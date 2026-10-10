@@ -1,0 +1,29 @@
+fastapi==0.141.1
+uvicorn[standard]==0.54.0
+sqlalchemy==2.1.1
+pydantic==2.13.5
+pydantic-settings==2.15.0
+pillow==12.3.0
+pillow-heif==1.8.0
+argon2-cffi==25.1.0
+cryptography==50.0.1
+pyjwt==2.15.1
+httpx==0.28.1
+segno==1.6.6
+tzdata==2026.1
+# Web Push: the message encrypted for one device (RFC 8291, aes128gcm).
+http-ece==1.2.1
+# Passkeys (WebAuthn): the browser's answers checked; brings cbor2, pyOpenSSL, pyasn1.
+webauthn==3.0.1
+# Receiving files: the body of a multipart upload, read piece by piece (services/receiving.py).
+python-multipart==0.0.32
+# Reading documents in the worker process (app/worker.py): PDF pages drawn by PDFium, pictures turned into a PDF.
+# img2pdf brings pikepdf (QPDF) and lxml; packaging comes with pikepdf.
+pypdfium2==5.14.0
+img2pdf==0.6.3
+pikepdf==10.16.0
+lxml==6.1.3
+packaging==26.3
+# The text of scans (app/worker.py): ocrmypdf drives Tesseract (installed in the image) and writes the searchable copy;
+# it brings fpdf2, uharfbuzz, pdfminer.six, pluggy, rich.
+ocrmypdf==17.13.0

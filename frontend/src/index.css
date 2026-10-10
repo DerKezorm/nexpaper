@@ -1,0 +1,191 @@
+@import 'tailwindcss';
+
+/* nexpaper: light paper and kraft by day, a dark desk by night. */
+:root {
+  color-scheme: light;
+  --paper: #f7f3ec; /* page */
+  --sheet: #fffdf9; /* cards */
+  --sheet-2: #f1ebe1; /* quiet fields */
+  --line: #e4dacb;
+  --ink: #2e2720; /* text */
+  --ink-2: #625648; /* secondary text */
+  --muted: #7f7264; /* small text, 4.5:1 on paper */
+  --accent: #9a6a3a;
+  --accent-soft: #f1e4d3;
+  --accent-ink: #fffaf3;
+  --ok: #3f7a4a;
+  --ok-soft: #e1efe2;
+  --warn: #a5561c;
+  --bad: #b42318; /* what went wrong, what cannot be taken back */
+  --bad-ink: #fffaf3; /* the text on a button in that colour */
+  --warn-soft: #f8e6d6;
+  --mark: #f6dfa9; /* search hits */
+  --shadow: 0 1px 2px rgb(70 45 20 / 0.06), 0 8px 24px -12px rgb(70 45 20 / 0.18);
+  --scrim: rgb(35 25 15 / 0.45);
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --paper: #171310;
+  --sheet: #211b17;
+  --sheet-2: #2a231d;
+  --line: #392f27;
+  --ink: #f1e8dc;
+  --ink-2: #c9baa8;
+  --muted: #a39280;
+  --accent: #d9ad7c;
+  --accent-soft: #3a2a1a;
+  --accent-ink: #171310;
+  --ok: #8cc79a;
+  --ok-soft: #1f3324;
+  --warn: #e7a06a;
+  --bad: #f4a199;
+  --bad-ink: #171310;
+  --warn-soft: #3d2715;
+  --mark: #6b5320;
+  --shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 10px 28px -14px rgb(0 0 0 / 0.7);
+  --scrim: rgb(0 0 0 / 0.6);
+}
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-sheet: var(--sheet);
+  --color-sheet-2: var(--sheet-2);
+  --color-line: var(--line);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-ink: var(--accent-ink);
+  --color-ok: var(--ok);
+  --color-ok-soft: var(--ok-soft);
+  --color-warn: var(--warn);
+  --color-bad: var(--bad);
+  --color-bad-ink: var(--bad-ink);
+  --color-warn-soft: var(--warn-soft);
+  --color-mark: var(--mark);
+  --color-scrim: var(--scrim);
+  --font-sans: 'Figtree Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Fraunces Variable', Georgia, serif;
+  --shadow-soft: var(--shadow);
+}
+
+html,
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+body {
+  min-height: 100dvh;
+  /* A word or an address longer than the line breaks instead of running over the edge of a card. */
+  overflow-wrap: break-word;
+}
+/* In the base layer, so a field's own focus look (border instead of ring) still wins. */
+@layer base {
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+}
+::selection {
+  background: var(--accent-soft);
+}
+mark {
+  background: var(--mark);
+  color: inherit;
+  border-radius: 3px;
+  padding: 0 2px;
+}
+
+@layer components {
+  /* Every page has the same width and gutters, so the content does not jump when switching pages. */
+  .page {
+    margin-inline: auto;
+    width: 100%;
+    max-width: 72rem;
+    padding-inline: 1rem;
+  }
+  @media (min-width: 640px) {
+    .page {
+      padding-inline: 1.5rem;
+    }
+  }
+  @media (min-width: 1024px) {
+    .page {
+      padding-inline: 2rem;
+    }
+  }
+  .card {
+    background: var(--sheet);
+    border: 1px solid var(--line);
+    border-radius: 1.25rem;
+    box-shadow: var(--shadow);
+  }
+  .input {
+    display: block;
+    height: 2.5rem;
+    width: 100%;
+    border-radius: 0.75rem;
+    border: 1px solid var(--line);
+    background: var(--sheet);
+    padding-inline: 0.75rem;
+    color: var(--ink);
+    outline: none;
+  }
+  .input:focus {
+    border-color: var(--accent);
+  }
+  /* A list that scrolls inside a page: a thin bar in the colours of the page, not the system's heavy one. */
+  .soft-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: var(--line) transparent;
+  }
+  .soft-scroll::-webkit-scrollbar {
+    width: 0.5rem;
+  }
+  .soft-scroll::-webkit-scrollbar-thumb {
+    background: var(--line);
+    border-radius: 999px;
+  }
+  /* A long list: what is off the screen is not laid out or drawn (about the height of one entry kept for the scroll bar). */
+  .inbox-entry {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 8.5rem;
+  }
+  .scroll-x {
+    scrollbar-width: none;
+  }
+  .scroll-x::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.rise {
+  animation: rise 0.35s ease-out both;
+}
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+.shimmer {
+  background: linear-gradient(90deg, var(--sheet-2) 25%, var(--accent-soft) 50%, var(--sheet-2) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s linear infinite;
+}

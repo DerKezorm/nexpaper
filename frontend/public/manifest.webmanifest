@@ -1,0 +1,99 @@
+{
+  "name": "nexpaper",
+  "short_name": "nexpaper",
+  "description": "A light paper filing cabinet for households and small firms.",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f7f3ec",
+  "theme_color": "#f7f3ec",
+  "icons": [
+    {
+      "src": "/logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Hochladen",
+      "short_name": "Hochladen",
+      "url": "/schnell",
+      "icons": [
+        {
+          "src": "/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Fotografieren",
+      "short_name": "Kamera",
+      "url": "/kamera",
+      "icons": [
+        {
+          "src": "/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    }
+  ],
+  "share_target": {
+    "action": "/teilen",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "title": "title",
+      "files": [
+        {
+          "name": "files",
+          "accept": [
+            "application/pdf",
+            "image/jpeg",
+            "image/png",
+            "image/tiff",
+            "image/heic",
+            "image/heif",
+            "image/webp",
+            "image/avif",
+            "application/xml",
+            "text/xml",
+            ".pdf",
+            ".xml",
+            ".jpg",
+            ".jpeg",
+            ".png",
+            ".heic",
+            ".heif",
+            ".webp",
+            ".avif",
+            ".tif",
+            ".tiff"
+          ]
+        }
+      ]
+    }
+  }
+}

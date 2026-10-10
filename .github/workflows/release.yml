@@ -1,0 +1,114 @@
+# Publishes a release: on a tag like v1.0.0, the tests once more, then the image for amd64 and arm64 into the GitHub
+# Container Registry. Nothing else publishes; the everyday checks are in ci.yml.
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+# One release at a time, and never cancelled: a half-published image is worse than a few minutes of waiting.
+# Read-only unless a job asks for more (only the image job of release.yml writes packages).
+permissions:
+  contents: read
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  tests:
+    name: Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4
+
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: |
+            backend/requirements.txt
+            backend/requirements-dev.txt
+
+      - name: Install the backend
+        working-directory: backend
+        run: python -m pip install -r requirements-dev.txt
+
+      - name: Lint and test the backend
+        working-directory: backend
+        run: |
+          python -m ruff check app tests
+          python -m pytest -q
+
+      # The version in the code must match the tag, or the app reports another version than the one installed.
+      - name: Version matches the tag
+        working-directory: backend
+        run: |
+          IN_CODE=$(python -c "import app; print(app.__version__)")
+          AT_TAG="${GITHUB_REF_NAME#v}"
+          echo "code: $IN_CODE / tag: $AT_TAG"
+          if [ "$IN_CODE" != "$AT_TAG" ]; then
+            echo "::error::backend/app/__init__.py says $IN_CODE, the tag says $AT_TAG."
+            exit 1
+          fi
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Lint, test and build the frontend
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run lint
+          npm test
+          npm run build
+
+  image:
+    name: Build and publish the image
+    runs-on: ubuntu-latest
+    needs: tests
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4
+
+      # NAS devices come with Intel/AMD and ARM.
+      - uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130  # v3
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f  # v3
+
+      - name: Log in to the registry
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9  # v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Work out names and labels
+        id: meta
+        uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051  # v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            # Not for a pre-release (v1.1.0-rc1): latest stays on the last full release.
+            type=raw,value=latest,enable=${{ !contains(github.ref_name, '-') }}
+
+      - name: Build and publish
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8  # v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

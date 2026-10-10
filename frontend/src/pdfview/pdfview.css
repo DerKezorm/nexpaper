@@ -1,0 +1,135 @@
+/* The PDF frame: the pages on the page's own ground, the pictures of the pages and the contents on the left. The
+   colours come from the page (light or dark, the theme), the pages themselves stay as the PDF draws them. */
+:root {
+  --ground: #0b0b0f;
+  --panel: #101016;
+  --text: #f2f2f5;
+  --muted: #9a9aa8;
+  --accent: #2dd4bf;
+  --line: #26262f;
+  color-scheme: light dark;
+}
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--ground);
+  color: var(--text);
+  font: 13px/1.4 system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+#side {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 152px;
+  display: flex;
+  flex-direction: column;
+  background: var(--panel);
+  border-right: 1px solid var(--line);
+}
+#side[hidden] {
+  display: none;
+}
+#box {
+  position: absolute;
+  inset: 0;
+  overflow: auto;
+}
+#side:not([hidden]) ~ #box {
+  left: 153px;
+}
+#tabs {
+  display: flex;
+  gap: 4px;
+  padding: 8px;
+}
+#tabs button {
+  flex: 1;
+  border: 0;
+  border-radius: 7px;
+  padding: 4px 0;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+#tabs button[aria-selected='true'] {
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  color: var(--text);
+  font-weight: 600;
+}
+#thumbs,
+#outline {
+  flex: 1;
+  overflow: auto;
+  padding: 2px 8px 12px;
+}
+#thumbs[hidden],
+#outline[hidden] {
+  display: none;
+}
+.thumb {
+  display: block;
+  margin: 0 auto 12px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+  text-align: center;
+}
+.thumb canvas {
+  display: block;
+  background: #fff;
+  border-radius: 2px;
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+}
+.thumb.on canvas {
+  outline-color: var(--accent);
+}
+.thumb.on span {
+  color: var(--accent);
+  font-weight: 600;
+}
+.line {
+  display: block;
+  width: 100%;
+  border: 0;
+  border-radius: 6px;
+  padding: 4px 8px;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 12.5px;
+  text-align: left;
+  cursor: pointer;
+}
+.line:hover {
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+.none {
+  color: var(--muted);
+  padding: 8px;
+}
+#said {
+  margin: 0;
+  padding: 24px;
+  color: var(--muted);
+  text-align: center;
+}
+#said[hidden],
+#box[hidden] {
+  display: none;
+}
+.pdfViewer .page {
+  border: 0;
+  margin: 12px auto;
+  box-shadow: 0 2px 12px rgb(0 0 0 / 0.35);
+}
+body.compact .pdfViewer .page {
+  margin: 8px auto;
+}

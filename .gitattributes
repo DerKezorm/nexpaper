@@ -1,0 +1,7 @@
+# One line ending for every machine this is worked on.
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.webp binary
+*.ico binary
+*.woff2 binary

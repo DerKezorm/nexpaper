@@ -1,0 +1,51 @@
+{
+  "1.0.0": {
+    "lead": "This is nexpaper 1.0, a filing cabinet for documents at home and in a small business: the simple Paperless-ngx for the home. This is what you find from the start.",
+    "sections": [
+      {
+        "title": "Everything comes into the inbox first",
+        "body": "From the phone, the mailbox, the intake folder, Paperless or the browser: new files wait in the inbox with the fields filled in. Filter by vault, search the text too, look at every page large, and file many at once.",
+        "where": "Inbox"
+      },
+      {
+        "title": "Vaults",
+        "body": "Everybody has a vault of their own, and there are shared ones like “Household”. Sharing is read, edit or manage, and single documents can go out as a link.",
+        "where": "Vaults"
+      },
+      {
+        "title": "Organise",
+        "body": "Senders, kinds and tags in one place, with how many documents each has: rename, merge or delete them. Typing a sender or a tag proposes the ones you already have.",
+        "where": "Organise"
+      },
+      {
+        "title": "Text recognition and search",
+        "body": "Scans become searchable PDFs and the original stays as it came. The search understands parts of words and filters like “kind:”, “sender:” and “amount:>”.",
+        "where": "Archive, search field"
+      },
+      {
+        "title": "Photographing with edge detection",
+        "body": "The camera finds the sheet, takes the picture by itself and straightens it. Several pages become one document.",
+        "where": "Upload, Photograph"
+      },
+      {
+        "title": "Pages and versions",
+        "body": "Turn, delete and order pages, join documents or split them at blank separator sheets. Every change is saved as a version of the document, the original stays.",
+        "where": "Document"
+      },
+      {
+        "title": "Backup and checking the files",
+        "body": "The backup holds the database, the settings and the server secrets, not the documents and not the search index. Once a week nexpaper checks the checksums of all files and warns at the document when one is missing or has changed.",
+        "where": "Settings, Backups"
+      }
+    ],
+    "smallTitle": "Also",
+    "small": [
+      "E-invoices (ZUGFeRD, Factur-X, XRechnung) are read from their data",
+      "Kinds of their own per vault, and rules that help with filing",
+      "An export for the tax adviser as a ZIP, as a link if you like",
+      "Import from Paperless-ngx",
+      "From the iPhone with a shortcut, from Android through Share",
+      "A second factor, passkeys and sign-in through your own provider"
+    ]
+  }
+}

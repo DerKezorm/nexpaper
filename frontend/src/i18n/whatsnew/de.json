@@ -1,0 +1,51 @@
+{
+  "1.0.0": {
+    "lead": "Das ist nexpaper 1.0, eine Ablage für Dokumente zu Hause und in kleinen Firmen: das einfache Paperless-ngx für Zuhause. Das findest du von Anfang an.",
+    "sections": [
+      {
+        "title": "Alles kommt erst in den Eingang",
+        "body": "Vom Handy, aus dem Postfach, dem Eingangsordner, aus Paperless oder dem Browser: Neues wartet im Eingang mit ausgefüllten Feldern. Nach Tresor filtern, auch im Text suchen, jede Seite groß ansehen und viele auf einmal ablegen.",
+        "where": "Eingang"
+      },
+      {
+        "title": "Tresore",
+        "body": "Jede Person hat einen eigenen Tresor, dazu gibt es gemeinsame wie „Haushalt“. Geteilt wird mit Lesen, Bearbeiten oder Verwalten, einzelne Dokumente auch per Link.",
+        "where": "Tresore"
+      },
+      {
+        "title": "Ordnung",
+        "body": "Absender, Arten und Tags an einem Ort, mit der Zahl ihrer Dokumente: umbenennen, zusammenführen oder löschen. Beim Tippen eines Absenders oder Tags schlägt nexpaper die vorhandenen vor.",
+        "where": "Ordnung"
+      },
+      {
+        "title": "Texterkennung und Suche",
+        "body": "Scans werden zu durchsuchbaren PDFs, das Original bleibt unverändert. Die Suche versteht Wortteile und Filter wie „art:“, „absender:“ und „betrag:>“.",
+        "where": "Archiv, Suchfeld"
+      },
+      {
+        "title": "Fotografieren mit Kantenerkennung",
+        "body": "Die Kamera findet das Blatt, löst selbst aus und richtet es gerade. Mehrere Seiten werden ein Dokument.",
+        "where": "Hochladen, Fotografieren"
+      },
+      {
+        "title": "Seiten und Fassungen",
+        "body": "Seiten drehen, löschen und ordnen, Dokumente zusammenfügen oder an leeren Trennblättern aufteilen. Jede Änderung wird als Fassung des Dokuments gespeichert, das Original bleibt.",
+        "where": "Dokument"
+      },
+      {
+        "title": "Sicherung und Dateien prüfen",
+        "body": "Die Sicherung enthält Datenbank, Einstellungen und Server-Geheimnisse, nicht die Dokumente und nicht den Suchindex. Einmal in der Woche prüft nexpaper die Prüfsummen aller Dateien und warnt am Dokument, wenn eine fehlt oder sich verändert hat.",
+        "where": "Einstellungen, Sicherung"
+      }
+    ],
+    "smallTitle": "Außerdem",
+    "small": [
+      "E-Rechnungen (ZUGFeRD, Factur-X, XRechnung) werden aus ihren Daten gelesen",
+      "Eigene Arten je Tresor und Regeln, die beim Ablegen mithelfen",
+      "Export für den Steuerberater als ZIP, auf Wunsch als Link",
+      "Import aus Paperless-ngx",
+      "Vom iPhone mit einem Kurzbefehl, von Android über Teilen",
+      "Zweiter Faktor, Passkeys und Anmeldung über den eigenen Anbieter"
+    ]
+  }
+}

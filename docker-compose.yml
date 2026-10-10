@@ -1,0 +1,58 @@
+# nexpaper, start with:  docker compose up -d --build
+#
+# Then open http://<your-host>:8560. The first account you create there is the operator; it needs the setup code
+# from the log (docker logs nexpaper) or the one you set below.
+
+services:
+  nexpaper:
+    build: .
+    container_name: nexpaper
+    restart: unless-stopped
+
+    ports:
+      # Host port on the left, container port on the right. Only this machine reaches it (127.0.0.1): put a reverse
+      # proxy with https in front and let it forward to http://127.0.0.1:8560 (a proxy in another container: put both
+      # in one Docker network and forward to http://nexpaper:8000). Set NEXPAPER_TRUSTED_PROXIES below to the proxy.
+      # To reach nexpaper directly from your home network instead, write "8560:8000", but only for a network you trust:
+      # without https, passwords and codes cross it in the clear.
+      - "127.0.0.1:8560:8000"
+
+    # The container needs nothing it is not given: it may not gain rights later, and starts with only what the
+    # entrypoint needs to set the ownership of /data (CHOWN, DAC_READ_SEARCH) and to drop from root to the user
+    # nexpaper (SETUID, SETGID). nexpaper itself runs as that user, with none.
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - DAC_READ_SEARCH
+      - SETUID
+      - SETGID
+
+    volumes:
+      # Database, logs, backups and the operator's own languages.
+      # A local disk, never an SMB or NFS share: SQLite's locking does not work reliably over network filesystems.
+      - ./data:/data
+      # The intake folder (Settings, Inputs): a subfolder per person, files that lie still 10 seconds come into that
+      # person's inbox and leave the folder. It is /data/eingang unless you name another one; to let a scanner or a
+      # share write there, mount that folder here. nexpaper (PUID) must be allowed to read, move and delete in it.
+      # - /path/to/scans:/data/eingang
+
+    environment:
+      # Who should own the files in the data directory. The container fixes the permissions itself on startup.
+      PUID: 1000
+      PGID: 1000
+
+      TZ: Europe/Berlin
+
+      # The address people use to reach nexpaper, for invitation links and the OIDC redirect. Can also be set in the
+      # interface.
+      # NEXPAPER_PUBLIC_URL: https://paper.example.com
+
+      # Behind a reverse proxy: its address, so that the brake against password guessing sees the real sender.
+      # NEXPAPER_TRUSTED_PROXIES: 172.16.0.0/12
+
+      # The code the first account needs. Without it nexpaper makes one at every start until it is set up and
+      # writes it to the log: docker logs nexpaper
+      # NEXPAPER_SETUP_TOKEN: choose-a-long-one
