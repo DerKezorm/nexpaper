@@ -58,7 +58,7 @@ def test_the_about_page_names_version_licence_and_where_it_comes_from(client: Te
     assert about["license"] == "AGPL-3.0"
     assert about["repo_url"] == "https://github.com/DerKezorm/nexpaper"
     assert about["releases_url"] == "https://github.com/DerKezorm/nexpaper/releases"
-    assert about["project_url"] == "", "no project page yet: the about page leaves the row out"
+    assert about["project_url"] == "https://nexpaper.nexapps.dev"
 
 
 def test_every_account_sees_the_answer_and_only_the_operator_switches_or_asks(
