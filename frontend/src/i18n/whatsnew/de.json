@@ -1,4 +1,30 @@
 {
+  "1.1.0": {
+    "lead": "Anmelden über mehrere Anbieter, so wie in allen nex-Apps: authentik, Microsoft Entra ID oder jeder andere, der OpenID Connect spricht.",
+    "sections": [
+      {
+        "title": "Mehrere Anmeldeanbieter",
+        "body": "Jeder Anbieter bekommt einen Knopf auf der Anmeldeseite, in der Reihenfolge deiner Liste. Je Anbieter stellst du ein, ob neue Personen ein Konto bekommen und ob er den zweiten Faktor selbst prüft. Microsoft Entra ID geht auch mit mehreren Mandanten.",
+        "where": "Einstellungen, Anmeldung"
+      },
+      {
+        "title": "authentik in einem Schritt",
+        "body": "Mit einem API-Token richtet nexpaper Anbieter und Anwendung in authentik selbst ein und sagt bei jedem Schritt, was geklappt hat und was nicht. Wer kein Token aus der Hand gibt, lädt stattdessen einen Blueprint herunter.",
+        "where": "Einstellungen, Anmeldung"
+      },
+      {
+        "title": "Verknüpfen in deinem Konto",
+        "body": "Jedes Konto verknüpft sich selbst mit den Anbietern, mit deinem Passwort als Bestätigung, und löst die Verknüpfung dort wieder. Eine Mailadresse vom Anbieter verknüpft nichts mehr von selbst; eine Einladung wirkt auch über den Anbieter.",
+        "where": "Mein Konto, Sicherheit"
+      }
+    ],
+    "smallTitle": "Außerdem",
+    "small": [
+      "Dein bisheriger Anbieter ist der erste Eintrag der Liste, alle Verknüpfungen bleiben, seine Rückleitadresse auch",
+      "Eine Adresse vom Anbieter zählt für Dokumente per Mail erst, wenn du sie bestätigt hast",
+      "Hinter einem Proxy, dem nexpaper traut, gilt auch das Schema, das er meldet"
+    ]
+  },
   "1.0.1": {
     "lead": "Eine kleine Version: nexpaper sagt jetzt deutlicher, wo es am besten aufgehoben ist.",
     "sections": [

@@ -59,7 +59,7 @@ beforeEach(async () => {
   await changeLanguage('de', false)
   auth.me = me
   auth.setMe.mockClear()
-  server.answers = { 'GET /api/v1/quick': quick, 'GET /api/v1/auth/methods': { password: true, oidc: false, oidc_name: '' } }
+  server.answers = { 'GET /api/v1/quick': quick, 'GET /api/v1/auth/methods': { password: true, providers: [] } }
   server.fails = {}
   server.install()
   uploader = new Uploader()

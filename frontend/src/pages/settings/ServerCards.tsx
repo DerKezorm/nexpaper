@@ -1,14 +1,15 @@
 /**
- * The operator's part of the settings, as the mock (and nexlore): accounts and invitations, sign-in (password, second
- * factor, public address, OIDC and authentik), mail, API keys, backups, languages and the log. Everything here is the
+ * The operator's part of the settings, as the mock (and nexlore): accounts and invitations, mail, API keys, backups,
+ * languages and the log. Sign-in (password, public address, second factor, providers, authentik) is in
+ * ``SignInCards.tsx``. Everything here is the
  * server's; it applies to all. The operator manages accounts and does not read the documents in them.
  */
-import { AlertTriangle, Download, FileText, HardDrive, Languages, Mail, MoreHorizontal, Plug, Plus, RotateCcw, ScrollText, Shield, ShieldCheck, Trash2, Upload, Users } from 'lucide-react'
+import { AlertTriangle, Download, FileText, HardDrive, Languages, Mail, MoreHorizontal, Plug, Plus, RotateCcw, ScrollText, ShieldCheck, Trash2, Upload, Users } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 
-import { accountsApi, api, apiKeysApi, passwordHeader, vaultsApi, type AccountLeaving, type AnyApiKey, type DocumentsChoice, type Me, type Person } from '../../api/client'
+import { accountsApi, ApiError, api, apiKeysApi, oidcApi, passwordHeader, vaultsApi, type AccountLeaving, type AccountLink, type AddressQuestion, type AnyApiKey, type DocumentsChoice, type Me, type Person } from '../../api/client'
 import { Avatar } from '../../components/Avatar'
 import { Dialog } from '../../components/Dialog'
 import { useConfirm } from '../../components/useConfirm'
@@ -21,7 +22,6 @@ export type ServerSettings = {
   public_url: string
   password_login: boolean
   two_factor_required: boolean
-  oidc_second_factor_by_provider: boolean
   backup_schedule: 'off' | 'daily' | 'weekly'
   backup_keep: number
   smtp_host: string
@@ -44,16 +44,40 @@ export type ServerSettings = {
   cache_max_mb: number
 }
 
-type Change = Partial<ServerSettings> & { smtp_password?: string; current_password?: string }
+type Change = Partial<ServerSettings> & { smtp_password?: string; current_password?: string; confirm_address?: boolean }
 type Server = ReturnType<typeof useServerSettings>
 
 // eslint-disable-next-line react-refresh/only-export-components
 export function useServerSettings() {
   const [settings, setSettings] = useState<ServerSettings | null>(null)
   const action = useAction()
-  useEffect(() => {
-    api<ServerSettings>('/api/v1/settings').then(setSettings, () => undefined)
+  const reload = useCallback(async () => {
+    const fresh = await api<ServerSettings>('/api/v1/settings')
+    setSettings(fresh)
+    return fresh
   }, [])
+  useEffect(() => {
+    reload().catch(() => undefined)
+  }, [reload])
+  /** Straight to the server, without the switch moving first (a change asked with the operator's password). */
+  const saveNow = async (change: Change) => setSettings(await api<ServerSettings>('/api/v1/settings', { method: 'PUT', body: change }))
+  /**
+   * The public address. While the authentik button registered the old one, or a provider entered by hand is on, the
+   * server asks first (409 `public_url_change`, nothing saved): the question comes back for the page to ask
+   * (Bauplan 04, card 1); with `confirm` it is saved. Null: saved, or refused for another reason (shown by `problem`).
+   */
+  const saveAddress = async (public_url: string, confirm = false): Promise<AddressQuestion | null> => {
+    let question: AddressQuestion | null = null
+    await action.run(async () => {
+      try {
+        setSettings(await api<ServerSettings>('/api/v1/settings', { method: 'PUT', body: { public_url, confirm_address: confirm } }))
+      } catch (error) {
+        if (!(error instanceof ApiError) || error.code !== 'public_url_change') throw error
+        question = { count: Number(error.values.count ?? 0), address: String(error.values.address ?? ''), hand: Number(error.values.hand ?? 0) }
+      }
+    })
+    return question
+  }
   /** The switch moves at once; the server's answer confirms it, a refusal puts it back. */
   const save = async (change: Change, done?: string) => {
     const before = settings
@@ -61,12 +85,12 @@ export function useServerSettings() {
     const ok = await action.run(async () => setSettings(await api<ServerSettings>('/api/v1/settings', { method: 'PUT', body: change })), done)
     if (!ok) setSettings(before)
   }
-  return { settings, save, setSettings, ...action }
+  return { settings, save, saveNow, saveAddress, reload, setSettings, ...action }
 }
 
 type AccountRow = Me & { locked: boolean; blocked?: boolean; has_password?: boolean; created_at: string; last_seen_at: string | null; ai_allowed: boolean }
 type OpenInvite = { id: number; email: string; expires_at: string }
-type Asking = 'role' | 'delete' | 'link' | 'reset' | 'signout' | 'block' | 'unblock'
+type Asking = 'role' | 'delete' | 'link' | 'reset' | 'signout' | 'block' | 'unblock' | 'unlink'
 /** What came of sending a link to set a new password: by mail, or to pass on once. */
 type LinkMade = { name: string; sent: boolean; email?: string; link?: string }
 const DAYS = ['1', '7', '30'] as const
@@ -79,13 +103,15 @@ export function AccountsCard() {
   const [inviting, setInviting] = useState(false)
   const [invites, setInvites] = useState<OpenInvite[]>([])
   const [menu, setMenu] = useState<number | null>(null)
-  const [asking, setAsking] = useState<{ kind: Asking; account: AccountRow } | null>(null)
+  const [asking, setAsking] = useState<{ kind: Asking; account: AccountRow; link?: AccountLink } | null>(null)
+  const [links, setLinks] = useState<AccountLink[]>([])
   const [made, setMade] = useState<LinkMade | null>(null)
   const { busy, problem, done, run } = useAction()
   const { ask, dialog } = useConfirm()
   const load = useCallback(() => {
     api<AccountRow[]>('/api/v1/accounts').then(setList, () => undefined)
     api<OpenInvite[]>('/api/v1/invites').then(setInvites, () => undefined)
+    oidcApi.links().then((found) => setLinks(Array.isArray(found) ? found : []), () => setLinks([]))
   }, [])
   useEffect(load, [load])
   useEffect(() => {
@@ -102,8 +128,10 @@ export function AccountsCard() {
     }
   }, [menu])
 
-  const actions = (row: AccountRow): { kind: Asking; label: string }[] => [
+  const linksOf = (row: AccountRow) => links.filter((entry) => entry.account_id === row.id)
+  const actions = (row: AccountRow): { kind: Asking; label: string; link?: AccountLink }[] => [
     { kind: 'role', label: row.role === 'operator' ? t('server.makeMember') : t('server.makeOperator') },
+    ...linksOf(row).map((link) => ({ kind: 'unlink' as const, label: t('server.unlinkProvider', { name: link.label }), link })),
     ...(row.two_factor ? [{ kind: 'reset' as const, label: t('server.resetTwoFactor') }] : []),
     { kind: 'signout', label: t('server.signOutEverywhere') },
     row.blocked ? { kind: 'unblock' as const, label: t('server.unblock') } : { kind: 'block' as const, label: t('server.block') },
@@ -127,6 +155,15 @@ export function AccountsCard() {
                 {row.locked ? ' · ' + t('server.locked') : ''}
                 {row.blocked ? ' · ' + t('server.blocked') : ''}
               </span>
+              {linksOf(row).length > 0 && (
+                <span className="mt-1 flex flex-wrap gap-1" data-testid="account-providers">
+                  {linksOf(row).map((link) => (
+                    <span key={link.provider_id} className="rounded-full border border-line px-2 py-0.5 text-[11px] font-semibold text-ink-2">
+                      {link.label}
+                    </span>
+                  ))}
+                </span>
+              )}
             </span>
             {row.id !== me?.id && (
               <span className="relative flex items-center gap-1.5" data-account-actions>
@@ -147,11 +184,11 @@ export function AccountsCard() {
                   <span className="card rise absolute top-full right-0 z-40 mt-1 block w-60 p-1.5">
                     {actions(row).map((entry) => (
                       <button
-                        key={entry.kind}
+                        key={entry.kind + (entry.link ? `-${entry.link.provider_id}` : '')}
                         type="button"
                         onClick={() => {
                           setMenu(null)
-                          setAsking({ kind: entry.kind, account: row })
+                          setAsking({ kind: entry.kind, account: row, link: entry.link })
                         }}
                         className={`block w-full rounded-lg px-3 py-2 text-left text-sm font-semibold hover:bg-sheet-2 ${entry.kind === 'delete' || entry.kind === 'block' ? 'text-bad' : 'text-ink-2'}`}
                       >
@@ -262,7 +299,7 @@ export function AccountsCard() {
       {asking && asking.kind !== 'delete' && (
         <Confirm
           title={t(`server.confirm.${asking.kind}.title`, { name: asking.account.name })}
-          text={t(asking.kind === 'role' ? (asking.account.role === 'operator' ? 'server.confirm.demote.text' : 'server.confirm.promote.text') : `server.confirm.${asking.kind}.text`, { name: asking.account.name })}
+          text={t(asking.kind === 'role' ? (asking.account.role === 'operator' ? 'server.confirm.demote.text' : 'server.confirm.promote.text') : `server.confirm.${asking.kind}.text`, { name: asking.account.name, provider: asking.link?.label ?? '' })}
           confirm={t(`server.confirm.${asking.kind}.button`)}
           danger={asking.kind === 'block'}
           password={me?.sign_in === 'password' && asking.kind !== 'signout'}
@@ -274,6 +311,7 @@ export function AccountsCard() {
             if (asking.kind === 'signout') await api(`/api/v1/accounts/${id}/sign-out`, { method: 'POST' })
             if (asking.kind === 'unblock') await api(`/api/v1/accounts/${id}/unblock`, { method: 'POST', body: { current_password: password } })
             if (asking.kind === 'block') await api(`/api/v1/accounts/${id}/block`, { method: 'POST', body: { current_password: password } })
+            if (asking.kind === 'unlink' && asking.link) await oidcApi.unlinkAccount(id, asking.link.provider_id, password)
             if (asking.kind === 'link') {
               // The operator sets no password: the person does, through a link that goes by mail or is shown here once.
               const sent = await api<{ sent: boolean; email?: string; link?: string }>(`/api/v1/accounts/${id}/reset-link`, { method: 'POST', body: { current_password: password } })
@@ -471,171 +509,6 @@ function InviteDialog({ onClose }: { onClose: () => void }) {
         </form>
       )}
     </Dialog>
-  )
-}
-
-type Oidc = { configured: boolean; issuer: string; client_id: string; provider_name: string; auto_create: boolean; redirect_uri: string }
-type Steps = { steps: { key: string; ok: boolean; detail: string }[] }
-
-export function SignInCard({ server }: { server: Server }) {
-  const { t } = useTranslation()
-  const { me } = useAuth()
-  const [oidc, setOidc] = useState<Oidc | null>(null)
-  const [form, setForm] = useState({ issuer: '', client_id: '', client_secret: '', provider_name: '', auto_create: false })
-  const [address, setAddress] = useState<string | null>(null)
-  const [authentik, setAuthentik] = useState({ url: '', token: '' })
-  const [steps, setSteps] = useState<Steps | null>(null)
-  // Switches that make signing in weaker ask for the operator's password first.
-  const [weaker, setWeaker] = useState<'two_factor_off' | 'provider_checks' | null>(null)
-  const { busy, problem, done, run } = useAction()
-  const { ask, dialog } = useConfirm()
-
-  const loadOidc = useCallback(async () => {
-    const config = await api<Oidc>('/api/v1/oidc/config')
-    setOidc(config)
-    setForm({ issuer: config.issuer, client_id: config.client_id, client_secret: '', provider_name: config.provider_name, auto_create: config.auto_create })
-  }, [])
-  useEffect(() => {
-    void run(loadOidc)
-  }, [run, loadOidc])
-
-  const s = server.settings
-  if (!s) return null
-  const ownFirst = !s.two_factor_required && !me?.two_factor
-  const provider = oidc?.provider_name || 'OpenID Connect'
-  return (
-    <Card id="sign-in" icon={Shield} title={t('server.signin')} text={t('server.signinText')}>
-      <Toggle label={t('server.passwordLogin')} hint={t('server.passwordLoginHint')} checked={s.password_login} onChange={(password_login) => void server.save({ password_login })} />
-      {/* Without an own second factor the operator would be the first one sent away: first the own one. */}
-      <Toggle
-        label={t('server.twoFactorRequired')}
-        hint={ownFirst ? t('server.ownSecondFactorFirst') : t('server.twoFactorRequiredHint')}
-        checked={s.two_factor_required}
-        disabled={ownFirst}
-        onChange={(on) => (on ? void server.save({ two_factor_required: true }) : setWeaker('two_factor_off'))}
-      />
-      {oidc?.configured && (
-        <Toggle
-          label={t('server.providerChecks', { name: provider })}
-          hint={t('server.providerChecksHint', { name: provider })}
-          checked={s.oidc_second_factor_by_provider}
-          onChange={(on) => (on ? setWeaker('provider_checks') : void server.save({ oidc_second_factor_by_provider: false }))}
-        />
-      )}
-      {weaker && (
-        <Confirm
-          title={t(`server.confirm.${weaker}.title`)}
-          text={t(`server.confirm.${weaker}.text`, { name: provider })}
-          confirm={t(`server.confirm.${weaker}.button`)}
-          danger
-          password={me?.sign_in === 'password'}
-          onCancel={() => setWeaker(null)}
-          onConfirm={async (current_password) => {
-            const change: Change = weaker === 'two_factor_off' ? { two_factor_required: false } : { oidc_second_factor_by_provider: true }
-            server.setSettings(await api<ServerSettings>('/api/v1/settings', { method: 'PUT', body: { ...change, current_password } }))
-            setWeaker(null)
-          }}
-        />
-      )}
-      <form
-        className="flex flex-wrap items-start gap-2"
-        onSubmit={(event) => {
-          event.preventDefault()
-          void server.save({ public_url: (address ?? s.public_url).trim() }, t('settings.saved'))
-        }}
-      >
-        <Input label={t('server.publicUrl')} value={address ?? s.public_url} onChange={setAddress} placeholder="https://paper.example.com" hint={t('server.publicUrlHint')} className="min-w-60 flex-1" />
-        <Button type="submit" busy={server.busy} className="mt-6">
-          {t('common.save')}
-        </Button>
-      </form>
-      <Feedback problem={server.problem} done={server.done} />
-
-      <SubHead title={t('server.oidc')} />
-      {oidc && (
-        <p className="-mt-2 text-xs break-words text-muted">
-          {oidc.configured ? t('server.oidcOn', { issuer: oidc.issuer }) : t('server.oidcOff')} · {t('server.redirect')}: <code className="font-mono">{oidc.redirect_uri}</code>
-        </p>
-      )}
-      <form
-        className="grid gap-3 sm:grid-cols-2"
-        onSubmit={(event) => {
-          event.preventDefault()
-          void run(async () => {
-            setOidc(await api<Oidc>('/api/v1/oidc/config', { method: 'PUT', body: form }))
-            setForm((current) => ({ ...current, client_secret: '' }))
-          }, t('settings.saved'))
-        }}
-      >
-        <Input label={t('server.oidcIssuer')} value={form.issuer} onChange={(issuer) => setForm({ ...form, issuer })} placeholder="https://auth.example.com/application/o/nexpaper/" className="sm:col-span-2" />
-        <Input label={t('server.clientId')} value={form.client_id} onChange={(client_id) => setForm({ ...form, client_id })} />
-        <Input label={t('server.clientSecret')} value={form.client_secret} onChange={(client_secret) => setForm({ ...form, client_secret })} type="password" autoComplete="new-password" placeholder={oidc?.configured ? t('server.secretKept') : ''} />
-        <Input label={t('server.oidcName')} value={form.provider_name} onChange={(provider_name) => setForm({ ...form, provider_name })} placeholder="authentik" />
-        <div className="sm:col-span-2">
-          <Toggle label={t('server.oidcAutoCreate')} hint={t('server.oidcAutoCreateHint')} checked={form.auto_create} onChange={(auto_create) => setForm({ ...form, auto_create })} />
-        </div>
-        <div className="flex gap-2 sm:col-span-2">
-          <Button type="submit" primary busy={busy}>
-            {t('common.save')}
-          </Button>
-          {oidc?.configured && (
-            <Button
-              danger
-              busy={busy}
-              onClick={() =>
-                ask({
-                  title: t('confirm.oidc.title'),
-                  text: t('confirm.oidc.text'),
-                  confirm: t('confirm.oidc.confirm'),
-                  run: async () => {
-                    await api('/api/v1/oidc/config', { method: 'DELETE' })
-                    await loadOidc()
-                  },
-                })
-              }
-            >
-              {t('server.oidcRemove')}
-            </Button>
-          )}
-        </div>
-      </form>
-
-      <SubHead title={t('server.authentik.title')} text={t('server.authentik.text')} />
-      <form
-        className="grid gap-3 sm:grid-cols-2"
-        onSubmit={(event) => {
-          event.preventDefault()
-          void run(async () => {
-            setSteps(await api<Steps>('/api/v1/oidc/authentik/setup', { method: 'POST', body: authentik }))
-            setAuthentik({ ...authentik, token: '' })
-            await loadOidc()
-          })
-        }}
-      >
-        <Input label={t('server.authentik.url')} value={authentik.url} onChange={(url) => setAuthentik({ ...authentik, url })} placeholder="https://auth.example.com" />
-        <Input label={t('server.authentik.token')} value={authentik.token} onChange={(token) => setAuthentik({ ...authentik, token })} type="password" autoComplete="new-password" />
-        <div className="flex flex-wrap gap-2 sm:col-span-2">
-          <Button type="submit" busy={busy} disabled={!authentik.url.trim() || !authentik.token.trim()}>
-            {t('server.authentik.run')}
-          </Button>
-          <a href="/api/v1/oidc/authentik/blueprint" className="inline-flex h-10 items-center justify-center gap-2 rounded-full border border-line px-4 text-sm font-semibold text-ink-2 hover:bg-sheet-2">
-            <Download size={16} />
-            {t('server.authentik.blueprint')}
-          </a>
-        </div>
-      </form>
-      {steps && (
-        <ol className="space-y-1 text-xs" data-testid="authentik-steps">
-          {steps.steps.map((step) => (
-            <li key={step.key} className={step.ok ? 'text-accent' : 'text-bad'}>
-              {step.ok ? '✓' : '✗'} {t(`authentik.step.${step.key}`, { defaultValue: step.key })}: {step.detail}
-            </li>
-          ))}
-        </ol>
-      )}
-      <Feedback problem={problem} done={done} />
-      {dialog}
-    </Card>
   )
 }
 

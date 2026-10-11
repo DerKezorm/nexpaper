@@ -105,7 +105,7 @@ beforeEach(async () => {
   await changeLanguage('de', false)
   auth.status = 'signedOut'
   auth.me = me
-  answers = { 'GET /api/v1/auth/methods': { password: true, oidc: false, oidc_name: '', passkeys: false, forgot: false } }
+  answers = { 'GET /api/v1/auth/methods': { password: true, providers: [], passkeys: false, forgot: false } }
   serve()
 })
 
@@ -122,14 +122,14 @@ describe('"Passwort vergessen?" on the sign-in page', () => {
     expect(box.textContent).not.toContain('Passwort vergessen?')
     act(() => root.unmount())
     box.remove()
-    answers['GET /api/v1/auth/methods'] = { password: true, oidc: false, oidc_name: '', passkeys: false, forgot: true }
+    answers['GET /api/v1/auth/methods'] = { password: true, providers: [], passkeys: false, forgot: true }
     await show(<LoginPage />)
     const link = [...box.querySelectorAll('a')].find((item) => item.textContent === 'Passwort vergessen?')
     expect(link?.getAttribute('href')).toBe('/forgot')
   })
 
   it('asks for the link with the name, and says the same whatever the name is', async () => {
-    answers['GET /api/v1/auth/methods'] = { password: true, oidc: false, oidc_name: '', passkeys: false, forgot: true }
+    answers['GET /api/v1/auth/methods'] = { password: true, providers: [], passkeys: false, forgot: true }
     answers['POST /api/v1/auth/forgot'] = { ok: true }
     await show(<ForgotPage />, '/forgot')
     expect(box.querySelector('h1')!.textContent).toBe('Passwort vergessen')
@@ -148,7 +148,7 @@ describe('"Passwort vergessen?" on the sign-in page', () => {
   })
 
   it('still says so when the mail was switched off between the page opening and the request', async () => {
-    answers['GET /api/v1/auth/methods'] = { password: true, oidc: false, oidc_name: '', passkeys: false, forgot: true }
+    answers['GET /api/v1/auth/methods'] = { password: true, providers: [], passkeys: false, forgot: true }
     answers['POST /api/v1/auth/forgot'] = { refused: 'reset_off' }
     await show(<ForgotPage />, '/forgot')
     await type(field('Name oder Mailadresse'), 'anna')
@@ -232,12 +232,12 @@ describe('what the server offers', () => {
     Object.defineProperty(window, 'isSecureContext', { value: true, configurable: true })
     vi.stubGlobal('PublicKeyCredential', function PublicKeyCredential() {})
     answers['GET /api/v1/auth/passkeys'] = []
-    answers['GET /api/v1/auth/methods'] = { password: true, oidc: false, oidc_name: '', passkeys: false }
+    answers['GET /api/v1/auth/methods'] = { password: true, providers: [], passkeys: false }
     await show(<PasskeysCard me={me} />, '/konto')
     expect(button('Passkey anlegen', box)!.disabled).toBe(true)
     act(() => root.unmount())
     box.remove()
-    answers['GET /api/v1/auth/methods'] = { password: true, oidc: false, oidc_name: '', passkeys: true }
+    answers['GET /api/v1/auth/methods'] = { password: true, providers: [], passkeys: true }
     await show(<PasskeysCard me={me} />, '/konto')
     expect(button('Passkey anlegen', box)!.disabled).toBe(false)
   })
@@ -265,7 +265,7 @@ describe('what the server offers', () => {
 
 describe("the operator's pages say what they hold", () => {
   const settings: ServerSettings = {
-    public_url: 'https://paper.example.com', password_login: true, two_factor_required: true, oidc_second_factor_by_provider: false,
+    public_url: 'https://paper.example.com', password_login: true, two_factor_required: true,
     backup_schedule: 'daily', backup_keep: 7, smtp_host: '', smtp_port: 587, smtp_security: 'starttls', smtp_user: '', smtp_password_set: false, smtp_from: '',
     api_keys_allowed: true, update_check: true, links_allowed: true, link_max_days: 30,
     upload_max_mb: 200, upload_max_pages: 2000, upload_max_megapixels: 100, upload_open_count: 10, upload_open_mb: 4096, process_timeout_seconds: 300, process_memory_mb: 2048, cache_max_mb: 1024,

@@ -28,7 +28,8 @@ export default defineConfig({
     setupFiles: ['src/test/setup.ts'],
     // The waits in the tests give up with a message of their own after 10 s; this is only the last resort.
     testTimeout: 30_000,
-    exclude: ['node_modules/**', 'dist/**'],
+    // The end-to-end tests run in Playwright (`npm run e2e`), not here.
+    exclude: ['node_modules/**', 'dist/**', 'e2e/**'],
   },
   server: {
     // Fixed port: if it is taken, Vite aborts instead of silently falling back to another one.

@@ -58,7 +58,6 @@
     "nameHint": "You sign in with it: 2 to 64 letters without accents, digits, dot, hyphen or underscore.",
     "password": "Password",
     "passwordHint": "At least 12 characters.",
-    "or": "or",
     "backToLogin": "To the sign-in",
     "setup": {
       "title": "Set up nexpaper",
@@ -72,7 +71,6 @@
       "text": "Welcome back to nexpaper.",
       "submit": "Sign in",
       "passwordOff": "Sign-in with a password is turned off here. Only the operator can still use it.",
-      "oidc": "Sign in with {{name}}",
       "passkey": "Sign in with a passkey",
       "forgot": "Forgot your password?"
     },
@@ -91,7 +89,6 @@
       "submit": "Create account",
       "invalidTitle": "Invitation not valid",
       "invalidText": "This invitation no longer works: it was used, has run out or was withdrawn. Ask for a new one.",
-      "withProvider": "Accept with {{name}}",
       "noWay": "Sign-in with a password is off and no sign-in provider is set up. Ask the operator.",
       "haveAccount": "This link is for a new account. You are signed in as {{name}} already and do not need it.",
       "toApp": "To nexpaper"
@@ -216,17 +213,6 @@
       "submit": "Change password",
       "done": "Password changed. Every other device is signed out."
     },
-    "oidc": {
-      "title": "Sign-in provider",
-      "text": "Sign in through {{name}}, besides the password.",
-      "only": "This account signs in through {{name}}.",
-      "linked": "Linked: you can sign in through {{name}} and with your password.",
-      "linkedNow": "Your account is linked to the provider.",
-      "unlink": "Unlink",
-      "unlinked": "No longer linked.",
-      "how": "Link your account with {{name}}, then both work. Your password confirms it is you; then it goes to {{name}} and back. There, its own second factor applies.",
-      "link": "Link with {{name}}"
-    },
     "role": {
       "operator": "Operator",
       "member": "Member"
@@ -299,7 +285,16 @@
       "unavailable": "Passkeys work only over https (or localhost) and in browsers that know them.",
       "noAddressOperator": "Enter the public address first (<settings>Settings → Sign-in</settings>).",
       "noAddressMember": "Your operator has to enter the public address first."
-    }
+    },
+    "oidc": {
+      "linkedTo": "Your account is linked to {{name}}.",
+      "unlinkedFrom": "Unlinked from {{name}}.",
+      "addressOffer": "{{provider}} knows you as {{address}}. Should nexpaper take this address?",
+      "takeAddress": "Take it",
+      "addressTaken": "The address is your account's now. Confirm it under Profile, then it counts for documents by mail too."
+    },
+    "keysWait": "Devices and API keys work only once you set up a second factor.",
+    "keysWaitLink": "Set up a second factor"
   },
   "twofactor": {
     "title": "Second factor",
@@ -340,16 +335,6 @@
     "until": "valid until {{when}}",
     "withdraw": "Withdraw",
     "noEmail": "Invitation link without an address"
-  },
-  "authentik": {
-    "step": {
-      "reached": "authentik reached",
-      "signingKey": "Signing key",
-      "mapping": "Mapping for the address",
-      "provider": "Provider",
-      "application": "Application",
-      "fill": "Settings here"
-    }
   },
   "server": {
     "aiAllowed": "AI allowed",
@@ -431,46 +416,21 @@
         "text": "Then a password alone is enough again to read documents. Whoever has a second factor already keeps it.",
         "button": "Stop requiring it"
       },
-      "provider_checks": {
-        "title": "Leave the second factor to the provider?",
-        "text": "Whoever comes in through {{name}} is no longer asked for a second factor here. That is safe only when {{name}} requires one itself.",
-        "button": "Leave it"
-      },
       "link": {
         "title": "Send {{name}} a link to reset the password?",
         "text": "The person chooses their password themselves. The link goes by mail to their address when mail is set up, otherwise you get it once to pass on. The second factor stays.",
         "button": "Send link"
+      },
+      "unlink": {
+        "title": "Unlink {{name}}?",
+        "text": "{{name}} no longer signs in through {{provider}} afterwards and is told. The account can link itself again when needed.",
+        "button": "Unlink"
       }
     },
-    "signin": "Sign-in",
-    "signinText": "How people get in.",
-    "passwordLogin": "Sign-in with a password",
-    "passwordLoginHint": "Off: members get in through the provider only. As the operator you can always use your password.",
     "twoFactorRequired": "Require a second factor",
     "twoFactorRequiredHint": "Every account that signs in with a password must set it up before it gets any further. Accounts from the provider bring their own.",
     "ownSecondFactorFirst": "Set up your own second factor first (My account, Security), or you would be the first one who cannot go on.",
-    "publicUrl": "Public address",
-    "publicUrlHint": "The address nexpaper is reached under. Invitations, Web Push and the provider use it.",
-    "oidc": "OpenID Connect",
-    "oidcOn": "Set up with {{issuer}}.",
-    "oidcOff": "Not set up.",
-    "redirect": "Redirect address for the provider",
-    "oidcIssuer": "Issuer",
-    "clientId": "Client ID",
-    "clientSecret": "Client secret",
     "secretKept": "stored, leave empty to keep it",
-    "oidcName": "Name on the button",
-    "oidcAutoCreate": "New people get an account",
-    "oidcAutoCreateHint": "Off: only invited or linked accounts get in through the provider.",
-    "oidcRemove": "Remove",
-    "authentik": {
-      "title": "authentik in one step",
-      "text": "With an API token that may create applications, nexpaper sets up provider and application in authentik by itself. The token is used for that only and not stored.",
-      "url": "Address of authentik",
-      "token": "API token",
-      "run": "Set up",
-      "blueprint": "Download a blueprint instead"
-    },
     "mail": "Mail",
     "mailHint": "For sending: invitations, \"Forgot your password?\", confirming mail addresses, the notice of a new sign-in. Without a server the link to copy is enough, and \"Forgot your password?\" is missing at sign-in.",
     "smtpHost": "Server",
@@ -582,8 +542,6 @@
       "save": "Save",
       "out": "What goes out: an encrypted message to the push service of each browser. Only the device can read it. It never holds the content of a document."
     },
-    "providerChecks": "{{name}} checks the second factor",
-    "providerChecksHint": "On: whoever comes in through {{name}} needs no second factor of their own here. Turn on only when {{name}} requires one itself.",
     "linkSent": "The link for {{name}} went to {{email}}. It works once and for 24 hours.",
     "linkShown": "The link for {{name}}, shown only now, valid once and for 24 hours. Pass it on, the person chooses the password themselves:",
     "linkLabel": "Link to the password",
@@ -663,7 +621,12 @@
       "revivedLinks_other": "Restoring makes {{count}} links valid again that were withdrawn since the backup.",
       "working": "Running the trial …"
     },
-    "sizeNote": "The backup is made while nexpaper runs, through SQLite's own backup function, nothing stalls. The search index is not in it and is built anew after a restore. Download, delete and restore ask for your password."
+    "sizeNote": "The backup is made while nexpaper runs, through SQLite's own backup function, nothing stalls. The search index is not in it and is built anew after a restore. Download, delete and restore ask for your password.",
+    "providers": {
+      "order": "Move {{name}} (arrow keys)",
+      "more": "More"
+    },
+    "unlinkProvider": "Unlink: {{name}}"
   },
   "errors": {
     "ai_not_allowed": "Your operator has not allowed the AI for your account.",
@@ -708,20 +671,6 @@
     "network": "The server cannot be reached.",
     "not_found": "Not found, or not open to you.",
     "oidc_account": "This account signs in through the provider.",
-    "oidc_denied": "The provider did not let you in.",
-    "oidc_email_taken": "Your mail address belongs to another account.",
-    "oidc_email_unverified": "The provider did not confirm your mail address.",
-    "oidc_exchange_failed": "The provider did not confirm the sign-in.",
-    "oidc_issuer_mismatch": "The provider answers under another address.",
-    "oidc_link_mismatch": "This link belongs to another account.",
-    "oidc_no_account": "There is no account for you here. Ask for an invitation.",
-    "oidc_not_configured": "No sign-in provider is set up.",
-    "oidc_only_account": "This account signs in through the provider only.",
-    "oidc_provider_invalid": "The provider does not answer like an OpenID Connect provider.",
-    "oidc_provider_unreachable": "The provider cannot be reached.",
-    "oidc_state_mismatch": "The sign-in ran out or came from elsewhere. Try again.",
-    "oidc_subject_taken": "This identity is linked to another account already.",
-    "oidc_token_invalid": "The provider's answer was not valid.",
     "operator_network": "The operator's settings can be reached from the home network only.",
     "operator_only": "Only the operator may do this.",
     "origin_refused": "The API is for programs, not web pages.",
@@ -2325,11 +2274,6 @@
       "title": "Sign out everywhere else?",
       "text": "All other browsers are signed out afterwards and have to sign in again. Paired devices stay.",
       "confirm": "Sign out everywhere else"
-    },
-    "oidc": {
-      "title": "Remove sign-in with the provider?",
-      "text": "The settings of the provider are deleted, and signing in with it stops working. Accounts that only sign in that way need a password then.",
-      "confirm": "Remove provider"
     },
     "mailAddress": {
       "title": "Remove the mail address?",

@@ -13,10 +13,23 @@
 import i18n from 'i18next'
 import { initReactI18next } from 'react-i18next'
 
-import de from './de.json'
-import en from './en.json'
+import oidcDe from '../vendor/nexoidc/oidc.de.json'
+import oidcEn from '../vendor/nexoidc/oidc.en.json'
+import { oidcVariables, oidcWording } from '../vendor/nexoidc/oidc'
+import ownDe from './de.json'
+import ownEn from './en.json'
 
 type Texts = Record<string, unknown>
+
+/** The name of the app in the texts of the shared sign-in module (`{{app}}`, and `{{slug}}` for its authentik
+ * application). */
+export const APP_NAME = 'nexpaper'
+/**
+ * The texts of sign-in through providers (`oidc.…`) come with the shared module `vendor/nexoidc`, the same words in
+ * every nex app (Bauplan 04); nexpaper has invitations and more than one account.
+ */
+const en: Texts = { ...ownEn, ...oidcWording(oidcEn, { singleAccount: false, invitations: true }) }
+const de: Texts = { ...ownDe, ...oidcWording(oidcDe, { singleAccount: false, invitations: true }) }
 
 export const SHIPPED: Record<string, { name: string; texts: Texts }> = {
   en: { name: 'English', texts: en },
@@ -115,7 +128,7 @@ i18n.use(initReactI18next).init({
   resources: { en: { translation: en }, de: { translation: de } },
   lng: first in SHIPPED ? first : FALLBACK,
   fallbackLng: FALLBACK,
-  interpolation: { escapeValue: false },
+  interpolation: { escapeValue: false, defaultVariables: oidcVariables(APP_NAME) },
   returnNull: false,
 })
 document.documentElement.lang = i18n.language

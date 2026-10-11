@@ -10,7 +10,8 @@ import reactRefresh from 'eslint-plugin-react-refresh'
 import tseslint from 'typescript-eslint'
 
 export default tseslint.config(
-  { ignores: ['**/dist/**'] },
+  // The shared sign-in module is checked where it comes from (bauplaene/oidc) and copied unchanged.
+  { ignores: ['**/dist/**', 'src/vendor/**'] },
   {
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
     files: ['**/*.{ts,tsx}'],

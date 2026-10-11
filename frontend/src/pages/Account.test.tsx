@@ -87,7 +87,7 @@ beforeEach(async () => {
   auth.me = baseMe
   auth.setMe.mockClear()
   answers = {
-    'GET /api/v1/auth/methods': { password: true, oidc: false, oidc_name: '', passkeys: true },
+    'GET /api/v1/auth/methods': { password: true, providers: [], passkeys: true },
     'GET /api/v1/auth/passkeys': [],
     'GET /api/v1/auth/sessions': [],
     'GET /api/v1/locales': [],

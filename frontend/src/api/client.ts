@@ -6,6 +6,8 @@
 
 import i18n from 'i18next'
 
+import type { AuthentikAddress } from '../vendor/nexoidc/oidc'
+
 export class ApiError extends Error {
   constructor(
     public readonly status: number,
@@ -147,11 +149,12 @@ export type Me = {
   role: 'operator' | 'member'
   sign_in: 'password' | 'oidc'
   email: string
-  /** Confirmed by a link sent to it (or by the provider); an address the operator typed is not. */
+  /** Confirmed by a link sent to it; an address the operator typed or a sign-in provider sent is not. */
   email_confirmed: boolean
   /** A new address waiting for its link; `email` stays until it is opened. */
   email_pending: string
   language: string
+  /** Linked to at least one sign-in provider (which ones: `oidcApi.mine`). */
   oidc_linked: boolean
   /** A second factor of any kind: a code from an app or a passkey. */
   two_factor: boolean
@@ -173,6 +176,11 @@ export type Me = {
   second_factor_required?: boolean
   /** What the operator allows this account (on from the start): the AI. */
   ai_allowed?: boolean
+  /**
+   * This session came in through a provider that checks the second factor, and the account (with a password) has none
+   * of its own: its device tokens and API keys wait until it sets one up. Making one stays possible.
+   */
+  keys_wait_for_second_factor?: boolean
 }
 
 export type SessionStage = 'full' | 'setup' | 'codes'
@@ -180,7 +188,9 @@ export type SessionStage = 'full' | 'setup' | 'codes'
 export type SecondFactorWaiting = { second_factor: true; totp: boolean; passkey: boolean }
 
 export type SetupState = { needs_setup: boolean; code_required: boolean; signed_in: boolean; version: string; min_password: number }
-export type Methods = { password: boolean; oidc: boolean; oidc_name: string; passkeys?: boolean; forgot?: boolean }
+/** A button on the sign-in and invitation page: one per active provider, in the order of the operator's list. */
+export type ProviderButton = { slug: string; label: string }
+export type Methods = { password: boolean; providers: ProviderButton[]; passkeys?: boolean; forgot?: boolean }
 export type SignedSession = { id: string; device: string; phone: boolean; network: string; created_at: string; last_seen_at: string; remember: boolean; here: boolean }
 export type Passkey = { id: string; name: string; created_at: string; last_used_at: string | null; credential: string }
 export type Readiness = { points: { key: string; state: 'ok' | 'warn' | 'bad'; values: Record<string, unknown> }[]; open: number }
@@ -211,6 +221,95 @@ export const authApi = {
   /** "Forgot your password?": a link to the address on record, if there is one; the answer is the same either way. */
   forgot: (name: string) => api<{ ok: true }>('/api/v1/auth/forgot', { method: 'POST', body: { name } }),
   whatsNewSeen: () => api<Me>('/api/v1/me/whats-new/seen', { method: 'POST' }),
+}
+
+// ---- Sign-in providers (the shared module `vendor/nexoidc`, Bauplan 04) -----------------------------------------------
+
+/** An entry of the provider list as the operator sees it (never the secret). `managed`: "" by hand, "authentik" by the
+ * authentik button. */
+export type OidcProvider = {
+  id: number
+  slug: string
+  label: string
+  issuer: string
+  client_id: string
+  has_secret: boolean
+  scopes: string
+  enabled: boolean
+  auto_create: boolean
+  trusts_second_factor: boolean
+  managed: '' | 'authentik' | 'nexsuite'
+  position: number
+  redirect_uri: string
+  links: number
+  editable: boolean
+}
+export type OidcProviderForm = {
+  label: string
+  slug?: string
+  issuer: string
+  client_id: string
+  client_secret: string
+  scopes: string
+  enabled: boolean
+  auto_create: boolean
+  trusts_second_factor: boolean
+}
+export type ProviderImpact = { issuer_change: number; count: number; only: number; only_names: string[] }
+export type AuthentikStep = { key: string; ok: boolean; detail: string; reason?: string; status?: number }
+/** `count`: with the reason `issuer_change`, how many accounts would have to link again (nothing was changed). */
+export type AuthentikResult = {
+  ok: boolean
+  steps: AuthentikStep[]
+  links_dropped: number
+  count?: number
+  /** The public address the run stored (the card's suggestion, confirmed); it stays even when a later step failed. */
+  public_url?: string
+  /** With the reason `public_url_needed`: what the card shows about the address (the same as `oidcApi.address`). */
+  address?: AuthentikAddress
+}
+/** What the server asks before a new public address leaves redirect addresses behind (409 `public_url_change`). */
+export type AddressQuestion = { count: number; address: string; hand: number }
+/** An active provider on the account page: linked or not, and the address it knows when it is not the account's. */
+export type MyProvider = { slug: string; label: string; linked: boolean; address: string | null }
+/** Which account is linked to which provider, for the marks in the operator's account list. */
+export type AccountLink = { account_id: number; provider_id: number; slug: string; label: string }
+
+export const oidcApi = {
+  providers: () => api<OidcProvider[]>('/api/v1/oidc/admin/providers'),
+  addProvider: (form: OidcProviderForm) => api<OidcProvider>('/api/v1/oidc/admin/providers', { method: 'POST', body: form }),
+  saveProvider: (id: number, form: OidcProviderForm) => api<OidcProvider & { dropped: number }>(`/api/v1/oidc/admin/providers/${id}`, { method: 'PUT', body: form }),
+  removeProvider: (id: number) => api<ProviderImpact>(`/api/v1/oidc/admin/providers/${id}`, { method: 'DELETE' }),
+  providerImpact: (id: number, issuer = '') => api<ProviderImpact>(`/api/v1/oidc/admin/providers/${id}/impact`, { query: issuer ? { issuer } : {} }),
+  orderProviders: (ids: number[]) => api<ProviderButton[]>('/api/v1/oidc/admin/providers/order', { method: 'PUT', body: { ids } }),
+  links: () => api<AccountLink[]>('/api/v1/oidc/admin/links'),
+  /** The operator takes an account's link away, with the own password. */
+  unlinkAccount: (account: number, provider: number, current_password: string) =>
+    api<void>(`/api/v1/oidc/admin/accounts/${account}/links/${provider}`, { method: 'DELETE', body: { current_password } }),
+  /**
+   * `confirm_issuer_change`: the answer to the question the button stops at when another issuer takes the links.
+   * `public_url`: the suggested address ("Use it and set up"), only sent while nexpaper has none.
+   */
+  authentik: (url: string, token: string, confirm_issuer_change = false, public_url = '') =>
+    api<AuthentikResult>('/api/v1/oidc/authentik/setup', { method: 'POST', body: { url, token, confirm_issuer_change, ...(public_url ? { public_url } : {}) } }),
+  /** What the authentik card shows about the public address. */
+  address: () => api<AuthentikAddress>('/api/v1/oidc/authentik/address'),
+  /** "Use it only": the address becomes the public one; 409 `public_url_change` asks first, `confirm` answers it. */
+  saveAddress: (public_url: string, confirm = false) => api<AuthentikAddress>('/api/v1/oidc/authentik/address', { method: 'POST', body: { public_url, confirm } }),
+  mine: () => api<MyProvider[]>('/api/v1/oidc/me'),
+  link: (slug: string, password: string) => api<{ url: string }>(`/api/v1/oidc/${encodeURIComponent(slug)}/link`, { method: 'POST', body: { password } }),
+  unlink: (slug: string) => api<void>(`/api/v1/oidc/${encodeURIComponent(slug)}/link`, { method: 'DELETE' }),
+  /** The address the provider knows becomes the own one (not confirmed: the link that confirms it is a step of its own). */
+  takeAddress: (slug: string) => api<{ email: string; email_confirmed: boolean }>('/api/v1/oidc/me/address', { method: 'POST', body: { slug } }),
+}
+
+/** The address a provider's button leads to (a full page load: the browser leaves for the provider). */
+export function providerStart(slug: string, extra: { invite?: string; next?: string } = {}): string {
+  const query = new URLSearchParams()
+  if (extra.invite) query.set('invite', extra.invite)
+  if (extra.next && extra.next !== '/') query.set('next', extra.next)
+  const text = query.toString()
+  return `/api/v1/oidc/${encodeURIComponent(slug)}/start${text ? `?${text}` : ''}`
 }
 
 export const passkeyApi = {

@@ -58,7 +58,6 @@
     "nameHint": "Damit meldest du dich an: 2 bis 64 Buchstaben ohne Umlaute, Ziffern, Punkt, Bindestrich oder Unterstrich.",
     "password": "Passwort",
     "passwordHint": "Mindestens 12 Zeichen.",
-    "or": "oder",
     "backToLogin": "Zur Anmeldung",
     "setup": {
       "title": "nexpaper einrichten",
@@ -72,7 +71,6 @@
       "text": "Willkommen zurück bei nexpaper.",
       "submit": "Anmelden",
       "passwordOff": "Die Anmeldung mit Passwort ist hier abgeschaltet. Nur der Betreiber kann es noch.",
-      "oidc": "Mit {{name}} anmelden",
       "passkey": "Mit Passkey anmelden",
       "forgot": "Passwort vergessen?"
     },
@@ -91,7 +89,6 @@
       "submit": "Konto anlegen",
       "invalidTitle": "Einladung nicht gültig",
       "invalidText": "Diese Einladung gilt nicht mehr: Sie ist benutzt, abgelaufen oder zurückgezogen. Frag nach einer neuen.",
-      "withProvider": "Mit {{name}} annehmen",
       "noWay": "Die Anmeldung mit Passwort ist abgeschaltet und kein Anmeldeanbieter eingerichtet. Frag den Betreiber.",
       "haveAccount": "Dieser Link ist für ein neues Konto. Du bist schon als {{name}} angemeldet und brauchst ihn nicht.",
       "toApp": "Zu nexpaper"
@@ -216,17 +213,6 @@
       "submit": "Passwort ändern",
       "done": "Passwort geändert. Alle anderen Geräte sind abgemeldet."
     },
-    "oidc": {
-      "title": "Anmeldeanbieter",
-      "text": "Über {{name}} anmelden, zusätzlich zum Passwort.",
-      "only": "Dieses Konto meldet sich über {{name}} an.",
-      "linked": "Verknüpft: Du kannst dich über {{name}} und mit deinem Passwort anmelden.",
-      "linkedNow": "Dein Konto ist mit dem Anbieter verknüpft.",
-      "unlink": "Verknüpfung lösen",
-      "unlinked": "Nicht mehr verknüpft.",
-      "how": "Verknüpfe dein Konto mit {{name}}, dann geht beides. Dein Passwort bestätigt, dass du es bist; danach geht es kurz zu {{name}} und zurück. Dort gilt dessen eigener zweiter Faktor.",
-      "link": "Mit {{name}} verknüpfen"
-    },
     "role": {
       "operator": "Betreiber",
       "member": "Mitglied"
@@ -299,7 +285,16 @@
       "unavailable": "Passkeys gibt es nur über https (oder localhost) und in Browsern, die sie kennen.",
       "noAddressOperator": "Trag zuerst die öffentliche Adresse ein (<settings>Einstellungen → Anmeldung</settings>).",
       "noAddressMember": "Dein Betreiber muss erst die öffentliche Adresse eintragen."
-    }
+    },
+    "oidc": {
+      "linkedTo": "Dein Konto ist mit {{name}} verknüpft.",
+      "unlinkedFrom": "Die Verknüpfung mit {{name}} ist gelöst.",
+      "addressOffer": "{{provider}} kennt dich als {{address}}. Soll nexpaper diese Adresse nehmen?",
+      "takeAddress": "Übernehmen",
+      "addressTaken": "Die Adresse gilt jetzt für dein Konto. Bestätige sie unter Profil, dann zählt sie auch für Dokumente per Mail."
+    },
+    "keysWait": "Geräte und API-Schlüssel wirken erst, wenn du einen zweiten Faktor einrichtest.",
+    "keysWaitLink": "Zweiten Faktor einrichten"
   },
   "twofactor": {
     "title": "Zweiter Faktor",
@@ -340,16 +335,6 @@
     "until": "gilt bis {{when}}",
     "withdraw": "Zurückziehen",
     "noEmail": "Einladungslink ohne Adresse"
-  },
-  "authentik": {
-    "step": {
-      "reached": "authentik erreicht",
-      "signingKey": "Schlüssel zum Signieren",
-      "mapping": "Zuordnung für die Adresse",
-      "provider": "Anbieter",
-      "application": "Anwendung",
-      "fill": "Einstellungen hier"
-    }
   },
   "server": {
     "aiAllowed": "KI erlaubt",
@@ -431,46 +416,21 @@
         "text": "Dann reicht wieder ein Passwort, um Dokumente zu lesen. Wer schon einen zweiten Faktor hat, behält ihn.",
         "button": "Nicht mehr verlangen"
       },
-      "provider_checks": {
-        "title": "Dem Anbieter den zweiten Faktor überlassen?",
-        "text": "Wer über {{name}} hereinkommt, wird hier nicht mehr nach einem zweiten Faktor gefragt. Das ist nur sicher, wenn {{name}} selbst einen verlangt.",
-        "button": "Überlassen"
-      },
       "link": {
         "title": "{{name}} einen Link zum Zurücksetzen schicken?",
         "text": "Die Person wählt ihr Passwort selbst. Der Link geht per Mail an ihre Adresse, wenn Mail eingerichtet ist, sonst bekommst du ihn einmal zum Weitergeben. Der zweite Faktor bleibt.",
         "button": "Link schicken"
+      },
+      "unlink": {
+        "title": "Verknüpfung von {{name}} lösen?",
+        "text": "{{name}} meldet sich danach nicht mehr über {{provider}} an und bekommt Bescheid. Das Konto verknüpft sich bei Bedarf selbst neu.",
+        "button": "Lösen"
       }
     },
-    "signin": "Anmeldung",
-    "signinText": "Wie man hereinkommt.",
-    "passwordLogin": "Anmeldung mit Passwort",
-    "passwordLoginHint": "Aus: Mitglieder kommen nur über den Anbieter herein. Du als Betreiber kannst dein Passwort immer nutzen.",
     "twoFactorRequired": "Zweiten Faktor verlangen",
     "twoFactorRequiredHint": "Jedes Konto, das sich mit Passwort anmeldet, muss ihn einrichten, bevor es weiterkommt. Konten vom Anbieter bringen dessen eigenen mit.",
     "ownSecondFactorFirst": "Richte zuerst deinen eigenen zweiten Faktor ein (Mein Konto, Sicherheit), sonst wärst du der Erste, der nicht mehr weiterkommt.",
-    "publicUrl": "Öffentliche Adresse",
-    "publicUrlHint": "Die Adresse, unter der man nexpaper erreicht. Einladungen, Web Push und der Anbieter nutzen sie.",
-    "oidc": "OpenID Connect",
-    "oidcOn": "Eingerichtet mit {{issuer}}.",
-    "oidcOff": "Nicht eingerichtet.",
-    "redirect": "Weiterleitungsadresse für den Anbieter",
-    "oidcIssuer": "Aussteller (Issuer)",
-    "clientId": "Client-ID",
-    "clientSecret": "Client-Geheimnis",
     "secretKept": "gespeichert, leer lassen zum Behalten",
-    "oidcName": "Name auf dem Knopf",
-    "oidcAutoCreate": "Neue Personen bekommen ein Konto",
-    "oidcAutoCreateHint": "Aus: Nur eingeladene oder verknüpfte Konten kommen über den Anbieter herein.",
-    "oidcRemove": "Entfernen",
-    "authentik": {
-      "title": "authentik in einem Schritt",
-      "text": "Mit einem API-Token, das Anwendungen anlegen darf, richtet nexpaper Anbieter und Anwendung in authentik selbst ein. Das Token wird nur dafür benutzt und nicht gespeichert.",
-      "url": "Adresse von authentik",
-      "token": "API-Token",
-      "run": "Einrichten",
-      "blueprint": "Stattdessen Blueprint herunterladen"
-    },
     "mail": "Mail",
     "mailHint": "Zum Verschicken: Einladungen, „Passwort vergessen?“, Bestätigung von Mailadressen, Bescheid bei neuer Anmeldung. Ohne Server reicht der Link zum Kopieren, und „Passwort vergessen?“ fehlt bei der Anmeldung.",
     "smtpHost": "Server",
@@ -582,8 +542,6 @@
       "save": "Speichern",
       "out": "Was hinausgeht: eine verschlüsselte Nachricht an den Push-Dienst des jeweiligen Browsers. Lesen kann sie nur das Gerät. Darin steht nie der Inhalt eines Dokuments."
     },
-    "providerChecks": "{{name}} prüft den zweiten Faktor",
-    "providerChecksHint": "An: Wer über {{name}} hereinkommt, braucht hier keinen eigenen. Nur einschalten, wenn {{name}} selbst einen verlangt.",
     "linkSent": "Der Link für {{name}} ging an {{email}}. Er gilt einmal und 24 Stunden.",
     "linkShown": "Der Link für {{name}}, nur jetzt zu sehen, einmal und 24 Stunden gültig. Gib ihn weiter, die Person wählt das Passwort selbst:",
     "linkLabel": "Link zum Passwort",
@@ -663,7 +621,12 @@
       "revivedLinks_other": "Zurückspielen macht {{count}} Links wieder gültig, die seit der Sicherung zurückgezogen wurden.",
       "working": "Probelauf läuft …"
     },
-    "sizeNote": "Gesichert wird im laufenden Betrieb über die Sicherungsfunktion von SQLite, nichts hakt. Der Suchindex ist nicht dabei und wird nach dem Wiederherstellen neu gebaut. Herunterladen, Löschen und Wiederherstellen fragen nach deinem Passwort."
+    "sizeNote": "Gesichert wird im laufenden Betrieb über die Sicherungsfunktion von SQLite, nichts hakt. Der Suchindex ist nicht dabei und wird nach dem Wiederherstellen neu gebaut. Herunterladen, Löschen und Wiederherstellen fragen nach deinem Passwort.",
+    "providers": {
+      "order": "{{name}} verschieben (Pfeiltasten)",
+      "more": "Mehr"
+    },
+    "unlinkProvider": "Verknüpfung lösen: {{name}}"
   },
   "errors": {
     "ai_not_allowed": "Dein Betreiber hat die KI für dein Konto nicht freigegeben.",
@@ -708,20 +671,6 @@
     "network": "Der Server ist nicht erreichbar.",
     "not_found": "Nicht gefunden, oder für dich nicht offen.",
     "oidc_account": "Dieses Konto meldet sich über den Anbieter an.",
-    "oidc_denied": "Der Anbieter hat dich nicht hereingelassen.",
-    "oidc_email_taken": "Deine Mailadresse gehört zu einem anderen Konto.",
-    "oidc_email_unverified": "Der Anbieter hat deine Mailadresse nicht bestätigt.",
-    "oidc_exchange_failed": "Der Anbieter hat die Anmeldung nicht bestätigt.",
-    "oidc_issuer_mismatch": "Der Anbieter meldet sich unter einer anderen Adresse.",
-    "oidc_link_mismatch": "Diese Verknüpfung gehört zu einem anderen Konto.",
-    "oidc_no_account": "Für dich gibt es hier kein Konto. Bitte um eine Einladung.",
-    "oidc_not_configured": "Es ist kein Anmeldeanbieter eingerichtet.",
-    "oidc_only_account": "Dieses Konto meldet sich nur über den Anbieter an.",
-    "oidc_provider_invalid": "Der Anbieter antwortet nicht wie ein OpenID-Connect-Anbieter.",
-    "oidc_provider_unreachable": "Der Anbieter ist nicht erreichbar.",
-    "oidc_state_mismatch": "Die Anmeldung ist abgelaufen oder kam von woanders. Noch einmal versuchen.",
-    "oidc_subject_taken": "Diese Identität ist schon mit einem anderen Konto verknüpft.",
-    "oidc_token_invalid": "Die Antwort des Anbieters war ungültig.",
     "operator_network": "Die Einstellungen des Betreibers sind nur aus dem Heimnetz erreichbar.",
     "operator_only": "Das darf nur der Betreiber.",
     "origin_refused": "Die API ist für Programme, nicht für Webseiten.",
@@ -2325,11 +2274,6 @@
       "title": "Überall sonst abmelden?",
       "text": "Alle anderen Browser sind danach abgemeldet und müssen sich neu anmelden. Gekoppelte Geräte bleiben.",
       "confirm": "Überall sonst abmelden"
-    },
-    "oidc": {
-      "title": "Anmeldung über den Anbieter entfernen?",
-      "text": "Die Einstellungen des Anbieters werden gelöscht, und die Anmeldung über ihn geht danach nicht mehr. Konten, die nur so angemeldet sind, brauchen dann ein Passwort.",
-      "confirm": "Anbieter entfernen"
     },
     "mailAddress": {
       "title": "Mailadresse entfernen?",

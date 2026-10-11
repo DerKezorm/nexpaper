@@ -29,7 +29,7 @@ export function PairedDevices() {
   const action = useAction()
 
   useEffect(() => {
-    authApi.methods().then((found) => setProvider(found.oidc ? found.oidc_name || 'authentik' : null), () => undefined)
+    authApi.methods().then((found) => setProvider(found.providers.map((entry) => entry.label).join(', ') || null), () => undefined)
   }, [])
 
   // While a code is shown: is it used, has it run out?

@@ -20,7 +20,8 @@ import { ShortcutLinkCard } from './settings/ShortcutLinkCard'
 import { FilesCards } from './settings/FilesCards'
 import { DiskCard, LimitsCard } from './settings/StorageCards'
 import { OcrCard } from './settings/OcrCard'
-import { AccountsCard, ApiKeysCard, BackupsCard, InterfaceCard, LanguagesCard, LogCard, MailCard, SignInCard, useServerSettings } from './settings/ServerCards'
+import { AccountsCard, ApiKeysCard, BackupsCard, InterfaceCard, LanguagesCard, LogCard, MailCard, useServerSettings } from './settings/ServerCards'
+import { SignInPart } from './settings/SignInCards'
 import { TabRow, type Tab } from './settings/ui'
 
 type Part = 'accounts' | 'signin' | 'mail' | 'ai' | 'storage' | 'inputs' | 'sharing' | 'push' | 'backups' | 'languages' | 'import' | 'log' | 'api'
@@ -56,8 +57,10 @@ function ServerPart({ part }: { part: Part }) {
     case 'signin':
       return (
         <div className="space-y-6">
+          {/* nexpaper's own look at the server (its points say "below"), then the three cards of the shared blueprint
+              (Bauplan 04), one below the other. */}
           <ReadinessCard />
-          <SignInCard server={server} />
+          <SignInPart server={server} />
         </div>
       )
     case 'mail':

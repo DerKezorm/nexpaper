@@ -1,18 +1,20 @@
 /**
  * The own account in tabs, everything personal in one place, as the mock: Profile (picture, display name, name, role,
- * mail address with its link, language), Security (password, second factor, passkeys, the link to the provider, the
+ * mail address with its link, language), Security (password, second factor, passkeys, the sign-in providers, the
  * signed-in devices and the notice of a new sign-in), Devices and apps (pairing by a QR code, the iPhone shortcut, API
  * keys, Web Push on the devices), Upload (where uploads go, where a phone starts), AI (the own switch, and what the operator set up) and Looks (light or dark, the
  * archive). The tab stands in the address (`?tab=`). Settings are the operator's.
  */
 import { AtSign, Camera, KeyRound, MonitorSmartphone, Palette, ShieldCheck, Sparkles, Trash2, Upload, User } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useSearchParams } from 'react-router-dom'
 
-import { api, authApi, type Me, type Methods } from '../api/client'
+import { api, authApi, type Me } from '../api/client'
 import { ApiKeys } from '../components/ApiKeys'
 import { Avatar } from '../components/Avatar'
+import { KeysWait } from '../components/KeysWait'
+import { MyProviders } from '../components/MyProviders'
 import { PairedDevices } from '../components/PairedDevices'
 import { useConfirm } from '../components/useConfirm'
 import { iso } from '../lib/say'
@@ -60,6 +62,7 @@ export function AccountPage() {
         {part === 'security' && <Security me={me} />}
         {part === 'devices' && (
           <>
+            <KeysWait />
             <PairedDevices />
             <ShortcutCard />
             <ApiKeys />
@@ -305,22 +308,11 @@ function Profile({ me }: { me: Me }) {
 
 function Security({ me }: { me: Me }) {
   const { t } = useTranslation()
-  const { refresh } = useAuth()
-  const [params] = useSearchParams()
-  const [methods, setMethods] = useState<Methods | null>(null)
-  const [pw, setPw] = useState({ current: '', next: '', again: '', link: '' })
+  const [pw, setPw] = useState({ current: '', next: '', again: '' })
   const password = useAction()
   const [unsent, setUnsent] = useState<string | null>(null)
-  const link = useAction()
-  const { ask, dialog } = useConfirm()
-  const [linkDone] = useState(params.get('linked') ? t('me.oidc.linkedNow') : null)
-  const [linkProblem] = useState(params.get('error'))
   // Until the second factor is set up, the server answers nothing else: only its cards are shown.
   const restricted = Boolean(me.second_factor_setup_required)
-  useEffect(() => {
-    if (!restricted) authApi.methods().then(setMethods, () => setMethods(null))
-  }, [restricted])
-  const provider = methods?.oidc_name || 'OpenID Connect'
   if (restricted)
     return (
       <>
@@ -365,54 +357,7 @@ function Security({ me }: { me: Me }) {
       <SecondFactorCard me={me} />
       <PasskeysCard me={me} />
 
-      {(methods?.oidc || me.sign_in === 'oidc' || me.oidc_linked) && (
-        <Card icon={ShieldCheck} title={t('me.oidc.title')} text={t('me.oidc.text', { name: provider })}>
-          {me.sign_in === 'oidc' ? (
-            <p className="text-sm text-ink-2">{t('me.oidc.only', { name: provider })}</p>
-          ) : me.oidc_linked ? (
-            <div className="flex flex-wrap items-center gap-3 text-sm">
-              <span className="text-ink-2">{t('me.oidc.linked', { name: provider })}</span>
-              <Button
-                busy={link.busy}
-                onClick={() =>
-                  ask({
-                    title: t('confirm.oidcLink.title'),
-                    text: t('confirm.oidcLink.text', { name: provider }),
-                    confirm: t('confirm.oidcLink.confirm'),
-                    run: async () => {
-                      await link.run(async () => {
-                        await api('/api/v1/oidc/link', { method: 'DELETE' })
-                        await refresh()
-                      }, t('me.oidc.unlinked'))
-                    },
-                  })
-                }
-              >
-                {t('me.oidc.unlink')}
-              </Button>
-            </div>
-          ) : (
-            <form
-              className="space-y-3"
-              onSubmit={(event) => {
-                event.preventDefault()
-                void link.run(async () => {
-                  const { url } = await api<{ url: string }>('/api/v1/oidc/link/start', { method: 'POST', body: { password: pw.link } })
-                  window.location.assign(url)
-                })
-              }}
-            >
-              <p className="text-sm text-ink-2">{t('me.oidc.how', { name: provider })}</p>
-              <Input label={t('auth.password')} type="password" value={pw.link} onChange={(value) => setPw({ ...pw, link: value })} autoComplete="current-password" className="max-w-sm" />
-              <Button type="submit" busy={link.busy}>
-                {t('me.oidc.link', { name: provider })}
-              </Button>
-            </form>
-          )}
-          <Feedback problem={link.problem ?? linkProblem} done={link.done ?? linkDone} />
-          {dialog}
-        </Card>
-      )}
+      <MyProviders me={me} />
 
       <DevicesCard me={me} />
     </>

@@ -10,7 +10,8 @@ import { changeLanguage } from '../i18n'
 import { INBOX, Page, Server, inboxOf, plain } from '../test/harness'
 import { AccountPage } from './AccountPage'
 import { InboxPage } from './InboxPage'
-import { AccountsCard, LanguagesCard, SignInCard, useServerSettings } from './settings/ServerCards'
+import { AccountsCard, LanguagesCard, useServerSettings } from './settings/ServerCards'
+import { SignInPart } from './settings/SignInCards'
 import { Route, Routes } from 'react-router-dom'
 
 const me: Me = {
@@ -29,7 +30,8 @@ beforeEach(async () => {
   await changeLanguage('de', false)
   auth.me = me
   server.answers = {
-    'GET /api/v1/auth/methods': { password: true, oidc: true, oidc_name: 'authentik', passkeys: true },
+    'GET /api/v1/auth/methods': { password: true, providers: [{ slug: 'authentik', label: 'authentik' }], passkeys: true },
+    'GET /api/v1/oidc/me': [{ slug: 'authentik', label: 'authentik', linked: true, address: null }],
     'GET /api/v1/auth/passkeys': [],
     'GET /api/v1/auth/sessions': [],
     'GET /api/v1/locales': [{ code: 'es', name: 'Español', keys: 120 }],
@@ -42,10 +44,10 @@ beforeEach(async () => {
     'GET /api/v1/ai': { provider: 'none', to: '', model: '', mine: true, allowed: true, available: false },
     'DELETE /api/v1/auth/avatar': { ...me, avatar: null },
     'PUT /api/v1/me/email': { ...me, email: '' },
-    'DELETE /api/v1/oidc/link': 204,
+    'DELETE /api/v1/oidc/authentik/link': 204,
     'DELETE /api/v1/api-keys/4': 204,
     'DELETE /api/v1/locales/es': 204,
-    'DELETE /api/v1/oidc/config': 204,
+    'DELETE /api/v1/oidc/admin/providers/3': { count: 1, only: 0, only_names: [] },
     'DELETE /api/v1/invites/9': 204,
   }
   server.fails = {}
@@ -87,7 +89,7 @@ describe('my account', () => {
 
   it('asks before the link to the provider is let go', async () => {
     await page.show(<AccountPage />, '/konto?tab=security')
-    await asksFirst(() => page.button('Verknüpfung lösen'), 'Verknüpfung lösen', 'DELETE /api/v1/oidc/link')
+    await asksFirst(() => page.button('Lösen'), 'Verknüpfung lösen', 'DELETE /api/v1/oidc/authentik/link')
   })
 
   it('asks before an API key is deleted, and names it', async () => {
@@ -115,15 +117,21 @@ describe('the operator', () => {
     await asksFirst(() => page.button('Zurückziehen'), 'Einladung zurückziehen', 'DELETE /api/v1/invites/9')
   })
 
-  it('asks before the sign-in with the provider is removed', async () => {
-    server.answers['GET /api/v1/oidc/config'] = { configured: true, issuer: 'https://auth.example.com/', client_id: 'nexpaper', provider_name: 'authentik', auto_create: false, redirect_uri: '' }
-    server.answers['GET /api/v1/settings'] = { two_factor_required: true, oidc_second_factor_by_provider: false }
-    function Card() {
+  it('asks before a sign-in provider is removed, with the number of accounts that lose their link', async () => {
+    server.answers['GET /api/v1/oidc/admin/providers'] = [{
+      id: 3, slug: 'authentik', label: 'authentik', issuer: 'https://auth.example.com/application/o/nexpaper', client_id: 'nexpaper',
+      has_secret: true, scopes: 'openid profile email', enabled: true, auto_create: false, trusts_second_factor: true, managed: 'authentik',
+      position: 0, redirect_uri: 'https://paper.example.com/api/v1/oidc/authentik/callback', links: 1, editable: true,
+    }]
+    server.answers['GET /api/v1/oidc/admin/providers/3/impact'] = { issuer_change: 0, count: 1, only: 0, only_names: [] }
+    server.answers['GET /api/v1/oidc/authentik/address'] = { public_url: 'https://paper.example.com', seen: 'https://paper.example.com', forwarded_proto: '', forwarded_host: '', proxy_ignored: false, callback_path: '/api/v1/oidc/authentik/callback', redirect_uri: '', registered_redirect_uri: '', stale: false }
+    server.answers['GET /api/v1/settings'] = { public_url: 'https://paper.example.com', password_login: true, two_factor_required: true }
+    function Cards() {
       const settings = useServerSettings()
-      return settings.settings ? <SignInCard server={settings} /> : null
+      return settings.settings ? <SignInPart server={settings} /> : null
     }
-    await page.show(<Card />)
-    await asksFirst(() => page.button('Entfernen'), 'Anbieter entfernen', 'DELETE /api/v1/oidc/config')
+    await page.show(<Cards />)
+    await asksFirst(() => page.button('Entfernen'), 'Entfernen', 'DELETE /api/v1/oidc/admin/providers/3')
   })
 })
 

@@ -1,4 +1,30 @@
 {
+  "1.1.0": {
+    "lead": "Sign in through several providers, as in every nex app: authentik, Microsoft Entra ID or any other that speaks OpenID Connect.",
+    "sections": [
+      {
+        "title": "Several sign-in providers",
+        "body": "Each provider gets a button on the sign-in page, in the order of your list. Per provider you choose whether new people get an account and whether it checks the second factor itself. Microsoft Entra ID works with several tenants too.",
+        "where": "Settings, Sign-in"
+      },
+      {
+        "title": "authentik in one step",
+        "body": "With an API token nexpaper sets up provider and application in authentik itself and says for each step what worked and what did not. Who would rather not hand out a token downloads a blueprint instead.",
+        "where": "Settings, Sign-in"
+      },
+      {
+        "title": "Linking in your account",
+        "body": "Every account links itself to the providers, with your password as confirmation, and undoes the link there. A mail address from the provider no longer links anything by itself; an invitation works through the provider too.",
+        "where": "My account, Security"
+      }
+    ],
+    "smallTitle": "Also",
+    "small": [
+      "Your provider so far is the first entry of the list, every link stays, its redirect address too",
+      "An address from the provider counts for documents by mail only once you confirmed it",
+      "Behind a proxy nexpaper trusts, the scheme it reports counts too"
+    ]
+  },
   "1.0.1": {
     "lead": "A small version: nexpaper now says more clearly where it is best kept.",
     "sections": [
