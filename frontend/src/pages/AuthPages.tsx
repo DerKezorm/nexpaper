@@ -101,15 +101,17 @@ export function SetupPage() {
   )
 }
 
-/** "Auf diesem Gerät angemeldet bleiben", as the mock: on from the start. */
-function Remember({ on, onChange }: { on: boolean; onChange: (value: boolean) => void }) {
+/** "Auf diesem Gerät angemeldet bleiben", as the mock: on from the start. `days`: how long such a sign-in lasts without
+ * use (`NEXPAPER_SESSION_DAYS`, from `/auth/methods`); the sentence waits until the server said it. */
+function Remember({ on, onChange, days }: { on: boolean; onChange: (value: boolean) => void; days?: number }) {
   const { t } = useTranslation()
+  const ends = typeof days === 'number' && days > 0 ? `${t('auth.remember.ends', { count: days })} ` : ''
   return (
     <label className="flex items-start gap-3 text-sm">
       <input type="checkbox" checked={on} onChange={(event) => onChange(event.target.checked)} className="mt-0.5 h-5 w-5 shrink-0 accent-[var(--accent)]" />
       <span>
         <span className="font-semibold">{t('auth.remember.label')}</span>
-        <span className="block text-xs text-muted">{t('auth.remember.hint')}</span>
+        <span className="block text-xs text-muted">{ends + t('auth.remember.hint')}</span>
       </span>
     </label>
   )
@@ -230,7 +232,7 @@ export function LoginPage() {
             autoFocus
             hint={onlyPasskey ? undefined : t('auth.code.hint')}
           />
-          <Remember on={remember} onChange={setRemember} />
+          <Remember on={remember} onChange={setRemember} days={methods?.session_days} />
           <Primary busy={busy}>{t('auth.login.submit')}</Primary>
           {waiting.passkey && passkeys && passkeyButton}
           <button
@@ -267,7 +269,7 @@ export function LoginPage() {
           <Problem code={problem} />
           <Input label={t('auth.name')} value={name} onChange={setName} autoComplete="username webauthn" autoFocus />
           <Input label={t('auth.password')} value={password} onChange={setPassword} type="password" autoComplete="current-password" />
-          <Remember on={remember} onChange={setRemember} />
+          <Remember on={remember} onChange={setRemember} days={methods?.session_days} />
           <Primary busy={busy}>{t('auth.login.submit')}</Primary>
           {methods?.forgot && (
             <Link to="/forgot" className="block text-center text-xs text-muted hover:text-ink">

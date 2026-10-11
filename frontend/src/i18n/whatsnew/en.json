@@ -24,7 +24,10 @@
       "An address from the provider counts for documents by mail only once you confirmed it, also one 1.0.1 took over as confirmed: confirm it once under My account, Profile",
       "Behind a proxy nexpaper trusts, the scheme it reports counts too",
       "“Require a second factor” is for signing in with a password: an account without a password, and whoever comes in through a provider whose entry has “The provider checks the second factor itself” on, is not made to set one up; the hints say so",
-      "A dashboard card can read nexpaper through an API key: what waits in the inbox, what is filed, and what falls due in the next 14 days."
+      "A dashboard card can read nexpaper through an API key: what waits in the inbox, what is filed, and what falls due in the next 14 days.",
+      "Texts corrected: what API keys may do, when a push comes, how long a sign-in lasts and how the files on the disk are named",
+      "Forgot your password and no mail server: the command python -m app.reset_link in the container prints a link to set a new one, valid once and for 24 hours (see the README)",
+      "The shortcuts on the app symbol speak the language of your browser"
     ]
   },
   "1.0.1": {

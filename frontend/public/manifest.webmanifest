@@ -36,8 +36,8 @@
   ],
   "shortcuts": [
     {
-      "name": "Hochladen",
-      "short_name": "Hochladen",
+      "name": "Upload",
+      "short_name": "Upload",
       "url": "/schnell",
       "icons": [
         {
@@ -48,8 +48,8 @@
       ]
     },
     {
-      "name": "Fotografieren",
-      "short_name": "Kamera",
+      "name": "Take a photo",
+      "short_name": "Camera",
       "url": "/kamera",
       "icons": [
         {

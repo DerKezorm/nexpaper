@@ -48,7 +48,7 @@ export function ReadinessCard() {
               </span>
               <span className="min-w-0">
                 <span className="font-semibold">{t(`ready.${point.key}.title`)}</span>
-                <span className="block text-xs break-words text-muted">{t(sentence(point), { ...point.values, when })}</span>
+                <span className="block text-xs break-words text-muted">{t(sentence(point), { ...point.values, when, ...(typeof point.values.days === 'number' ? { count: point.values.days } : {}) })}</span>
               </span>
             </li>
           )

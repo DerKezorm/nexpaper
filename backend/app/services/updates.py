@@ -1,9 +1,10 @@
 """Whether a newer nexpaper is out, after nexmail's update check.
 
-At most once a day the public GitHub API is asked for the newest release. Nothing goes out but the question itself: no
-names, no entries, no settings. It is one of the few calls nexpaper makes by itself, so the switch stands on the about
-page, where the answer shows, and the page says in a sentence what goes out. Off means "not by itself": the button
-still asks.
+The public GitHub API is asked for the newest release only when somebody opens the about page (``GET
+/api/v1/about/updates``) and the last answer is older than a day (an hour after one that failed). No background job
+asks: ``NEXPAPER_DISABLE_BACKGROUND`` has nothing to do with it. Nothing goes out but the question itself: no names, no
+entries, no settings. The switch stands on the about page, where the answer shows, and the page says in a sentence what
+goes out. Off means "not by itself": the button still asks.
 
 The check is a side matter. Without a network, with GitHub down or answering an error, nothing on the page breaks: the
 answer is simply not there. While the repository is private, GitHub answers "not found" and so says nothing either.

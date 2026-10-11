@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
@@ -13,7 +14,7 @@ from typing import Any
 from fastapi import FastAPI, Request
 from fastapi.exception_handlers import http_exception_handler
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
@@ -81,6 +82,7 @@ from .services import (
     totp,
 )
 from .services import intake as intake_service
+from .services import manifest as manifest_service
 from .services import pairing as pairing_service
 from .services import passkeys as passkeys_service
 from .services import uploads as uploads_service
@@ -274,8 +276,9 @@ for module in ROUTERS:
 
 
 #: Files a browser asks the server about again each time: the service worker (an old one would keep its old ways for a
-#: day) and the manifest.
-FRESH = ("sw.js", "manifest.webmanifest")
+#: day). The manifest is asked about afresh too, and comes in the language of the browser (``_manifest`` below).
+FRESH = ("sw.js",)
+MANIFEST = "manifest.webmanifest"
 
 #: The PDF frame (``frontend/pdfview.html``, the document page shows its pages with pdf.js there): a sandbox without an
 #: origin of its own, scripts only from nexpaper itself (its worker from a blob), WebAssembly for pdf.js's image
@@ -313,6 +316,21 @@ def _mount_frontend(target: FastAPI, dist: Path) -> None:
         # Files the share menu of Android sent while the service worker was not there to catch them: such a form carries
         # the cookie and no header of nexpaper's own, so nothing of it is read or kept (``routers/phone.py``).
         return RedirectResponse("/teilen?missed=1", status_code=303)
+
+    @target.get(f"/{MANIFEST}", include_in_schema=False, response_model=None)
+    def _manifest(request: Request) -> Response:
+        # The names of the shortcuts in the browser's language (services/manifest.py). The answer depends on
+        # Accept-Language: a cache in between keeps one per language, the browser asks again each time.
+        try:
+            base = json.loads((dist / MANIFEST).read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return FileResponse(index, headers={"Cache-Control": "no-cache"})
+        if not isinstance(base, dict):
+            base = {}
+        language = manifest_service.choose(request.headers.get("accept-language", ""))
+        body = json.dumps(manifest_service.localized(base, language), ensure_ascii=False, indent=2)
+        return Response(body, media_type="application/manifest+json",
+                        headers={"Cache-Control": "no-cache", "Vary": "Accept-Language", "Content-Language": language})
 
     @target.get("/{path:path}", include_in_schema=False, response_model=None)
     def spa(path: str) -> FileResponse | JSONResponse:

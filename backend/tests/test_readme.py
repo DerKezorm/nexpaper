@@ -48,3 +48,25 @@ def test_the_screenshot_folder_holds_both_looks_of_every_picture() -> None:
     shown = {path.stem for path in (ROOT / "docs" / "screenshots").glob("*.webp")}
     for name in sorted(shown):
         assert name.endswith("-dark") or f"{name}-dark" in shown, f"{name} has no dark twin"
+
+
+def test_the_compose_block_of_the_readme_is_hardened_as_the_compose_file() -> None:
+    """#job-215: whoever copies the block under "Start" gets the same hardening as ``docker-compose.yml`` (the project
+    page takes the block from here)."""
+    compose = (ROOT / "docker-compose.yml").read_text(encoding="utf-8")
+    plain = [line for line in compose.splitlines() if line.strip() and not line.strip().startswith("#")]
+    start = next(i for i, line in enumerate(plain) if line.strip() == "security_opt:")
+    end = next(i for i, line in enumerate(plain) if line.strip() == "volumes:")
+    hardening = "\n".join(plain[start:end])
+    assert "cap_drop:\n      - ALL" in hardening and "- SETGID" in hardening
+    block = README.split("## Start", 1)[1].split("```yaml", 1)[1].split("```", 1)[0]
+    assert hardening in block
+    assert "image: ghcr.io/derkezorm/nexpaper:latest" in block
+
+
+def test_the_readme_says_how_to_make_a_password_link_in_the_container() -> None:
+    from app import reset_link
+
+    command = "docker exec -it -u nexpaper nexpaper python -m app.reset_link <account>"
+    assert command in README
+    assert f"-u nexpaper <container> {reset_link.COMMAND}" in reset_link.ROOT_REFUSED

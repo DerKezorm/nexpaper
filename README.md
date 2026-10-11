@@ -56,6 +56,15 @@ services:
     restart: unless-stopped
     ports:
       - "127.0.0.1:8560:8000"
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - DAC_READ_SEARCH
+      - SETUID
+      - SETGID
     volumes:
       - ./data:/data
     environment:
@@ -67,6 +76,10 @@ services:
 ```sh
 docker compose up -d
 ```
+
+The container may not gain rights later and keeps only what its start needs: setting the owner of `/data` (`CHOWN`,
+`DAC_READ_SEARCH`) and dropping from root to the user `nexpaper` (`SETUID`, `SETGID`). nexpaper itself runs as that
+user, with none.
 
 Built from source instead: clone this repository, use `docker-compose.yml` as it is (it has `build: .`) and run
 `docker compose up -d --build`. The file has every option explained.
@@ -106,7 +119,8 @@ with care and at least this:
    version instead of `latest`, update on purpose, back up before.
 8. Nobody, the operator included, sets a password for somebody else. Whoever forgot theirs gets a link to set a new
    one: the operator sends it (Settings, Accounts), or, where a mail server and the public address are set, the
-   person asks for it on the sign-in page. The link works once and for 24 hours.
+   person asks for it on the sign-in page. The link works once and for 24 hours. An operator without a mail server
+   who forgot their own password makes one in the container (below).
 9. Passkeys work under the public https address, or on localhost.
 
 Optionally keep the operator's settings at home: `NEXPAPER_OPERATOR_NETWORKS: "192.168.0.0/16"` refuses them from
@@ -152,6 +166,24 @@ entry `oidc` stands while the entry is on and checks the second factor itself (i
 client, so that 1.0.1 never lets anybody in with less than the entry asks. What 1.0.1 changes there is taken over at the
 next start of the newer version.
 
+## Forgot your password, and no mail server
+
+Whoever can run a command in the container holds the database and the secrets anyway, so a link made there gives
+nothing away. It is the same link the operator sends from Settings, Accounts: it works once and for 24 hours, a new one
+replaces the one before, and using it ends every session and lifts a lock after failed sign-ins. The second factor stays:
+sign in with the new password, then with the code from your app, a passkey or a recovery code.
+
+```sh
+docker exec -it -u nexpaper nexpaper python -m app.reset_link <account>
+```
+
+`-u nexpaper` runs it as the user the server runs as (with the ids of `PUID` and `PGID`); as root it refuses, because a
+file root makes in `/data` the server could not open any more. Where the compose file starts the container with a
+`user:` of its own, give that instead. Without an account name it lists the accounts. It prints the whole link when
+the public address is set (Settings, Sign-in, or `NEXPAPER_PUBLIC_URL`), otherwise the path `/reset/...` to open at the
+address you use. An unknown or blocked account gets no link and a message, and the command ends with an error. The log
+notes that a link was made this way, and for whom, never the link itself.
+
 ## Where things are stored
 
 Everything lives in `/data`:
@@ -161,9 +193,17 @@ Everything lives in `/data`:
 | `nexpaper.db` | The SQLite database: accounts, settings, the filing, the recognised text and the search index. |
 | `secret.key` | The server's own secret (the secrets of the sign-in providers, the mail password, the AI key and the like). |
 | `backups/`, `logs/`, `locales/` | Backups, the log, extra languages as JSON files. |
-| `dokumente/` | The documents themselves, as readable files: `<vault>/<year>/<sender>/<date> <title>.pdf`, the original as it came, beside it the searchable copy and the older versions. Readable without nexpaper. |
+| `dokumente/` | The documents themselves, as readable files (below). Readable without nexpaper. |
 | `cache/`, `uploads/`, `exports/` | Pictures of pages (trimmed to a size you set), uploads in progress, ZIPs for the tax adviser. |
 | `eingang/` | The intake folder, when it is switched on (Settings, Inputs): one subfolder per person. |
+
+The documents lie as `<vault>/<year>/<sender>/<date> <kind>.<ending>`, the original as it came, for example
+`Household/2026/City Utilities/2026-10-07 Invoice.pdf`. Beside it lie the searchable copy (`2026-10-07 Invoice
+(searchable).pdf`, also the PDF made from a photo) and the older versions (`2026-10-07 Invoice (version 1).pdf`); two
+documents with the same name get ` (2)`. The title is not part of the name (the export for the tax adviser names its
+files by date and title). Where a part is missing, the folders and files on the disk have English names whatever the
+language of the interface: `undated` for the year and the date, `no sender`, and `Document` for the kind. The interface
+shows them translated; the names on the disk stay as they are.
 
 Mount `/data` from a local disk, never from an SMB or NFS share: SQLite's locking does not work reliably over network
 filesystems. There is no per-person encryption: it would stop search and make the files unreadable without nexpaper. A
@@ -229,7 +269,7 @@ checks the second factor itself" on; otherwise only the password does. Coming up
 | `NEXPAPER_UPDATE_URL` | GitHub | Where the update check asks for the newest release |
 | `NEXPAPER_ARGON2_TIME`, `NEXPAPER_ARGON2_MEMORY_KIB`, `NEXPAPER_ARGON2_PARALLELISM` | `3`, `65536`, `2` | Cost of the password hash; only the tests lower it |
 | `NEXPAPER_FRONTEND_DIST` | `/app/static` | Where the built interface lies (set by the image) |
-| `NEXPAPER_DISABLE_BACKGROUND` | `false` | Switches off the background jobs (backups, update check); for tests |
+| `NEXPAPER_DISABLE_BACKGROUND` | `false` | Switches off the background jobs (the log, backups, tidying up, the queue, checking the files, the inputs); for tests. The update check is none of them: it asks only when somebody opens the about page and the last answer is older than a day |
 | `NEXPAPER_PORT` | `8000` | The port inside the container; only for host networking |
 | `PUID`, `PGID` | `1000` | Owner of the files in the data directory |
 | `TZ` | | The time zone of the container's log. People's own time zones come from their browsers |
@@ -265,8 +305,10 @@ days and can be brought back; one deleted for good, a key, a link or a device th
 
 ## Push
 
-The notice of a new sign-in arrives by Web Push, to every device a person signs up (My account, Devices and apps). It
-needs https (or localhost). On an iPhone it works only for the app added to the home screen (Share, Add to Home Screen)
+Notices arrive by Web Push, to every device a person signs up (My account, Devices and apps): of a new sign-in, of a
+ready export or a finished import from Paperless, of a second factor the operator reset or an account the operator
+unlinked from a sign-in provider; operators also hear when the check of the files finds something wrong or a restore
+fails. It needs https (or localhost). On an iPhone it works only for the app added to the home screen (Share, Add to Home Screen)
 and only from iOS 16.4. The server makes its own keys; the operator can add a contact and further push services. A push
 never carries the content of a document.
 
@@ -327,14 +369,14 @@ itself: it all waits in an inbox.
 
 Everything the web app does goes through `/api/v1`; the web app uses nothing else. A phone or a later app pairs with a
 **device token** (My account, Devices and apps) and acts with the rights of its account; scripts use an **API key**
-that only reads or only uploads (off until the operator switches it on; 120 requests a minute, 50 uploads an hour). The description is served at `/api/v1/docs` and, for
+that only reads or only uploads, never more than its account may (off until the operator switches it on; 120 requests a minute, 50 uploads an hour). The description is served at `/api/v1/docs` and, for
 machines, at `/api/v1/openapi.json`; [docs/api.md](docs/api.md) says how to sign in.
 
 ## Security in short
 
 - Passwords are hashed with Argon2id. Five failed sign-ins lock an account and an address for 15 minutes; with a second
-  factor, the password alone opens nothing. A session ends after 30 days without use, or after 12 hours when "stay signed
-  in" was not ticked, and every device can be signed out on its own.
+  factor, the password alone opens nothing. A session ends after 30 days without use (`NEXPAPER_SESSION_DAYS`), or after 12
+  hours when "stay signed in" was not ticked, and every device can be signed out on its own.
 - Rights are checked on the server for every request. A wrong device token or API key counts against the sender like a
   wrong password. A device token never changes the way into the account (password, second factor, passkeys), never
   reaches the operator's side (settings, accounts, backups, the log) and never pairs another device; a lost phone is blocked in the list and stops at once.

@@ -190,7 +190,7 @@ export type SecondFactorWaiting = { second_factor: true; totp: boolean; passkey:
 export type SetupState = { needs_setup: boolean; code_required: boolean; signed_in: boolean; version: string; min_password: number }
 /** A button on the sign-in and invitation page: one per active provider, in the order of the operator's list. */
 export type ProviderButton = { slug: string; label: string }
-export type Methods = { password: boolean; providers: ProviderButton[]; passkeys?: boolean; forgot?: boolean }
+export type Methods = { password: boolean; providers: ProviderButton[]; passkeys?: boolean; forgot?: boolean; session_days?: number }
 export type SignedSession = { id: string; device: string; phone: boolean; network: string; created_at: string; last_seen_at: string; remember: boolean; here: boolean }
 export type Passkey = { id: string; name: string; created_at: string; last_used_at: string | null; credential: string }
 export type Readiness = { points: { key: string; state: 'ok' | 'warn' | 'bad'; values: Record<string, unknown> }[]; open: number }

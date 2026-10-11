@@ -91,6 +91,7 @@ export function DiskCard() {
 /data/dokumente/Haushalt/2026/Stadtwerke Lindenau/2026-10-01 Rechnung (searchable).pdf`}
       </pre>
       <p className="text-xs text-muted">{t('storage.disk.note')}</p>
+      <p className="text-xs text-muted">{t('storage.disk.english')}</p>
     </Card>
   )
 }

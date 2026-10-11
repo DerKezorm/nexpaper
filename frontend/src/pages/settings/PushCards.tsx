@@ -187,8 +187,18 @@ export function SignInNoticeCard({ me, children }: { me: Me; children?: ReactNod
   const { setMe } = useAuth()
   const action = useAction()
   const on = me.profile.notify_login !== false
+  // How long a sign-in lasts without use (NEXPAPER_SESSION_DAYS); the sentence waits until the server said it.
+  const [days, setDays] = useState<number | null>(null)
+  useEffect(() => {
+    let alive = true
+    authApi.methods().then((methods) => alive && typeof methods.session_days === 'number' && setDays(methods.session_days), () => undefined)
+    return () => {
+      alive = false
+    }
+  }, [])
+  const text = days && days > 0 ? `${t('me.devices.text')} ${t('me.devices.ends', { count: days })}` : t('me.devices.text')
   return (
-    <Card icon={MonitorSmartphone} title={t('me.devices.title')} text={t('me.devices.text')}>
+    <Card icon={MonitorSmartphone} title={t('me.devices.title')} text={text}>
       {children}
       <Toggle
         label={t('me.devices.notify')}

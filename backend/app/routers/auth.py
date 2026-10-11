@@ -356,6 +356,9 @@ def methods(request: Request, db: DbSession) -> dict[str, Any]:
         "passkeys": passkeys.available(db, request.url.hostname),
         # "Forgot your password?" where a mail goes out and the link has a public address to point to.
         "forgot": bool(values["password_login"]) and resets.available(db),
+        # How long "stay signed in" lasts without use (NEXPAPER_SESSION_DAYS): the sign-in page says it before anybody
+        # is signed in, and the list of devices says it after.
+        "session_days": get_settings().session_days,
     }
 
 

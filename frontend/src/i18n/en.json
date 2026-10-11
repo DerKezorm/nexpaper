@@ -95,7 +95,9 @@
     },
     "remember": {
       "label": "Stay signed in on this device",
-      "hint": "Until you have not been here for 30 days. Good for your own phone, not for other people's devices."
+      "hint": "Good for your own phone, not for other people's devices.",
+      "ends_one": "Until you have not been here for {{count}} day.",
+      "ends_other": "Until you have not been here for {{count}} days."
     },
     "setup2fa": {
       "title": "Set up your second factor",
@@ -167,7 +169,7 @@
       "title": "Updates",
       "text": "Whether a newer version of nexpaper is out.",
       "daily": "Check once a day",
-      "dailyHint": "Asks GitHub for the newest release. Off: only when you press the button.",
+      "dailyHint": "Asks GitHub for the newest release when somebody opens this page, once a day at most. Off: only when you press the button.",
       "now": "Check now",
       "current": "This is the newest version.",
       "none": "No release found yet.",
@@ -175,7 +177,7 @@
       "off": "The daily check is off.",
       "toRelease": "What is new",
       "checkedAt": "last checked {{when}}",
-      "whatGoesOut": "Only the question goes out: a request to api.github.com for the newest release of nexpaper, with no names, documents or settings. Besides the mail server, the AI and the mailbox, if you set them up, and the push services of the browsers, it is the only call nexpaper makes on its own."
+      "whatGoesOut": "Only the question goes out: a request to api.github.com for the newest release of nexpaper, with no names, documents or settings. Besides the mail server, the AI and the mailbox, if you set them up, the push services of the browsers, the import from Paperless when somebody starts it, and the sign-in providers when somebody signs in through them, it is the only call nexpaper makes on its own."
     }
   },
   "me": {
@@ -256,7 +258,9 @@
     },
     "devices": {
       "title": "Signed-in devices",
-      "text": "Where you are signed in. A sign-in ends by itself after 30 days without use.",
+      "text": "Where you are signed in.",
+      "ends_one": "A sign-in ends by itself after {{count}} day without use.",
+      "ends_other": "A sign-in ends by itself after {{count}} days without use.",
       "notify": "Tell me about a new sign-in",
       "notifyHint": "By push to your devices and by mail: which device, which browser, roughly from where. If it was not you, one tap signs it off.",
       "here": "this device",
@@ -519,19 +523,18 @@
       "outgoing": "What goes out: the recognised text of the first two pages of a new document, without the image, without the name of the account, plus the list of kinds. Nothing else. Whoever does not want that switches the AI off in their account.",
       "saved": "Saved.",
       "keyOptional": "API key (if needed)",
-      "keyLocalHint": "Only when the service asks for one, such as LiteLLM. Ollama needs none.",
-      "autoAllowedHint": "Off: nobody can have the day before written up on its own in the morning. On: each person decides in their own account, where it is off from the start. The notes then go to the service set up here without a press of a button."
+      "keyLocalHint": "Only when the service asks for one, such as LiteLLM. Ollama needs none."
     },
     "push": {
       "title": "Web Push",
-      "text": "So that the notice of a new sign-in reaches the phone and the browser. Reminders of deadlines later. Set up from the start; each person signs up their devices under My account.",
+      "text": "So that notices reach the phone and the browser: of a new sign-in, of a ready export or a finished import from Paperless, of a second factor that was reset or an account that was unlinked from a sign-in provider. Operators also hear when the check of the files finds something wrong or a restore fails. Set up from the start; each person signs up their devices under My account.",
       "ready_one": "Ready · {{count}} device signed up",
       "ready_other": "Ready · {{count}} devices signed up",
       "contact": "Contact for the push services",
       "contactHint": "The services of Google, Apple and Mozilla ask for an address where they reach the operator. It stands in every message, nothing else of yours.",
       "saved": "Saved.",
       "keys": "Keys",
-      "keysText": "nexpaper made a key pair of its own at the first start. Making a new one signs every device off; each person has to sign them up again.",
+      "keysText": "nexpaper made a key pair of its own. Making a new one signs every device off; each person has to sign them up again.",
       "renew": "Make new",
       "renewTitle": "Make a new key pair?",
       "renewText": "Every device is signed off. Each person has to sign them up again under My account, Devices and apps.",
@@ -551,7 +554,7 @@
     "backupNoDocumentsText": "They lie as plain files under /data/dokumente, readable without nexpaper too. Put this folder into the backup your server makes anyway (Hyper Backup, restic, snapshots). Whoever backs up only this file has filing without documents after a disk failure.",
     "apiKeys": {
       "title": "API keys",
-      "text": "Programs read with a key that each person makes under My account. Here you allow that and see every key, never the key itself.",
+      "text": "Programs read or upload with a key that each person makes under My account. Here you allow that and see every key, never the key itself.",
       "allow": "Allow API keys",
       "allowHint": "Off: nobody can make keys, and existing ones stop working.",
       "block": "Block",
@@ -559,7 +562,7 @@
       "blockTitle": "Block the key {{name}} of {{account}}?",
       "blockText": "It stops working at once, for good. The account sees it blocked in its list.",
       "blocked": "blocked",
-      "offHint": "Keys only read and never more than the account may.",
+      "offHint": "A key only reads or only uploads, and never does more than its account may.",
       "own": "Make your own keys"
     },
     "interface": {
@@ -867,7 +870,8 @@
     },
     "cookies": {
       "title": "Sessions and cookies",
-      "ok": "Cookies only over https and not readable by scripts; a sign-in runs out after 30 days without use.",
+      "ok_one": "Cookies only over https and not readable by scripts; a sign-in runs out after {{count}} day without use.",
+      "ok_other": "Cookies only over https and not readable by scripts; a sign-in runs out after {{count}} days without use.",
       "warn": "Without https the sign-in cookies travel in the clear. Over https nexpaper protects them by itself.",
       "bad": "NEXPAPER_COOKIE_SECURE is off: the cookies go unprotected even over https. Set it to auto."
     },
@@ -953,7 +957,7 @@
     "enableConfirm": "Allow",
     "enableTitle": "Allow API keys for everybody?",
     "enableText": "After that every person on this server can make keys under My account. A key lets a program either only read or only upload, never more than the account that made it may. You can switch this off again under Settings, API at any time; keys that exist stop working then too.",
-    "uploadNote": "A key for uploading can only put documents into the inbox of your target vault. It cannot read, change or delete anything.",
+    "uploadNote": "A key for uploading only puts documents into an inbox: the one of your target vault or, when the program names another, the one of a vault you may add to. It cannot read, change or delete anything.",
     "new": "New key",
     "name": "Name",
     "namePlaceholder": "nexdeck",
@@ -1184,7 +1188,8 @@
     "disk": {
       "title": "How the files lie on the disk",
       "text": "Readable even without nexpaper. If you ever stop using nexpaper, you keep your folders.",
-      "note": "Originals are never changed, and every file carries a checksum. From a photo nexpaper makes a PDF beside it. Deleted documents stay 30 days in the trash, then they are gone with their files."
+      "note": "Originals are never changed, and every file carries a checksum. From a photo nexpaper makes a PDF beside it. Deleted documents stay 30 days in the trash, then they are gone with their files.",
+      "english": "Where the date, the sender or the kind is missing, the folders and files on the disk have English names: “undated”, “no sender”, “Document”. The app shows them translated."
     }
   },
   "phone": {
@@ -1387,7 +1392,7 @@
       "fetchedMore": "Fetched. Mails: {{mails}}, documents: {{files}}. The rest comes next time.",
       "lastOk": "Last fetched {{when}}: mails {{mails}}, documents {{files}}.",
       "lastFailed": "Last try {{when}} failed: {{reason}}",
-      "dropUnknown": "Leave mails from unknown senders",
+      "dropUnknown": "Ignore mails from unknown senders",
       "dropUnknownHint": "They stay in the mailbox and do not come into the operator's inbox.",
       "whole": "Afterwards happens only once all attachments of a mail are in. Mails with attachments over the limits stay in the mailbox and are flagged.",
       "instead": {
@@ -1532,7 +1537,7 @@
       "owner": "Belongs to",
       "tags": "Tags",
       "dates": "Dates",
-      "datesHint": "Due, contract until, warranty until, keep until. Reminders of them come in a later version.",
+      "datesHint": "Due, contract until, warranty until, keep until.",
       "addDate": "Date",
       "removeDate": "Remove {{kind}}",
       "addTag": "+ Tag",
@@ -2582,5 +2587,12 @@
       "added": "Added."
     },
     "link": "Tidy up senders, kinds and tags: Organise"
+  },
+  "manifest": {
+    "description": "A light paper filing cabinet for households and small firms.",
+    "upload": "Upload",
+    "uploadShort": "Upload",
+    "camera": "Take a photo",
+    "cameraShort": "Camera"
   }
 }

@@ -305,7 +305,7 @@ describe('devices and apps', () => {
     answers['GET /api/v1/api-keys'] = { allowed: true, keys: [] }
     await show('/konto?tab=devices')
     expect(button('Schlüssel zum Hochladen (für Scanner und Apps)')).toBeTruthy()
-    expect(box.querySelector('[data-testid="api-keys-upload-note"]')!.textContent).toContain('kann nur Dokumente in den Eingang deines Ziel-Tresors legen')
+    expect(box.querySelector('[data-testid="api-keys-upload-note"]')!.textContent).toContain('legt Dokumente nur in einen Eingang: in den deines Ziel-Tresors oder, wenn das Programm einen anderen nennt, in den eines Tresors, in dem du ablegen darfst')
   })
 
   it('makes a key that is shown once, with its header line, and lists only its first characters after', async () => {

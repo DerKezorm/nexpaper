@@ -130,12 +130,14 @@ def _secrets() -> Point:
 
 
 def _cookies(request: Request) -> Point:
+    """The sentence names how long a sign-in lasts without use (NEXPAPER_SESSION_DAYS), never a fixed number."""
     mode = get_settings().cookie_secure.lower()
+    days = get_settings().session_days
     if mode == "off":
-        return Point("cookies", BAD, {"mode": mode})
+        return Point("cookies", BAD, {"mode": mode, "days": days})
     if not came_over_https(request):
-        return Point("cookies", WARN, {"mode": mode})
-    return Point("cookies", OK, {"mode": mode})
+        return Point("cookies", WARN, {"mode": mode, "days": days})
+    return Point("cookies", OK, {"mode": mode, "days": days})
 
 
 def _proxy(request: Request, unknown_proxy: bool) -> Point:

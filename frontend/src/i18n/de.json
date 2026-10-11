@@ -95,7 +95,9 @@
     },
     "remember": {
       "label": "Auf diesem Gerät angemeldet bleiben",
-      "hint": "Bis du 30 Tage nicht hier warst. Gut fürs eigene Handy, nicht für fremde Geräte."
+      "hint": "Gut fürs eigene Handy, nicht für fremde Geräte.",
+      "ends_one": "Bis du {{count}} Tag nicht hier warst.",
+      "ends_other": "Bis du {{count}} Tage nicht hier warst."
     },
     "setup2fa": {
       "title": "Zweiten Faktor einrichten",
@@ -167,7 +169,7 @@
       "title": "Aktualisierungen",
       "text": "Ob es eine neuere Version von nexpaper gibt.",
       "daily": "Einmal am Tag nachsehen",
-      "dailyHint": "Fragt GitHub nach der neuesten Veröffentlichung. Aus: nur, wenn du den Knopf drückst.",
+      "dailyHint": "Fragt GitHub nach der neuesten Veröffentlichung, wenn jemand diese Seite öffnet, höchstens einmal am Tag. Aus: nur, wenn du den Knopf drückst.",
       "now": "Jetzt nachsehen",
       "current": "Das ist die neueste Version.",
       "none": "Noch keine Veröffentlichung gefunden.",
@@ -175,7 +177,7 @@
       "off": "Das tägliche Nachsehen ist aus.",
       "toRelease": "Was neu ist",
       "checkedAt": "zuletzt nachgesehen {{when}}",
-      "whatGoesOut": "Hinaus geht nur die Frage: eine Anfrage an api.github.com nach der neuesten Veröffentlichung von nexpaper, ohne Namen, Dokumente oder Einstellungen. Neben dem Mailserver, der KI und dem Postfach, wenn ihr sie eingerichtet habt, und den Push-Diensten der Browser ist es der einzige Ruf, den nexpaper von sich aus macht."
+      "whatGoesOut": "Hinaus geht nur die Frage: eine Anfrage an api.github.com nach der neuesten Veröffentlichung von nexpaper, ohne Namen, Dokumente oder Einstellungen. Neben dem Mailserver, der KI und dem Postfach, wenn ihr sie eingerichtet habt, den Push-Diensten der Browser, dem Import aus Paperless, wenn ihn jemand startet, und den Anmeldeanbietern, wenn sich jemand über sie anmeldet, ist es der einzige Ruf, den nexpaper von sich aus macht."
     }
   },
   "me": {
@@ -256,7 +258,9 @@
     },
     "devices": {
       "title": "Angemeldete Geräte",
-      "text": "Wo du gerade angemeldet bist. Eine Anmeldung läuft nach 30 Tagen ohne Nutzung von selbst ab.",
+      "text": "Wo du gerade angemeldet bist.",
+      "ends_one": "Eine Anmeldung läuft nach {{count}} Tag ohne Nutzung von selbst ab.",
+      "ends_other": "Eine Anmeldung läuft nach {{count}} Tagen ohne Nutzung von selbst ab.",
       "notify": "Bei einer neuen Anmeldung Bescheid geben",
       "notifyHint": "Per Push auf deine Geräte und per Mail: welches Gerät, welcher Browser, ungefähr von wo. Warst du es nicht, meldest du es mit einem Tipp ab.",
       "here": "dieses Gerät",
@@ -519,19 +523,18 @@
       "outgoing": "Was hinausgeht: der erkannte Text der ersten zwei Seiten eines neuen Dokuments, ohne Bild, ohne Namen des Kontos, dazu die Liste der Arten. Sonst nichts. Wer das nicht will, schaltet die KI in seinem Konto für sich ab.",
       "saved": "Gespeichert.",
       "keyOptional": "API-Schlüssel (falls nötig)",
-      "keyLocalHint": "Nur, wenn der Dienst einen verlangt, etwa LiteLLM. Ollama braucht keinen.",
-      "autoAllowedHint": "Aus: Niemand kann sich den Vortag am Morgen von allein ausformulieren lassen. An: Jede Person entscheidet in ihrem Konto selbst, ab Werk ist es dort aus. Die Notizen gehen dann ohne Knopfdruck an den eingestellten Dienst."
+      "keyLocalHint": "Nur, wenn der Dienst einen verlangt, etwa LiteLLM. Ollama braucht keinen."
     },
     "push": {
       "title": "Web Push",
-      "text": "Damit der Bescheid bei einer neuen Anmeldung aufs Handy und in den Browser kommt. Später auch Erinnerungen an Fristen. Ist von Anfang an eingerichtet; jede Person meldet ihre Geräte unter Mein Konto an.",
+      "text": "Damit Bescheide aufs Handy und in den Browser kommen: bei einer neuen Anmeldung, wenn ein Export fertig oder ein Import aus Paperless durch ist, wenn der zweite Faktor einer Person zurückgesetzt oder ihr Konto von einem Anmeldeanbieter gelöst wurde. Betreiber hören außerdem, wenn beim Prüfen der Dateien etwas nicht stimmt oder ein Wiederherstellen scheitert. Ist von Anfang an eingerichtet; jede Person meldet ihre Geräte unter Mein Konto an.",
       "ready_one": "Bereit · {{count}} Gerät angemeldet",
       "ready_other": "Bereit · {{count}} Geräte angemeldet",
       "contact": "Kontakt für die Push-Dienste",
       "contactHint": "Die Dienste von Google, Apple und Mozilla verlangen eine Adresse, unter der sie den Betreiber erreichen. Sie steht in jeder Nachricht, sonst nichts von dir.",
       "saved": "Gespeichert.",
       "keys": "Schlüssel",
-      "keysText": "nexpaper hat beim ersten Start ein eigenes Schlüsselpaar erzeugt. Neu erzeugen meldet alle Geräte ab; jede Person muss sie neu anmelden.",
+      "keysText": "nexpaper hat ein eigenes Schlüsselpaar erzeugt. Neu erzeugen meldet alle Geräte ab; jede Person muss sie neu anmelden.",
       "renew": "Neu erzeugen",
       "renewTitle": "Neues Schlüsselpaar erzeugen?",
       "renewText": "Alle Geräte werden abgemeldet. Jede Person muss sie unter Mein Konto, Geräte und Apps neu anmelden.",
@@ -551,7 +554,7 @@
     "backupNoDocumentsText": "Sie liegen als normale Dateien unter /data/dokumente, lesbar auch ohne nexpaper. Nimm diesen Ordner in die Sicherung, die dein Server sowieso macht (Hyper Backup, restic, Snapshots). Wer nur diese Datei sichert, hat nach einem Plattenschaden Zuordnungen ohne Dokumente.",
     "apiKeys": {
       "title": "API-Schlüssel",
-      "text": "Programme lesen mit einem Schlüssel, den jede Person unter Mein Konto anlegt. Hier gibst du das frei und siehst alle Schlüssel, nie den Schlüssel selbst.",
+      "text": "Programme lesen oder laden hoch mit einem Schlüssel, den jede Person unter Mein Konto anlegt. Hier gibst du das frei und siehst alle Schlüssel, nie den Schlüssel selbst.",
       "allow": "API-Schlüssel erlauben",
       "allowHint": "Aus: Niemand kann Schlüssel anlegen, und vorhandene gehen nicht mehr.",
       "block": "Sperren",
@@ -559,7 +562,7 @@
       "blockTitle": "Schlüssel {{name}} von {{account}} sperren?",
       "blockText": "Er hört sofort auf zu gehen, für immer. Das Konto sieht ihn gesperrt in seiner Liste.",
       "blocked": "gesperrt",
-      "offHint": "Schlüssel lesen nur und nie mehr, als das Konto darf.",
+      "offHint": "Ein Schlüssel liest nur oder lädt nur hoch und darf nie mehr als das Konto.",
       "own": "Eigene Schlüssel anlegen"
     },
     "interface": {
@@ -867,7 +870,8 @@
     },
     "cookies": {
       "title": "Sitzungen und Cookies",
-      "ok": "Cookies nur über https und nicht für Skripte lesbar; eine Anmeldung läuft nach 30 Tagen ohne Nutzung ab.",
+      "ok_one": "Cookies nur über https und nicht für Skripte lesbar; eine Anmeldung läuft nach {{count}} Tag ohne Nutzung ab.",
+      "ok_other": "Cookies nur über https und nicht für Skripte lesbar; eine Anmeldung läuft nach {{count}} Tagen ohne Nutzung ab.",
       "warn": "Ohne https gehen die Anmelde-Cookies offen mit. Über https schützt nexpaper sie von selbst.",
       "bad": "NEXPAPER_COOKIE_SECURE steht auf off: Die Cookies gehen auch über https ungeschützt. Setze den Wert auf auto."
     },
@@ -953,7 +957,7 @@
     "enableConfirm": "Freigeben",
     "enableTitle": "API-Schlüssel für alle freigeben?",
     "enableText": "Danach kann jede Person auf diesem Server unter Mein Konto Schlüssel anlegen. Ein Schlüssel lässt ein Programm entweder nur lesen oder nur hochladen, nie mehr, als das Konto darf, das ihn anlegt. Du kannst die Freigabe unter Einstellungen, API jederzeit wieder ausschalten; dann gehen auch vorhandene Schlüssel nicht mehr.",
-    "uploadNote": "Ein Schlüssel zum Hochladen kann nur Dokumente in den Eingang deines Ziel-Tresors legen. Lesen, ändern oder löschen kann er nichts.",
+    "uploadNote": "Ein Schlüssel zum Hochladen legt Dokumente nur in einen Eingang: in den deines Ziel-Tresors oder, wenn das Programm einen anderen nennt, in den eines Tresors, in dem du ablegen darfst. Lesen, ändern oder löschen kann er nichts.",
     "new": "Neuer Schlüssel",
     "name": "Name",
     "namePlaceholder": "nexdeck",
@@ -1184,7 +1188,8 @@
     "disk": {
       "title": "So liegen die Dateien auf der Platte",
       "text": "Lesbar, auch ohne nexpaper. Wer nexpaper eines Tages nicht mehr nutzt, hat seine Ordner.",
-      "note": "Originale werden nie verändert, und jede Datei trägt eine Prüfsumme. Aus einem Foto macht nexpaper ein PDF daneben. Gelöschte Dokumente bleiben 30 Tage im Papierkorb, dann sind sie samt Dateien weg."
+      "note": "Originale werden nie verändert, und jede Datei trägt eine Prüfsumme. Aus einem Foto macht nexpaper ein PDF daneben. Gelöschte Dokumente bleiben 30 Tage im Papierkorb, dann sind sie samt Dateien weg.",
+      "english": "Fehlt Datum, Absender oder Art, heißen die Ordner und Dateien auf der Platte englisch: „undated“, „no sender“, „Document“. Die App zeigt sie übersetzt."
     }
   },
   "phone": {
@@ -1532,7 +1537,7 @@
       "owner": "Gehört",
       "tags": "Tags",
       "dates": "Termine",
-      "datesHint": "Fällig, Vertrag bis, Garantie bis, Aufbewahren bis. Erinnerungen daran kommen in einer späteren Fassung.",
+      "datesHint": "Fällig, Vertrag bis, Garantie bis, Aufbewahren bis.",
       "addDate": "Termin",
       "removeDate": "{{kind}} entfernen",
       "addTag": "+ Tag",
@@ -1699,7 +1704,7 @@
       "originalCamera": "die Fotos als PDF, wie aufgenommen",
       "share": "Teilen",
       "more": "Mehr",
-      "newVersion": "Neue Version hochladen",
+      "newVersion": "Neue Fassung hochladen",
       "newVersionHint": "die alte bleibt unter Fassungen",
       "merge": "Mit anderem zusammenfügen",
       "mergeHint": "dessen Seiten kommen hinten dran",
@@ -2582,5 +2587,12 @@
       "added": "Hinzugefügt."
     },
     "link": "Absender, Arten und Tags aufräumen: Ordnung"
+  },
+  "manifest": {
+    "description": "Eine leichte Ablage für die Papiere von Haushalten und kleinen Firmen.",
+    "upload": "Hochladen",
+    "uploadShort": "Hochladen",
+    "camera": "Fotografieren",
+    "cameraShort": "Kamera"
   }
 }
