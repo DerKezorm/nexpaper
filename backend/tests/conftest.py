@@ -40,7 +40,7 @@ from app.services import (  # noqa: E402
     brakes,
     jobs,
     notices,
-    oidc,
+    oidc_store,
     passkeys,
     push,
     settings_service,
@@ -48,6 +48,11 @@ from app.services import (  # noqa: E402
     totp,
     updates,
 )
+from app.vendor.nexoidc import attempt as nexoidc_attempt  # noqa: E402
+from app.vendor.nexoidc import protocol as nexoidc_protocol  # noqa: E402
+
+# The stand-in sign-in provider of the shared contract tests, for nexpaper's own tests around it (``oidc_helpers``).
+from .oidc_helpers import provider  # noqa: E402, F401
 
 DATA_DIR = _DATA
 TAB = {"X-Nexpaper-Client": "tab-tests000"}
@@ -74,7 +79,10 @@ def clean_db(schema: None) -> Iterator[None]:
     # a test leaves behind: every test starts with no documents on the disk and no cached pictures of them.
     for folder in (storage.FOLDER, "cache", "uploads"):
         shutil.rmtree(os.path.join(_DATA, folder), ignore_errors=True)
-    oidc.clear_cache()
+    # The shared sign-in module: configured as at start-up, nothing remembered from a test before.
+    oidc_store.configure()
+    nexoidc_protocol.clear_caches()
+    nexoidc_attempt.forget_used_states()
     brake.forget()
     brakes.forget()
     totp.forget()

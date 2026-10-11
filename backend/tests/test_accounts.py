@@ -157,7 +157,7 @@ def test_password_sign_in_off_keeps_the_operator_in(client: TestClient) -> None:
     assert refused.status_code == 403 and refused.json()["detail"]["code"] == "password_login_off"
     assert client.post("/api/v1/auth/login", json={"name": "boss", "password": PASSWORD}).status_code == 200
     # No passkeys offered: no public address is set, and the test server is not called "localhost".
-    assert client.get("/api/v1/auth/methods").json() == {"password": False, "oidc": False, "oidc_name": "", "passkeys": False, "forgot": False}
+    assert client.get("/api/v1/auth/methods").json() == {"password": False, "providers": [], "passkeys": False, "forgot": False}
 
 
 def test_changing_the_password_ends_the_other_sessions(client: TestClient) -> None:

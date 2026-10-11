@@ -21,13 +21,22 @@ A request that carries `Authorization: Bearer` is judged by that token alone; th
 token never falls back to it. A changing request with a token needs no `X-Nexpaper-Client`: a page on another site can
 set neither header.
 
+### Sign-in providers (a browser)
+
+Sign-in through an OpenID Connect provider is a browser's way, under `/api/v1/oidc`, the same in every nex app:
+`GET /providers` (the buttons of the sign-in page, open), `GET /<short name>/start[?invite=…][&next=<page>]` and
+`GET /<short name>/callback` (`/callback` for the entry `oidc`, the address of 1.0.1). After the provider the browser holds
+the session cookie, or lands on `/login?step=code` when the code of nexpaper's own second factor is due; a page given as
+`next` (the authorization page of an app being paired) comes back after either. Linking, unlinking and the operator's
+list (`/me`, `/<short name>/link`, `/me/address`, `/admin/…`, `/authentik/…`) answer `403 browser_only` to a token.
+
 ### Devices
 
 Made in the web app (**My account, Devices and apps**, or `POST /api/v1/devices` from a signed-in browser):
 
 - The token is shown once; nexpaper keeps only a checksum. It acts with the rights of its account.
 - Only a signed-in browser may pair, list or revoke devices, make API keys, change the password, the second factor or
-  the passkeys, change or take away the mail address, or undo the link to the provider: these routes answer `403
+  the passkeys, change or take away the mail address, or link or unlink a sign-in provider: these routes answer `403
   browser_only` to a token. The same goes for **every route of the operator** (settings, accounts, invitations, links to
   set a new password, backups, the log, the mail and push setup): the operator's side is the browser's, even for the
   operator's own token, so a lost phone is no way into the server. The second factor was met when the device was paired.

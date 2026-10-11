@@ -107,9 +107,11 @@ def session_expiry(remember: bool, stage: str, now: datetime) -> datetime:
 
 
 def start_session(
-    db: Session, account: Account, ip: str, user_agent: str, *, remember: bool = True, stage: str = STAGE_FULL
+    db: Session, account: Account, ip: str, user_agent: str, *, remember: bool = True, stage: str = STAGE_FULL,
+    second_factor_by_provider: bool = False,
 ) -> str:
-    """Creates a browser session and returns the token for the cookie."""
+    """Creates a browser session and returns the token for the cookie. ``second_factor_by_provider``: it came in
+    through a provider whose entry checks the second factor itself (``AuthSession.second_factor_by_provider``)."""
     token = new_token()
     now = clock.now()
     db.add(
@@ -123,6 +125,7 @@ def start_session(
             user_agent=user_agent[:255],
             remember=remember,
             stage=stage,
+            second_factor_by_provider=second_factor_by_provider,
         )
     )
     if stage == STAGE_FULL:

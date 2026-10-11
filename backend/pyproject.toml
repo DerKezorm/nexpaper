@@ -1,6 +1,9 @@
 [tool.ruff]
 target-version = "py313"
 line-length = 120
+# The shared sign-in module and its contract tests are checked where they come from (bauplaene/oidc) and copied
+# unchanged; a finding there is fixed there, never here.
+extend-exclude = ["app/vendor/nexoidc", "tests/nexoidc"]
 
 [tool.ruff.lint]
 extend-select = ["E501", "E402", "S608", "B", "I"]

@@ -179,6 +179,25 @@
         "title": "AddIn",
         "type": "object"
       },
+      "AddressIn": {
+        "properties": {
+          "confirm": {
+            "default": false,
+            "title": "Confirm",
+            "type": "boolean"
+          },
+          "public_url": {
+            "maxLength": 600,
+            "title": "Public Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "public_url"
+        ],
+        "title": "AddressIn",
+        "type": "object"
+      },
       "AiSettingsIn": {
         "additionalProperties": false,
         "properties": {
@@ -399,28 +418,6 @@
           "redirect_uri"
         ],
         "title": "AskedOut",
-        "type": "object"
-      },
-      "AuthentikSetupIn": {
-        "properties": {
-          "token": {
-            "maxLength": 2000,
-            "minLength": 1,
-            "title": "Token",
-            "type": "string"
-          },
-          "url": {
-            "maxLength": 500,
-            "minLength": 1,
-            "title": "Url",
-            "type": "string"
-          }
-        },
-        "required": [
-          "url",
-          "token"
-        ],
-        "title": "AuthentikSetupIn",
         "type": "object"
       },
       "AuthorizeIn": {
@@ -644,45 +641,6 @@
           "op"
         ],
         "title": "ConditionIn",
-        "type": "object"
-      },
-      "ConfigIn": {
-        "properties": {
-          "auto_create": {
-            "default": false,
-            "title": "Auto Create",
-            "type": "boolean"
-          },
-          "client_id": {
-            "maxLength": 255,
-            "minLength": 1,
-            "title": "Client Id",
-            "type": "string"
-          },
-          "client_secret": {
-            "default": "",
-            "maxLength": 500,
-            "title": "Client Secret",
-            "type": "string"
-          },
-          "issuer": {
-            "maxLength": 500,
-            "minLength": 1,
-            "title": "Issuer",
-            "type": "string"
-          },
-          "provider_name": {
-            "default": "",
-            "maxLength": 64,
-            "title": "Provider Name",
-            "type": "string"
-          }
-        },
-        "required": [
-          "issuer",
-          "client_id"
-        ],
-        "title": "ConfigIn",
         "type": "object"
       },
       "CreateIn": {
@@ -3453,20 +3411,6 @@
         "title": "LinkOut",
         "type": "object"
       },
-      "LinkStartIn": {
-        "properties": {
-          "password": {
-            "maxLength": 200,
-            "title": "Password",
-            "type": "string"
-          }
-        },
-        "required": [
-          "password"
-        ],
-        "title": "LinkStartIn",
-        "type": "object"
-      },
       "LocaleEntry": {
         "properties": {
           "code": {
@@ -4565,6 +4509,23 @@
         "title": "OrderEntry",
         "type": "object"
       },
+      "OrderIn": {
+        "properties": {
+          "ids": {
+            "items": {
+              "type": "integer"
+            },
+            "maxItems": 200,
+            "title": "Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "ids"
+        ],
+        "title": "OrderIn",
+        "type": "object"
+      },
       "OrderPage": {
         "properties": {
           "items": {
@@ -5209,18 +5170,6 @@
         "title": "PasswordChangeIn",
         "type": "object"
       },
-      "PasswordIn": {
-        "properties": {
-          "password": {
-            "default": "",
-            "maxLength": 200,
-            "title": "Password",
-            "type": "string"
-          }
-        },
-        "title": "PasswordIn",
-        "type": "object"
-      },
       "PermissionsIn": {
         "additionalProperties": false,
         "properties": {
@@ -5297,6 +5246,65 @@
           "display_name"
         ],
         "title": "ProfileIn",
+        "type": "object"
+      },
+      "ProviderIn": {
+        "properties": {
+          "auto_create": {
+            "default": false,
+            "title": "Auto Create",
+            "type": "boolean"
+          },
+          "client_id": {
+            "maxLength": 300,
+            "title": "Client Id",
+            "type": "string"
+          },
+          "client_secret": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Client Secret",
+            "type": "string"
+          },
+          "enabled": {
+            "default": true,
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "issuer": {
+            "maxLength": 600,
+            "title": "Issuer",
+            "type": "string"
+          },
+          "label": {
+            "maxLength": 200,
+            "title": "Label",
+            "type": "string"
+          },
+          "scopes": {
+            "default": "openid profile email",
+            "maxLength": 500,
+            "title": "Scopes",
+            "type": "string"
+          },
+          "slug": {
+            "default": "",
+            "maxLength": 100,
+            "title": "Slug",
+            "type": "string"
+          },
+          "trusts_second_factor": {
+            "default": true,
+            "title": "Trusts Second Factor",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "label",
+          "issuer",
+          "client_id"
+        ],
+        "title": "ProviderIn",
         "type": "object"
       },
       "PublicExport": {
@@ -6073,6 +6081,11 @@
             ],
             "title": "Cache Max Mb"
           },
+          "confirm_address": {
+            "default": false,
+            "title": "Confirm Address",
+            "type": "boolean"
+          },
           "current_password": {
             "default": "",
             "maxLength": 200,
@@ -6106,17 +6119,6 @@
               }
             ],
             "title": "Links Allowed"
-          },
-          "oidc_second_factor_by_provider": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Oidc Second Factor By Provider"
           },
           "password_login": {
             "anyOf": [
@@ -6375,10 +6377,6 @@
             "title": "Links Allowed",
             "type": "boolean"
           },
-          "oidc_second_factor_by_provider": {
-            "title": "Oidc Second Factor By Provider",
-            "type": "boolean"
-          },
           "password_login": {
             "title": "Password Login",
             "type": "boolean"
@@ -6456,7 +6454,6 @@
           "public_url",
           "password_login",
           "two_factor_required",
-          "oidc_second_factor_by_provider",
           "backup_schedule",
           "backup_keep",
           "smtp_host",
@@ -6480,38 +6477,6 @@
           "prerender_max_pages"
         ],
         "title": "SettingsOut",
-        "type": "object"
-      },
-      "SetupIn": {
-        "properties": {
-          "code": {
-            "default": "",
-            "maxLength": 200,
-            "title": "Code",
-            "type": "string"
-          },
-          "language": {
-            "default": "",
-            "maxLength": 16,
-            "title": "Language",
-            "type": "string"
-          },
-          "name": {
-            "maxLength": 64,
-            "title": "Name",
-            "type": "string"
-          },
-          "password": {
-            "maxLength": 200,
-            "title": "Password",
-            "type": "string"
-          }
-        },
-        "required": [
-          "name",
-          "password"
-        ],
-        "title": "SetupIn",
         "type": "object"
       },
       "ShareIn": {
@@ -6829,6 +6794,21 @@
           "document"
         ],
         "title": "StartOut",
+        "type": "object"
+      },
+      "TakeAddressIn": {
+        "properties": {
+          "slug": {
+            "maxLength": 40,
+            "minLength": 1,
+            "title": "Slug",
+            "type": "string"
+          }
+        },
+        "required": [
+          "slug"
+        ],
+        "title": "TakeAddressIn",
         "type": "object"
       },
       "TestMailIn": {
@@ -7431,6 +7411,50 @@
         "title": "VersionOut",
         "type": "object"
       },
+      "app__routers__auth__SetupIn": {
+        "properties": {
+          "code": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Code",
+            "type": "string"
+          },
+          "language": {
+            "default": "",
+            "maxLength": 16,
+            "title": "Language",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 64,
+            "title": "Name",
+            "type": "string"
+          },
+          "password": {
+            "maxLength": 200,
+            "title": "Password",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "password"
+        ],
+        "title": "SetupIn",
+        "type": "object"
+      },
+      "app__routers__backups__PasswordIn": {
+        "properties": {
+          "password": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Password",
+            "type": "string"
+          }
+        },
+        "title": "PasswordIn",
+        "type": "object"
+      },
       "app__routers__catalog__MergeIn": {
         "properties": {
           "into": {
@@ -7491,6 +7515,53 @@
         "title": "PairedOut",
         "type": "object"
       },
+      "app__routers__oidc__PasswordIn": {
+        "properties": {
+          "password": {
+            "maxLength": 200,
+            "title": "Password",
+            "type": "string"
+          }
+        },
+        "required": [
+          "password"
+        ],
+        "title": "PasswordIn",
+        "type": "object"
+      },
+      "app__routers__oidc__SetupIn": {
+        "properties": {
+          "confirm_issuer_change": {
+            "default": false,
+            "title": "Confirm Issuer Change",
+            "type": "boolean"
+          },
+          "public_url": {
+            "default": "",
+            "maxLength": 600,
+            "title": "Public Url",
+            "type": "string"
+          },
+          "token": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Token",
+            "type": "string"
+          },
+          "url": {
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "url",
+          "token"
+        ],
+        "title": "SetupIn",
+        "type": "object"
+      },
       "app__routers__pagetools__MergeIn": {
         "additionalProperties": false,
         "properties": {
@@ -7537,6 +7608,18 @@
           "account"
         ],
         "title": "PairedOut",
+        "type": "object"
+      },
+      "app__routers__passkeys__PasswordIn": {
+        "properties": {
+          "password": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Password",
+            "type": "string"
+          }
+        },
+        "title": "PasswordIn",
         "type": "object"
       },
       "app__routers__push__ConfirmIn": {
@@ -7617,6 +7700,18 @@
           "code"
         ],
         "title": "ConfirmIn",
+        "type": "object"
+      },
+      "app__routers__totp__PasswordIn": {
+        "properties": {
+          "password": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Password",
+            "type": "string"
+          }
+        },
+        "title": "PasswordIn",
         "type": "object"
       }
     },
@@ -8959,7 +9054,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/PasswordIn"
+                "$ref": "#/components/schemas/app__routers__passkeys__PasswordIn"
               }
             }
           },
@@ -9253,7 +9348,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/PasswordIn"
+                "$ref": "#/components/schemas/app__routers__totp__PasswordIn"
               }
             }
           },
@@ -9301,7 +9396,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/PasswordIn"
+                "$ref": "#/components/schemas/app__routers__totp__PasswordIn"
               }
             }
           },
@@ -9518,7 +9613,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/PasswordIn"
+                "$ref": "#/components/schemas/app__routers__backups__PasswordIn"
               }
             }
           },
@@ -9680,7 +9775,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/PasswordIn"
+                "$ref": "#/components/schemas/app__routers__backups__PasswordIn"
               }
             }
           },
@@ -15151,6 +15246,476 @@
         ]
       }
     },
+    "/api/v1/oidc/admin/accounts/{account_id}/links/{provider_id}": {
+      "delete": {
+        "operationId": "operator_unlink_api_v1_oidc_admin_accounts__account_id__links__provider_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "account_id",
+            "required": true,
+            "schema": {
+              "maximum": 2147483647,
+              "minimum": 1,
+              "title": "Account Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "provider_id",
+            "required": true,
+            "schema": {
+              "maximum": 2147483647,
+              "minimum": 1,
+              "title": "Provider Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OperatorConfirmIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Operator: unlink an account from a provider (with the own password)",
+        "tags": [
+          "oidc"
+        ]
+      }
+    },
+    "/api/v1/oidc/admin/links": {
+      "get": {
+        "operationId": "admin_links_api_v1_oidc_admin_links_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "additionalProperties": true,
+                    "type": "object"
+                  },
+                  "title": "Response Admin Links Api V1 Oidc Admin Links Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Which account is linked to which provider (the marks in the account list)",
+        "tags": [
+          "oidc"
+        ]
+      }
+    },
+    "/api/v1/oidc/admin/providers": {
+      "get": {
+        "operationId": "admin_providers_api_v1_oidc_admin_providers_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "additionalProperties": true,
+                    "type": "object"
+                  },
+                  "title": "Response Admin Providers Api V1 Oidc Admin Providers Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "The provider list for the operator (never a secret)",
+        "tags": [
+          "oidc"
+        ]
+      },
+      "post": {
+        "operationId": "add_provider_api_v1_oidc_admin_providers_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProviderIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Add Provider Api V1 Oidc Admin Providers Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Add a provider; the issuer is checked by discovery",
+        "tags": [
+          "oidc"
+        ]
+      }
+    },
+    "/api/v1/oidc/admin/providers/order": {
+      "put": {
+        "operationId": "order_providers_api_v1_oidc_admin_providers_order_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrderIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "additionalProperties": {
+                      "type": "string"
+                    },
+                    "type": "object"
+                  },
+                  "title": "Response Order Providers Api V1 Oidc Admin Providers Order Put",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Put the providers in this order (the drag handle)",
+        "tags": [
+          "oidc"
+        ]
+      }
+    },
+    "/api/v1/oidc/admin/providers/{provider_id}": {
+      "delete": {
+        "operationId": "remove_provider_api_v1_oidc_admin_providers__provider_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "provider_id",
+            "required": true,
+            "schema": {
+              "maximum": 2147483647,
+              "minimum": 1,
+              "title": "Provider Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Remove Provider Api V1 Oidc Admin Providers  Provider Id  Delete",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Remove a provider with its links",
+        "tags": [
+          "oidc"
+        ]
+      },
+      "put": {
+        "operationId": "save_provider_api_v1_oidc_admin_providers__provider_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "provider_id",
+            "required": true,
+            "schema": {
+              "maximum": 2147483647,
+              "minimum": 1,
+              "title": "Provider Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProviderIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Save Provider Api V1 Oidc Admin Providers  Provider Id  Put",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Save a provider; another issuer drops its links",
+        "tags": [
+          "oidc"
+        ]
+      }
+    },
+    "/api/v1/oidc/admin/providers/{provider_id}/impact": {
+      "get": {
+        "operationId": "provider_impact_api_v1_oidc_admin_providers__provider_id__impact_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "provider_id",
+            "required": true,
+            "schema": {
+              "maximum": 2147483647,
+              "minimum": 1,
+              "title": "Provider Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "issuer",
+            "required": false,
+            "schema": {
+              "default": "",
+              "maxLength": 600,
+              "title": "Issuer",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Provider Impact Api V1 Oidc Admin Providers  Provider Id  Impact Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Who loses a link when the issuer changes or it goes",
+        "tags": [
+          "oidc"
+        ]
+      }
+    },
+    "/api/v1/oidc/authentik/address": {
+      "get": {
+        "operationId": "authentik_address_api_v1_oidc_authentik_address_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Authentik Address Api V1 Oidc Authentik Address Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "What the authentik card shows about the public address",
+        "tags": [
+          "oidc"
+        ]
+      },
+      "post": {
+        "operationId": "authentik_save_address_api_v1_oidc_authentik_address_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddressIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Authentik Save Address Api V1 Oidc Authentik Address Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Use the address as nexpaper's public address, without setting up",
+        "tags": [
+          "oidc"
+        ]
+      }
+    },
     "/api/v1/oidc/authentik/blueprint": {
       "get": {
         "operationId": "authentik_blueprint_api_v1_oidc_authentik_blueprint_get",
@@ -15182,7 +15747,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/AuthentikSetupIn"
+                "$ref": "#/components/schemas/app__routers__oidc__SetupIn"
               }
             }
           },
@@ -15225,70 +15790,143 @@
     },
     "/api/v1/oidc/callback": {
       "get": {
-        "operationId": "callback_api_v1_oidc_callback_get",
+        "operationId": "legacy_callback_api_v1_oidc_callback_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "The return from the provider of the entry oidc (the address of 1.0.1)",
+        "tags": [
+          "oidc"
+        ]
+      }
+    },
+    "/api/v1/oidc/me": {
+      "get": {
+        "operationId": "my_providers_api_v1_oidc_me_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "additionalProperties": true,
+                    "type": "object"
+                  },
+                  "title": "Response My Providers Api V1 Oidc Me Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "The active providers and whether the own account is linked to each",
+        "tags": [
+          "oidc"
+        ]
+      }
+    },
+    "/api/v1/oidc/me/address": {
+      "post": {
+        "description": "Offered on the account page when the provider knows the account by another address (Bauplan 01). It is the\naccount's address from then on, but not confirmed: the mail intake counts it only once the person opened the link\nnexpaper sends (a provider's word is not the person's). It goes again with the last link.",
+        "operationId": "take_provider_address_api_v1_oidc_me_address_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TakeAddressIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Take Provider Address Api V1 Oidc Me Address Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Take the address the provider knows as the own one (unconfirmed)",
+        "tags": [
+          "oidc"
+        ]
+      }
+    },
+    "/api/v1/oidc/providers": {
+      "get": {
+        "operationId": "public_providers_api_v1_oidc_providers_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "additionalProperties": {
+                      "type": "string"
+                    },
+                    "type": "object"
+                  },
+                  "title": "Response Public Providers Api V1 Oidc Providers Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "The active sign-in providers: slug and label (no sign-in needed)",
+        "tags": [
+          "oidc"
+        ]
+      }
+    },
+    "/api/v1/oidc/{slug}/callback": {
+      "get": {
+        "operationId": "callback_api_v1_oidc__slug__callback_get",
         "parameters": [
           {
-            "in": "query",
-            "name": "code",
-            "required": false,
+            "in": "path",
+            "name": "slug",
+            "required": true,
             "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Code"
-            }
-          },
-          {
-            "in": "query",
-            "name": "state",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "State"
-            }
-          },
-          {
-            "in": "query",
-            "name": "error",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Error"
-            }
-          },
-          {
-            "in": "query",
-            "name": "error_description",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Error Description"
+              "maxLength": 40,
+              "title": "Slug",
+              "type": "string"
             }
           }
         ],
@@ -15318,73 +15956,23 @@
         ]
       }
     },
-    "/api/v1/oidc/config": {
+    "/api/v1/oidc/{slug}/link": {
       "delete": {
-        "operationId": "delete_config_api_v1_oidc_config_delete",
+        "operationId": "unlink_api_v1_oidc__slug__link_delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "maxLength": 40,
+              "title": "Slug",
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "204": {
-            "description": "Successful Response"
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "summary": "Remove the OIDC configuration",
-        "tags": [
-          "oidc"
-        ]
-      },
-      "get": {
-        "operationId": "read_config_api_v1_oidc_config_get",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "additionalProperties": true,
-                  "title": "Response Read Config Api V1 Oidc Config Get",
-                  "type": "object"
-                }
-              }
-            },
-            "description": "Successful Response"
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "summary": "The OIDC configuration (never the secret)",
-        "tags": [
-          "oidc"
-        ]
-      },
-      "put": {
-        "operationId": "write_config_api_v1_oidc_config_put",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ConfigIn"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "additionalProperties": true,
-                  "title": "Response Write Config Api V1 Oidc Config Put",
-                  "type": "object"
-                }
-              }
-            },
             "description": "Successful Response"
           },
           "422": {
@@ -15403,40 +15991,31 @@
             "HTTPBearer": []
           }
         ],
-        "summary": "Set the OIDC provider; the issuer is checked once",
+        "summary": "Unlink the own account from a provider",
         "tags": [
           "oidc"
         ]
-      }
-    },
-    "/api/v1/oidc/link": {
-      "delete": {
-        "operationId": "unlink_api_v1_oidc_link_delete",
-        "responses": {
-          "204": {
-            "description": "Successful Response"
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "summary": "Forget the link between the own account and the provider",
-        "tags": [
-          "oidc"
-        ]
-      }
-    },
-    "/api/v1/oidc/link/start": {
+      },
       "post": {
         "description": "Linking hands the account to whoever the browser is at the provider, so it asks for the password: a page\nelsewhere cannot start it (the tab header), and neither can somebody at an unattended browser.",
-        "operationId": "start_link_api_v1_oidc_link_start_post",
+        "operationId": "link_start_api_v1_oidc__slug__link_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "maxLength": 40,
+              "title": "Slug",
+              "type": "string"
+            }
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/LinkStartIn"
+                "$ref": "#/components/schemas/app__routers__oidc__PasswordIn"
               }
             }
           },
@@ -15447,8 +16026,10 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": true,
-                  "title": "Response Start Link Api V1 Oidc Link Start Post",
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Link Start Api V1 Oidc  Slug  Link Post",
                   "type": "object"
                 }
               }
@@ -15471,16 +16052,26 @@
             "HTTPBearer": []
           }
         ],
-        "summary": "Start linking the own account to the provider; needs the password",
+        "summary": "Start linking the own account to a provider; needs the password",
         "tags": [
           "oidc"
         ]
       }
     },
-    "/api/v1/oidc/start": {
+    "/api/v1/oidc/{slug}/start": {
       "get": {
-        "operationId": "start_api_v1_oidc_start_get",
+        "operationId": "start_api_v1_oidc__slug__start_get",
         "parameters": [
+          {
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "maxLength": 40,
+              "title": "Slug",
+              "type": "string"
+            }
+          },
           {
             "in": "query",
             "name": "invite",
@@ -15507,7 +16098,6 @@
             "schema": {
               "anyOf": [
                 {
-                  "maxLength": 2000,
                   "type": "string"
                 },
                 {
@@ -15540,29 +16130,6 @@
           }
         },
         "summary": "Send the browser to the provider (no sign-in needed)",
-        "tags": [
-          "oidc"
-        ]
-      }
-    },
-    "/api/v1/oidc/state": {
-      "get": {
-        "operationId": "state_api_v1_oidc_state_get",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "additionalProperties": true,
-                  "title": "Response State Api V1 Oidc State Get",
-                  "type": "object"
-                }
-              }
-            },
-            "description": "Successful Response"
-          }
-        },
-        "summary": "Is OIDC sign-in available? (no sign-in needed)",
         "tags": [
           "oidc"
         ]
@@ -18076,7 +18643,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/SetupIn"
+                "$ref": "#/components/schemas/app__routers__auth__SetupIn"
               }
             }
           },

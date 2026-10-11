@@ -6,6 +6,10 @@
 1. raise ``SCHEMA_VERSION`` in ``app/db.py`` and write the step in ``MIGRATIONS``,
 2. record the new schema: ``NEXPAPER_RECORD_SCHEMA=1 python -m pytest tests/test_schema.py``,
 3. ``test_every_older_schema_is_brought_up_to_the_current_one`` then runs the step against the old record.
+
+A change the released version before must still open (new tables, a new column with a default) may go into
+``db.ADDITIONS`` instead, without a new version: then the record of the current version is made anew, and
+``tests/schema/released/`` keeps what the released version made (1.0.1 for the sign-in providers of 1.1.0).
 """
 
 from __future__ import annotations
@@ -243,3 +247,44 @@ def test_switching_to_wal_waits_for_a_start_that_holds_the_database(tmp_path: Pa
         release.join()
         waiting.close()
         holder.close()
+
+
+# --- Additions without a new version (``db.ADDITIONS``) ---------------------------------------------------------------
+
+RELEASED = RECORDS / "released"
+
+
+def test_a_database_of_1_0_1_gets_the_additions_and_keeps_its_version_so_1_0_1_still_opens_it(scratch: Path) -> None:
+    """1.1.0 adds the tables of the sign-in providers and a column with a default, without raising the version: 1.0.1
+    refuses a database of a higher version, and the way back to it must stay open for one version."""
+    with closing(sqlite3.connect(scratch)) as connection:
+        connection.executescript((RELEASED / "1.0.1.sql").read_text(encoding="utf-8"))
+        connection.execute("PRAGMA user_version = 10")
+        connection.commit()
+    database.init_db()
+    assert version_of(scratch) == 10 == database.SCHEMA_VERSION
+    current = fresh_schema_sql()
+    with sqlite3.connect(":memory:") as connection:
+        connection.executescript(current)
+        wanted = schema_of(connection)
+    with closing(sqlite3.connect(scratch)) as connection:
+        assert schema_of(connection) == wanted
+        # What 1.0.1 writes, naming only its own columns, still goes in.
+        connection.execute(
+            "INSERT INTO users (id, name, display_name, whats_new_seen, role, sign_in, password_hash, email, oidc_subject, "
+            "language, created_at, failed_logins, totp_secret_enc, totp_recovery, totp_last_step) VALUES (1, 'anna', '', "
+            "'', 'member', 'password', '', '', '', '', '2026-10-11 08:00:00', 0, '', '', 0)")
+        connection.execute(
+            "INSERT INTO auth_sessions (token_hash, account_id, created_at, expires_at, last_seen_at, ip, user_agent) "
+            "VALUES ('h', 1, '2026-10-11 08:00:00', '2026-10-12 08:00:00', '2026-10-11 08:00:00', '', '')")
+        connection.commit()
+        assert connection.execute("SELECT second_factor_by_provider FROM auth_sessions").fetchone() == (0,)
+    # A second start changes nothing and makes no backup.
+    database.init_db()
+    assert version_of(scratch) == 10 and made == []
+
+
+def test_the_released_record_is_what_1_0_1_made() -> None:
+    """The record of 1.0.1 is the schema of version 10 before the additions: without the sign-in tables."""
+    text = (RELEASED / "1.0.1.sql").read_text(encoding="utf-8")
+    assert "CREATE TABLE users" in text and "oidc_providers" not in text and "second_factor_by_provider" not in text

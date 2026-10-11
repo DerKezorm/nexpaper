@@ -1,7 +1,8 @@
 """The operator's settings: address, sign-in, API keys, invitation mail, backups; "Ready for the internet?".
 
 Secrets (the mail password) are written encrypted and never read back: the answer only says whether one is set.
-The OIDC settings live in ``routers/oidc.py``.
+The sign-in providers live in ``routers/oidc.py``; the public address saved here asks first when the redirect address
+of a provider changes with it (``authentik.public_url_guard``, the same question as the authentik card).
 """
 
 from __future__ import annotations
@@ -31,7 +32,6 @@ class SettingsOut(BaseModel):
     public_url: str
     password_login: bool
     two_factor_required: bool
-    oidc_second_factor_by_provider: bool
     backup_schedule: str
     backup_keep: int
     smtp_host: str
@@ -63,7 +63,9 @@ class SettingsIn(BaseModel):
     public_url: str | None = Field(default=None, max_length=255)
     password_login: bool | None = None
     two_factor_required: bool | None = None
-    oidc_second_factor_by_provider: bool | None = None
+    #: The operator confirmed that the redirect address at the sign-in providers changes with the public address
+    #: (``oidc.admin.addressChangeConfirm``); without it such a change answers 409 ``public_url_change``.
+    confirm_address: bool = False
     #: The operator's password once more: asked when a change makes signing in weaker.
     current_password: str = Field(default="", max_length=200)
     backup_schedule: Literal["off", "daily", "weekly"] | None = None
@@ -104,7 +106,6 @@ def _view(db: DbSession) -> SettingsOut:
         public_url=values["public_url"],
         password_login=values["password_login"],
         two_factor_required=bool(values["two_factor_required"]),
-        oidc_second_factor_by_provider=bool(values["oidc_second_factor_by_provider"]),
         backup_schedule=values["backup_schedule"],
         backup_keep=values["backup_keep"],
         smtp_host=values["smtp_host"],
@@ -127,7 +128,7 @@ def read(_operator: OperatorAccount, db: DbSession) -> SettingsOut:
 
 
 #: Changes that make signing in weaker: each asks for the operator's password once more.
-WEAKER = {"two_factor_required": False, "oidc_second_factor_by_provider": True}
+WEAKER = {"two_factor_required": False}
 
 
 @router.put("", response_model=SettingsOut)
@@ -139,13 +140,15 @@ def save(payload: SettingsIn, request: Request, operator: OperatorAccount, db: D
         confirm_operator(request, db, operator, payload.current_password)
     changes: dict[str, Any] = {}
     for key, value in sent.items():
-        if value is None or key == "current_password":
+        if value is None or key in ("current_password", "confirm_address"):
             continue
         if key == "public_url":
             try:
                 value = settings_service.normalize_public_url(value)
             except ValueError as exc:
                 raise error("invalid_url", "Give an address like https://paper.example.com.", 422) from exc
+            if value != settings_service.public_url(db):
+                _ask_before_the_address(db, request, value, confirm=payload.confirm_address)
         elif key == "smtp_from":
             value = value.strip()
             if value and not accounts.EMAIL_PATTERN.match(value):
@@ -155,11 +158,9 @@ def save(payload: SettingsIn, request: Request, operator: OperatorAccount, db: D
         ):
             # Else the operator would be the first one sent to set it up, with nothing else in reach.
             raise error("own_second_factor_first", "Set up your own second factor first.", 409)
-        elif key == "password_login" and not value:
-            current = settings_service.get_all(db)
-            if not (current["oidc_issuer"] and current["oidc_client_id"]):
-                # Without a provider nobody but the operator could sign in any more, and invitations would fail.
-                raise error("provider_first", "Set up a sign-in provider first.", 409)
+        elif key == "password_login" and not value and not _an_active_provider(db):
+            # Without a provider nobody but the operator could sign in any more, and invitations would fail.
+            raise error("provider_first", "Set up a sign-in provider first.", 409)
         elif key == "process_memory_mb" and 0 < value < limits.MEMORY_FLOOR:
             raise error("invalid_input", f"Use 0 (no limit) or at least {limits.MEMORY_FLOOR}.", 422, fields=[key])
         elif key == "smtp_password":
@@ -171,6 +172,28 @@ def save(payload: SettingsIn, request: Request, operator: OperatorAccount, db: D
     settings_service.save(db, changes)
     logger.info("Settings changed keys=%s by=%s", ",".join(sorted(changes)), operator.name)
     return _view(db)
+
+
+def _an_active_provider(db: DbSession) -> bool:
+    from ..services.oidc_store import SqlStore
+    from ..vendor.nexoidc import providers
+
+    return bool(providers.public_list(SqlStore(db)))
+
+
+def _ask_before_the_address(db: DbSession, request: Request, value: str, *, confirm: bool) -> None:
+    """The public address is part of every provider's redirect address: saving another one (or none, which falls back
+    to the request's) asks first while the authentik button registered the old one or a provider entered by hand is on
+    (Bauplan 04, card 1). 409 ``public_url_change`` with the question, nothing saved."""
+    from ..services.oidc_store import SqlStore
+    from ..vendor.nexoidc import authentik
+
+    try:
+        question = authentik.public_url_guard(SqlStore(db), value, str(request.base_url), confirm=confirm)
+    except ValueError as exc:
+        raise error("invalid_url", "Give an address like https://paper.example.com.", 422) from exc
+    if question is not None:
+        raise error("public_url_change", "The redirect address at the sign-in providers changes.", 409, **question)
 
 
 class QueueOut(BaseModel):

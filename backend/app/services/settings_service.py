@@ -17,24 +17,33 @@ DEFAULTS: dict[str, Any] = {
     #: off | daily | weekly. Daily in the night unless the operator decides otherwise.
     "backup_schedule": "daily",
     "backup_keep": 7,
-    #: The address people use to reach nexpaper: invitation links, the OIDC redirect. Empty means
-    #: ``NEXPAPER_PUBLIC_URL``, and without that the request's own.
+    #: The address people use to reach nexpaper: invitation links, the redirect address of the sign-in providers.
+    #: Empty means ``NEXPAPER_PUBLIC_URL``, and without that the request's own.
     "public_url": "",
     #: Members may sign in with a password. The operator always may: the emergency exit when OIDC fails.
     "password_login": True,
     #: Every account needs a second factor (a code from an app or a passkey), on from the start: right after the
     #: password, an account without one sets it up before it gets anywhere. Turning it off asks for the password.
     "two_factor_required": True,
-    #: The operator declares that the OIDC provider checks a second factor itself: then an account that comes through
-    #: the provider is not asked for nexpaper's. Off from the start.
+    #: The single provider of 1.0.1, kept for the way back for one version (``services/oidc_store.py``): read once by
+    #: the migration to the provider list, then written from the entry ``oidc`` after every change, so that 1.0.1
+    #: started on this database finds what the list holds. ``oidc_second_factor_by_provider`` was 1.0.1's switch "the
+    #: provider checks a second factor" (off from the start); the entry ``oidc`` took it over as "The provider checks
+    #: the second factor itself".
     "oidc_second_factor_by_provider": False,
-    #: OIDC: issuer, client id and the encrypted client secret; empty means not set up.
     "oidc_issuer": "",
     "oidc_client_id": "",
     "oidc_client_secret_enc": "",
     "oidc_provider_name": "",
-    #: Whether an unknown identity from the provider gets an account. Off: only invited or linked accounts.
     "oidc_auto_create": False,
+    #: The migration to the provider list ran (an operator who removes every entry later does not get the old one back).
+    "oidc_list_migrated": False,
+    #: What the old settings and ``users.oidc_subject`` said when the way back was last written (a fingerprint).
+    "oidc_legacy_fingerprint": "",
+    #: The issuer 1.0.1 knows, as it wrote it, or "-" (closed for good): the module's anchor of the way back.
+    "oidc_legacy_anchor": "",
+    #: What the way back last wrote into ``oidc_second_factor_by_provider``: a switch 1.0.1 changed since is taken over.
+    "oidc_legacy_second_factor": None,
     #: Keys for programs such as a dashboard card (``/api/v1``): closed until the operator opens it.
     "api_keys_allowed": False,
     #: Ask GitHub once a day whether a newer nexpaper is out (services/updates). Only the question goes out, so on.
@@ -160,7 +169,8 @@ def get_all(db: Session) -> dict[str, Any]:
     return values
 
 
-def save(db: Session, changes: dict[str, Any]) -> None:
+def save(db: Session, changes: dict[str, Any], *, commit: bool = True) -> None:
+    """Writes the settings; ``commit=False`` leaves them in the transaction of the caller."""
     for key, value in changes.items():
         if key not in DEFAULTS:
             raise KeyError(key)
@@ -169,7 +179,10 @@ def save(db: Session, changes: dict[str, Any]) -> None:
             db.add(Setting(key=key, value=value))
         else:
             row.value = value
-    db.commit()
+    if commit:
+        db.commit()
+    else:
+        db.flush()
 
 
 def normalize_public_url(value: str) -> str:

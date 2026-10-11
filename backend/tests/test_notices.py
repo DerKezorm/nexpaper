@@ -21,7 +21,7 @@ from app.services import mailer, notices, settings_service
 
 from .conftest import PASSWORD, make_account
 from .fake_push import FakePushService
-from .test_oidc import FakeProvider, configure, fresh_browser, provider, sign_in_via_oidc  # noqa: F401 - fixture
+from .oidc_helpers import FakeProvider, configure, fresh_browser, sign_in_via_oidc
 
 FIREFOX = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:131.0) Gecko/20100101 Firefox/131.0"
 SAFARI = ("Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) "
@@ -191,9 +191,9 @@ def test_the_network_never_the_address(anna: Account) -> None:
     assert notices.device_name("", "de") == "Ein Browser unter einem unbekannten System"
 
 
-def test_a_sign_in_through_the_provider_is_told_too(client: TestClient, operator: Account, provider: FakeProvider,  # noqa: F811
+def test_a_sign_in_through_the_provider_is_told_too(client: TestClient, operator: Account, provider: FakeProvider,
                                                     push_service: FakePushService) -> None:
-    configure(client)
+    configure(client, provider)
     first = fresh_browser(client)
     assert sign_in_via_oidc(first, provider).status_code == 303
     assert first.post("/api/v1/push/devices", json=push_service.device().subscription()).status_code == 201
@@ -201,8 +201,8 @@ def test_a_sign_in_through_the_provider_is_told_too(client: TestClient, operator
     assert sign_in_via_oidc(again, provider).status_code == 303
     notices.settle()
     assert len(push_service.received) == 1, "a second browser through the provider is new"
-    # The first browser again, through the provider: it carries its device cookie to the return from the provider.
-    assert first.cookies.get(DEVICE_COOKIE, path="/api/v1/oidc/callback")
+    # The first browser again, through the provider: it carries its device cookie to every return from a provider.
+    assert first.cookies.get(DEVICE_COOKIE, path="/api/v1/oidc")
     assert sign_in_via_oidc(first, provider).status_code == 303
     notices.settle()
     assert len(push_service.received) == 1
@@ -212,7 +212,11 @@ def test_the_device_cookie_goes_to_the_two_sign_ins_only(anna: Account) -> None:
     with browser() as phone:
         answer = phone.post("/api/v1/auth/login", json={"name": "anna", "password": PASSWORD})
     lines = [line.lower() for line in answer.headers.get_list("set-cookie") if line.startswith(DEVICE_COOKIE + "=")]
-    assert sorted(line.split("path=")[1].split(";")[0] for line in lines) == ["/api/v1/auth", "/api/v1/oidc/callback"]
+    paths = sorted(line.split("path=")[1].split(";")[0] for line in lines if "max-age=0" not in line)
+    assert paths == ["/api/v1/auth", "/api/v1/oidc"]
+    # The one of 1.0.1, only at its single callback, goes: ``/api/v1/oidc`` holds it for every provider now.
+    gone = [line.split("path=")[1].split(";")[0] for line in lines if "max-age=0" in line]
+    assert gone == ["/api/v1/oidc/callback"]
     assert all("httponly" in line and "samesite=lax" in line for line in lines)
 
 

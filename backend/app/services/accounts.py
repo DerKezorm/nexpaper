@@ -1,4 +1,5 @@
-"""Accounts: the first is the operator, the others come by invitation or through OIDC.
+"""Accounts: the first is the operator, the others come by invitation or through a sign-in provider
+(``services/oidc_store.py``).
 
 An invitation is a link with an end date, made by the operator: whoever follows it makes an account.
 
@@ -21,7 +22,7 @@ from sqlalchemy.orm import Session
 
 from .. import __version__, clock
 from ..config import get_settings
-from ..models import MEMBER, OPERATOR, ROLES, SIGN_IN_OIDC, SIGN_IN_PASSWORD, Account, Invite, utcnow
+from ..models import MEMBER, OPERATOR, ROLES, SIGN_IN_PASSWORD, Account, Invite, utcnow
 from ..security import LOCK_MINUTES, MAX_FAILURES, hash_password, hash_token, verify_password
 
 logger = logging.getLogger("nexpaper.auth")
@@ -109,30 +110,6 @@ def create_operator(db: Session, name: str, password: str, code: str) -> Account
         if not secrets.compare_digest(code.strip().upper().encode(), setup_code().upper().encode()):
             raise AccountError("setup_code_wrong", "The setup code is wrong. It is in the server's log.", 403)
         return create_with_password(db, name, password, OPERATOR)
-
-
-def create_oidc(db: Session, name: str, subject: str, email: str) -> Account:
-    base = re.sub(r"[^a-z0-9._-]", "-", name.strip().lower()).strip("-._") or "user"
-    candidate = base[:60]
-    suffix = 1
-    while by_name(db, candidate) is not None or not NAME_PATTERN.match(candidate):
-        suffix += 1
-        candidate = f"{base[:57]}-{suffix}"
-    account = Account(
-        name=candidate,
-        role=MEMBER,
-        sign_in=SIGN_IN_OIDC,
-        oidc_subject=subject,
-        email=email,
-        # The provider vouches for its address.
-        email_confirmed_at=utcnow() if email else None,
-        email_from_provider=bool(email),
-        whats_new_seen=__version__,
-    )
-    db.add(account)
-    db.commit()
-    logger.info("Account created name=%s role=%s sign_in=oidc", account.name, MEMBER)
-    return account
 
 
 @lru_cache(maxsize=1)

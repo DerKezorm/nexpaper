@@ -21,7 +21,7 @@ from . import __version__, private
 from .config import get_settings
 from .db import SessionLocal, init_db
 from .errors import detail
-from .middleware import GuardMiddleware, RequestContextMiddleware, unhandled_error
+from .middleware import ForwardedProtoMiddleware, GuardMiddleware, RequestContextMiddleware, unhandled_error
 from .routers import (
     about,
     ai,
@@ -74,6 +74,7 @@ from .services import (
     logs,
     mounts,
     notices,
+    oidc_store,
     pictures,
     settings_service,
     storage,
@@ -83,6 +84,7 @@ from .services import intake as intake_service
 from .services import pairing as pairing_service
 from .services import passkeys as passkeys_service
 from .services import uploads as uploads_service
+from .vendor import nexoidc
 
 logger = logging.getLogger("nexpaper")
 
@@ -140,6 +142,11 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     mounts.warn_at_start(get_settings().data_dir, get_settings().database_path)
     with SessionLocal() as db:
         catalog.ensure_kinds(db)
+    # The sign-in providers: the single provider of 1.0.1 becomes the entry ``oidc`` once (a backup first), every
+    # start takes over what 1.0.1 changed on the way back and writes the way back again (``services/oidc_store.py``).
+    oidc_store.migrate_settings()
+    # The TLS context of the sign-in module, read once in a thread now: the first sign-in does not wait for it.
+    await nexoidc.warm()
     # Nothing is being written yet: what a broken-off write left under a temporary name goes now, and an upload that was
     # being finished when the server stopped receives again.
     storage.sweep_incoming()
@@ -193,6 +200,8 @@ app = FastAPI(
 # Added last, runs first: the request id and headers wrap everything, the guard sits inside it.
 app.add_middleware(GuardMiddleware)
 app.add_middleware(RequestContextMiddleware)
+# Outermost: the scheme a trusted proxy reports is the request's for everything inside (``request.base_url``).
+app.add_middleware(ForwardedProtoMiddleware)
 
 
 def _bad_date_field(exc: RequestValidationError) -> str | None:
@@ -322,3 +331,5 @@ def _mount_frontend(target: FastAPI, dist: Path) -> None:
 
 
 _mount_frontend(app, get_settings().frontend_dist)
+# The shared sign-in module learns who it runs in, before the first request.
+oidc_store.configure()

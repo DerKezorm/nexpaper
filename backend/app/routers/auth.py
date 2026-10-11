@@ -68,6 +68,7 @@ from ..services import (
     locales,
     mailer,
     notices,
+    oidc_store,
     resets,
     settings_service,
     timezones,
@@ -140,8 +141,11 @@ def secure_cookie(request: Request) -> bool:
         return True
     if mode == "off":
         return False
-    forwarded = request.headers.get("x-forwarded-proto", "")
-    return request.url.scheme == "https" or forwarded.split(",")[0].strip() == "https"
+    # The scheme of a trusted proxy is the request's already (``middleware.ForwardedProtoMiddleware``). Any other
+    # proxy's word only ever makes the cookie stricter, as before: its rightmost value, which that proxy wrote.
+    lines = request.headers.getlist("x-forwarded-proto")
+    forwarded = lines[-1] if lines else ""
+    return request.url.scheme == "https" or forwarded.split(",")[-1].strip().lower() == "https"
 
 
 #: How long the browser keeps the cookie of a session that stays: as long as browsers allow (400 days). The server
@@ -220,7 +224,8 @@ def account_view(account: AccountRow) -> dict[str, Any]:
         # A new address waiting for its link; the one in "email" stays until it is opened.
         "email_pending": pending,
         "language": account.language,
-        "oidc_linked": bool(account.oidc_subject),
+        # Linked to at least one sign-in provider (which ones: ``GET /api/v1/oidc/me``).
+        "oidc_linked": _has_links(account.id),
         # A second factor of any kind: a code from an app (``totp``) or a passkey.
         "two_factor": on,
         "totp": bool(account.totp_secret_enc),
@@ -235,8 +240,18 @@ def account_view(account: AccountRow) -> dict[str, Any]:
     }
 
 
-#: Where the device cookie goes: the sign-in with a password and the return from the provider, nowhere else.
-DEVICE_PATHS = ("/api/v1/oidc/callback", "/api/v1/auth")
+def _has_links(account_id: int) -> bool:
+    from ..models import OidcLink
+
+    with SessionLocal() as db:
+        return db.scalar(select(OidcLink.id).where(OidcLink.account_id == account_id).limit(1)) is not None
+
+
+#: Where the device cookie goes: the sign-in with a password and every return from a provider (all of them lie below
+#: ``/api/v1/oidc``: ``/callback`` of the entry ``oidc``, ``/<slug>/callback`` of the others), nowhere else.
+DEVICE_PATHS = ("/api/v1/oidc", "/api/v1/auth")
+#: Where 1.0.1 put it for its single provider: it goes when a sign-in renews the cookie (``/api/v1/oidc`` holds it now).
+OLD_DEVICE_PATHS = ("/api/v1/oidc/callback",)
 
 
 def remember_device(request: Request, response: Response, account: AccountRow) -> bool:
@@ -245,19 +260,27 @@ def remember_device(request: Request, response: Response, account: AccountRow) -
     current = request.cookies.get(DEVICE_COOKIE)
     known = account.id in devices_of(current)
     token = device_token(account.id, current)
+    for path in OLD_DEVICE_PATHS:
+        response.delete_cookie(DEVICE_COOKIE, path=path, httponly=True, samesite="lax", secure=secure_cookie(request))
     for path in DEVICE_PATHS:
         response.set_cookie(DEVICE_COOKIE, token, max_age=DEVICE_DAYS * 86400, httponly=True, samesite="lax",
                             secure=secure_cookie(request), path=path)
     return known
 
 
-def start(db: DbSession, request: Request, response: Response, account: AccountRow, *, remember: bool = True) -> str:
+def start(
+    db: DbSession, request: Request, response: Response, account: AccountRow, *, remember: bool = True,
+    by_provider: bool = False,
+) -> str:
     """The session of a sign-in that went through, by any way; gives its stage.
 
     An account that must set up a second factor first gets a session that may do only that, for a quarter of an hour,
     and nothing else happens yet. A full session brings the cookies and, when this browser is new for the account, the
-    notice to the other devices (``services/notices.py``)."""
+    notice to the other devices (``services/notices.py``). ``by_provider``: it came in through a provider whose entry
+    checks the second factor itself; "require a second factor" does not send this session to set one up (Bauplan 01),
+    and the session keeps that mark."""
     agent = request.headers.get("user-agent", "")
+    account.second_factor_by_provider = by_provider
     if totp.setup_required(db, account):
         token = start_session(db, account, client_ip(request), agent, remember=remember, stage=STAGE_SETUP)
         _set_cookie(response, request, token, False)
@@ -265,7 +288,8 @@ def start(db: DbSession, request: Request, response: Response, account: AccountR
     first = not account.signed_in_before
     account.signed_in_before = True
     known = remember_device(request, response, account)
-    token = start_session(db, account, client_ip(request), agent, remember=remember)
+    token = start_session(db, account, client_ip(request), agent, remember=remember,
+                          second_factor_by_provider=by_provider)
     _set_cookie(response, request, token, remember)
     notices.new_sign_in(account, client_ip(request), agent, first=first, known=known)
     return STAGE_FULL
@@ -320,13 +344,14 @@ def setup(payload: SetupIn, request: Request, response: Response, db: DbSession)
 @router.get("/auth/methods", summary="How one can sign in here (no sign-in needed)")
 def methods(request: Request, db: DbSession) -> dict[str, Any]:
     from ..services import passkeys
+    from ..vendor.nexoidc import providers
 
     values = settings_service.get_all(db)
-    oidc = bool(values["oidc_issuer"] and values["oidc_client_id"])
     return {
         "password": bool(values["password_login"]),
-        "oidc": oidc,
-        "oidc_name": values["oidc_provider_name"] if oidc else "",
+        # A button per active sign-in provider, in the operator's order: slug and label, nothing else (the same as
+        # ``GET /api/v1/oidc/providers``).
+        "providers": providers.public_list(oidc_store.SqlStore(db)),
         # Passkeys work under the public https address, or on localhost.
         "passkeys": passkeys.available(db, request.url.hostname),
         # "Forgot your password?" where a mail goes out and the link has a public address to point to.
@@ -434,6 +459,10 @@ def me(request: Request, account: Account, db: DbSession) -> dict[str, Any]:
         "second_factor_setup_required": stage != STAGE_FULL or totp.setup_required(db, account),
         "second_factor_required": bool(settings_service.get(db, "two_factor_required"))
         and not totp.provider_checks(db, account),
+        # This session came in through a provider that checks the second factor, and the account (with a password)
+        # has none of its own: its device tokens and API keys wait until it sets one up (they have no provider behind
+        # them). Making one stays possible; the page says so beside them.
+        "keys_wait_for_second_factor": bool(account.second_factor_by_provider) and totp.keys_wait(db, account),
     }
 
 
@@ -719,8 +748,10 @@ def delete_account(
         db, account_id, choice=payload.documents, target_user=payload.target_user_id,
         target_vault=payload.target_vault_id, by=operator.id, account_name=name,
     )
-    # The database takes what hangs on the account with it (ON DELETE CASCADE): sessions, passkeys, keys, devices.
+    # The database takes what hangs on the account with it (ON DELETE CASCADE): sessions, passkeys, keys, devices, its
+    # links to sign-in providers. The way back to 1.0.1 follows in the same commit (its subject leaves the old column).
     db.delete(row)
+    oidc_store.way_back_changed(db)
     db.commit()
     totp.forget_account(account_id)
     logger.warning("Account deleted name=%s by=%s documents=%s choice=%s", name, operator.name, held,

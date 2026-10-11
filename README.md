@@ -112,6 +112,43 @@ with care and at least this:
 Optionally keep the operator's settings at home: `NEXPAPER_OPERATOR_NETWORKS: "192.168.0.0/16"` refuses them from
 anywhere else (behind a proxy only together with `NEXPAPER_TRUSTED_PROXIES`).
 
+## Sign-in with a provider
+
+Besides the password, people can sign in through any provider that speaks OpenID Connect: authentik, Microsoft Entra ID,
+Keycloak, Authelia, Pocket ID. Settings, Sign-in has three cards: the sign-in itself (password sign-in, the public
+address, the second factor), the list of **sign-in providers** (each gets a button on the sign-in page, in the order of
+the list), and **authentik in one step**.
+
+- **authentik in one step**: give the address of authentik and an API token that may create applications; nexpaper sets
+  up provider and application there and enters them here. The token is used for that run only and never stored. Who
+  would rather not hand out a token downloads the blueprint instead and enters client ID and secret by hand.
+- **By hand**: "Add a provider" asks for the name on the button, a short name (part of the redirect address
+  `https://paper.example.com/api/v1/oidc/<short name>/callback`, fixed once made), the issuer, client ID and secret.
+  For Microsoft Entra ID the issuer is `https://login.microsoftonline.com/<tenant>/v2.0`, or `common` or
+  `organizations` for several tenants.
+- **Who comes in**: an identity is known by its provider and its subject only, never by its mail address. An account
+  links itself on its own page (Security, with its password); new people come in by invitation, or, where the operator
+  switches "New people get an account" on for a provider, as members. Everybody gets a vault of their own.
+- **Addresses from a provider** are shown and can be taken, but they are never confirmed by that alone: a mail to the
+  intake counts only for an address the person confirmed by the link nexpaper sends.
+- **The second factor**: "The provider checks the second factor itself" is on for a new provider. Off, whoever has a
+  second factor in nexpaper is asked for its code after the provider. Device tokens and API keys of an account with a
+  password and no second factor of its own wait until it sets one up, also when it signs in through a provider that
+  checks one.
+- **Password sign-in** can go off once a provider is active; the operator can always sign in with the password.
+
+**Behind a reverse proxy** the redirect address is the public address (set it in Settings, Sign-in, or the authentik
+card offers the address the browser uses). For the authentik card and the `Secure` flag to see `https`, name the proxy in
+`NEXPAPER_TRUSTED_PROXIES`: nexpaper then believes its `X-Forwarded-For` and its `X-Forwarded-Proto` (the last value the
+proxy wrote), and nobody else's.
+
+**Coming from 1.0.1**: the one provider of 1.0.1 becomes the entry `oidc` with every account linked as before, after a
+backup, and keeps its redirect address `/api/v1/oidc/callback`, so nothing changes at the provider. Whether it checks
+the second factor comes from 1.0.1's switch. Going back to 1.0.1 works for this version: 1.0.1 finds its settings as the
+entry `oidc` stands while the entry is on and checks the second factor itself (its switch on), otherwise without a
+client, so that 1.0.1 never lets anybody in with less than the entry asks. What 1.0.1 changes there is taken over at the
+next start of the newer version.
+
 ## Where things are stored
 
 Everything lives in `/data`:
@@ -119,7 +156,7 @@ Everything lives in `/data`:
 | Where | What |
 |---|---|
 | `nexpaper.db` | The SQLite database: accounts, settings, the filing, the recognised text and the search index. |
-| `secret.key` | The server's own secret (the OIDC secret, the mail password, the AI key and the like). |
+| `secret.key` | The server's own secret (the secrets of the sign-in providers, the mail password, the AI key and the like). |
 | `backups/`, `logs/`, `locales/` | Backups, the log, extra languages as JSON files. |
 | `dokumente/` | The documents themselves, as readable files: `<vault>/<year>/<sender>/<date> <title>.pdf`, the original as it came, beside it the searchable copy and the older versions. Readable without nexpaper. |
 | `cache/`, `uploads/`, `exports/` | Pictures of pages (trimmed to a size you set), uploads in progress, ZIPs for the tax adviser. |
@@ -174,8 +211,8 @@ needs doing by hand. The way back is under Settings, Backups.
 | `NEXPAPER_DATA_DIR` | `/data` | Database, logs, backups, secrets and the languages |
 | `NEXPAPER_LOCALES_DIR` | `<data>/locales` | Extra languages, one JSON file each |
 | `NEXPAPER_SECRET_KEY` | made on first start | Protects server-side secrets; when set, it wins over `secret.key` |
-| `NEXPAPER_PUBLIC_URL` | from the request | The address people use, for invitation links and the OIDC redirect. The setting in the interface wins |
-| `NEXPAPER_TRUSTED_PROXIES` | none | Addresses or networks of reverse proxies whose `X-Forwarded-For` is believed, comma separated |
+| `NEXPAPER_PUBLIC_URL` | from the request | The address people use, for invitation links and the redirect address of the sign-in providers. The setting in the interface wins |
+| `NEXPAPER_TRUSTED_PROXIES` | none | Addresses or networks of reverse proxies whose `X-Forwarded-For` and `X-Forwarded-Proto` are believed, comma separated |
 | `NEXPAPER_SETUP_TOKEN` | made at start | The code the first account needs |
 | `NEXPAPER_OPERATOR_NETWORKS` | none | Networks the operator's settings may be changed from, comma separated |
 | `NEXPAPER_SESSION_DAYS` | `30` | A session of "stay signed in on this device" ends after this many days without use |
@@ -320,6 +357,12 @@ cd frontend && npm ci && npm run dev && npm test && npm run lint && npm run buil
 On Linux the virtual environment's programs are in `.venv/bin`. The frontend on port 5571 sends `/api` to the backend.
 The tests need no network and keep their data in a folder of their own. When the interface changes on purpose, renew the
 recorded description: `NEXPAPER_RECORD_OPENAPI=1 python -m pytest tests/test_routes.py`.
+
+The sign-in through a provider end to end, headless, with a stand-in provider on its own port:
+`cd frontend && npx playwright install chromium && npm run e2e` (builds the interface, starts the backend on 18566 and
+the stand-in on 18567, both with a fresh data folder). The sign-in module in `backend/app/vendor/nexoidc`,
+`frontend/src/vendor/nexoidc` and `backend/tests/nexoidc` is shared by every nex app and checked against its checksums;
+it is changed at its source only.
 
 ## License
 

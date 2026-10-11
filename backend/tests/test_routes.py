@@ -45,8 +45,11 @@ OPEN = {
     ("POST", "/api/v1/auth/passkey"),
     ("POST", "/api/v1/auth/logout"),
     ("POST", "/api/v1/auth/forgot"),
-    ("GET", "/api/v1/oidc/state"),
-    ("GET", "/api/v1/oidc/start"),
+    # Sign-in through a provider: the buttons, off to the provider, and back (the second return belongs to the entry
+    # ``oidc``, the address of 1.0.1).
+    ("GET", "/api/v1/oidc/providers"),
+    ("GET", "/api/v1/oidc/{slug}/start"),
+    ("GET", "/api/v1/oidc/{slug}/callback"),
     ("GET", "/api/v1/oidc/callback"),
     ("GET", "/api/v1/invite/{token}"),
     ("POST", "/api/v1/invite/{token}"),

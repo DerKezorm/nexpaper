@@ -253,14 +253,21 @@ def test_the_token_and_the_address_stay_out_of_the_log(client: TestClient, opera
     assert token not in caplog.text and "private.name@example.com" not in caplog.text
 
 
-def test_a_provider_account_comes_with_a_confirmed_address(client: TestClient, operator: Account) -> None:
-    from app.services import accounts
+def test_a_provider_account_comes_with_an_address_its_owner_still_has_to_confirm(
+    client: TestClient, operator: Account
+) -> None:
+    """A provider may send any address (authentik lets everybody change their own): it is the account's, but the mail
+    intake counts it only once the person confirmed it by the link (``services/oidc_store.take_address``)."""
+    from app.services.oidc_store import SqlStore
 
     with SessionLocal() as db:
-        made = accounts.create_oidc(db, "sam", "subject-1", "sam@example.com")
-        assert made.email == "sam@example.com" and made.email_confirmed_at is not None
-        bare = accounts.create_oidc(db, "kim", "subject-2", "")
-        assert bare.email_confirmed_at is None
+        store = SqlStore(db)
+        made = db.get(Account, store.create_account("sam", invite=None, email="sam@example.com"))
+        bare = db.get(Account, store.create_account("kim", invite=None, email=""))
+        db.commit()
+        assert made is not None and bare is not None
+        assert made.email == "sam@example.com" and made.email_from_provider and made.email_confirmed_at is None
+        assert bare.email == "" and bare.email_confirmed_at is None
 
 
 # --- One link, one writer ----------------------------------------------------------------------------------------------

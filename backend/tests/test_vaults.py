@@ -39,10 +39,11 @@ def test_every_account_has_exactly_one_vault_of_its_own_whichever_way_it_was_mad
         joined = stranger.post(f"/api/v1/invite/{token}", json={"name": "guest", "password": PASSWORD})
         assert joined.status_code in (200, 201), joined.text
     # Through the provider.
-    from app.services import accounts
+    from app.services.oidc_store import SqlStore
 
     with SessionLocal() as db:
-        accounts.create_oidc(db, "Provider Person", "subject-1", "p@example.com")
+        SqlStore(db).create_account("provider-person", invite=None, email="p@example.com")
+        db.commit()
     # Straight into the database (as the tests of other parts do).
     direct = make_account("direct")
     with SessionLocal() as db:

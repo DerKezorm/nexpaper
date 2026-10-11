@@ -91,6 +91,11 @@ def _is_trusted_proxy(text: str) -> bool:
     return address is not None and any(address in network for network in networks)
 
 
+def is_trusted_proxy(text: str) -> bool:
+    """Whether a peer is one of the proxies in ``NEXPAPER_TRUSTED_PROXIES`` (none from the start)."""
+    return _is_trusted_proxy(text)
+
+
 _warned_unknown_proxy = False
 
 
@@ -192,6 +197,8 @@ def require_account(
         if found is None:
             raise error("sign_in_required", "Sign in first.", 401)
         session, account = found
+        # A session through a provider that checks the second factor is not sent to set one up (``totp``).
+        account.second_factor_by_provider = bool(session.second_factor_by_provider)
         path = request.url.path
         if session.stage == STAGE_SETUP:
             if totp.has_second_factor(db, account):

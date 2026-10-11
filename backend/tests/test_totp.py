@@ -387,9 +387,12 @@ def test_required_mode_lets_an_account_without_a_second_factor_only_enrol(
     assert anna.get("/api/v1/api-keys").status_code == 200
 
 
-def test_accounts_from_a_provider_set_one_up_unless_the_operator_says_the_provider_checks(
+def test_an_account_through_a_provider_only_is_not_sent_to_set_one_up_but_may_enrol_its_own(
     client: TestClient, operator: Account, clock: Clock
 ) -> None:
+    """Bauplan 01 (decided 10.10.2026): "require a second factor" sends only password accounts to set one up. An account
+    through a provider only (no password here) is not forced; its own second factor, if it makes one, is asked after a
+    provider whose entry does not check it (``tests/test_oidc_app.py``)."""
     with SessionLocal() as db:
         row = Account(name="idp-user", role="member", sign_in=SIGN_IN_OIDC, oidc_subject="sub-1", email="u@example.com")
         db.add(row)
@@ -399,15 +402,11 @@ def test_accounts_from_a_provider_set_one_up_unless_the_operator_says_the_provid
     other.cookies.set(SESSION_COOKIE, token)
     enrol(client)
     assert client.put("/api/v1/settings", json={"two_factor_required": True}).status_code == 200
-    # Required: an account from the provider needs nexpaper's own second factor as well.
-    blocked = other.get("/api/v1/api-keys")
-    assert blocked.status_code == 403 and blocked.json()["detail"]["code"] == "second_factor_setup_required"
-    # Unless the operator declares that the provider checks one: that weakens sign-in and needs the password.
-    without = client.put("/api/v1/settings", json={"oidc_second_factor_by_provider": True})
-    assert without.status_code == 401 and without.json()["detail"]["code"] == "wrong_password"
-    declared = client.put("/api/v1/settings", json={"oidc_second_factor_by_provider": True, "current_password": PASSWORD})
-    assert declared.status_code == 200 and declared.json()["oidc_second_factor_by_provider"] is True
     assert other.get("/api/v1/api-keys").status_code == 200
+    me = other.get("/api/v1/auth/me").json()
+    assert me["second_factor_setup_required"] is False and me["second_factor_required"] is False
+    # The switch of 1.0.1 is no setting any more: the entry of each provider says it (``oidc_store``).
+    assert "oidc_second_factor_by_provider" not in client.get("/api/v1/settings").json()
     # Such an account may still enrol one of its own, without a password: right after signing in through the provider.
     begun = other.post("/api/v1/auth/totp/begin")
     assert begun.status_code == 200

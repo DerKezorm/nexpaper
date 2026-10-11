@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import secrets
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, ClassVar
 
 from sqlalchemy import (
     JSON,
@@ -93,8 +93,11 @@ class Account(Base):
     email: Mapped[str] = mapped_column(String(255), default="")
     #: When the address was confirmed by a link sent to it (or came from the provider); empty: one the operator typed.
     email_confirmed_at: Mapped[datetime | None] = mapped_column(UtcDateTime, nullable=True)
-    #: The address came from the provider that vouched for it (and goes with the link to it, see ``DELETE /oidc/link``).
+    #: The address came from a sign-in provider (``services/oidc_store.py``): it goes with the last link, and it is
+    #: never confirmed by that alone (the mail intake counts only an address the person confirmed by a link).
     email_from_provider: Mapped[bool] = mapped_column(Boolean, default=False, server_default=text("0"))
+    #: The subject of the single provider before the list (1.0.1). Read once by the migration, then only written for
+    #: the way back (``services/oidc_store.py``); it goes one version later.
     oidc_subject: Mapped[str] = mapped_column(String(255), default="")
     #: The interface language; empty: the browser's.
     language: Mapped[str] = mapped_column(String(16), default="")
@@ -122,6 +125,9 @@ class Account(Base):
     #: What the operator allows this person (on from the start; the operator takes single accounts out): the AI
     #: (``services/ai.py``). It comes on top of the operator's switch for the whole server and the person's own switch.
     ai_allowed: Mapped[bool] = mapped_column(Boolean, default=True, server_default=text("1"))
+    #: Not a column: whether the session that asks came in through a provider that checks the second factor itself
+    #: (``AuthSession.second_factor_by_provider``), set by ``deps.require_account`` for ``totp.setup_required``.
+    second_factor_by_provider: ClassVar[bool] = False
 
 
 #: What a session may do (``deps.require_account``): everything; only set up the second factor right after signing in;
@@ -156,6 +162,65 @@ class AuthSession(Base):
     uid: Mapped[str] = mapped_column(String(32), default=_session_uid, server_default=text("''"))
     remember: Mapped[bool] = mapped_column(Boolean, default=True, server_default=text("1"))
     stage: Mapped[str] = mapped_column(String(8), default=STAGE_FULL, server_default=text("'full'"))
+    #: The session came in through a provider whose entry checks the second factor itself: "require a second factor"
+    #: does not send it to set one up (Bauplan 01); the same account signing in with its password still is.
+    second_factor_by_provider: Mapped[bool] = mapped_column(Boolean, default=False, server_default=text("0"))
+
+
+class OidcProvider(Base):
+    """A sign-in provider (OpenID Connect), one row each, the columns as the shared blueprint names them (Bauplan 01).
+    Read and written only through ``services/oidc_store.py`` for the shared module ``vendor/nexoidc``.
+
+    Not part of a numbered schema step: an addition (``db.ADDITIONS``) that 1.0.1 opens without knowing it, so that
+    the way back to 1.0.1 stays open for one version."""
+
+    __tablename__ = "oidc_providers"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    #: Part of the callback address ``/api/v1/oidc/<slug>/callback``; fixed once made.
+    slug: Mapped[str] = mapped_column(String(40), unique=True)
+    #: The name on the sign-in button.
+    label: Mapped[str] = mapped_column(String(64))
+    #: Stored without blanks and without a slash at the end.
+    issuer: Mapped[str] = mapped_column(String(500))
+    client_id: Mapped[str] = mapped_column(String(255))
+    #: Encrypted with the server secret under the context ``oidc-provider:<id>``; empty for a public client.
+    client_secret_enc: Mapped[str] = mapped_column(Text, default="")
+    scopes: Mapped[str] = mapped_column(String(500), default="openid profile email")
+    enabled: Mapped[bool] = mapped_column(Boolean, default=True)
+    #: "New people get an account": off from the start.
+    auto_create: Mapped[bool] = mapped_column(Boolean, default=False)
+    #: "The provider checks the second factor itself": on from the start (the migrated entry keeps 1.0.1's switch).
+    trusts_second_factor: Mapped[bool] = mapped_column(Boolean, default=True)
+    #: "" by hand, "authentik" made by the authentik button.
+    managed: Mapped[str] = mapped_column(String(20), default="")
+    position: Mapped[int] = mapped_column(Integer, default=0)
+    #: A callback path the provider knew before (only a migration sets it); "" is the standard one.
+    redirect_path: Mapped[str] = mapped_column(String(300), default="")
+    #: The redirect address the authentik button last registered at authentik for this entry, "" for none.
+    registered_redirect: Mapped[str] = mapped_column(String(500), default="", server_default=text("''"))
+    created_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utcnow)
+
+
+class OidcLink(Base):
+    """One identity at one provider, bound to one account. Found only by ``(provider_id, subject)``, never by an
+    address: ``email`` is for display."""
+
+    __tablename__ = "oidc_links"
+    __table_args__ = (
+        UniqueConstraint("provider_id", "subject"),
+        UniqueConstraint("provider_id", "account_id"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    provider_id: Mapped[int] = mapped_column(ForeignKey("oidc_providers.id", ondelete="CASCADE"), index=True)
+    subject: Mapped[str] = mapped_column(String(255))
+    account_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    #: The ``iss`` of the token that made the link (with Entra ``common`` the real tenant).
+    issuer: Mapped[str] = mapped_column(String(500))
+    email: Mapped[str | None] = mapped_column(String(320), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utcnow)
+    last_used_at: Mapped[datetime | None] = mapped_column(UtcDateTime, nullable=True)
 
 
 class Passkey(Base):

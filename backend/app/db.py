@@ -10,6 +10,12 @@ There is no Alembic. The database carries the version of its schema in SQLite's 
 
 Whoever changes a table in ``models.py`` raises ``SCHEMA_VERSION``, writes the step, and records the new schema in
 ``tests/schema/`` (``test_schema.py`` says how).
+
+One exception, ``ADDITIONS``: new tables and new columns with a default that the released version before opens without
+knowing them. They are made at every start when missing and do not raise the version, so that version can still start
+on this database (it refuses one of a higher version): the way back for one version (1.1.0, the sign-in providers, back
+to 1.0.1). Then the schema of the current version is recorded anew, and ``tests/schema/released/`` keeps what the
+released version made.
 """
 
 from __future__ import annotations
@@ -301,6 +307,28 @@ MIGRATIONS: dict[int, Callable[[Connection], None]] = {
     10: _step_files,
 }
 
+def _has_column(connection: Connection, table: str, column: str) -> bool:
+    return any(row[1] == column for row in connection.exec_driver_sql(f'PRAGMA table_info("{table}")'))
+
+
+def _additions_signin(connection: Connection) -> None:
+    """1.1.0, the sign-in providers of the shared module (``services/oidc_store.py``): the list and the links as tables
+    of their own, and the mark on a session that came in through a provider that checks the second factor. 1.0.1 reads
+    neither and keeps working on the old settings and ``users.oidc_subject``, which the way back writes."""
+    from .models import OidcLink, OidcProvider
+
+    Base.metadata.create_all(connection, tables=[OidcProvider.__table__, OidcLink.__table__])  # type: ignore[list-item]
+    if not _has_column(connection, "auth_sessions", "second_factor_by_provider"):
+        # With a default: 1.0.1 inserts sessions without naming the column.
+        connection.exec_driver_sql(
+            "ALTER TABLE auth_sessions ADD COLUMN second_factor_by_provider BOOLEAN DEFAULT 0 NOT NULL"
+        )
+
+
+#: Made at every start when missing, without a new version (see the top of this file). Each is idempotent.
+ADDITIONS: list[Callable[[Connection], None]] = [_additions_signin]
+
+
 # No pool with an upper bound: with the default pool the sixteenth concurrent request would block the event
 # loop waiting for a connection. Opening a SQLite connection costs a fraction of a millisecond.
 engine = create_engine(
@@ -441,6 +469,10 @@ def _init(schema: Engine, *, backup: bool = True) -> None:
                 step(connection)
                 _set_version(connection, target)
             logger.info("Database migrated schema=%s", target)
+    for addition in ADDITIONS:
+        # Under the write lock, like a step; idempotent, so another process that did it first changes nothing here.
+        with schema.begin() as connection:
+            addition(connection)
 
 
 class NotOurs(RuntimeError):

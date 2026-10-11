@@ -273,6 +273,7 @@ def later(monkeypatch: pytest.MonkeyPatch) -> Callable[[float], None]:
 
 def test_the_second_factor_is_required_from_the_start() -> None:
     assert settings_service.DEFAULTS["two_factor_required"] is True
+    # 1.0.1's switch, kept for the way back: off from the start, as 1.0.1 had it.
     assert settings_service.DEFAULTS["oidc_second_factor_by_provider"] is False
 
 

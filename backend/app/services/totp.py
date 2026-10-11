@@ -182,19 +182,37 @@ def has_second_factor(db: Session, account: Account) -> bool:
     return bool(account.totp_secret_enc) or passkey_count(db, account.id) > 0
 
 
-def provider_checks(db: Session, account: Account) -> bool:
-    """The account signs in through the provider only, and the operator declared that the provider checks a second
-    factor: nexpaper does not ask for its own."""
-    return account.sign_in == SIGN_IN_OIDC and bool(settings_service.get(db, "oidc_second_factor_by_provider"))
+def provider_only(account: Account) -> bool:
+    """The account signs in through a provider only: it has no password here."""
+    return account.sign_in == SIGN_IN_OIDC and not account.password_hash
+
+
+def provider_checks(_db: Session, account: Account) -> bool:
+    """"Require a second factor" does not reach this account here (Bauplan 01, "Zweiter Faktor"): it signs in through a
+    provider only (the provider's way in is the only one; its own second factor, if it has one, is still asked after a
+    provider that does not check it), or the session that asks came in through a provider whose entry checks the
+    second factor itself (``second_factor_by_provider``). The same account with its password is asked as before."""
+    return provider_only(account) or bool(getattr(account, "second_factor_by_provider", False))
 
 
 def setup_required(db: Session, account: Account) -> bool:
     """The operator requires a second factor (the default), and this account has none yet. Such an account sets it up
-    before it reaches anything else. An account from OIDC is asked as well, unless the operator declared that the
-    provider checks one."""
+    before it reaches anything else; not an account through a provider only, nor a session through a provider that
+    checks one (``provider_checks``)."""
     return (
         bool(settings_service.get(db, "two_factor_required"))
         and not provider_checks(db, account)
+        and not has_second_factor(db, account)
+    )
+
+
+def keys_wait(db: Session, account: Account) -> bool:
+    """A device token or an API key of this account waits: the operator requires a second factor, the account has a
+    password and none of its own. A key has no provider behind it, so a session through a provider that checks the
+    second factor does not free it."""
+    return (
+        bool(settings_service.get(db, "two_factor_required"))
+        and not provider_only(account)
         and not has_second_factor(db, account)
     )
 

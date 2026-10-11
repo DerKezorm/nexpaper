@@ -46,11 +46,12 @@ services:
 
       TZ: Europe/Berlin
 
-      # The address people use to reach nexpaper, for invitation links and the OIDC redirect. Can also be set in the
-      # interface.
+      # The address people use to reach nexpaper, for invitation links and the redirect address of the sign-in
+      # providers. Can also be set in the interface.
       # NEXPAPER_PUBLIC_URL: https://paper.example.com
 
-      # Behind a reverse proxy: its address, so that the brake against password guessing sees the real sender.
+      # Behind a reverse proxy: its address, so that the brake against password guessing sees the real sender and the
+      # scheme the proxy reports (X-Forwarded-Proto) counts.
       # NEXPAPER_TRUSTED_PROXIES: 172.16.0.0/12
 
       # The code the first account needs. Without it nexpaper makes one at every start until it is set up and
