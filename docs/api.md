@@ -83,6 +83,45 @@ A wrong token counts against the sender like a wrong password.
 
 With an API key: who the key speaks for: `name`, `display_name`, `scope` and the nexpaper `version`.
 
+### `GET /api/v1/dashboard`
+
+With an API key of scope `read`: the numbers for a dashboard card, counted among what the key's account may read (its
+vaults and what was shared with it), the trash left out. Counts, a few titles, dates and links; no text, sender,
+amount or tag leaves.
+
+```json
+{
+  "version": "1.0.1",
+  "inbox": 7,
+  "inbox_oldest": [{"id": 12, "title": "Invoice utilities", "added_at": "2026-10-01T08:12:00+00:00",
+                    "url": "https://paper.example.com/eingang/12"}],
+  "inbox_oldest_at": "2026-10-01T08:12:00+00:00",
+  "filed": 412,
+  "total": 419,
+  "added_week": 9,
+  "processing": 1,
+  "deadlines": [{"id": 40, "title": "Car insurance", "date": "2026-10-20", "kind": "due",
+                 "url": "https://paper.example.com/dokument/40"}]
+}
+```
+
+- `inbox`: the inbox of the account as the menu shows it: documents waiting in the vaults where it may change things
+  (not filed, not being read, not in the trash). Somebody who may only read a vault has no inbox there. `inbox_oldest`
+  holds the five oldest of them, the oldest first; `inbox_oldest_at` is the arrival of the oldest, or `null` when
+  nothing waits.
+- `filed`: filed documents. `total`: everything not in the trash. `added_week`: those that came in during the last
+  seven days. `processing`: those whose text is being read. All four are counted among everything the account reads.
+- `deadlines`: the dated terms of documents (`kind`) that fall from today to 14 days ahead, by day, at most 20. Three
+  kinds count: `due` (a payment falls due), `contract_end` (a contract ends or renews) and `warranty_end` (the last day
+  to claim under a warranty). `keep_until` is not a deadline and is left out, as is the date printed on a document. A
+  document with two such terms shows twice. "Today" is today in the time zone of the account.
+- `url`: the page of the document in the web app: `/eingang/<id>` while it waits in the inbox, `/dokument/<id>` once
+  filed. It starts with the public address when the operator set one (**Settings**), else with the address the request
+  came to.
+
+A key of scope `upload` gets `403 key_scope`. The other answers are those of every route for programs (see the table
+of errors): `403 origin_refused`, `401 api_off`, `401 key_invalid`, `401 token_wrong_kind`, `429 slow_down`.
+
 ### `GET /api/v1/auth/me`
 
 With a session or a device token: the account, its profile and what this server offers it.

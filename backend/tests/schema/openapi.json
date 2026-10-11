@@ -655,6 +655,72 @@
         "title": "CreateIn",
         "type": "object"
       },
+      "DashboardOut": {
+        "properties": {
+          "added_week": {
+            "title": "Added Week",
+            "type": "integer"
+          },
+          "deadlines": {
+            "items": {
+              "$ref": "#/components/schemas/DeadlineOut"
+            },
+            "title": "Deadlines",
+            "type": "array"
+          },
+          "filed": {
+            "title": "Filed",
+            "type": "integer"
+          },
+          "inbox": {
+            "title": "Inbox",
+            "type": "integer"
+          },
+          "inbox_oldest": {
+            "items": {
+              "$ref": "#/components/schemas/WaitingOut"
+            },
+            "title": "Inbox Oldest",
+            "type": "array"
+          },
+          "inbox_oldest_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Inbox Oldest At"
+          },
+          "processing": {
+            "title": "Processing",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          },
+          "version": {
+            "title": "Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "version",
+          "inbox",
+          "inbox_oldest",
+          "inbox_oldest_at",
+          "filed",
+          "total",
+          "added_week",
+          "processing",
+          "deadlines"
+        ],
+        "title": "DashboardOut",
+        "type": "object"
+      },
       "DateIn": {
         "additionalProperties": false,
         "properties": {
@@ -698,6 +764,39 @@
           "date"
         ],
         "title": "DateOut",
+        "type": "object"
+      },
+      "DeadlineOut": {
+        "properties": {
+          "date": {
+            "title": "Date",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "date",
+          "kind",
+          "url"
+        ],
+        "title": "DeadlineOut",
         "type": "object"
       },
       "DeviceOut": {
@@ -7411,6 +7510,34 @@
         "title": "VersionOut",
         "type": "object"
       },
+      "WaitingOut": {
+        "properties": {
+          "added_at": {
+            "title": "Added At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "added_at",
+          "url"
+        ],
+        "title": "WaitingOut",
+        "type": "object"
+      },
       "app__routers__auth__SetupIn": {
         "properties": {
           "code": {
@@ -9904,6 +10031,33 @@
         "summary": "The numbers beside Inbox and Trash in the menu",
         "tags": [
           "inbox"
+        ]
+      }
+    },
+    "/api/v1/dashboard": {
+      "get": {
+        "description": "Counts and a few titles of what the key's account may read, nothing of the contents (no text, sender, amount or\ntag). A key of scope ``upload`` reads nothing here (``403 key_scope``).\n\n``inbox`` is the inbox of the account as the menu shows it (the vaults where it may change things), ``filed``,\n``total`` (everything not in the trash), ``added_week`` (the last seven days) and ``processing`` (text being read)\nare counted among all it may read. ``inbox_oldest`` names the five oldest of the inbox, the oldest first.\n``deadlines`` are the dates of kind ``due``, ``contract_end`` and ``warranty_end`` from today to 14 days ahead, by\nday, at most 20. ``url`` is the page of the document: the public address when the operator set one, else the\naddress this request came to.",
+        "operationId": "dashboard_card_api_v1_dashboard_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "The numbers for a dashboard card: the inbox, the archive and what falls due soon",
+        "tags": [
+          "api keys"
         ]
       }
     },
