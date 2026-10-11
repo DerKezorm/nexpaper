@@ -428,8 +428,8 @@
       }
     },
     "twoFactorRequired": "Require a second factor",
-    "twoFactorRequiredHint": "Every account that signs in with a password must set it up before it gets any further. Accounts from the provider bring their own.",
-    "ownSecondFactorFirst": "Set up your own second factor first (My account, Security), or you would be the first one who cannot go on.",
+    "twoFactorRequiredHint": "Every account that signs in with a password must set it up before it gets any further. Accounts from the provider bring their own. An account with a password is not affected either when it comes in through a provider for which “{{trusts}}” is on.",
+    "ownSecondFactorFirst": "Set up your own second factor first (My account, Security), or you would be the first one who cannot go on. Not affected is whoever signs in through a provider for which “{{trusts}}” is on.",
     "secretKept": "stored, leave empty to keep it",
     "mail": "Mail",
     "mailHint": "For sending: invitations, \"Forgot your password?\", confirming mail addresses, the notice of a new sign-in. Without a server the link to copy is enough, and \"Forgot your password?\" is missing at sign-in.",

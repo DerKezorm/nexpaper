@@ -7,7 +7,7 @@
 import { Route, Routes } from 'react-router-dom'
 
 import type { Me, OidcProvider } from '../api/client'
-import { changeLanguage } from '../i18n'
+import i18n, { changeLanguage } from '../i18n'
 import { Page, Server, plain } from '../test/harness'
 import { AccountPage } from './AccountPage'
 import { InvitePage, LoginPage } from './AuthPages'
@@ -209,6 +209,26 @@ describe('Settings, Sign-in', () => {
       { public_url: 'https://papers.example.com', confirm_address: true },
     ])
   })
+
+  // A password account that comes in through a provider with "the provider checks the second factor itself" is not sent
+  // away (Bauplan 04); both hints under "Require a second factor" say so and name that switch.
+  for (const language of ['de', 'en'] as const) {
+    for (const own of [true, false]) {
+      it(`names the provider switch that exempts a sign-in (${language}, ${own ? 'with' : 'without'} an own second factor)`, async () => {
+        await changeLanguage(language, false)
+        auth.me = { ...me, two_factor: own }
+        server.answers['GET /api/v1/settings'] = { public_url: 'https://paper.example.com', password_login: true, two_factor_required: false }
+        await page.show(<Cards />)
+        const card = plain(document.querySelector('#sign-in')?.textContent)
+        const name = i18n.t('oidc.admin.trustsSecondFactor')
+        const hint = plain(i18n.t(own ? 'server.twoFactorRequiredHint' : 'server.ownSecondFactorFirst', { trusts: name }))
+        expect(card).toContain(hint)
+        // The words of the switch itself between the quotes of the sentence, not a gap.
+        const [open, close] = language === 'de' ? ['„', '“'] : ['“', '”']
+        expect(card).toContain(`${open}${name}${close}`)
+      })
+    }
+  }
 })
 
 describe('the account page', () => {

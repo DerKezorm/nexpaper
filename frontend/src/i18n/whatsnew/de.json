@@ -22,7 +22,8 @@
     "small": [
       "Dein bisheriger Anbieter ist der erste Eintrag der Liste, alle Verknüpfungen bleiben, seine Rückleitadresse auch",
       "Eine Adresse vom Anbieter zählt für Dokumente per Mail erst, wenn du sie bestätigt hast",
-      "Hinter einem Proxy, dem nexpaper traut, gilt auch das Schema, das er meldet"
+      "Hinter einem Proxy, dem nexpaper traut, gilt auch das Schema, das er meldet",
+      "Die Hinweise unter „Zweiten Faktor verlangen“ sagen jetzt, dass ein Anbieter, der den zweiten Faktor selbst prüft, auch Konten mit Passwort von dieser Pflicht befreit"
     ]
   },
   "1.0.1": {

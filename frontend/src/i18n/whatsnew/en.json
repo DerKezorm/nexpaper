@@ -22,7 +22,8 @@
     "small": [
       "Your provider so far is the first entry of the list, every link stays, its redirect address too",
       "An address from the provider counts for documents by mail only once you confirmed it",
-      "Behind a proxy nexpaper trusts, the scheme it reports counts too"
+      "Behind a proxy nexpaper trusts, the scheme it reports counts too",
+      "The hints under “Require a second factor” now say that a provider which checks the second factor itself spares accounts with a password from it too"
     ]
   },
   "1.0.1": {
