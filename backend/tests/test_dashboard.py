@@ -15,6 +15,7 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import select
 
+from app import __version__
 from app.db import SessionLocal
 from app.models import Account, Note, Version, VersionText
 from app.services import apikeys, documents, search_index, settings_service
@@ -115,7 +116,7 @@ def mixed(world: World) -> dict[str, int]:
 def test_the_numbers_of_a_mixed_stock(client: TestClient, world: World) -> None:
     ids = mixed(world)
     card = world.card(client)
-    assert card["version"] == "1.0.1"
+    assert card["version"] == __version__
     assert card["inbox"] == 3
     assert [item["title"] for item in card["inbox_oldest"]] == ["Oldest bill", "Second letter", "Newest letter"]
     assert [item["id"] for item in card["inbox_oldest"]] == [ids["old"], ids["second"], ids["new"]]
@@ -141,7 +142,7 @@ def test_five_oldest_at_most_and_the_oldest_comes_first(client: TestClient, worl
 
 def test_an_empty_stock_says_zero_and_no_oldest(client: TestClient, world: World) -> None:
     assert world.card(client) == {
-        "version": "1.0.1", "inbox": 0, "inbox_oldest": [], "inbox_oldest_at": None, "filed": 0, "total": 0,
+        "version": __version__, "inbox": 0, "inbox_oldest": [], "inbox_oldest_at": None, "filed": 0, "total": 0,
         "added_week": 0, "processing": 0, "deadlines": []}
 
 
