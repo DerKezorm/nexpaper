@@ -15,7 +15,8 @@ One exception, ``ADDITIONS``: new tables and new columns with a default that the
 knowing them. They are made at every start when missing and do not raise the version, so that version can still start
 on this database (it refuses one of a higher version): the way back for one version (1.1.0, the sign-in providers, back
 to 1.0.1). Then the schema of the current version is recorded anew, and ``tests/schema/released/`` keeps what the
-released version made.
+released version made. On a database of that released schema (``ADDITIONS_ON``) they run before every step as well, so
+a later step finds their tables; like a step, each is written out as its tables stood, not taken from the models.
 """
 
 from __future__ import annotations
@@ -314,10 +315,32 @@ def _has_column(connection: Connection, table: str, column: str) -> bool:
 def _additions_signin(connection: Connection) -> None:
     """1.1.0, the sign-in providers of the shared module (``services/oidc_store.py``): the list and the links as tables
     of their own, and the mark on a session that came in through a provider that checks the second factor. 1.0.1 reads
-    neither and keeps working on the old settings and ``users.oidc_subject``, which the way back writes."""
-    from .models import OidcLink, OidcProvider
+    neither and keeps working on the old settings and ``users.oidc_subject``, which the way back writes.
 
-    Base.metadata.create_all(connection, tables=[OidcProvider.__table__, OidcLink.__table__])  # type: ignore[list-item]
+    Written out as the tables stood in 1.1.0, like a step, not taken from the models: the additions also run before
+    the steps of a later version, and a step that changes these tables must find them as they were."""
+    for statement in (
+        (
+            "CREATE TABLE IF NOT EXISTS oidc_providers ( id INTEGER NOT NULL, slug VARCHAR(40) NOT NULL, "
+            "label VARCHAR(64) NOT NULL, issuer VARCHAR(500) NOT NULL, client_id VARCHAR(255) NOT NULL, "
+            "client_secret_enc TEXT NOT NULL, scopes VARCHAR(500) NOT NULL, enabled BOOLEAN NOT NULL, "
+            "auto_create BOOLEAN NOT NULL, trusts_second_factor BOOLEAN NOT NULL, managed VARCHAR(20) NOT NULL, "
+            "position INTEGER NOT NULL, redirect_path VARCHAR(300) NOT NULL, "
+            "registered_redirect VARCHAR(500) DEFAULT '' NOT NULL, created_at DATETIME NOT NULL, PRIMARY KEY (id), "
+            "UNIQUE (slug) )"
+        ),
+        (
+            "CREATE TABLE IF NOT EXISTS oidc_links ( id INTEGER NOT NULL, provider_id INTEGER NOT NULL, "
+            "subject VARCHAR(255) NOT NULL, account_id INTEGER NOT NULL, issuer VARCHAR(500) NOT NULL, "
+            "email VARCHAR(320), created_at DATETIME NOT NULL, last_used_at DATETIME, PRIMARY KEY (id), "
+            "UNIQUE (provider_id, subject), UNIQUE (provider_id, account_id), "
+            "FOREIGN KEY(provider_id) REFERENCES oidc_providers (id) ON DELETE CASCADE, "
+            "FOREIGN KEY(account_id) REFERENCES users (id) ON DELETE CASCADE )"
+        ),
+        "CREATE INDEX IF NOT EXISTS ix_oidc_links_account_id ON oidc_links (account_id)",
+        "CREATE INDEX IF NOT EXISTS ix_oidc_links_provider_id ON oidc_links (provider_id)",
+    ):
+        connection.exec_driver_sql(statement)
     if not _has_column(connection, "auth_sessions", "second_factor_by_provider"):
         # With a default: 1.0.1 inserts sessions without naming the column.
         connection.exec_driver_sql(
@@ -327,6 +350,10 @@ def _additions_signin(connection: Connection) -> None:
 
 #: Made at every start when missing, without a new version (see the top of this file). Each is idempotent.
 ADDITIONS: list[Callable[[Connection], None]] = [_additions_signin]
+
+#: The schema the additions are made on: the one of 1.0.1. From there on they run before every step too, so that a
+#: step of a later version finds their tables on a database 1.0.1 made (it would stop with "no such table" else).
+ADDITIONS_ON = 10
 
 
 # No pool with an upper bound: with the default pool the sixteenth concurrent request would block the event
@@ -461,6 +488,8 @@ def _init(schema: Engine, *, backup: bool = True) -> None:
             step = MIGRATIONS.get(target)
             if step is None:
                 raise RuntimeError(f"No migration to schema {target}.")
+            if target - 1 >= ADDITIONS_ON:
+                _run_additions(schema)
             with schema.begin() as connection:
                 # Read again under the lock: another process may have taken this step since the first read. A step
                 # that is not idempotent (an added column, moved rows) must never run twice.
@@ -469,6 +498,10 @@ def _init(schema: Engine, *, backup: bool = True) -> None:
                 step(connection)
                 _set_version(connection, target)
             logger.info("Database migrated schema=%s", target)
+    _run_additions(schema)
+
+
+def _run_additions(schema: Engine) -> None:
     for addition in ADDITIONS:
         # Under the write lock, like a step; idempotent, so another process that did it first changes nothing here.
         with schema.begin() as connection:

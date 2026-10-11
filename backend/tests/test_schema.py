@@ -288,3 +288,30 @@ def test_the_released_record_is_what_1_0_1_made() -> None:
     """The record of 1.0.1 is the schema of version 10 before the additions: without the sign-in tables."""
     text = (RELEASED / "1.0.1.sql").read_text(encoding="utf-8")
     assert "CREATE TABLE users" in text and "oidc_providers" not in text and "second_factor_by_provider" not in text
+
+
+def test_a_later_step_finds_the_additions_on_a_database_of_1_0_1(scratch: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A step of a later version may change the tables of the additions: on a database 1.0.1 made, they are there
+    before the first step runs, as they stood when they were added, and the version goes up."""
+    with closing(sqlite3.connect(scratch)) as connection:
+        connection.executescript((RELEASED / "1.0.1.sql").read_text(encoding="utf-8"))
+        connection.execute("PRAGMA user_version = 10")
+        connection.commit()
+    found: list[list[str]] = []
+
+    def step(connection: Connection) -> None:
+        found.append([row[1] for row in connection.exec_driver_sql('PRAGMA table_info("oidc_providers")')])
+        connection.exec_driver_sql("ALTER TABLE oidc_providers ADD COLUMN later VARCHAR(8) DEFAULT '' NOT NULL")
+        connection.exec_driver_sql("SELECT count(*) FROM oidc_links").fetchone()
+
+    monkeypatch.setattr(database, "SCHEMA_VERSION", 11)
+    monkeypatch.setitem(database.MIGRATIONS, 11, step)
+    database.init_db()
+    assert version_of(scratch) == 11
+    assert len(found) == 1 and "trusts_second_factor" in found[0] and "later" not in found[0]
+    with closing(sqlite3.connect(scratch)) as connection:
+        assert "later" in [row[1] for row in connection.execute('PRAGMA table_info("oidc_providers")')]
+        assert "second_factor_by_provider" in [row[1] for row in connection.execute("PRAGMA table_info(auth_sessions)")]
+    # The next start runs the additions again: they change nothing that is there.
+    database.init_db()
+    assert version_of(scratch) == 11

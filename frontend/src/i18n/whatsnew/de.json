@@ -21,9 +21,10 @@
     "smallTitle": "Außerdem",
     "small": [
       "Dein bisheriger Anbieter ist der erste Eintrag der Liste, alle Verknüpfungen bleiben, seine Rückleitadresse auch",
-      "Eine Adresse vom Anbieter zählt für Dokumente per Mail erst, wenn du sie bestätigt hast",
+      "Eine Adresse vom Anbieter zählt für Dokumente per Mail erst, wenn du sie bestätigt hast, auch eine, die 1.0.1 als bestätigt übernommen hatte: einmal unter Mein Konto, Profil bestätigen",
       "Hinter einem Proxy, dem nexpaper traut, gilt auch das Schema, das er meldet",
-      "Die Hinweise unter „Zweiten Faktor verlangen“ sagen jetzt, dass ein Anbieter, der den zweiten Faktor selbst prüft, auch Konten mit Passwort von dieser Pflicht befreit"
+      "„Zweiten Faktor verlangen“ gilt für die Anmeldung mit Passwort: Konten ohne Passwort und wer über einen Anbieter kommt, dessen Eintrag „Der Anbieter prüft den zweiten Faktor selbst“ hat, müssen keinen einrichten; die Hinweise sagen es",
+      "Eine Dashboard-Karte kann nexpaper über einen API-Schlüssel lesen: was im Eingang wartet, was abgelegt ist und was in den nächsten 14 Tagen fällig wird."
     ]
   },
   "1.0.1": {

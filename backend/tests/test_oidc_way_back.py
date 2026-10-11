@@ -156,3 +156,26 @@ def test_a_provider_1_0_1_sets_up_later_trusts_as_its_switch_says(client: TestCl
     older(provider, switch=True, alex="person-1")
     oidc_store.migrate_settings(backup=False)
     assert entry_trusts() is True and found()["client_id"] == provider.client_id
+
+
+def test_before_the_migration_the_way_back_leaves_what_1_0_1_wrote_alone(
+    client: TestClient, provider: FakeProvider
+) -> None:
+    """The old settings and the old column are the migration's input until it ran: a way that writes the way back
+    early (deleting an account does) must not empty them, or the link of 1.0.1 is gone before it is taken over."""
+    with SessionLocal() as db:
+        db.query(Setting).filter(Setting.key.in_([oidc_store.MIGRATED, oidc_store.FINGERPRINT, oidc_store.ANCHOR,
+                                                  oidc_store.WRITTEN_SECOND_FACTOR])).delete(synchronize_session=False)
+        db.commit()
+    make_account("alex")
+    older(provider, switch=False, alex="person-1")
+    before = found()
+    with SessionLocal() as db:
+        oidc_store.way_back_changed(db)
+        db.commit()
+    assert found() == before
+    oidc_store.migrate_settings(backup=False)
+    with SessionLocal() as db:
+        store = oidc_store.SqlStore(db)
+        entry = store.provider_by_slug("oidc")
+        assert entry is not None and [link.subject for link in store.links_of_provider(entry.id)] == ["person-1"]

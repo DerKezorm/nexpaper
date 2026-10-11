@@ -52,3 +52,14 @@ def test_behind_a_proxy_that_speaks_https_the_cookies_are_secure(name: str, monk
 
 def test_the_device_cookie_goes_to_the_sign_in_only() -> None:
     assert "path=/api/v1/auth" in sign_in("http://testserver")[DEVICE_COOKIE]
+
+
+@pytest.mark.parametrize(("forwarded", "secure"), [("https, http", False), ("http, https", True), ("http", False)])
+def test_a_proxy_nobody_trusts_only_ever_makes_the_cookie_stricter_by_its_rightmost_value(
+    forwarded: str, secure: bool, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The value on the right is the one the proxy in front wrote; one on the left came from whoever sent the
+    request. Without trusted proxies the scheme stays http, and the header can only add ``Secure``."""
+    monkeypatch.setattr(get_settings(), "trusted_proxies", "")
+    line = sign_in("http://testserver", {"X-Forwarded-Proto": forwarded})[SESSION_COOKIE]
+    assert ("; secure" in line) is secure

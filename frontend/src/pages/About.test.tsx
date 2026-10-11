@@ -5,6 +5,7 @@
  */
 import type { Me } from '../api/client'
 import { changeLanguage } from '../i18n'
+import { entriesFor } from '../lib/whatsNew'
 import { Page, Server } from '../test/harness'
 import { AboutPage } from './AboutPage'
 
@@ -91,6 +92,9 @@ describe('the daily question', () => {
 
 describe('what is new', () => {
   it('opens the text of 1.0.0 and reads it again at any time', async () => {
+    // The texts come by a dynamic import: loaded before the page, the button is there at its first idle moment, also
+    // on a busy machine.
+    await entriesFor('de')
     await page.show(<AboutPage />)
     await page.click(page.button('Neu in nexpaper 1.0.0'))
     const window = document.querySelector('[data-testid="whats-new-window"]')!
@@ -103,6 +107,7 @@ describe('what is new', () => {
 
   it('has the same text in English', async () => {
     await changeLanguage('en', false)
+    await entriesFor('en')
     await page.show(<AboutPage />)
     await page.click(page.button('New in nexpaper 1.0.0'))
     const window = document.querySelector('[data-testid="whats-new-window"]')!

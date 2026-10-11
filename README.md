@@ -130,11 +130,14 @@ the list), and **authentik in one step**.
   links itself on its own page (Security, with its password); new people come in by invitation, or, where the operator
   switches "New people get an account" on for a provider, as members. Everybody gets a vault of their own.
 - **Addresses from a provider** are shown and can be taken, but they are never confirmed by that alone: a mail to the
-  intake counts only for an address the person confirmed by the link nexpaper sends.
+  intake counts only for an address the person confirmed by the link nexpaper sends. An address 1.0.1 took from the
+  provider as confirmed waits for that link once after the update (My account, Profile); it needs the mail server.
 - **The second factor**: "The provider checks the second factor itself" is on for a new provider. Off, whoever has a
-  second factor in nexpaper is asked for its code after the provider. Device tokens and API keys of an account with a
-  password and no second factor of its own wait until it sets one up, also when it signs in through a provider that
-  checks one.
+  second factor in nexpaper is asked for its code after the provider. "Require a second factor" is for signing in with
+  a password: an account without a password, and whoever comes in through a provider whose entry has "The provider
+  checks the second factor itself" on, is not made to set one up (a change from 1.0.1). Device tokens and API keys of
+  an account with a password and no second factor of its own wait until it sets one up, also when it signs in through a
+  provider that checks one.
 - **Password sign-in** can go off once a provider is active; the operator can always sign in with the password.
 
 **Behind a reverse proxy** the redirect address is the public address (set it in Settings, Sign-in, or the authentik
@@ -203,6 +206,9 @@ left. It warns, here and in the log at the start, when the database lies on a ne
 With an image: `docker compose pull && docker compose up -d`. Built from source: pull the new code and run
 `docker compose up -d --build`. nexpaper adds what the database lacks at the start and makes a backup first; nothing
 needs doing by hand. The way back is under Settings, Backups.
+
+Going back from 1.1.0 to 1.0.1: there, the sign-in through the provider works only if its entry had "The provider
+checks the second factor itself" on; otherwise only the password does. Coming up to 1.1.0 again brings everything back.
 
 ## Environment
 

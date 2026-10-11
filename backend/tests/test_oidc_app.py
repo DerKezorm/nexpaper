@@ -20,9 +20,10 @@ from urllib.parse import parse_qs, quote, urlsplit
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 from app.db import SessionLocal
+from app.main import app
 from app.middleware import ForwardedProtoMiddleware, forwarded_proto
 from app.models import SIGN_IN_OIDC, Account, AuthSession, OidcLink, OidcProvider, Vault
 from app.security import brake, encrypt_secret, hash_password, start_session
@@ -222,6 +223,36 @@ def test_an_identity_with_the_address_of_an_account_never_comes_into_it_nor_into
     with SessionLocal() as db:
         row = db.scalar(select(Account).where(Account.name == "anna"))
         assert row is not None and row.email == "anna@example.com"
+        # Not even a copy of it: an invitation made for an address another account has gives the newcomer none.
+        stranger = db.scalar(select(Account).where(Account.name == newcomer))
+        assert stranger is not None and stranger.email.lower() != "anna@example.com"
+        assert db.query(Account).filter(func.lower(Account.email) == "anna@example.com").count() == 1
+
+
+def test_a_known_identity_through_an_invitation_keeps_the_address_it_has(
+    client: TestClient, operator: Account, provider: FakeProvider
+) -> None:
+    """An invitation brings its address on top, never instead: an account that has one keeps it."""
+    configure(client, provider, auto_create=True)
+    browser = fresh_browser()
+    assert location(sign_in_via_oidc(browser, provider, sub="person-8", preferred_username="lea",
+                                     email="lea@example.com")) == "/"
+    with SessionLocal() as db:
+        from app.models import utcnow
+
+        db.query(Account).filter(Account.name == "lea").update(
+            {"email": "lea@home.example.com", "email_confirmed_at": utcnow(), "email_from_provider": False})
+        db.commit()
+    answer = client.post("/api/v1/invites", json={"days": 7, "email": "invited@example.com", "send": False})
+    assert answer.status_code == 201, answer.text
+    invite = answer.json()["link"].rsplit("/", 1)[1]
+    again = fresh_browser()
+    assert location(sign_in_via_oidc(again, provider, invite=invite, sub="person-8", preferred_username="lea",
+                                     email="lea@example.com")) == "/"
+    assert who(again) == "lea"
+    with SessionLocal() as db:
+        row = db.scalar(select(Account).where(Account.name == "lea"))
+        assert row is not None and row.email == "lea@home.example.com" and row.email_confirmed_at is not None
 
 
 # --- The mail intake (Besonderheit 2) ---------------------------------------------------------------------------------
@@ -253,6 +284,20 @@ def test_an_address_from_a_provider_never_decides_whose_vault_a_mail_reaches(
     assert taken.status_code == 200 and taken.json() == {"email": "tom@example.com", "email_confirmed": False}
     with SessionLocal() as db:
         assert mail_senders.owners(db, "tom@example.com") == set()
+
+
+def test_taking_the_address_of_a_provider_needs_a_link_to_it(
+    client: TestClient, operator: Account, provider: FakeProvider
+) -> None:
+    configure(client, provider)
+    member = fresh_browser()
+    sign_in(member, make_account("anna"))
+    for slug in ("sso", "nowhere"):
+        answer = member.post("/api/v1/oidc/me/address", json={"slug": slug})
+        assert answer.status_code == 404, (slug, answer.text)
+    with SessionLocal() as db:
+        row = db.scalar(select(Account).where(Account.name == "anna"))
+        assert row is not None and row.email == ""
 
 
 def test_an_address_the_person_confirmed_is_never_replaced_by_the_providers(
@@ -549,6 +594,8 @@ def test_password_sign_in_goes_off_only_with_an_active_provider_and_the_sign_in_
     body = {key: made[key] for key in ("label", "issuer", "client_id", "scopes", "auto_create", "trusts_second_factor")}
     assert client.put(f"/api/v1/oidc/admin/providers/{made['id']}", json={**body, "enabled": False}).status_code == 200
     assert client.get("/api/v1/auth/methods").json()["providers"] == [{"slug": "other", "label": "Other"}]
+    # The page before the sign-in asks the same list: nobody sees an entry that is off.
+    assert fresh_browser().get("/api/v1/oidc/providers").json() == [{"slug": "other", "label": "Other"}]
 
 
 def test_emptying_the_public_address_asks_first_while_a_provider_by_hand_is_on(
@@ -589,6 +636,23 @@ def test_the_operator_sees_who_is_linked_and_the_account_hears_when_the_operator
                           json={"current_password": PASSWORD})
     assert done.status_code == 204 and links() == {}
     assert told == [(anna.id, "oidc-unlinked")]
+
+
+def test_the_list_of_links_and_providers_is_the_operators_only(
+    client: TestClient, operator: Account, provider: FakeProvider
+) -> None:
+    configure(client, provider)
+    member = fresh_browser()
+    sign_in(member, make_account("anna"))
+    for path in ("/api/v1/oidc/admin/links", "/api/v1/oidc/admin/providers"):
+        assert member.get(path).status_code == 403, path
+        assert client.get(path).status_code == 200, path
+    # Never with a device token either, not even the operator's own.
+    paired = client.post("/api/v1/devices", json={"name": "phone"})
+    assert paired.status_code == 201, paired.text
+    device = TestClient(app, base_url="http://testserver")
+    answer = device.get("/api/v1/oidc/admin/links", headers={"Authorization": "Bearer " + paired.json()["token"]})
+    assert answer.status_code in (401, 403), answer.text
 
 
 def test_the_session_of_1_0_1_and_an_account_made_without_the_new_column_get_their_default(
