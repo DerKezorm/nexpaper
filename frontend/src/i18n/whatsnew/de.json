@@ -1,4 +1,18 @@
 {
+  "1.0.1": {
+    "lead": "Eine kleine Version: nexpaper sagt jetzt deutlicher, wo es am besten aufgehoben ist.",
+    "sections": [
+      {
+        "title": "Am besten zu Hause",
+        "body": "Deine Papiere bleiben am besten im eigenen Netz, und von unterwegs gehst du über ein VPN hinein. Die Texte zur Schnittstelle versprechen keine Apps mehr, die erst noch kommen.",
+        "where": "Einstellungen, API"
+      }
+    ],
+    "smallTitle": "Außerdem",
+    "small": [
+      "README und Sicherheitshinweise sagen dasselbe"
+    ]
+  },
   "1.0.0": {
     "lead": "Das ist nexpaper 1.0, eine Ablage für Dokumente zu Hause und in kleinen Firmen: das einfache Paperless-ngx für Zuhause. Das findest du von Anfang an.",
     "sections": [

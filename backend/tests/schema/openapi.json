@@ -7631,7 +7631,7 @@
   "info": {
     "summary": "The interface the web app speaks, and the one native apps and scripts use.",
     "title": "nexpaper",
-    "version": "1.0.0"
+    "version": "1.0.1"
   },
   "openapi": "3.1.0",
   "paths": {

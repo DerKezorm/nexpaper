@@ -1,4 +1,18 @@
 {
+  "1.0.1": {
+    "lead": "A small version: nexpaper now says more clearly where it is best kept.",
+    "sections": [
+      {
+        "title": "Best kept at home",
+        "body": "Your papers are best kept in your own network, and from on the way you come in through a VPN. The texts about the API no longer promise apps that are still to come.",
+        "where": "Settings, API"
+      }
+    ],
+    "smallTitle": "Also",
+    "small": [
+      "The README and the security notes say the same"
+    ]
+  },
   "1.0.0": {
     "lead": "This is nexpaper 1.0, a filing cabinet for documents at home and in a small business: the simple Paperless-ngx for the home. This is what you find from the start.",
     "sections": [
