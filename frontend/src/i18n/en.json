@@ -848,7 +848,7 @@
     "https": {
       "title": "Public address with https",
       "ok": "{{address}}",
-      "warn": "{{address}} has https, but this request came without. Open nexpaper under that address, or let the proxy send X-Forwarded-Proto.",
+      "warn": "{{address}} has https, but this request came without. Open nexpaper under that address, or let the proxy send X-Forwarded-Proto and name it in NEXPAPER_TRUSTED_PROXIES.",
       "bad": "Without https, passwords travel the network in the clear, and Web Push and passkeys do not work at all. Enter the public address with https below."
     },
     "two_factor": {

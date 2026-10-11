@@ -54,26 +54,37 @@ def test_only_the_operator_sees_the_check(client: TestClient, operator: Account)
     assert anna.get("/api/v1/settings/readiness").status_code == 403
 
 
-def test_https_needs_the_public_address_and_the_request_on_https(client: TestClient, operator: Account) -> None:
+def test_https_needs_the_public_address_and_the_request_on_https(
+    client: TestClient, operator: Account, monkeypatch: pytest.MonkeyPatch
+) -> None:
     assert points(client)["https"]["state"] == "bad"
     save({"public_url": "http://paper.example.com"})
     assert points(client)["https"]["state"] == "bad"
     save({"public_url": "https://paper.example.com"})
     assert points(client)["https"]["state"] == "warn", "the address says https, the request did not come over it"
     assert points(https_client(operator))["https"]["state"] == "ok"
-    assert points(client, headers={"X-Forwarded-Proto": "https"})["https"]["state"] == "ok"
+    assert points(client, headers={"X-Forwarded-Proto": "https"})["https"]["state"] == "warn", "nobody is trusted yet"
+    monkeypatch.setattr(get_settings(), "trusted_proxies", "172.18.0.0/16")
+    proxy = TestClient(app, base_url="http://testserver", headers=TAB, client=("172.18.0.2", 50000))
+    sign_in(proxy, operator)
+    assert points(proxy, headers={"X-Forwarded-Proto": "https"})["https"]["state"] == "ok"
+    assert points(proxy, headers={"X-Forwarded-Proto": "https"})["cookies"]["state"] == "ok"
+    assert points(client, headers={"X-Forwarded-Proto": "https"})["cookies"]["state"] == "warn"
 
 
 @pytest.mark.parametrize(("forwarded", "https"), [
     ("https, http", False), ("http, https", True), ("HTTPS", True), ("gopher", False),
 ])
-def test_the_check_reads_the_proxy_as_the_cookie_does(client: TestClient, operator: Account, forwarded: str,
-                                                      https: bool) -> None:
-    """The rightmost value counts (the left ones a sender may have written), without regard to case, and only http
-    or https: the same reading as the ``Secure`` flag of the cookies, so the check never says what the cookie does
-    not do."""
+def test_the_check_reads_the_proxy_as_the_cookie_does(operator: Account, forwarded: str, https: bool,
+                                                      monkeypatch: pytest.MonkeyPatch) -> None:
+    """Of a trusted proxy the rightmost value counts (the left ones a sender may have written), without regard to
+    case, and only http or https: the same reading as the ``Secure`` flag of the cookies, so the check never says
+    what the cookie does not do."""
     save({"public_url": "https://paper.example.com"})
-    found = points(client, headers={"X-Forwarded-Proto": forwarded})
+    monkeypatch.setattr(get_settings(), "trusted_proxies", "10.0.0.2")
+    proxy = TestClient(app, base_url="http://testserver", headers=TAB, client=("10.0.0.2", 50000))
+    sign_in(proxy, operator)
+    found = points(proxy, headers={"X-Forwarded-Proto": forwarded})
     assert found["https"]["state"] == ("ok" if https else "warn"), forwarded
     assert found["cookies"]["state"] == found["https"]["state"], forwarded
 

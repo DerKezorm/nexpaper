@@ -264,7 +264,7 @@ checks the second factor itself" on; otherwise only the password does. Coming up
 | `NEXPAPER_SETUP_TOKEN` | made at start | The code the first account needs |
 | `NEXPAPER_OPERATOR_NETWORKS` | none | Networks the operator's settings may be changed from, comma separated |
 | `NEXPAPER_SESSION_DAYS` | `30` | A session of "stay signed in on this device" ends after this many days without use |
-| `NEXPAPER_COOKIE_SECURE` | `auto` | `on`, `off` or `auto` (from the request or `X-Forwarded-Proto`) |
+| `NEXPAPER_COOKIE_SECURE` | `auto` | `on`, `off` or `auto` (from the request, or `X-Forwarded-Proto` of a trusted proxy) |
 | `NEXPAPER_COOKIE_SUFFIX` | none | Appended to the cookie names; keeps two instances on one host apart |
 | `NEXPAPER_LOG_LEVEL` | stored setting | `quiet`, `normal`, `detailed` or `trace`; overrides the setting |
 | `NEXPAPER_DECODE_SLOTS` | `1` | How many pictures are unpacked at the same moment (each takes some 150 MB while open) |

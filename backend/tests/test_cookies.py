@@ -1,5 +1,5 @@
 """The cookies of a sign-in: never readable by scripts, sent only with the site's own navigations, and only over https
-when the request came over https (directly or, as the proxy says, behind it)."""
+when the request came over https (directly or, as a trusted proxy says, behind it)."""
 
 from __future__ import annotations
 
@@ -22,9 +22,12 @@ def cookies_of(answer: httpx.Response) -> dict[str, str]:
     return out
 
 
-def sign_in(base_url: str, headers: dict[str, str] | None = None) -> dict[str, str]:
-    make_account("rosa")
-    with TestClient(app, base_url=base_url, headers={**TAB, **(headers or {})}) as browser:
+def sign_in(
+    base_url: str, headers: dict[str, str] | None = None, peer: str = "testclient", make: bool = True
+) -> dict[str, str]:
+    if make:
+        make_account("rosa")
+    with TestClient(app, base_url=base_url, headers={**TAB, **(headers or {})}, client=(peer, 50000)) as browser:
         answer = browser.post("/api/v1/auth/login", json={"name": "rosa", "password": PASSWORD})
     assert answer.status_code == 200, answer.text
     return cookies_of(answer)
@@ -46,7 +49,8 @@ def test_over_https_the_cookies_are_secure(name: str) -> None:
 @pytest.mark.parametrize("name", [SESSION_COOKIE, DEVICE_COOKIE])
 def test_behind_a_proxy_that_speaks_https_the_cookies_are_secure(name: str, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(get_settings(), "trusted_proxies", "127.0.0.1")
-    line = sign_in("http://testserver", {"X-Forwarded-Proto": "https", "X-Forwarded-For": "203.0.113.7"})[name]
+    proxied = {"X-Forwarded-Proto": "https", "X-Forwarded-For": "203.0.113.7"}
+    line = sign_in("http://testserver", proxied, peer="127.0.0.1")[name]
     assert "httponly" in line and "samesite=lax" in line and "; secure" in line
 
 
@@ -54,12 +58,20 @@ def test_the_device_cookie_goes_to_the_sign_in_only() -> None:
     assert "path=/api/v1/auth" in sign_in("http://testserver")[DEVICE_COOKIE]
 
 
-@pytest.mark.parametrize(("forwarded", "secure"), [("https, http", False), ("http, https", True), ("http", False)])
-def test_a_proxy_nobody_trusts_only_ever_makes_the_cookie_stricter_by_its_rightmost_value(
-    forwarded: str, secure: bool, monkeypatch: pytest.MonkeyPatch
+@pytest.mark.parametrize("name", [SESSION_COOKIE, DEVICE_COOKIE])
+def test_the_scheme_of_a_proxy_counts_only_from_a_trusted_one_and_its_rightmost_value(
+    name: str, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """The value on the right is the one the proxy in front wrote; one on the left came from whoever sent the
-    request. Without trusted proxies the scheme stays http, and the header can only add ``Secure``."""
+    # The shared sign-in module README, "Hinter einem Proxy": nobody is trusted from the start, a stranger's header
+    # counts for nothing, and of a trusted proxy only the value it appended itself.
+    make_account("rosa")
+
+    def secure(headers: dict[str, str], peer: str) -> bool:
+        return "; secure" in sign_in("http://testserver", headers, peer=peer, make=False)[name]
+
     monkeypatch.setattr(get_settings(), "trusted_proxies", "")
-    line = sign_in("http://testserver", {"X-Forwarded-Proto": forwarded})[SESSION_COOKIE]
-    assert ("; secure" in line) is secure
+    assert not secure({"X-Forwarded-Proto": "https"}, "10.0.0.2"), "no proxy is trusted from the start"
+    monkeypatch.setattr(get_settings(), "trusted_proxies", "10.0.0.2")
+    assert not secure({"X-Forwarded-Proto": "https"}, "203.0.113.5"), "a stranger's header is not believed"
+    assert not secure({"X-Forwarded-Proto": "https, http"}, "10.0.0.2"), "the rightmost value counts"
+    assert secure({"X-Forwarded-Proto": "http, HTTPS"}, "10.0.0.2"), "the rightmost value, in any case"

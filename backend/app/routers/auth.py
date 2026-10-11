@@ -36,7 +36,6 @@ from ..deps import (
     session_of,
 )
 from ..errors import error
-from ..middleware import claims_https
 from ..models import (
     OPERATOR,
     ROLES,
@@ -142,9 +141,9 @@ def secure_cookie(request: Request) -> bool:
         return True
     if mode == "off":
         return False
-    # The scheme of a trusted proxy is the request's already (``middleware.ForwardedProtoMiddleware``). Any other
-    # proxy's word only ever makes the cookie stricter, as before: its rightmost value, which that proxy wrote.
-    return request.url.scheme == "https" or claims_https(request.scope.get("headers", []))
+    # The scheme of a trusted proxy is the request's already (``middleware.ForwardedProtoMiddleware``); the header of
+    # anybody else counts for nothing (shared sign-in module, "Hinter einem Proxy": nobody is trusted from the start).
+    return request.url.scheme == "https"
 
 
 #: How long the browser keeps the cookie of a session that stays: as long as browsers allow (400 days). The server

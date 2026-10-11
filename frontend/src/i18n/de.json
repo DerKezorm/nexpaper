@@ -848,7 +848,7 @@
     "https": {
       "title": "Öffentliche Adresse mit https",
       "ok": "{{address}}",
-      "warn": "{{address}} hat https, aber diese Anfrage kam ohne. Öffne nexpaper über diese Adresse, oder lass den Proxy X-Forwarded-Proto mitschicken.",
+      "warn": "{{address}} hat https, aber diese Anfrage kam ohne. Öffne nexpaper über diese Adresse, oder lass den Proxy X-Forwarded-Proto mitschicken und trag ihn in NEXPAPER_TRUSTED_PROXIES ein.",
       "bad": "Ohne https gehen Passwörter offen durchs Netz, und Web Push und Passkeys funktionieren gar nicht. Trage unten die öffentliche Adresse mit https ein."
     },
     "two_factor": {

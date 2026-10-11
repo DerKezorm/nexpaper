@@ -4,15 +4,18 @@ from __future__ import annotations
 
 from datetime import timedelta
 
+import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import select
 
+from app.config import get_settings
 from app.db import SessionLocal
+from app.main import app
 from app.models import OPERATOR, Account, AuthSession, utcnow
 from app.security import MAX_FAILURES, SESSION_COOKIE, decrypt_secret, encrypt_secret, hash_token
 from app.services import settings_service
 
-from .conftest import PASSWORD, SETUP_CODE, make_account, sign_in
+from .conftest import PASSWORD, SETUP_CODE, TAB, make_account, sign_in
 
 GOOD = "a long enough password"
 
@@ -78,11 +81,13 @@ def test_sign_in_and_out(client: TestClient) -> None:
     assert client.get("/api/v1/auth/me").status_code == 401
 
 
-def test_the_cookie_is_secure_behind_https(client: TestClient) -> None:
+def test_the_cookie_is_secure_behind_https(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
     make_account("anna")
-    signed = client.post(
-        "/api/v1/auth/login", json={"name": "anna", "password": PASSWORD}, headers={"X-Forwarded-Proto": "https"}
-    )
+    monkeypatch.setattr(get_settings(), "trusted_proxies", "10.0.0.2")
+    with TestClient(app, base_url="http://testserver", headers=TAB, client=("10.0.0.2", 50000)) as proxied:
+        signed = proxied.post(
+            "/api/v1/auth/login", json={"name": "anna", "password": PASSWORD}, headers={"X-Forwarded-Proto": "https"}
+        )
     assert "Secure" in signed.headers["set-cookie"]
 
 

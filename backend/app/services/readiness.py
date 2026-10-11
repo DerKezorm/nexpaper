@@ -17,7 +17,6 @@ from fastapi import Request
 from sqlalchemy.orm import Session
 
 from ..config import get_settings
-from ..middleware import claims_https
 from ..models import Account
 from ..security import Brake
 from . import backups, settings_service, totp
@@ -46,9 +45,9 @@ class Point:
 
 
 def came_over_https(request: Request) -> bool:
-    """The request reached nexpaper over https, or the proxy in front says it did: read as for the ``Secure`` flag of
-    the cookies (``routers.auth.secure_cookie``), so that this check and the cookie never disagree."""
-    return request.url.scheme == "https" or claims_https(request.scope.get("headers", []))
+    """The request reached nexpaper over https, or a trusted proxy in front says it did (``ForwardedProtoMiddleware``):
+    the same as for the ``Secure`` flag of the cookies (``routers.auth.secure_cookie``), so the two never disagree."""
+    return request.url.scheme == "https"
 
 
 def _https(db: Session, request: Request) -> Point:
