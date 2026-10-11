@@ -4,14 +4,18 @@ the second factor kept, a line in the log without the link."""
 
 from __future__ import annotations
 
+import logging
 import os
 from datetime import timedelta
+from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
+from sqlalchemy import text
 
 from app import reset_link
-from app.db import SessionLocal
-from app.models import OPERATOR, Account, PasswordReset, utcnow
+from app.db import SCHEMA_VERSION, SessionLocal, engine
+from app.models import OPERATOR, SIGN_IN_OIDC, SIGN_IN_PASSWORD, Account, PasswordReset, utcnow
 from app.services import logs, resets, settings_service
 
 from .conftest import make_account, require_second_factor
@@ -132,9 +136,59 @@ def test_with_passwords_off_only_an_operator_gets_one(capsys: pytest.CaptureFixt
     assert run(capsys, "boss")[0] == 0
 
 
-def test_the_log_names_the_command_and_never_the_token(capsys: pytest.CaptureFixture[str]) -> None:
+def test_the_log_names_the_command_and_never_the_token(
+    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch,
+) -> None:
     make_account("boss", role=OPERATOR)
+    # The command runs in a process of its own, with no handler but its own; an earlier test may have set up the server's.
+    monkeypatch.setattr(logging.getLogger(), "handlers", [])
+    before = logs.log_file().read_text(encoding="utf-8") if logs.log_file().exists() else ""
     _, out, _ = run(capsys, "boss")
-    text = logs.log_file().read_text(encoding="utf-8")
-    assert "Password link made on the server with python -m app.reset_link name=boss" in text
-    assert token_of(out) not in text
+    written = logs.log_file().read_text(encoding="utf-8")[len(before):]
+    # One line, and it says where the link came from (not "the person", which is who asks on the sign-in page).
+    assert written.count("Password link made") == 1
+    assert "Password link made name=boss by=the command python -m app.reset_link on the server" in written
+    assert "by=the person" not in written
+    assert token_of(out) not in written
+
+
+def test_an_account_of_a_provider_is_told_it_gets_a_password(capsys: pytest.CaptureFixture[str]) -> None:
+    require_second_factor(False)
+    carl = make_account("carl")
+    make_account("anna")
+    with SessionLocal() as db:
+        row = db.get(Account, carl.id)
+        assert row is not None
+        row.sign_in = SIGN_IN_OIDC
+        db.commit()
+    code, out, err = run(capsys, "anna")
+    assert code == 0 and "signs in through a provider" not in err
+    code, out, err = run(capsys, "carl")
+    assert code == 0, err
+    assert "'carl' signs in through a provider so far" in err and "an account with a password" in err
+    assert stranger().post(f"/api/v1/reset/{token_of(out)}", json={"password": NEW}).status_code == 204
+    with SessionLocal() as db:
+        assert db.get(Account, carl.id).sign_in == SIGN_IN_PASSWORD  # type: ignore[union-attr]
+
+
+def test_without_a_database_nothing_is_made(
+    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
+) -> None:
+    monkeypatch.setattr(reset_link, "get_settings", lambda: SimpleNamespace(database_path=tmp_path / "none.db"))
+    code, out, err = run(capsys, "boss")
+    assert code == 1 and out == "" and "There is no database yet" in err
+    assert not (tmp_path / "none.db").exists()
+
+
+def test_a_database_of_another_schema_is_left_alone(capsys: pytest.CaptureFixture[str]) -> None:
+    make_account("boss", role=OPERATOR)
+    with engine.begin() as connection:
+        connection.execute(text(f"PRAGMA user_version = {SCHEMA_VERSION - 1}"))
+    try:
+        code, out, err = run(capsys, "boss")
+    finally:
+        with engine.begin() as connection:
+            connection.execute(text(f"PRAGMA user_version = {SCHEMA_VERSION}"))
+    assert code == 1 and out == ""
+    assert f"schema {SCHEMA_VERSION - 1}" in err and f"expects {SCHEMA_VERSION}" in err and "Start the server once" in err
+    assert links() == 0

@@ -527,7 +527,7 @@
     },
     "push": {
       "title": "Web Push",
-      "text": "Damit Bescheide aufs Handy und in den Browser kommen: bei einer neuen Anmeldung, wenn ein Export fertig oder ein Import aus Paperless durch ist, wenn der zweite Faktor einer Person zurückgesetzt oder ihr Konto von einem Anmeldeanbieter gelöst wurde. Betreiber hören außerdem, wenn beim Prüfen der Dateien etwas nicht stimmt oder ein Wiederherstellen scheitert. Ist von Anfang an eingerichtet; jede Person meldet ihre Geräte unter Mein Konto an.",
+      "text": "Damit Bescheide aufs Handy und in den Browser kommen: bei einer neuen Anmeldung, wenn ein Export fertig oder gescheitert oder ein Import aus Paperless durch ist, wenn der zweite Faktor einer Person zurückgesetzt oder ihr Konto von einem Anmeldeanbieter gelöst wurde. Betreiber hören außerdem, wenn beim Prüfen der Dateien etwas nicht stimmt oder ein Wiederherstellen scheitert. Ist von Anfang an eingerichtet; jede Person meldet ihre Geräte unter Mein Konto an.",
       "ready_one": "Bereit · {{count}} Gerät angemeldet",
       "ready_other": "Bereit · {{count}} Geräte angemeldet",
       "contact": "Kontakt für die Push-Dienste",
@@ -562,7 +562,7 @@
       "blockTitle": "Schlüssel {{name}} von {{account}} sperren?",
       "blockText": "Er hört sofort auf zu gehen, für immer. Das Konto sieht ihn gesperrt in seiner Liste.",
       "blocked": "gesperrt",
-      "offHint": "Ein Schlüssel liest nur oder lädt nur hoch und darf nie mehr als das Konto.",
+      "offHint": "Ein Schlüssel kann lesen oder nur hochladen und nie mehr, als das Konto darf.",
       "own": "Eigene Schlüssel anlegen"
     },
     "interface": {

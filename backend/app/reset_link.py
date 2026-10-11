@@ -9,7 +9,9 @@ nothing they did not have::
 
 It makes the link the interface makes (``services/resets.py``: the same table, once, 24 hours, one open link per
 account, the same checks when it is used) and prints it, and it writes a line to the server's log without the link.
-Using the link lifts the lock after failed sign-ins; the second factor stays, the recovery codes still work.
+Using the link lifts the lock after failed sign-ins; the second factor stays, the recovery codes still work. An account
+that signs in only through a provider gets a password this way and becomes an account with a password (the operator's
+link does the same).
 """
 
 from __future__ import annotations
@@ -24,7 +26,7 @@ from sqlalchemy.orm import Session
 
 from .config import get_settings
 from .db import SCHEMA_VERSION, SessionLocal, engine, schema_version
-from .models import OPERATOR, Account
+from .models import OPERATOR, SIGN_IN_PASSWORD, Account
 from .services import logs, resets, settings_service
 
 COMMAND = "python -m app.reset_link"
@@ -34,8 +36,6 @@ ROOT_REFUSED = (
     f"  From a console inside:    gosu nexpaper {COMMAND} <account>\n"
     "  (Where the compose file starts the container with a user: of its own, give that user to -u instead.)"
 )
-
-logger = logging.getLogger("nexpaper.auth")
 
 
 def _make(db: Session, account: Account) -> str:
@@ -48,8 +48,7 @@ def _make(db: Session, account: Account) -> str:
     root.addHandler(handler)
     root.setLevel(logging.INFO)
     try:
-        _row, token = resets.make(db, account)
-        logger.warning("Password link made on the server with %s name=%s", COMMAND, account.name)
+        _row, token = resets.make(db, account, origin=f"the command {COMMAND} on the server")
     finally:
         root.removeHandler(handler)
         root.setLevel(level)
@@ -103,6 +102,8 @@ def main(argv: list[str] | None = None) -> int:
                   file=sys.stderr)
             return 1
 
+        by_provider = account.sign_in != SIGN_IN_PASSWORD
+        name = account.name
         token = _make(db, account)
         link = resets.link_to(db, token)
 
@@ -112,6 +113,9 @@ def main(argv: list[str] | None = None) -> int:
         print(f"/reset/{token}")
         print("Open this path at the address you use for nexpaper, for example http://192.0.2.10:8560/reset/...",
               file=sys.stderr)
+    if by_provider:
+        print(f"'{name}' signs in through a provider so far. Using the link gives the account a password and makes it "
+              "an account with a password.", file=sys.stderr)
     print(f"The link works once and for {resets.HOURS} hours. Your second factor stays: sign in with the new password, "
           "then with the code from your app, a passkey or one of your recovery codes.", file=sys.stderr)
     return 0

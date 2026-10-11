@@ -91,6 +91,32 @@ describe('the length of a sign-in', () => {
     expect(box.textContent).toContain('Until you have not been here for 1 day. Good for your own phone')
   })
 
+  it('says one day as one day in German on the sign-in page', async () => {
+    answers['GET /api/v1/auth/methods'] = methods(1)
+    await show(<LoginPage />)
+    expect(box.textContent).toContain('Bis du 1 Tag nicht hier warst.')
+    expect(box.textContent).not.toContain('1 Tage')
+  })
+
+  it('says one day as one day under Security and in "Ready for the internet?", in German and in English', async () => {
+    for (const [language, devices, ready] of [
+      ['de', 'läuft nach 1 Tag ohne Nutzung von selbst ab.', 'läuft nach 1 Tag ohne Nutzung ab.'],
+      ['en', 'ends by itself after 1 day without use.', 'runs out after 1 day without use.'],
+    ] as const) {
+      await act(async () => changeLanguage(language, false))
+      answers['GET /api/v1/auth/methods'] = methods(1)
+      answers['GET /api/v1/settings/readiness'] = { open: 0, points: [{ key: 'cookies', state: 'ok', values: { mode: 'auto', days: 1 } }] }
+      await show(<SignInNoticeCard me={me} />, '/konto')
+      expect(box.textContent, language).toContain(devices)
+      act(() => root.unmount())
+      box.remove()
+      await show(<ReadinessCard />, '/einstellungen')
+      expect(box.textContent, language).toContain(ready)
+      act(() => root.unmount())
+      box.remove()
+    }
+  })
+
   it('names no number before the server said one', async () => {
     answers['GET /api/v1/auth/methods'] = methods()
     await show(<LoginPage />)

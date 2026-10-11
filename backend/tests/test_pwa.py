@@ -180,6 +180,26 @@ def test_a_language_the_operator_added_names_the_shortcuts_too(home_screen: Test
     assert shortcuts(home_screen, "nl")[:2] == ("en", [("Upload", "Upload"), ("Take a photo", "Camera")])
 
 
+def test_a_language_with_a_region_comes_before_the_language_without(home_screen: TestClient) -> None:
+    folder = locales.locales_dir()
+    (folder / "pt.json").write_text(json.dumps({"manifest": {"camera": "Fotografar", "cameraShort": "Foto"}}), encoding="utf-8")
+    (folder / "pt-BR.json").write_text(json.dumps({"manifest": {"camera": "Tirar uma foto", "cameraShort": "Câmera"}}),
+                                       encoding="utf-8")
+    locales.forget()
+    brazil = ("pt-BR", [("Upload", "Upload"), ("Tirar uma foto", "Câmera")])
+    portugal = ("pt", [("Upload", "Upload"), ("Fotografar", "Foto")])
+    for accept, wanted in (
+        ("pt-BR,pt;q=0.9,en;q=0.8", brazil),
+        ("pt-br", brazil),
+        # A region nexpaper has no file for falls back to the language, a region it has does not leak to others.
+        ("pt-PT,pt;q=0.9", portugal),
+        ("pt", portugal),
+        ("pt-BR;q=0.2, de;q=0.9", ("de", [("Hochladen", "Hochladen"), ("Fotografieren", "Kamera")])),
+    ):
+        language, names, _ = shortcuts(home_screen, accept)
+        assert (language, names) == wanted, accept
+
+
 def test_the_words_of_the_server_are_those_of_the_interface() -> None:
     """The template of a new language is the interface's en.json: its ``manifest`` section is what a translator sees."""
     for language, words in manifest_service.SHIPPED.items():

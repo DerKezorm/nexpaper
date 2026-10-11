@@ -47,8 +47,11 @@ def available(db: Session) -> bool:
     )
 
 
-def make(db: Session, account: Account, by: Account | None = None) -> tuple[PasswordReset, str]:
-    """A new link for the account, the one before gone. The token is returned once, never stored."""
+def make(
+    db: Session, account: Account, by: Account | None = None, origin: str = "the person",
+) -> tuple[PasswordReset, str]:
+    """A new link for the account, the one before gone. The token is returned once, never stored. The log says who
+    asked: the operator who sent it (``by``), else ``origin`` (the person on the sign-in page, or a command)."""
     token = secrets.token_urlsafe(32)
     db.execute(delete(PasswordReset).where(PasswordReset.account_id == account.id))
     row = PasswordReset(
@@ -57,7 +60,7 @@ def make(db: Session, account: Account, by: Account | None = None) -> tuple[Pass
     )
     db.add(row)
     db.commit()
-    logger.info("Password link made name=%s by=%s", account.name, by.name if by else "the person")
+    logger.info("Password link made name=%s by=%s", account.name, by.name if by else origin)
     return row, token
 
 

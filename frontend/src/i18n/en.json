@@ -527,7 +527,7 @@
     },
     "push": {
       "title": "Web Push",
-      "text": "So that notices reach the phone and the browser: of a new sign-in, of a ready export or a finished import from Paperless, of a second factor that was reset or an account that was unlinked from a sign-in provider. Operators also hear when the check of the files finds something wrong or a restore fails. Set up from the start; each person signs up their devices under My account.",
+      "text": "So that notices reach the phone and the browser: of a new sign-in, of an export that is ready or failed or a finished import from Paperless, of a second factor that was reset or an account that was unlinked from a sign-in provider. Operators also hear when the check of the files finds something wrong or a restore fails. Set up from the start; each person signs up their devices under My account.",
       "ready_one": "Ready · {{count}} device signed up",
       "ready_other": "Ready · {{count}} devices signed up",
       "contact": "Contact for the push services",

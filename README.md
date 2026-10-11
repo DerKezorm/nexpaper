@@ -169,9 +169,11 @@ next start of the newer version.
 ## Forgot your password, and no mail server
 
 Whoever can run a command in the container holds the database and the secrets anyway, so a link made there gives
-nothing away. It is the same link the operator sends from Settings, Accounts: it works once and for 24 hours, a new one
-replaces the one before, and using it ends every session and lifts a lock after failed sign-ins. The second factor stays:
-sign in with the new password, then with the code from your app, a passkey or a recovery code.
+nothing away. It is the same link the operator sends from Settings, Accounts: it works once and for 24 hours, a new
+one replaces the one before, and using it ends every session and lifts a lock after failed sign-ins. The second factor
+stays: sign in with the new password, then with the code from your app, a passkey or a recovery code. An account that
+signs in only through a provider gets a password this way and becomes an account with a password, as with the link the
+operator sends.
 
 ```sh
 docker exec -it -u nexpaper nexpaper python -m app.reset_link <account>
@@ -305,12 +307,12 @@ days and can be brought back; one deleted for good, a key, a link or a device th
 
 ## Push
 
-Notices arrive by Web Push, to every device a person signs up (My account, Devices and apps): of a new sign-in, of a
-ready export or a finished import from Paperless, of a second factor the operator reset or an account the operator
-unlinked from a sign-in provider; operators also hear when the check of the files finds something wrong or a restore
-fails. It needs https (or localhost). On an iPhone it works only for the app added to the home screen (Share, Add to Home Screen)
-and only from iOS 16.4. The server makes its own keys; the operator can add a contact and further push services. A push
-never carries the content of a document.
+Notices arrive by Web Push, to every device a person signs up (My account, Devices and apps): of a new sign-in, of an
+export that is ready or failed or a finished import from Paperless, of a second factor the operator reset or an account
+the operator unlinked from a sign-in provider; operators also hear when the check of the files finds something wrong or
+a restore fails. It needs https (or localhost). On an iPhone it works only for the app added to the home screen (Share,
+Add to Home Screen) and only from iOS 16.4. The server makes its own keys; the operator can add a contact and further
+push services. A push never carries the content of a document.
 
 ## On the phone
 
@@ -368,18 +370,20 @@ itself: it all waits in an inbox.
 ## For programs
 
 Everything the web app does goes through `/api/v1`; the web app uses nothing else. A phone or a later app pairs with a
-**device token** (My account, Devices and apps) and acts with the rights of its account; scripts use an **API key**
-that only reads or only uploads, never more than its account may (off until the operator switches it on; 120 requests a minute, 50 uploads an hour). The description is served at `/api/v1/docs` and, for
-machines, at `/api/v1/openapi.json`; [docs/api.md](docs/api.md) says how to sign in.
+**device token** (My account, Devices and apps) and acts with the rights of its account; scripts use an **API key** that
+only reads or only uploads, never more than its account may (off until the operator switches it on; 120 requests a
+minute, 50 uploads an hour). The description is served at `/api/v1/docs` and, for machines, at `/api/v1/openapi.json`;
+[docs/api.md](docs/api.md) says how to sign in.
 
 ## Security in short
 
 - Passwords are hashed with Argon2id. Five failed sign-ins lock an account and an address for 15 minutes; with a second
-  factor, the password alone opens nothing. A session ends after 30 days without use (`NEXPAPER_SESSION_DAYS`), or after 12
-  hours when "stay signed in" was not ticked, and every device can be signed out on its own.
+  factor, the password alone opens nothing. A session ends after 30 days without use (`NEXPAPER_SESSION_DAYS`), or after
+  12 hours when "stay signed in" was not ticked, and every device can be signed out on its own.
 - Rights are checked on the server for every request. A wrong device token or API key counts against the sender like a
   wrong password. A device token never changes the way into the account (password, second factor, passkeys), never
-  reaches the operator's side (settings, accounts, backups, the log) and never pairs another device; a lost phone is blocked in the list and stops at once.
+  reaches the operator's side (settings, accounts, backups, the log) and never pairs another device; a lost phone is
+  blocked in the list and stops at once.
 - Every changing request of a browser needs a header a page on another site cannot send. Cookies are `HttpOnly` and
   `SameSite`; the Content Security Policy only allows the app's own files. Only the worker that finds the edges of a page
   in a photo may compile code at run time (OpenCV); it sees pixels and nothing else.
