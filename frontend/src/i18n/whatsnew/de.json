@@ -1,4 +1,19 @@
 {
+  "1.1.1": {
+    "lead": "Eine kleine Korrektur für den Betrieb hinter einem Reverse Proxy und für die Sprache des Browsers.",
+    "sections": [
+      {
+        "title": "X-Forwarded-Proto nur von vertrauten Proxys",
+        "where": "Einstellungen, Anmeldung, Bereit fürs Internet?",
+        "body": "Ob Cookies das Secure-Flag bekommen und ob „Bereit fürs Internet?“ https als in Ordnung zeigt, richtet sich jetzt nur noch nach einem Proxy, der in NEXPAPER_TRUSTED_PROXIES steht. Bisher zählte dafür der Kopf X-Forwarded-Proto von jedem Absender. Läuft nexpaper hinter einem Proxy, trag ihn dort ein oder setz NEXPAPER_COOKIE_SECURE auf on, sonst bleiben die Cookies im Modus auto ohne Secure."
+      }
+    ],
+    "smallTitle": "Außerdem",
+    "small": [
+      "Die Sprache des Browsers wird überall gleich gelesen, auch für neue Konten und Pushes: jede Gewichtung zählt, egal wo sie steht und wie sie geschrieben ist",
+      "Der https-Hinweis in „Bereit fürs Internet?“ nennt NEXPAPER_TRUSTED_PROXIES"
+    ]
+  },
   "1.1.0": {
     "lead": "Anmelden über mehrere Anbieter, so wie in allen nex-Apps: authentik, Microsoft Entra ID oder jeder andere, der OpenID Connect spricht.",
     "sections": [
