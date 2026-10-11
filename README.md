@@ -16,8 +16,9 @@ over what you already have in Paperless-ngx.
 - **For small firms.** E-invoices (ZUGFeRD, Factur-X, XRechnung) are read from their data, there is a history of who
   changed what, and an export for the tax adviser (a ZIP with the PDFs and a list). No claim of GoBD compliance.
 - **No Redis, no Celery, no Postgres.** One container, SQLite, plain readable files on the disk.
-- **Made to be on the internet:** a second factor from the start, passkeys, sign-in through your own provider, and a
-  checklist in the settings. Everything the web app does goes through an open API for the apps that will come.
+- **Best kept at home.** nexpaper is meant for your own network; from on the way, reach it through a VPN. It still
+  comes with a second factor from the start, passkeys, sign-in through your own provider and a checklist in the
+  settings. Everything the web app does goes through an open API (`/api/v1`) for your own tools.
 
 nexpaper is one of the nex apps and looks like them: light paper and kraft by day, a dark desk by night.
 
@@ -82,9 +83,11 @@ shows the code, new at every start until nexpaper is set up. To choose it yourse
 after the password the account sets up its second factor; then the operator invites the others by link. Everything
 personal is under "My account" for everybody; "Settings" is the operator's and holds the server.
 
-## nexpaper on the internet
+## Reaching nexpaper from outside
 
-Many people will put nexpaper on the internet; it is made for that. Before you open it:
+Your papers are best kept in your own network. To reach nexpaper on the way, a VPN into your home network (WireGuard,
+Tailscale, NetBird and the like) is the safer choice than opening a port. If you open it to the internet anyway, do it
+with care and at least this:
 
 1. **Set it up first**, from your own network, with the setup code from the log. Only then forward a port.
 2. **https at a reverse proxy**, and nexpaper reachable only through it: publish the port as `127.0.0.1:8560:8000` when

@@ -185,7 +185,7 @@ describe('devices and apps', () => {
       }
       answers['GET /api/v1/devices/pairing'] = { state: 'open', expires_at: null, device: null }
       await show('/konto?tab=devices')
-      expect(box.textContent).toContain('Für die nexpaper-Apps, die noch kommen, und für eigene Programme.')
+      expect(box.textContent).toContain('Für eigene Programme und Apps.')
       await click(button('Code zum Koppeln zeigen'))
       const shown = box.querySelector('[data-testid="pairing-code"]')!
       expect(shown.textContent).toContain('Mit dem Gerät scannen. Der Code gilt 5 Minuten und nur einmal.')

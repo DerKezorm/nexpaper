@@ -14,9 +14,10 @@ available, and you are thanked there unless you would rather not be.
 Only the newest release gets security fixes. Updating is `docker compose pull && docker compose up -d`; see
 [Updating](README.md#updating).
 
-## Running nexpaper on the internet
+## Reaching nexpaper from outside
 
-The README has a checklist: [nexpaper on the internet](README.md#nexpaper-on-the-internet).
+nexpaper is best used in your own network, and from on the way through a VPN. If you open it to the internet anyway,
+the README has a checklist: [Reaching nexpaper from outside](README.md#reaching-nexpaper-from-outside).
 
 ## What the operator can reach
 

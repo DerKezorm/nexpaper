@@ -606,7 +606,7 @@
     },
     "interface": {
       "title": "Interface",
-      "text": "Everything the web app can do works through /api/v1 as well. The nexpaper apps that are still to come build on it, and every helper of your own.",
+      "text": "Everything the web app can do works through /api/v1 as well. Helpers and programs of your own build on it.",
       "docs": "Description",
       "docsText": "All routes on one page",
       "schema": "Machine readable",
@@ -977,7 +977,7 @@
   },
   "pairing": {
     "title": "Pair a device",
-    "text": "For the nexpaper apps still to come and for programs of your own. The device gets a key of its own that you can block any time.",
+    "text": "For programs and apps of your own. The device gets a key of its own that you can block any time.",
     "new": "Pair a device",
     "name": "Name of the device",
     "namePlaceholder": "jule's iPhone",

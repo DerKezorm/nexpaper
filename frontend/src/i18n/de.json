@@ -606,7 +606,7 @@
     },
     "interface": {
       "title": "Schnittstelle",
-      "text": "Alles, was die Web-App kann, geht auch über /api/v1. Darauf bauen die nexpaper-Apps auf, die noch kommen, und jeder eigene Helfer.",
+      "text": "Alles, was die Web-App kann, geht auch über /api/v1. Darauf bauen eigene Helfer und Programme auf.",
       "docs": "Beschreibung",
       "docsText": "Alle Routen auf einer Seite",
       "schema": "Maschinenlesbar",
@@ -977,7 +977,7 @@
   },
   "pairing": {
     "title": "Gerät koppeln",
-    "text": "Für die nexpaper-Apps, die noch kommen, und für eigene Programme. Das Gerät bekommt einen eigenen Schlüssel, den du jederzeit sperren kannst.",
+    "text": "Für eigene Programme und Apps. Das Gerät bekommt einen eigenen Schlüssel, den du jederzeit sperren kannst.",
     "new": "Gerät koppeln",
     "name": "Name des Geräts",
     "namePlaceholder": "iPhone von jule",
