@@ -205,3 +205,59 @@ def remove(code: str) -> bool:
     path.unlink()
     logger.info("Language file %s removed", path.name)
     return True
+
+
+# --- The browser's languages ------------------------------------------------------------------------------------------
+
+#: How much of ``Accept-Language`` is read. A browser sends well under 200 characters; every entry within this counts.
+MAX_ACCEPT = 4096
+#: A language range: a language, then subtags of letters and digits (``de``, ``pt-BR``, ``zh-Hant-TW``).
+_RANGE = re.compile(r"^[A-Za-z]{1,8}(?:-[A-Za-z0-9]{1,8})*$")
+
+
+def _weight(params: list[str]) -> float | None:
+    """The weight among the parameters of an entry: ``q`` in any case and at any place (1 without one). None when the
+    weight is not a number from 0 to 1: such an entry is broken and counts not at all."""
+    for param in params:
+        name, _, value = param.partition("=")
+        if name.strip().lower() != "q":
+            continue
+        try:
+            weight = float(value.strip())
+        except ValueError:
+            return None
+        return weight if 0 <= weight <= 1 else None
+    return 1.0
+
+
+def accepted(header: str) -> list[str]:
+    """The languages of ``Accept-Language`` by their weight, the order of the header among equal weights. ``*``, a
+    weight of 0 and broken entries are left out."""
+    found: list[tuple[float, int, str]] = []
+    for position, part in enumerate((header or "")[:MAX_ACCEPT].split(",")):
+        code, *params = part.split(";")
+        code = code.strip()
+        weight = _weight(params)
+        if weight and code != "*" and _RANGE.match(code):
+            found.append((-weight, position, code))
+    return [code for _weight, _position, code in sorted(found)]
+
+
+def _canonical(subtags: list[str]) -> str:
+    """``PT-br`` as ``pt-BR``, ``zh-hant`` as ``zh-Hant``: the way the files are named."""
+    out = [subtags[0].lower()]
+    for tag in subtags[1:]:
+        out.append(tag.upper() if len(tag) == 2 else tag.title() if len(tag) == 4 else tag.lower())
+    return "-".join(out)
+
+
+def best_match(header: str, known: set[str]) -> str:
+    """The first language of the browser that is in ``known``: with its region or script (``pt-BR``), else the
+    language alone (``pt``). Empty when none is."""
+    for code in accepted(header):
+        subtags = code.split("-")
+        for size in range(len(subtags), 0, -1):
+            candidate = _canonical(subtags[:size])
+            if candidate in known:
+                return candidate
+    return ""

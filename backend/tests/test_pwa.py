@@ -200,6 +200,37 @@ def test_a_language_with_a_region_comes_before_the_language_without(home_screen:
         assert (language, names) == wanted, accept
 
 
+@pytest.mark.parametrize(("accept", "wanted"), [
+    # The weight in any case, and after other parameters of the entry.
+    ("de;Q=0.2, en;q=0.9", "en"),
+    ("de;level=1;q=0.2, en;q=0.5", "en"),
+    # Every entry counts, not only the first twenty.
+    (", ".join(f"x{i:02d}" for i in range(30)) + ", de", "de"),
+    # A weight that is no number from 0 to 1 makes the entry broken; it counts not at all.
+    ("de;q=abc, en;q=0.1", "en"),
+    ("de;q=2, en;q=0.1", "en"),
+    ("de;q=nan, en;q=0.1", "en"),
+])
+def test_the_manifest_reads_every_entry_and_the_weight_wherever_it_stands(home_screen: TestClient, accept: str,
+                                                                          wanted: str) -> None:
+    assert shortcuts(home_screen, accept)[0] == wanted, accept
+
+
+def test_the_language_of_a_new_account_follows_the_weight_too() -> None:
+    """The interface asks without naming its language: the browser's first language by weight that nexpaper has."""
+    from starlette.requests import Request
+
+    from app.routers.auth import interface_language
+
+    def ask(accept: str) -> str:
+        return interface_language(Request({"type": "http", "headers": [(b"accept-language", accept.encode())]}))
+
+    assert ask("en;q=0.2, de;q=0.9") == "de"
+    assert ask("fr, de;level=1;Q=0.5") == "de"
+    assert ask("DE-at") == "de"
+    assert ask("fr") == ""
+
+
 def test_the_words_of_the_server_are_those_of_the_interface() -> None:
     """The template of a new language is the interface's en.json: its ``manifest`` section is what a translator sees."""
     for language, words in manifest_service.SHIPPED.items():

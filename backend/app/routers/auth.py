@@ -184,16 +184,12 @@ def _known(language: str) -> bool:
 
 def interface_language(request: Request) -> str:
     """The language of the page that asks: the one the interface names (``X-Nexpaper-Language``), else the first of
-    the browser's languages nexpaper has; empty when none fits."""
+    the browser's languages nexpaper has, by their weight (``locales.best_match``); empty when none fits."""
     named = request.headers.get(LANGUAGE_HEADER, "").strip()[:16]
     if named and _known(named):
         return named
-    for part in request.headers.get("accept-language", "").split(",")[:20]:
-        code = part.split(";")[0].strip()
-        for candidate in (code, code.split("-")[0].lower()):
-            if candidate and _known(candidate):
-                return candidate
-    return ""
+    known = set(SHIPPED) | {item.code for item in locales.available()}
+    return locales.best_match(request.headers.get("accept-language", ""), known)
 
 
 def check_language(language: str) -> str:

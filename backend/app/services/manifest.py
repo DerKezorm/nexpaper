@@ -32,42 +32,16 @@ SHIPPED: dict[str, dict[str, str]] = {
 SHORTCUTS = {"/schnell": ("upload", "uploadShort"), "/kamera": ("camera", "cameraShort")}
 #: A name on the home screen; longer is no name but a mistake in a file.
 MAX_TEXT = 120
-#: Languages read from ``Accept-Language``; a browser sends a handful.
-MAX_LANGUAGES = 20
 
 
 def _known() -> set[str]:
     return set(SHIPPED) | {item.code for item in locales.available()}
 
 
-def _weighted(header: str) -> list[str]:
-    """The languages of ``Accept-Language`` by their weight (``q``), the order of the header among equal weights."""
-    found: list[tuple[float, int, str]] = []
-    for position, part in enumerate(header.split(",")[:MAX_LANGUAGES]):
-        code, _, rest = part.strip().partition(";")
-        weight = 1.0
-        rest = rest.strip()
-        if rest.startswith("q="):
-            try:
-                weight = float(rest[2:])
-            except ValueError:
-                continue
-        code = code.strip()
-        if code and code != "*" and weight > 0:
-            found.append((-weight, position, code))
-    return [code for _weight, _position, code in sorted(found)]
-
-
 def choose(accept_language: str) -> str:
-    """The first language of the browser that nexpaper has (``pt-BR``, else ``pt``), else English."""
-    known = _known()
-    for code in _weighted(accept_language or ""):
-        language, _, region = code.partition("-")
-        exact = f"{language.lower()}-{region.upper()}" if len(region) == 2 else code
-        for candidate in (exact, language.lower()):
-            if candidate in known:
-                return candidate
-    return FALLBACK
+    """The first language of the browser that nexpaper has (``pt-BR``, else ``pt``), else English. The header is
+    read by ``locales.accepted``, as everywhere in nexpaper."""
+    return locales.best_match(accept_language or "", _known()) or FALLBACK
 
 
 def texts(language: str) -> dict[str, str]:
