@@ -78,6 +78,14 @@ def forwarded_proto(headers: list[tuple[bytes, bytes]], kind: str) -> str | None
     return proto if proto in _SCHEMES.get(kind, ()) else None
 
 
+def claims_https(headers: list[tuple[bytes, bytes]]) -> bool:
+    """Whether ``X-Forwarded-Proto`` says https by the same reading as ``forwarded_proto``, from any sender. Only for
+    what such a word can make stricter or only shows to whoever sent it: the ``Secure`` flag of a cookie (a forged
+    https withholds the cookie from plain http, nothing more) and the operator's check of the own request. The scheme
+    of the request, addresses and links come from a trusted proxy alone (``ForwardedProtoMiddleware``)."""
+    return forwarded_proto(headers, "http") == "https"
+
+
 class ForwardedProtoMiddleware:
     """The scheme a proxy that ends TLS reports. uvicorn runs with ``--no-proxy-headers`` (it would believe any sender
     that writes ``X-Forwarded-For``), so behind such a proxy every request looked like plain http: the redirect address

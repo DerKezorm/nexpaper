@@ -64,6 +64,20 @@ def test_https_needs_the_public_address_and_the_request_on_https(client: TestCli
     assert points(client, headers={"X-Forwarded-Proto": "https"})["https"]["state"] == "ok"
 
 
+@pytest.mark.parametrize(("forwarded", "https"), [
+    ("https, http", False), ("http, https", True), ("HTTPS", True), ("gopher", False),
+])
+def test_the_check_reads_the_proxy_as_the_cookie_does(client: TestClient, operator: Account, forwarded: str,
+                                                      https: bool) -> None:
+    """The rightmost value counts (the left ones a sender may have written), without regard to case, and only http
+    or https: the same reading as the ``Secure`` flag of the cookies, so the check never says what the cookie does
+    not do."""
+    save({"public_url": "https://paper.example.com"})
+    found = points(client, headers={"X-Forwarded-Proto": forwarded})
+    assert found["https"]["state"] == ("ok" if https else "warn"), forwarded
+    assert found["cookies"]["state"] == found["https"]["state"], forwarded
+
+
 def test_the_second_factor_for_everybody_and_for_the_operator(client: TestClient, operator: Account) -> None:
     found = points(client)
     assert found["two_factor"]["state"] == "bad" and found["own_account"]["state"] == "bad"
