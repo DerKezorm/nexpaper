@@ -1,4 +1,21 @@
 {
+  "1.1.2": {
+    "lead": "Two fixes: HDR photos from an iPhone and very large mailboxes.",
+    "sections": [
+      {
+        "title": "HDR photos from an iPhone make one page",
+        "where": "Upload, Camera, My account",
+        "body": "An HDR photo from an iPhone is a JPEG with a second, small picture behind it, the gain map. Until now it became a PDF of two pages, the second small and grey. Now only the photo becomes the page. As a profile picture such a photo was refused so far; now it is taken."
+      },
+      {
+        "title": "Very large mailboxes as an input",
+        "where": "Settings, Inputs, Mailbox",
+        "body": "With a mailbox of well over 100,000 mails as the input, fetching stopped at the same place on every run after the first pass. The server sent the list of all mails in one line, and that line was longer than nexpaper would read. Now nexpaper asks for the newest mail alone and reads long answers too."
+      }
+    ],
+    "smallTitle": "Also",
+    "small": []
+  },
   "1.1.1": {
     "lead": "A small fix for running behind a reverse proxy and for the language of the browser.",
     "sections": [

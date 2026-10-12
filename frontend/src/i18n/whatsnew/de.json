@@ -1,4 +1,21 @@
 {
+  "1.1.2": {
+    "lead": "Zwei Korrekturen: HDR-Fotos vom iPhone und sehr große Postfächer.",
+    "sections": [
+      {
+        "title": "HDR-Fotos vom iPhone ergeben eine Seite",
+        "where": "Hochladen, Kamera, Mein Konto",
+        "body": "Ein HDR-Foto vom iPhone ist ein JPEG mit einem zweiten, kleinen Bild dahinter, der Gain-Map. Daraus wurde bisher ein PDF mit zwei Seiten, die zweite klein und grau. Jetzt wird nur das Foto zur Seite. Als Profilbild wurde ein solches Foto bisher abgelehnt, jetzt wird es angenommen."
+      },
+      {
+        "title": "Sehr große Postfächer als Eingang",
+        "where": "Einstellungen, Eingänge, E-Mail-Postfach",
+        "body": "Wer ein Postfach mit weit über 100.000 Mails als Eingang einträgt, bei dem blieb der Abruf nach dem ersten Durchgang bei jedem Lauf an derselben Stelle stehen. Der Server schickte die Liste aller Mails in einer Zeile, und die war länger, als nexpaper las. Jetzt fragt nexpaper nur noch nach der neuesten Mail und liest auch lange Antworten."
+      }
+    ],
+    "smallTitle": "Außerdem",
+    "small": []
+  },
   "1.1.1": {
     "lead": "Eine kleine Korrektur für den Betrieb hinter einem Reverse Proxy und für die Sprache des Browsers.",
     "sections": [
