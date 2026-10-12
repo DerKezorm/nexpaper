@@ -71,6 +71,18 @@ def make_image(kind: str = "png", size: tuple[int, int] = (300, 400), text: str 
     return buffer.getvalue()
 
 
+def make_hdr_jpeg(size: tuple[int, int] = (600, 800)) -> bytes:
+    """What Safari sends for an HDR photo from an iPhone: a JPEG with its gain map as a second picture behind it
+    (Multi-Picture Format). The photo is red and taller than wide, the gain map grey, small and wider than tall."""
+    from PIL import Image
+
+    photo = Image.new("RGB", size, (220, 30, 30))
+    gain = Image.new("L", (size[1] // 4, size[0] // 4), 128)
+    buffer = io.BytesIO()
+    photo.save(buffer, "MPO", save_all=True, append_images=[gain])
+    return buffer.getvalue()
+
+
 def make_animated_webp(frames: int = 4, size: tuple[int, int] = (120, 160)) -> bytes:
     """A WebP animation: every frame has its own number on it."""
     from PIL import Image, ImageDraw

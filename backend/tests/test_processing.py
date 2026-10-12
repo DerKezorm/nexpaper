@@ -133,6 +133,23 @@ def test_a_webp_animation_is_one_page_its_first_frame(client: TestClient, operat
     assert len(pdf_pages(archive_file(document["id"]))) == 1
 
 
+def test_an_hdr_photo_from_an_iphone_is_one_page_the_photo_not_its_gain_map(client: TestClient, operator: object) -> None:
+    from PIL import Image
+
+    data = files.make_hdr_jpeg(size=(600, 800))
+    assert Image.open(io.BytesIO(data)).format == "MPO" and Image.open(io.BytesIO(data)).n_frames == 2  # the premise
+    limit(upload_max_pages=1)  # the gain map is no page, so one page is enough
+    document = upload_and_read(client, "IMG_0042.jpg", data)
+    assert document["status"] == "inbox" and document["pages"] == 1 and document["process_error"] == ""
+    assert (Path(DATA_DIR) / "dokumente" / version_of(document["id"]).original_path).read_bytes() == data
+    sizes = pdf_pages(archive_file(document["id"]))
+    assert len(sizes) == 1 and sizes[0][1] > sizes[0][0]  # the photo (taller than wide), not the gain map
+    first = pages.thumb_path(document["id"], 1)
+    with Image.open(first) as thumb:
+        red, green, blue = thumb.convert("RGB").getpixel((thumb.width // 2, thumb.height // 2))
+    assert red > 150 and green < 100 and blue < 100, (red, green, blue)
+
+
 @pytest.mark.parametrize("kind", ["webp", "avif"])
 def test_a_webp_and_an_avif_with_transparency_are_drawn_on_white(client: TestClient, operator: object, kind: str) -> None:
     import pypdfium2

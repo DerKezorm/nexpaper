@@ -12,6 +12,7 @@ from PIL import Image
 from app.main import app
 from app.services import avatars
 
+from . import files
 from .conftest import make_account, sign_in
 
 
@@ -79,6 +80,8 @@ def test_only_pictures_come_in(client: TestClient, account: object) -> None:
     # A PNG and a WebP are pictures too.
     assert anna.put("/api/v1/auth/avatar", content=photo(kind="PNG")).status_code == 200
     assert anna.put("/api/v1/auth/avatar", content=photo(kind="WEBP")).status_code == 200
+    # An HDR photo from an iPhone: a JPEG with its gain map behind it (Multi-Picture Format).
+    assert anna.put("/api/v1/auth/avatar", content=files.make_hdr_jpeg()).status_code == 200
 
 
 def test_seen_by_everybody_on_the_server(client: TestClient, account: object) -> None:

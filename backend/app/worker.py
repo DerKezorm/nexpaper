@@ -155,15 +155,23 @@ def fingerprint(image: Any) -> str:
 
 #: Kinds that are one picture to a document even when the file holds an animation or a series: the first frame is taken.
 SINGLE_FRAME = ("webp", "avif")
+#: What Pillow calls a JPEG with more pictures behind the first (Multi-Picture Format). An HDR photo from an iPhone is
+#: one: the photo, then its gain map. It is one page, the photo.
+SERIES = "MPO"
+
+
+def _single(kind: str, image: Any) -> bool:
+    return kind in SINGLE_FRAME or image.format == SERIES
 
 
 def _check_picture(source: Path, max_pixels: int, max_pages: int, kind: str = "") -> tuple[Any, int]:
     """Opens a picture and checks its size (every frame of a multi-page TIFF); returns it and the number of frames.
-    A WebP or AVIF that is an animation is one page, its first frame: its frames are not looked at."""
+    A WebP or AVIF that is an animation, and a JPEG with a gain map behind it, is one page, its first frame: the others
+    are not looked at."""
     image_module = _pillow(max_pixels)
     try:
         image = image_module.open(source)
-        frames = 1 if kind in SINGLE_FRAME else int(getattr(image, "n_frames", 1) or 1)
+        frames = 1 if _single(kind, image) else int(getattr(image, "n_frames", 1) or 1)
         if frames > max_pages:
             raise Refused("too_many_pages")
         for index in range(frames):
@@ -186,16 +194,16 @@ def _to_pdf(source: Path, kind: str, target: Path, max_pixels: int, max_pages: i
     """The picture as a PDF of one page per frame, written whole to a temporary name and put in place."""
     import img2pdf
 
-    image, _frames = _check_picture(source, max_pixels, max_pages, kind)
+    image, frames = _check_picture(source, max_pixels, max_pages, kind)
     partial = _partial(target)
     target.parent.mkdir(parents=True, exist_ok=True)
     scratch: list[Path] = []
     try:
         feed: Path = source
         has_dpi = bool(image.info.get("dpi")) and all(60 <= float(part) <= 2400 for part in image.info["dpi"])
-        if kind in ("heic", "webp", "avif"):
-            # img2pdf does not know HEIC, WebP or AVIF: a JPEG of the same pixels (the first frame, turned upright,
-            # transparency on white), goes in.
+        if kind in ("heic", "webp", "avif") or image.format == SERIES:
+            # img2pdf does not know HEIC, WebP or AVIF, and it makes a page of every picture in a JPEG with a gain map:
+            # a JPEG of the same pixels (the first frame, turned upright, transparency on white), goes in.
             upright = _opaque(image)
             feed = partial.with_suffix(".jpg")
             scratch.append(feed)
@@ -205,7 +213,7 @@ def _to_pdf(source: Path, kind: str, target: Path, max_pixels: int, max_pages: i
         try:
             data = img2pdf.convert(str(feed), layout_fun=layout) if layout else img2pdf.convert(str(feed))
         except Exception:  # noqa: BLE001 - transparency, odd colour modes, 16 bits: draw it again plainly
-            data = _plain_pdf(image)
+            data = _plain_pdf(image, frames)
         partial.write_bytes(data)
         os.replace(partial, target)
     finally:
@@ -229,12 +237,13 @@ def _opaque(image: Any) -> Any:
     return frame.convert("RGB")
 
 
-def _plain_pdf(image: Any) -> bytes:
-    """A PDF of every frame of a picture that img2pdf would not take: opaque RGB (transparency on white), re-encoded."""
+def _plain_pdf(image: Any, count: int) -> bytes:
+    """A PDF of the first ``count`` frames of a picture that img2pdf would not take: opaque RGB (transparency on white),
+    re-encoded."""
     from PIL import Image, ImageOps
 
     frames = []
-    for index in range(int(getattr(image, "n_frames", 1) or 1)):
+    for index in range(count):
         image.seek(index)
         frame = ImageOps.exif_transpose(image)
         if frame.mode in ("RGBA", "LA", "P"):

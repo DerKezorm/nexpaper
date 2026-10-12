@@ -147,7 +147,10 @@ def opened(data: bytes, kinds: set[str]) -> Iterator[Any]:
     try:
         try:
             with Image.open(io.BytesIO(data)) as image:
-                if image.format and image.format.lower() not in {"jpeg", "png", "webp", "gif", "bmp", "heif", "avif"}:
+                # "mpo" is a JPEG with more pictures behind the first, like an HDR photo from an iPhone and its gain
+                # map; only the first is read.
+                if image.format and image.format.lower() not in {"jpeg", "mpo", "png", "webp", "gif", "bmp", "heif",
+                                                                  "avif"}:
                     raise PictureError("kind")
                 if image.width * image.height > MAX_PIXELS:
                     raise PictureError("size")
