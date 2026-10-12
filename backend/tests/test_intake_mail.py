@@ -430,6 +430,40 @@ def test_a_run_takes_a_few_and_leaves_the_rest_for_the_next(mailbox: imap_server
     assert last.more is False and len(docs()) == 5
 
 
+def huge_mailbox(store: imap_server.Store, count: int = 140_000, first_uid: int = 1_000_000) -> list[int]:
+    """A mailbox someone uses for everything: ``count`` read mails with UIDs of seven digits. Never fetched, so empty."""
+    inbox = store.inbox()
+    inbox.next_uid = first_uid
+    for _ in range(count):
+        inbox.add(b"", {"\\Seen"})
+    uids = [m.uid for m in inbox.mails]
+    assert len(" ".join(map(str, uids))) > 1_000_000  # the floor: all of them in one line is more than imaplib's 1 MB
+    return uids
+
+
+def test_a_huge_mailbox_ends_its_fresh_start_and_takes_what_comes_after(mailbox: imap_server.Store, operator: Account,
+                                                                       monkeypatch: pytest.MonkeyPatch) -> None:
+    import imaplib
+
+    monkeypatch.setattr(imaplib, "_MAXLINE", 1_000_000)  # imaplib as it comes: the newest UID alone is asked for
+    uids = huge_mailbox(mailbox)
+    assert intake_mail.fetch().files == 0
+    with SessionLocal() as db:
+        state = settings_service.get(db, "mail_state")
+    assert state["backlog"] is False and state["last"] == uids[-1]
+    deliver(mailbox, mail(sender="a@example.org", files=[PDF]), flags={"\\Seen"})
+    assert intake_mail.fetch().files == 1 and [d.title for d in docs()] == ["Rechnung"]
+
+
+def test_a_search_answer_longer_than_a_megabyte_is_read(mailbox: imap_server.Store, operator: Account) -> None:
+    uids = huge_mailbox(mailbox)
+    with SessionLocal() as db:
+        cfg = intake_mail.config(db)
+    with intake_mail.session(cfg, readonly=True) as box:
+        assert box.uids(["ALL"]) == uids
+        assert box.uids(["UID", "*"]) == [uids[-1]]  # the same connection goes on after the long line
+
+
 # --- Connections ------------------------------------------------------------------------------------------------------
 
 

@@ -76,6 +76,11 @@ CONNECT_SECONDS = 10.0
 RUN_SECONDS = 300.0
 #: Lines one answer may hold (a server that floods with untagged lines is cut off).
 MAX_LINES = 10_000
+#: How long one line of an answer may be. imaplib stops at 1 MB, and a search answers in one line: with UIDs of seven
+#: digits that is about 125,000 mails, a mailbox someone uses for everything. As long as a whole answer may be
+#: (``_Client``), a mail and a little more; that still stops a server that sends without ever ending a line.
+LINE_MAX = MAIL_MAX + 2 * MB
+imaplib._MAXLINE = max(imaplib._MAXLINE, LINE_MAX)
 
 #: For the tests: how names are resolved and which certificates are trusted.
 resolver: Callable[[str, int], list[str]] = outbound.resolve
@@ -890,8 +895,9 @@ def _fetch() -> Result:
             state = _state(cfg, box, stored)
             fresh = _waiting(box, state)
             if not fresh and state["backlog"]:
-                # The unread mails of a fresh start are done: from here on, everything after the newest mail.
-                state["last"] = max([state["last"], *box.uids(["ALL"])])
+                # The unread mails of a fresh start are done: from here on, everything after the newest mail. Asked
+                # for that one alone ("UID *"): the list of all would be one line as long as the mailbox.
+                state["last"] = max([state["last"], *box.uids(["UID", "*"])])
                 state["backlog"] = False
             waiting = sorted(set(_due(state, today)) | set(fresh))
             result.more = len(waiting) > PER_RUN
