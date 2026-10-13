@@ -1,4 +1,26 @@
 {
+  "1.3.0": {
+    "lead": "Titel, die mehr sagen, eigene Anweisungen an die KI und ein Eingangsordner, der im Container überall liegen darf.",
+    "sections": [
+      {
+        "title": "KI-Titel, die ein Dokument unterscheiden",
+        "where": "Eingang",
+        "body": "Die KI schlägt jetzt Titel vor, die sagen, was das Dokument ist und was es besonders macht, etwa „Rechnung 110526 – Reifen“ statt nur „Rechnung“: mit Rechnungs-, Vertrags- oder Versicherungsnummer und dem Gegenstand, soweit der Text sie nennt. Erfunden wird nichts."
+      },
+      {
+        "title": "Eigene Anweisungen an die KI",
+        "where": "Einstellungen, KI",
+        "body": "Als Betreiber kannst du der KI zusätzliche Anweisungen geben, etwa wie eure Titel aussehen sollen oder in welcher Sprache. Sie kommen zu den festen Regeln hinzu und ändern nichts daran, welche Felder die KI füllt und was nexpaper prüft. Leer bleibt alles wie bisher."
+      },
+      {
+        "title": "Eingangsordner an jedem eingebundenen Ort",
+        "where": "Einstellungen, Eingänge",
+        "body": "Im Container nahm nexpaper als Eingangsordner nur /data/eingang an; jeder andere Pfad hieß „darf nicht“, auch ein eigens eingebundener wie /scans. Jetzt geht jeder eingebundene Ordner, der nicht im Programm, in den Daten oder in einem Systemordner liegt."
+      }
+    ],
+    "smallTitle": "Außerdem",
+    "small": []
+  },
   "1.2.1": {
     "lead": "Eine Korrektur am neuen Archiv.",
     "sections": [

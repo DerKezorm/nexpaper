@@ -1,4 +1,26 @@
 {
+  "1.3.0": {
+    "lead": "Titles that say more, your own instructions for the AI, and an intake folder that may lie anywhere in the container.",
+    "sections": [
+      {
+        "title": "AI titles that tell a document apart",
+        "where": "Inbox",
+        "body": "The AI now proposes titles that say what the document is and what is particular to it, such as “Invoice 110526 – Tyres” instead of just “Invoice”: with the number of an invoice, a contract or a policy and what it is about, as far as the text names them. Nothing is made up."
+      },
+      {
+        "title": "Your own instructions for the AI",
+        "where": "Settings, AI",
+        "body": "As the operator you can give the AI additional instructions, for example how your titles should look or in which language. They are added to the fixed rules and change nothing in which fields the AI fills and what nexpaper checks. Left empty, everything stays as it was."
+      },
+      {
+        "title": "An intake folder wherever it is mounted",
+        "where": "Settings, Inputs",
+        "body": "In the container nexpaper took only /data/eingang as the intake folder; any other path was refused, a mounted one like /scans too. Now any mounted folder will do that does not lie in the program, in the data or in a system folder."
+      }
+    ],
+    "smallTitle": "Also",
+    "small": []
+  },
   "1.2.1": {
     "lead": "A fix for the new archive.",
     "sections": [

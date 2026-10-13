@@ -291,6 +291,8 @@ knew them; a proposal is only a proposal, and the inbox says where each field ca
 - The operator sets a **limit of documents per day** for the whole server (200 from the start, 0 for none), so that a
   large delivery does not send every document, one request each, to a service that is paid for by the request. When it is
   reached, the documents keep what the rules and the text gave them until the next day.
+- The operator can add **own instructions** (at most 2000 characters), for example how titles should be named. They go
+  with the fixed rules and change nothing in which fields are filled and how the answer is checked.
 
 ## Filing
 
