@@ -2177,7 +2177,12 @@
       "dailyLimitSave": "Grenze speichern",
       "dailyLimitInvalid": "Bitte eine ganze Zahl von 0 bis 100000 eingeben.",
       "usedToday_one": "Heute {{count}} Anfrage",
-      "usedToday_other": "Heute {{count}} Anfragen"
+      "usedToday_other": "Heute {{count}} Anfragen",
+      "instructions": "Zusätzliche Anweisungen an die KI",
+      "instructionsHint": "Kommen zu den festen Regeln hinzu, etwa für Titel nach eurer Art. Sie ändern nichts daran, welche Felder die KI füllt und was nexpaper prüft. Leer: nur die festen Regeln. Höchstens {{max}} Zeichen.",
+      "instructionsPlaceholder": "Titel immer auf Deutsch. Bei Rechnungen die Rechnungsnummer und was gekauft wurde.",
+      "instructionsSave": "Anweisungen speichern",
+      "instructionsSaved": "Anweisungen gespeichert."
     },
     "events": {
       "proposed": "hat {{fields}} vorgeschlagen",

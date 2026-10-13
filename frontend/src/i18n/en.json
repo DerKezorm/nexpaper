@@ -2177,7 +2177,12 @@
       "dailyLimitSave": "Save limit",
       "dailyLimitInvalid": "Enter a whole number from 0 to 100000.",
       "usedToday_one": "{{count}} request today",
-      "usedToday_other": "{{count}} requests today"
+      "usedToday_other": "{{count}} requests today",
+      "instructions": "Additional instructions for the AI",
+      "instructionsHint": "Added to the fixed rules, for example for titles the way you name things. They change nothing in which fields the AI fills and what nexpaper checks. Empty: the fixed rules alone. At most {{max}} characters.",
+      "instructionsPlaceholder": "Titles always in English. For invoices the invoice number and what was bought.",
+      "instructionsSave": "Save instructions",
+      "instructionsSaved": "Instructions saved."
     },
     "events": {
       "proposed": "proposed {{fields}}",

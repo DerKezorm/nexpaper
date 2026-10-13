@@ -90,7 +90,7 @@ def probe(client: TestClient) -> httpx.Response:
 
 def test_there_is_no_ai_from_the_start_and_nothing_goes_out(client: TestClient, account: Account, model: Model) -> None:
     assert client.get("/api/v1/settings/ai").json() == {"provider": "none", "url": "", "model": "", "key_set": False, "skip_personal": True,
-                                                         "daily_limit": 200, "used_today": 0}
+                                                         "daily_limit": 200, "used_today": 0, "instructions": ""}
     assert client.get("/api/v1/ai").json() == {"provider": "none", "to": "", "model": "", "mine": True,
                                                "allowed": True, "available": False, "skip_personal": True}
     assert probe(client).json()["detail"]["code"] == "ai_off"
@@ -113,7 +113,7 @@ def test_the_key_is_never_shown_and_belongs_to_its_address(client: TestClient, a
     key = set_up(client)
     view = client.get("/api/v1/settings/ai")
     assert view.json() == {"provider": "openai", "url": CLOUD + "/", "model": "model-a", "key_set": True,
-                           "skip_personal": True, "daily_limit": 200, "used_today": 0}
+                           "skip_personal": True, "daily_limit": 200, "used_today": 0, "instructions": ""}
     assert key not in view.text
     # Another model keeps the key.
     assert client.put("/api/v1/settings/ai", json={"model": "model-b"}).json()["key_set"] is True

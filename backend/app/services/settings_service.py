@@ -71,6 +71,9 @@ DEFAULTS: dict[str, Any] = {
     #: counts the day's requests (``services/ai_proposals.py``).
     "ai_daily_limit": 200,
     "ai_day": {},
+    #: The operator's own wishes for the proposals (a naming convention, a language), added to the fixed rules; they
+    #: never change the answer's form or what is checked. Empty: the fixed rules alone.
+    "ai_instructions": "",
     #: Web Push (``services/webpush.py``, ``services/push.py``): nexpaper's own key pair, made at the first need and
     #: sealed with the server's secret; who the push services may contact (empty: the public https address, else a
     #: placeholder); and push services beyond the known ones, as host names.

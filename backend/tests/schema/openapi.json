@@ -214,6 +214,18 @@
             ],
             "title": "Daily Limit"
           },
+          "instructions": {
+            "anyOf": [
+              {
+                "maxLength": 2000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Instructions"
+          },
           "key": {
             "anyOf": [
               {

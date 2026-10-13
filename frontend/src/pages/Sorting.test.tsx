@@ -265,6 +265,22 @@ describe('the kinds card and the AI card', () => {
     expect(server.called('PUT', '/api/v1/settings/ai')!.body).toEqual({ daily_limit: 50 })
     expect(page.box.querySelector<HTMLInputElement>('input[type="number"]')!.value).toBe('50')
   })
+
+  it('keeps the operator\'s own instructions for the AI, saved on their own', async () => {
+    const local = { provider: 'local', url: 'http://ollama:11434/v1/', model: 'llama3.1:8b', key_set: false, skip_personal: true }
+    server.answers['GET /api/v1/settings/ai'] = { ...local, instructions: 'Titel immer auf Deutsch.' }
+    server.answers['PUT /api/v1/settings/ai'] = { ...local, instructions: 'Bei Rechnungen die Nummer.' }
+    await page.show(<AiCard />)
+    const area = await until(() => page.box.querySelector<HTMLTextAreaElement>('textarea'))
+    expect(area.value).toBe('Titel immer auf Deutsch.')
+    expect(area.maxLength).toBe(2000)
+    expect(page.button('Anweisungen speichern')!.disabled).toBe(true)
+    await page.type(area, 'Bei Rechnungen die Nummer.')
+    await page.click(page.button('Anweisungen speichern'))
+    expect(server.called('PUT', '/api/v1/settings/ai')!.body).toEqual({ instructions: 'Bei Rechnungen die Nummer.' })
+    expect(page.box.querySelector<HTMLTextAreaElement>('textarea')!.value).toBe('Bei Rechnungen die Nummer.')
+    expect(page.text).toContain('Anweisungen gespeichert.')
+  })
 })
 
 describe('kinds of a vault', () => {

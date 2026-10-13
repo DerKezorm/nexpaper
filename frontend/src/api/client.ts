@@ -424,7 +424,7 @@ export type AiProvider = 'none' | 'local' | 'openai' | 'messages'
 /** What a person may know about the AI: whether there is one for them (`available`), of which kind, the host the text
  * goes to for a service on the internet (`to`), and the own switch (`mine`). */
 export type AiState = { provider: AiProvider; to: string; model: string; mine: boolean; allowed?: boolean; available: boolean; skip_personal?: boolean }
-export type AiSettings = { provider: AiProvider; url: string; model: string; key_set: boolean; skip_personal?: boolean; daily_limit?: number; used_today?: number }
+export type AiSettings = { provider: AiProvider; url: string; model: string; key_set: boolean; skip_personal?: boolean; daily_limit?: number; used_today?: number; instructions?: string }
 export type AiModel = { id: string; name: string }
 
 export const aiApi = {

@@ -32,6 +32,8 @@ class AiSettingsIn(Strict):
     skip_personal: StrictBool | None = None
     #: The most documents sent to the AI in one day, on the whole server; 0 is no limit.
     daily_limit: StrictInt | None = Field(default=None, ge=0, le=1_000_000)
+    #: The operator's own wishes for the proposals, added to the fixed rules; empty removes them.
+    instructions: str | None = Field(default=None, max_length=ai.INSTRUCTIONS_MAX)
 
 
 class ModelsIn(Strict):
@@ -60,7 +62,8 @@ def settings(_operator: OperatorAccount, db: DbSession) -> dict[str, Any]:
 @router.put("/settings/ai", summary="Choose the AI service of the server; only the fields sent change")
 def save(payload: AiSettingsIn, _operator: OperatorAccount, db: DbSession) -> dict[str, Any]:
     return ai.save(db, provider=payload.provider, url=payload.url, model=payload.model, key=payload.key,
-                   skip_personal=payload.skip_personal, daily_limit=payload.daily_limit)
+                   skip_personal=payload.skip_personal, daily_limit=payload.daily_limit,
+                   instructions=payload.instructions)
 
 
 @router.post("/settings/ai/models", summary="The models a service offers, with the address typed or stored")

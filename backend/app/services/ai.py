@@ -26,6 +26,7 @@ from __future__ import annotations
 import logging
 import threading
 import time
+import unicodedata
 from collections import deque
 from collections.abc import Callable, Hashable, Iterator
 from contextlib import contextmanager
@@ -186,7 +187,20 @@ def operator_view(db: Session) -> dict[str, Any]:
         "skip_personal": bool(values.get("ai_skip_personal", True)),
         "daily_limit": int(values.get("ai_daily_limit") or 0),
         "used_today": used_today(values),
+        "instructions": str(values.get("ai_instructions") or ""),
     }
+
+
+#: The longest the operator's own wishes for the proposals may be.
+INSTRUCTIONS_MAX = 2000
+
+
+def clean_instructions(text: str) -> str:
+    """The operator's wishes as they are kept: lines and tabs stay, other control and format characters go, at most
+    ``INSTRUCTIONS_MAX`` characters, no blank lines at either end."""
+    kept = "".join(char for char in text.replace("\r\n", "\n").replace("\r", "\n")
+                   if char in "\n\t" or unicodedata.category(char) not in ("Cc", "Cf"))
+    return kept.strip()[:INSTRUCTIONS_MAX].strip()
 
 
 def used_today(values: dict[str, Any]) -> int:
@@ -220,7 +234,8 @@ def check_address(url: str, provider: str) -> str:
 
 
 def save(db: Session, *, provider: str | None, url: str | None, model: str | None,
-         key: str | None, skip_personal: bool | None = None, daily_limit: int | None = None) -> dict[str, Any]:
+         key: str | None, skip_personal: bool | None = None, daily_limit: int | None = None,
+         instructions: str | None = None) -> dict[str, Any]:
     """Changes what was sent; left out stays. A new address is resolved and checked before it is kept, so that the
     operator hears at once that it lies in the wrong network (every request checks again).
 
@@ -250,6 +265,8 @@ def save(db: Session, *, provider: str | None, url: str | None, model: str | Non
         changes["ai_skip_personal"] = skip_personal
     if daily_limit is not None:
         changes["ai_daily_limit"] = max(0, min(int(daily_limit), 1_000_000))
+    if instructions is not None:
+        changes["ai_instructions"] = clean_instructions(instructions)
     settings_service.save(db, changes)
     logger.info("The operator changed the AI service fields=%s", ",".join(sorted(changes)) or "nothing")
     return operator_view(db)

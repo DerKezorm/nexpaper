@@ -90,7 +90,7 @@ export class Page {
     await idle()
   }
 
-  async type(input: HTMLInputElement | null | undefined, value: string): Promise<void> {
+  async type(input: HTMLInputElement | HTMLTextAreaElement | null | undefined, value: string): Promise<void> {
     expect(input).toBeTruthy()
     const setter = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(input), 'value')!.set!
     await act(async () => {

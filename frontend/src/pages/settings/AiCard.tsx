@@ -5,12 +5,16 @@
  * forgets it (the server does that). Nobody else can set this.
  */
 import { Sparkles } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useId, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { aiApi, type AiModel, type AiProvider, type AiSettings } from '../../api/client'
 import { AI_PROVIDERS, LOCAL_URL, MESSAGES_URL, providerName } from '../../lib/aiProviders'
 import { Button, Card, Feedback, Input, Select, Toggle, useAction } from './ui'
+
+/** The most the operator's own wishes may be, as the server keeps them. */
+const WISHES_MAX = 2000
+const AREA = 'mt-1 block min-h-28 w-full rounded-xl border border-line bg-sheet px-3.5 py-2.5 text-[0.95rem] text-ink outline-none placeholder:text-muted/70 focus:border-accent'
 
 export function AiCard() {
   const { t, i18n } = useTranslation()
@@ -25,6 +29,8 @@ export function AiCard() {
   const [probed, setProbed] = useState<number | null>(null)
   const [limit, setLimit] = useState<string | null>(null)
   const [limitInvalid, setLimitInvalid] = useState(false)
+  const [wishes, setWishes] = useState<string | null>(null)
+  const wishesHint = useId()
 
   const take = (found: AiSettings) => {
     setStored(found)
@@ -72,6 +78,15 @@ export function AiCard() {
     setLimitInvalid(false)
     setLimit(null)
     void action.run(async () => setStored(await aiApi.save({ daily_limit: number })))
+  }
+
+  /** The operator's own wishes for the proposals, saved on their own; empty leaves the fixed rules alone. */
+  const saveWishes = () => {
+    if (wishes === null) return
+    void action.run(async () => {
+      setStored(await aiApi.save({ instructions: wishes }))
+      setWishes(null)
+    }, t('sorting.ai.instructionsSaved'))
   }
 
   const address = chosen === 'messages' ? MESSAGES_URL : url.trim()
@@ -163,6 +178,28 @@ export function AiCard() {
             <p className="pb-6 text-sm text-ink-2" data-testid="ai-used-today">
               {t('sorting.ai.usedToday', { count: stored.used_today ?? 0 })}
             </p>
+          </div>
+          <div className="text-sm sm:col-span-2">
+            <label className="block">
+              <span className="font-semibold">{t('sorting.ai.instructions')}</span>
+              <textarea
+                value={wishes ?? stored.instructions ?? ''}
+                onChange={(event) => setWishes(event.target.value)}
+                rows={4}
+                maxLength={WISHES_MAX}
+                placeholder={t('sorting.ai.instructionsPlaceholder')}
+                aria-describedby={wishesHint}
+                className={AREA}
+              />
+            </label>
+            <span id={wishesHint} className="mt-1 block text-xs text-muted">
+              {t('sorting.ai.instructionsHint', { max: WISHES_MAX })}
+            </span>
+            <div className="mt-2">
+              <Button busy={action.busy} disabled={wishes === null} onClick={saveWishes}>
+                {t('sorting.ai.instructionsSave')}
+              </Button>
+            </div>
           </div>
           {limitInvalid && (
             <p role="alert" className="rounded-xl border border-bad/40 bg-bad/10 px-3 py-2 text-sm text-bad sm:col-span-2">
