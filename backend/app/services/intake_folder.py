@@ -34,8 +34,8 @@ from pathlib import Path
 
 from sqlalchemy import select, update
 
-from .. import clock
-from ..config import PROJECT_DIR, get_settings
+from .. import clock, config
+from ..config import get_settings
 from ..db import SessionLocal
 from ..models import Account, IntakeItem
 from ..names import clean_segment
@@ -125,6 +125,16 @@ def _windows_places() -> list[Path]:
     return found
 
 
+def _program_places() -> list[Path]:
+    """Where nexpaper's own files lie: the code, the built interface, and in a checkout the whole project. In the image
+    the code lies in ``/app/app``, so the project's folder is the root of the disk: taken as a place of the program, it
+    would forbid every folder but ``<data>/eingang``."""
+    places = [config.BACKEND_DIR, get_settings().frontend_dist]
+    if config.PROJECT_DIR.parent != config.PROJECT_DIR:
+        places.append(config.PROJECT_DIR)
+    return [_real(place) for place in places]
+
+
 def forbidden(path: Path) -> bool:
     """Whether a folder is one whose files nexpaper must not move: the root of a disk, nexpaper's data folder or one
     above it, a place inside it other than ``eingang``, the program, a system folder."""
@@ -136,11 +146,11 @@ def forbidden(path: Path) -> bool:
         return True
     if _inside(real, data) and not _inside(real, data / DEFAULT_NAME):
         return True
-    program = _real(PROJECT_DIR)
-    if _inside(real, program) and not _inside(real, data / DEFAULT_NAME):
-        return True
-    if _inside(program, real):
-        return True
+    for program in _program_places():
+        if _inside(real, program) and not _inside(real, data / DEFAULT_NAME):
+            return True
+        if _inside(program, real):
+            return True
     places = [Path(place) for place in SYSTEM] if os.name != "nt" else _windows_places()
     return any(_inside(real, _real(place)) for place in places)
 

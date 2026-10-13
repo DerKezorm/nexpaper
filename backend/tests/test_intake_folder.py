@@ -419,6 +419,28 @@ def test_a_folder_above_the_data_folder_is_forbidden_wherever_it_lies(tmp_path: 
     assert intake_folder.forbidden(tmp_path / "daneben") is False
 
 
+def test_in_the_image_a_mounted_folder_beside_the_program_can_be_the_intake_folder(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    # The image keeps the code in /app/app and the interface in /app/static: the project's folder is the root of the
+    # disk there. Taken as the program, it forbade every folder but /data/eingang (issue #1).
+    from app import config
+
+    image = tmp_path / "app"
+    (image / "app").mkdir(parents=True)
+    (image / "static").mkdir()
+    (tmp_path / "data").mkdir()
+    (tmp_path / "scans").mkdir()
+    monkeypatch.setattr(config, "BACKEND_DIR", image)
+    monkeypatch.setattr(config, "PROJECT_DIR", Path(tmp_path.anchor))
+    monkeypatch.setattr(get_settings(), "frontend_dist", image / "static")
+    monkeypatch.setattr(get_settings(), "data_dir", tmp_path / "data")
+    assert intake_folder.forbidden(tmp_path / "scans") is False
+    assert intake_folder.usable_root(str(tmp_path / "scans")) == tmp_path / "scans"
+    for place in (image, image / "app", image / "static", image / "static" / "assets", tmp_path):
+        assert intake_folder.forbidden(place) is True, place
+    assert intake_folder.forbidden(tmp_path / "data" / "eingang") is False
+
+
 def test_a_file_written_to_while_it_is_read_waits_for_another_quiet_spell(operator: Account, ticks: Clock,
                                                                           folder: Path,
                                                                           monkeypatch: pytest.MonkeyPatch) -> None:
