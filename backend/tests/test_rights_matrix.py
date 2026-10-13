@@ -102,6 +102,8 @@ TABLE = [
     Row("GET", "/api/v1/changes", None, "any", 200),
     Row("GET", "/api/v1/documents/{d}/origin", None, "read", 404),
     Row("GET", "/api/v1/search", None, "any", 200),
+    # The start of the archive: counts only what the caller may see (``test_search_pages.py``).
+    Row("GET", "/api/v1/search/overview", None, "any", 200),
     Row("GET", "/api/v1/documents/{d}/versions/{x}/text", None, "read", 404),
     # Deleting for good from the trash (B4): a manager of the vault, or the owner while they may change it (the editor
     # owns this one), from a signed-in browser only; the document is not in the trash here, so who may gets 409.

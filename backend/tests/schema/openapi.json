@@ -3029,6 +3029,23 @@
         "title": "KeysOut",
         "type": "object"
       },
+      "KindCount": {
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/KindOut"
+          }
+        },
+        "required": [
+          "kind",
+          "count"
+        ],
+        "title": "KindCount",
+        "type": "object"
+      },
       "KindEntry": {
         "properties": {
           "can_change": {
@@ -4204,6 +4221,24 @@
         "title": "MyLink",
         "type": "object"
       },
+      "NameCount": {
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "count"
+        ],
+        "title": "NameCount",
+        "type": "object"
+      },
       "NameGroup": {
         "description": "One name, and the rows of that name in the vaults the caller reaches (one per vault).",
         "properties": {
@@ -4694,6 +4729,51 @@
           "unknown"
         ],
         "title": "OriginOut",
+        "type": "object"
+      },
+      "OverviewOut": {
+        "properties": {
+          "kinds": {
+            "items": {
+              "$ref": "#/components/schemas/KindCount"
+            },
+            "title": "Kinds",
+            "type": "array"
+          },
+          "senders": {
+            "items": {
+              "$ref": "#/components/schemas/NameCount"
+            },
+            "title": "Senders",
+            "type": "array"
+          },
+          "tags": {
+            "items": {
+              "$ref": "#/components/schemas/NameCount"
+            },
+            "title": "Tags",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          },
+          "years": {
+            "items": {
+              "$ref": "#/components/schemas/YearCount"
+            },
+            "title": "Years",
+            "type": "array"
+          }
+        },
+        "required": [
+          "total",
+          "senders",
+          "kinds",
+          "years",
+          "tags"
+        ],
+        "title": "OverviewOut",
         "type": "object"
       },
       "PageIn": {
@@ -7536,6 +7616,24 @@
           "url"
         ],
         "title": "WaitingOut",
+        "type": "object"
+      },
+      "YearCount": {
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "year": {
+            "title": "Year",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "year",
+          "count"
+        ],
+        "title": "YearCount",
         "type": "object"
       },
       "app__routers__auth__SetupIn": {
@@ -17185,7 +17283,7 @@
     },
     "/api/v1/search": {
       "get": {
-        "description": "Words (each must be found, a part of a word is enough), \"a phrase\", art:/kind:, absender:/sender:, tag:, betrag:/amount: with >, < or = (comma or point). Newest first. Each range is [start, end) in UTF-16 code units of the text it belongs to.",
+        "description": "Words (each must be found, a part of a word is enough), \"a phrase\", art:/kind:, absender:/sender:, tag:, betrag:/amount: with >, < or = (comma or point). Newest first, page by page with the cursor; or numbered pages in another order. Each range is [start, end) in UTF-16 code units of the text it belongs to.",
         "operationId": "find_api_v1_search_get",
         "parameters": [
           {
@@ -17387,6 +17485,7 @@
             }
           },
           {
+            "description": "Only with the newest first and no page",
             "in": "query",
             "name": "cursor",
             "required": false,
@@ -17400,6 +17499,7 @@
                   "type": "null"
                 }
               ],
+              "description": "Only with the newest first and no page",
               "title": "Cursor"
             }
           },
@@ -17413,6 +17513,48 @@
               "minimum": 1,
               "title": "Limit",
               "type": "integer"
+            }
+          },
+          {
+            "description": "date, title, sender or amount; a minus for the largest (newest, Z) first. Empty senders and amounts come last.",
+            "in": "query",
+            "name": "sort",
+            "required": false,
+            "schema": {
+              "default": "-date",
+              "description": "date, title, sender or amount; a minus for the largest (newest, Z) first. Empty senders and amounts come last.",
+              "enum": [
+                "-date",
+                "date",
+                "-title",
+                "title",
+                "-sender",
+                "sender",
+                "-amount",
+                "amount"
+              ],
+              "title": "Sort",
+              "type": "string"
+            }
+          },
+          {
+            "description": "The numbered page, from 1",
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 100000,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "The numbered page, from 1",
+              "title": "Page"
             }
           }
         ],
@@ -17444,6 +17586,103 @@
           }
         ],
         "summary": "Find documents the caller may see",
+        "tags": [
+          "search"
+        ]
+      }
+    },
+    "/api/v1/search/overview": {
+      "get": {
+        "operationId": "overview_api_v1_search_overview_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "vault_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 2147483647,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Vault Id"
+            }
+          },
+          {
+            "description": "Only this status; without it everything but the trash",
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "processing",
+                    "inbox",
+                    "filed"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only this status; without it everything but the trash",
+              "title": "Status"
+            }
+          },
+          {
+            "description": "Only documents seen through a share alone (true), or only those of the caller's vaults (false)",
+            "in": "query",
+            "name": "via_share",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only documents seen through a share alone (true), or only those of the caller's vaults (false)",
+              "title": "Via Share"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OverviewOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "How the documents the caller may see spread over senders, kinds, years and tags",
         "tags": [
           "search"
         ]

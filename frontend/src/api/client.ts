@@ -791,8 +791,24 @@ export type SearchFilters = {
 }
 export type VersionText = { version: number; state: 'done' | 'pending' | 'none'; pages: string[]; ocr_pages: number; languages: string; long_document_pages?: number }
 
+/** The orders of a numbered page: a minus is the largest (the newest, Z) first; empty senders and amounts come last. */
+export type SearchOrder = '-date' | 'date' | '-title' | 'title' | '-sender' | 'sender' | '-amount' | 'amount'
+/** A numbered page (`page` from 1) in an order, instead of the cursor. */
+export type SearchPage = SearchFilters & { sort?: SearchOrder; page?: number }
+export type NameCount = { name: string; count: number }
+/** How the documents spread, for the start of the archive. A kind's id as `kind_id` finds its namesakes too. */
+export type SearchOverview = {
+  total: number
+  senders: NameCount[]
+  kinds: { kind: DocumentKind; count: number }[]
+  years: { year: number; count: number }[]
+  tags: NameCount[]
+}
+
 export const searchApi = {
-  find: (q: string, filters: SearchFilters = {}, signal?: AbortSignal) => api<SearchResult>('/api/v1/search', { query: { q, ...filters }, signal }),
+  find: (q: string, filters: SearchPage = {}, signal?: AbortSignal) => api<SearchResult>('/api/v1/search', { query: { q, ...filters }, signal }),
+  overview: (filters: Pick<SearchFilters, 'vault_id' | 'status' | 'via_share'> = {}, signal?: AbortSignal) =>
+    api<SearchOverview>('/api/v1/search/overview', { query: filters, signal }),
   text: (document: number, version: number) => api<VersionText>(`/api/v1/documents/${document}/versions/${version}/text`),
 }
 

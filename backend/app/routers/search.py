@@ -3,7 +3,9 @@
 ``GET /api/v1/search`` finds what the caller may see (a signed-in browser, a device, a program with a read key): the
 language of the archive's search field (``services/searchtext.py``) plus filters as parameters, newest first, with the
 total and a cursor for the next page. Each hit carries the places to mark in its title and sender and an excerpt of
-its text, as ranges, never as HTML.
+its text, as ranges, never as HTML. The archive's table asks for numbered pages (``page``) in an order of its choice
+(``sort``) instead of the cursor; ``GET /api/v1/search/overview`` counts the same documents by sender, kind, year and
+tag for the start of the archive.
 
 ``GET /api/v1/documents/{id}/versions/{n}/text`` is the text of every page of a version, with the rights of reading
 the document; through a link (``/api/v1/l/{token}/text``) only when the link allows downloading: the text is the
@@ -31,7 +33,7 @@ from ..errors import error
 from ..models import Version, VersionText
 from ..services import brakes, ocr, rights, search, searchtext, sharing
 from .public import _not_found
-from .schemas import DocumentOut, document_out
+from .schemas import DocumentOut, KindOut, document_out, kind_out
 
 logger = logging.getLogger("nexpaper.search")
 
@@ -105,10 +107,62 @@ class SearchOut(BaseModel):
     understood: Understood
 
 
+Order = Literal["-date", "date", "-title", "title", "-sender", "sender", "-amount", "amount"]
+
+
+class NameCount(BaseModel):
+    name: str
+    count: int
+
+
+class KindCount(BaseModel):
+    kind: KindOut
+    count: int
+
+
+class YearCount(BaseModel):
+    year: int
+    count: int
+
+
+class OverviewOut(BaseModel):
+    #: How many documents there are with these filters (that the caller may see).
+    total: int
+    #: Most first. A sender or tag of the same name in two vaults is counted as one.
+    senders: list[NameCount]
+    #: Most first; ``kind.id`` as the search's ``kind_id`` finds the kinds of the same name too.
+    kinds: list[KindCount]
+    #: By the document's date, the newest year first; a document without a date is in no year.
+    years: list[YearCount]
+    tags: list[NameCount]
+
+
+@router.get("/search/overview", response_model=OverviewOut,
+            summary="How the documents the caller may see spread over senders, kinds, years and tags")
+def overview(
+    account: Reader, db: DbSession,
+    vault_id: ID = None,
+    status: Literal["processing", "inbox", "filed"] | None = Query(
+        default=None, description="Only this status; without it everything but the trash"),
+    via_share: bool | None = Query(default=None, description="Only documents seen through a share alone (true), or "
+                                   "only those of the caller's vaults (false)"),
+) -> OverviewOut:
+    brakes.take("search", account.id)
+    found = search.overview(db, account.id, search.Filters(vault_id=vault_id, status=status, via_share=via_share))
+    return OverviewOut(
+        total=found.total,
+        senders=[NameCount(name=name, count=n) for name, n in found.senders],
+        kinds=[KindCount(kind=kind_out(kind), count=n) for kind, n in found.kinds],  # type: ignore[arg-type]
+        years=[YearCount(year=year, count=n) for year, n in found.years],
+        tags=[NameCount(name=name, count=n) for name, n in found.tags],
+    )
+
+
 @router.get(
     "/search", response_model=SearchOut, summary="Find documents the caller may see",
     description="Words (each must be found, a part of a word is enough), \"a phrase\", art:/kind:, absender:/sender:, "
-                "tag:, betrag:/amount: with >, < or = (comma or point). Newest first. " + RANGES,
+                "tag:, betrag:/amount: with >, < or = (comma or point). Newest first, page by page with the cursor; or "
+                "numbered pages in another order. " + RANGES,
 )
 def find(
     account: Reader, db: DbSession,
@@ -123,8 +177,11 @@ def find(
     trash: bool = Query(default=False, description="Search the trash instead (only the caller's own documents)"),
     via_share: bool | None = Query(default=None, description="Only documents seen through a share alone (true), or "
                                    "only those of the caller's vaults (false)"),
-    cursor: str | None = Query(default=None, max_length=200),
+    cursor: str | None = Query(default=None, max_length=200, description="Only with the newest first and no page"),
     limit: int = Query(default=50, ge=1, le=search.MAX_LIMIT),
+    sort: Order = Query(default="-date", description="date, title, sender or amount; a minus for the largest "
+                        "(newest, Z) first. Empty senders and amounts come last."),
+    page: int | None = Query(default=None, ge=1, le=search.MAX_PAGE, description="The numbered page, from 1"),
 ) -> SearchOut:
     brakes.take("search", account.id)
     filters = search.Filters(vault_id=vault_id, kind_id=kind_id, sender=sender, tag=tag, owner_id=owner_id,
@@ -132,7 +189,7 @@ def find(
                              via_share=via_share)
     began = clock()
     try:
-        result = search.find(db, account.id, q, filters, cursor=cursor, limit=limit)
+        result = search.find(db, account.id, q, filters, cursor=cursor, limit=limit, order=sort, page=page)
     finally:
         _wait_for_the_step(began)
     items = []

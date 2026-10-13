@@ -1,5 +1,5 @@
 /**
- * The small parts of the pages with documents: amounts as people type them, the span of time of the archive, the marks
+ * The small parts of the pages with documents: amounts as people type them, the filters, order and pages of the archive, the marks
  * of a search (ranges in UTF-16 units, never HTML), and the history in words for every action the server records.
  */
 import type { TFunction } from 'i18next'
@@ -8,7 +8,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import type { DocumentEvent } from '../api/client'
 import { Marked } from '../components/docs'
 import i18n, { changeLanguage } from '../i18n'
-import { filtersOf, spanDates } from './archive'
+import { filtersOf, nextOrder, orderOf, pageList, pageOf, sizeOf } from './archive'
 import { eventWhat, eventWho, standsAlone } from './events'
 import { plain } from '../test/harness'
 import { amountText, money, parseAmount } from './money'
@@ -44,20 +44,40 @@ describe('amounts', () => {
   })
 })
 
-describe('the span of time of the archive', () => {
-  const now = new Date(2026, 9, 10)
-  it('becomes dates for the server', () => {
-    expect(spanDates('year', now)).toEqual({ date_from: '2026-01-01', date_to: '2026-12-31' })
-    expect(spanDates('lastyear', now)).toEqual({ date_from: '2025-01-01', date_to: '2025-12-31' })
-    expect(spanDates('12m', now)).toEqual({ date_from: '2025-10-10' })
-    expect(spanDates('', now)).toEqual({})
+describe('the filters, order and pages of the archive', () => {
+  it('become filters of what was filed, a year its first to its last day', () => {
+    expect(filtersOf({ vault: '7', kind: '3', sender: 'Stadtwerke', tag: 'strom', owner: '2', year: '2025' })).toEqual({
+      status: 'filed', vault_id: 7, kind_id: 3, sender: 'Stadtwerke', tag: 'strom', owner_id: 2, date_from: '2025-01-01', date_to: '2025-12-31',
+    })
+    expect(filtersOf({ vault: 'shared', kind: 'x', sender: '', tag: '', owner: '', year: '20255' })).toEqual({ status: 'filed', via_share: true })
   })
 
-  it('and the chips become filters of what was filed', () => {
-    expect(filtersOf({ vault: '7', kind: '3', sender: 'Stadtwerke', tag: 'strom', owner: '2', span: 'year' }, now)).toEqual({
-      status: 'filed', vault_id: 7, kind_id: 3, sender: 'Stadtwerke', tag: 'strom', owner_id: 2, date_from: '2026-01-01', date_to: '2026-12-31',
-    })
-    expect(filtersOf({ vault: 'shared', kind: 'x', sender: '', tag: '', owner: '', span: '' }, now)).toEqual({ status: 'filed', via_share: true })
+  it('read the order, the size and the page from the address, and only what the server takes', () => {
+    expect(orderOf('-amount')).toBe('-amount')
+    expect(orderOf('colour')).toBe('-date')
+    expect(orderOf(null)).toBe('-date')
+    expect(sizeOf('25')).toBe(25)
+    expect(sizeOf('1000')).toBe(50)
+    expect(pageOf('3')).toBe(3)
+    for (const wrong of ['0', '-1', '2.5', 'x', '100001', null]) expect(pageOf(wrong)).toBe(1)
+  })
+
+  it('show the first, the last and the neighbours of the page, with gaps', () => {
+    expect(pageList(1, 1)).toEqual([1])
+    expect(pageList(1, 3)).toEqual([1, 2, 3])
+    expect(pageList(3, 40)).toEqual([1, 2, 3, 4, null, 40])
+    expect(pageList(20, 40)).toEqual([1, null, 19, 20, 21, null, 40])
+    expect(pageList(40, 40)).toEqual([1, null, 39, 40])
+  })
+
+  it('turn a column around on a second click, and start dates and amounts with the largest', () => {
+    expect(nextOrder('-date', 'date')).toBe('date')
+    expect(nextOrder('date', 'date')).toBe('-date')
+    expect(nextOrder('-date', 'title')).toBe('title')
+    expect(nextOrder('title', 'title')).toBe('-title')
+    expect(nextOrder('title', 'amount')).toBe('-amount')
+    expect(nextOrder('-amount', 'amount')).toBe('amount')
+    expect(nextOrder('-date', 'sender')).toBe('sender')
   })
 })
 

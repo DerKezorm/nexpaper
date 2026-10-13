@@ -1,8 +1,8 @@
 /**
- * The archive against a stand-in of the server: documents by month as a list or tiles, the search with the marks the
- * server names (never HTML), the help, the chips and filters in the address and in the request, more while scrolling
- * (the cursor), the brake of the search, the field that waits for a pause and stops the request before, the export
- * only where a part for it is plugged in, and a sender deleted after the number of its documents was confirmed.
+ * The archive against a stand-in of the server: the overview (the newest, by sender, kind, year and tag) as the way in,
+ * the table with numbered pages and sortable columns, the search with the marks the server names (never HTML), the
+ * help, the chips and filters in the address and in the request, the brake of the search, the field that waits for a
+ * pause and stops the request before, and the export only where a part for it is plugged in.
  */
 import { act } from 'react'
 import { useLocation } from 'react-router-dom'
@@ -37,12 +37,26 @@ function doc(id: number, title: string, date: string, extra: Record<string, unkn
 function hit(document: ReturnType<typeof doc>, extra: Partial<SearchHit> = {}) {
   return { document, title_marks: [], sender_marks: [], excerpt: null, ...extra }
 }
-const FIRST = 'GET /api/v1/search?q=&status=filed&limit=50'
+const result = (items: unknown[], total = items.length) => ({ items, total, next: null, understood: {} })
+const three = () => [hit(doc(1, 'Abschlag Strom Oktober', '2026-10-01')), hit(doc(2, 'Kfz-Versicherung', '2026-09-28', { notes: 1, sender: { id: 6, name: 'Hansa' } })), hit(doc(3, 'Waschmaschine', '2025-03-14', { amount: null }))]
+
+const WHOLE = 'GET /api/v1/search/overview?status=filed'
+const NEWEST = 'GET /api/v1/search?q=&status=filed&limit=6'
+/** A page of the table: the search, the filters after the status, then size, order and page. */
+const table = (q = '', filters = '', rest = 'limit=50&sort=-date&page=1') => `GET /api/v1/search?q=${q}&status=filed${filters}&${rest}`
+const ALL = table()
 const SHARED = 'GET /api/v1/documents?status=filed&via_share=true&limit=1'
 const vaults = [
   { id: 7, name: 'Jule', icon: 'user', personal_of: 1, my_right: 'manage', documents: 3, size: 1, members: [] },
   { id: 9, name: 'Haushalt', icon: 'home', personal_of: null, my_right: 'edit', documents: 1654, size: 1, members: [] },
 ]
+const overview = {
+  total: 3,
+  senders: [{ name: 'Stadtwerke Lindenau', count: 2 }, { name: 'Hansa', count: 1 }],
+  kinds: [{ kind, count: 3 }],
+  years: [{ year: 2026, count: 2 }, { year: 2025, count: 1 }],
+  tags: [{ name: 'strom', count: 3 }, { name: 'auto', count: 1 }],
+}
 
 function Where() {
   const location = useLocation()
@@ -58,6 +72,9 @@ function show(at = '/', slots = {}) {
   )
 }
 const where = () => plain(page.box.querySelector('[data-testid="where"]')!.textContent)
+const rows = () => [...page.box.querySelectorAll('[data-testid="row"]')]
+const section = (label: string) => page.box.querySelector<HTMLElement>(`section[aria-label="${label}"]`)!
+const pick = (label: string, name: string) => [...section(label).querySelectorAll<HTMLButtonElement>('li button')].find((b) => plain(b.textContent)?.startsWith(name))
 
 beforeEach(async () => {
   forgetPictures()
@@ -70,10 +87,9 @@ beforeEach(async () => {
     'GET /api/v1/senders': [{ name: 'Stadtwerke Lindenau', items: [{ id: 5, vault_id: 9 }] }],
     'GET /api/v1/tags': [{ name: 'strom', items: [{ id: 6, vault_id: 9 }] }],
     [SHARED]: { items: [], next: null },
-    [FIRST]: {
-      items: [hit(doc(1, 'Abschlag Strom Oktober', '2026-10-01')), hit(doc(2, 'Kfz-Versicherung', '2026-09-28', { notes: 1, sender: { id: 6, name: 'Hansa' } })), hit(doc(3, 'Waschmaschine', '2025-03-14', { amount: null }))],
-      total: 3, next: null, understood: {},
-    },
+    [WHOLE]: overview,
+    [NEWEST]: result(three()),
+    [ALL]: result(three()),
     'PUT /api/v1/me/preferences': { ...me.profile, view: 'grid' },
   }
   server.fails = {}
@@ -84,21 +100,101 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-describe('the archive', () => {
-  it('shows what was filed, by month, with the count of what the person sees', async () => {
+describe('the overview of the archive', () => {
+  it('shows the newest documents and how the archive spreads, with the count of what the person sees', async () => {
     await show()
     expect(plain(page.box.querySelector('h1')!.textContent)).toBe('Archiv')
     expect(page.text).toContain('3 Dokumente in 2 Tresoren, die du sehen kannst')
-    expect([...page.box.querySelectorAll('section h2')].map((h) => plain(h.textContent))).toEqual(['Oktober 2026', 'September 2026', 'März 2025'])
-    const rows = [...page.box.querySelectorAll('section li')]
-    expect(plain(rows[0].textContent)).toContain('Abschlag Strom Oktober')
-    expect(plain(rows[0].textContent)).toContain('Stadtwerke Lindenau · 01.10.2026')
-    expect(plain(rows[0].textContent)).toContain('86,40')
-    expect(rows[0].querySelector('a')!.getAttribute('href')).toBe('/dokument/1')
-    expect(rows[1].querySelector('[aria-label="mit Notiz"]')).toBeTruthy()
-    // No export without the part of block B9, and no "shared with me" without such documents.
+    expect(page.text).toContain('Neueste Dokumente')
+    expect(rows().map((row) => plain(row.querySelector('.font-semibold')!.textContent))).toEqual(['Abschlag Strom Oktober', 'Kfz-Versicherung', 'Waschmaschine'])
+    expect(rows()[0].querySelector('a')!.getAttribute('href')).toBe('/dokument/1')
+    expect(rows()[1].querySelector('[aria-label="mit Notiz"]')).toBeTruthy()
+    // The newest have no heading and no months; the counts of the cards.
+    expect(page.box.querySelector('[data-testid="month"]')).toBeNull()
+    expect(plain(pick('Nach Absender', 'Stadtwerke Lindenau')!.textContent)).toBe('Stadtwerke Lindenau2')
+    expect(plain(pick('Nach Art', 'Rechnung')!.textContent)).toBe('Rechnung3')
+    expect(plain(section('Nach Jahr').textContent)).toBe('Nach Jahr2026220251')
+    expect(plain(section('Häufige Tags').textContent)).toContain('strom 3')
+    // No pages, no tiles, no table here; no export without its part, no "shared with me" without such documents.
+    expect(page.box.querySelector('[data-testid="pager"]')).toBeNull()
+    expect(page.button('Kacheln')).toBeUndefined()
     expect(page.button('Exportieren')).toBeUndefined()
     expect(page.button('Mit mir geteilt')).toBeUndefined()
+    expect(server.calls.filter((c) => c.url.startsWith('/api/v1/search?')).map((c) => c.url)).toEqual([NEWEST.slice(4)])
+  })
+
+  it('opens the table with everything, newest first, page by page', async () => {
+    await show()
+    await page.click(page.button('Alle 3 anzeigen'))
+    expect(where()).toBe('/?all=1')
+    expect(server.called('GET', ALL.slice(4))).toBeTruthy()
+    expect([...page.box.querySelectorAll('[data-testid="month"]')].map((m) => plain(m.textContent))).toEqual(['Oktober 2026', 'September 2026', 'März 2025'])
+    expect(plain(page.box.querySelector('[data-testid="hit-count"]')!.textContent)).toBe('3 Dokumente')
+    expect(plain(page.box.querySelector('[data-testid="pager"]')!.textContent)).toContain('1 bis 3 von 3')
+    // Back to the overview, and the back button of the browser too.
+    await page.click(page.button('Übersicht'))
+    expect(where()).toBe('/')
+    expect(page.box.querySelector('[data-testid="overview"]')).toBeTruthy()
+  })
+
+  it('opens the table of a sender, a kind, a year or a tag of the overview', async () => {
+    server.answers[table('', '&sender=Stadtwerke+Lindenau')] = result(three().slice(0, 1), 2)
+    await show()
+    await page.click(pick('Nach Absender', 'Stadtwerke Lindenau'))
+    expect(where()).toBe('/?sender=Stadtwerke+Lindenau')
+    expect(server.called('GET', table('', '&sender=Stadtwerke+Lindenau').slice(4))).toBeTruthy()
+    // What narrows the table, removable on its own.
+    expect(plain(page.box.querySelector('[data-testid="pill"]')!.textContent)).toBe('AbsenderStadtwerke Lindenau')
+    await page.click(page.button('Absender entfernen'))
+    expect(where()).toBe('/')
+    await page.click(pick('Nach Jahr', '2025'))
+    expect(server.called('GET', table('', '&date_from=2025-01-01&date_to=2025-12-31').slice(4))).toBeTruthy()
+    await page.click(page.button('Übersicht'))
+    await page.click(pick('Nach Art', 'Rechnung'))
+    expect(server.called('GET', table('', '&kind_id=1').slice(4))).toBeTruthy()
+    await page.click(page.button('Übersicht'))
+    await page.click([...section('Häufige Tags').querySelectorAll('button')].find((b) => plain(b.textContent) === 'auto 1'))
+    expect(where()).toBe('/?tag=auto')
+  })
+
+  it('lists every sender in a dialog, to find one by typing and to sort by name', async () => {
+    const many = Array.from({ length: 12 }, (_, i) => ({ name: `Absender ${String.fromCharCode(65 + i)}`, count: 12 - i }))
+    server.answers[WHOLE] = { ...overview, senders: many }
+    await show()
+    expect(section('Nach Absender').querySelectorAll('li')).toHaveLength(7)
+    await page.click(page.button('Alle 12 Absender'))
+    const names = () => [...page.dialog!.querySelectorAll('[data-testid="all-senders"] bdi')].map((b) => b.textContent)
+    expect(names()).toHaveLength(12)
+    await page.choose(page.select('Reihenfolge'), 'name')
+    expect(names()[0]).toBe('Absender A')
+    await page.type(page.dialog!.querySelector<HTMLInputElement>('input'), 'absender k')
+    expect(names()).toEqual(['Absender K'])
+    await page.click(page.dialog!.querySelector<HTMLButtonElement>('[data-testid="all-senders"] button'))
+    expect(page.dialog).toBeNull()
+    expect(where()).toBe('/?sender=Absender+K')
+  })
+
+  it('shows the overview of one vault, and of what was shared one by one', async () => {
+    server.answers[SHARED] = { items: [doc(30, 'Klassenfahrt', '2026-09-05', { via_share: true, my_right: 'read' })], next: null }
+    server.answers['GET /api/v1/search/overview?status=filed&vault_id=9'] = { ...overview, total: 1, senders: [{ name: 'Hansa', count: 1 }] }
+    server.answers['GET /api/v1/search/overview?status=filed&via_share=true'] = { ...overview, total: 1 }
+    await show()
+    await page.click(page.button('Haushalt'))
+    expect(where()).toBe('/?vault=9')
+    expect(server.called('GET', '/api/v1/search?q=&status=filed&vault_id=9&limit=6')).toBeTruthy()
+    expect(plain(section('Nach Absender').textContent)).toContain('Hansa1')
+    // The heading still counts the whole archive.
+    expect(plain(page.box.querySelector('[data-testid="archive-count"]')!.textContent)).toBe('3 Dokumente in 2 Tresoren, die du sehen kannst')
+    await page.click(page.button('Mit mir geteilt'))
+    expect(server.called('GET', '/api/v1/search/overview?status=filed&via_share=true')).toBeTruthy()
+    expect(server.called('GET', '/api/v1/search?q=&status=filed&via_share=true&limit=6')).toBeTruthy()
+  })
+
+  it('says so when the archive is empty', async () => {
+    server.answers[WHOLE] = { total: 0, senders: [], kinds: [], years: [], tags: [] }
+    server.answers[NEWEST] = result([])
+    await show()
+    expect(page.text).toContain('Noch nichts im Archiv')
   })
 
   it('has no small link to the trash at the foot: the trash is in the menu', async () => {
@@ -107,28 +203,125 @@ describe('the archive', () => {
     expect(page.text).not.toContain('Papierkorb')
   })
 
-  it('shows tiles where the person chose them', async () => {
-    auth.me = { ...me, profile: { ...me.profile, view: 'grid' } }
+  it('learns from the list of documents, not from a search, whether something was shared one by one', async () => {
     await show()
+    expect(server.calls.filter((c) => c.url.includes('via_share=true')).map((c) => c.url)).toEqual([SHARED.slice(4)])
+  })
+})
+
+describe('the table of the archive', () => {
+  it('goes from page to page, with the page in the address and in the request', async () => {
+    const first = Array.from({ length: 50 }, (_, i) => hit(doc(100 + i, `Brief ${i}`, '2026-05-01')))
+    server.answers[ALL] = result(first, 120)
+    server.answers[table('', '', 'limit=50&sort=-date&page=2')] = result([hit(doc(200, 'Seite zwei', '2026-01-01'))], 120)
+    server.answers[table('', '', 'limit=50&sort=-date&page=3')] = result([hit(doc(300, 'Seite drei', '2025-01-01'))], 120)
+    await show('/?all=1')
+    expect(rows()).toHaveLength(50)
+    const pager = () => page.box.querySelector('[data-testid="pager"]')!
+    expect(plain(pager().textContent)).toContain('1 bis 50 von 120')
+    expect([...pager().querySelectorAll('nav button[aria-label^="Seite"]')].map((b) => b.textContent)).toEqual(['1', '2', '3'])
+    expect(page.button('Vorige Seite')!.disabled).toBe(true)
+    await page.click(page.button('Seite 2'))
+    expect(where()).toBe('/?all=1&page=2')
+    expect(page.text).toContain('Seite zwei')
+    expect(plain(pager().textContent)).toContain('51 bis 51 von 120')
+    expect(page.button('Seite 2')!.getAttribute('aria-current')).toBe('page')
+    await page.click(page.button('Nächste Seite'))
+    expect(where()).toBe('/?all=1&page=3')
+    expect(page.button('Nächste Seite')!.disabled).toBe(true)
+    // Another choice starts on the first page again.
+    await page.click(page.button('Haushalt'))
+    expect(where()).toBe('/?all=1&vault=9')
+  })
+
+  it('takes 25 or 100 a page, and starts on the first', async () => {
+    server.answers[table('', '', 'limit=25&sort=-date&page=1')] = result(three(), 3)
+    server.answers[table('', '', 'limit=50&sort=-date&page=2')] = result(three(), 60)
+    await show('/?all=1&page=2')
+    await page.choose(page.select('je Seite'), '25')
+    expect(where()).toBe('/?all=1&n=25')
+    expect(server.called('GET', table('', '', 'limit=25&sort=-date&page=1').slice(4))).toBeTruthy()
+  })
+
+  it('goes to the last page when the one in the address is past the end', async () => {
+    server.answers[table('', '', 'limit=50&sort=-date&page=9')] = result([], 60)
+    server.answers[table('', '', 'limit=50&sort=-date&page=2')] = result([hit(doc(9, 'Das letzte', '2020-01-01'))], 60)
+    await show('/?all=1&page=9')
+    await until(() => page.text.includes('Das letzte'))
+    expect(where()).toBe('/?all=1&page=2')
+  })
+
+  it('sorts by a column, the other way round on a second click, and only months when sorted by date', async () => {
+    server.answers[table('', '', 'limit=50&sort=-amount&page=1')] = result(three())
+    server.answers[table('', '', 'limit=50&sort=amount&page=1')] = result(three())
+    server.answers[table('', '', 'limit=50&sort=title&page=1')] = result(three())
+    server.answers[table('', '', 'limit=50&sort=-date&page=2')] = result(three(), 60)
+    await show('/?all=1&page=2')
+    expect(page.box.querySelectorAll('[data-testid="month"]').length).toBeGreaterThan(0)
+    await page.click(page.button('Sortieren nach Betrag'))
+    expect(where()).toBe('/?all=1&sort=-amount')
+    expect(page.box.querySelector('[data-testid="month"]')).toBeNull()
+    expect(page.button('Sortieren nach Betrag')!.getAttribute('aria-pressed')).toBe('true')
+    await page.click(page.button('Sortieren nach Betrag'))
+    expect(where()).toBe('/?all=1&sort=amount')
+    await page.click(page.button('Sortieren nach Titel'))
+    expect(server.called('GET', table('', '', 'limit=50&sort=title&page=1').slice(4))).toBeTruthy()
+    // The newest first again: the order leaves the address.
+    await page.click(page.button('Sortieren nach Datum'))
+    expect(where()).toBe('/?all=1')
+  })
+
+  it('shows tiles where the person chose them, page by page too', async () => {
+    auth.me = { ...me, profile: { ...me.profile, view: 'grid' } }
+    await show('/?all=1')
     expect(page.box.querySelectorAll('ul.grid li')).toHaveLength(3)
     expect(page.box.querySelector('[role="radio"][aria-checked="true"]')!.getAttribute('aria-label')).toBe('Kacheln')
+    expect(page.box.querySelector('[data-testid="pager"]')).toBeTruthy()
   })
 
   it('switches to tiles and keeps that choice with the account', async () => {
-    await show()
+    await show('/?all=1')
     await page.click(page.button('Kacheln'))
     expect(server.called('PUT', '/api/v1/me/preferences')!.body).toEqual({ view: 'grid' })
     expect(auth.setMe).toHaveBeenCalledWith(expect.objectContaining({ profile: expect.objectContaining({ view: 'grid' }) }))
   })
 
+  it('marks what the person shared with people or by a link, apart from what was shared with them', async () => {
+    server.answers[ALL] = result([
+      hit(doc(1, 'Geteilt', '2026-10-01', { share_count: 2, link_count: 0 })),
+      hit(doc(2, 'Mit Link', '2026-10-01', { share_count: 0, link_count: 1 })),
+      hit(doc(3, 'Von Lea', '2026-10-01', { via_share: true, can_share: false, share_count: null, link_count: null, my_right: 'read' })),
+    ])
+    await show('/?all=1')
+    const marks = (row: Element) => [...row.querySelectorAll('[aria-label]')].map((m) => m.getAttribute('aria-label'))
+    expect(marks(rows()[0])).toEqual(['mit Personen geteilt'])
+    expect(marks(rows()[1])).toEqual(['Link nach außen'])
+    expect(marks(rows()[2])).toEqual([])
+    expect(plain(rows()[2].textContent)).toContain('mit mir geteilt')
+  })
+
+  it('keeps a title that turns its text around apart from the sentence around it', async () => {
+    const turned = `strom ${String.fromCharCode(0x202e)}txt.exe${String.fromCharCode(0x202c)} Rechnung`
+    server.answers[ALL] = result([hit(doc(1, turned, '2026-10-01'))])
+    await show('/?all=1')
+    expect(rows()[0].querySelector('.font-semibold bdi')!.textContent).toBe(turned)
+  })
+
+  it('says it kindly when the search is braked, and tries again by itself', async () => {
+    server.fails[ALL] = { status: 429, code: 'search_too_often', values: { retry_after: 1 } }
+    await show('/?all=1')
+    expect(plain(page.box.querySelector('[role="alert"]')!.textContent)).toBe('Zu viele Suchen auf einmal. Warte einen Moment.')
+    delete server.fails[ALL]
+    await until(() => !page.box.querySelector('[role="alert"]') && page.text.includes('Abschlag Strom Oktober'))
+  })
+})
+
+describe('the search of the archive', () => {
   it('searches what is in the address and marks the places the server names', async () => {
-    server.answers['GET /api/v1/search?q=werke&status=filed&limit=50'] = {
-      items: [hit(doc(1, 'Abschlag Strom Oktober', '2026-10-01'), { sender_marks: [[5, 10]], excerpt: { text: 'Die Stadtwerke <b>Lindenau</b> buchen ab.', marks: [[9, 14]], source: 'text' } })],
-      total: 1, next: null, understood: {},
-    }
+    server.answers[table('werke')] = result([hit(doc(1, 'Abschlag Strom Oktober', '2026-10-01'), { sender_marks: [[5, 10]], excerpt: { text: 'Die Stadtwerke <b>Lindenau</b> buchen ab.', marks: [[9, 14]], source: 'text' } })])
     await show('/?q=werke')
     await until(() => page.box.querySelector('mark'))
-    expect([...page.box.querySelectorAll('mark')].map((m) => plain(m.textContent))).toEqual(['werke', 'werke'])
+    expect([...page.box.querySelectorAll('mark')].map((m) => plain(m.textContent))).toEqual(['werke', 'werke', 'werke'])
     expect(plain(page.box.querySelector('[data-testid="excerpt"]')!.textContent)).toBe('Die Stadtwerke <b>Lindenau</b> buchen ab.')
     expect(page.box.querySelector('[data-testid="excerpt"] b')).toBeNull()
     expect(plain(page.box.querySelector('[data-testid="hit-count"]')!.textContent)).toContain('Ein Treffer für „werke“')
@@ -140,9 +333,9 @@ describe('the archive', () => {
     await page.type(field, 's')
     await page.type(field, 'st')
     await page.type(field, 'strom')
-    await until(() => server.called('GET', '/api/v1/search?q=strom&status=filed&limit=50'))
+    await until(() => server.called('GET', table('strom').slice(4)))
     const asked = server.calls.filter((c) => c.url.startsWith('/api/v1/search?q=s'))
-    expect(asked.map((c) => c.url)).toEqual(['/api/v1/search?q=strom&status=filed&limit=50'])
+    expect(asked.map((c) => c.url)).toEqual([table('strom').slice(4)])
     expect(where()).toBe('/?q=strom')
   })
 
@@ -168,7 +361,7 @@ describe('the archive', () => {
   it('stops a request when the person leaves the page', async () => {
     const signals: AbortSignal[] = []
     vi.stubGlobal('fetch', vi.fn(async (url: string, init?: RequestInit) => {
-      if (url.startsWith('/api/v1/search?q=') && url.includes('limit=50')) {
+      if (url.startsWith('/api/v1/search?q=') && url.includes('page=1')) {
         signals.push(init!.signal!)
         return new Promise<Response>((_resolve, reject) => init!.signal!.addEventListener('abort', () => reject(new DOMException('stop', 'AbortError'))))
       }
@@ -179,46 +372,10 @@ describe('the archive', () => {
     const { createRoot } = await import('react-dom/client')
     const { MemoryRouter } = await import('react-router-dom')
     page.root = createRoot(page.box)
-    await act(async () => page.root.render(<MemoryRouter initialEntries={['/']}><ArchivePage /></MemoryRouter>))
+    await act(async () => page.root.render(<MemoryRouter initialEntries={['/?all=1']}><ArchivePage /></MemoryRouter>))
     await until(() => signals.length === 1)
     await act(async () => page.root.render(<MemoryRouter initialEntries={['/']}><p>elsewhere</p></MemoryRouter>))
     await until(() => signals[0].aborted)
-  })
-
-  it('stops loading more when the search changes meanwhile', async () => {
-    server.answers[FIRST] = { items: [hit(doc(1, 'Neu', '2026-10-01'))], total: 2, next: 'CURSOR1', understood: {} }
-    await show()
-    const signals: AbortSignal[] = []
-    const answer = (url: string) => new Response(JSON.stringify(server.answers[`GET ${url}`] ?? { items: [], total: 0, next: null, understood: {} }), { status: 200 })
-    vi.stubGlobal('fetch', vi.fn(async (url: string, init?: RequestInit) => {
-      if (url.includes('cursor=CURSOR1')) {
-        signals.push(init!.signal!)
-        return new Promise<Response>((_resolve, reject) => init!.signal!.addEventListener('abort', () => reject(new DOMException('stop', 'AbortError'))))
-      }
-      return answer(url)
-    }))
-    await act(async () => page.button('Mehr laden')!.click())
-    await until(() => signals.length === 1)
-    await act(async () => page.button('Haushalt')!.click())
-    await until(() => signals[0].aborted)
-  })
-
-  it('marks what the person shared with people or by a link, apart from what was shared with them', async () => {
-    server.answers[FIRST] = {
-      items: [
-        hit(doc(1, 'Geteilt', '2026-10-01', { share_count: 2, link_count: 0 })),
-        hit(doc(2, 'Mit Link', '2026-10-01', { share_count: 0, link_count: 1 })),
-        hit(doc(3, 'Von Lea', '2026-10-01', { via_share: true, can_share: false, share_count: null, link_count: null, my_right: 'read' })),
-      ],
-      total: 3, next: null, understood: {},
-    }
-    await show()
-    const rows = [...page.box.querySelectorAll('section li')]
-    const marks = (row: Element) => [...row.querySelectorAll('[aria-label]')].map((m) => m.getAttribute('aria-label'))
-    expect(marks(rows[0])).toEqual(['mit Personen geteilt'])
-    expect(marks(rows[1])).toEqual(['Link nach außen'])
-    expect(marks(rows[2])).toEqual([])
-    expect(plain(rows[2].textContent)).toContain('mit mir geteilt')
   })
 
   it('keeps the help open while the focus moves into it with Tab, and an example works with the keyboard', async () => {
@@ -261,26 +418,6 @@ describe('the archive', () => {
     expect(codes).toEqual(['stadtwerke 2026', '"please transfer"', 'kind:invoice', 'sender:hansa', 'tag:car', 'amount:>100'])
   })
 
-  it('counts only what was filed in the heading, and only for the whole archive', async () => {
-    await show('/?vault=9')
-    expect(plain(page.box.querySelector('[data-testid="archive-count"]')!.textContent)).toBe('')
-    await page.click(page.button('Alle Tresore'))
-    expect(plain(page.box.querySelector('[data-testid="archive-count"]')!.textContent)).toBe('3 Dokumente in 2 Tresoren, die du sehen kannst')
-  })
-
-  it('learns from the list of documents, not from a search, whether something was shared one by one', async () => {
-    await show()
-    expect(server.calls.filter((c) => c.url.startsWith('/api/v1/search'))).toHaveLength(1)
-  })
-
-  it('keeps a title that turns its text around apart from the sentence around it', async () => {
-    const turned = `strom ${String.fromCharCode(0x202e)}txt.exe${String.fromCharCode(0x202c)} Rechnung`
-    server.answers[FIRST] = { items: [hit(doc(1, turned, '2026-10-01'))], total: 1, next: null, understood: {} }
-    await show()
-    const title = page.box.querySelector('section li .font-semibold bdi')!
-    expect(title.textContent).toBe(turned)
-  })
-
   it('offers the help of the search on an empty field, and an example searches at once', async () => {
     await show()
     const field = page.box.querySelector<HTMLInputElement>('input[type="search"]')!
@@ -293,14 +430,21 @@ describe('the archive', () => {
     await act(async () => (example as HTMLButtonElement).click())
     await idle()
     expect(where()).toBe('/?q=betrag%3A%3E100')
-    expect(server.called('GET', '/api/v1/search?q=betrag%3A%3E100&status=filed&limit=50')).toBeTruthy()
+    expect(server.called('GET', table('betrag%3A%3E100').slice(4))).toBeTruthy()
   })
 
-  it('narrows by vault, kind, sender, tag, owner and time, in the address and in the request', async () => {
+  it('a new search starts on the first page', async () => {
+    await show('/?q=alt&page=3')
+    const field = page.box.querySelector<HTMLInputElement>('input[type="search"]')!
+    await page.type(field, 'neu')
+    await until(() => where() === '/?q=neu')
+  })
+
+  it('narrows by vault, kind, sender, tag, owner and year, in the address and in the request', async () => {
+    server.answers['GET /api/v1/search/overview?status=filed&vault_id=9'] = overview
     await show()
     await page.click(page.button('Haushalt'))
     expect(where()).toBe('/?vault=9')
-    expect(server.called('GET', '/api/v1/search?q=&status=filed&vault_id=9&limit=50')).toBeTruthy()
     await page.click(page.button('Filter'))
     await page.choose(page.select('Art'), '1')
     // The sender is chosen in the field of its own: typing shows the fitting names, a click takes one.
@@ -310,8 +454,9 @@ describe('the archive', () => {
     await page.click(page.box.querySelector<HTMLElement>('[role="option"]'))
     await page.choose(page.select('Tag'), 'strom')
     await page.choose(page.select('Gehört'), '2')
-    expect(server.called('GET', '/api/v1/search?q=&status=filed&vault_id=9&kind_id=1&sender=Stadtwerke+Lindenau&tag=strom&owner_id=2&limit=50')).toBeTruthy()
-    expect(page.button('Filter (4)')).toBeTruthy()
+    await page.choose(page.select('Jahr'), '2025')
+    expect(server.called('GET', table('', '&vault_id=9&kind_id=1&sender=Stadtwerke+Lindenau&tag=strom&owner_id=2&date_from=2025-01-01&date_to=2025-12-31').slice(4))).toBeTruthy()
+    expect(page.button('Filter (5)')).toBeTruthy()
     await page.click(page.button('Filter zurücksetzen'))
     expect(where()).toBe('/?vault=9')
   })
@@ -323,80 +468,15 @@ describe('the archive', () => {
     const options = [...page.select('Art')!.querySelectorAll('option')].map((o) => [o.value, plain(o.textContent)])
     expect(options).toEqual([['', 'Alle'], ['1', 'Rechnung'], ['8', 'Mietvertrag']])
     await page.choose(page.select('Art'), '8')
-    expect(server.called('GET', '/api/v1/search?q=&status=filed&kind_id=8&limit=50')).toBeTruthy()
+    expect(server.called('GET', table('', '&kind_id=8').slice(4))).toBeTruthy()
     // An address that carries the number of the namesake shows the same entry.
     expect(page.select('Art')!.value).toBe('8')
   })
 
-  it('shows "shared with me" only when something was shared one by one, and asks the server for exactly that', async () => {
-    server.answers[SHARED] = { items: [doc(30, 'Klassenfahrt', '2026-09-05', { via_share: true, my_right: 'read' })], next: null }
-    await show()
-    await page.click(page.button('Mit mir geteilt'))
-    expect(server.called('GET', '/api/v1/search?q=&status=filed&via_share=true&limit=50')).toBeTruthy()
-  })
-
-  it('loads the next page with the cursor of the one before', async () => {
-    server.answers[FIRST] = { items: [hit(doc(1, 'Neu', '2026-10-01'))], total: 2, next: 'CURSOR1', understood: {} }
-    server.answers['GET /api/v1/search?q=&status=filed&limit=50&cursor=CURSOR1'] = { items: [hit(doc(2, 'Alt', '2020-01-02'))], total: 2, next: null, understood: {} }
-    await show()
-    await page.click(page.button('Mehr laden'))
-    expect(page.text).toContain('Alt')
-    expect([...page.box.querySelectorAll('section h2')].map((h) => plain(h.textContent))).toEqual(['Oktober 2026', 'Januar 2020'])
-    expect(page.button('Mehr laden')).toBeUndefined()
-  })
-
-  it('says it kindly when the search is braked, and tries again by itself', async () => {
-    server.fails[FIRST] = { status: 429, code: 'search_too_often', values: { retry_after: 1 } }
-    await show()
-    expect(plain(page.box.querySelector('[role="alert"]')!.textContent)).toBe('Zu viele Suchen auf einmal. Warte einen Moment.')
-    delete server.fails[FIRST]
-    await until(() => !page.box.querySelector('[role="alert"]') && page.text.includes('Abschlag Strom Oktober'))
-  })
-
   it('names the errors of the search language', async () => {
-    server.fails['GET /api/v1/search?q=betrag%3A%3Eviel&status=filed&limit=50'] = { status: 422, code: 'invalid_amount' }
+    server.fails[table('betrag%3A%3Eviel')] = { status: 422, code: 'invalid_amount' }
     await show('/?q=betrag:>viel')
     expect(page.text).toContain('Schreib einen Betrag wie betrag:>100 oder betrag:<12,50.')
-  })
-
-  it('shows the export only where its part is plugged in, with the filters as they are', async () => {
-    const seen: unknown[] = []
-    const ExportDialog = (props: { q: string; filters: unknown }) => {
-      seen.push(props)
-      return <p>export dialog</p>
-    }
-    await show('/?q=strom&vault=9', { ExportDialog })
-    await page.click(page.button('Exportieren'))
-    expect(page.text).toContain('export dialog')
-    expect(seen[0]).toMatchObject({ q: 'strom', filters: { status: 'filed', vault_id: 9 } })
-  })
-
-  it('hands the export the number and the sum of what it shows, and says what the export said', async () => {
-    const seen: { count: number; sum: number }[] = []
-    const ExportDialog = (props: { count: number; sum: number; say?: (text: string) => void; onClose: () => void }) => {
-      seen.push(props)
-      return (
-        <button type="button" onClick={() => { props.say?.('Das ZIP wird gepackt.'); props.onClose() }}>
-          fertig
-        </button>
-      )
-    }
-    await show('/', { ExportDialog })
-    await page.click(page.button('Exportieren'))
-    expect(seen.at(-1)).toMatchObject({ count: 3, sum: 8640 * 2 })
-    await page.click(page.button('fertig'))
-    expect(page.text).toContain('Das ZIP wird gepackt.')
-    expect(page.button('fertig')).toBeUndefined()
-  })
-
-  it('opens the export when the notice of a finished one leads here, and forgets it in the address', async () => {
-    const ExportDialog = () => <p>export dialog</p>
-    await show('/?export=1', { ExportDialog })
-    expect(page.text).toContain('export dialog')
-    expect(where()).toBe('/')
-    page.close()
-    await show('/?export=1')
-    expect(page.text).not.toContain('export dialog')
   })
 
   it('has no tools to rename or delete a sender any more: the filter points to the order page', async () => {
@@ -409,23 +489,75 @@ describe('the archive', () => {
   })
 })
 
+describe('the export of the archive', () => {
+  it('shows the export only where its part is plugged in, with the filters as they are', async () => {
+    const seen: unknown[] = []
+    const ExportDialog = (props: { q: string; filters: unknown }) => {
+      seen.push(props)
+      return <p>export dialog</p>
+    }
+    await show('/?q=strom&vault=9', { ExportDialog })
+    await page.click(page.button('Exportieren'))
+    expect(page.text).toContain('export dialog')
+    expect(seen[0]).toMatchObject({ q: 'strom', filters: { status: 'filed', vault_id: 9 } })
+  })
+
+  it('hands the export the number and the sum of what the table shows, and says what the export said', async () => {
+    const seen: { count: number; sum: number }[] = []
+    const ExportDialog = (props: { count: number; sum: number; say?: (text: string) => void; onClose: () => void }) => {
+      seen.push(props)
+      return (
+        <button type="button" onClick={() => { props.say?.('Das ZIP wird gepackt.'); props.onClose() }}>
+          fertig
+        </button>
+      )
+    }
+    await show('/?all=1', { ExportDialog })
+    await page.click(page.button('Exportieren'))
+    expect(seen.at(-1)).toMatchObject({ count: 3, sum: 8640 * 2 })
+    await page.click(page.button('fertig'))
+    expect(page.text).toContain('Das ZIP wird gepackt.')
+    expect(page.button('fertig')).toBeUndefined()
+  })
+
+  it('hands it the number of the whole archive from the overview', async () => {
+    const seen: { count: number }[] = []
+    const ExportDialog = (props: { count: number }) => {
+      seen.push(props)
+      return <p>export dialog</p>
+    }
+    await show('/', { ExportDialog })
+    await page.click(page.button('Exportieren'))
+    expect(seen.at(-1)).toMatchObject({ count: 3 })
+  })
+
+  it('opens the export when the notice of a finished one leads here, and forgets it in the address', async () => {
+    const ExportDialog = () => <p>export dialog</p>
+    await show('/?export=1', { ExportDialog })
+    expect(page.text).toContain('export dialog')
+    expect(where()).toBe('/')
+    page.close()
+    await show('/?export=1')
+    expect(page.text).not.toContain('export dialog')
+  })
+})
+
 describe('the check of the files in the archive', () => {
   const broken = hit(doc(4, 'Mietvertrag', '2024-01-15', { files_state: 'missing' }))
   const changed = hit(doc(5, 'Zeugnis', '2023-07-01', { files_state: 'changed' }))
 
-  it('puts a warning sign on a list row whose file is missing or changed, and on no other', async () => {
-    server.answers[FIRST] = { items: [hit(doc(1, 'Abschlag Strom Oktober', '2026-10-01')), broken, changed], total: 3, next: null, understood: {} }
-    await show()
-    const rows = [...page.box.querySelectorAll('section li')]
-    expect(rows[0].querySelector('[data-testid="file-sign"]')).toBeNull()
-    expect(rows[1].querySelector('[data-testid="file-sign"]')?.getAttribute('aria-label')).toBe('Datei fehlt')
-    expect(rows[2].querySelector('[data-testid="file-sign"]')?.getAttribute('aria-label')).toBe('Datei verändert')
+  it('puts a warning sign on a row whose file is missing or changed, and on no other', async () => {
+    server.answers[ALL] = result([hit(doc(1, 'Abschlag Strom Oktober', '2026-10-01')), broken, changed])
+    await show('/?all=1')
+    expect(rows()[0].querySelector('[data-testid="file-sign"]')).toBeNull()
+    expect(rows()[1].querySelector('[data-testid="file-sign"]')?.getAttribute('aria-label')).toBe('Datei fehlt')
+    expect(rows()[2].querySelector('[data-testid="file-sign"]')?.getAttribute('aria-label')).toBe('Datei verändert')
   })
 
   it('puts it on a tile too', async () => {
     auth.me = { ...me, profile: { ...me.profile, view: 'grid' } }
-    server.answers[FIRST] = { items: [hit(doc(1, 'Abschlag Strom Oktober', '2026-10-01')), broken], total: 2, next: null, understood: {} }
-    await show()
+    server.answers[ALL] = result([hit(doc(1, 'Abschlag Strom Oktober', '2026-10-01')), broken])
+    await show('/?all=1')
     const tiles = [...page.box.querySelectorAll('ul.grid li')]
     expect(tiles[0].querySelector('[data-testid="file-sign"]')).toBeNull()
     expect(tiles[1].querySelector('[data-testid="file-sign"]')?.getAttribute('aria-label')).toBe('Datei fehlt')

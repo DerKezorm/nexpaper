@@ -376,6 +376,11 @@ began, and up to 25 ms later by chance, errors too: its time tells nothing about
   the caller's own documents in it), `via_share=true` (only what was shared with the caller one by one) or `false` (only
   what lies in the caller's vaults).
 - `limit` (1 to 100, 50), `cursor` (the `next` of the page before; `422 invalid_cursor` for anything else).
+- Numbered pages instead of the cursor (the archive's table): `page` (from 1, at most 100,000) and `sort`: `-date` (the
+  usual), `date`, `title`, `-title`, `sender`, `-sender`, `amount`, `-amount`; a minus is the largest (the newest, Z)
+  first. Documents without a sender or an amount come last either way; equal ones keep the newest first. `next` is
+  empty then; a cursor with a page or another order is `422 cursor_and_page`. A page past the end is empty, with the
+  total.
 
 Answer: `{items, total, next, understood}`. Each item: `document` (as `GET /documents/{id}`), `title_marks` and
 `sender_marks`, and `excerpt` `{text, marks, source}` (a piece of the text around the first place found, or of a note:
@@ -388,6 +393,14 @@ the search asks only for the caller's) and again in the query that finds and cou
 excerpts are the same whether or not documents the caller cannot see match too, and the index never reads their
 entries. A search that takes longer than ten seconds in the database is stopped (`503 search_too_slow`); the excerpts of
 one answer get one second, the rest show the start of their text.
+
+### `GET /api/v1/search/overview`
+
+How the documents the caller may see spread, for the start of the archive: `{total, senders, kinds, years, tags}`, each
+list most first (`years` the newest first). `senders` and `tags` are `{name, count}`; a name in two vaults counts once.
+`kinds` are `{kind, count}`, kinds of the same name together; `kind.id` as the search's `kind_id` finds them all.
+`years` are `{year, count}` by the document's date; one without a date is only in `total`. Filters: `vault_id`,
+`status`, `via_share`, as for the search. The same rights as the search, and its brake.
 
 ### Settings (the operator, in a browser)
 

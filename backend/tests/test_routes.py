@@ -281,6 +281,7 @@ READ_ROUTES = {
     ("GET", "/api/v1/documents/{document_id}/origin"),
     # The search and the text of a document (B3).
     ("GET", "/api/v1/search"),
+    ("GET", "/api/v1/search/overview"),
     ("GET", "/api/v1/documents/{document_id}/versions/{number}/text"),
     # The e-invoice of a document: its data and its XML (B6), read like the file.
     ("GET", "/api/v1/documents/{document_id}/einvoice"),

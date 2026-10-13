@@ -16,7 +16,11 @@ words in a row, through the word index. Every term must be found, each in any of
 **The trash** is searched only when asked for (``trash``), and then only the caller's own documents in it.
 
 Order: by the document's date (the day it came in when it has none), newest first, then by id. ``next`` is a cursor for
-the following page; it holds the place of the last document of this page, nothing else.
+the following page; it holds the place of the last document of this page, nothing else. The archive's table asks for a
+numbered ``page`` instead and may sort by title, sender or amount too (``ORDERS``); a document without a sender or an
+amount comes last either way, and equal ones keep the newest first.
+
+``overview`` counts what the same rights and filters find, by sender, kind, year and tag: the start of the archive.
 """
 
 from __future__ import annotations
@@ -55,6 +59,10 @@ from . import changes, documents, rights, search_index, searchtext
 logger = logging.getLogger("nexpaper.search")
 
 MAX_LIMIT = 100
+#: The orders a page may be asked in; a minus is the largest (the newest, Z) first.
+ORDERS = ("-date", "date", "-title", "title", "-sender", "sender", "-amount", "amount")
+#: Highest page number a search takes (with 100 a page, ten million documents).
+MAX_PAGE = 100_000
 #: Longest a search may take in the database.
 MAX_SECONDS = 10.0
 #: How many steps of the database engine run between two looks at the clock.
@@ -251,10 +259,61 @@ def _bounded(db: Session) -> Iterator[None]:
         raw.set_progress_handler(None, 0)
 
 
-def find(db: Session, uid: int, raw: str, filters: Filters, *, cursor: str | None = None, limit: int = 50) -> Result:
-    """One page of what ``uid`` may see that the search ``raw`` finds, with the total."""
+def _order(order: str) -> list[ColumnElement[Any]]:
+    """The ``ORDER BY`` of ``order``: the column, empty ones last, then the newest first and the id."""
+    key = _sort_key()
+    newest = [key.desc(), Document.id.desc()]
+    down = order.startswith("-")
+    name = order.lstrip("-")
+    if name == "date":
+        return newest if down else [key.asc(), Document.id.asc()]
+    column: ColumnElement[Any]
+    if name == "title":
+        column = Document.title.collate("NOCASE")
+    elif name == "sender":
+        column = select(Sender.key).where(Sender.id == Document.sender_id).scalar_subquery()
+    else:
+        column = Document.amount
+    return [column.is_(None), column.desc() if down else column.asc(), *newest]
+
+
+def find(db: Session, uid: int, raw: str, filters: Filters, *, cursor: str | None = None, limit: int = 50,
+         order: str = "-date", page: int | None = None) -> Result:
+    """One page of what ``uid`` may see that the search ``raw`` finds, with the total: after ``cursor`` (newest first
+    only), or the numbered ``page`` in ``order``."""
+    if order not in ORDERS:
+        raise error("invalid_order", "Sort by one of: " + ", ".join(ORDERS) + ".", 422)
+    if cursor and (page is not None or order != "-date"):
+        raise error("cursor_and_page", "A cursor goes with the newest first and no page number.", 422)
+    if page is not None and not 1 <= page <= MAX_PAGE:
+        raise error("invalid_page", f"Ask for a page from 1 to {MAX_PAGE}.", 422, max=MAX_PAGE)
+    query = _parse(raw)
+    limit = max(1, min(limit, MAX_LIMIT))
+    clauses = where(uid, query, filters, scope_of(db, uid) if query.has_text else [])
+    key = _sort_key()
+    with changes.snapshot(db), _bounded(db):
+        total = int(db.scalar(select(func.count()).select_from(Document).where(and_(*clauses))) or 0)
+        statement = select(Document, key.label("sort_key")).where(and_(*clauses))
+        if cursor:
+            after_key, after_id = _read_cursor(cursor)
+            statement = statement.where(or_(key < after_key, and_(key == after_key, Document.id < after_id)))
+        statement = statement.order_by(*_order(order))
+        if page is not None:
+            statement = statement.offset((page - 1) * limit)
+        found = db.execute(statement.limit(limit + 1)).all()
+        more = len(found) > limit
+        found = found[:limit]
+        rows = documents.rows(db, uid, [row[0] for row in found])
+        hits = _hits(db, query, rows)
+    # A numbered page has no cursor: the next one is the next number.
+    paged = page is not None or order != "-date"
+    next_cursor = _cursor(found[-1][1], found[-1][0].id) if more and found and not paged else None
+    return Result(hits=hits, total=total, next=next_cursor, query=query)
+
+
+def _parse(raw: str) -> searchtext.Query:
     try:
-        query = searchtext.parse(raw)
+        return searchtext.parse(raw)
     except searchtext.SearchError as exc:
         message = {"query_too_long": f"Use at most {searchtext.MAX_LENGTH} characters.",
                    "too_many_terms": f"Use at most {searchtext.MAX_TERMS} words and filters.",
@@ -262,22 +321,53 @@ def find(db: Session, uid: int, raw: str, filters: Filters, *, cursor: str | Non
         limit_of = {"query_too_long": searchtext.MAX_LENGTH, "too_many_terms": searchtext.MAX_TERMS}
         values = {"max": limit_of[exc.code]} if exc.code in limit_of else {}
         raise error(exc.code, message, 422, **values) from exc
-    limit = max(1, min(limit, MAX_LIMIT))
-    clauses = where(uid, query, filters, scope_of(db, uid) if query.has_text else [])
-    key = _sort_key()
+
+
+@dataclass
+class Overview:
+    total: int
+    #: (name, number of documents), most first; senders and tags of the same name in two vaults are one.
+    senders: list[tuple[str, int]]
+    #: (a kind of that name, number), most first; the search counts the kinds of the same name in when one is asked for.
+    kinds: list[tuple[Kind, int]]
+    #: (year of the document's date, number), the newest year first; a document without a date is in no year.
+    years: list[tuple[int, int]]
+    tags: list[tuple[str, int]]
+
+
+def overview(db: Session, uid: int, filters: Filters) -> Overview:
+    """How many documents ``uid`` may see with ``filters``, and how they spread over senders, kinds, years and tags:
+    the same rights and filters as ``find``, so nothing is counted that the caller could not open."""
+    clauses = where(uid, searchtext.parse(""), filters, [])
+    seen = select(Document.id).where(and_(*clauses))
+    most = func.count().desc()
+    year = func.substr(cast(Document.date, String), 1, 4)
     with changes.snapshot(db), _bounded(db):
         total = int(db.scalar(select(func.count()).select_from(Document).where(and_(*clauses))) or 0)
-        page = select(Document, key.label("sort_key")).where(and_(*clauses))
-        if cursor:
-            after_key, after_id = _read_cursor(cursor)
-            page = page.where(or_(key < after_key, and_(key == after_key, Document.id < after_id)))
-        found = db.execute(page.order_by(key.desc(), Document.id.desc()).limit(limit + 1)).all()
-        more = len(found) > limit
-        found = found[:limit]
-        rows = documents.rows(db, uid, [row[0] for row in found])
-        hits = _hits(db, query, rows)
-    next_cursor = _cursor(found[-1][1], found[-1][0].id) if more and found else None
-    return Result(hits=hits, total=total, next=next_cursor, query=query)
+        senders = db.execute(
+            select(func.min(Sender.name), func.count()).join(Document, Document.sender_id == Sender.id)
+            .where(Document.id.in_(seen)).group_by(Sender.key).order_by(most, func.min(Sender.name))
+        ).all()
+        kind_rows = db.execute(
+            select(func.min(Kind.id), func.count()).join(Document, Document.kind_id == Kind.id)
+            .where(Document.id.in_(seen)).group_by(Kind.name_key).order_by(most, func.min(Kind.name))
+        ).all()
+        kinds = {kind.id: kind for kind in db.scalars(select(Kind).where(Kind.id.in_([row[0] for row in kind_rows])))}
+        years = db.execute(
+            select(year, func.count()).where(Document.id.in_(seen), Document.date.is_not(None))
+            .group_by(year).order_by(year.desc())
+        ).all()
+        tags = db.execute(
+            select(func.min(Tag.name), func.count()).join(DocumentTag, DocumentTag.tag_id == Tag.id)
+            .where(DocumentTag.document_id.in_(seen)).group_by(Tag.key).order_by(most, func.min(Tag.name))
+        ).all()
+    return Overview(
+        total=total,
+        senders=[(name, int(n)) for name, n in senders],
+        kinds=[(kinds[kind_id], int(n)) for kind_id, n in kind_rows if kind_id in kinds],
+        years=[(int(y), int(n)) for y, n in years if y and y.isdigit()],
+        tags=[(name, int(n)) for name, n in tags],
+    )
 
 
 def _hits(db: Session, query: searchtext.Query, rows: list[documents.Row]) -> list[Hit]:
@@ -321,4 +411,7 @@ def _notes_snippet(db: Session, document_id: int, terms: list[str]) -> tuple[str
     return None
 
 
-__all__ = ["MAX_LIMIT", "Filters", "Hit", "Result", "find", "text_clauses", "where"]
+__all__ = [
+    "MAX_LIMIT", "MAX_PAGE", "ORDERS", "Filters", "Hit", "Overview", "Result", "find", "overview", "text_clauses",
+    "where",
+]
