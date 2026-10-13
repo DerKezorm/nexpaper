@@ -630,8 +630,9 @@ function Pick({ children, count, onClick }: { children: ReactNode; count: number
   )
 }
 
-/** The columns of the table: from `md` a grid, the vault from `lg`; below, title, sender and date in two lines. */
-const COLUMNS = 'md:grid md:grid-cols-[1.5rem_minmax(0,1fr)_11rem_7.5rem_6rem_6.5rem] lg:grid-cols-[1.5rem_minmax(0,1fr)_12rem_7.5rem_9rem_6rem_6.5rem] md:items-center md:gap-4'
+/** The columns of the table: from `md` a grid, the vault from `lg`; below, title, sender and date in two lines. Title
+ * and sender share what is left, the title twice as much: fixed widths cut the titles short on a laptop. */
+const COLUMNS = 'md:grid md:grid-cols-[1.5rem_minmax(0,2fr)_minmax(0,1fr)_7rem_5.5rem_6rem] lg:grid-cols-[1.5rem_minmax(0,2fr)_minmax(0,1fr)_7rem_minmax(0,8rem)_5.5rem_6rem] md:items-center md:gap-3'
 
 type TableProps = {
   hits: SearchHit[]
