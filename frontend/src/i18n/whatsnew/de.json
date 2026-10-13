@@ -1,4 +1,24 @@
 {
+  "1.2.0": {
+    "lead": "Das Archiv bleibt übersichtlich, auch mit Tausenden Dokumenten.",
+    "sections": [
+      {
+        "title": "Eine Übersicht als Einstieg ins Archiv",
+        "where": "Archiv",
+        "body": "Ohne Suche und Filter zeigt das Archiv jetzt die neuesten Dokumente und darunter, wie sich alles verteilt: nach Absender, nach Art und nach Jahr, jeweils mit der Zahl der Dokumente, dazu die häufigsten Tags. Ein Klick auf einen Eintrag zeigt genau diese Dokumente. Hinter „Alle Absender“ steht die ganze Liste mit einem Suchfeld."
+      },
+      {
+        "title": "Eine Tabelle mit Seiten statt einer endlosen Liste",
+        "where": "Archiv, „Alle anzeigen“, eine Suche oder ein Filter",
+        "body": "Was gefunden wird, steht in einer Tabelle mit nummerierten Seiten, 25, 50 oder 100 je Seite. Ein Klick auf Titel, Absender, Datum oder Betrag sortiert danach, ein zweiter dreht die Reihenfolge um. Seite, Sortierung und Filter stehen in der Adresse: Ein Lesezeichen führt genau dorthin zurück, und der Zurück-Knopf des Browsers führt zur Übersicht."
+      }
+    ],
+    "smallTitle": "Außerdem",
+    "small": [
+      "Im Filter des Archivs steht statt „Zeitraum“ jetzt „Jahr“, mit den Jahren, aus denen es Dokumente gibt.",
+      "Für Programme: Die Suche über die API nimmt zusätzlich `page` und `sort`, und `GET /api/v1/search/overview` liefert die Zahlen der Übersicht. Der Cursor bleibt."
+    ]
+  },
   "1.1.2": {
     "lead": "Zwei Korrekturen: HDR-Fotos vom iPhone und sehr große Postfächer.",
     "sections": [

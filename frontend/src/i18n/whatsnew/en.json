@@ -1,4 +1,24 @@
 {
+  "1.2.0": {
+    "lead": "The archive stays easy to find your way in, with thousands of documents too.",
+    "sections": [
+      {
+        "title": "An overview as the way into the archive",
+        "where": "Archive",
+        "body": "Without a search or a filter the archive now shows the newest documents and, below them, how everything spreads: by sender, by kind and by year, each with the number of documents, and the most frequent tags. A click on an entry shows exactly those documents. Behind “All senders” is the whole list with a search field."
+      },
+      {
+        "title": "A table with pages instead of an endless list",
+        "where": "Archive, “Show all”, a search or a filter",
+        "body": "What is found stands in a table with numbered pages, 25, 50 or 100 a page. A click on title, sender, date or amount sorts by it, a second click turns the order around. The page, the order and the filters are in the address: a bookmark leads back to exactly there, and the back button of the browser leads to the overview."
+      }
+    ],
+    "smallTitle": "Also",
+    "small": [
+      "The archive's filter has “Year” instead of “Time”, with the years there are documents from.",
+      "For programs: the search of the API takes `page` and `sort` too, and `GET /api/v1/search/overview` gives the numbers of the overview. The cursor stays."
+    ]
+  },
   "1.1.2": {
     "lead": "Two fixes: HDR photos from an iPhone and very large mailboxes.",
     "sections": [
