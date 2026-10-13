@@ -1,4 +1,16 @@
 {
+  "1.2.1": {
+    "lead": "Eine Korrektur am neuen Archiv.",
+    "sections": [
+      {
+        "title": "Ganze Titel in der Tabelle",
+        "where": "Archiv",
+        "body": "Auf einem Laptop schnitt die Tabelle des Archivs die Titel nach wenigen Wörtern ab, weil die übrigen Spalten feste Breiten hatten. Jetzt teilen sich Titel und Absender den Platz, der Titel bekommt doppelt so viel."
+      }
+    ],
+    "smallTitle": "Außerdem",
+    "small": []
+  },
   "1.2.0": {
     "lead": "Das Archiv bleibt übersichtlich, auch mit Tausenden Dokumenten.",
     "sections": [

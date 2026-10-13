@@ -1,4 +1,16 @@
 {
+  "1.2.1": {
+    "lead": "A fix for the new archive.",
+    "sections": [
+      {
+        "title": "Whole titles in the table",
+        "where": "Archive",
+        "body": "On a laptop the archive's table cut the titles short after a few words, because the other columns had fixed widths. Now title and sender share the room, the title gets twice as much."
+      }
+    ],
+    "smallTitle": "Also",
+    "small": []
+  },
   "1.2.0": {
     "lead": "The archive stays easy to find your way in, with thousands of documents too.",
     "sections": [
