@@ -6,7 +6,8 @@
  */
 import { Check, Plus, X } from 'lucide-react'
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react'
-import { useTranslation } from 'react-i18next'
+import { Trans, useTranslation } from 'react-i18next'
+import { Link } from 'react-router-dom'
 
 import type { DateKind, DocumentDate, Notice } from '../api/client'
 import { dayInDays, shortDate } from '../lib/dates'
@@ -230,7 +231,9 @@ export function Dates({ dates, onChange, onDraft, start, why, refused, done, onD
           )
         )}
       </div>
-      <p className="mt-1 text-xs text-muted">{t('docs.fields.datesHint')}</p>
+      <p className="mt-1.5 text-xs text-muted">
+        <Trans i18nKey="reminders.datesNote" components={{ account: <Link to="/konto?tab=erinnerungen" className="font-semibold text-accent hover:underline" /> }} />
+      </p>
     </div>
   )
 }

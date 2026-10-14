@@ -1,5 +1,5 @@
 /**
- * My account in the interface, against a stand-in of the server: the six tabs of the mock in their order and in the
+ * My account in the interface, against a stand-in of the server: the seven tabs of the mock in their order and in the
  * address, the mail address with the link it waits for (the password asked again, the old address standing until the
  * link is opened, withdrawn on request), pairing a device (the key shown once, then blocked), API keys (off until the
  * operator allows them, the key shown once) and the choices of the look.
@@ -107,10 +107,10 @@ afterEach(() => {
 })
 
 describe('the tabs', () => {
-  it('are the six of the mock, in their order', async () => {
+  it('are the seven of the mock, in their order', async () => {
     await show()
     const tabs = [...box.querySelectorAll('[role="tab"]')].map((item) => item.textContent?.trim())
-    expect(tabs).toEqual(['Profil', 'Sicherheit', 'Geräte und Apps', 'Hochladen', 'KI', 'Aussehen'])
+    expect(tabs).toEqual(['Profil', 'Sicherheit', 'Geräte und Apps', 'Hochladen', 'Erinnerungen', 'KI', 'Aussehen'])
     expect(box.querySelector('h1')!.textContent).toBe('Mein Konto')
   })
 
@@ -124,10 +124,10 @@ describe('the tabs', () => {
     expect(box.querySelector('[role="tab"][aria-selected="true"]')!.textContent).toContain('Profil')
   })
 
-  it('come in English too, with the same six', async () => {
+  it('come in English too, with the same seven', async () => {
     await changeLanguage('en', false)
     await show()
-    expect([...box.querySelectorAll('[role="tab"]')].map((item) => item.textContent?.trim())).toEqual(['Profile', 'Security', 'Devices and apps', 'Upload', 'AI', 'Look'])
+    expect([...box.querySelectorAll('[role="tab"]')].map((item) => item.textContent?.trim())).toEqual(['Profile', 'Security', 'Devices and apps', 'Upload', 'Reminders', 'AI', 'Look'])
   })
 })
 

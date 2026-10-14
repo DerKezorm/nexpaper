@@ -188,7 +188,8 @@
       "looks": "Look",
       "ai": "AI",
       "devices": "Devices and apps",
-      "upload": "Upload"
+      "upload": "Upload",
+      "reminders": "Reminders"
     },
     "profile": {
       "text": "How the others see you on your documents, notes and in the history.",
@@ -835,7 +836,10 @@
     "not_in_trash": "The document is no longer in the trash. Reload the page.",
     "invalid_order": "There is no such order.",
     "invalid_page": "There is no such page.",
-    "cursor_and_page": "The list of results has changed. Start the search again."
+    "cursor_and_page": "The list of results has changed. Start the search again.",
+    "mail_unavailable": "Reminders by mail need a mail server and a confirmed address.",
+    "reminders_no_way": "No way is switched on that reaches you.",
+    "bad_reminder": "This value is not one nexpaper offers."
   },
   "ready": {
     "title": "Ready for the internet?",
@@ -1540,7 +1544,6 @@
       "owner": "Belongs to",
       "tags": "Tags",
       "dates": "Dates",
-      "datesHint": "Due, contract until, warranty until, keep until.",
       "addDate": "Date",
       "removeDate": "Remove {{kind}}",
       "addTag": "+ Tag",
@@ -2774,5 +2777,111 @@
       "reopened": "opened the deadline again",
       "renewed": "renewed the contract by itself until {{date}}"
     }
+  },
+  "reminders": {
+    "tab": "Reminders",
+    "how": {
+      "title": "How you are reminded",
+      "text": "Of bills, notice periods and warranties in your vaults. What a message says: the kind, the day and the title of the document, never an amount or its contents."
+    },
+    "when": "When",
+    "rhythmLabel": "When you are reminded",
+    "rhythm": {
+      "single": "One by one, when it is time",
+      "weekly": "Once a week",
+      "both": "Both"
+    },
+    "rhythmHint": {
+      "single": "One message per deadline, as early as set below.",
+      "weekly": "On Mondays at 8 o'clock a mail with everything that comes up this week. Only when something does.",
+      "both": "One message per deadline, and on Mondays the overview of the week by mail."
+    },
+    "where": "Where",
+    "push": "Push to the phone and the browser",
+    "pushHint_one": "Switched on on {{count}} device. A tap opens the document.",
+    "pushHint_other": "Switched on on {{count}} devices. A tap opens the document.",
+    "pushNone": "Not switched on on any device yet. That is under Devices and apps.",
+    "mailTo": "Mail to {{address}}",
+    "mail": "Mail",
+    "mailHint": "Your confirmed address. Without the operator's mail server this does not work.",
+    "mailWhy": {
+      "no_server": "The operator has not set up a mail server, so this does not work.",
+      "no_address": "You have no mail address. Enter it under Profile and confirm it.",
+      "unconfirmed": "Your mail address is not confirmed yet. Open the link in the mail."
+    },
+    "weeklyTo": "The weekly overview goes by mail to <b>{{address}}</b>.",
+    "weeklyNot": "The weekly overview comes by mail, so it does not work right now.",
+    "nothingWay": "This way you get no reminders one by one. The deadlines page still shows everything.",
+    "test": "Send a test message",
+    "tested": "Test message sent. It should show on your devices in a moment.",
+    "early": {
+      "title": "How early",
+      "text": "At 8 o'clock in the morning in your time zone ({{zone}}). Keeping times do not remind one by one."
+    },
+    "lead": {
+      "due": "Bill due",
+      "cancel": "Last day to cancel",
+      "warranty": "Warranty ends"
+    },
+    "leadAria": "{{label}}, how early",
+    "before_one": "{{count}} day before",
+    "before_other": "{{count}} days before",
+    "sameDay": "Once more on the day itself",
+    "sameDayHint": "Unless it is marked done by then.",
+    "vaults": {
+      "title": "Which vaults",
+      "text": "You are reminded for vaults where you may change things. Muted ones stay on the deadlines page."
+    },
+    "myVault": "My vault",
+    "myVaultHint": "Only your own documents.",
+    "othersToo": "The others who may change things are reminded too.",
+    "onlyYou": "Only you are reminded.",
+    "shared": "Shared with you one by one",
+    "sharedHint_one": "{{count}} document somebody shared with you to change.",
+    "sharedHint_other": "{{count}} documents somebody shared with you to change.",
+    "readOnly": "Read only, so no reminders:",
+    "personal": "{{name}} (personal)",
+    "preview": {
+      "title": "What it looks like",
+      "text": "Examples with your deadlines.",
+      "push": "Push on the lock screen",
+      "mail": "Weekly overview, on Mondays",
+      "time": "8:00"
+    },
+    "words": {
+      "pay": "Pay by {{day}}",
+      "cancel": "Cancel by {{day}}",
+      "ends": "Contract ends {{day}}",
+      "warranty": "Warranty until {{day}}",
+      "days": "{{count}} days to go.",
+      "tomorrow": "Tomorrow.",
+      "today": "Today.",
+      "renews": "After that the contract renews until {{date}}."
+    },
+    "week": {
+      "subject_one": "This week: {{count}} deadline",
+      "subject_other": "This week: {{count}} deadlines",
+      "overdue": ", {{count}} overdue",
+      "hello": "Good morning {{name}}, this is what comes up this week:",
+      "overdueHead": "Overdue",
+      "weekHead": "This week",
+      "nothing": "nothing",
+      "mayGo": "May go",
+      "mayGo_one": "The keeping time of one document is over.",
+      "mayGo_other": "The keeping time of {{count}} documents is over.",
+      "all": "Open all deadlines in nexpaper",
+      "why": "This mail comes because you switched on the weekly overview under My account, Reminders.",
+      "short": {
+        "pay": "Pay",
+        "cancel": "Cancel",
+        "ends": "Cancel",
+        "warranty": "Warranty"
+      }
+    },
+    "remindedHow": "You are reminded the way you set it under <account>My account, Reminders</account>.",
+    "datesNote": "Everybody who may change things in the vault is reminded, each the way they set it under <account>My account, Reminders</account>.",
+    "muted": "muted",
+    "mutedTitle": "You muted the reminders of this vault.",
+    "saved": "Saved."
   }
 }

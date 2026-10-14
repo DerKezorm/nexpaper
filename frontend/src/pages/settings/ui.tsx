@@ -294,7 +294,7 @@ export function TabRow<T extends string>({ tabs, active, onChange, under = false
 }
 
 /** A choice of a few, as a pill with segments. */
-export function Segment<T extends string>({ options, value, onChange, label }: { options: { value: T; label: string }[]; value: T; onChange: (value: T) => void; label?: string }) {
+export function Segment<T extends string>({ options, value, onChange, label }: { options: { value: T; label: string; disabled?: boolean }[]; value: T; onChange: (value: T) => void; label?: string }) {
   return (
     <div role="radiogroup" aria-label={label} className="inline-flex flex-wrap rounded-full border border-line bg-sheet-2/60 p-1 text-sm font-semibold">
       {options.map((option) => (
@@ -303,8 +303,9 @@ export function Segment<T extends string>({ options, value, onChange, label }: {
           type="button"
           role="radio"
           aria-checked={value === option.value}
+          disabled={option.disabled}
           onClick={() => onChange(option.value)}
-          className={`rounded-full px-3.5 py-1.5 ${value === option.value ? 'bg-sheet text-ink shadow-sm' : 'text-muted hover:text-ink'}`}
+          className={`rounded-full px-3.5 py-1.5 disabled:opacity-50 ${value === option.value ? 'bg-sheet text-ink shadow-sm' : 'text-muted hover:text-ink disabled:hover:text-muted'}`}
         >
           {option.label}
         </button>

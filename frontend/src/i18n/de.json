@@ -188,7 +188,8 @@
       "looks": "Aussehen",
       "ai": "KI",
       "devices": "Geräte und Apps",
-      "upload": "Hochladen"
+      "upload": "Hochladen",
+      "reminders": "Erinnerungen"
     },
     "profile": {
       "text": "So sehen dich die anderen an deinen Dokumenten, Notizen und im Verlauf.",
@@ -835,7 +836,10 @@
     "not_in_trash": "Das Dokument liegt nicht mehr im Papierkorb. Lade die Seite neu.",
     "invalid_order": "Diese Sortierung gibt es nicht.",
     "invalid_page": "Diese Seite gibt es nicht.",
-    "cursor_and_page": "Die Trefferliste hat sich geändert. Starte die Suche neu."
+    "cursor_and_page": "Die Trefferliste hat sich geändert. Starte die Suche neu.",
+    "mail_unavailable": "Erinnerungen per Mail brauchen einen Mailserver und eine bestätigte Adresse.",
+    "reminders_no_way": "Kein Weg ist eingeschaltet, der dich erreicht.",
+    "bad_reminder": "Diesen Wert bietet nexpaper nicht an."
   },
   "ready": {
     "title": "Bereit fürs Internet?",
@@ -1540,7 +1544,6 @@
       "owner": "Gehört",
       "tags": "Tags",
       "dates": "Termine",
-      "datesHint": "Fällig, Vertrag bis, Garantie bis, Aufbewahren bis.",
       "addDate": "Termin",
       "removeDate": "{{kind}} entfernen",
       "addTag": "+ Tag",
@@ -2774,5 +2777,111 @@
       "reopened": "hat die Frist wieder geöffnet",
       "renewed": "hat den Vertrag von selbst verlängert bis {{date}}"
     }
+  },
+  "reminders": {
+    "tab": "Erinnerungen",
+    "how": {
+      "title": "Wie du erinnert wirst",
+      "text": "An Rechnungen, Kündigungen und Garantien in deinen Tresoren. Was in der Nachricht steht: Art, Datum und Titel des Dokuments, nie Betrag oder Inhalt."
+    },
+    "when": "Wann",
+    "rhythmLabel": "Wann erinnert wird",
+    "rhythm": {
+      "single": "Einzeln, wenn es so weit ist",
+      "weekly": "Einmal die Woche",
+      "both": "Beides"
+    },
+    "rhythmHint": {
+      "single": "Je Frist eine Nachricht, so früh wie unten eingestellt.",
+      "weekly": "Montags um 8 Uhr eine Mail mit allem, was in dieser Woche ansteht. Nur wenn etwas ansteht.",
+      "both": "Je Frist eine Nachricht, und montags dazu die Übersicht der Woche per Mail."
+    },
+    "where": "Wohin",
+    "push": "Push aufs Handy und in den Browser",
+    "pushHint_one": "Auf {{count}} Gerät eingeschaltet. Tippen öffnet das Dokument.",
+    "pushHint_other": "Auf {{count}} Geräten eingeschaltet. Tippen öffnet das Dokument.",
+    "pushNone": "Noch auf keinem Gerät eingeschaltet. Das geht unter Geräte und Apps.",
+    "mailTo": "Mail an {{address}}",
+    "mail": "Mail",
+    "mailHint": "Deine bestätigte Adresse. Ohne Mailserver des Betreibers geht das nicht.",
+    "mailWhy": {
+      "no_server": "Der Betreiber hat keinen Mailserver eingerichtet, darum geht das nicht.",
+      "no_address": "Du hast keine Mailadresse hinterlegt. Trag sie unter Profil ein und bestätige sie.",
+      "unconfirmed": "Deine Mailadresse ist noch nicht bestätigt. Öffne den Link in der Mail."
+    },
+    "weeklyTo": "Die Wochenübersicht geht per Mail an <b>{{address}}</b>.",
+    "weeklyNot": "Die Wochenübersicht kommt per Mail und geht darum gerade nicht.",
+    "nothingWay": "So bekommst du keine einzelnen Erinnerungen. Die Seite Fristen zeigt trotzdem alles.",
+    "test": "Testnachricht schicken",
+    "tested": "Testnachricht geschickt. Sie sollte gleich auf deinen Geräten erscheinen.",
+    "early": {
+      "title": "Wie früh",
+      "text": "Um 8 Uhr morgens in deiner Zeitzone ({{zone}}). Aufbewahrungsfristen erinnern nicht einzeln."
+    },
+    "lead": {
+      "due": "Rechnung fällig",
+      "cancel": "Letzter Kündigungstag",
+      "warranty": "Garantie läuft ab"
+    },
+    "leadAria": "{{label}}, wie früh",
+    "before_one": "{{count}} Tag vorher",
+    "before_other": "{{count}} Tage vorher",
+    "sameDay": "Am Tag selbst noch einmal",
+    "sameDayHint": "Wenn es bis dahin nicht als erledigt markiert ist.",
+    "vaults": {
+      "title": "Welche Tresore",
+      "text": "Erinnert wirst du für Tresore, in denen du bearbeiten darfst. Stumm geschaltete stehen weiter auf der Seite Fristen."
+    },
+    "myVault": "Mein Tresor",
+    "myVaultHint": "Nur deine eigenen Dokumente.",
+    "othersToo": "Auch die anderen mit Bearbeiten-Recht werden erinnert.",
+    "onlyYou": "Nur du wirst erinnert.",
+    "shared": "Einzeln mit dir geteilt",
+    "sharedHint_one": "{{count}} Dokument, das jemand mit dir zum Bearbeiten geteilt hat.",
+    "sharedHint_other": "{{count}} Dokumente, die jemand mit dir zum Bearbeiten geteilt hat.",
+    "readOnly": "Nur lesen, darum keine Erinnerungen:",
+    "personal": "{{name}} (persönlich)",
+    "preview": {
+      "title": "So sieht es aus",
+      "text": "Beispiele mit deinen Fristen.",
+      "push": "Push auf dem Sperrbildschirm",
+      "mail": "Wochenübersicht, montags",
+      "time": "8:00"
+    },
+    "words": {
+      "pay": "Zahlen bis {{day}}",
+      "cancel": "Kündigen bis {{day}}",
+      "ends": "Vertrag endet {{day}}",
+      "warranty": "Garantie bis {{day}}",
+      "days": "Noch {{count}} Tage.",
+      "tomorrow": "Morgen.",
+      "today": "Heute.",
+      "renews": "Danach verlängert sich der Vertrag bis {{date}}."
+    },
+    "week": {
+      "subject_one": "Diese Woche: {{count}} Frist",
+      "subject_other": "Diese Woche: {{count}} Fristen",
+      "overdue": ", {{count}} überfällig",
+      "hello": "Guten Morgen {{name}}, das steht diese Woche an:",
+      "overdueHead": "Überfällig",
+      "weekHead": "Diese Woche",
+      "nothing": "nichts",
+      "mayGo": "Darf weg",
+      "mayGo_one": "Bei einem Dokument ist die Aufbewahrungszeit um.",
+      "mayGo_other": "Bei {{count}} Dokumenten ist die Aufbewahrungszeit um.",
+      "all": "Alle Fristen in nexpaper öffnen",
+      "why": "Diese Mail kommt, weil du unter Mein Konto, Erinnerungen die Wochenübersicht eingeschaltet hast.",
+      "short": {
+        "pay": "Zahlen",
+        "cancel": "Kündigen",
+        "ends": "Kündigen",
+        "warranty": "Garantie"
+      }
+    },
+    "remindedHow": "Erinnert wirst du so, wie du es unter <account>Mein Konto, Erinnerungen</account> eingestellt hast.",
+    "datesNote": "Erinnert werden alle, die im Tresor bearbeiten dürfen, jede Person so, wie sie es unter <account>Mein Konto, Erinnerungen</account> eingestellt hat.",
+    "muted": "stumm",
+    "mutedTitle": "Für diesen Tresor hast du Erinnerungen stumm geschaltet.",
+    "saved": "Gespeichert."
   }
 }

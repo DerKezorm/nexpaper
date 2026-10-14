@@ -1204,3 +1204,34 @@ export const kindsApi = {
   create: (name: string, hue: number) => api<DocumentKind>('/api/v1/kinds', { method: 'POST', body: { name, hue } }),
   remove: (id: number) => api<void>(`/api/v1/kinds/${id}`, { method: 'DELETE' }),
 }
+
+// Reminders (F2): how the own account is reminded of deadlines.
+export type ReminderRhythm = 'single' | 'weekly' | 'both'
+export type ReminderLead = { due: number; cancel: number; warranty: number }
+export type ReminderVault = { id: number; name: string; icon: string; personal: boolean; personal_of_other: boolean }
+export type Reminders = {
+  rhythm: ReminderRhythm
+  push: boolean
+  mail: boolean
+  lead: ReminderLead
+  same_day: boolean
+  muted: number[]
+  muted_shared: boolean
+  options: { due: number[]; cancel: number[]; warranty: number[] }
+  hour: number
+  time_zone: string
+  push_devices: number
+  mail_address: string
+  mail_problem: 'no_server' | 'no_address' | 'unconfirmed' | null
+  vaults: (ReminderVault & { muted: boolean; others: number })[]
+  read_only: ReminderVault[]
+  shared: number
+}
+export type RemindersChange = Partial<Pick<Reminders, 'rhythm' | 'push' | 'mail' | 'same_day' | 'muted' | 'muted_shared'>> & { lead?: Partial<ReminderLead> }
+export type ReminderTest = { push: PushResult; mail: boolean; by_push: boolean; by_mail: boolean }
+
+export const remindersApi = {
+  get: () => api<Reminders>('/api/v1/me/reminders'),
+  save: (change: RemindersChange) => api<Reminders>('/api/v1/me/reminders', { method: 'PUT', body: change }),
+  test: () => api<ReminderTest>('/api/v1/me/reminders/test', { method: 'POST' }),
+}

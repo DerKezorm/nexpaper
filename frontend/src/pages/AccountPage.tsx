@@ -2,10 +2,10 @@
  * The own account in tabs, everything personal in one place, as the mock: Profile (picture, display name, name, role,
  * mail address with its link, language), Security (password, second factor, passkeys, the sign-in providers, the
  * signed-in devices and the notice of a new sign-in), Devices and apps (pairing by a QR code, the iPhone shortcut, API
- * keys, Web Push on the devices), Upload (where uploads go, where a phone starts), AI (the own switch, and what the operator set up) and Looks (light or dark, the
+ * keys, Web Push on the devices), Upload (where uploads go, where a phone starts), Reminders (of deadlines), AI (the own switch, and what the operator set up) and Looks (light or dark, the
  * archive). The tab stands in the address (`?tab=`). Settings are the operator's.
  */
-import { AtSign, Camera, KeyRound, MonitorSmartphone, Palette, ShieldCheck, Sparkles, Trash2, Upload, User } from 'lucide-react'
+import { AtSign, Bell, Camera, KeyRound, MonitorSmartphone, Palette, ShieldCheck, Sparkles, Trash2, Upload, User } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useSearchParams } from 'react-router-dom'
@@ -25,11 +25,12 @@ import { useAuth } from '../state/auth'
 import { MyIntakeCards } from './settings/IntakeCards'
 import { LanguageCard, LooksCard, PhoneCard } from './settings/PersonalCards'
 import { PushDevicesCard } from './settings/PushCards'
+import { RemindersPart } from './settings/RemindersCards'
 import { DevicesCard, PasskeysCard, SecondFactorCard } from './settings/SecurityCards'
 import { Button, Card, Feedback, Input, TabRow, Toggle, useAction, type Tab } from './settings/ui'
 
-type Part = 'profile' | 'security' | 'devices' | 'upload' | 'ai' | 'looks'
-const PARTS: Part[] = ['profile', 'security', 'devices', 'upload', 'ai', 'looks']
+type Part = 'profile' | 'security' | 'devices' | 'upload' | 'erinnerungen' | 'ai' | 'looks'
+const PARTS: Part[] = ['profile', 'security', 'devices', 'upload', 'erinnerungen', 'ai', 'looks']
 
 export function AccountPage() {
   const { t } = useTranslation()
@@ -44,6 +45,7 @@ export function AccountPage() {
     { value: 'security', label: t('me.tabs.security'), icon: ShieldCheck },
     { value: 'devices', label: t('me.tabs.devices'), icon: MonitorSmartphone },
     { value: 'upload', label: t('me.tabs.upload'), icon: Upload },
+    { value: 'erinnerungen', label: t('me.tabs.reminders'), icon: Bell },
     { value: 'ai', label: t('me.tabs.ai'), icon: Sparkles },
     { value: 'looks', label: t('me.tabs.looks'), icon: Palette },
   ]
@@ -76,6 +78,7 @@ export function AccountPage() {
             <MyIntakeCards />
           </>
         )}
+        {part === 'erinnerungen' && <RemindersPart me={me} />}
         {part === 'ai' && <AiPart me={me} />}
         {part === 'looks' && <LooksCard />}
       </div>

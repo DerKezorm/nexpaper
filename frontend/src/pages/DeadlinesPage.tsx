@@ -4,12 +4,12 @@
  * "Gekündigt" or "Erledigt" ends the reminders for everybody; "Später" only pauses them for oneself. Everything comes
  * from `GET /api/v1/deadlines`, the rights are the server's.
  */
-import { CalendarClock, Check, ChevronDown, Clock, Receipt, RotateCcw, ScrollText, ShieldCheck, Users, type LucideIcon } from 'lucide-react'
+import { BellOff, CalendarClock, Check, ChevronDown, Clock, Receipt, RotateCcw, ScrollText, ShieldCheck, Users, type LucideIcon } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { useTranslation } from 'react-i18next'
+import { Trans, useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 
-import { ApiError, deadlinesApi, vaultsApi, type Deadline, type DeadlineQuery, type Deadlines, type DeadlineSection, type DeadlineWhat, type Vault } from '../api/client'
+import { ApiError, deadlinesApi, remindersApi, vaultsApi, type Deadline, type DeadlineQuery, type Deadlines, type DeadlineSection, type DeadlineWhat, type Vault } from '../api/client'
 import { Button } from '../components/Button'
 import { Chip } from '../components/docs'
 import { VaultIcon } from '../components/VaultIcon'
@@ -44,9 +44,12 @@ export function DeadlinesPage() {
   const [found, setFound] = useState<Deadlines | null>(null)
   const [vaults, setVaults] = useState<Vault[]>([])
   const [problem, setProblem] = useState<string | null>(null)
+  // What the person muted (My account, Reminders): those deadlines stay here, with a mark.
+  const [quiet, setQuiet] = useState<{ vaults: number[]; shared: boolean }>({ vaults: [], shared: false })
 
   useEffect(() => {
     void vaultsApi.list().then((list) => setVaults(listOf(list)), () => undefined)
+    void remindersApi.get().then((r) => setQuiet({ vaults: listOf<number>(r?.muted), shared: !!r?.muted_shared }), () => undefined)
   }, [])
 
   const load = useCallback(() => {
@@ -79,12 +82,15 @@ export function DeadlinesPage() {
   const counts = found?.counts ?? {}
   const withDeadlines = vaults.filter((v) => (counts[String(v.id)] ?? 0) > 0 || vault === String(v.id))
   const vaultOf = (id: number) => vaults.find((v) => v.id === id)
+  const mutedOf = (x: Deadline) => (x.via_share ? quiet.shared : quiet.vaults.includes(x.vault_id))
 
   return (
     <div className="page pt-6 pb-28 lg:pt-8 lg:pb-12">
       <div className="mb-5">
         <h1 className="font-display text-3xl font-semibold tracking-tight">{t('deadlines.title')}</h1>
-        <p className="max-w-2xl text-sm text-muted">{t('deadlines.intro')}</p>
+        <p className="max-w-2xl text-sm text-muted">
+          {t('deadlines.intro')} <Trans i18nKey="reminders.remindedHow" components={{ account: <Link to="/konto?tab=erinnerungen" className="font-semibold text-accent hover:underline" /> }} />
+        </p>
       </div>
 
       <div className="scroll-x -mx-1 mb-2 flex gap-2 overflow-x-auto px-1 pb-1" role="group" aria-label={t('deadlines.filters')}>
@@ -127,25 +133,26 @@ export function DeadlinesPage() {
         </div>
       ) : (
         <div className="space-y-7">
-          <Section title={t('deadlines.overdue')} part={overdue} warn vaultOf={vaultOf} onChanged={changed} />
-          <Section title={t('deadlines.soon', { days: found.soon_days })} part={soon} empty={t('deadlines.soonEmpty')} vaultOf={vaultOf} onChanged={changed} />
+          <Section title={t('deadlines.overdue')} part={overdue} warn vaultOf={vaultOf} mutedOf={mutedOf} onChanged={changed} />
+          <Section title={t('deadlines.soon', { days: found.soon_days })} part={soon} empty={t('deadlines.soonEmpty')} vaultOf={vaultOf} mutedOf={mutedOf} onChanged={changed} />
           <Section
             title={t('deadlines.later')}
             part={allLater ? later : { total: later.total, items: later.items.slice(0, LATER_SHOWN) }}
             more={!allLater && later.total > LATER_SHOWN ? () => setAllLater(true) : undefined}
             vaultOf={vaultOf}
+            mutedOf={mutedOf}
             onChanged={changed}
           />
-          {showDone && <Section title={t('deadlines.done')} part={done} empty={t('deadlines.doneEmpty')} vaultOf={vaultOf} onChanged={changed} />}
+          {showDone && <Section title={t('deadlines.done')} part={done} empty={t('deadlines.doneEmpty')} vaultOf={vaultOf} mutedOf={mutedOf} onChanged={changed} />}
         </div>
       )}
     </div>
   )
 }
 
-type SectionProps = { title: string; part: DeadlineSection; warn?: boolean; empty?: string; more?: () => void; vaultOf: (id: number) => Vault | undefined; onChanged: () => Promise<void> }
+type SectionProps = { title: string; part: DeadlineSection; warn?: boolean; empty?: string; more?: () => void; vaultOf: (id: number) => Vault | undefined; mutedOf?: (x: Deadline) => boolean; onChanged: () => Promise<void> }
 
-function Section({ title, part, warn, empty, more, vaultOf, onChanged }: SectionProps) {
+function Section({ title, part, warn, empty, more, vaultOf, mutedOf, onChanged }: SectionProps) {
   const { t } = useTranslation()
   if (!part.total && !empty) return null
   return (
@@ -159,7 +166,7 @@ function Section({ title, part, warn, empty, more, vaultOf, onChanged }: Section
       ) : (
         <ul className="card divide-y divide-line">
           {part.items.map((x) => (
-            <Row key={`${x.document_id}:${x.kind}`} x={x} vault={vaultOf(x.vault_id)} onChanged={onChanged} />
+            <Row key={`${x.document_id}:${x.kind}`} x={x} vault={vaultOf(x.vault_id)} muted={mutedOf?.(x) ?? false} onChanged={onChanged} />
           ))}
           {more && (
             <li>
@@ -188,7 +195,7 @@ function DateBlock({ date, warn, done }: { date: string; warn?: boolean; done?: 
   )
 }
 
-function Row({ x, vault, onChanged }: { x: Deadline; vault: Vault | undefined; onChanged: () => Promise<void> }) {
+function Row({ x, vault, muted, onChanged }: { x: Deadline; vault: Vault | undefined; muted: boolean; onChanged: () => Promise<void> }) {
   const { t, i18n } = useTranslation()
   const say = useSay()
   const dayName = useDayName()
@@ -251,6 +258,11 @@ function Row({ x, vault, onChanged }: { x: Deadline; vault: Vault | undefined; o
               </>
             )}
           </span>
+          {muted && (
+            <span className="inline-flex items-center gap-1" title={t('reminders.mutedTitle')}>
+              <BellOff size={13} aria-hidden /> {t('reminders.muted')}
+            </span>
+          )}
         </p>
 
         {x.what === 'cancel' && x.notice && (
