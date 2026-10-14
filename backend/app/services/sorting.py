@@ -456,6 +456,12 @@ def _apply(db: Session, document: Document, proposal: Proposal, human: set[str])
                 db.add(DocumentTag(document_id=document.id, tag_id=tag_id))
             catalog.prune(db, [], have - wanted)
             changed.append("tags")
+    if {"kind", "date"} & set(changed):
+        # A proposal of the AI for a document in the inbox: its keeping time follows the kind (while it is being read
+        # nothing is worked out yet, ``processing`` does it once the status is set).
+        from . import keeping
+
+        keeping.refresh(db, [document.id])
     if changed:
         document.change_seq = changes.next_seq(db)
         if {"vault", "sender", "kind", "date"} & set(changed):

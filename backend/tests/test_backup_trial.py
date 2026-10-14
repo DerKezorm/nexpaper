@@ -121,6 +121,11 @@ def test_the_trigger_and_the_tables_of_the_search_index_as_nexpaper_makes_them_p
     assert backups.check(name).usable is True
 
 
+#: What takes a database of today back to the schema before the last step (the columns that step adds): F3, keeping.
+BEFORE_THE_LAST_STEP = ("ALTER TABLE kinds DROP COLUMN keep_years", "ALTER TABLE kinds DROP COLUMN keep_new_only",
+                        "ALTER TABLE document_dates DROP COLUMN manual")
+
+
 def test_nothing_is_written_to_the_copy_before_the_foreign_objects_are_looked_for(
     client: TestClient, operator: object, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -140,8 +145,7 @@ def test_nothing_is_written_to_the_copy_before_the_foreign_objects_are_looked_fo
     assert backups.check(name).usable is False
     assert ran == [], "the start was run on a database with a trigger that is not ours"
     # The control: without the trigger the steps do run.
-    ok = write_archive(database_with(made_here(), tmp_path, "ALTER TABLE documents DROP COLUMN files_state",
-                                     "ALTER TABLE versions DROP COLUMN archive_sha256",
+    ok = write_archive(database_with(made_here(), tmp_path, *BEFORE_THE_LAST_STEP,
                                      version=database.SCHEMA_VERSION - 1), "nexpaper-2020-01-03-000000.zip")
     assert backups.check(ok).usable is True and ran == [1]
 
@@ -167,8 +171,7 @@ def test_the_steps_of_the_rehearsal_run_on_the_copy_and_never_on_the_live_databa
     client: TestClient, operator: object, tmp_path: Path
 ) -> None:
     """An older database passes (its steps run on the scratch copy), and the live one is not touched by that."""
-    entries = database_with(made_here(), tmp_path, "ALTER TABLE documents DROP COLUMN files_state",
-                            "ALTER TABLE versions DROP COLUMN archive_sha256", version=database.SCHEMA_VERSION - 1)
+    entries = database_with(made_here(), tmp_path, *BEFORE_THE_LAST_STEP, version=database.SCHEMA_VERSION - 1)
     brief = backups.check(write_archive(entries))
     assert brief.usable and brief.schema == database.SCHEMA_VERSION - 1
     with SessionLocal() as db:

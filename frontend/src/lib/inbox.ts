@@ -39,7 +39,7 @@ export function draftOf(d: DocumentInfo): Draft {
     date: d.date ?? '',
     amount: d.amount,
     tags: d.tags,
-    dates: d.dates.map((x) => ({ kind: x.kind as DateEntry['kind'], date: x.date })),
+    dates: d.dates.map((x) => ({ kind: x.kind as DateEntry['kind'], date: x.date, ...(x.kind === 'keep_until' ? { manual: !!x.manual } : {}) })),
     vault_id: d.vault_id,
   }
 }

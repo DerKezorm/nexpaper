@@ -456,6 +456,11 @@ class Kind(Base):
     position: Mapped[int] = mapped_column(Integer, default=0)
     vault_id: Mapped[int | None] = mapped_column(ForeignKey("vaults.id", ondelete="CASCADE"), nullable=True)
     created_by: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    #: How many years documents of this kind are kept (``services/keeping.py``); empty: no keeping time. The kinds that
+    #: come with nexpaper have none.
+    keep_years: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    #: The keeping time was set for documents filed from then on only (the ones already there kept what they had).
+    keep_new_only: Mapped[bool] = mapped_column(Boolean, default=False, server_default=text("0"))
 
 
 class Tag(Base):
@@ -522,6 +527,9 @@ class DocumentDate(Base):
     document_id: Mapped[int] = mapped_column(ForeignKey("documents.id", ondelete="CASCADE"), index=True)
     kind: Mapped[str] = mapped_column(String(16))
     date: Mapped[Any] = mapped_column(Date)
+    #: Set by a person, not worked out from the kind (only ``keep_until`` is ever worked out): a change of the kind, the
+    #: date or the vault leaves it as it is (``services/keeping.py``).
+    manual: Mapped[bool] = mapped_column(Boolean, default=False, server_default=text("0"))
 
 
 class DocumentTag(Base):

@@ -369,6 +369,8 @@ began, and up to 25 ms later by chance, errors too: its time tells nothing about
   - `art:` / `kind:` (the kind's name or key begins so), `absender:` / `sender:` (the sender's name holds it), `tag:` (a tag
     begins so), `betrag:` / `amount:` with `>`, `<` or `=` (or none: equal), in euros, comma or point (`betrag:>1.234,56`;
     `422 invalid_amount`). Values with blanks in quotes: `absender:"am weiher"`.
+  - `aufbewahren:abgelaufen` / `keep:expired`: the keeping time is over; `aufbewahren:läuft` / `keep:running`: it is
+    not over yet (the server's day). Another word after `aufbewahren:` finds nothing.
   - Nothing else is syntax: FTS5's operators (`NEAR`, `OR`, `*`, `-`, `^`, brackets, `column:`) are characters, and words
     like any other.
 - Filters as parameters: `vault_id`, `kind_id`, `owner_id`, `sender` and `tag` (a name, exactly), `date_from`, `date_to`,
@@ -769,3 +771,33 @@ key that never runs out is the one nobody remembers when it leaks. For a key tha
 one, so does a scanner) it proposes no end: such a key can only put documents into its owner's inbox, and a shortcut that
 stops working after a year is the worse surprise; 30, 90 or 365 days stay a choice. The API itself takes `days` 30, 90 or
 365, or leaves it out for a key without an end.
+
+## Keeping documents
+
+A kind can say how many years its documents are kept (`keep_years` on a kind, empty: no keeping time; the kinds that
+come with nexpaper have none). A document of such a kind gets the term `keep_until`: the end of the year of its date plus
+that many years (an invoice of 14.03.2026 kept 10 years: 31.12.2036; without a date, the year it came in). It is worked
+out again when the document is filed or read, and when its kind, its date or its vault changes; in the answers it
+stands in `dates` with `manual: false`. A `keep_until` a person sends with `PATCH /documents/{id}` is set by hand
+(`manual: true`) and stays whatever happens to the kind or the date; sending the date the document already has leaves
+it as it was made, `"manual": false` in the term says "from the kind" outright, and leaving `keep_until` out of `dates`
+works it out from the kind again. Nothing is ever deleted because its time is over.
+
+- `POST /kinds/{id}/keeping/preview` `{"years"}` (1 to 30): what setting it for the documents already there would do,
+  counted over the documents the caller may see (not in the trash, not being read): `{"documents", "by_hand",
+  "expired"}`. Changes nothing.
+- `PUT /kinds/{id}/keeping` `{"years", "existing"}`: sets the keeping time (`null` takes it away). With `existing` the
+  documents of the kind already there are worked out again (those set by hand keep theirs); without it the time holds
+  for documents filed from then on (`keep_new_only` on the kind). Taking it away always reaches the documents there: a
+  worked-out `keep_until` goes. More than 200 documents are done in the background (`queued: true`). Each document whose
+  term changed gets a new number for `GET /changes` and a line in its history (`fields: ["keep_until"]`, `by: catalog`).
+  A kind of the whole server is the operator's, in a browser; a kind of a vault needs `manage` there. Answer:
+  `{"kind", "changed", "queued"}`.
+- `GET /keeping` (`vault_id`, `limit` at most 500, `offset`): the filed documents whose `keep_until` is before today (the
+  caller's time zone), in the vaults where the caller may change things (`edit` or `manage`; documents only shared with
+  them are not looked at), the ones over longest first: `{"items" (as `GET /documents/{id}`), "total"}`.
+- `POST /documents/trash` `{"ids"}` (at most 500): many documents into the trash for 30 days, each checked as
+  `DELETE /documents/{id}` would be: `{"trashed": [ids], "failed": [{"id", "code"}]}`; one the caller may not see fails
+  as `not_found`.
+- `GET /order/kinds` gives `keep_years` and `keep_new_only` with each kind; the CSV of an export has a column
+  "Aufbewahren bis" / "Keep until".

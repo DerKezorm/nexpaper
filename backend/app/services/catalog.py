@@ -34,7 +34,7 @@ from sqlalchemy.orm import Session
 from ..errors import error
 from ..models import EDIT, MANAGE, READ, TRASH, Document, DocumentTag, Kind, Sender, Share, Tag, VaultMember
 from ..names import name_key
-from . import changes, jobs, rights, settings_service
+from . import changes, jobs, keeping, rights, settings_service
 
 logger = logging.getLogger("nexpaper.catalog")
 
@@ -266,6 +266,8 @@ def delete_kind(db: Session, uid: int, kind_id: int, force: bool = False) -> Non
     if kind.vault_id is not None and ids and not force and rights.vault_right(db, uid, kind.vault_id) != MANAGE:
         raise error("in_use", "Documents still have this kind. Confirm to take it off them.", 409, documents=len(ids))
     db.execute(update(Document).where(Document.kind_id == kind.id).values(kind_id=None))
+    # Without a kind there is no keeping time to work out: a worked-out keep_until goes (one set by hand stays).
+    keeping.refresh(db, ids)
     _reached(db, uid, ids, "kind", rename=True)
     db.delete(kind)
     db.commit()
@@ -370,6 +372,8 @@ def rehome(db: Session, document_ids: Iterable[int], vault_id: int) -> None:
     # The documents in the session read their sender and kind anew.
     for document in db.scalars(select(Document).where(Document.id.in_(ids))):
         db.refresh(document, ["sender_id", "kind_id"])
+    # Another kind of the same name may keep its documents for another time.
+    keeping.refresh(db, ids)
     prune(db, old_senders, old_tags)
 
 
@@ -590,7 +594,8 @@ def entries(db: Session, uid: int, what: str, *, vault_id: int | None = None, q:
                                    "documents": int(count), "in_trash": int(trashed),
                                    "can_change": (right == MANAGE) if row.vault_id is not None else None}
         if what == "kinds":
-            item.update(key=row.key, hue=row.hue, position=row.position)
+            item.update(key=row.key, hue=row.hue, position=row.position, keep_years=row.keep_years,
+                        keep_new_only=row.keep_new_only)
         out.append(item)
     return out, total
 
@@ -671,6 +676,7 @@ def merge_kind(db: Session, uid: int, kind_id: int, into_id: int) -> Kind:
 
     ids = _documents_of_kind(db, source.id)
     db.execute(update(Document).where(Document.kind_id == source.id).values(kind_id=target.id))
+    keeping.refresh(db, ids)
     rules.repoint_kind(db, source.id, target.id)
     _reached(db, uid, ids, "kind", rename=True)
     db.delete(source)

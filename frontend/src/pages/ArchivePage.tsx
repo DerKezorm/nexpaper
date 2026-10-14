@@ -115,7 +115,11 @@ export function ArchivePage({ slots = appSlots }: { slots?: Slots }) {
   const searchBox = useRef<HTMLDivElement>(null)
   const field = useRef<HTMLInputElement>(null)
   const top = useRef<HTMLDivElement>(null)
-  const examples = Array.from({ length: HELP }, (_, index) => t(`docs.archive.example.${index}`))
+  const examples: [string, string][] = [
+    ...Array.from({ length: HELP }, (_, index): [string, string] => [t(`docs.archive.example.${index}`), t(`docs.archive.help.${index}`)]),
+    // Keeping (F3): the documents whose keeping time is over.
+    [t('keeping.searchExample'), t('keeping.searchHelp')],
+  ]
 
   // What the filters offer.
   useEffect(() => {
@@ -371,7 +375,7 @@ export function ArchivePage({ slots = appSlots }: { slots?: Slots }) {
           <div className="card rise absolute inset-x-0 top-full z-20 mt-2 p-4 text-sm" data-testid="search-help">
             <p className="mb-2 text-xs font-bold tracking-wide text-muted uppercase">{t('docs.archive.helpTitle')}</p>
             <div className="grid gap-x-6 gap-y-1.5 sm:grid-cols-2">
-              {examples.map((example, index) => (
+              {examples.map(([example, meaning]) => (
                 <button
                   key={example}
                   type="button"
@@ -386,7 +390,7 @@ export function ArchivePage({ slots = appSlots }: { slots?: Slots }) {
                   className="flex items-baseline gap-3 rounded-lg px-2 py-1 text-left hover:bg-sheet-2"
                 >
                   <code className="shrink-0 rounded bg-sheet-2 px-1.5 py-0.5 text-xs text-accent">{example}</code>
-                  <span className="text-ink-2">{t(`docs.archive.help.${index}`)}</span>
+                  <span className="text-ink-2">{meaning}</span>
                 </button>
               ))}
             </div>

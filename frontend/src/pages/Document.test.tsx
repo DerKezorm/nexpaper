@@ -29,7 +29,7 @@ const page = new Page()
 const tax = { id: 4, key: 'tax', name: 'Steuer', hue: 0, position: 3 }
 const base = {
   id: 7, vault_id: 9, owner: { id: 1, name: 'jule', display_name: 'Jule' }, title: 'Einkommensteuerbescheid 2025', sender: { id: 5, name: 'Finanzamt Lindenau' },
-  kind: tax, date: '2026-09-17', amount: 128417, currency: 'EUR', tags: ['steuer-2025'], dates: [{ kind: 'keep_until', date: '2036-12-31' }], pages: 6,
+  kind: tax, date: '2026-09-17', amount: 128417, currency: 'EUR', tags: ['steuer-2025'], dates: [{ kind: 'keep_until', date: '2036-12-31', manual: false }], pages: 6,
   source: 'upload', status: 'filed', added_at: '2026-09-18T18:15:00Z', trashed_at: null, trash_ends_at: null, change_seq: 3, current_version: 1,
   my_right: 'manage', via_share: false, can_share: true, notes: 1, process_error: '', duplicate: null, suggest: {},
 }
@@ -194,11 +194,15 @@ describe('a document for somebody who may change it', () => {
     // It is asked first, with what happens: 30 days, and it can be brought back. Abbrechen sends nothing.
     expect(server.changes()).toEqual([])
     expect(plain(page.dialog!.textContent)).toContain('liegt 30 Tage im Papierkorb und lässt sich in dieser Zeit zurückholen')
+    // Its keeping time still runs (the mock's TrashDialog): the question says until when, and the button says so too.
+    expect(plain(page.dialog!.querySelector('[data-testid="keep-running"]')?.textContent)).toBe(
+      'Aufbewahren bis 31.12.2036So lange sollen Dokumente der Art Steuer bleiben (10 Jahre). Die Zeit ist noch nicht um.',
+    )
     await page.inDialog('Abbrechen')
     expect(server.changes()).toEqual([])
     await page.click(page.button('Mehr'))
     await page.click([...page.box.querySelectorAll<HTMLButtonElement>('[role="menuitem"]')].find((b) => plain(b.textContent)?.includes('In den Papierkorb')))
-    await page.inDialog('In den Papierkorb')
+    await page.inDialog('Trotzdem in den Papierkorb')
     expect(server.changes()).toEqual(['DELETE /api/v1/documents/7'])
     expect(where()).toBe('/')
   })

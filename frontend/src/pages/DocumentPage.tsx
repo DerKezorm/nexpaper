@@ -32,7 +32,6 @@ import {
   ApiError,
   catalogApi,
   documentApi,
-  TRASH_DAYS,
   documentsApi,
   einvoiceApi,
   fileUrls,
@@ -68,6 +67,8 @@ import { VaultIcon } from '../components/VaultIcon'
 import { formatBytes } from '../lib/bytes'
 import { copyText } from '../lib/copy'
 import { shortDate } from '../lib/dates'
+import { baseYear } from '../lib/keeping'
+import { trashQuestion } from '../components/KeepTrash'
 import { useVaultTags } from '../lib/tags'
 import { problemOf, refusedOf, refusedValue, shownAtField } from '../lib/dateInput'
 import { errorText } from '../lib/errors'
@@ -188,9 +189,7 @@ function Doc({ document: d, setDocument, reload, slots }: { document: DocumentIn
   /** Into the trash, after asking: it stays {{days}} days there and can be brought back. */
   const trash = () =>
     ask({
-      title: t('confirm.trash.title'),
-      text: t('confirm.trash.text', { title: iso(d.title), days: TRASH_DAYS }),
-      confirm: t('confirm.trash.confirm'),
+      ...trashQuestion(d, t, i18n.language),
       danger: false,
       run: async () => {
         await documentApi.trash(d.id)
@@ -490,7 +489,8 @@ function Details({ document: d, canEdit, vaults, path, change, problem, onShare,
       onProblem(error instanceof ApiError ? { code: error.code, values: error.values } : { code: 'internal_error' })
     }
   }
-  const dates = d.dates.map((x) => ({ kind: x.kind as DateEntry['kind'], date: x.date }))
+  const dates: DateEntry[] = d.dates.map((x) => ({ kind: x.kind as DateEntry['kind'], date: x.date, ...(x.kind === 'keep_until' ? { manual: !!x.manual } : {}) }))
+  const keep = { kindName: d.kind?.name ?? null, years: d.kind?.keep_years ?? null, base: baseYear(d.date, d.added_at), fresh: true }
   const addTag = (name: string) => {
     const word = name.trim().replace(/^#/, '')
     if (word && !d.tags.some((had) => had.toLocaleLowerCase() === word.toLocaleLowerCase())) void change({ tags: [...d.tags, word] })
@@ -598,7 +598,7 @@ function Details({ document: d, canEdit, vaults, path, change, problem, onShare,
         </div>
       </Row>
       {canEdit ? (
-        <Dates dates={dates} onChange={(next) => void change({ dates: next })} start={d.date} refused={refusedOf(problem)} />
+        <Dates dates={dates} onChange={(next) => void change({ dates: next })} start={d.date} refused={refusedOf(problem)} keep={keep} />
       ) : dates.length ? (
         <Row label={t('docs.fields.dates')}>{dates.map((x) => `${t(`docs.dateKinds.${x.kind}`)} ${shortDate(x.date, i18n.language)}`).join(', ')}</Row>
       ) : null}

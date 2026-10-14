@@ -41,7 +41,8 @@ def test_the_kinds_that_were_there_stay_the_servers_and_the_vaults_may_have_thei
         after = schema_of(connection)
         assert {name: columns[: len(before[name])] for name, columns in after.items() if name in before} == before
         assert {"rules", "einvoices"} <= set(after)
-        assert [column[0] for column in after["kinds"][-2:]] == ["vault_id", "created_by"]
+        added = [column[0] for column in after["kinds"][len(before["kinds"]):]]
+        assert added[:2] == ["vault_id", "created_by"]
         # The kind that was there is the server's, and its document keeps it.
         assert connection.execute("SELECT vault_id, created_by FROM kinds WHERE id = 1").fetchone() == (None, None)
         assert connection.execute("SELECT kind_id FROM documents WHERE id = 1").fetchone() == (1,)

@@ -45,7 +45,9 @@ INDEX = "index"
 #: One document looked at again by the check of the files, because what its sign was about may be gone
 #: (``filecheck.recheck_soon``).
 FILES = "files"
-QUICK = (RENAME, DELETE_FILES, INDEX, FILES)
+#: The keeping time of a kind worked out again for its many documents (``services/keeping.py``); ``ref`` is the kind.
+KEEP = "keep"
+QUICK = (RENAME, DELETE_FILES, INDEX, FILES, KEEP)
 #: The text of a document read before there was text (``processing.read_text``): a worker run like ``process``.
 TEXT = "text"
 #: The small pictures of the pages of a long document, drawn after it was read (``pages.draw_in_background``). It runs
@@ -230,6 +232,10 @@ def _run(db: Session, job: Job) -> None:
         from . import ai_proposals
 
         ai_proposals.run_job(db, job.ref)
+    elif job.kind == KEEP:
+        from . import keeping
+
+        keeping.run_job(db, job.ref, job.payload)
     else:
         raise storage.StorageError("unknown job")
 

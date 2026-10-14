@@ -32,11 +32,16 @@ class KindOut(BaseModel):
     position: int
     #: The vault this kind belongs to; empty for the kinds of the whole server.
     vault_id: int | None = None
+    #: How many years its documents are kept (`keep_until` is worked out from it); empty: no keeping time.
+    keep_years: int | None = None
 
 
 class DateOut(BaseModel):
     kind: str
     date: Date
+    #: Only `keep_until`: set by a person. Otherwise it was worked out from the kind's keeping time, and is worked out
+    #: again when the kind, the date or the vault changes.
+    manual: bool = False
 
 
 class DuplicateOut(BaseModel):
@@ -113,7 +118,7 @@ def kind_out(kind: Kind | None) -> KindOut | None:
     if kind is None:
         return None
     return KindOut(id=kind.id, key=kind.key, name=kind.name, hue=kind.hue, position=kind.position,
-                   vault_id=kind.vault_id)
+                   vault_id=kind.vault_id, keep_years=kind.keep_years)
 
 
 def document_out(row: Row) -> DocumentOut:
@@ -123,7 +128,9 @@ def document_out(row: Row) -> DocumentOut:
         id=document.id, vault_id=document.vault_id, owner=person(row.owner), title=document.title,
         sender=NameRef(id=row.sender.id, name=row.sender.name) if row.sender else None, kind=kind_out(row.kind),
         date=document.date, amount=document.amount, currency=document.currency, tags=row.tags,
-        dates=[DateOut(kind=kind, date=day) for kind, day in row.dates], pages=document.pages, source=document.source,
+        dates=[DateOut(kind=kind, date=day, manual=kind == "keep_until" and row.keep_by_hand)
+               for kind, day in row.dates],
+        pages=document.pages, source=document.source,
         status=document.status,  # type: ignore[arg-type]
         added_at=document.added_at, trashed_at=document.trashed_at, trash_ends_at=ends, change_seq=document.change_seq,
         current_version=document.current_version, my_right=row.right,  # type: ignore[arg-type]

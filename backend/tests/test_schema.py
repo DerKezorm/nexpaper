@@ -262,7 +262,8 @@ def test_a_database_of_1_0_1_gets_the_additions_and_keeps_its_version_so_1_0_1_s
         connection.execute("PRAGMA user_version = 10")
         connection.commit()
     database.init_db()
-    assert version_of(scratch) == 10 == database.SCHEMA_VERSION
+    # Since 1.4 the steps after 10 follow the additions (1.0.1 cannot open it any more, and need not).
+    assert version_of(scratch) == database.SCHEMA_VERSION
     current = fresh_schema_sql()
     with sqlite3.connect(":memory:") as connection:
         connection.executescript(current)
@@ -280,8 +281,9 @@ def test_a_database_of_1_0_1_gets_the_additions_and_keeps_its_version_so_1_0_1_s
         connection.commit()
         assert connection.execute("SELECT second_factor_by_provider FROM auth_sessions").fetchone() == (0,)
     # A second start changes nothing and makes no backup.
+    made.clear()
     database.init_db()
-    assert version_of(scratch) == 10 and made == []
+    assert version_of(scratch) == database.SCHEMA_VERSION and made == []
 
 
 def test_the_released_record_is_what_1_0_1_made() -> None:

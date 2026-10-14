@@ -8,7 +8,9 @@
 * ``art:rechnung`` / ``kind:invoice``: the kind (its name or key begins so),
 * ``absender:hansa`` / ``sender:hansa``: the sender (its name holds it),
 * ``tag:auto``: a tag that begins so,
-* ``betrag:>100`` / ``amount:<50,5`` / ``betrag:=12.30`` / ``betrag:100``: the amount in euros, comma or point.
+* ``betrag:>100`` / ``amount:<50,5`` / ``betrag:=12.30`` / ``betrag:100``: the amount in euros, comma or point,
+* ``aufbewahren:abgelaufen`` / ``keep:expired``: the keeping time is over (``aufbewahren:läuft`` / ``keep:running``:
+  it is not over yet); another word finds nothing.
 
 Nothing a person types reaches SQL or FTS5 as syntax: every word is cut into the tokens FTS5 itself would make and
 handed over inside double quotes, so ``NEAR``, ``*``, ``-``, ``(``, ``^`` and quotes are just characters. Filters are
@@ -42,6 +44,10 @@ KIND_KEYS = ("art", "kind")
 SENDER_KEYS = ("absender", "sender")
 TAG_KEYS = ("tag",)
 AMOUNT_KEYS = ("betrag", "amount")
+KEEP_KEYS = ("aufbewahren", "keep")
+#: The words of ``aufbewahren:`` / ``keep:`` (folded) and what they ask for; any other word asks for ``none``.
+KEEP_WORDS = {"abgelaufen": "expired", "expired": "expired", "laeuft": "running", "lauft": "running",
+              "running": "running"}
 
 # A piece of the search: key:"two words", key:value, "a phrase" (an unclosed one runs to the end), or anything up to a
 # blank.
@@ -100,6 +106,8 @@ class Query:
     senders: list[str] = field(default_factory=list)
     tags: list[str] = field(default_factory=list)
     amounts: list[Amount] = field(default_factory=list)
+    #: ``expired``, ``running`` or ``none`` (a word the search does not know: nothing is found).
+    keeps: list[str] = field(default_factory=list)
 
     @property
     def has_text(self) -> bool:
@@ -107,7 +115,7 @@ class Query:
 
     @property
     def empty(self) -> bool:
-        return not (self.has_text or self.kinds or self.senders or self.tags or self.amounts)
+        return not (self.has_text or self.kinds or self.senders or self.tags or self.amounts or self.keeps)
 
     def patterns(self) -> list[str]:
         """Regular expressions for the places a hit is marked at, as the index finds them: a word of
@@ -185,6 +193,10 @@ def parse(raw: str) -> Query:
             if name in AMOUNT_KEYS:
                 if clean:
                     query.amounts.append(_amount(clean))
+                continue
+            if name in KEEP_KEYS:
+                if clean:
+                    query.keeps.append(KEEP_WORDS.get(fold(clean), "none"))
                 continue
             if name in KIND_KEYS + SENDER_KEYS + TAG_KEYS:
                 if clean:

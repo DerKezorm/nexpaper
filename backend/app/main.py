@@ -53,6 +53,7 @@ from .routers import documents as documents_router
 from .routers import exports as exports_router
 from .routers import inbox as inbox_router
 from .routers import intake as intake_router
+from .routers import keeping as keeping_router
 from .routers import locales as locales_router
 from .routers import logs as logs_router
 from .routers import ocr as ocr_router
@@ -100,6 +101,7 @@ ROUTERS = [
     pagetools_router,
     storage_router,
     inbox_router,
+    keeping_router,
 ]
 
 

@@ -6,18 +6,20 @@
  *
  * The lists come from `GET /api/v1/order/...`, which looks at the vaults the person is in and nothing else.
  */
-import { GitMerge, Pencil, Plus, Tags, Trash2, Users } from 'lucide-react'
+import { Archive, GitMerge, Info, Pencil, Plus, Tags, Trash2, Users } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useSearchParams } from 'react-router-dom'
 
-import { ApiError, catalogApi, kindsApi, orderApi, vaultsApi, type OrderEntry, type OrderWhat, type Vault } from '../api/client'
+import { ApiError, catalogApi, keepingApi, kindsApi, orderApi, vaultsApi, type KeepPreview, type OrderEntry, type OrderWhat, type Vault } from '../api/client'
 import { Button } from '../components/Button'
 import { Dialog } from '../components/Dialog'
 import { useConfirm } from '../components/useConfirm'
 import { KindPill } from '../components/docs'
 import { VaultFilter } from '../components/VaultFilter'
+import { dayInDays, shortDate } from '../lib/dates'
 import { errorText } from '../lib/errors'
+import { KEEP_CHOICES } from '../lib/keeping'
 import { foldName } from '../lib/kinds'
 import { iso, listOf, useSay } from '../lib/say'
 import { vaultLabel } from '../lib/vaultLabel'
@@ -54,6 +56,7 @@ export function OrderPage() {
   const [problem, setProblem] = useState<string | null>(null)
   const [renaming, setRenaming] = useState<OrderEntry | null>(null)
   const [merging, setMerging] = useState<OrderEntry | null>(null)
+  const [keeping, setKeeping] = useState<{ entry: OrderEntry; years: number } | null>(null)
   const { ask, dialog } = useConfirm()
 
   useEffect(() => {
@@ -110,6 +113,19 @@ export function OrderPage() {
   }
   const tabs: Tab<OrderWhat>[] = WHATS.map((value) => ({ value, label: t(`order.tabs.${value}`) }))
   const anyReadOnly = shown.some((entry) => !entry.can_change && entry.vault_id !== null)
+
+  /** The keeping time chosen in a row: none at once, a number of years after the question about the documents there. */
+  const keepFor = async (entry: OrderEntry, years: number) => {
+    setProblem(null)
+    try {
+      if (!years) {
+        await keepingApi.set(entry.id, null, true)
+        refresh(t('keeping.removed', { name: iso(entry.name) }))
+      } else setKeeping({ entry, years })
+    } catch (error) {
+      setProblem(error instanceof ApiError ? error.code : 'internal_error')
+    }
+  }
 
   /** Asks, then deletes. The number of documents it reaches is in the question. */
   const remove = (entry: OrderEntry) => {
@@ -207,8 +223,10 @@ export function OrderPage() {
                   )}
                   {t('order.documents', { count: entry.documents })}
                   {entry.in_trash > 0 && <> · {t('order.inTrash', { count: entry.in_trash })}</>}
+                  {what === 'kinds' && entry.keep_years && entry.keep_new_only ? <> · {t('keeping.newOnly')}</> : null}
                 </p>
               </div>
+              {what === 'kinds' && <KeepSelect entry={entry} onPick={(years) => void keepFor(entry, years)} />}
               {entry.can_change && (
                 <div className="flex shrink-0 items-center gap-1">
                   <IconButton icon={Pencil} text={t('order.rename')} name={entry.name} onClick={() => setRenaming(entry)} />
@@ -229,6 +247,17 @@ export function OrderPage() {
           </Button>
         </div>
       )}
+      {what === 'kinds' && items !== null && (
+        <div className="flex gap-3 rounded-2xl bg-sheet-2/70 p-4 text-sm text-ink-2">
+          <Info size={18} className="mt-0.5 shrink-0 text-accent" aria-hidden />
+          <div className="space-y-1.5">
+            <p>
+              <span className="font-semibold text-ink">{t('keeping.infoLead')}</span> {t('keeping.info')}
+            </p>
+            <p>{t('keeping.examples')}</p>
+          </div>
+        </div>
+      )}
       {anyReadOnly && <p className="text-xs text-muted">{t('order.readOnly')}</p>}
       {what === 'kinds' && shown.some((entry) => entry.vault_id === null && !entry.can_change) && <p className="text-xs text-muted">{t('order.serverKind')}</p>}
 
@@ -242,6 +271,17 @@ export function OrderPage() {
           onDone={() => {
             setRenaming(null)
             refresh(t('order.done.renamed'))
+          }}
+        />
+      )}
+      {keeping && (
+        <KeepDialog
+          entry={keeping.entry}
+          years={keeping.years}
+          onClose={() => setKeeping(null)}
+          onDone={(notice) => {
+            setKeeping(null)
+            refresh(notice)
           }}
         />
       )}
@@ -259,6 +299,105 @@ export function OrderPage() {
       )}
       {dialog}
     </div>
+  )
+}
+
+/** The keeping time of a kind: a choice for whoever may set it (the operator for the server's kinds, a manager of the
+ * vault for its own), else the time as text. */
+function KeepSelect({ entry, onPick }: { entry: OrderEntry; onPick: (years: number) => void }) {
+  const { t } = useTranslation()
+  const years = entry.keep_years ?? 0
+  const choices = years && !KEEP_CHOICES.includes(years) ? [...KEEP_CHOICES, years].sort((a, b) => a - b) : KEEP_CHOICES
+  return (
+    <label className="flex shrink-0 items-center gap-2 text-sm">
+      <Archive size={15} className="text-muted" aria-hidden />
+      <span className="text-ink-2">{t('keeping.column')}</span>
+      {entry.can_change ? (
+        <select value={years} onChange={(event) => onPick(Number(event.target.value))} className="input h-9 w-auto" aria-label={t('keeping.selectLabel', { name: entry.name })}>
+          <option value={0}>{t('keeping.notSet')}</option>
+          {choices.map((n) => (
+            <option key={n} value={n}>
+              {t('keeping.years', { count: n })}
+            </option>
+          ))}
+        </select>
+      ) : (
+        <span className="font-semibold">{years ? t('keeping.years', { count: years }) : t('keeping.notSet')}</span>
+      )}
+    </label>
+  )
+}
+
+/**
+ * Setting a keeping time: also for the documents already there? Says how many there are (only the ones the person may
+ * see), how many were set by hand (they stay) and how many may go at once. None there: set without asking.
+ */
+function KeepDialog({ entry, years, onClose, onDone }: { entry: OrderEntry; years: number; onClose: () => void; onDone: (notice: string) => void }) {
+  const { t, i18n } = useTranslation()
+  const [found, setFound] = useState<KeepPreview | null>(null)
+  const [problem, setProblem] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+  const today = dayInDays(0)
+  const yearsText = t('keeping.years', { count: years })
+  const name = iso(entry.name)
+  const set = async (existing: boolean) => {
+    if (busy) return
+    setBusy(true)
+    setProblem(null)
+    try {
+      const done = await keepingApi.set(entry.id, years, existing)
+      onDone(done.queued ? t('keeping.setQueued', { name, years: yearsText }) : t(existing ? 'keeping.setAll' : 'keeping.setNew', { name, years: yearsText }))
+    } catch (error) {
+      setProblem(error instanceof ApiError ? error.code : 'internal_error')
+      setBusy(false)
+    }
+  }
+  const setRef = useRef(set)
+  setRef.current = set
+  useEffect(() => {
+    let alive = true
+    keepingApi.preview(entry.id, years).then(
+      (answer) => {
+        if (!alive) return
+        // Nothing there to ask about: it holds for what is filed from now on.
+        if (answer.documents === 0) void setRef.current(true)
+        else setFound(answer)
+      },
+      (error: unknown) => alive && setProblem(error instanceof ApiError ? error.code : 'internal_error'),
+    )
+    return () => {
+      alive = false
+    }
+  }, [entry.id, years])
+  if (!found && !problem) return null
+  const count = (n: number) => n.toLocaleString(i18n.language)
+  return (
+    <Dialog title={t('keeping.dialogTitle', { name: entry.name, years: yearsText })} onClose={onClose}>
+      <div className="space-y-3 text-sm">
+        <p className="text-ink-2">{t('keeping.dialogText', { years: yearsText, today: shortDate(today, i18n.language), year: Number(today.slice(0, 4)) + years })}</p>
+        {found && (
+          <div className="rounded-xl border border-line bg-sheet-2/50 p-4">
+            <p className="font-semibold">{t('keeping.existing', { count: found.documents, n: count(found.documents) })}</p>
+            <ul className="mt-1.5 list-disc space-y-0.5 pl-5 text-ink-2">
+              {found.by_hand > 0 && <li>{t('keeping.byHand', { count: found.by_hand, n: count(found.by_hand) })}</li>}
+              {found.expired > 0 ? <li>{t('keeping.expired', { count: found.expired, n: count(found.expired) })}</li> : <li>{t('keeping.noneExpired')}</li>}
+            </ul>
+          </div>
+        )}
+        {problem && <Feedback problem={problem} />}
+        <div className="flex flex-wrap justify-end gap-2 pt-1">
+          <Button variant="ghost" onClick={onClose}>
+            {t('common.cancel')}
+          </Button>
+          <Button variant="line" disabled={!found || busy} onClick={() => void set(false)}>
+            {t('keeping.onlyNew')}
+          </Button>
+          <Button variant="primary" disabled={!found || busy} onClick={() => void set(true)}>
+            {t('keeping.forAll', { n: count(found?.documents ?? 0) })}
+          </Button>
+        </div>
+      </div>
+    </Dialog>
   )
 }
 

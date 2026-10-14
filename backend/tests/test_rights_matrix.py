@@ -20,7 +20,8 @@ from .test_routes import api_routes
 PREFIXES = ("/api/v1/vaults", "/api/v1/documents", "/api/v1/links", "/api/v1/senders", "/api/v1/tags", "/api/v1/kinds",
             "/api/v1/people", "/api/v1/changes", "/api/v1/sharing", "/api/v1/order",
             "/api/v1/inbox", "/api/v1/counts",
-            "/api/v1/search")
+            "/api/v1/search",
+            "/api/v1/keeping")
 
 
 class Row(NamedTuple):
@@ -125,6 +126,12 @@ TABLE = [
     Row("POST", "/api/v1/documents/{d}/versions/{x}/restore", {"base_version": 1}, "edit", 404),
     Row("POST", "/api/v1/documents/{d}/versions", None, "edit", 404),
     Row("DELETE", "/api/v1/documents/{d}/versions/{x}", None, "edit", 404),
+    # Keeping (F3): the keeping time of a kind of the server is the operator's (``test_keeping.py`` has the vault's
+    # kinds, edit against manage); "may go" and many documents into the trash look at each document on its own.
+    Row("POST", "/api/v1/kinds/{k}/keeping/preview", {"years": 10}, "operator", 403),
+    Row("PUT", "/api/v1/kinds/{k}/keeping", {"years": 10, "existing": True}, "operator", 403),
+    Row("GET", "/api/v1/keeping", None, "any", 200),
+    Row("POST", "/api/v1/documents/trash", {"ids": [2**31 - 1]}, "any", 200),
 ]
 
 

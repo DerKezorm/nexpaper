@@ -473,7 +473,7 @@ export type Vault = {
   members: VaultMember[]
 }
 /** `vault_id` is the vault a kind belongs to; empty for the kinds of the whole server. */
-export type DocumentKind = { id: number; key: string; name: string; hue: number; position: number; vault_id?: number | null }
+export type DocumentKind = { id: number; key: string; name: string; hue: number; position: number; vault_id?: number | null; keep_years?: number | null }
 export type DocumentInfo = {
   id: number
   vault_id: number
@@ -486,7 +486,8 @@ export type DocumentInfo = {
   amount: number | null
   currency: string
   tags: string[]
-  dates: { kind: string; date: string }[]
+  /** `manual` only says something for `keep_until`: set by a person (otherwise worked out from the kind). */
+  dates: { kind: string; date: string; manual?: boolean }[]
   pages: number
   source: string
   status: 'processing' | 'inbox' | 'filed' | 'trash'
@@ -960,7 +961,8 @@ export type DocumentPatch = Partial<{
   amount: number | null
   status: 'inbox' | 'filed'
   tags: string[]
-  dates: { kind: DateKind; date: string }[]
+  /** For `keep_until`, `manual` says how it is meant: by hand, or worked out from the kind (left out: as it is). */
+  dates: { kind: DateKind; date: string; manual?: boolean }[]
 }>
 export type DocumentNote = { id: number; author: Person | null; text: string; created_at: string; updated_at: string | null; mine: boolean }
 export type DocumentEvent = { id: number; at: string; action: string; by: Person | null; by_link: string; detail: Record<string, unknown> | null }
@@ -1053,6 +1055,9 @@ export type OrderEntry = {
   key?: string
   hue?: number
   position?: number
+  /** Only kinds: how many years their documents are kept (empty: not set), and whether only for newly filed ones. */
+  keep_years?: number | null
+  keep_new_only?: boolean
 }
 export type OrderPage = { items: OrderEntry[]; total: number }
 export type OrderQuery = { vault_id?: number; q?: string; order?: 'name' | 'documents'; limit?: number; offset?: number }
@@ -1136,4 +1141,22 @@ export const kindsApi = {
   list: () => api<DocumentKind[]>('/api/v1/kinds'),
   create: (name: string, hue: number) => api<DocumentKind>('/api/v1/kinds', { method: 'POST', body: { name, hue } }),
   remove: (id: number) => api<void>(`/api/v1/kinds/${id}`, { method: 'DELETE' }),
+}
+
+// ---- Keeping documents (F3): the keeping time of a kind, what may go ---------------------------------------------------
+
+export type KeepPreview = { documents: number; by_hand: number; expired: number }
+export type KeepSet = { kind: DocumentKind; changed: number; queued: boolean }
+export type MayGoPage = { items: DocumentInfo[]; total: number }
+export type TrashResult = { trashed: number[]; failed: { id: number; code: string }[] }
+
+export const keepingApi = {
+  /** What setting `years` for the documents of the kind already there would do (only documents the person sees). */
+  preview: (kindId: number, years: number) => api<KeepPreview>(`/api/v1/kinds/${kindId}/keeping/preview`, { method: 'POST', body: { years } }),
+  /** Sets the keeping time (`null` takes it away; that always reaches the documents there). */
+  set: (kindId: number, years: number | null, existing: boolean) => api<KeepSet>(`/api/v1/kinds/${kindId}/keeping`, { method: 'PUT', body: { years, existing } }),
+  /** Filed documents whose keeping time is over, in the vaults where the person may change things. */
+  mayGo: (query: { vault_id?: number; limit?: number; offset?: number } = {}) => api<MayGoPage>('/api/v1/keeping', { query }),
+  /** Many documents into the trash, each checked on its own. */
+  trashMany: (ids: number[]) => api<TrashResult>('/api/v1/documents/trash', { method: 'POST', body: { ids } }),
 }

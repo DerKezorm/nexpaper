@@ -35,16 +35,32 @@ from dataclasses import dataclass, field
 from datetime import date as Date
 from typing import Any
 
-from sqlalchemy import ColumnElement, Integer, String, and_, bindparam, cast, column, exists, func, or_, select, text
+from sqlalchemy import (
+    ColumnElement,
+    Integer,
+    String,
+    and_,
+    bindparam,
+    cast,
+    column,
+    exists,
+    false,
+    func,
+    or_,
+    select,
+    text,
+)
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 
+from .. import clock
 from ..errors import error
 from ..models import (
     FTS_TABLE,
     TRASH,
     TRI_TABLE,
     Document,
+    DocumentDate,
     DocumentTag,
     Kind,
     Sender,
@@ -54,7 +70,7 @@ from ..models import (
     VersionText,
 )
 from ..names import name_key
-from . import changes, documents, rights, search_index, searchtext
+from . import changes, documents, keeping, rights, search_index, searchtext
 
 logger = logging.getLogger("nexpaper.search")
 
@@ -151,8 +167,18 @@ def text_clauses(query: searchtext.Query, scope: list[str]) -> list[ColumnElemen
     return clauses
 
 
-def filter_clauses(query: searchtext.Query) -> list[ColumnElement[bool]]:
+def filter_clauses(query: searchtext.Query, today: Date | None = None) -> list[ColumnElement[bool]]:
+    """The filters of a search. ``today`` (for ``aufbewahren:``) is the server's day when not given."""
     clauses: list[ColumnElement[bool]] = []
+    for value in query.keeps:
+        day = today or clock.now().date()
+        keep = exists().where(DocumentDate.document_id == Document.id, DocumentDate.kind == keeping.KEEP)
+        if value == "expired":
+            clauses.append(keep.where(DocumentDate.date < day))
+        elif value == "running":
+            clauses.append(keep.where(DocumentDate.date >= day))
+        else:
+            clauses.append(false())
     for value in query.kinds:
         pattern = _escape_like(name_key(value)) + "%"
         clauses.append(Document.kind_id.in_(select(Kind.id).where(or_(

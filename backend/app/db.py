@@ -46,7 +46,7 @@ _settings.data_dir.mkdir(parents=True, exist_ok=True)
 BUSY_SECONDS = 15
 
 #: The version of the schema the models describe.
-SCHEMA_VERSION = 10
+SCHEMA_VERSION = 11
 
 
 def _step_v2(connection: Connection) -> None:
@@ -297,6 +297,20 @@ def _step_files(connection: Connection) -> None:
         connection.exec_driver_sql(statement)
 
 
+def _step_keeping(connection: Connection) -> None:
+    """Keeping documents (F3): how long the documents of a kind are kept, whether that was set for new documents only,
+    and the mark on a dated term that a person set it (a ``keep_until`` worked out from the kind has none). Three added
+    columns with a default, nothing else."""
+    for statement in (
+        "ALTER TABLE kinds ADD COLUMN keep_years INTEGER",
+        "ALTER TABLE kinds ADD COLUMN keep_new_only BOOLEAN DEFAULT 0 NOT NULL",
+        "ALTER TABLE document_dates ADD COLUMN manual BOOLEAN DEFAULT 0 NOT NULL",
+        # Every keep_until there was came from a person: before this step nothing worked one out.
+        "UPDATE document_dates SET manual = 1 WHERE kind = 'keep_until'",
+    ):
+        connection.exec_driver_sql(statement)
+
+
 #: ``MIGRATIONS[n]`` brings a database from version ``n - 1`` to ``n``. Version 1 is the first schema; it has no step.
 #: Later steps are written out as the tables stood then, not taken from the models, which move on.
 MIGRATIONS: dict[int, Callable[[Connection], None]] = {
@@ -306,6 +320,8 @@ MIGRATIONS: dict[int, Callable[[Connection], None]] = {
     9: _step_sorting,
     # B10, checking the files.
     10: _step_files,
+    # F3, keeping documents (a number of its own until the steps of 1.4 are put together: after F1's).
+    11: _step_keeping,
 }
 
 def _has_column(connection: Connection, table: str, column: str) -> bool:

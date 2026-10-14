@@ -244,6 +244,10 @@ TOKEN_ROUTES = {
     ("POST", "/api/v1/documents/{document_id}/versions/{number}/restore"),
     ("POST", "/api/v1/documents/{document_id}/versions"),
     ("DELETE", "/api/v1/documents/{document_id}/versions/{number}"),
+    # Keeping (F3): the keeping time of a kind and many documents into the trash.
+    ("POST", "/api/v1/kinds/{kind_id}/keeping/preview"),
+    ("PUT", "/api/v1/kinds/{kind_id}/keeping"),
+    ("POST", "/api/v1/documents/trash"),
 }
 
 #: The routes that only read and that a program with an API key reaches too (as the browser and a device do). A route
@@ -288,6 +292,8 @@ READ_ROUTES = {
     ("GET", "/api/v1/documents/{document_id}/versions/{number}/einvoice"),
     # The blank separator pages of a document (B5).
     ("GET", "/api/v1/documents/{document_id}/separators"),
+    # The documents whose keeping time is over (F3).
+    ("GET", "/api/v1/keeping"),
 }
 
 

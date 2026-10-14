@@ -48,7 +48,7 @@ from ..models import (
     Version,
 )
 from ..names import name_key
-from . import catalog, changes, filecheck, filetypes, jobs, rights, storage
+from . import catalog, changes, filecheck, filetypes, jobs, keeping, rights, storage
 
 logger = logging.getLogger("nexpaper.documents")
 
@@ -115,6 +115,8 @@ class Row:
     link_count: int | None = None
     #: The format of its e-invoice, when it carries one (``services/einvoices.py``); empty else.
     einvoice: str = ""
+    #: Its ``keep_until`` was set by a person, not worked out from the kind (``services/keeping.py``).
+    keep_by_hand: bool = False
 
 
 def rows(db: Session, uid: int, documents: list[Document]) -> list[Row]:
@@ -139,8 +141,11 @@ def rows(db: Session, uid: int, documents: list[Document]) -> list[Row]:
     ):
         tags[document_id].append(name)
     dates: dict[int, list[tuple[str, Date]]] = {i: [] for i in ids}
+    by_hand: set[int] = set()
     for row in db.scalars(select(DocumentDate).where(DocumentDate.document_id.in_(ids)).order_by(DocumentDate.date)):
         dates[row.document_id].append((row.kind, row.date))
+        if row.kind == keeping.KEEP and row.manual:
+            by_hand.add(row.document_id)
     notes = dict(db.execute(select(Note.document_id, func.count()).where(Note.document_id.in_(ids))
                             .group_by(Note.document_id)).all())
     wanted = {d.duplicate_of for d in documents if d.duplicate_of}
@@ -168,7 +173,7 @@ def rows(db: Session, uid: int, documents: list[Document]) -> list[Row]:
             split=document.id in split,
             share_count=shared_counts.get(document.id, 0) if access.can_share else None,
             link_count=link_counts.get(document.id, 0) if access.can_share else None,
-            einvoice=invoices.get(document.id, ""),
+            einvoice=invoices.get(document.id, ""), keep_by_hand=document.id in by_hand,
         ))
     return out
 
@@ -257,6 +262,7 @@ def create(
     for tag in catalog.tags_named(db, vault_id, owner_id, tags or []):
         db.add(DocumentTag(document_id=document.id, tag_id=tag.id))
     _set_dates(db, document, dates or [])
+    keeping.refresh(db, [document.id])
     changes.record(db, document.id, changes.CREATED, user_id=created_by or owner_id, detail={"source": source})
     if content is not None:
         import hashlib
@@ -324,16 +330,20 @@ def create_from_file(
     return document
 
 
-def _set_dates(db: Session, document: Document, dates: list[tuple[str, Date]]) -> bool:
-    """Replaces the dated terms of a document; True when something changed."""
+def _set_dates(db: Session, document: Document, dates: list[tuple[str, Date]],
+               manual: dict[str, bool | None] | None = None) -> bool:
+    """Replaces the dated terms of a document; True when something changed. ``keep_until`` is set by hand when it is
+    sent, unless ``manual`` says how it was meant (``keeping.take``); left out, it is worked out from the kind."""
     wanted: dict[str, Date] = {}
     for index, (kind, day) in enumerate(dates):
         if kind not in DATE_KINDS:
             raise error("invalid_date_kind", "No such kind of date.", 422, field=f"dates[{index}]")
         wanted[kind] = check_date(day, f"dates[{index}]")  # type: ignore[assignment]
-    current = {row.kind: row for row in db.scalars(select(DocumentDate).where(DocumentDate.document_id == document.id))}
+    kept = keeping.take(db, document, wanted.pop(keeping.KEEP, None), (manual or {}).get(keeping.KEEP))
+    current = {row.kind: row for row in db.scalars(select(DocumentDate).where(
+        DocumentDate.document_id == document.id, DocumentDate.kind != keeping.KEEP))}
     if {k: r.date for k, r in current.items()} == wanted:
-        return False
+        return kept
     for kind, row in current.items():
         if kind not in wanted:
             db.delete(row)
@@ -408,8 +418,14 @@ def update_fields(db: Session, uid: int, document_id: int, patch: dict[str, Any]
             for tag_id in wanted - have:
                 db.add(DocumentTag(document_id=document.id, tag_id=tag_id))
             changed.append("tags")
-    if "dates" in patch and _set_dates(db, document, [(d["kind"], d["date"]) for d in patch["dates"]]):
+    if "dates" in patch and _set_dates(db, document, [(d["kind"], d["date"]) for d in patch["dates"]],
+                                       {d["kind"]: d.get("manual") for d in patch["dates"]}):
         changed.append("dates")
+    # Worked out from the kind again (another kind, another date, filed now, or taken back from a person): unless the
+    # terms changed anyway, a field of its own in the history.
+    worked_out = {"kind", "date", "status", "dates"} & set(changed) and keeping.refresh(db, [document.id])
+    if worked_out and "dates" not in changed:
+        changed.append(keeping.KEEP)
     if not changed:
         db.rollback()
         return document

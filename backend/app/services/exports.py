@@ -51,6 +51,7 @@ from ..models import (
     TRASH,
     Account,
     Document,
+    DocumentDate,
     Export,
     ExportLink,
     Kind,
@@ -82,9 +83,12 @@ PACKED_KINDS = (filetypes.PDF, filetypes.JPEG, filetypes.PNG, filetypes.HEIC, fi
                 filetypes.WEBP, filetypes.AVIF)
 CSV_NAME = {"de": "liste.csv", "en": "list.csv"}
 CSV_HEADINGS = {
-    "de": ("Datum", "Titel", "Absender", "Art", "Betrag", "Währung", "Rechnungsnummer", "Tresor", "Datei"),
-    "en": ("Date", "Title", "Sender", "Kind", "Amount", "Currency", "Invoice number", "Vault", "File"),
+    "de": ("Datum", "Titel", "Absender", "Art", "Betrag", "Währung", "Rechnungsnummer", "Tresor", "Datei",
+           "Aufbewahren bis"),
+    "en": ("Date", "Title", "Sender", "Kind", "Amount", "Currency", "Invoice number", "Vault", "File", "Keep until"),
 }
+#: The columns made here (a date, an amount, a currency): taken as they are; every other one came from a person.
+MADE_HERE = (0, 4, 5, 9)
 #: The start of a field a spreadsheet takes for a formula.
 FORMULA_START = ("=", "+", "-", "@", "\t", "\r")
 NO_DATE = {"de": "ohne Datum", "en": "undated"}
@@ -469,6 +473,8 @@ def _pack(db: Session, export_id: int) -> None:
     entries: list[Entry] = []
     rows: list[tuple[str, ...]] = []
     invoice_numbers = einvoices.numbers(db, [item.document.id for item in found])
+    keep_until = dict(db.execute(select(DocumentDate.document_id, DocumentDate.date).where(
+        DocumentDate.document_id.in_([item.document.id for item in found]), DocumentDate.kind == "keep_until")).all())
     vaults: set[int] = set()
     size = 0
     total = 0
@@ -500,6 +506,7 @@ def _pack(db: Session, export_id: int) -> None:
             item.sender.name if item.sender else "", item.kind.name if item.kind else "",
             amount_text(document.amount, language), document.currency if document.amount is not None else "",
             invoice_numbers.get(document.id, ""), item.vault.name if item.vault else "", first,
+            keep_until[document.id].isoformat() if document.id in keep_until else "",
         ))
     if size > MAX_BYTES:
         raise PackError("too_large")
@@ -554,7 +561,7 @@ def _csv(rows: list[tuple[str, ...]], language: str) -> bytes:
     writer.writerow(CSV_HEADINGS[language])
     for row in rows:
         # The amount (made here, a number) stays as it is; every text that came from a person is made safe.
-        writer.writerow([cell if index in (0, 4, 5) else safe_cell(cell) for index, cell in enumerate(row)])
+        writer.writerow([cell if index in MADE_HERE else safe_cell(cell) for index, cell in enumerate(row)])
     return "﻿".encode() + out.getvalue().encode("utf-8")
 
 

@@ -662,6 +662,10 @@ def _split(db: Session, uid: int, document_id: int, base_version: int, parts: li
                 jobs.enqueue(db, jobs.TEXT, new.id)
             pages.queue_background(db, new.id, 1, item.pages)
             made_documents.append(new)
+        from . import keeping
+
+        # The parts keep the kind and date of the whole: its keeping time too.
+        keeping.refresh(db, [d.id for d in made_documents])
         _to_trash(db, uid, original)
         changes.record(db, original.id, SPLIT_INTO, user_id=uid,
                        detail={"into": [d.id for d in made_documents], "parts": len(parts),

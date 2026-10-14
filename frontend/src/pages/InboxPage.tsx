@@ -23,7 +23,6 @@ import {
   intakeApi,
   rulesApi,
   searchApi,
-  TRASH_DAYS,
   vaultsApi,
   type DocumentInfo,
   type DocumentKind,
@@ -51,6 +50,8 @@ import { errorText } from '../lib/errors'
 import { useVaultTags } from '../lib/tags'
 import { changesOf, draftOf, follow, type Draft } from '../lib/inbox'
 import { oneOfEachName } from '../lib/kinds'
+import { baseYear } from '../lib/keeping'
+import { trashQuestion } from '../components/KeepTrash'
 import { personName } from '../lib/people'
 import { INBOX_CHANGED, inboxChanged, iso, listOf, moment, useSay, useSourceText, type NoticeLink } from '../lib/say'
 import { vaultLabel } from '../lib/vaultLabel'
@@ -731,9 +732,7 @@ function Detail({ document: d, next, slots, search, onChanged }: { document: Doc
   /** Into the trash, after asking: it stays {{days}} days there and can be brought back. */
   const trash = (notice: string) =>
     ask({
-      title: t('confirm.trash.title'),
-      text: t('confirm.trash.text', { title: iso(d.title), days: TRASH_DAYS }),
-      confirm: t('confirm.trash.confirm'),
+      ...trashQuestion(d, t, i18n.language),
       danger: false,
       run: async () => {
         await documentApi.trash(d.id)
@@ -978,7 +977,20 @@ function Detail({ document: d, next, slots, search, onChanged }: { document: Doc
           <Field label={t('docs.fields.tags')} why={why.tags}>
             <TagEditor tags={f.tags} onChange={(tags) => setF((was) => ({ ...was, tags }))} label={t('docs.fields.addTagLabel')} known={vaultTags} />
           </Field>
-          <Dates dates={f.dates} onChange={(dates) => setF((was) => ({ ...was, dates }))} onDraft={(dates) => setF((was) => ({ ...was, dates }))} start={f.date || null} why={why.dates} refused={refusedOf(problem)} />
+          <Dates
+            dates={f.dates}
+            onChange={(dates) => setF((was) => ({ ...was, dates }))}
+            onDraft={(dates) => setF((was) => ({ ...was, dates }))}
+            start={f.date || null}
+            why={why.dates}
+            refused={refusedOf(problem)}
+            keep={{
+              kindName: kinds.find((k) => k.id === f.kind_id)?.name ?? null,
+              years: kinds.find((k) => k.id === f.kind_id)?.keep_years ?? null,
+              base: baseYear(f.date, d.added_at),
+              fresh: f.kind_id === (d.kind?.id ?? null) && f.date === (d.date ?? '') && f.vault_id === d.vault_id,
+            }}
+          />
 
           {offer && f.sender.trim() && d.my_right === 'manage' && (
             <div className="rise flex items-start gap-3 rounded-2xl border border-dashed border-accent/50 p-3 text-sm" data-testid="remember">
