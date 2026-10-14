@@ -36,9 +36,31 @@ class KindOut(BaseModel):
     keep_years: int | None = None
 
 
+class NoticeOut(BaseModel):
+    n: int
+    unit: Literal["weeks", "months"]
+
+
+class DoneOut(BaseModel):
+    at: datetime
+    #: Who marked it done; empty when that account is gone.
+    by: PersonRef | None
+
+
 class DateOut(BaseModel):
     kind: str
     date: Date
+    #: A contract's notice period, and how many months it renews by when nobody cancels (empty: it just ends).
+    notice: NoticeOut | None = None
+    renew_months: int | None = None
+    #: The last day to cancel, worked out from ``date`` and ``notice`` (to the day of the calendar).
+    last_to_cancel: Date | None = None
+    #: Paid, cancelled or claimed: for everybody, with who and when.
+    done: DoneOut | None = None
+    #: The end the contract last renewed from by itself (the history has when).
+    renewed_from: Date | None = None
+    #: "Later" of the caller on this deadline, while it lasts.
+    snoozed_until: Date | None = None
     #: Only on `keep_until` (left out for the other kinds): `true` set by a person; `false` worked out from the kind's
     #: keeping time, and worked out again when the kind, the date or the vault changes.
     manual: bool | None = None
@@ -129,6 +151,18 @@ def kind_out(kind: Kind | None) -> KindOut | None:
                    vault_id=kind.vault_id, keep_years=kind.keep_years)
 
 
+def dates_out(row: Row) -> list[DateOut]:
+    if not row.date_rows:
+        return [DateOut(kind=kind, date=day) for kind, day in row.dates]
+    return [DateOut(
+        kind=r.kind, date=r.date, manual=r.manual if r.kind == "keep_until" else None,
+        notice=NoticeOut(n=r.notice_n, unit=r.notice_unit) if r.notice_n and r.notice_unit else None,  # type: ignore[arg-type]
+        renew_months=r.renew_months, last_to_cancel=r.notice_date,
+        done=DoneOut(at=r.done_at, by=person(row.done_by.get(r.done_by)) if r.done_by else None) if r.done_at else None,
+        renewed_from=r.renewed_from, snoozed_until=row.snoozes.get(r.id),
+    ) for r in row.date_rows]
+
+
 def document_out(row: Row) -> DocumentOut:
     document = row.document
     ends = document.trashed_at + timedelta(days=documents_service.TRASH_DAYS) if document.trashed_at else None
@@ -136,9 +170,7 @@ def document_out(row: Row) -> DocumentOut:
         id=document.id, vault_id=document.vault_id, owner=person(row.owner), title=document.title,
         sender=NameRef(id=row.sender.id, name=row.sender.name) if row.sender else None, kind=kind_out(row.kind),
         date=document.date, amount=document.amount, currency=document.currency, tags=row.tags,
-        dates=[DateOut(kind=kind, date=day, manual=row.keep_by_hand if kind == "keep_until" else None)
-               for kind, day in row.dates],
-        pages=document.pages, source=document.source,
+        dates=dates_out(row), pages=document.pages, source=document.source,
         status=document.status,  # type: ignore[arg-type]
         added_at=document.added_at, trashed_at=document.trashed_at, trash_ends_at=ends, change_seq=document.change_seq,
         current_version=document.current_version, my_right=row.right,  # type: ignore[arg-type]

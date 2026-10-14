@@ -46,10 +46,10 @@ describe('amounts', () => {
 
 describe('the filters, order and pages of the archive', () => {
   it('become filters of what was filed, a year its first to its last day', () => {
-    expect(filtersOf({ vault: '7', kind: '3', sender: 'Stadtwerke', tag: 'strom', owner: '2', year: '2025' })).toEqual({
-      status: 'filed', vault_id: 7, kind_id: 3, sender: 'Stadtwerke', tag: 'strom', owner_id: 2, date_from: '2025-01-01', date_to: '2025-12-31',
+    expect(filtersOf({ vault: '7', kind: '3', sender: 'Stadtwerke', tag: 'strom', owner: '2', year: '2025', deadline: '30' })).toEqual({
+      status: 'filed', vault_id: 7, kind_id: 3, sender: 'Stadtwerke', tag: 'strom', owner_id: 2, date_from: '2025-01-01', date_to: '2025-12-31', deadline: '30',
     })
-    expect(filtersOf({ vault: 'shared', kind: 'x', sender: '', tag: '', owner: '', year: '20255' })).toEqual({ status: 'filed', via_share: true })
+    expect(filtersOf({ vault: 'shared', kind: 'x', sender: '', tag: '', owner: '', year: '20255', deadline: 'soon' })).toEqual({ status: 'filed', via_share: true })
   })
 
   it('read the order, the size and the page from the address, and only what the server takes', () => {

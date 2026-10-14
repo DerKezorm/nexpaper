@@ -20,7 +20,7 @@ from .test_routes import api_routes
 PREFIXES = ("/api/v1/vaults", "/api/v1/documents", "/api/v1/links", "/api/v1/senders", "/api/v1/tags", "/api/v1/kinds",
             "/api/v1/people", "/api/v1/changes", "/api/v1/sharing", "/api/v1/order",
             "/api/v1/inbox", "/api/v1/counts",
-            "/api/v1/search",
+            "/api/v1/search", "/api/v1/deadlines",
             "/api/v1/keeping")
 
 
@@ -36,7 +36,7 @@ class Row(NamedTuple):
 
 
 # {d} document, {v} the shared vault, {n} a note, {l} a link, {u} the person to share with / add, {s} a sender,
-# {t} a tag, {k} a kind, {x} the number of a version (1), {g} a page (1). The routes that bring files in have a table of
+# {t} a tag, {k} a kind, {x} the number of a version (1), {g} a page (1), {w} the kind of a date (due). The routes that bring files in have a table of
 # their own (``test_rights_uploads.py``).
 TABLE = [
     Row("GET", "/api/v1/vaults", None, "any", 200),
@@ -132,6 +132,13 @@ TABLE = [
     Row("PUT", "/api/v1/kinds/{k}/keeping", {"years": 10, "existing": True}, "operator", 403),
     Row("GET", "/api/v1/keeping", None, "any", 200),
     Row("POST", "/api/v1/documents/trash", {"ids": [2**31 - 1]}, "any", 200),
+    # Deadlines (F1): only the deadlines of what the caller may change; done and later need `edit` (this document has
+    # no due date, so whoever may gets 404 `no_such_date`, ``test_deadlines.py`` has the ones that do).
+    Row("GET", "/api/v1/deadlines", None, "any", 200),
+    Row("POST", "/api/v1/documents/{d}/dates/{w}/done", None, "edit", 404),
+    Row("DELETE", "/api/v1/documents/{d}/dates/{w}/done", None, "edit", 404),
+    Row("PUT", "/api/v1/documents/{d}/dates/{w}/snooze", {"days": 1}, "edit", 404),
+    Row("DELETE", "/api/v1/documents/{d}/dates/{w}/snooze", None, "edit", 404),
 ]
 
 
@@ -141,7 +148,8 @@ def test_every_route_of_vaults_and_documents_is_in_the_table() -> None:
     routes = {(m, p) for m, p in api_routes() if p.startswith(PREFIXES)} - UPLOAD_ROUTES
     # Normalise the parameter names of the table to those of the routes.
     names = {"{d}": "{document_id}", "{v}": "{vault_id}", "{n}": "{note_id}", "{l}": "{link_id}", "{u}": "{user_id}",
-             "{s}": "{sender_id}", "{t}": "{tag_id}", "{k}": "{kind_id}", "{x}": "{number}", "{g}": "{page}"}
+             "{s}": "{sender_id}", "{t}": "{tag_id}", "{k}": "{kind_id}", "{x}": "{number}", "{g}": "{page}",
+             "{w}": "{kind}"}
     table = set()
     for row in TABLE:
         template = row.template
@@ -178,7 +186,7 @@ class World:
 
 
 def fill(template: str, ids: dict[str, int]) -> str:
-    out = template.replace("{x}", "1").replace("{g}", "1")
+    out = template.replace("{x}", "1").replace("{g}", "1").replace("{w}", "due")
     for key in ("d", "v", "n", "l", "u", "s", "t", "k"):
         out = out.replace("{" + key + "}", str(ids[key]))
     return out

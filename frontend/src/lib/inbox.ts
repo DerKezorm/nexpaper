@@ -2,7 +2,7 @@
  * The inbox's data: what waits there for the person, and what of a document's fields changed (the draft of the inbox
  * against the document as the server has it).
  */
-import { documentsApi, type DocumentInfo, type DocumentPatch } from '../api/client'
+import { documentsApi, type DateSet, type DocumentInfo, type DocumentPatch } from '../api/client'
 import type { DateEntry } from '../components/DocumentFields'
 
 /** Everything waiting in the inbox that the person may add to: being read first, then the newest. */
@@ -31,6 +31,20 @@ export type Draft = {
   vault_id: number
 }
 
+/** A date of the document as the fields edit it: a contract with its notice period and renewal. */
+export function dateEntry(x: DocumentInfo['dates'][number]): DateEntry {
+  const kind = x.kind as DateEntry['kind']
+  // Terms only where there are some: left out, they stay as they are on the server.
+  return {
+    kind,
+    date: x.date,
+    ...(kind === 'contract_end' && x.notice ? { notice: x.notice } : {}),
+    ...(kind === 'contract_end' && x.renew_months ? { renew_months: x.renew_months } : {}),
+    // A keeping time says whether a person set it (else it is worked out from the kind).
+    ...(kind === 'keep_until' ? { manual: !!x.manual } : {}),
+  }
+}
+
 export function draftOf(d: DocumentInfo): Draft {
   return {
     title: d.title,
@@ -39,7 +53,7 @@ export function draftOf(d: DocumentInfo): Draft {
     date: d.date ?? '',
     amount: d.amount,
     tags: d.tags,
-    dates: d.dates.map((x) => ({ kind: x.kind as DateEntry['kind'], date: x.date, ...(x.kind === 'keep_until' ? { manual: !!x.manual } : {}) })),
+    dates: d.dates.map(dateEntry),
     vault_id: d.vault_id,
   }
 }
@@ -75,6 +89,29 @@ export function changesOf(d: DocumentInfo, f: Draft): DocumentPatch {
   if (f.date !== was.date) out.date = f.date || null
   if (f.amount !== was.amount) out.amount = f.amount
   if (JSON.stringify(f.tags) !== JSON.stringify(was.tags)) out.tags = f.tags
-  if (JSON.stringify(f.dates) !== JSON.stringify(was.dates)) out.dates = f.dates
-  return out
+  return { ...out, ...datesChanged(was.dates, f.dates) }
+}
+
+/**
+ * What changed in the terms, as single terms (`set_dates`, `remove_dates`): a page sends only what the person changed,
+ * so a page that is behind never sends back a day it did not see change (a contract that renewed meanwhile).
+ */
+export function datesChanged(was: DateEntry[], now: DateEntry[]): Pick<DocumentPatch, 'set_dates' | 'remove_dates'> {
+  const setDates: DateSet[] = []
+  for (const entry of now) {
+    const before = was.find((d) => d.kind === entry.kind)
+    if (!before) {
+      setDates.push({ ...entry })
+      continue
+    }
+    const changed: DateSet = { kind: entry.kind }
+    if (entry.date !== before.date) changed.date = entry.date
+    if (JSON.stringify(entry.notice ?? null) !== JSON.stringify(before.notice ?? null)) changed.notice = entry.notice ?? null
+    if ((entry.renew_months ?? null) !== (before.renew_months ?? null)) changed.renew_months = entry.renew_months ?? null
+    // A keeping time that a person took over from the kind (or gave back to it) says so, with or without a new day.
+    if (entry.kind === 'keep_until' && entry.manual !== undefined && entry.manual !== before.manual) changed.manual = entry.manual
+    if (Object.keys(changed).length > 1) setDates.push(changed)
+  }
+  const removeDates = was.filter((d) => !now.some((x) => x.kind === d.kind)).map((d) => d.kind)
+  return { ...(setDates.length ? { set_dates: setDates } : {}), ...(removeDates.length ? { remove_dates: removeDates } : {}) }
 }

@@ -83,7 +83,8 @@ def test_fields_change_and_the_history_names_the_fields_not_the_values(
     body = changed.json()
     assert body["title"] == "New title" and body["sender"]["name"] == "Elektro Brandt" and body["amount"] == 22491
     assert body["tags"] == ["Handwerker", "heizung"] and body["status"] == "inbox"
-    assert body["dates"] == [{"kind": "due", "date": "2026-10-20"}, {"kind": "warranty_end", "date": "2028-10-06"}]
+    assert [{"kind": d["kind"], "date": d["date"]} for d in body["dates"]] == [
+        {"kind": "due", "date": "2026-10-20"}, {"kind": "warranty_end", "date": "2028-10-06"}]
     events = client.get(f"/api/v1/documents/{doc}/events").json()
     assert [e["action"] for e in events] == ["changed", "created"]
     assert set(events[0]["detail"]["fields"]) == {"title", "sender", "kind", "date", "amount", "status", "tags", "dates"}

@@ -7,6 +7,8 @@
 import type { TFunction } from 'i18next'
 
 import type { DocumentEvent, Person } from '../api/client'
+import i18n from '../i18n'
+import { shortDate } from './dates'
 import { personName } from './people'
 import { iso } from './say'
 
@@ -145,6 +147,13 @@ export function eventWhat(event: DocumentEvent, t: TFunction, context: EventCont
       return t('docs.events.filesWhole')
     case 'version_discarded':
       return t('pagetools.events.versionDiscarded', { version: number('version') ?? '' })
+    // Deadlines (F1): done for everybody, open again, and a contract that renewed by itself.
+    case 'deadline_done':
+      return t(`deadlines.events.done.${['due', 'contract_end', 'warranty_end'].includes(String(detail.kind)) ? String(detail.kind) : 'due'}`)
+    case 'deadline_reopened':
+      return t('deadlines.events.reopened')
+    case 'renewed':
+      return typeof detail.to === 'string' ? t('deadlines.events.renewed', { date: shortDate(detail.to, i18n.language) }) : t('docs.events.something')
     default:
       return t('docs.events.something')
   }

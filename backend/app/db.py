@@ -46,7 +46,7 @@ _settings.data_dir.mkdir(parents=True, exist_ok=True)
 BUSY_SECONDS = 15
 
 #: The version of the schema the models describe.
-SCHEMA_VERSION = 11
+SCHEMA_VERSION = 12
 
 
 def _step_v2(connection: Connection) -> None:
@@ -297,6 +297,35 @@ def _step_files(connection: Connection) -> None:
         connection.exec_driver_sql(statement)
 
 
+def _step_deadlines(connection: Connection) -> None:
+    """Deadlines (F1): a date of a document may be done (who, when), a contract knows its notice period, how long it
+    renews by and the last day to cancel worked out from them, and the end it renewed from last (never twice from the
+    same one), and the end its renewal counts from (``renew_anchor``). "Later" on a deadline, per person, in a table of
+    its own. Columns added to ``document_dates`` and one table, nothing else; written out as they stood when the step
+    was made."""
+    for statement in (
+        "ALTER TABLE document_dates ADD COLUMN notice_n INTEGER",
+        "ALTER TABLE document_dates ADD COLUMN notice_unit VARCHAR(8)",
+        "ALTER TABLE document_dates ADD COLUMN renew_months INTEGER",
+        "ALTER TABLE document_dates ADD COLUMN notice_date DATE",
+        "ALTER TABLE document_dates ADD COLUMN done_at DATETIME",
+        "ALTER TABLE document_dates ADD COLUMN done_by INTEGER REFERENCES users (id) ON DELETE SET NULL",
+        "ALTER TABLE document_dates ADD COLUMN renewed_from DATE",
+        "ALTER TABLE document_dates ADD COLUMN renew_anchor DATE",
+        # A contract that is there already counts its terms from the end it has now.
+        "UPDATE document_dates SET renew_anchor = date WHERE kind = 'contract_end'",
+        (
+            "CREATE TABLE deadline_snoozes ( id INTEGER NOT NULL, date_id INTEGER NOT NULL, user_id INTEGER NOT NULL, "
+            "until DATE NOT NULL, created_at DATETIME NOT NULL, PRIMARY KEY (id), "
+            "CONSTRAINT uq_deadline_snoozes UNIQUE (date_id, user_id), "
+            "FOREIGN KEY(date_id) REFERENCES document_dates (id) ON DELETE CASCADE, "
+            "FOREIGN KEY(user_id) REFERENCES users (id) ON DELETE CASCADE )"
+        ),
+        "CREATE INDEX ix_deadline_snoozes_user_id ON deadline_snoozes (user_id)",
+    ):
+        connection.exec_driver_sql(statement)
+
+
 def _step_keeping(connection: Connection) -> None:
     """Keeping documents (F3): how long the documents of a kind are kept, whether that was set for new documents only,
     and the mark on a dated term that a person set it (a ``keep_until`` worked out from the kind has none). Three added
@@ -320,8 +349,10 @@ MIGRATIONS: dict[int, Callable[[Connection], None]] = {
     9: _step_sorting,
     # B10, checking the files.
     10: _step_files,
-    # F3, keeping documents (a number of its own until the steps of 1.4 are put together: after F1's).
-    11: _step_keeping,
+    # F1, deadlines.
+    11: _step_deadlines,
+    # F3, keeping documents.
+    12: _step_keeping,
 }
 
 def _has_column(connection: Connection, table: str, column: str) -> bool:

@@ -248,6 +248,11 @@ TOKEN_ROUTES = {
     ("POST", "/api/v1/kinds/{kind_id}/keeping/preview"),
     ("PUT", "/api/v1/kinds/{kind_id}/keeping"),
     ("POST", "/api/v1/documents/trash"),
+    # Deadlines (F1): done and open again for everybody, later for oneself.
+    ("POST", "/api/v1/documents/{document_id}/dates/{kind}/done"),
+    ("DELETE", "/api/v1/documents/{document_id}/dates/{kind}/done"),
+    ("PUT", "/api/v1/documents/{document_id}/dates/{kind}/snooze"),
+    ("DELETE", "/api/v1/documents/{document_id}/dates/{kind}/snooze"),
 }
 
 #: The routes that only read and that a program with an API key reaches too (as the browser and a device do). A route
@@ -294,6 +299,8 @@ READ_ROUTES = {
     ("GET", "/api/v1/documents/{document_id}/separators"),
     # The documents whose keeping time is over (F3).
     ("GET", "/api/v1/keeping"),
+    # The deadlines (F1).
+    ("GET", "/api/v1/deadlines"),
 }
 
 

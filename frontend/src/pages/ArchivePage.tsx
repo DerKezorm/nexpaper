@@ -34,7 +34,7 @@ import { SenderPicker } from '../components/SenderPicker'
 import { Chip, DocThumb, FileSign, KindPill, Marked } from '../components/docs'
 import { Avatar } from '../components/Avatar'
 import { VaultIcon } from '../components/VaultIcon'
-import { DEFAULT_SIZE, filtersOf, KEYS, NARROWING, nextOrder, orderOf, pageList, pageOf, SIZES, sizeOf, type Chosen } from '../lib/archive'
+import { DEADLINE_FILTER, DEFAULT_SIZE, filtersOf, KEYS, NARROWING, nextOrder, orderOf, pageList, pageOf, SIZES, sizeOf, type Chosen } from '../lib/archive'
 import { shortDate } from '../lib/dates'
 import { errorText } from '../lib/errors'
 import { oneOfEachName, representative } from '../lib/kinds'
@@ -53,7 +53,7 @@ const TOP_SENDERS = 7
 /** How many tags the overview shows. */
 const TOP_TAGS = 12
 /** How many examples the help under the field shows (their words come in the language of the page). */
-const HELP = 6
+const HELP = 8
 
 type Problem = { code: string; values: Record<string, unknown> }
 const problemOf = (error: unknown): Problem => (error instanceof ApiError ? { code: error.code, values: error.values } : { code: 'internal_error', values: {} })
@@ -282,7 +282,7 @@ export function ArchivePage({ slots = appSlots }: { slots?: Slots }) {
   const toOverview = () => {
     setTyped('')
     sent.current = ''
-    go({ q: '', all: '', kind: '', sender: '', tag: '', owner: '', year: '' })
+    go({ q: '', all: '', kind: '', sender: '', tag: '', owner: '', year: '', deadline: '' })
   }
   const toPage = (n: number) => {
     go({ page: n > 1 ? String(n) : '' }, { keepPage: true })
@@ -304,6 +304,7 @@ export function ArchivePage({ slots = appSlots }: { slots?: Slots }) {
     ['year', t('docs.archive.year'), chosen.year],
     ['tag', t('docs.archive.tag'), chosen.tag],
     ['owner', t('docs.archive.owner'), chosen.owner && personName(people.find((p) => String(p.id) === chosen.owner) ?? { id: 0, name: chosen.owner, display_name: '' })],
+    ['deadline', t('deadlines.archive.filter'), chosen.deadline && t(`deadlines.archive.${DEADLINE_FILTER.find(([value]) => value === chosen.deadline)?.[1] ?? 'open'}`)],
   ].filter(([, , value]) => value) as [keyof Chosen, string, string][]
 
   return (
@@ -903,7 +904,7 @@ function Filters({ chosen, choose, kinds, senders, tags, people, years, active }
   // The years the archive has, and the chosen one even when it has none (an address from elsewhere).
   const yearOptions = [...new Set([...years.map((y) => String(y.year)), ...(chosen.year ? [chosen.year] : [])])].sort().reverse()
   return (
-    <div className="card rise grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-6">
+    <div className="card rise grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-7">
       <Select label={t('docs.archive.kind')} value={representative(kinds, chosen.kind)} onChange={(kind) => choose({ kind })} options={oneOfEachName(kinds).map((k) => [String(k.id), k.name])} empty={t('docs.archive.all')} />
       <div className="text-sm sm:col-span-2">
         <span className="text-xs font-semibold text-muted">{t('docs.archive.sender')}</span>
@@ -914,9 +915,10 @@ function Filters({ chosen, choose, kinds, senders, tags, people, years, active }
       <Select label={t('docs.archive.tag')} value={chosen.tag} onChange={(tag) => choose({ tag })} options={tags.map((g) => [g.name, g.name])} empty={t('docs.archive.all')} />
       <Select label={t('docs.archive.owner')} value={chosen.owner} onChange={(owner) => choose({ owner })} options={people.map((p) => [String(p.id), personName(p)])} empty={t('docs.archive.all')} />
       <Select label={t('docs.archive.year')} value={chosen.year} onChange={(year) => choose({ year })} options={yearOptions.map((y) => [y, y])} empty={t('docs.archive.anytime')} />
-      <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-sm font-semibold text-accent sm:col-span-2 lg:col-span-6">
+      <Select label={t('deadlines.archive.filter')} value={chosen.deadline} onChange={(deadline) => choose({ deadline })} options={DEADLINE_FILTER.map(([value, word]) => [value, t(`deadlines.archive.${word}`)])} empty={t('deadlines.archive.any')} />
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-sm font-semibold text-accent sm:col-span-2 lg:col-span-7">
         {active > 0 && (
-          <button type="button" onClick={() => choose({ kind: '', sender: '', tag: '', owner: '', year: '' })} className="text-left">
+          <button type="button" onClick={() => choose({ kind: '', sender: '', tag: '', owner: '', year: '', deadline: '' })} className="text-left">
             {t('docs.archive.reset')}
           </button>
         )}

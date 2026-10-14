@@ -114,7 +114,9 @@ amount or tag leaves.
 - `deadlines`: the dated terms of documents (`kind`) that fall from today to 14 days ahead, by day, at most 20. Three
   kinds count: `due` (a payment falls due), `contract_end` (a contract ends or renews) and `warranty_end` (the last day
   to claim under a warranty). `keep_until` is not a deadline and is left out, as is the date printed on a document. A
-  document with two such terms shows twice. "Today" is today in the time zone of the account.
+  contract with a notice period shows once more as `notice`, on its last day to cancel. A deadline marked done (paid,
+  cancelled, claimed) is left out. A document with two such terms shows twice. "Today" is today in the time zone of the
+  account.
 - `url`: the page of the document in the web app: `/eingang/<id>` while it waits in the inbox, `/dokument/<id>` once
   filed. It starts with the public address when the operator set one (**Settings**), else with the address the request
   came to.
@@ -216,8 +218,9 @@ answers `404 not_found`, exactly like one that does not exist; one they see but 
   follows all the filters, `counts` says how many each vault would show under the same filters apart from the vault
   itself (vault id as text to number, only vaults the caller is in with `edit` or `manage`), `shared` how many more they
   may change through a share of the document alone (no vault number is given for those; `?shared=true` lists just
-  them), `all` is the sum of both. `GET /counts` gives `{"inbox", "reading", "trash"}`, the numbers the
-  menu shows. `POST /inbox/file` `{"ids" (at most 200), "vault_id", "kind_id", "add_tags" (at most 10)}` files many at
+  them), `all` is the sum of both. `GET /counts` gives `{"inbox", "reading", "trash", "deadlines",
+  "deadlines_overdue"}`, the numbers the menu shows (`deadlines`: open deadlines that are overdue or come in the next
+  14 days, see "Deadlines"). `POST /inbox/file` `{"ids" (at most 200), "vault_id", "kind_id", "add_tags" (at most 10)}` files many at
   once: the proposals stay as they are and filing takes them over, `vault_id` moves each document first (`edit` in both
   vaults), `kind_id` and `add_tags` apply to all. Every document is checked on its own, as a single change would be;
   the answer is `{"filed": [ids], "failed": [{"id", "code"}]}` with the code a single change would have given
@@ -369,6 +372,9 @@ began, and up to 25 ms later by chance, errors too: its time tells nothing about
   - `art:` / `kind:` (the kind's name or key begins so), `absender:` / `sender:` (the sender's name holds it), `tag:` (a tag
     begins so), `betrag:` / `amount:` with `>`, `<` or `=` (or none: equal), in euros, comma or point (`betrag:>1.234,56`;
     `422 invalid_amount`). Values with blanks in quotes: `absender:"am weiher"`.
+  - `frist:` / `deadline:` with `offen`/`open`, `überfällig`/`overdue`, `erledigt`/`done`, or `<30` (open and due within
+    that many days, overdue ones included; `422 invalid_deadline` for anything else): a deadline of the document, as
+    "Deadlines" below works it out, in the caller's time zone.
   - `aufbewahren:abgelaufen` / `keep:expired`: the keeping time is over; `aufbewahren:läuft` / `keep:running`: it is
     not over yet (the server's day). Another word after `aufbewahren:` finds nothing.
   - Nothing else is syntax: FTS5's operators (`NEAR`, `OR`, `*`, `-`, `^`, brackets, `column:`) are characters, and words
@@ -376,7 +382,7 @@ began, and up to 25 ms later by chance, errors too: its time tells nothing about
 - Filters as parameters: `vault_id`, `kind_id`, `owner_id`, `sender` and `tag` (a name, exactly), `date_from`, `date_to`,
   `status` (`processing`, `inbox`, `filed`; without it everything but the trash), `trash=true` (the trash instead, and only
   the caller's own documents in it), `via_share=true` (only what was shared with the caller one by one) or `false` (only
-  what lies in the caller's vaults).
+  what lies in the caller's vaults), `deadline` (`open`, `overdue`, `done`, or a number of days, as `frist:`).
 - `limit` (1 to 100, 50), `cursor` (the `next` of the page before; `422 invalid_cursor` for anything else).
 - Numbered pages instead of the cursor (the archive's table): `page` (from 1, at most 100,000) and `sort`: `-date` (the
   usual), `date`, `title`, `-title`, `sender`, `-sender`, `amount`, `-amount`; a minus is the largest (the newest, Z)
@@ -403,6 +409,39 @@ list most first (`years` the newest first). `senders` and `tags` are `{name, cou
 `kinds` are `{kind, count}`, kinds of the same name together; `kind.id` as the search's `kind_id` finds them all.
 `years` are `{year, count}` by the document's date; one without a date is only in `total`. Filters: `vault_id`,
 `status`, `via_share`, as for the search. The same rights as the search, and its brake.
+
+### Deadlines
+
+A date of a document is a deadline when it is `due`, `contract_end` or `warranty_end` (`keep_until` is none). A contract
+may carry its notice period and renewal: `PATCH /documents/{id}` takes in `dates` per entry `notice` (`{"n": 1 to 24,
+"unit": "weeks" | "months"}`) and `renew_months` (1 to 120); left out they stay, `null` takes them away; on any other kind
+`422 invalid_terms` naming the field. A page that may be behind sends single terms instead of the whole list:
+`set_dates` (at most 4, `[{kind, date?, notice?, renew_months?}]`: only the kinds named, and of them only what is sent; a
+left-out `date` keeps the day, a new term needs one) and `remove_dates` (`[kind]`); not together with `dates`
+(`422 invalid_input`), a refused day names `set_dates[n]`. A contract that renewed by itself keeps its new end when the
+end it renewed from comes back in `dates` (a page that is behind); another day is taken as meant. Each date in an answer carries `notice`, `renew_months`, `last_to_cancel` (the end
+minus the period, to the day of the calendar: 31.12. minus 3 months is 30.09.), `done` (`{at, by}`), `renewed_from` and
+the caller's own `snoozed_until`.
+
+`GET /deadlines` lists the deadlines of the documents the caller may change (`edit` or `manage` in the vault, or a share
+with `edit`; somebody who may only read gets none), in the inbox or filed, by the day to act:
+`{today, soon_days, overdue, soon, later, done, counts, shared}`, each section `{total, items}` with at most `limit`
+items (1 to 500, 200). Filters `vault_id`, `shared=true`, `what` (`pay`, `cancel`, `warranty`), `done=true` (else
+`done` is empty). An item: `document_id`, `title`, `status`, `vault_id`, `via_share`, `sender`, `amount`, `currency`,
+`kind`, `what` (`pay`, `cancel`, `ends`, `warranty`), `date` (the day to act), `days` (from today, below 0 overdue),
+`end`, `notice`, `renew_months`, `renews_to`, `missed`, `done`, `snoozed_until`. A contract is due on its last day to
+cancel; once that has passed, its end is the deadline (`what: ends`, `missed` the passed day, `renews_to` where it
+moves without notice).
+
+`POST /documents/{id}/dates/{kind}/done` marks it done for everybody, `DELETE` opens it again (both `edit`, a number for
+`/changes` and a line in the history; `404 no_such_date`, `409 in_trash`). `PUT …/snooze` `{"days": 1 | 3 | 7}` puts it
+off for the caller alone and answers `{until}`; `DELETE …/snooze` ends that (`edit`; `409 deadline_done`; no number, no
+history). A key reads the list and changes nothing.
+
+A contract that renews and that nobody cancelled moves its end on by itself once it has passed: to the first end that
+is today or later, once per end (`renewed` in the history with `from` and `to`, a new number for `/changes`). The terms
+are counted from the end a person last set (or the end when the renewal changed), so 30.01. plus a month each time is
+28.02., 30.03., 30.04.
 
 ### Settings (the operator, in a browser)
 

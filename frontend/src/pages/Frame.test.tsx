@@ -81,17 +81,27 @@ afterEach(() => {
 
 describe('after the sign-in', () => {
   it('opens on the archive, with the menu of the mock: archive, inbox with its count, vaults', async () => {
-    answers['GET /api/v1/counts'] = { inbox: 2, reading: 1, trash: 4 }
+    answers['GET /api/v1/counts'] = { inbox: 2, reading: 1, trash: 4, deadlines: 6, deadlines_overdue: 1 }
     sessionStorage.setItem('nexpaper.startShown', '1')
     await show('/')
     expect(box.querySelector('h1')!.textContent).toBe('Archiv')
     // The sidebar holds the mark, the camera under the upload button (as the mock), archive, inbox and vaults, and the
     // person's menu. The round button of the phone leads to the quick upload.
     const side = box.querySelector('aside')!
-    expect([...side.querySelectorAll('a')].map((a) => a.getAttribute('href'))).toEqual(['/kamera', '/eingang', '/', '/tresore', '/ordnung', '/papierkorb'])
+    expect([...side.querySelectorAll('a')].map((a) => a.getAttribute('href'))).toEqual(['/kamera', '/eingang', '/', '/fristen', '/tresore', '/ordnung', '/papierkorb'])
     expect(side.textContent).toContain('NEXPAPER')
     expect(side.querySelector('[data-testid="inbox-count"]')!.textContent).toBe('3')
     expect(side.querySelector('[data-testid="trash-count"]')!.textContent).toBe('4')
+    // Deadlines: overdue and the next 14 days; something is overdue, so the number is drawn in the warning colour.
+    const deadlines = side.querySelector('[data-testid="deadline-count"]')!
+    expect(deadlines.textContent).toBe('6')
+    expect(deadlines.className).toContain('bg-warn')
+    expect(deadlines.getAttribute('title')).toBe('Etwas ist überfällig')
+    // "Darf weg" (the keeping time is over) is no deadline: the menu neither counts it nor even asks for it.
+    expect(calls.some((c) => c.url.startsWith('/api/v1/keeping'))).toBe(false)
+    // The phone's bar: five, the deadlines instead of Order.
+    const bar = box.querySelector('main ~ nav')!
+    expect([...bar.querySelectorAll('a')].map((a) => a.getAttribute('href'))).toEqual(['/eingang', '/', '/fristen', '/tresore', '/papierkorb'])
     expect(box.querySelector('main a[href="/schnell"]')!.getAttribute('aria-label')).toBe('Hochladen')
   })
 
@@ -122,7 +132,7 @@ describe('after the sign-in', () => {
     await show('/')
     await click(box.querySelector('aside button[aria-haspopup="true"]'))
     const items = [...document.querySelectorAll('aside .card a, aside .card button')].map((item) => item.textContent?.trim())
-    expect(items).toEqual(['Mein Konto', 'Einstellungen', 'Über nexpaper', 'Abmelden'])
+    expect(items).toEqual(['Mein Konto', 'Ordnung', 'Einstellungen', 'Über nexpaper', 'Abmelden'])
   })
 
   it('leaves the settings out of the menu of a member', async () => {
@@ -130,7 +140,7 @@ describe('after the sign-in', () => {
     await show('/')
     await click(box.querySelector('aside button[aria-haspopup="true"]'))
     const items = [...document.querySelectorAll('aside .card a, aside .card button')].map((item) => item.textContent?.trim())
-    expect(items).toEqual(['Mein Konto', 'Über nexpaper', 'Abmelden'])
+    expect(items).toEqual(['Mein Konto', 'Ordnung', 'Über nexpaper', 'Abmelden'])
   })
 })
 

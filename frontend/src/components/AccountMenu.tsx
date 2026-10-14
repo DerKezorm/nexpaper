@@ -1,4 +1,4 @@
-import { Info, LogOut, Settings, User } from 'lucide-react'
+import { Info, ListTree, LogOut, Settings, User } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
@@ -65,6 +65,10 @@ export function AccountMenu({ up = false }: { up?: boolean }) {
         <div className={`card rise absolute z-50 w-56 p-1.5 ${up ? 'bottom-full left-0 mb-2' : 'top-full right-0 mt-2'}`}>
           <Link to="/konto" className={item}>
             <User size={16} /> {t('account.mine')}
+          </Link>
+          {/* On the phone the bottom bar has room for five: Order lives here there (the mock's App). */}
+          <Link to="/ordnung" className={`${item} lg:hidden`}>
+            <ListTree size={16} /> {t('order.menu')}
           </Link>
           {me.role === 'operator' && (
             <Link to="/einstellungen" className={item}>

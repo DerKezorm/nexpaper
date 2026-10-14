@@ -675,7 +675,7 @@
           },
           "deadlines": {
             "items": {
-              "$ref": "#/components/schemas/DeadlineOut"
+              "$ref": "#/components/schemas/app__routers__v1__DeadlineOut"
             },
             "title": "Deadlines",
             "type": "array"
@@ -735,6 +735,7 @@
       },
       "DateIn": {
         "additionalProperties": false,
+        "description": "A date of a document. A contract (``contract_end``) may carry its notice period and how many months it renews\nby; left out, they stay as they were, ``null`` takes them away.",
         "properties": {
           "date": {
             "format": "date",
@@ -761,6 +762,29 @@
               }
             ],
             "title": "Manual"
+          },
+          "notice": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NoticeIn"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "renew_months": {
+            "anyOf": [
+              {
+                "maximum": 120.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Renew Months"
           }
         },
         "required": [
@@ -777,7 +801,119 @@
             "title": "Date",
             "type": "string"
           },
+          "done": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DoneOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "last_to_cancel": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last To Cancel"
+          },
+          "manual": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manual"
+          },
+          "notice": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NoticeOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "renew_months": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Renew Months"
+          },
+          "renewed_from": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Renewed From"
+          },
+          "snoozed_until": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Snoozed Until"
+          }
+        },
+        "required": [
+          "kind",
+          "date"
+        ],
+        "title": "DateOut",
+        "type": "object"
+      },
+      "DateSet": {
+        "additionalProperties": false,
+        "description": "One term in ``set_dates``: the kind it is, and only what is to change. A day left out keeps the day the term has\n(a new term needs one); ``notice`` and ``renew_months`` as in ``dates``.",
+        "properties": {
+          "date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Date"
+          },
+          "kind": {
+            "enum": [
+              "due",
+              "contract_end",
+              "warranty_end",
+              "keep_until"
+            ],
             "title": "Kind",
             "type": "string"
           },
@@ -791,46 +927,90 @@
               }
             ],
             "title": "Manual"
+          },
+          "notice": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NoticeIn"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "renew_months": {
+            "anyOf": [
+              {
+                "maximum": 120.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Renew Months"
           }
         },
         "required": [
-          "kind",
-          "date"
+          "kind"
         ],
-        "title": "DateOut",
+        "title": "DateSet",
         "type": "object"
       },
-      "DeadlineOut": {
+      "DeadlinesOut": {
         "properties": {
-          "date": {
-            "title": "Date",
-            "type": "string"
+          "counts": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Counts",
+            "type": "object"
           },
-          "id": {
-            "title": "Id",
+          "done": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SectionOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "later": {
+            "$ref": "#/components/schemas/SectionOut"
+          },
+          "overdue": {
+            "$ref": "#/components/schemas/SectionOut"
+          },
+          "shared": {
+            "title": "Shared",
             "type": "integer"
           },
-          "kind": {
-            "title": "Kind",
-            "type": "string"
+          "soon": {
+            "$ref": "#/components/schemas/SectionOut"
           },
-          "title": {
-            "title": "Title",
-            "type": "string"
+          "soon_days": {
+            "title": "Soon Days",
+            "type": "integer"
           },
-          "url": {
-            "title": "Url",
+          "today": {
+            "format": "date",
+            "title": "Today",
             "type": "string"
           }
         },
         "required": [
-          "id",
-          "title",
-          "date",
-          "kind",
-          "url"
+          "today",
+          "soon_days",
+          "overdue",
+          "soon",
+          "later",
+          "done",
+          "counts",
+          "shared"
         ],
-        "title": "DeadlineOut",
+        "title": "DeadlinesOut",
         "type": "object"
       },
       "DeviceOut": {
@@ -1165,7 +1345,7 @@
       },
       "DocumentPatch": {
         "additionalProperties": false,
-        "description": "Only the fields that are sent change. ``sender`` is a name (made if new), empty or null removes it; ``amount``\nis in cents; ``tags`` and ``dates`` replace the whole list.",
+        "description": "Only the fields that are sent change. ``sender`` is a name (made if new), empty or null removes it; ``amount``\nis in cents; ``tags`` and ``dates`` replace the whole list. ``set_dates`` changes only the terms it names, and only\nwhat it sends of them; ``remove_dates`` takes terms away by kind (not together with ``dates``). A page that may be\nbehind sends those, so it never sends back a day it did not see change (a contract that renewed meanwhile).",
         "properties": {
           "amount": {
             "anyOf": [
@@ -1218,6 +1398,27 @@
             ],
             "title": "Kind Id"
           },
+          "remove_dates": {
+            "anyOf": [
+              {
+                "items": {
+                  "enum": [
+                    "due",
+                    "contract_end",
+                    "warranty_end",
+                    "keep_until"
+                  ],
+                  "type": "string"
+                },
+                "maxItems": 4,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Remove Dates"
+          },
           "sender": {
             "anyOf": [
               {
@@ -1229,6 +1430,21 @@
               }
             ],
             "title": "Sender"
+          },
+          "set_dates": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/DateSet"
+                },
+                "maxItems": 4,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Set Dates"
           },
           "status": {
             "anyOf": [
@@ -1274,6 +1490,31 @@
           }
         },
         "title": "DocumentPatch",
+        "type": "object"
+      },
+      "DoneOut": {
+        "properties": {
+          "at": {
+            "format": "date-time",
+            "title": "At",
+            "type": "string"
+          },
+          "by": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PersonRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "at",
+          "by"
+        ],
+        "title": "DoneOut",
         "type": "object"
       },
       "DownloadIn": {
@@ -4115,6 +4356,16 @@
       },
       "MenuCounts": {
         "properties": {
+          "deadlines": {
+            "default": 0,
+            "title": "Deadlines",
+            "type": "integer"
+          },
+          "deadlines_overdue": {
+            "default": 0,
+            "title": "Deadlines Overdue",
+            "type": "integer"
+          },
           "inbox": {
             "title": "Inbox",
             "type": "integer"
@@ -4531,6 +4782,53 @@
           "mine"
         ],
         "title": "NoteOut",
+        "type": "object"
+      },
+      "NoticeIn": {
+        "additionalProperties": false,
+        "properties": {
+          "n": {
+            "maximum": 24.0,
+            "minimum": 1.0,
+            "title": "N",
+            "type": "integer"
+          },
+          "unit": {
+            "enum": [
+              "weeks",
+              "months"
+            ],
+            "title": "Unit",
+            "type": "string"
+          }
+        },
+        "required": [
+          "n",
+          "unit"
+        ],
+        "title": "NoticeIn",
+        "type": "object"
+      },
+      "NoticeOut": {
+        "properties": {
+          "n": {
+            "title": "N",
+            "type": "integer"
+          },
+          "unit": {
+            "enum": [
+              "weeks",
+              "months"
+            ],
+            "title": "Unit",
+            "type": "string"
+          }
+        },
+        "required": [
+          "n",
+          "unit"
+        ],
+        "title": "NoticeOut",
         "type": "object"
       },
       "OcrIn": {
@@ -6281,6 +6579,27 @@
         "title": "SearchOut",
         "type": "object"
       },
+      "SectionOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/app__routers__deadlines__DeadlineOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "total",
+          "items"
+        ],
+        "title": "SectionOut",
+        "type": "object"
+      },
       "SenderIn": {
         "properties": {
           "address": {
@@ -7002,6 +7321,39 @@
         "title": "ShortcutOut",
         "type": "object"
       },
+      "SnoozeIn": {
+        "additionalProperties": false,
+        "properties": {
+          "days": {
+            "enum": [
+              1,
+              3,
+              7
+            ],
+            "title": "Days",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "days"
+        ],
+        "title": "SnoozeIn",
+        "type": "object"
+      },
+      "SnoozeOut": {
+        "properties": {
+          "until": {
+            "format": "date",
+            "title": "Until",
+            "type": "string"
+          }
+        },
+        "required": [
+          "until"
+        ],
+        "title": "SnoozeOut",
+        "type": "object"
+      },
       "SplitIn": {
         "additionalProperties": false,
         "properties": {
@@ -7279,6 +7631,21 @@
               "$ref": "#/components/schemas/AmountOut"
             },
             "title": "Amounts",
+            "type": "array"
+          },
+          "deadlines": {
+            "default": [],
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Deadlines",
             "type": "array"
           },
           "kinds": {
@@ -7929,6 +8296,183 @@
         "title": "NameIn",
         "type": "object"
       },
+      "app__routers__deadlines__DeadlineOut": {
+        "properties": {
+          "amount": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Amount"
+          },
+          "currency": {
+            "title": "Currency",
+            "type": "string"
+          },
+          "date": {
+            "format": "date",
+            "title": "Date",
+            "type": "string"
+          },
+          "days": {
+            "title": "Days",
+            "type": "integer"
+          },
+          "document_id": {
+            "title": "Document Id",
+            "type": "integer"
+          },
+          "done": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DoneOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "end": {
+            "format": "date",
+            "title": "End",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "due",
+              "contract_end",
+              "warranty_end"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "missed": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Missed"
+          },
+          "notice": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NoticeOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "renew_months": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Renew Months"
+          },
+          "renews_to": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Renews To"
+          },
+          "sender": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sender"
+          },
+          "snoozed_until": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Snoozed Until"
+          },
+          "status": {
+            "enum": [
+              "inbox",
+              "filed"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "vault_id": {
+            "title": "Vault Id",
+            "type": "integer"
+          },
+          "via_share": {
+            "title": "Via Share",
+            "type": "boolean"
+          },
+          "what": {
+            "enum": [
+              "pay",
+              "cancel",
+              "ends",
+              "warranty"
+            ],
+            "title": "What",
+            "type": "string"
+          }
+        },
+        "required": [
+          "document_id",
+          "title",
+          "status",
+          "vault_id",
+          "via_share",
+          "sender",
+          "amount",
+          "currency",
+          "kind",
+          "what",
+          "date",
+          "days",
+          "end",
+          "notice",
+          "renew_months",
+          "renews_to",
+          "missed",
+          "done",
+          "snoozed_until"
+        ],
+        "title": "DeadlineOut",
+        "type": "object"
+      },
       "app__routers__devices__DeviceIn": {
         "properties": {
           "name": {
@@ -8158,6 +8702,39 @@
           }
         },
         "title": "PasswordIn",
+        "type": "object"
+      },
+      "app__routers__v1__DeadlineOut": {
+        "properties": {
+          "date": {
+            "title": "Date",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "date",
+          "kind",
+          "url"
+        ],
+        "title": "DeadlineOut",
         "type": "object"
       }
     },
@@ -10347,7 +10924,7 @@
             "HTTPBearer": []
           }
         ],
-        "summary": "The numbers beside Inbox and Trash in the menu",
+        "summary": "The numbers beside Inbox, Deadlines and Trash in the menu",
         "tags": [
           "inbox"
         ]
@@ -10355,7 +10932,7 @@
     },
     "/api/v1/dashboard": {
       "get": {
-        "description": "Counts and a few titles of what the key's account may read, nothing of the contents (no text, sender, amount or\ntag). A key of scope ``upload`` reads nothing here (``403 key_scope``).\n\n``inbox`` is the inbox of the account as the menu shows it (the vaults where it may change things), ``filed``,\n``total`` (everything not in the trash), ``added_week`` (the last seven days) and ``processing`` (text being read)\nare counted among all it may read. ``inbox_oldest`` names the five oldest of the inbox, the oldest first.\n``deadlines`` are the dates of kind ``due``, ``contract_end`` and ``warranty_end`` from today to 14 days ahead, by\nday, at most 20. ``url`` is the page of the document: the public address when the operator set one, else the\naddress this request came to.",
+        "description": "Counts and a few titles of what the key's account may read, nothing of the contents (no text, sender, amount or\ntag). A key of scope ``upload`` reads nothing here (``403 key_scope``).\n\n``inbox`` is the inbox of the account as the menu shows it (the vaults where it may change things), ``filed``,\n``total`` (everything not in the trash), ``added_week`` (the last seven days) and ``processing`` (text being read)\nare counted among all it may read. ``inbox_oldest`` names the five oldest of the inbox, the oldest first.\n``deadlines`` are the dates of kind ``due``, ``contract_end`` and ``warranty_end`` from today to 14 days ahead, and\nthe last day to cancel a contract as ``notice``, by day, at most 20; what is marked done is left out. ``url`` is\nthe page of the document: the public address when the operator set one, else the address this request came to.",
         "operationId": "dashboard_card_api_v1_dashboard_get",
         "responses": {
           "200": {
@@ -10377,6 +10954,124 @@
         "summary": "The numbers for a dashboard card: the inbox, the archive and what falls due soon",
         "tags": [
           "api keys"
+        ]
+      }
+    },
+    "/api/v1/deadlines": {
+      "get": {
+        "description": "The deadlines of the documents the caller may change (`edit` or `manage` in the vault, or a share with `edit`),\nin the inbox or filed. A vault the caller does not reach answers like an empty one.",
+        "operationId": "listing_api_v1_deadlines_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "vault_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 2147483647,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Vault Id"
+            }
+          },
+          {
+            "description": "Only documents the caller reaches through a share alone",
+            "in": "query",
+            "name": "shared",
+            "required": false,
+            "schema": {
+              "default": false,
+              "description": "Only documents the caller reaches through a share alone",
+              "title": "Shared",
+              "type": "boolean"
+            }
+          },
+          {
+            "description": "`pay`: due dates; `cancel`: contracts; `warranty`: warranties",
+            "in": "query",
+            "name": "what",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "pay",
+                    "cancel",
+                    "warranty"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "`pay`: due dates; `cancel`: contracts; `warranty`: warranties",
+              "title": "What"
+            }
+          },
+          {
+            "description": "Also what is done (paid, cancelled, claimed)",
+            "in": "query",
+            "name": "done",
+            "required": false,
+            "schema": {
+              "default": false,
+              "description": "Also what is done (paid, cancelled, claimed)",
+              "title": "Done",
+              "type": "boolean"
+            }
+          },
+          {
+            "description": "At most this many in each section",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 200,
+              "description": "At most this many in each section",
+              "maximum": 500,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeadlinesOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "What is to be paid, cancelled or claimed: overdue, the next 14 days, later, done",
+        "tags": [
+          "deadlines"
         ]
       }
     },
@@ -11043,7 +11738,7 @@
             "description": "Successful Response"
           },
           "422": {
-            "description": "A field is wrong. A date that is out of range (1900 to 2200) or no date answers `invalid_date` with `field`: `date`, or `dates[n]` for the n-th term of `dates`."
+            "description": "A field is wrong. A date that is out of range (1900 to 2200) or no date answers `invalid_date` with `field`: `date`, or `dates[n]` for the n-th term of `dates` (`set_dates[n]` for single terms)."
           }
         },
         "security": [
@@ -11054,6 +11749,251 @@
         "summary": "Change fields of a document",
         "tags": [
           "documents"
+        ]
+      }
+    },
+    "/api/v1/documents/{document_id}/dates/{kind}/done": {
+      "delete": {
+        "operationId": "mark_open_api_v1_documents__document_id__dates__kind__done_delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "document_id",
+            "required": true,
+            "schema": {
+              "title": "Document Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "kind",
+            "required": true,
+            "schema": {
+              "enum": [
+                "due",
+                "contract_end",
+                "warranty_end"
+              ],
+              "title": "Kind",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Open a deadline that was marked done again",
+        "tags": [
+          "deadlines"
+        ]
+      },
+      "post": {
+        "description": "Nobody is reminded of it any more, and a cancelled contract no longer renews. Needs `edit`; 404 when the document\nhas no such date.",
+        "operationId": "mark_done_api_v1_documents__document_id__dates__kind__done_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "document_id",
+            "required": true,
+            "schema": {
+              "title": "Document Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "kind",
+            "required": true,
+            "schema": {
+              "enum": [
+                "due",
+                "contract_end",
+                "warranty_end"
+              ],
+              "title": "Kind",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Mark a deadline done (paid, cancelled, claimed), for everybody",
+        "tags": [
+          "deadlines"
+        ]
+      }
+    },
+    "/api/v1/documents/{document_id}/dates/{kind}/snooze": {
+      "delete": {
+        "operationId": "end_put_off_api_v1_documents__document_id__dates__kind__snooze_delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "document_id",
+            "required": true,
+            "schema": {
+              "title": "Document Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "kind",
+            "required": true,
+            "schema": {
+              "enum": [
+                "due",
+                "contract_end",
+                "warranty_end"
+              ],
+              "title": "Kind",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "End the caller's own later on a deadline",
+        "tags": [
+          "deadlines"
+        ]
+      },
+      "put": {
+        "description": "Only for the caller: the others in the vault are reminded as before. Needs `edit` like the deadline itself; a\ndeadline that is done answers `409 deadline_done`.",
+        "operationId": "put_off_api_v1_documents__document_id__dates__kind__snooze_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "document_id",
+            "required": true,
+            "schema": {
+              "title": "Document Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "kind",
+            "required": true,
+            "schema": {
+              "enum": [
+                "due",
+                "contract_end",
+                "warranty_end"
+              ],
+              "title": "Kind",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SnoozeIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SnoozeOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Later: no reminder of this deadline for the caller for 1, 3 or 7 days",
+        "tags": [
+          "deadlines"
         ]
       }
     },
@@ -17748,7 +18688,7 @@
     },
     "/api/v1/search": {
       "get": {
-        "description": "Words (each must be found, a part of a word is enough), \"a phrase\", art:/kind:, absender:/sender:, tag:, betrag:/amount: with >, < or = (comma or point). Newest first, page by page with the cursor; or numbered pages in another order. Each range is [start, end) in UTF-16 code units of the text it belongs to.",
+        "description": "Words (each must be found, a part of a word is enough), \"a phrase\", art:/kind:, absender:/sender:, tag:, betrag:/amount: with >, < or = (comma or point), frist:/deadline: open, overdue, done or <n (days). Newest first, page by page with the cursor; or numbered pages in another order. Each range is [start, end) in UTF-16 code units of the text it belongs to.",
         "operationId": "find_api_v1_search_get",
         "parameters": [
           {
@@ -18021,6 +18961,25 @@
               "description": "The numbered page, from 1",
               "title": "Page"
             }
+          },
+          {
+            "description": "Only documents with a deadline that is open, overdue, done, or open and due within this many days (overdue ones included)",
+            "in": "query",
+            "name": "deadline",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "pattern": "^(open|overdue|done|[0-9]{1,4})$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only documents with a deadline that is open, overdue, done, or open and due within this many days (overdue ones included)",
+              "title": "Deadline"
+            }
           }
         ],
         "responses": {
@@ -18117,6 +19076,25 @@
               ],
               "description": "Only documents seen through a share alone (true), or only those of the caller's vaults (false)",
               "title": "Via Share"
+            }
+          },
+          {
+            "description": "Only documents with a deadline that is open, overdue, done, or open and due within this many days (overdue ones included)",
+            "in": "query",
+            "name": "deadline",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "pattern": "^(open|overdue|done|[0-9]{1,4})$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only documents with a deadline that is open, overdue, done, or open and due within this many days (overdue ones included)",
+              "title": "Deadline"
             }
           }
         ],

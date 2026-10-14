@@ -83,7 +83,7 @@ class DeadlineOut(BaseModel):
     title: str
     #: The day, ``YYYY-MM-DD``.
     date: str
-    #: ``due``, ``contract_end`` or ``warranty_end``.
+    #: ``due``, ``contract_end``, ``warranty_end`` or ``notice`` (a contract's last day to cancel).
     kind: str
     url: str
 
@@ -113,9 +113,9 @@ def dashboard_card(request: Request, found: Reader) -> DashboardOut:
     ``inbox`` is the inbox of the account as the menu shows it (the vaults where it may change things), ``filed``,
     ``total`` (everything not in the trash), ``added_week`` (the last seven days) and ``processing`` (text being read)
     are counted among all it may read. ``inbox_oldest`` names the five oldest of the inbox, the oldest first.
-    ``deadlines`` are the dates of kind ``due``, ``contract_end`` and ``warranty_end`` from today to 14 days ahead, by
-    day, at most 20. ``url`` is the page of the document: the public address when the operator set one, else the
-    address this request came to."""
+    ``deadlines`` are the dates of kind ``due``, ``contract_end`` and ``warranty_end`` from today to 14 days ahead, and
+    the last day to cancel a contract as ``notice``, by day, at most 20; what is marked done is left out. ``url`` is
+    the page of the document: the public address when the operator set one, else the address this request came to."""
     if found.scope != "read":
         raise error("key_scope", "This key is not for this.", 403)
     with SessionLocal() as db:

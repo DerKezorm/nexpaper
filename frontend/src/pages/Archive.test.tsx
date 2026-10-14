@@ -415,7 +415,7 @@ describe('the search of the archive', () => {
     await act(async () => field.focus())
     await until(() => page.box.querySelector('[data-testid="search-help"]'))
     const codes = [...page.box.querySelectorAll('[data-testid="search-help"] code')].map((c) => c.textContent)
-    expect(codes).toEqual(['stadtwerke 2026', '"please transfer"', 'kind:invoice', 'sender:hansa', 'tag:car', 'amount:>100', 'keep:expired'])
+    expect(codes).toEqual(['stadtwerke 2026', '"please transfer"', 'kind:invoice', 'sender:hansa', 'tag:car', 'amount:>100', 'deadline:open', 'deadline:<30', 'keep:expired'])
   })
 
   it('offers the help of the search on an empty field, and an example searches at once', async () => {

@@ -84,11 +84,17 @@ PACKED_KINDS = (filetypes.PDF, filetypes.JPEG, filetypes.PNG, filetypes.HEIC, fi
 CSV_NAME = {"de": "liste.csv", "en": "list.csv"}
 CSV_HEADINGS = {
     "de": ("Datum", "Titel", "Absender", "Art", "Betrag", "Währung", "Rechnungsnummer", "Tresor", "Datei",
-           "Aufbewahren bis"),
-    "en": ("Date", "Title", "Sender", "Kind", "Amount", "Currency", "Invoice number", "Vault", "File", "Keep until"),
+           "Fällig am", "Vertrag bis", "Kündigen bis", "Garantie bis", "Erledigt", "Aufbewahren bis"),
+    "en": ("Date", "Title", "Sender", "Kind", "Amount", "Currency", "Invoice number", "Vault", "File",
+           "Due", "Contract until", "Cancel by", "Warranty until", "Done", "Keep until"),
 }
-#: The columns made here (a date, an amount, a currency): taken as they are; every other one came from a person.
-MADE_HERE = (0, 4, 5, 9)
+#: The deadlines in the list (F1): the columns of the dates, and the word for a deadline that is done.
+DEADLINE_COLUMNS = ("due", "contract_end", "notice", "warranty_end")
+DONE_WORD = {"de": {"due": "bezahlt", "contract_end": "gekündigt", "warranty_end": "erledigt"},
+             "en": {"due": "paid", "contract_end": "cancelled", "warranty_end": "done"}}
+#: The columns made here (a date, an amount, a currency, the day to keep until): taken as they are; every other one
+#: came from a person.
+MADE_HERE = (0, 4, 5, 14)
 #: The start of a field a spreadsheet takes for a formula.
 FORMULA_START = ("=", "+", "-", "@", "\t", "\r")
 NO_DATE = {"de": "ohne Datum", "en": "undated"}
@@ -475,6 +481,7 @@ def _pack(db: Session, export_id: int) -> None:
     invoice_numbers = einvoices.numbers(db, [item.document.id for item in found])
     keep_until = dict(db.execute(select(DocumentDate.document_id, DocumentDate.date).where(
         DocumentDate.document_id.in_([item.document.id for item in found]), DocumentDate.kind == "keep_until")).all())
+    terms = _terms(db, [item.document.id for item in found], language)
     vaults: set[int] = set()
     size = 0
     total = 0
@@ -506,6 +513,7 @@ def _pack(db: Session, export_id: int) -> None:
             item.sender.name if item.sender else "", item.kind.name if item.kind else "",
             amount_text(document.amount, language), document.currency if document.amount is not None else "",
             invoice_numbers.get(document.id, ""), item.vault.name if item.vault else "", first,
+            *terms.get(document.id, ("",) * (len(DEADLINE_COLUMNS) + 1)),
             keep_until[document.id].isoformat() if document.id in keep_until else "",
         ))
     if size > MAX_BYTES:
@@ -553,6 +561,27 @@ def _pack(db: Session, export_id: int) -> None:
     db.commit()
     logger.info("Export packed export_id=%s documents=%s bytes=%s", export_id, len(found), export.size)
     _tell(export_id)
+
+
+def _terms(db: Session, ids: list[int], language: str) -> dict[int, tuple[str, ...]]:
+    """Per document the cells of its deadlines: due, contract end, last day to cancel, warranty, and what is done (the
+    word and the day, ``bezahlt 2026-09-29``)."""
+    from ..models import DocumentDate
+
+    cells: dict[int, dict[str, str]] = {}
+    done: dict[int, list[str]] = {}
+    words = DONE_WORD.get(language, DONE_WORD["en"])
+    for start in range(0, len(ids), 500):
+        for row in db.scalars(select(DocumentDate).where(DocumentDate.document_id.in_(ids[start:start + 500]),
+                                                         DocumentDate.kind.in_(tuple(words)))
+                              .order_by(DocumentDate.document_id, DocumentDate.kind)):
+            mine = cells.setdefault(row.document_id, {})
+            mine[row.kind] = row.date.isoformat()
+            if row.notice_date is not None:
+                mine["notice"] = row.notice_date.isoformat()
+            if row.done_at is not None:
+                done.setdefault(row.document_id, []).append(f"{words[row.kind]} {row.done_at.date().isoformat()}")
+    return {i: (*(c.get(k, "") for k in DEADLINE_COLUMNS), ", ".join(done.get(i, []))) for i, c in cells.items()}
 
 
 def _csv(rows: list[tuple[str, ...]], language: str) -> bytes:

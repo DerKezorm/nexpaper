@@ -33,7 +33,7 @@ def test_a_zugferd_pdf_brings_its_data(client: TestClient, operator: Account) ->
     assert document["amount"] == 22491 and document["date"] == "2026-10-06"
     assert document["sender"]["name"] == "Elektro Brandt GmbH" and document["kind"]["key"] == "invoice"
     assert document["title"] == "Rechnung 2026-0473"
-    assert {"kind": "due", "date": "2026-10-20"} in document["dates"]
+    assert {"kind": "due", "date": "2026-10-20"} in [{"kind": d["kind"], "date": d["date"]} for d in document["dates"]]
     for field in ("title", "sender", "kind", "date", "amount", "dates"):
         assert document["suggest"][field] == "einvoice", field
     data = client.get(f"/api/v1/documents/{document['id']}/einvoice").json()

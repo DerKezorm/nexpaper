@@ -27,7 +27,16 @@ router = APIRouter(prefix="/api/v1", tags=["documents"])
 ID = Annotated[int, Query(ge=1, le=2**31 - 1)]
 
 
+class NoticeIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    n: StrictInt = Field(ge=1, le=24)
+    unit: Literal["weeks", "months"]
+
+
 class DateIn(BaseModel):
+    """A date of a document. A contract (``contract_end``) may carry its notice period and how many months it renews
+    by; left out, they stay as they were, ``null`` takes them away."""
+
     model_config = ConfigDict(extra="forbid")
     kind: Literal["due", "contract_end", "warranty_end", "keep_until"]
     date: Date
@@ -35,11 +44,29 @@ class DateIn(BaseModel):
     #: out from the kind's keeping time (the date sent is not used). Left out: the date it has now stays as it was
     #: made, another one counts as set by hand. A `keep_until` left out of `dates` is worked out from the kind again.
     manual: bool | None = None
+    notice: NoticeIn | None = None
+    renew_months: StrictInt | None = Field(default=None, ge=1, le=120)
+
+
+class DateSet(BaseModel):
+    """One term in ``set_dates``: the kind it is, and only what is to change. A day left out keeps the day the term has
+    (a new term needs one); ``notice`` and ``renew_months`` as in ``dates``."""
+
+    model_config = ConfigDict(extra="forbid")
+    kind: Literal["due", "contract_end", "warranty_end", "keep_until"]
+    date: Date | None = None
+    notice: NoticeIn | None = None
+    renew_months: StrictInt | None = Field(default=None, ge=1, le=120)
+    #: Only for `keep_until`, as in `dates`: `true` set by hand, `false` worked out from the kind's keeping time again
+    #: (the term is dropped and worked out right away). With no day, `true` keeps the day it has as set by hand.
+    manual: bool | None = None
 
 
 class DocumentPatch(BaseModel):
     """Only the fields that are sent change. ``sender`` is a name (made if new), empty or null removes it; ``amount``
-    is in cents; ``tags`` and ``dates`` replace the whole list."""
+    is in cents; ``tags`` and ``dates`` replace the whole list. ``set_dates`` changes only the terms it names, and only
+    what it sends of them; ``remove_dates`` takes terms away by kind (not together with ``dates``). A page that may be
+    behind sends those, so it never sends back a day it did not see change (a contract that renewed meanwhile)."""
 
     model_config = ConfigDict(extra="forbid")
     title: str | None = Field(default=None, max_length=documents.TITLE_MAX * 2)
@@ -50,6 +77,9 @@ class DocumentPatch(BaseModel):
     status: Literal["inbox", "filed"] | None = None
     tags: list[str] | None = Field(default=None, max_length=60)
     dates: list[DateIn] | None = Field(default=None, max_length=12)
+    set_dates: list[DateSet] | None = Field(default=None, max_length=4)
+    remove_dates: list[Literal["due", "contract_end", "warranty_end", "keep_until"]] | None = Field(
+        default=None, max_length=4)
 
 
 class MoveIn(BaseModel):
@@ -117,12 +147,15 @@ def read(document_id: int, account: Reader, db: DbSession) -> DocumentOut:
 @router.patch("/documents/{document_id}", response_model=DocumentOut, summary="Change fields of a document",
               responses={422: {"description": "A field is wrong. A date that is out of range (1900 to 2200) or no "
                                               "date answers `invalid_date` with `field`: `date`, or `dates[n]` for "
-                                              "the n-th term of `dates`."}})
+                                              "the n-th term of `dates` (`set_dates[n]` for single terms)."}})
 def patch(document_id: int, payload: DocumentPatch, account: Caller, db: DbSession) -> DocumentOut:
     sent = payload.model_dump(exclude_unset=True)
-    for required in ("title", "tags", "dates", "status"):
+    for required in ("title", "tags", "dates", "status", "set_dates", "remove_dates"):
         if required in sent and sent[required] is None:
             raise error("invalid_input", "This field cannot be empty.", 422, fields=[required])
+    if "dates" in sent and ("set_dates" in sent or "remove_dates" in sent):
+        raise error("invalid_input", "Send the whole list or single terms, not both.", 422,
+                    fields=["dates", "set_dates", "remove_dates"])
     if "sender" in sent and sent["sender"] is not None:
         sent["sender"] = sent["sender"].strip() or None
     documents.update_fields(db, account.id, document_id, sent)

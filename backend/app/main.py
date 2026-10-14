@@ -49,6 +49,7 @@ from .routers import (
 from .routers import avatars as avatars_router
 from .routers import backups as backups_router
 from .routers import catalog as catalog_router
+from .routers import deadlines as deadlines_router
 from .routers import documents as documents_router
 from .routers import exports as exports_router
 from .routers import inbox as inbox_router
@@ -82,6 +83,7 @@ from .services import (
     storage,
     totp,
 )
+from .services import deadlines as deadlines_service
 from .services import intake as intake_service
 from .services import manifest as manifest_service
 from .services import pairing as pairing_service
@@ -101,6 +103,7 @@ ROUTERS = [
     pagetools_router,
     storage_router,
     inbox_router,
+    deadlines_router,
     keeping_router,
 ]
 
@@ -176,6 +179,7 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
         tasks.append(asyncio.create_task(jobs.run_forever(stop)))
         tasks.append(asyncio.create_task(filecheck.run_forever(stop)))
         tasks.append(asyncio.create_task(intake_service.run_forever(stop)))
+        tasks.append(asyncio.create_task(deadlines_service.run_forever(stop)))
     logger.info("nexpaper %s started", __version__)
     with SessionLocal() as db:
         accounts.announce_setup_code(db)

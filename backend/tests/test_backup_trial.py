@@ -52,6 +52,28 @@ def database_with(entries: dict[str, bytes], tmp_path: Path, *statements: str, v
     return agreeing({**entries, DATABASE_ENTRY: copy.read_bytes()})
 
 
+#: A database as it stood before step 11 (the deadlines): its table gone, ``document_dates`` as in schema 10
+#: (a column with a foreign key cannot be dropped in SQLite, so the table is made anew). Together with
+#: ``UNDO_LAST_STEP`` it takes a database back to schema 10.
+UNDO_DEADLINES = (
+    "DROP TABLE deadline_snoozes",
+    (
+        "CREATE TABLE dd10 ( id INTEGER NOT NULL, document_id INTEGER NOT NULL, kind VARCHAR(16) NOT NULL, "
+        "date DATE NOT NULL, PRIMARY KEY (id), CONSTRAINT uq_document_dates_kind UNIQUE (document_id, kind), "
+        "FOREIGN KEY(document_id) REFERENCES documents (id) ON DELETE CASCADE )"
+    ),
+    "INSERT INTO dd10 SELECT id, document_id, kind, date FROM document_dates",
+    "DROP TABLE document_dates",
+    "ALTER TABLE dd10 RENAME TO document_dates",
+    "CREATE INDEX ix_document_dates_document_id ON document_dates (document_id)",
+)
+
+
+#: What takes a database of today back to the schema before the last step (12, keeping documents): the columns it adds.
+UNDO_LAST_STEP = ("ALTER TABLE kinds DROP COLUMN keep_years", "ALTER TABLE kinds DROP COLUMN keep_new_only",
+                  "ALTER TABLE document_dates DROP COLUMN manual")
+
+
 def update_copies() -> list[backups.Entry]:
     return [entry for entry in backups.entries() if entry.kind == backups.UPDATE]
 
@@ -121,11 +143,6 @@ def test_the_trigger_and_the_tables_of_the_search_index_as_nexpaper_makes_them_p
     assert backups.check(name).usable is True
 
 
-#: What takes a database of today back to the schema before the last step (the columns that step adds): F3, keeping.
-BEFORE_THE_LAST_STEP = ("ALTER TABLE kinds DROP COLUMN keep_years", "ALTER TABLE kinds DROP COLUMN keep_new_only",
-                        "ALTER TABLE document_dates DROP COLUMN manual")
-
-
 def test_nothing_is_written_to_the_copy_before_the_foreign_objects_are_looked_for(
     client: TestClient, operator: object, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -145,7 +162,7 @@ def test_nothing_is_written_to_the_copy_before_the_foreign_objects_are_looked_fo
     assert backups.check(name).usable is False
     assert ran == [], "the start was run on a database with a trigger that is not ours"
     # The control: without the trigger the steps do run.
-    ok = write_archive(database_with(made_here(), tmp_path, *BEFORE_THE_LAST_STEP,
+    ok = write_archive(database_with(made_here(), tmp_path, *UNDO_LAST_STEP,
                                      version=database.SCHEMA_VERSION - 1), "nexpaper-2020-01-03-000000.zip")
     assert backups.check(ok).usable is True and ran == [1]
 
@@ -171,7 +188,7 @@ def test_the_steps_of_the_rehearsal_run_on_the_copy_and_never_on_the_live_databa
     client: TestClient, operator: object, tmp_path: Path
 ) -> None:
     """An older database passes (its steps run on the scratch copy), and the live one is not touched by that."""
-    entries = database_with(made_here(), tmp_path, *BEFORE_THE_LAST_STEP, version=database.SCHEMA_VERSION - 1)
+    entries = database_with(made_here(), tmp_path, *UNDO_LAST_STEP, version=database.SCHEMA_VERSION - 1)
     brief = backups.check(write_archive(entries))
     assert brief.usable and brief.schema == database.SCHEMA_VERSION - 1
     with SessionLocal() as db:

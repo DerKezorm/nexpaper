@@ -51,8 +51,10 @@ def set_keep(session: TestClient, kind: int, years: int | None, existing: bool =
 
 
 def keep_entry(session: TestClient, document_id: int) -> dict[str, Any] | None:
+    """The ``keep_until`` of the document as the interface says it (the terms of deadlines are left out)."""
     shown = session.get(f"/api/v1/documents/{document_id}").json()
-    return next((d for d in shown["dates"] if d["kind"] == "keep_until"), None)
+    found = next((d for d in shown["dates"] if d["kind"] == "keep_until"), None)
+    return None if found is None else {k: found[k] for k in ("kind", "date", "manual") if k in found}
 
 
 # --- Working it out ---------------------------------------------------------------------------------------------------
@@ -165,6 +167,58 @@ def test_set_by_hand_stays_until_it_is_taken_back(client: TestClient, operator: 
     client.patch(f"/api/v1/documents/{doc}", json={"dates": [{"kind": "keep_until", "date": "2099-01-01",
                                                               "manual": False}]})
     assert keep_of(doc) == (date(2028, 12, 31), False)
+
+
+def test_the_single_terms_of_the_patch_follow_the_same_rules(client: TestClient, operator: Account) -> None:
+    """``set_dates`` and ``remove_dates`` (what the web app sends: only the terms that changed) set it by hand, keep the
+    worked-out one when the day comes back unchanged, and give it back to the kind."""
+    mine = own_vault(operator)
+    invoice, contract = kind_id(client, "invoice"), kind_id(client, "contract")
+    set_keep(client, invoice, 10)
+    set_keep(client, contract, 3)
+    doc = add_document(mine, operator, "Strom", kind_id=invoice, date=date(2026, 3, 14), content=None)
+    assert keep_of(doc) == (date(2036, 12, 31), False)
+
+    def patch(**body: Any) -> None:
+        answer = client.patch(f"/api/v1/documents/{doc}", json=body)
+        assert answer.status_code == 200, answer.text
+
+    # Another term only: the worked-out date is left alone, and the term it names is added.
+    patch(set_dates=[{"kind": "due", "date": "2026-11-01"}])
+    assert keep_of(doc) == (date(2036, 12, 31), False)
+    # The same day back is still the worked-out one.
+    patch(set_dates=[{"kind": "keep_until", "date": "2036-12-31"}])
+    assert keep_of(doc) == (date(2036, 12, 31), False)
+    # Another day is set by hand; a new kind, date or time of the kind leaves it.
+    patch(set_dates=[{"kind": "keep_until", "date": "2040-06-30"}])
+    assert keep_of(doc) == (date(2040, 6, 30), True)
+    patch(kind_id=contract, date="2025-01-01")
+    set_keep(client, contract, 5)
+    assert keep_of(doc) == (date(2040, 6, 30), True)
+    # Given back to the kind without a day (or with the word): it is worked out again, from the year of the date.
+    patch(set_dates=[{"kind": "keep_until", "manual": False}])
+    assert keep_of(doc) == (date(2030, 12, 31), False)
+    # By hand with the day it has: no day needed.
+    patch(set_dates=[{"kind": "keep_until", "manual": True}])
+    assert keep_of(doc) == (date(2030, 12, 31), True)
+    # Taken away (a term set by hand): the kind works it out again; one worked out is not one to take away.
+    patch(remove_dates=["keep_until"])
+    assert keep_of(doc) == (date(2030, 12, 31), False)
+    with SessionLocal() as db:
+        before = db.scalar(select(Event.id).where(Event.document_id == doc).order_by(Event.id.desc()))
+    patch(remove_dates=["keep_until"])
+    assert keep_of(doc) == (date(2030, 12, 31), False)
+    with SessionLocal() as db:
+        assert db.scalar(select(Event.id).where(Event.document_id == doc).order_by(Event.id.desc())) == before
+    # A kind without a time: by hand stays, taking it away leaves nothing.
+    set_keep(client, contract, None, existing=False)
+    patch(set_dates=[{"kind": "keep_until", "date": "2041-01-01"}])
+    assert keep_of(doc) == (date(2041, 1, 1), True)
+    patch(remove_dates=["keep_until"])
+    assert keep_of(doc) is None
+    # No day for a term that is not there is refused, and says which one.
+    refused = client.patch(f"/api/v1/documents/{doc}", json={"set_dates": [{"kind": "keep_until", "manual": True}]})
+    assert refused.status_code == 422 and refused.json()["detail"]["field"] == "set_dates[0]"
 
 
 def test_a_kind_without_time_takes_only_the_worked_out_ones_away(client: TestClient, operator: Account) -> None:
@@ -493,8 +547,9 @@ def test_the_list_of_a_packed_export_has_the_date_of_each(client: TestClient, op
     assert rows == {"Titel": "Aufbewahren bis", "Strom": "2036-12-31", "Brief": "2040-01-01", "Ohne": ""}
 
 
-def test_a_database_before_keeping_is_brought_up_and_its_terms_count_as_set_by_hand(tmp_path: Any,
-                                                                                    monkeypatch: Any) -> None:
+def _old_database(tmp_path: Any, monkeypatch: Any, version: int) -> Any:
+    """A database as schema ``version`` made it (the recorded schema), with a kind, a vault and a document that has a
+    keep_until, a due date and (from 11 on) a contract; the start has brought it up when this returns."""
     import sqlite3
     from contextlib import closing
     from pathlib import Path
@@ -507,8 +562,8 @@ def test_a_database_before_keeping_is_brought_up_and_its_terms_count_as_set_by_h
     path = tmp_path / "nexpaper.db"
     records = Path(__file__).parent / "schema"
     with closing(sqlite3.connect(path)) as connection:
-        connection.executescript((records / "v10.sql").read_text(encoding="utf-8"))
-        connection.execute("PRAGMA user_version = 10")
+        connection.executescript((records / f"v{version}.sql").read_text(encoding="utf-8"))
+        connection.execute(f"PRAGMA user_version = {version}")
         connection.execute("INSERT INTO kinds (id, key, name, name_key, hue, position) VALUES (1, 'x', 'X', 'x', 0, 0)")
         connection.execute("INSERT INTO vaults (id, name, icon, folder, created_at) VALUES (1, 'V', 'folder', 'v', "
                            "'2026-01-01 00:00:00')")
@@ -517,7 +572,7 @@ def test_a_database_before_keeping_is_brought_up_and_its_terms_count_as_set_by_h
             "change_seq, currency, trashed_status, duplicate_kind, process_error, files_state) "
             "VALUES (1, 1, 'T', 'filed', 'upload', '2026-01-01 00:00:00', 0, 1, 1, 'EUR', '', '', '', '')")
         connection.execute("INSERT INTO document_dates (id, document_id, kind, date) VALUES (1, 1, 'keep_until', "
-                           "'2030-12-31'), (2, 1, 'due', '2026-02-01')")
+                           "'2030-12-31'), (2, 1, 'due', '2026-02-01'), (3, 1, 'contract_end', '2027-06-30')")
         connection.commit()
     engine = create_engine(f"sqlite:///{path}")
     monkeypatch.setattr(database, "engine", engine)
@@ -526,11 +581,52 @@ def test_a_database_before_keeping_is_brought_up_and_its_terms_count_as_set_by_h
         database.init_db()
     finally:
         engine.dispose()
+    return path
+
+
+def _brought_up(path: Any, anchors: list[tuple[Any]]) -> None:
+    import sqlite3
+    from contextlib import closing
+
+    from app import db as database
+
     with closing(sqlite3.connect(path)) as connection:
-        assert connection.execute("PRAGMA user_version").fetchone()[0] == database.SCHEMA_VERSION
+        assert connection.execute("PRAGMA user_version").fetchone()[0] == database.SCHEMA_VERSION == 12
+        # What a person set before keeping existed counts as set by hand; nothing else does.
         assert connection.execute("SELECT kind, manual FROM document_dates ORDER BY id").fetchall() == [
-            ("keep_until", 1), ("due", 0)]
+            ("keep_until", 1), ("due", 0), ("contract_end", 0)]
         assert connection.execute("SELECT keep_years, keep_new_only FROM kinds").fetchall() == [(None, 0)]
+        # The step of the deadlines is there as well (from 10 a contract counts its terms from the end it has).
+        assert connection.execute("SELECT renew_anchor FROM document_dates ORDER BY id").fetchall() == anchors
+        assert connection.execute("SELECT count(*) FROM deadline_snoozes").fetchone() == (0,)
+
+
+def test_a_database_before_keeping_is_brought_up_and_its_terms_count_as_set_by_hand(tmp_path: Any,
+                                                                                    monkeypatch: Any) -> None:
+    """One start from schema 10 (the release before 1.4) runs the step of the deadlines and the one of keeping."""
+    _brought_up(_old_database(tmp_path, monkeypatch, 10), [(None,), (None,), ("2027-06-30",)])
+
+
+def test_a_database_with_the_deadlines_only_gets_the_step_of_keeping(tmp_path: Any, monkeypatch: Any) -> None:
+    """Schema 11 (the deadlines, without keeping) needs the one step after it, and the deadlines stay as they were."""
+    _brought_up(_old_database(tmp_path, monkeypatch, 11), [(None,), (None,), (None,)])
+
+
+def test_what_may_go_is_no_deadline_and_no_number_at_the_menu(client: TestClient, operator: Account) -> None:
+    """A keeping time that is over is on its own page filter: the deadlines, the number at the menu and the search of
+    deadlines do not know it."""
+    mine = own_vault(operator)
+    invoice = kind_id(client, "invoice")
+    set_keep(client, invoice, 1)
+    doc = add_document(mine, operator, "Alt", kind_id=invoice, date=date(2020, 5, 1), content=None)
+    assert keep_of(doc) == (date(2021, 12, 31), False)
+    assert [item["id"] for item in may_go(client)["items"]] == [doc]
+    assert client.get("/api/v1/deadlines").json()["counts"] == {}
+    counts = client.get("/api/v1/counts").json()
+    assert counts["deadlines"] == 0 and counts["deadlines_overdue"] == 0
+    for word in ("offen", "überfällig", "erledigt", "<30"):
+        found = client.get("/api/v1/search", params={"q": f"frist:{word}"}).json()
+        assert found["total"] == 0, word
 
 
 def test_a_backup_keeps_the_times_and_the_marks(client: TestClient, operator: Account, tmp_path: Any) -> None:
@@ -691,8 +787,8 @@ def test_manual_is_said_only_on_keep_until(client: TestClient, operator: Account
     doc = add_document(own_vault(operator), operator, "A", content=None,
                        dates=[("due", date(2026, 10, 20)), ("keep_until", date(2030, 1, 1))])
     shown = client.get(f"/api/v1/documents/{doc}").json()["dates"]
-    assert shown == [{"kind": "due", "date": "2026-10-20"},
-                     {"kind": "keep_until", "date": "2030-01-01", "manual": True}]
+    assert [(d["kind"], d["date"], d.get("manual", "none")) for d in shown] == [
+        ("due", "2026-10-20", "none"), ("keep_until", "2030-01-01", True)]
 
 
 def test_may_go_is_ordered_by_when_the_time_ended_then_the_date_then_the_id(client: TestClient,

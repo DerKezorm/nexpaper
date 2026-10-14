@@ -33,6 +33,7 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from datetime import date as Date
+from datetime import timedelta
 from typing import Any
 
 from sqlalchemy import (
@@ -70,7 +71,7 @@ from ..models import (
     VersionText,
 )
 from ..names import name_key
-from . import changes, documents, keeping, rights, search_index, searchtext
+from . import changes, deadlines, documents, keeping, rights, search_index, searchtext
 
 logger = logging.getLogger("nexpaper.search")
 
@@ -101,6 +102,10 @@ class Filters:
     trash: bool = False
     #: Only the documents the caller sees through a share alone (true), or only those of their vaults (false).
     via_share: bool | None = None
+    #: Only documents with a deadline that is ``open``, ``overdue``, ``done``, or open within that many days.
+    deadline: str | int | None = None
+    #: Today for the deadlines (the caller's day); the server's when not given.
+    today: Date | None = None
 
 
 @dataclass
@@ -262,7 +267,25 @@ def where(uid: int, query: searchtext.Query, filters: Filters, scope: list[str])
     if filters.via_share is not None:
         in_vault = (Document.vault_id + 0).in_(rights.member_vault_ids(uid))
         clauses.append(~in_vault if filters.via_share else in_vault)
+    today = filters.today or deadlines.server_today()
+    for wanted in ([filters.deadline] if filters.deadline is not None else []) + list(query.deadlines):
+        clauses.append(deadline_clause(wanted, today))
     return clauses + filter_clauses(query) + text_clauses(query, scope)
+
+
+def deadline_clause(wanted: str | int, today: Date) -> ColumnElement[bool]:
+    """The document has a deadline (``services/deadlines.py``) that is ``open``, ``overdue`` or ``done``, or one that
+    is open and due within ``wanted`` days (overdue ones included)."""
+    rows = [DocumentDate.document_id == Document.id, *deadlines.deadline_rows()]
+    if wanted == "done":
+        rows.append(DocumentDate.done_at.is_not(None))
+    else:
+        rows.append(deadlines.is_open())
+        if wanted == "overdue":
+            rows.append(deadlines.act_by(today) < today)
+        elif isinstance(wanted, int):
+            rows.append(deadlines.act_by(today) <= today + timedelta(days=wanted))
+    return exists().where(*rows)
 
 
 @contextmanager
@@ -343,7 +366,9 @@ def _parse(raw: str) -> searchtext.Query:
     except searchtext.SearchError as exc:
         message = {"query_too_long": f"Use at most {searchtext.MAX_LENGTH} characters.",
                    "too_many_terms": f"Use at most {searchtext.MAX_TERMS} words and filters.",
-                   "invalid_amount": "Write an amount like betrag:>100 or amount:<12,50."}[exc.code]
+                   "invalid_amount": "Write an amount like betrag:>100 or amount:<12,50.",
+                   "invalid_deadline": "Write frist:offen, frist:überfällig, frist:erledigt or frist:<30 "
+                                       "(deadline:open, overdue, done, <30)."}[exc.code]
         limit_of = {"query_too_long": searchtext.MAX_LENGTH, "too_many_terms": searchtext.MAX_TERMS}
         values = {"max": limit_of[exc.code]} if exc.code in limit_of else {}
         raise error(exc.code, message, 422, **values) from exc
