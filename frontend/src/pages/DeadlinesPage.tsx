@@ -157,13 +157,13 @@ function Section({ title, part, warn, empty, more, vaultOf, onChanged }: Section
       {part.total === 0 ? (
         <p className="rounded-2xl border border-dashed border-line px-5 py-4 text-sm text-muted">{empty}</p>
       ) : (
-        <ul className="card divide-y divide-line overflow-hidden">
+        <ul className="card divide-y divide-line">
           {part.items.map((x) => (
             <Row key={`${x.document_id}:${x.kind}`} x={x} vault={vaultOf(x.vault_id)} onChanged={onChanged} />
           ))}
           {more && (
             <li>
-              <button type="button" onClick={more} className="w-full px-5 py-3 text-sm font-semibold text-accent hover:bg-sheet-2">
+              <button type="button" onClick={more} className="w-full rounded-b-[1.25rem] px-5 py-3 text-sm font-semibold text-accent hover:bg-sheet-2">
                 {t('deadlines.showAll', { count: part.total })}
               </button>
             </li>
@@ -218,7 +218,7 @@ function Row({ x, vault, onChanged }: { x: Deadline; vault: Vault | undefined; o
   const later = (days: 1 | 3 | 7) => act(() => deadlinesApi.snooze(x.document_id, x.kind, days), t('deadlines.saidLater', laterWords(addDays(todayOf(x), days))))
 
   return (
-    <li className={`flex gap-4 px-4 py-4 sm:px-5 ${overdue ? 'bg-warn-soft/40' : ''}`} data-testid="deadline">
+    <li className={`flex gap-4 px-4 py-4 first:rounded-t-[1.25rem] last:rounded-b-[1.25rem] sm:px-5 ${overdue ? 'bg-warn-soft/40' : ''}`} data-testid="deadline">
       <DateBlock date={x.date} warn={overdue} done={!!x.done} />
       <div className="min-w-0 flex-1">
         <p className={`flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm font-semibold ${overdue ? 'text-warn' : 'text-ink-2'}`}>
