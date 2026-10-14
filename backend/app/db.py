@@ -46,7 +46,7 @@ _settings.data_dir.mkdir(parents=True, exist_ok=True)
 BUSY_SECONDS = 15
 
 #: The version of the schema the models describe.
-SCHEMA_VERSION = 11
+SCHEMA_VERSION = 12
 
 
 def _step_v2(connection: Connection) -> None:
@@ -322,6 +322,41 @@ def _step_deadlines(connection: Connection) -> None:
         connection.exec_driver_sql(statement)
 
 
+def _step_reminders(connection: Connection) -> None:
+    """Reminders (F2): how each person wants to be reminded, the vaults a person muted, and every reminder that went
+    (or is going) out, once per deadline, person, stage and day. Three tables, nothing else; written out as they stood
+    when the step was made, so that the step moves to another number unchanged."""
+    for statement in (
+        (
+            "CREATE TABLE reminder_settings ( user_id INTEGER NOT NULL, rhythm VARCHAR(8) NOT NULL, "
+            "push BOOLEAN NOT NULL, mail BOOLEAN NOT NULL, lead_due INTEGER NOT NULL, lead_cancel INTEGER NOT NULL, "
+            "lead_warranty INTEGER NOT NULL, same_day BOOLEAN NOT NULL, muted_shared BOOLEAN NOT NULL, "
+            "updated_at DATETIME NOT NULL, PRIMARY KEY (user_id), "
+            "FOREIGN KEY(user_id) REFERENCES users (id) ON DELETE CASCADE )"
+        ),
+        (
+            "CREATE TABLE reminder_mutes ( id INTEGER NOT NULL, user_id INTEGER NOT NULL, vault_id INTEGER NOT NULL, "
+            "created_at DATETIME NOT NULL, PRIMARY KEY (id), CONSTRAINT uq_reminder_mutes UNIQUE (user_id, vault_id), "
+            "FOREIGN KEY(user_id) REFERENCES users (id) ON DELETE CASCADE, "
+            "FOREIGN KEY(vault_id) REFERENCES vaults (id) ON DELETE CASCADE )"
+        ),
+        "CREATE INDEX ix_reminder_mutes_vault_id ON reminder_mutes (vault_id)",
+        (
+            "CREATE TABLE reminders_sent ( id INTEGER NOT NULL, user_id INTEGER NOT NULL, date_id INTEGER, "
+            "stage VARCHAR(8) NOT NULL, day DATE NOT NULL, sent_day DATE NOT NULL, sent_at DATETIME NOT NULL, "
+            "PRIMARY KEY (id), FOREIGN KEY(user_id) REFERENCES users (id) ON DELETE CASCADE, "
+            "FOREIGN KEY(date_id) REFERENCES document_dates (id) ON DELETE CASCADE )"
+        ),
+        (
+            "CREATE UNIQUE INDEX uq_reminders_sent_date ON reminders_sent (date_id, user_id, stage, day) "
+            "WHERE date_id IS NOT NULL"
+        ),
+        "CREATE UNIQUE INDEX uq_reminders_sent_person ON reminders_sent (user_id, stage, day) WHERE date_id IS NULL",
+        "CREATE INDEX ix_reminders_sent_user_day ON reminders_sent (user_id, sent_day)",
+    ):
+        connection.exec_driver_sql(statement)
+
+
 #: ``MIGRATIONS[n]`` brings a database from version ``n - 1`` to ``n``. Version 1 is the first schema; it has no step.
 #: Later steps are written out as the tables stood then, not taken from the models, which move on.
 MIGRATIONS: dict[int, Callable[[Connection], None]] = {
@@ -333,6 +368,8 @@ MIGRATIONS: dict[int, Callable[[Connection], None]] = {
     10: _step_files,
     # F1, deadlines.
     11: _step_deadlines,
+    # F2, reminders.
+    12: _step_reminders,
 }
 
 def _has_column(connection: Connection, table: str, column: str) -> bool:

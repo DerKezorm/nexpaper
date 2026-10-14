@@ -435,6 +435,25 @@ history). A key reads the list and changes nothing.
 A contract that renews and that nobody cancelled moves its end on by itself once it has passed: to the first end that
 is today or later, once per end (`renewed` in the history with `from` and `to`, a new number for `/changes`).
 
+### Reminders
+
+`GET /api/v1/me/reminders` says how the own account is reminded of deadlines: `rhythm` (`single`, one message per
+deadline; `weekly`, a mail on Mondays; `both`), `push`, `mail`, `lead` (`{due, cancel, warranty}`, days ahead, of
+`options`: 1, 3, 7, 14 for a bill, 7, 14, 30, 60 for the last day to cancel and the end of a warranty), `same_day`,
+`muted` (vault ids), `muted_shared` (nothing about documents reached through a share alone), and what that needs:
+`hour` and `time_zone` (8 o'clock in the person's zone), `push_devices`, `mail_address` (confirmed, else empty),
+`mail_problem` (`no_server`, `no_address`, `unconfirmed` or null), `vaults` (edit or manage: `{id, name, icon, personal,
+personal_of_other, muted, others}`), `read_only` (never reminded) and `shared` (documents shared with `edit`).
+`PUT /api/v1/me/reminders` changes what it is sent and answers the same; switching mail or the weekly mail on without a
+way to mail is `409 mail_unavailable`, a vault the caller may not change things in (or none) `422 bad_reminder`.
+`POST /api/v1/me/reminders/test` sends a test message on every way that is on (`{push: {sent, gone, failed}, mail,
+by_push, by_mail}`; `409 reminders_no_way`). A browser or a device; a key is turned away.
+
+A reminder names the kind of deadline, its day and the title of the document, never an amount, the text, notes or tags,
+and opens the document. It goes from 8 o'clock in the person's zone, once per deadline and stage: ahead by the lead,
+on the day itself (when chosen), and when a "later" ends; missed ones up to 2 days late. At most 20 a day per person,
+the rest in one message. The weekly mail goes on Mondays when something comes up.
+
 ### Settings (the operator, in a browser)
 
 `GET /api/v1/settings/ocr`, `PUT /api/v1/settings/ocr` `{languages, straighten, blank_pages, jobs, max_seconds}`: the

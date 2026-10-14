@@ -59,6 +59,7 @@ from .routers import logs as logs_router
 from .routers import ocr as ocr_router
 from .routers import pagetools as pagetools_router
 from .routers import paperless as paperless_router
+from .routers import reminders as reminders_router
 from .routers import search as search_router
 from .routers import settings as settings_router
 from .routers import sorting as sorting_router
@@ -87,6 +88,7 @@ from .services import intake as intake_service
 from .services import manifest as manifest_service
 from .services import pairing as pairing_service
 from .services import passkeys as passkeys_service
+from .services import reminders as reminders_service
 from .services import uploads as uploads_service
 from .vendor import nexoidc
 
@@ -103,6 +105,7 @@ ROUTERS = [
     storage_router,
     inbox_router,
     deadlines_router,
+    reminders_router,
 ]
 
 
@@ -178,6 +181,7 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
         tasks.append(asyncio.create_task(filecheck.run_forever(stop)))
         tasks.append(asyncio.create_task(intake_service.run_forever(stop)))
         tasks.append(asyncio.create_task(deadlines_service.run_forever(stop)))
+        tasks.append(asyncio.create_task(reminders_service.run_forever(stop)))
     logger.info("nexpaper %s started", __version__)
     with SessionLocal() as db:
         accounts.announce_setup_code(db)

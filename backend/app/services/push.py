@@ -10,8 +10,11 @@
   it may send to the device. Only a keyed hash of it stays in the clear, so that signing up twice keeps one device.
 * **A device that left is removed**: the push service answers 404 or 410 for an address that no longer exists.
   Anything else (429, 500, no answer) leaves it; the next message tries again.
-* **No document in a message.** What is sent is written by the server (a notice, a probe), never anything a
-  person stored.
+* **Of a document, a message names the title at most.** What is sent is written by the server (a notice, a probe).
+  The one exception, on purpose: a reminder of a deadline (``services/reminders.py``) names the kind of deadline, its
+  day and the title of the document ("Kündigen bis Mi, 30.09.: Handyvertrag"), because a reminder that does not say
+  what it is about is no help. Never an amount, the text, notes or tags; the push service and the lock screen see the
+  title.
 """
 
 from __future__ import annotations

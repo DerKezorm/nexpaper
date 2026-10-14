@@ -249,6 +249,10 @@ TOKEN_ROUTES = {
     ("DELETE", "/api/v1/documents/{document_id}/dates/{kind}/done"),
     ("PUT", "/api/v1/documents/{document_id}/dates/{kind}/snooze"),
     ("DELETE", "/api/v1/documents/{document_id}/dates/{kind}/snooze"),
+    # Reminders (F2): how the own account is reminded, for a native app as for the browser.
+    ("GET", "/api/v1/me/reminders"),
+    ("PUT", "/api/v1/me/reminders"),
+    ("POST", "/api/v1/me/reminders/test"),
 }
 
 #: The routes that only read and that a program with an API key reaches too (as the browser and a device do). A route

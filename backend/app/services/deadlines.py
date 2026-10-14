@@ -34,6 +34,7 @@ from __future__ import annotations
 import asyncio
 import calendar
 import logging
+from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import date as Date
 from datetime import timedelta
@@ -316,11 +317,13 @@ def menu_count(db: Session, uid: int, today: Date) -> Count:
     return Count(soon=int(soon or 0), overdue=int(overdue or 0))
 
 
-def open_for(db: Session, uid: int, today: Date, *, until: Date | None = None) -> list[Deadline]:
+def open_for(db: Session, uid: int, today: Date, *, until: Date | None = None,
+             where: Sequence[ColumnElement[bool]] = ()) -> list[Deadline]:
     """Every open deadline of the person's documents (the ones they may change), with the day to act; up to ``until``
-    when given. What the reminders take."""
+    when given, and narrowed by ``where`` (the reminders leave out muted vaults and what is long overdue in SQL). What
+    the reminders take."""
     when = act_by(today)
-    clauses = [*_mine(uid), is_open()]
+    clauses = [*_mine(uid), is_open(), *where]
     if until is not None:
         clauses.append(when <= until)
     found = db.execute(

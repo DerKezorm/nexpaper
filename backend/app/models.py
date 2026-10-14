@@ -1135,3 +1135,64 @@ class DeadlineSnooze(Base):
 
 
 __all__ += ["DeadlineSnooze"]
+
+
+class ReminderSettings(Base):
+    """How a person is reminded of deadlines (Mein Konto, Erinnerungen). No row: the defaults (one by one by push, at
+    3, 14 and 30 days, and on the day itself; no mail, no weekly mail)."""
+
+    __tablename__ = "reminder_settings"
+
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
+    #: ``single`` (one message per deadline), ``weekly`` (a mail on Mondays) or ``both``.
+    rhythm: Mapped[str] = mapped_column(String(8), default="single")
+    push: Mapped[bool] = mapped_column(Boolean, default=True)
+    mail: Mapped[bool] = mapped_column(Boolean, default=False)
+    #: Days ahead, per kind of deadline: due (pay by), the last day to cancel, the end of a warranty.
+    lead_due: Mapped[int] = mapped_column(Integer, default=3)
+    lead_cancel: Mapped[int] = mapped_column(Integer, default=14)
+    lead_warranty: Mapped[int] = mapped_column(Integer, default=30)
+    #: Once more on the day itself, unless it is done by then.
+    same_day: Mapped[bool] = mapped_column(Boolean, default=True)
+    #: Nothing about documents the person reaches through a share alone (they are in no vault of theirs to mute).
+    muted_shared: Mapped[bool] = mapped_column(Boolean, default=False)
+    updated_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utcnow)
+
+class ReminderMute(Base):
+    """A vault a person hears nothing from (Mein Konto, Erinnerungen): its deadlines stay on the page, no reminder and
+    no weekly mail names them. Gone with the person or the vault."""
+
+    __tablename__ = "reminder_mutes"
+    __table_args__ = (UniqueConstraint("user_id", "vault_id", name="uq_reminder_mutes"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    vault_id: Mapped[int] = mapped_column(ForeignKey("vaults.id", ondelete="CASCADE"), index=True)
+    created_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utcnow)
+
+
+class ReminderSent(Base):
+    """Every reminder goes exactly once: a row per deadline, person, stage and day, written before anything is sent
+    (``services/reminders.py``). The weekly mail and the message that gathers what is over the day's limit have no
+    deadline; their key is the person, the stage and the day alone. ``sent_day`` is the person's day of sending, for
+    the limit per day."""
+
+    __tablename__ = "reminders_sent"
+    __table_args__ = (
+        Index("uq_reminders_sent_date", "date_id", "user_id", "stage", "day", unique=True,
+              sqlite_where=text("date_id IS NOT NULL")),
+        Index("uq_reminders_sent_person", "user_id", "stage", "day", unique=True,
+              sqlite_where=text("date_id IS NULL")),
+        Index("ix_reminders_sent_user_day", "user_id", "sent_day"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    date_id: Mapped[int | None] = mapped_column(ForeignKey("document_dates.id", ondelete="CASCADE"), nullable=True)
+    stage: Mapped[str] = mapped_column(String(8))
+    day: Mapped[Any] = mapped_column(Date)
+    sent_day: Mapped[Any] = mapped_column(Date)
+    sent_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utcnow)
+
+
+__all__ += ["ReminderMute", "ReminderSent", "ReminderSettings"]

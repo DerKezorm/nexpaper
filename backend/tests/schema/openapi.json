@@ -3430,6 +3430,101 @@
         "title": "LanguageIn",
         "type": "object"
       },
+      "Lead": {
+        "properties": {
+          "cancel": {
+            "title": "Cancel",
+            "type": "integer"
+          },
+          "due": {
+            "title": "Due",
+            "type": "integer"
+          },
+          "warranty": {
+            "title": "Warranty",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "due",
+          "cancel",
+          "warranty"
+        ],
+        "title": "Lead",
+        "type": "object"
+      },
+      "LeadIn": {
+        "additionalProperties": false,
+        "properties": {
+          "cancel": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cancel"
+          },
+          "due": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Due"
+          },
+          "warranty": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Warranty"
+          }
+        },
+        "title": "LeadIn",
+        "type": "object"
+      },
+      "LeadOptions": {
+        "properties": {
+          "cancel": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Cancel",
+            "type": "array"
+          },
+          "due": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Due",
+            "type": "array"
+          },
+          "warranty": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Warranty",
+            "type": "array"
+          }
+        },
+        "required": [
+          "due",
+          "cancel",
+          "warranty"
+        ],
+        "title": "LeadOptions",
+        "type": "object"
+      },
       "LinkAddress": {
         "properties": {
           "url": {
@@ -5853,6 +5948,29 @@
         "title": "PublicLink",
         "type": "object"
       },
+      "PushCount": {
+        "properties": {
+          "failed": {
+            "title": "Failed",
+            "type": "integer"
+          },
+          "gone": {
+            "title": "Gone",
+            "type": "integer"
+          },
+          "sent": {
+            "title": "Sent",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "sent",
+          "gone",
+          "failed"
+        ],
+        "title": "PushCount",
+        "type": "object"
+      },
       "QueueOut": {
         "properties": {
           "running": {
@@ -6016,6 +6134,316 @@
           }
         },
         "title": "RememberIn",
+        "type": "object"
+      },
+      "ReminderTestOut": {
+        "properties": {
+          "by_mail": {
+            "title": "By Mail",
+            "type": "boolean"
+          },
+          "by_push": {
+            "title": "By Push",
+            "type": "boolean"
+          },
+          "mail": {
+            "title": "Mail",
+            "type": "boolean"
+          },
+          "push": {
+            "$ref": "#/components/schemas/PushCount"
+          }
+        },
+        "required": [
+          "push",
+          "mail",
+          "by_push",
+          "by_mail"
+        ],
+        "title": "ReminderTestOut",
+        "type": "object"
+      },
+      "ReminderVault": {
+        "properties": {
+          "icon": {
+            "title": "Icon",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "personal": {
+            "title": "Personal",
+            "type": "boolean"
+          },
+          "personal_of_other": {
+            "title": "Personal Of Other",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "icon",
+          "personal",
+          "personal_of_other"
+        ],
+        "title": "ReminderVault",
+        "type": "object"
+      },
+      "ReminderVaultMine": {
+        "properties": {
+          "icon": {
+            "title": "Icon",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "muted": {
+            "title": "Muted",
+            "type": "boolean"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "others": {
+            "title": "Others",
+            "type": "integer"
+          },
+          "personal": {
+            "title": "Personal",
+            "type": "boolean"
+          },
+          "personal_of_other": {
+            "title": "Personal Of Other",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "icon",
+          "personal",
+          "personal_of_other",
+          "muted",
+          "others"
+        ],
+        "title": "ReminderVaultMine",
+        "type": "object"
+      },
+      "RemindersIn": {
+        "additionalProperties": false,
+        "description": "Only what is sent changes.",
+        "properties": {
+          "lead": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LeadIn"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "mail": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mail"
+          },
+          "muted": {
+            "anyOf": [
+              {
+                "items": {
+                  "maximum": 2147483647.0,
+                  "minimum": 1.0,
+                  "type": "integer"
+                },
+                "maxItems": 500,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Muted"
+          },
+          "muted_shared": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Muted Shared"
+          },
+          "push": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Push"
+          },
+          "rhythm": {
+            "anyOf": [
+              {
+                "enum": [
+                  "single",
+                  "weekly",
+                  "both"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rhythm"
+          },
+          "same_day": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Same Day"
+          }
+        },
+        "title": "RemindersIn",
+        "type": "object"
+      },
+      "RemindersOut": {
+        "properties": {
+          "hour": {
+            "title": "Hour",
+            "type": "integer"
+          },
+          "lead": {
+            "$ref": "#/components/schemas/Lead"
+          },
+          "mail": {
+            "title": "Mail",
+            "type": "boolean"
+          },
+          "mail_address": {
+            "title": "Mail Address",
+            "type": "string"
+          },
+          "mail_problem": {
+            "anyOf": [
+              {
+                "enum": [
+                  "no_server",
+                  "no_address",
+                  "unconfirmed"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mail Problem"
+          },
+          "muted": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Muted",
+            "type": "array"
+          },
+          "muted_shared": {
+            "title": "Muted Shared",
+            "type": "boolean"
+          },
+          "options": {
+            "$ref": "#/components/schemas/LeadOptions"
+          },
+          "push": {
+            "title": "Push",
+            "type": "boolean"
+          },
+          "push_devices": {
+            "title": "Push Devices",
+            "type": "integer"
+          },
+          "read_only": {
+            "items": {
+              "$ref": "#/components/schemas/ReminderVault"
+            },
+            "title": "Read Only",
+            "type": "array"
+          },
+          "rhythm": {
+            "enum": [
+              "single",
+              "weekly",
+              "both"
+            ],
+            "title": "Rhythm",
+            "type": "string"
+          },
+          "same_day": {
+            "title": "Same Day",
+            "type": "boolean"
+          },
+          "shared": {
+            "title": "Shared",
+            "type": "integer"
+          },
+          "time_zone": {
+            "title": "Time Zone",
+            "type": "string"
+          },
+          "vaults": {
+            "items": {
+              "$ref": "#/components/schemas/ReminderVaultMine"
+            },
+            "title": "Vaults",
+            "type": "array"
+          }
+        },
+        "required": [
+          "rhythm",
+          "push",
+          "mail",
+          "lead",
+          "same_day",
+          "muted",
+          "muted_shared",
+          "options",
+          "hour",
+          "time_zone",
+          "push_devices",
+          "mail_address",
+          "mail_problem",
+          "vaults",
+          "read_only",
+          "shared"
+        ],
+        "title": "RemindersOut",
         "type": "object"
       },
       "RestoreIn": {
@@ -16077,6 +16505,102 @@
         "summary": "The own display name; empty shows the name",
         "tags": [
           "auth"
+        ]
+      }
+    },
+    "/api/v1/me/reminders": {
+      "get": {
+        "operationId": "get_reminders_api_v1_me_reminders_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RemindersOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "How the own account is reminded of deadlines",
+        "tags": [
+          "reminders"
+        ]
+      },
+      "put": {
+        "operationId": "put_reminders_api_v1_me_reminders_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RemindersIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RemindersOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Change how the own account is reminded; only the values sent change",
+        "tags": [
+          "reminders"
+        ]
+      }
+    },
+    "/api/v1/me/reminders/test": {
+      "post": {
+        "operationId": "test_reminder_api_v1_me_reminders_test_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReminderTestOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "A test message on every way the own reminders go",
+        "tags": [
+          "reminders"
         ]
       }
     },

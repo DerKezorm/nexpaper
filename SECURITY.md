@@ -188,3 +188,17 @@ inside the server process.
 Whether a person already has a file is decided only from the documents they may see; nothing in an answer, its timing
 or an error tells them that somebody else keeps the same file in a vault they cannot look into.
 
+
+## Reminders of deadlines
+
+A reminder (push, mail, the weekly mail) names the kind of a deadline, its day and **the title of the document**
+("Cancel by Wed, Sep 30: Mobile contract"). This is the one place where something a person stored leaves the server in a
+message: the push service of the browser (Google, Mozilla, Apple, Microsoft) carries it encrypted, but the lock screen
+of a phone shows it, and a mail lies in the mailbox of the person. Never an amount, the text, notes or tags. Whoever does
+not want titles on a lock screen switches the push off under My account, Reminders (the deadlines page still shows
+everything), or mutes a vault.
+
+Only people who may change a document are reminded of it (edit or manage in its vault, or a share with edit); a reader
+is not. The rights and the muted vaults are part of the query that runs right before a message goes out, so nobody is
+told about a document they lost meanwhile. Each reminder is written down before it is sent and goes out once, also when
+two runs meet; at most 20 per person and day, the rest in one message.
