@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date as Date
 from datetime import timedelta
 from pathlib import Path
@@ -115,6 +115,10 @@ class Row:
     link_count: int | None = None
     #: The format of its e-invoice, when it carries one (``services/einvoices.py``); empty else.
     einvoice: str = ""
+    #: The dates as rows (notice period, renewal, done), the people who marked one done, and the caller's "later".
+    date_rows: list[DocumentDate] = field(default_factory=list)
+    done_by: dict[int, Account] = field(default_factory=dict)
+    snoozes: dict[int, Date] = field(default_factory=dict)
 
 
 def rows(db: Session, uid: int, documents: list[Document]) -> list[Row]:
@@ -139,8 +143,16 @@ def rows(db: Session, uid: int, documents: list[Document]) -> list[Row]:
     ):
         tags[document_id].append(name)
     dates: dict[int, list[tuple[str, Date]]] = {i: [] for i in ids}
+    date_rows: dict[int, list[DocumentDate]] = {i: [] for i in ids}
     for row in db.scalars(select(DocumentDate).where(DocumentDate.document_id.in_(ids)).order_by(DocumentDate.date)):
         dates[row.document_id].append((row.kind, row.date))
+        date_rows[row.document_id].append(row)
+    from . import deadlines
+
+    every_row = [r for found in date_rows.values() for r in found]
+    done_by = {a.id: a for a in db.scalars(select(Account).where(
+        Account.id.in_({r.done_by for r in every_row if r.done_by})))} if any(r.done_by for r in every_row) else {}
+    snoozes = deadlines.snoozes_of(db, uid, [r.id for r in every_row], deadlines.server_today())
     notes = dict(db.execute(select(Note.document_id, func.count()).where(Note.document_id.in_(ids))
                             .group_by(Note.document_id)).all())
     wanted = {d.duplicate_of for d in documents if d.duplicate_of}
@@ -169,6 +181,9 @@ def rows(db: Session, uid: int, documents: list[Document]) -> list[Row]:
             share_count=shared_counts.get(document.id, 0) if access.can_share else None,
             link_count=link_counts.get(document.id, 0) if access.can_share else None,
             einvoice=invoices.get(document.id, ""),
+            date_rows=date_rows[document.id],
+            done_by={r.done_by: done_by[r.done_by] for r in date_rows[document.id] if r.done_by in done_by},
+            snoozes={r.id: snoozes[r.id] for r in date_rows[document.id] if r.id in snoozes},
         ))
     return out
 
@@ -324,25 +339,45 @@ def create_from_file(
     return document
 
 
-def _set_dates(db: Session, document: Document, dates: list[tuple[str, Date]]) -> bool:
-    """Replaces the dated terms of a document; True when something changed."""
-    wanted: dict[str, Date] = {}
-    for index, (kind, day) in enumerate(dates):
+def _set_dates(db: Session, document: Document, dates: list[tuple[Any, ...]]) -> bool:
+    """Replaces the dated terms of a document; True when something changed. Each entry is ``(kind, date)`` or
+    ``(kind, date, terms)``; ``terms`` may name ``notice`` (``{"n", "unit"}`` or nothing) and ``renew_months`` of a
+    contract: what it names is set, what it leaves out stays as it was."""
+    from . import deadlines
+
+    wanted: dict[str, tuple[Date, dict[str, Any]]] = {}
+    for index, entry in enumerate(dates):
+        kind, day = entry[0], entry[1]
+        terms: dict[str, Any] = dict(entry[2]) if len(entry) > 2 and entry[2] else {}
+        place = f"dates[{index}]"
         if kind not in DATE_KINDS:
-            raise error("invalid_date_kind", "No such kind of date.", 422, field=f"dates[{index}]")
-        wanted[kind] = check_date(day, f"dates[{index}]")  # type: ignore[assignment]
+            raise error("invalid_date_kind", "No such kind of date.", 422, field=place)
+        deadlines.check_terms(kind, terms.get("notice"), terms.get("renew_months"), place)
+        wanted[kind] = (check_date(day, place), terms)  # type: ignore[assignment]
     current = {row.kind: row for row in db.scalars(select(DocumentDate).where(DocumentDate.document_id == document.id))}
-    if {k: r.date for k, r in current.items()} == wanted:
-        return False
+    changed = False
     for kind, row in current.items():
         if kind not in wanted:
             db.delete(row)
-    for kind, day in wanted.items():
-        if kind in current:
-            current[kind].date = day
-        else:
-            db.add(DocumentDate(document_id=document.id, kind=kind, date=day))
-    return True
+            changed = True
+    for kind, (day, terms) in wanted.items():
+        row = current.get(kind)
+        if row is None:
+            row = DocumentDate(document_id=document.id, kind=kind, date=day)
+            db.add(row)
+            changed = True
+        before = (row.date, row.notice_n, row.notice_unit, row.renew_months)
+        row.date = day
+        if "notice" in terms:
+            notice = terms["notice"]
+            row.notice_n = notice["n"] if notice else None
+            row.notice_unit = notice["unit"] if notice else None
+        if "renew_months" in terms:
+            row.renew_months = terms["renew_months"]
+        deadlines.store_terms(row)
+        if before != (row.date, row.notice_n, row.notice_unit, row.renew_months):
+            changed = True
+    return changed
 
 
 # --- Changing ---------------------------------------------------------------------------------------------------------
@@ -408,7 +443,9 @@ def update_fields(db: Session, uid: int, document_id: int, patch: dict[str, Any]
             for tag_id in wanted - have:
                 db.add(DocumentTag(document_id=document.id, tag_id=tag_id))
             changed.append("tags")
-    if "dates" in patch and _set_dates(db, document, [(d["kind"], d["date"]) for d in patch["dates"]]):
+    if "dates" in patch and _set_dates(db, document, [
+        (d["kind"], d["date"], {k: d[k] for k in ("notice", "renew_months") if k in d}) for d in patch["dates"]
+    ]):
         changed.append("dates")
     if not changed:
         db.rollback()

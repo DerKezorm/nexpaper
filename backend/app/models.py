@@ -522,6 +522,17 @@ class DocumentDate(Base):
     document_id: Mapped[int] = mapped_column(ForeignKey("documents.id", ondelete="CASCADE"), index=True)
     kind: Mapped[str] = mapped_column(String(16))
     date: Mapped[Any] = mapped_column(Date)
+    # Deadlines (F1, ``services/deadlines.py``). A contract (``contract_end``) may know its notice period and how many
+    # months it renews by; ``notice_date`` is the last day to cancel worked out from them (kept with the row, so the
+    # search and the deadlines page compare it in SQL). Any deadline may be done (paid, cancelled, claimed): who and
+    # when. ``renewed_from`` is the end the contract was last renewed from by itself: never twice from the same end.
+    notice_n: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    notice_unit: Mapped[str | None] = mapped_column(String(8), nullable=True)
+    renew_months: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    notice_date: Mapped[Any] = mapped_column(Date, nullable=True)
+    done_at: Mapped[datetime | None] = mapped_column(UtcDateTime, nullable=True)
+    done_by: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    renewed_from: Mapped[Any] = mapped_column(Date, nullable=True)
 
 
 class DocumentTag(Base):
@@ -1107,3 +1118,20 @@ class EInvoice(Base):
 
 
 __all__ += ["EInvoice", "Rule"]
+
+
+class DeadlineSnooze(Base):
+    """"Later" on a deadline, for one person: until that day nobody reminds them of it (the others in the vault are
+    reminded as before). Gone with the date or the person."""
+
+    __tablename__ = "deadline_snoozes"
+    __table_args__ = (UniqueConstraint("date_id", "user_id", name="uq_deadline_snoozes"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    date_id: Mapped[int] = mapped_column(ForeignKey("document_dates.id", ondelete="CASCADE"))
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    until: Mapped[Any] = mapped_column(Date)
+    created_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utcnow)
+
+
+__all__ += ["DeadlineSnooze"]

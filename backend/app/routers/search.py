@@ -31,7 +31,7 @@ from ..db import SessionLocal
 from ..deps import DbSession, Reader, link_guard
 from ..errors import error
 from ..models import Version, VersionText
-from ..services import brakes, ocr, rights, search, searchtext, sharing
+from ..services import brakes, deadlines, ocr, rights, search, searchtext, sharing
 from .public import _not_found
 from .schemas import DocumentOut, KindOut, document_out, kind_out
 
@@ -96,6 +96,8 @@ class Understood(BaseModel):
     senders: list[str]
     tags: list[str]
     amounts: list[AmountOut]
+    #: ``frist:`` / ``deadline:``: ``open``, ``overdue``, ``done``, or the number of days of ``<n``.
+    deadlines: list[str | int] = []
 
 
 class SearchOut(BaseModel):
@@ -146,9 +148,14 @@ def overview(
         default=None, description="Only this status; without it everything but the trash"),
     via_share: bool | None = Query(default=None, description="Only documents seen through a share alone (true), or "
                                    "only those of the caller's vaults (false)"),
+    deadline: str | None = Query(default=None, pattern=r"^(open|overdue|done|[0-9]{1,4})$",
+                                 description="Only documents with a deadline that is open, overdue, done, or open and "
+                                             "due within this many days (overdue ones included)"),
 ) -> OverviewOut:
     brakes.take("search", account.id)
-    found = search.overview(db, account.id, search.Filters(vault_id=vault_id, status=status, via_share=via_share))
+    found = search.overview(db, account.id, search.Filters(vault_id=vault_id, status=status, via_share=via_share,
+                                                           deadline=_deadline(deadline),
+                                                           today=deadlines.today_of(account)))
     return OverviewOut(
         total=found.total,
         senders=[NameCount(name=name, count=n) for name, n in found.senders],
@@ -161,8 +168,8 @@ def overview(
 @router.get(
     "/search", response_model=SearchOut, summary="Find documents the caller may see",
     description="Words (each must be found, a part of a word is enough), \"a phrase\", art:/kind:, absender:/sender:, "
-                "tag:, betrag:/amount: with >, < or = (comma or point). Newest first, page by page with the cursor; or "
-                "numbered pages in another order. " + RANGES,
+                "tag:, betrag:/amount: with >, < or = (comma or point), frist:/deadline: open, overdue, done or <n "
+                "(days). Newest first, page by page with the cursor; or numbered pages in another order. " + RANGES,
 )
 def find(
     account: Reader, db: DbSession,
@@ -182,11 +189,14 @@ def find(
     sort: Order = Query(default="-date", description="date, title, sender or amount; a minus for the largest "
                         "(newest, Z) first. Empty senders and amounts come last."),
     page: int | None = Query(default=None, ge=1, le=search.MAX_PAGE, description="The numbered page, from 1"),
+    deadline: str | None = Query(default=None, pattern=r"^(open|overdue|done|[0-9]{1,4})$",
+                                 description="Only documents with a deadline that is open, overdue, done, or open and "
+                                             "due within this many days (overdue ones included)"),
 ) -> SearchOut:
     brakes.take("search", account.id)
     filters = search.Filters(vault_id=vault_id, kind_id=kind_id, sender=sender, tag=tag, owner_id=owner_id,
                              date_from=date_from, date_to=date_to, status=status, trash=trash,
-                             via_share=via_share)
+                             via_share=via_share, deadline=_deadline(deadline), today=deadlines.today_of(account))
     began = clock()
     try:
         result = search.find(db, account.id, q, filters, cursor=cursor, limit=limit, order=sort, page=page)
@@ -208,7 +218,14 @@ def find(
         words=query.words, phrases=[" ".join(parts) for parts, _prefix in query.phrases], kinds=query.kinds,
         senders=query.senders, tags=query.tags,
         amounts=[AmountOut(op=a.op, cents=a.cents) for a in query.amounts],  # type: ignore[arg-type]
+        deadlines=query.deadlines,
     ))
+
+
+def _deadline(value: str | None) -> str | int | None:
+    if value is None:
+        return None
+    return int(value) if value.isdigit() else value
 
 
 def _wait_for_the_step(began: float) -> None:

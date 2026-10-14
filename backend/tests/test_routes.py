@@ -244,6 +244,11 @@ TOKEN_ROUTES = {
     ("POST", "/api/v1/documents/{document_id}/versions/{number}/restore"),
     ("POST", "/api/v1/documents/{document_id}/versions"),
     ("DELETE", "/api/v1/documents/{document_id}/versions/{number}"),
+    # Deadlines (F1): done and open again for everybody, later for oneself.
+    ("POST", "/api/v1/documents/{document_id}/dates/{kind}/done"),
+    ("DELETE", "/api/v1/documents/{document_id}/dates/{kind}/done"),
+    ("PUT", "/api/v1/documents/{document_id}/dates/{kind}/snooze"),
+    ("DELETE", "/api/v1/documents/{document_id}/dates/{kind}/snooze"),
 }
 
 #: The routes that only read and that a program with an API key reaches too (as the browser and a device do). A route
@@ -288,6 +293,8 @@ READ_ROUTES = {
     ("GET", "/api/v1/documents/{document_id}/versions/{number}/einvoice"),
     # The blank separator pages of a document (B5).
     ("GET", "/api/v1/documents/{document_id}/separators"),
+    # The deadlines (F1).
+    ("GET", "/api/v1/deadlines"),
 }
 
 

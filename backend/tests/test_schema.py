@@ -254,15 +254,16 @@ def test_switching_to_wal_waits_for_a_start_that_holds_the_database(tmp_path: Pa
 RELEASED = RECORDS / "released"
 
 
-def test_a_database_of_1_0_1_gets_the_additions_and_keeps_its_version_so_1_0_1_still_opens_it(scratch: Path) -> None:
-    """1.1.0 adds the tables of the sign-in providers and a column with a default, without raising the version: 1.0.1
-    refuses a database of a higher version, and the way back to it must stay open for one version."""
+def test_a_database_of_1_0_1_gets_the_additions_and_the_later_steps(scratch: Path) -> None:
+    """1.1.0 added the tables of the sign-in providers and a column with a default without raising the version (the
+    way back to 1.0.1 stayed open for one version). A database 1.0.1 made gets them, then the steps after version 10
+    (since 1.4, the deadlines), and ends as a new one would be."""
     with closing(sqlite3.connect(scratch)) as connection:
         connection.executescript((RELEASED / "1.0.1.sql").read_text(encoding="utf-8"))
         connection.execute("PRAGMA user_version = 10")
         connection.commit()
     database.init_db()
-    assert version_of(scratch) == 10 == database.SCHEMA_VERSION
+    assert version_of(scratch) == database.SCHEMA_VERSION
     current = fresh_schema_sql()
     with sqlite3.connect(":memory:") as connection:
         connection.executescript(current)
@@ -279,9 +280,10 @@ def test_a_database_of_1_0_1_gets_the_additions_and_keeps_its_version_so_1_0_1_s
             "VALUES ('h', 1, '2026-10-11 08:00:00', '2026-10-12 08:00:00', '2026-10-11 08:00:00', '', '')")
         connection.commit()
         assert connection.execute("SELECT second_factor_by_provider FROM auth_sessions").fetchone() == (0,)
-    # A second start changes nothing and makes no backup.
+    # The steps after 10 made one backup first; a second start changes nothing and makes no other.
+    assert made == [f"before schema {database.SCHEMA_VERSION}"]
     database.init_db()
-    assert version_of(scratch) == 10 and made == []
+    assert version_of(scratch) == database.SCHEMA_VERSION and made == [f"before schema {database.SCHEMA_VERSION}"]
 
 
 def test_the_released_record_is_what_1_0_1_made() -> None:

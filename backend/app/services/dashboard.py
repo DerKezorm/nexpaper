@@ -11,7 +11,9 @@ account's own inbox as the menu shows it: the documents in the vaults where the 
 - ``contract_end``: a contract that ends or renews, the day to cancel it,
 - ``warranty_end``: the last day to claim under a warranty.
 
-``keep_until`` (keep the paper until) is not one: nothing is to be done by that day, so it is left out.
+``keep_until`` (keep the paper until) is not one: nothing is to be done by that day, so it is left out. A contract with
+a notice period comes once more as ``notice``, on its last day to cancel (``services/deadlines.py``). A deadline marked
+done (paid, cancelled, claimed) is left out altogether.
 
 **What leaves.** Counts, a title, a date and a link: no text of a document, no sender, no amount, no tag.
 """
@@ -31,6 +33,8 @@ from . import inbox, rights, timezones
 
 #: The kinds of date that are a deadline (see the top).
 DEADLINE_KINDS = ("due", "contract_end", "warranty_end")
+#: The kind a contract's last day to cancel is named by.
+NOTICE = "notice"
 #: How many of the oldest documents of the inbox are named.
 OLDEST = 5
 #: How far ahead, in days from today (today included), a deadline is shown, and how many at most.
@@ -92,11 +96,16 @@ def numbers(db: Session, account: Account) -> Numbers:
         .order_by(Document.added_at.asc(), Document.id.asc()).limit(OLDEST)).all()]
 
     today = today_of(account)
-    out.deadlines = [Deadline(id=i, title=t, date=d, kind=k, status=s) for i, t, d, k, s in db.execute(
-        select(Document.id, Document.title, DocumentDate.date, DocumentDate.kind, Document.status)
-        .join(DocumentDate, DocumentDate.document_id == Document.id)
-        .where(seen, Document.status != TRASH, DocumentDate.kind.in_(DEADLINE_KINDS),
-               DocumentDate.date >= today, DocumentDate.date <= today + timedelta(days=HORIZON_DAYS))
-        .order_by(DocumentDate.date.asc(), Document.id.asc(), DocumentDate.kind.asc())
-        .limit(MAX_DEADLINES)).all()]
+    last = today + timedelta(days=HORIZON_DAYS)
+    found: list[Deadline] = []
+    for day_column, kinds, named in ((DocumentDate.date, DEADLINE_KINDS, None),
+                                     (DocumentDate.notice_date, ("contract_end",), NOTICE)):
+        found += [Deadline(id=i, title=t, date=d, kind=named or k, status=s) for i, t, d, k, s in db.execute(
+            select(Document.id, Document.title, day_column, DocumentDate.kind, Document.status)
+            .join(DocumentDate, DocumentDate.document_id == Document.id)
+            .where(seen, Document.status != TRASH, DocumentDate.kind.in_(kinds), DocumentDate.done_at.is_(None),
+                   day_column.is_not(None), day_column >= today, day_column <= last)
+            .order_by(day_column.asc(), Document.id.asc(), DocumentDate.kind.asc())
+            .limit(MAX_DEADLINES)).all()]
+    out.deadlines = sorted(found, key=lambda d: (d.date, d.id, d.kind))[:MAX_DEADLINES]
     return out

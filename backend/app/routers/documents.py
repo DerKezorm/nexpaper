@@ -27,10 +27,21 @@ router = APIRouter(prefix="/api/v1", tags=["documents"])
 ID = Annotated[int, Query(ge=1, le=2**31 - 1)]
 
 
+class NoticeIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    n: StrictInt = Field(ge=1, le=24)
+    unit: Literal["weeks", "months"]
+
+
 class DateIn(BaseModel):
+    """A date of a document. A contract (``contract_end``) may carry its notice period and how many months it renews
+    by; left out, they stay as they were, ``null`` takes them away."""
+
     model_config = ConfigDict(extra="forbid")
     kind: Literal["due", "contract_end", "warranty_end", "keep_until"]
     date: Date
+    notice: NoticeIn | None = None
+    renew_months: StrictInt | None = Field(default=None, ge=1, le=120)
 
 
 class DocumentPatch(BaseModel):

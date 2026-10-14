@@ -53,7 +53,7 @@ def test_the_inbox_holds_what_the_caller_may_change_and_a_reader_sees_none_of_it
     with new_client(reader) as session:
         page = get(session)
         assert page["items"] == [] and page["total"] == 0 and page["counts"] == {} and page["all"] == 0
-        assert session.get("/api/v1/counts").json() == {"inbox": 0, "reading": 0, "trash": 0}
+        assert session.get("/api/v1/counts").json() == {"inbox": 0, "reading": 0, "trash": 0, "deadlines": 0, "deadlines_overdue": 0}
         assert get(session, vault_id=vault) == page, "asking for the vault tells nothing more"
     assert titles(get(client)) == ["Waiting"]
 
@@ -212,11 +212,11 @@ def test_the_numbers_of_the_menu_count_the_inbox_the_reading_and_the_trash(clien
     inbox_doc(vault, operator, "Three", status="processing")
     gone = inbox_doc(vault, operator, "Gone")
     assert client.delete(f"/api/v1/documents/{gone}").status_code == 200
-    assert client.get("/api/v1/counts").json() == {"inbox": 2, "reading": 1, "trash": 1}
+    assert client.get("/api/v1/counts").json() == {"inbox": 2, "reading": 1, "trash": 1, "deadlines": 0, "deadlines_overdue": 0}
     with new_client(editor) as session:
-        assert session.get("/api/v1/counts").json() == {"inbox": 2, "reading": 1, "trash": 1}
+        assert session.get("/api/v1/counts").json() == {"inbox": 2, "reading": 1, "trash": 1, "deadlines": 0, "deadlines_overdue": 0}
     with new_client(reader) as session:
-        assert session.get("/api/v1/counts").json() == {"inbox": 0, "reading": 0, "trash": 1}
+        assert session.get("/api/v1/counts").json() == {"inbox": 0, "reading": 0, "trash": 1, "deadlines": 0, "deadlines_overdue": 0}
         quick = session.get("/api/v1/quick").json()
         assert (quick["inbox"], quick["processing"]) == (0, 0), "the phone's numbers follow the same rule"
 

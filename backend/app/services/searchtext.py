@@ -8,7 +8,10 @@
 * ``art:rechnung`` / ``kind:invoice``: the kind (its name or key begins so),
 * ``absender:hansa`` / ``sender:hansa``: the sender (its name holds it),
 * ``tag:auto``: a tag that begins so,
-* ``betrag:>100`` / ``amount:<50,5`` / ``betrag:=12.30`` / ``betrag:100``: the amount in euros, comma or point.
+* ``betrag:>100`` / ``amount:<50,5`` / ``betrag:=12.30`` / ``betrag:100``: the amount in euros, comma or point,
+* ``frist:offen`` / ``deadline:open``, ``frist:überfällig`` / ``deadline:overdue``, ``frist:erledigt`` /
+  ``deadline:done``, ``frist:<30`` / ``deadline:<30``: a deadline of the document that is open, overdue, done, or
+  open and due within that many days (overdue ones included; ``services/deadlines.py``).
 
 Nothing a person types reaches SQL or FTS5 as syntax: every word is cut into the tokens FTS5 itself would make and
 handed over inside double quotes, so ``NEAR``, ``*``, ``-``, ``(``, ``^`` and quotes are just characters. Filters are
@@ -42,6 +45,11 @@ KIND_KEYS = ("art", "kind")
 SENDER_KEYS = ("absender", "sender")
 TAG_KEYS = ("tag",)
 AMOUNT_KEYS = ("betrag", "amount")
+DEADLINE_KEYS = ("frist", "deadline")
+#: What ``frist:`` takes, in both languages, and the most days of ``frist:<n``.
+DEADLINE_WORDS = {"offen": "open", "open": "open", "überfällig": "overdue", "ueberfaellig": "overdue",
+                  "uberfallig": "overdue", "overdue": "overdue", "erledigt": "done", "done": "done"}
+DEADLINE_DAYS_MAX = 3660
 
 # A piece of the search: key:"two words", key:value, "a phrase" (an unclosed one runs to the end), or anything up to a
 # blank.
@@ -100,6 +108,8 @@ class Query:
     senders: list[str] = field(default_factory=list)
     tags: list[str] = field(default_factory=list)
     amounts: list[Amount] = field(default_factory=list)
+    #: ``open``, ``overdue``, ``done``, or a number of days (``frist:<30``).
+    deadlines: list[str | int] = field(default_factory=list)
 
     @property
     def has_text(self) -> bool:
@@ -107,7 +117,7 @@ class Query:
 
     @property
     def empty(self) -> bool:
-        return not (self.has_text or self.kinds or self.senders or self.tags or self.amounts)
+        return not (self.has_text or self.kinds or self.senders or self.tags or self.amounts or self.deadlines)
 
     def patterns(self) -> list[str]:
         """Regular expressions for the places a hit is marked at, as the index finds them: a word of
@@ -150,6 +160,16 @@ def _amount(value: str) -> Amount:
     return Amount(op=found.group("op") or "=", cents=cents)
 
 
+def _deadline(value: str) -> str | int:
+    word = unicodedata.normalize("NFC", value.strip().lower())
+    if word in DEADLINE_WORDS:
+        return DEADLINE_WORDS[word]
+    found = re.fullmatch(r"<=?\s*(\d{1,5})", word)
+    if found and int(found.group(1)) <= DEADLINE_DAYS_MAX:
+        return int(found.group(1))
+    raise SearchError("invalid_deadline")
+
+
 def _add_text(query: Query, text: str, *, quoted: bool) -> None:
     if quoted:
         parts = tokens(text)
@@ -185,6 +205,10 @@ def parse(raw: str) -> Query:
             if name in AMOUNT_KEYS:
                 if clean:
                     query.amounts.append(_amount(clean))
+                continue
+            if name in DEADLINE_KEYS:
+                if clean:
+                    query.deadlines.append(_deadline(clean))
                 continue
             if name in KIND_KEYS + SENDER_KEYS + TAG_KEYS:
                 if clean:

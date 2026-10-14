@@ -14,7 +14,7 @@ from pydantic import BaseModel, ConfigDict, Field, StrictInt
 
 from ..deps import Account as Caller
 from ..deps import DbSession, Reader
-from ..services import documents, inbox
+from ..services import deadlines, documents, inbox
 from .schemas import DocumentOut, document_out
 
 router = APIRouter(prefix="/api/v1", tags=["inbox"])
@@ -69,12 +69,18 @@ class MenuCounts(BaseModel):
     reading: int
     #: In the trash, in the vaults the caller sees.
     trash: int
+    #: Beside "Fristen": open deadlines that are overdue or come in the next 14 days, and how many of them are overdue
+    #: (``GET /api/v1/deadlines`` has them).
+    deadlines: int = 0
+    deadlines_overdue: int = 0
 
 
-@router.get("/counts", response_model=MenuCounts, summary="The numbers beside Inbox and Trash in the menu")
+@router.get("/counts", response_model=MenuCounts, summary="The numbers beside Inbox, Deadlines and Trash in the menu")
 def counts(account: Reader, db: DbSession) -> MenuCounts:
     found = inbox.menu_counts(db, account.id)
-    return MenuCounts(inbox=found.inbox, reading=found.reading, trash=found.trash)
+    soon = deadlines.menu_count(db, account.id, deadlines.today_of(account))
+    return MenuCounts(inbox=found.inbox, reading=found.reading, trash=found.trash, deadlines=soon.soon,
+                      deadlines_overdue=soon.overdue)
 
 
 class FileIn(BaseModel):
