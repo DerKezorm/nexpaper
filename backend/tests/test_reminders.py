@@ -347,6 +347,17 @@ def test_what_is_done_or_put_off_is_not_reminded_and_later_comes_back(town: Town
     assert town.got() == []
 
 
+def test_later_comes_back_on_its_day_also_far_ahead_of_the_deadline(town: Town) -> None:
+    """Put off before its lead began: the day "later" ends reminds, though neither the lead nor the day itself would."""
+    doc = town.add("Fern", town.mine, town.jule, dates=[("due", TODAY + 10 * DAY)])
+    with SessionLocal() as db:
+        deadlines.snooze(db, town.jule.id, doc, "due", 1, TODAY)
+    run(at(TODAY + DAY, 8))
+    assert [(m["title"], m["body"]) for m in town.messages()] == [("Zahlen bis So, 18.10.: Fern", "Noch 9 Tage.")]
+    run(at(TODAY + 2 * DAY, 8))
+    assert town.got() == []
+
+
 def test_a_blocked_account_hears_nothing(town: Town) -> None:
     with SessionLocal() as db:
         row = db.get(Account, town.tom.id)
@@ -385,7 +396,9 @@ def test_at_most_twenty_a_day_and_one_message_for_the_rest(town: Town) -> None:
 def test_a_message_names_kind_day_and_title_never_amount_text_notes_or_tags(town: Town,
                                                                            mails: list[EmailMessage]) -> None:
     choose(town.jule, mail=True, rhythm="both")
-    doc = town.add("Zahnarzt", town.mine, town.jule, dates=[("due", TODAY + DAY)], amount=987654, tags=["Geheimtag"])
+    # Two days ahead: the sentence counts the days ("Noch 2 Tage."), the place an amount would most likely slip into.
+    doc = town.add("Zahnarzt", town.mine, town.jule, dates=[("due", TODAY + 2 * DAY)], amount=987654,
+                   tags=["Geheimtag"])
     with SessionLocal() as db:
         documents.add_note(db, town.jule.id, doc, "Geheimnotiz")
         # The interface refuses control characters in a title; one that came in another way still stays one line.
@@ -397,9 +410,11 @@ def test_a_message_names_kind_day_and_title_never_amount_text_notes_or_tags(town
     run(at(Date(2026, 10, 12), 8))  # Monday: the weekly mail
     messages = town.messages()
     assert messages and all("Zahnarzt Bcc: x@example.com" in m["title"] for m in messages)
-    assert len(mails) == 2
-    single, week = mails
-    assert single["Subject"] == "Zahlen bis Fr, 09.10.: Zahnarzt Bcc: x@example.com" and single["Bcc"] is None
+    assert len(mails) == 3  # ahead on Thursday, on Monday the missed day itself (two days late) and the week
+    single, late, week = mails
+    assert late["Subject"] == single["Subject"] and "Seit 2 Tagen." in late.get_content()
+    assert single["Subject"] == "Zahlen bis Sa, 10.10.: Zahnarzt Bcc: x@example.com" and single["Bcc"] is None
+    assert "Noch 2 Tage." in single.get_content()
     for text in [repr(m) for m in messages] + [m.as_string() for m in mails]:
         for secret in ("987654", "9.876,54", "9876", "Geheimnotiz", "Geheimtag"):
             assert secret not in text
@@ -407,7 +422,7 @@ def test_a_message_names_kind_day_and_title_never_amount_text_notes_or_tags(town
     plain = week.get_body(("plain",)).get_content()  # type: ignore[union-attr]
     markup = week.get_body(("html",)).get_content()  # type: ignore[union-attr]
     assert week["Subject"] == "Diese Woche: keine Fristen, 1 überfällig"
-    assert "ÜBERFÄLLIG" in plain and "Fr, 09.10. · Zahlen: Zahnarzt Bcc: x@example.com" in plain
+    assert "ÜBERFÄLLIG" in plain and "Sa, 10.10. · Zahlen: Zahnarzt Bcc: x@example.com" in plain
     assert "https://paper.example.com/fristen" in plain and "Wochenübersicht eingeschaltet" in plain
     assert "<script" not in markup and "Alle Fristen in nexpaper öffnen" in markup
 

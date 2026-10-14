@@ -206,7 +206,8 @@ function Preview({ me, r }: { me: Me; r: Reminders }) {
   const overdue = all.filter((x) => x.days < 0)
   const longDate = (day: string) => new Intl.DateTimeFormat(i18n.language, { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC' }).format(new Date(`${day}T00:00:00Z`))
   const lead = shown ? (shown.what === 'pay' ? r.lead.due : shown.what === 'warranty' ? r.lead.warranty : r.lead.cancel) : 0
-  const days = shown ? Math.min(shown.days, lead) : 0
+  // As the reminder says it on its day: as many days ahead as the person chose.
+  const days = lead
   const line = (x: Deadline) => `${shortDay(x.date)} · ${t(`reminders.week.short.${x.what}`)}: ${x.title}`
   return (
     <div className="grid gap-5 md:grid-cols-2">
