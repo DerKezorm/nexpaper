@@ -70,7 +70,7 @@ import { formatBytes } from '../lib/bytes'
 import { copyText } from '../lib/copy'
 import { shortDate } from '../lib/dates'
 import { useVaultTags } from '../lib/tags'
-import { dateEntry } from '../lib/inbox'
+import { dateEntry, datesChanged } from '../lib/inbox'
 import { problemOf, refusedOf, refusedValue, shownAtField } from '../lib/dateInput'
 import { errorText } from '../lib/errors'
 import { eventWhat, eventWho, standsAlone } from '../lib/events'
@@ -610,7 +610,7 @@ function Details({ document: d, canEdit, vaults, path, change, problem, onShare,
         </div>
       </Row>
       {canEdit ? (
-        <Dates dates={dates} onChange={(next) => void change({ dates: next })} start={d.date} refused={refusedOf(problem)} done={done} onDone={(kind, on) => void markDone(kind, on)} />
+        <Dates dates={dates} onChange={(next) => void change(datesChanged(dates, next))} start={d.date} refused={refusedOf(problem)} done={done} onDone={(kind, on) => void markDone(kind, on)} />
       ) : dates.length ? (
         <Row label={t('docs.fields.dates')}>{dates.map((x) => `${t(`docs.dateKinds.${x.kind}`)} ${shortDate(x.date, i18n.language)}`).join(', ')}</Row>
       ) : null}

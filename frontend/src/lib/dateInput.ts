@@ -23,17 +23,21 @@ export function expandYear(value: string): string {
   return `${String(2000 + Number(match[1])).padStart(4, '0')}-${match[2].padStart(2, '0')}-${match[3].padStart(2, '0')}`
 }
 
-/** What the server refused: which field it was (`date`, or `dates[n]`) and the value that was sent. */
-export type Refused = { field: string; value: string }
+/** What the server refused: which field it was (`date`, `dates[n]`, or `set_dates[n]` with the `kind` of that term)
+ * and the value that was sent. */
+export type Refused = { field: string; value: string; kind?: string }
 
 /** The sentence's code and values of an error, with, for a refused date, the value that was sent in `value`. */
-export function problemOf(error: unknown, sent?: { date?: string | null; dates?: { date: string }[] }): { code: string; values: Record<string, unknown> } {
+export function problemOf(error: unknown, sent?: { date?: string | null; dates?: { date: string }[]; set_dates?: { kind: string; date?: string }[] }): { code: string; values: Record<string, unknown> } {
   if (!(error instanceof ApiError)) return { code: 'internal_error', values: {} }
   const values: Record<string, unknown> = { ...error.values }
   if (error.code === 'invalid_date' && typeof values.field === 'string' && sent) {
     const entry = /^dates\[(\d+)\]$/.exec(values.field)
-    const value = values.field === 'date' ? sent.date : entry ? sent.dates?.[Number(entry[1])]?.date : undefined
+    const single = /^set_dates\[(\d+)\]$/.exec(values.field)
+    const term = single ? sent.set_dates?.[Number(single[1])] : undefined
+    const value = values.field === 'date' ? sent.date : entry ? sent.dates?.[Number(entry[1])]?.date : term?.date
     if (typeof value === 'string') values.value = value
+    if (term) values.kind = term.kind
   }
   return { code: error.code, values }
 }
@@ -47,7 +51,7 @@ export function refusedValue(problem: { code: string; values?: Record<string, un
 /** The field and the value the server refused, if the problem is that; else nothing. */
 export function refusedOf(problem: { code: string; values?: Record<string, unknown> } | null | undefined): Refused | null {
   if (problem?.code !== 'invalid_date' || typeof problem.values?.field !== 'string' || typeof problem.values.value !== 'string') return null
-  return { field: problem.values.field, value: problem.values.value }
+  return { field: problem.values.field, value: problem.values.value, ...(typeof problem.values.kind === 'string' ? { kind: problem.values.kind } : {}) }
 }
 
 /** True when the problem is shown at a field of its own, so the page need not say it again below. */

@@ -22,9 +22,11 @@ the server's day; once a day would do, every ``TICK_SECONDS`` is cheap.
 
 **Renewing by itself.** A contract with a renewal that nobody cancelled moves its end on once the end has passed
 (``renew_due``): to the first end that is today or later, however many terms it is behind (a contract imported from
-long ago does not step year by year). The write is a compare-and-set on the end it read, under the write lock, and never
-from an end it renewed from before (``renewed_from``): two runs at once, a restart or a clock that jumps back move it
-once. Each renewal takes a number for the feed and writes ``renewed`` in the history.
+long ago does not step year by year), counted in whole terms from the end a person last set (``renew_anchor``), so the
+day does not drift to the end of the month after a February. A page that still shows the old end and sends it back does
+not undo a renewal (``documents._set_dates``). The write is a compare-and-set on the end it read, under the write lock,
+and never from an end it renewed from before (``renewed_from``): two runs at once, a restart or a clock that jumps back
+move it once. Each renewal takes a number for the feed and writes ``renewed`` in the history.
 
 ``open_for`` is what the reminders take (the block after this one): every open deadline of a person with the day to act.
 """
@@ -400,18 +402,19 @@ def snoozes_of(db: Session, uid: int, date_ids: list[int], today: Date) -> dict[
 # --- Renewing by itself -----------------------------------------------------------------------------------------------
 
 
-def next_end(end: Date, months: int, today: Date) -> Date | None:
-    """The first end of the contract that is today or later, counted from ``end`` in steps of ``months`` (each step from
-    ``end`` itself, so a 31st stays the last day of the month); nothing beyond ``LAST_DAY``."""
+def next_end(anchor: Date, months: int, today: Date, after: Date | None = None) -> Date | None:
+    """The first end of the contract that is today or later (and after ``after``, the end it has now), counted from
+    ``anchor`` in whole terms of ``months`` (each from the anchor itself: a contract to the 30th stays at the 30th after
+    a February, a 31st stays the last day of the month); nothing beyond ``LAST_DAY``."""
     step = 1
     while True:
         try:
-            moved = add_months(end, months * step)
+            moved = add_months(anchor, months * step)
         except ValueError:
             return None
         if moved > LAST_DAY:
             return None
-        if moved >= today:
+        if moved >= today and (after is None or moved > after):
             return moved
         step += 1
 
@@ -424,7 +427,8 @@ def renew_due(db: Session, today: Date | None = None) -> int:
     while True:
         changes.write_lock(db)
         rows = db.execute(
-            select(DocumentDate.id, DocumentDate.document_id, DocumentDate.date, DocumentDate.renew_months)
+            select(DocumentDate.id, DocumentDate.document_id, DocumentDate.date, DocumentDate.renew_months,
+                   DocumentDate.renew_anchor)
             .join(Document, Document.id == DocumentDate.document_id)
             .where(DocumentDate.kind == "contract_end", DocumentDate.renew_months.is_not(None),
                    DocumentDate.renew_months > 0, is_open(), DocumentDate.date < today,
@@ -435,9 +439,9 @@ def renew_due(db: Session, today: Date | None = None) -> int:
         if not rows:
             db.rollback()
             return moved
-        for date_id, document_id, end, months in rows:
+        for date_id, document_id, end, months, anchor in rows:
             seen.add(date_id)
-            target = next_end(end, months, today)
+            target = next_end(anchor or end, months, today, after=end)
             if target is None:
                 continue
             # Compare and set: only from the end that was read, and never twice from the same end.

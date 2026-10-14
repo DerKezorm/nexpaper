@@ -1,6 +1,7 @@
 /** The calendar of the deadlines, worked out in the browser while a contract's terms are typed (the server does the same,
  * `services/deadlines.py`, `test_deadlines.py`). */
 import { addDays, addMonths, daysBetween, lastToCancel, relative, whatOfKind } from './deadlines'
+import { datesChanged } from './inbox'
 
 describe('the last day to cancel', () => {
   it.each([
@@ -39,5 +40,22 @@ describe('how far away a day is', () => {
 
   it('names what a done date was: paid, cancelled, done', () => {
     expect(['due', 'contract_end', 'warranty_end'].map(whatOfKind)).toEqual(['pay', 'cancel', 'warranty'])
+  })
+})
+
+describe('what a page sends of the terms', () => {
+  const contract = { kind: 'contract_end' as const, date: '2026-10-07', notice: { n: 3, unit: 'months' as const }, renew_months: 12 }
+
+  it('sends only what changed, so a page that is behind never sends back the old end', () => {
+    expect(datesChanged([contract], [{ ...contract, notice: { n: 6, unit: 'weeks' } }])).toEqual({ set_dates: [{ kind: 'contract_end', notice: { n: 6, unit: 'weeks' } }] })
+    expect(datesChanged([contract], [{ ...contract, renew_months: null }])).toEqual({ set_dates: [{ kind: 'contract_end', renew_months: null }] })
+    expect(datesChanged([contract], [{ ...contract, date: '2027-01-31' }])).toEqual({ set_dates: [{ kind: 'contract_end', date: '2027-01-31' }] })
+  })
+
+  it('sends a new term whole, a removed one by its kind, and nothing when nothing changed', () => {
+    const due = { kind: 'due' as const, date: '2026-10-20' }
+    expect(datesChanged([contract], [contract, due])).toEqual({ set_dates: [due] })
+    expect(datesChanged([contract, due], [due])).toEqual({ remove_dates: ['contract_end'] })
+    expect(datesChanged([contract, due], [contract, due])).toEqual({})
   })
 })

@@ -124,12 +124,12 @@ describe('a date on the document page', () => {
   })
 
   it('marks the term that was refused and no other', async () => {
-    server.fails['PATCH /api/v1/documents/7'] = { status: 422, code: 'invalid_date', values: { field: 'dates[1]' } }
+    server.fails['PATCH /api/v1/documents/7'] = { status: 422, code: 'invalid_date', values: { field: 'set_dates[0]' } }
     await showDocument()
-    // The terms in the order they are sent: due (0), contract_end (1).
+    // Only the term that changed is sent (a page that is behind sends back nothing it did not see change).
     await page.type(input('Vertrag bis'), '1850-01-01')
     await until(() => alerts().length > 0)
-    expect(patches()).toEqual([{ dates: [{ kind: 'due', date: '2026-10-20' }, { kind: 'contract_end', date: '1850-01-01' }] }])
+    expect(patches()).toEqual([{ set_dates: [{ kind: 'contract_end', date: '1850-01-01' }] }])
     expect(input('Vertrag bis').getAttribute('aria-invalid')).toBe('true')
     expect(input('Fällig am').getAttribute('aria-invalid')).toBe('false')
     expect(alerts()).toEqual(['Dieses Datum geht nicht. Erlaubt sind die Jahre 1900 bis 2200.'])
@@ -140,7 +140,7 @@ describe('a date on the document page', () => {
     await page.type(input('Fällig am'), '0027-03-01')
     await leave(input('Fällig am'))
     await until(() => patches().length === 1)
-    expect(patches()).toEqual([{ dates: [{ kind: 'due', date: '2027-03-01' }, { kind: 'contract_end', date: '2027-02-28' }] }])
+    expect(patches()).toEqual([{ set_dates: [{ kind: 'due', date: '2027-03-01' }] }])
   })
 
   it('still says a refusal that names no field below, as before', async () => {
@@ -184,8 +184,8 @@ describe('a date in the inbox', () => {
     expect(patches()[1]).toMatchObject({ date: '2027-02-28', status: 'filed' })
   })
 
-  it('marks the term (dates[n]) that was refused', async () => {
-    server.fails['PATCH /api/v1/documents/11'] = { status: 422, code: 'invalid_date', values: { field: 'dates[1]' } }
+  it('marks the term (set_dates[n]) that was refused', async () => {
+    server.fails['PATCH /api/v1/documents/11'] = { status: 422, code: 'invalid_date', values: { field: 'set_dates[0]' } }
     await showInbox()
     await until(() => !!page.button('Ablegen'))
     await page.type(input('Vertrag bis'), '0027-02-28')

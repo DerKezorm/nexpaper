@@ -963,11 +963,16 @@ export type DocumentPatch = Partial<{
   status: 'inbox' | 'filed'
   tags: string[]
   dates: DateIn[]
+  /** Only the terms named, and of them only what is sent (a left-out `date` keeps the day). Not with `dates`. */
+  set_dates: DateSet[]
+  remove_dates: DateKind[]
 }>
 /** A notice period of a contract. */
 export type Notice = { n: number; unit: 'weeks' | 'months' }
 /** A date as `PATCH` takes it: a contract may carry its notice period and renewal (left out: they stay, `null`: gone). */
 export type DateIn = { kind: DateKind; date: string; notice?: Notice | null; renew_months?: number | null }
+/** One term of `set_dates`: the kind and what changes of it. */
+export type DateSet = { kind: DateKind; date?: string; notice?: Notice | null; renew_months?: number | null }
 /** A date of a document as the server has it: with a contract's terms, the last day to cancel worked out from them,
  * who marked it done and when, and the person's own "later". */
 export type DocumentDate = {
