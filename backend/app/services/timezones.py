@@ -1,5 +1,7 @@
 """The time zone of a person: what the browser reported, the server's own until then. Used where the server writes
-a time for somebody (a notice of a new sign-in), never to decide what a document is worth."""
+a time for somebody (a notice of a new sign-in) and where "today" depends on where they are (the deadlines of the
+dashboard, the documents whose keeping time is over: ``keeping.today_of``). Nothing that decides who may see or
+change a document reads it."""
 
 from __future__ import annotations
 

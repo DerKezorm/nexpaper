@@ -102,12 +102,29 @@ describe('the column "Aufbewahren" of the kinds', () => {
     expect(server.calls.filter((c) => c.method === 'PUT').map((c) => c.body)).toEqual([{ years: 2, existing: true }, { years: 2, existing: false }])
   })
 
-  it('takes a time away without asking: nothing is deleted, dates set by hand stay', async () => {
+  it('asks before taking a time away too: for all takes the worked out dates away, only for new ones leaves them', async () => {
+    server.answers['POST /api/v1/kinds/31/keeping/preview'] = { documents: 21, by_hand: 2, expired: 0 }
     await page.show(<OrderPage />, '/ordnung?tab=kinds')
     await until(() => rows().length === 4)
     await page.choose(page.select('Steuer, aufbewahren'), '0')
-    expect(page.dialog).toBeNull()
-    expect(server.called('PUT', '/api/v1/kinds/31/keeping')!.body).toEqual({ years: null, existing: true })
+    await until(() => page.dialog)
+    expect(server.called('POST', '/api/v1/kinds/31/keeping/preview')!.body).toEqual({ years: null })
+    const text = plain(page.dialog!.textContent)
+    expect(text).toContain('Steuer: keine Aufbewahrungsfrist mehr')
+    expect(text).toContain('Neu abgelegte Dokumente dieser Art bekommen kein „Aufbewahren bis“ mehr. Gelöscht wird nichts.')
+    expect(text).toContain('Auch für die 21 vorhandenen?')
+    expect(text).toContain('2 mit einem von Hand gesetzten Datum behalten es.')
+    expect(text).toContain('„Für alle“ nimmt das aus der Art errechnete Datum weg, „Nur für neue“ lässt es stehen, dann als von Hand gesetzt.')
+    // Abbrechen sends nothing that changes.
+    await page.inDialog('Abbrechen')
+    expect(server.calls.filter((c) => c.method === 'PUT')).toEqual([])
+    await page.choose(page.select('Steuer, aufbewahren'), '0')
+    await until(() => page.dialog)
+    await page.inDialog('Für alle 21')
+    await page.choose(page.select('Steuer, aufbewahren'), '0')
+    await until(() => page.dialog)
+    await page.inDialog('Nur für neue')
+    expect(server.calls.filter((c) => c.method === 'PUT').map((c) => c.body)).toEqual([{ years: null, existing: true }, { years: null, existing: false }])
   })
 
   it('sets the time without a question when there is no document of the kind', async () => {

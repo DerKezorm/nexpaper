@@ -206,16 +206,19 @@ def create_kind(db: Session, uid: int | None, name: str, hue: int, vault_id: int
     return kind, True
 
 
-def kind_in_vault(db: Session, vault_id: int, uid: int | None, name: str, hue: int) -> Kind:
+def kind_in_vault(db: Session, vault_id: int, uid: int | None, name: str, hue: int, like: Kind | None = None) -> Kind:
     """The kind of that name for documents of the vault, made when there is none: what a document brings along when it
-    comes to a vault (a move, an import). The caller holds the write lock and has checked the right to add there."""
+    comes to a vault (a move, an import). A kind made for a document that moves takes the keeping time of the kind it
+    had (``like``); a kind the vault has already keeps its own. The caller holds the write lock and has checked the
+    right to add there."""
     name = clean_word(name, KIND_MAX, "invalid_name")
     found = kind_called(db, vault_id, name_key(name))
     if found is None:
         position = int(db.scalar(select(func.coalesce(func.max(Kind.position), -1) + 1).where(
             Kind.vault_id == vault_id)) or 0)
         found = Kind(key="", name=name, name_key=name_key(name), hue=hue % 360, position=position, vault_id=vault_id,
-                     created_by=uid)
+                     created_by=uid, keep_years=like.keep_years if like is not None else None,
+                     keep_new_only=like.keep_new_only if like is not None else False)
         db.add(found)
         db.flush()
     return found
@@ -265,9 +268,10 @@ def delete_kind(db: Session, uid: int, kind_id: int, force: bool = False) -> Non
     ids = _documents_of_kind(db, kind.id)
     if kind.vault_id is not None and ids and not force and rights.vault_right(db, uid, kind.vault_id) != MANAGE:
         raise error("in_use", "Documents still have this kind. Confirm to take it off them.", 409, documents=len(ids))
+    # The keeping times stay: a worked-out keep_until counts as set by hand from now on, so deleting a kind (which an
+    # editor may, with force) never takes away what managing the vault decided.
+    keeping.freeze(db, ids)
     db.execute(update(Document).where(Document.kind_id == kind.id).values(kind_id=None))
-    # Without a kind there is no keeping time to work out: a worked-out keep_until goes (one set by hand stays).
-    keeping.refresh(db, ids)
     _reached(db, uid, ids, "kind", rename=True)
     db.delete(kind)
     db.commit()
@@ -361,12 +365,13 @@ def rehome(db: Session, document_ids: Iterable[int], vault_id: int) -> None:
     # A kind of the vault they left becomes the kind of the same name here (the server's, or made when missing). The
     # old vault keeps its kind: a kind is a choice of the vault, not a mark that goes with a document.
     kinds_moved: dict[int, int] = {}
-    for document_id, kind_id, name, hue, created_by in db.execute(
-        select(Document.id, Kind.id, Kind.name, Kind.hue, Kind.created_by).join(Kind, Kind.id == Document.kind_id)
+    for document_id, kind in db.execute(
+        select(Document.id, Kind).join(Kind, Kind.id == Document.kind_id)
         .where(Document.id.in_(ids), Kind.vault_id.is_not(None), Kind.vault_id != vault_id)
     ).all():
-        if kind_id not in kinds_moved:
-            kinds_moved[kind_id] = kind_in_vault(db, vault_id, created_by, name, hue).id
+        if kind.id not in kinds_moved:
+            kinds_moved[kind.id] = kind_in_vault(db, vault_id, kind.created_by, kind.name, kind.hue, like=kind).id
+        kind_id = kind.id
         db.execute(update(Document).where(Document.id == document_id).values(kind_id=kinds_moved[kind_id])
                    .execution_options(synchronize_session=False))
     # The documents in the session read their sender and kind anew.
@@ -675,6 +680,9 @@ def merge_kind(db: Session, uid: int, kind_id: int, into_id: int) -> Kind:
     from . import rules  # here and not at the top: the rules read the catalog
 
     ids = _documents_of_kind(db, source.id)
+    # A target with a keeping time works the dates out anew; one without keeps the dates there were, as set by hand.
+    if not target.keep_years:
+        keeping.freeze(db, ids)
     db.execute(update(Document).where(Document.kind_id == source.id).values(kind_id=target.id))
     keeping.refresh(db, ids)
     rules.repoint_kind(db, source.id, target.id)

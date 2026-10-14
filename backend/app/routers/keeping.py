@@ -46,8 +46,8 @@ class KeepPreview(BaseModel):
 
 class PreviewIn(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    #: The years that would be set.
-    years: StrictInt = Field(ge=1, le=keeping.YEARS_MAX)
+    #: The years that would be set; null: the time taken away (`expired` is 0 then).
+    years: StrictInt | None = Field(ge=1, le=keeping.YEARS_MAX)
 
 
 @router.post("/kinds/{kind_id}/keeping/preview", response_model=KeepPreview,
@@ -64,16 +64,18 @@ class KeepIn(BaseModel):
     model_config = ConfigDict(extra="forbid")
     #: Years to keep the documents of the kind, from the end of the year of their date; empty takes the time away.
     years: StrictInt | None = Field(ge=1, le=keeping.YEARS_MAX)
-    #: Also for the documents already there (their `keep_until` is worked out again, ones set by hand stay). Taking the
-    #: time away always reaches them: a worked-out `keep_until` goes.
+    #: Also for the documents already there: their `keep_until` is worked out again (taken away: a worked-out one
+    #: goes); ones set by hand stay. Without it they are left alone (taken away: a worked-out one stays, as set by
+    #: hand).
     existing: bool = False
 
 
 class KeepOut(BaseModel):
     kind: KindOut
-    #: Documents whose `keep_until` changed now.
+    #: Documents the caller may see whose `keep_until` changed now (every document of the kind is changed, only these
+    #: are counted).
     changed: int
-    #: Many documents: they are changed in the background, `changed` is 0.
+    #: More than 200 documents the caller may see: they are changed in the background, `changed` is 0.
     queued: bool
 
 

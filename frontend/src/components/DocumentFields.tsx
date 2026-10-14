@@ -11,6 +11,7 @@ import { useTranslation } from 'react-i18next'
 import type { DateKind } from '../api/client'
 import { dayInDays } from '../lib/dates'
 import { YEAR_FROM, YEAR_TO, expandYear, yearOf } from '../lib/dateInput'
+import { keepUntil } from '../lib/keeping'
 import { amountText, parseAmount } from '../lib/money'
 import { Chip, WhyBadge } from './docs'
 import { TagPicker } from './TagPicker'
@@ -185,7 +186,7 @@ export function Dates({ dates, onChange, onDraft, start, why, refused, keep }: {
   const worked = (() => {
     if (!fromKind || !keep) return null
     if (stored && keep.fresh) return { date: stored.date, years: Number(stored.date.slice(0, 4)) - keep.base }
-    return keep.years ? { date: `${keep.base + keep.years}-12-31`, years: keep.years } : null
+    return keep.years ? { date: keepUntil(keep.base, keep.years), years: keep.years } : null
   })()
   const shown = dates.filter((d) => !(d.kind === KEEP && fromKind))
   const free = DATE_KINDS.filter((kind) => !shown.some((d) => d.kind === kind) && !(kind === KEEP && worked))

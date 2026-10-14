@@ -73,7 +73,7 @@ class KindEntry(OrderEntry):
     position: int
     #: How many years its documents are kept; empty: no keeping time (`PUT /kinds/{id}/keeping`).
     keep_years: int | None = None
-    #: The keeping time was set for documents filed from then on only.
+    #: The last decision about the documents already there was "for new ones only" (they kept what they had).
     keep_new_only: bool = False
 
 

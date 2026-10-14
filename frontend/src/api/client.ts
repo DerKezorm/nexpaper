@@ -1151,9 +1151,10 @@ export type MayGoPage = { items: DocumentInfo[]; total: number }
 export type TrashResult = { trashed: number[]; failed: { id: number; code: string }[] }
 
 export const keepingApi = {
-  /** What setting `years` for the documents of the kind already there would do (only documents the person sees). */
-  preview: (kindId: number, years: number) => api<KeepPreview>(`/api/v1/kinds/${kindId}/keeping/preview`, { method: 'POST', body: { years } }),
-  /** Sets the keeping time (`null` takes it away; that always reaches the documents there). */
+  /** What setting `years` (null: taking the time away) for the documents of the kind already there would do (only
+   * documents the person sees). */
+  preview: (kindId: number, years: number | null) => api<KeepPreview>(`/api/v1/kinds/${kindId}/keeping/preview`, { method: 'POST', body: { years } }),
+  /** Sets the keeping time (`null` takes it away). `existing`: also for the documents already there. */
   set: (kindId: number, years: number | null, existing: boolean) => api<KeepSet>(`/api/v1/kinds/${kindId}/keeping`, { method: 'PUT', body: { years, existing } }),
   /** Filed documents whose keeping time is over, in the vaults where the person may change things. */
   mayGo: (query: { vault_id?: number; limit?: number; offset?: number } = {}) => api<MayGoPage>('/api/v1/keeping', { query }),

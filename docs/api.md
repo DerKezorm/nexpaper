@@ -777,25 +777,32 @@ stops working after a year is the worse surprise; 30, 90 or 365 days stay a choi
 A kind can say how many years its documents are kept (`keep_years` on a kind, empty: no keeping time; the kinds that
 come with nexpaper have none). A document of such a kind gets the term `keep_until`: the end of the year of its date plus
 that many years (an invoice of 14.03.2026 kept 10 years: 31.12.2036; without a date, the year it came in). It is worked
-out again when the document is filed or read, and when its kind, its date or its vault changes; in the answers it
-stands in `dates` with `manual: false`. A `keep_until` a person sends with `PATCH /documents/{id}` is set by hand
-(`manual: true`) and stays whatever happens to the kind or the date; sending the date the document already has leaves
-it as it was made, `"manual": false` in the term says "from the kind" outright, and leaving `keep_until` out of `dates`
-works it out from the kind again. Nothing is ever deleted because its time is over.
+out again when the document is filed or read, and when its kind, its date or its vault changes. A kind of a vault that
+is made in another vault for a document that moves there takes the keeping time along; a kind of that name the other
+vault has already keeps its own.
 
-- `POST /kinds/{id}/keeping/preview` `{"years"}` (1 to 30): what setting it for the documents already there would do,
-  counted over the documents the caller may see (not in the trash, not being read): `{"documents", "by_hand",
-  "expired"}`. Changes nothing.
+In the answers `keep_until` carries `manual` (only this term does): `false` worked out from the kind, `true` set by a
+person, which stays whatever happens to the kind or the date. A `keep_until` sent with `PATCH /documents/{id}` is set by
+hand; sending the date the document already has leaves it as it was made, `"manual": false` in the term says "from the
+kind" outright, and leaving `keep_until` out of `dates` works it out from the kind again. Deleting a kind, or merging
+it into one without a keeping time, leaves the dates where they are, as set by hand. Nothing is ever deleted because
+its time is over.
+
+- `POST /kinds/{id}/keeping/preview` `{"years"}` (1 to 30, or `null` for taking the time away): what the question
+  before setting it says, counted over the documents the caller may see (not in the trash, not being read):
+  `{"documents", "by_hand", "expired"}` (`expired` is 0 for `null`). Changes nothing.
 - `PUT /kinds/{id}/keeping` `{"years", "existing"}`: sets the keeping time (`null` takes it away). With `existing` the
-  documents of the kind already there are worked out again (those set by hand keep theirs); without it the time holds
-  for documents filed from then on (`keep_new_only` on the kind). Taking it away always reaches the documents there: a
-  worked-out `keep_until` goes. More than 200 documents are done in the background (`queued: true`). Each document whose
-  term changed gets a new number for `GET /changes` and a line in its history (`fields: ["keep_until"]`, `by: catalog`).
-  A kind of the whole server is the operator's, in a browser; a kind of a vault needs `manage` there. Answer:
-  `{"kind", "changed", "queued"}`.
+  documents of the kind already there are worked out again (taken away: a worked-out `keep_until` goes); without it
+  they are left alone (`keep_new_only` on the kind; taken away: a worked-out `keep_until` stays, as set by hand).
+  Dates set by hand always stay. Every document of the kind is changed, also in vaults the caller does not see, but the
+  answer `{"kind", "changed", "queued"}` counts only documents the caller may see: more than 200 of them are done in
+  the background (`queued: true`, `changed` 0; one job, which does what was decided last when it runs). Each document
+  whose term changed gets a new number for `GET /changes` and a line in its history (`fields: ["keep_until"]`, `by:
+  catalog`). A kind of the whole server is the operator's, in a browser; a kind of a vault needs `manage` there.
 - `GET /keeping` (`vault_id`, `limit` at most 500, `offset`): the filed documents whose `keep_until` is before today (the
   caller's time zone), in the vaults where the caller may change things (`edit` or `manage`; documents only shared with
-  them are not looked at), the ones over longest first: `{"items" (as `GET /documents/{id}`), "total"}`.
+  them are not looked at), the ones over longest first, then by date and id: `{"items" (as `GET /documents/{id}`),
+  "total"}`.
 - `POST /documents/trash` `{"ids"}` (at most 500): many documents into the trash for 30 days, each checked as
   `DELETE /documents/{id}` would be: `{"trashed": [ids], "failed": [{"id", "code"}]}`; one the caller may not see fails
   as `not_found`.

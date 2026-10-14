@@ -782,9 +782,15 @@
             "type": "string"
           },
           "manual": {
-            "default": false,
-            "title": "Manual",
-            "type": "boolean"
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manual"
           }
         },
         "required": [
@@ -5543,10 +5549,17 @@
         "additionalProperties": false,
         "properties": {
           "years": {
-            "maximum": 30.0,
-            "minimum": 1.0,
-            "title": "Years",
-            "type": "integer"
+            "anyOf": [
+              {
+                "maximum": 30.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Years"
           }
         },
         "required": [

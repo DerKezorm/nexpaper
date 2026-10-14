@@ -80,6 +80,8 @@ export function MayGo({ items, total, vaults, mineId, onChanged }: { items: Docu
         {t('keeping.mayGo')} <span className="rounded-full bg-sheet-2 px-1.5 text-xs">{n(total)}</span>
       </h2>
       <p className="mb-3 max-w-2xl text-sm text-muted">{t('keeping.mayGoIntro')}</p>
+      {/* At most 500 come at once: "Alle N auswählen" says how many it reaches, and this says that more wait. */}
+      {total > items.length && items.length > 0 && <p className="mb-3 max-w-2xl text-sm text-ink-2">{t('keeping.firstOnly', { shown: n(items.length), total: n(total) })}</p>}
       {items.length === 0 ? (
         <p className="rounded-2xl border border-dashed border-line px-5 py-4 text-sm text-muted">{t('keeping.mayGoEmpty')}</p>
       ) : (

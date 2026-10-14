@@ -459,7 +459,8 @@ class Kind(Base):
     #: How many years documents of this kind are kept (``services/keeping.py``); empty: no keeping time. The kinds that
     #: come with nexpaper have none.
     keep_years: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    #: The keeping time was set for documents filed from then on only (the ones already there kept what they had).
+    #: The last decision about the documents already there was "for new ones only": a time set then did not reach
+    #: them, a time taken away then left their worked-out dates as set by hand.
     keep_new_only: Mapped[bool] = mapped_column(Boolean, default=False, server_default=text("0"))
 
 

@@ -2680,6 +2680,11 @@
     "failed_one": "{{n}} ließ sich nicht in den Papierkorb legen.",
     "failed_other": "{{n}} ließen sich nicht in den Papierkorb legen.",
     "searchExample": "aufbewahren:abgelaufen",
-    "searchHelp": "Aufbewahrungszeit ist um"
+    "searchHelp": "Aufbewahrungszeit ist um",
+    "removeTitle": "{{name}}: keine Aufbewahrungsfrist mehr",
+    "removeText": "Neu abgelegte Dokumente dieser Art bekommen kein „Aufbewahren bis“ mehr. Gelöscht wird nichts.",
+    "removeChoice": "„Für alle“ nimmt das aus der Art errechnete Datum weg, „Nur für neue“ lässt es stehen, dann als von Hand gesetzt.",
+    "removedNew": "{{name}}: keine Aufbewahrungsfrist mehr für neu abgelegte. Die vorhandenen behalten ihr Datum.",
+    "firstOnly": "Gezeigt und auswählbar sind die ersten {{shown}} von {{total}}. Was du in den Papierkorb legst, macht Platz für die nächsten."
   }
 }

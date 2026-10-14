@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from datetime import date as Date
 from datetime import datetime, timedelta
-from typing import Literal
+from typing import Any, Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, model_serializer
 
 from ..models import Account, Kind
 from ..services import documents as documents_service
@@ -39,9 +39,17 @@ class KindOut(BaseModel):
 class DateOut(BaseModel):
     kind: str
     date: Date
-    #: Only `keep_until`: set by a person. Otherwise it was worked out from the kind's keeping time, and is worked out
-    #: again when the kind, the date or the vault changes.
-    manual: bool = False
+    #: Only on `keep_until` (left out for the other kinds): `true` set by a person; `false` worked out from the kind's
+    #: keeping time, and worked out again when the kind, the date or the vault changes.
+    manual: bool | None = None
+
+    # No return annotation: pydantic would take it for the schema of the answer.
+    @model_serializer(mode="wrap")
+    def _manual_only_where_it_means_something(self, handler: Any):
+        data = handler(self)
+        if self.manual is None:
+            data.pop("manual", None)
+        return data
 
 
 class DuplicateOut(BaseModel):
@@ -128,7 +136,7 @@ def document_out(row: Row) -> DocumentOut:
         id=document.id, vault_id=document.vault_id, owner=person(row.owner), title=document.title,
         sender=NameRef(id=row.sender.id, name=row.sender.name) if row.sender else None, kind=kind_out(row.kind),
         date=document.date, amount=document.amount, currency=document.currency, tags=row.tags,
-        dates=[DateOut(kind=kind, date=day, manual=kind == "keep_until" and row.keep_by_hand)
+        dates=[DateOut(kind=kind, date=day, manual=row.keep_by_hand if kind == "keep_until" else None)
                for kind, day in row.dates],
         pages=document.pages, source=document.source,
         status=document.status,  # type: ignore[arg-type]

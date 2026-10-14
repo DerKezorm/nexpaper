@@ -2680,6 +2680,11 @@
     "failed_one": "{{n}} could not be moved to the trash.",
     "failed_other": "{{n}} could not be moved to the trash.",
     "searchExample": "keep:expired",
-    "searchHelp": "keeping time is over"
+    "searchHelp": "keeping time is over",
+    "removeTitle": "{{name}}: no keeping time any more",
+    "removeText": "Newly filed documents of this kind no longer get “Keep until”. Nothing is deleted.",
+    "removeChoice": "“For all” takes away the date worked out from the kind, “Only for new ones” leaves it, from then on as set by hand.",
+    "removedNew": "{{name}}: no keeping time any more for newly filed ones. The ones already there keep their date.",
+    "firstOnly": "Shown and selectable are the first {{shown}} of {{total}}. What you move to the trash makes room for the next ones."
   }
 }

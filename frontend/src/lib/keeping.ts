@@ -13,9 +13,9 @@ export function baseYear(date: string | null | undefined, addedAt: string): numb
   return Number((date || addedAt).slice(0, 4))
 }
 
-/** The end of the year of the document's date plus `years`. */
-export function keepUntil(years: number, date: string | null | undefined, addedAt: string): string {
-  return `${baseYear(date, addedAt) + years}-12-31`
+/** The end of the year `base` (of the document's date, `baseYear`) plus `years`: what the server works out too. */
+export function keepUntil(base: number, years: number): string {
+  return `${base + years}-12-31`
 }
 
 export type Kept = { date: string; from: 'hand' | 'kind'; years?: number }

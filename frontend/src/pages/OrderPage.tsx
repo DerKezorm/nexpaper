@@ -114,17 +114,10 @@ export function OrderPage() {
   const tabs: Tab<OrderWhat>[] = WHATS.map((value) => ({ value, label: t(`order.tabs.${value}`) }))
   const anyReadOnly = shown.some((entry) => !entry.can_change && entry.vault_id !== null)
 
-  /** The keeping time chosen in a row: none at once, a number of years after the question about the documents there. */
-  const keepFor = async (entry: OrderEntry, years: number) => {
+  /** The keeping time chosen in a row (0: none): set after the question about the documents already there. */
+  const keepFor = (entry: OrderEntry, years: number) => {
     setProblem(null)
-    try {
-      if (!years) {
-        await keepingApi.set(entry.id, null, true)
-        refresh(t('keeping.removed', { name: iso(entry.name) }))
-      } else setKeeping({ entry, years })
-    } catch (error) {
-      setProblem(error instanceof ApiError ? error.code : 'internal_error')
-    }
+    setKeeping({ entry, years })
   }
 
   /** Asks, then deletes. The number of documents it reaches is in the question. */
@@ -227,7 +220,7 @@ export function OrderPage() {
                   {what === 'kinds' && entry.keep_years && entry.keep_new_only ? <> · {t('keeping.newOnly')}</> : null}
                 </p>
               </div>
-              {what === 'kinds' && <KeepSelect entry={entry} onPick={(years) => void keepFor(entry, years)} />}
+              {what === 'kinds' && <KeepSelect entry={entry} onPick={(years) => keepFor(entry, years)} />}
               {entry.can_change && (
                 <div className="flex shrink-0 items-center gap-1">
                   <IconButton icon={Pencil} text={t('order.rename')} name={entry.name} onClick={() => setRenaming(entry)} />
@@ -330,8 +323,10 @@ function KeepSelect({ entry, onPick }: { entry: OrderEntry; onPick: (years: numb
 }
 
 /**
- * Setting a keeping time: also for the documents already there? Says how many there are (only the ones the person may
- * see), how many were set by hand (they stay) and how many may go at once. None there: set without asking.
+ * Setting a keeping time, or taking it away (`years` 0): also for the documents already there? Says how many there are
+ * (only the ones the person may see), how many were set by hand (they stay) and, for a time, how many may go at once.
+ * Taking it away "for all" takes the worked-out dates away, "only for new ones" leaves them as set by hand. None there:
+ * set without asking.
  */
 function KeepDialog({ entry, years, onClose, onDone }: { entry: OrderEntry; years: number; onClose: () => void; onDone: (notice: string) => void }) {
   const { t, i18n } = useTranslation()
@@ -339,6 +334,7 @@ function KeepDialog({ entry, years, onClose, onDone }: { entry: OrderEntry; year
   const [problem, setProblem] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const today = dayInDays(0)
+  const removing = !years
   const yearsText = t('keeping.years', { count: years })
   const name = iso(entry.name)
   const set = async (existing: boolean) => {
@@ -346,8 +342,14 @@ function KeepDialog({ entry, years, onClose, onDone }: { entry: OrderEntry; year
     setBusy(true)
     setProblem(null)
     try {
-      const done = await keepingApi.set(entry.id, years, existing)
-      onDone(done.queued ? t('keeping.setQueued', { name, years: yearsText }) : t(existing ? 'keeping.setAll' : 'keeping.setNew', { name, years: yearsText }))
+      const done = await keepingApi.set(entry.id, removing ? null : years, existing)
+      onDone(
+        removing
+          ? t(existing ? 'keeping.removed' : 'keeping.removedNew', { name })
+          : done.queued
+            ? t('keeping.setQueued', { name, years: yearsText })
+            : t(existing ? 'keeping.setAll' : 'keeping.setNew', { name, years: yearsText }),
+      )
     } catch (error) {
       setProblem(error instanceof ApiError ? error.code : 'internal_error')
       setBusy(false)
@@ -357,7 +359,7 @@ function KeepDialog({ entry, years, onClose, onDone }: { entry: OrderEntry; year
   setRef.current = set
   useEffect(() => {
     let alive = true
-    keepingApi.preview(entry.id, years).then(
+    keepingApi.preview(entry.id, years || null).then(
       (answer) => {
         if (!alive) return
         // Nothing there to ask about: it holds for what is filed from now on.
@@ -373,15 +375,21 @@ function KeepDialog({ entry, years, onClose, onDone }: { entry: OrderEntry; year
   if (!found && !problem) return null
   const count = (n: number) => n.toLocaleString(i18n.language)
   return (
-    <Dialog title={t('keeping.dialogTitle', { name: entry.name, years: yearsText })} onClose={onClose}>
+    <Dialog title={removing ? t('keeping.removeTitle', { name: entry.name }) : t('keeping.dialogTitle', { name: entry.name, years: yearsText })} onClose={onClose}>
       <div className="space-y-3 text-sm">
-        <p className="text-ink-2">{t('keeping.dialogText', { years: yearsText, today: shortDate(today, i18n.language), year: Number(today.slice(0, 4)) + years })}</p>
+        <p className="text-ink-2">{removing ? t('keeping.removeText') : t('keeping.dialogText', { years: yearsText, today: shortDate(today, i18n.language), year: Number(today.slice(0, 4)) + years })}</p>
         {found && (
           <div className="rounded-xl border border-line bg-sheet-2/50 p-4">
             <p className="font-semibold">{t('keeping.existing', { count: found.documents, n: count(found.documents) })}</p>
             <ul className="mt-1.5 list-disc space-y-0.5 pl-5 text-ink-2">
               {found.by_hand > 0 && <li>{t('keeping.byHand', { count: found.by_hand, n: count(found.by_hand) })}</li>}
-              {found.expired > 0 ? <li>{t('keeping.expired', { count: found.expired, n: count(found.expired) })}</li> : <li>{t('keeping.noneExpired')}</li>}
+              {removing ? (
+                <li>{t('keeping.removeChoice')}</li>
+              ) : found.expired > 0 ? (
+                <li>{t('keeping.expired', { count: found.expired, n: count(found.expired) })}</li>
+              ) : (
+                <li>{t('keeping.noneExpired')}</li>
+              )}
             </ul>
           </div>
         )}

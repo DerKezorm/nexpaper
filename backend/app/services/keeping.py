@@ -29,12 +29,12 @@ from dataclasses import dataclass
 from datetime import date as Date
 from datetime import datetime
 
-from sqlalchemy import ColumnElement, Integer, String, and_, cast, func, select
+from sqlalchemy import ColumnElement, Integer, String, and_, cast, delete, func, select
 from sqlalchemy.orm import Session
 
 from .. import clock
 from ..errors import error
-from ..models import EDIT, FILED, INBOX, MANAGE, TRASH, Account, Document, DocumentDate, Kind, VaultMember
+from ..models import EDIT, FILED, INBOX, MANAGE, TRASH, Account, Document, DocumentDate, Job, Kind, VaultMember
 from . import changes, jobs, rights, timezones
 
 logger = logging.getLogger("nexpaper.keeping")
@@ -139,6 +139,22 @@ def take(db: Session, document: Document, day: Date | None, manual: bool | None)
     return True
 
 
+def freeze(db: Session, document_ids: Iterable[int]) -> set[int]:
+    """The worked-out ``keep_until`` of these documents counts as set by hand from now on: the date stays where it is
+    whatever the kind does (its keeping time taken away "for new ones only", the kind deleted or merged into one
+    without a time). Returns the documents whose term was marked. The caller holds the write lock."""
+    ids = sorted(set(document_ids))
+    marked: set[int] = set()
+    for part in _chunks(ids):
+        for row in db.scalars(select(DocumentDate).where(
+                DocumentDate.document_id.in_(part), DocumentDate.kind == KEEP, DocumentDate.manual.is_(False))):
+            row.manual = True
+            marked.add(row.document_id)
+    if marked:
+        db.flush()
+    return marked
+
+
 def stamp(db: Session, document_ids: Iterable[int], uid: int | None, *, by: str = "catalog") -> None:
     """New numbers for the feed and a line in the history of documents whose ``keep_until`` the kind changed."""
     ids = sorted(set(document_ids))
@@ -176,16 +192,16 @@ class Preview:
     expired: int
 
 
-def preview(db: Session, uid: int, kind_id: int, years: int, today: Date) -> Preview:
-    """What the question before setting ``years`` for the documents already there says. Only documents ``uid`` may
-    see are counted."""
+def preview(db: Session, uid: int, kind_id: int, years: int | None, today: Date) -> Preview:
+    """What the question before setting ``years`` (None: taking the time away) for the documents already there says.
+    Only documents ``uid`` may see are counted."""
     check_years(years)
     kind = _kind_to_set(db, uid, kind_id)
     manual = select(DocumentDate.document_id).where(DocumentDate.kind == KEEP, DocumentDate.manual.is_(True))
     seen = and_(Document.kind_id == kind.id, Document.status.in_((INBOX, FILED)), rights.visible_clause(uid))
     documents = int(db.scalar(select(func.count()).select_from(Document).where(seen)) or 0)
     by_hand = int(db.scalar(select(func.count()).select_from(Document).where(seen, Document.id.in_(manual))) or 0)
-    expired = int(db.scalar(select(func.count()).select_from(Document).where(
+    expired = 0 if years is None else int(db.scalar(select(func.count()).select_from(Document).where(
         seen, Document.id.not_in(manual), _base_year() + years < today.year)) or 0)
     db.rollback()
     return Preview(documents=documents, by_hand=by_hand, expired=expired)
@@ -194,41 +210,58 @@ def preview(db: Session, uid: int, kind_id: int, years: int, today: Date) -> Pre
 @dataclass
 class Setting:
     kind: Kind
-    #: Documents changed now (``queued``: the job changes them, this is none).
+    #: Documents the caller may see whose term changed now (the ones changed in the background are not counted).
     changed: int
-    #: The documents are changed in the background.
+    #: More documents the caller may see than are done at once: they are changed in the background.
     queued: bool
 
 
+def _apply(db: Session, kind: Kind, ids: list[int]) -> set[int]:
+    """The documents of the kind brought to what was decided last for the ones already there: worked out again (a
+    time for all, or the time taken away for all), the worked-out dates kept as set by hand (taken away "for new ones
+    only"), or nothing (a time set "for new ones only")."""
+    if kind.keep_new_only:
+        return set() if kind.keep_years else freeze(db, ids)
+    return refresh(db, ids)
+
+
 def set_kind(db: Session, uid: int, kind_id: int, years: int | None, existing: bool) -> Setting:
-    """Sets the keeping time of a kind (None: none). With ``existing`` (always when it is taken away), the documents
-    already there are worked out again: now when they are few, else in the background."""
+    """Sets the keeping time of a kind (None: none). With ``existing`` the documents already there are worked out
+    again (taken away: their worked-out dates go); without it they are left alone (taken away: their worked-out dates
+    stay, as set by hand). Few documents now, many in the background (one job ``keep``, which reads the decision when
+    it runs). Every document of the kind is changed, but the answer counts only the ones ``uid`` may see."""
     check_years(years)
     changes.write_lock(db)
     kind = _kind_to_set(db, uid, kind_id)
-    apply = existing or years is None
     kind.keep_years = years
-    kind.keep_new_only = bool(years) and not apply
-    queued = False
+    kind.keep_new_only = not existing
+    with_time = and_(Document.kind_id == kind.id, Document.status.in_(WITH_TIME))
+    seen = set(db.scalars(select(Document.id).where(with_time, rights.visible_clause(uid)).limit(AT_ONCE + 1)))
+    queued = len(seen) > AT_ONCE
     changed: set[int] = set()
-    if apply:
-        ids = list(db.scalars(select(Document.id).where(Document.kind_id == kind.id, Document.status.in_(WITH_TIME))
-                              .limit(AT_ONCE + 1)))
-        if len(ids) > AT_ONCE:
+    if existing or years is None:
+        everything = list(db.scalars(select(Document.id).where(with_time).limit(AT_ONCE + 1)))
+        if len(everything) > AT_ONCE:
+            # The documents the caller sees first, when they are few: the answer is true at once.
+            if not queued:
+                changed = _apply(db, kind, list(seen))
             jobs.enqueue(db, jobs.KEEP, kind.id, {"by": uid})
-            queued = True
         else:
-            changed = refresh(db, ids)
-            stamp(db, changed, uid)
+            changed = _apply(db, kind, everything)
+        stamp(db, changed, uid)
+    else:
+        # Nothing to do for the documents there: a job still waiting for this kind has nothing left to do either.
+        db.execute(delete(Job).where(Job.kind == jobs.KEEP, Job.ref == kind.id, Job.state == "queued"))
     db.commit()
-    logger.info("Keeping time set kind_id=%s years=%s existing=%s changed=%s queued=%s", kind.id, years, apply,
+    shown = len(changed & seen)
+    logger.info("Keeping time set kind_id=%s years=%s existing=%s changed=%s queued=%s", kind.id, years, existing,
                 len(changed), queued)
-    return Setting(kind=kind, changed=len(changed), queued=queued)
+    return Setting(kind=kind, changed=shown, queued=queued)
 
 
 def run_job(db: Session, kind_id: int, payload: object) -> None:
-    """The documents of a kind worked out again, a batch per transaction. Reads the kind's keeping time as it is now, so
-    running it twice, or after another change of the time, does no harm."""
+    """The documents of a kind brought to the decision about them as it stands when the job runs (``_apply``), a batch
+    per transaction. Running it twice, or after another decision, does no harm."""
     by = payload.get("by") if isinstance(payload, dict) else None
     # The person who set it, for the history; nobody when the account went meanwhile.
     uid = by if isinstance(by, int) and db.get(Account, by) is not None else None
@@ -239,7 +272,8 @@ def run_job(db: Session, kind_id: int, payload: object) -> None:
         if jobs.stopping.is_set():
             raise jobs.Interrupted
         changes.write_lock(db)
-        if db.get(Kind, kind_id) is None:
+        kind = db.get(Kind, kind_id)
+        if kind is None or (kind.keep_new_only and kind.keep_years):
             db.rollback()
             break
         ids = list(db.scalars(select(Document.id).where(
@@ -248,7 +282,7 @@ def run_job(db: Session, kind_id: int, payload: object) -> None:
         if not ids:
             db.rollback()
             break
-        changed = refresh(db, ids)
+        changed = _apply(db, kind, ids)
         stamp(db, changed, uid)
         db.commit()
         total += len(changed)

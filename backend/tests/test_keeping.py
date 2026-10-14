@@ -175,24 +175,64 @@ def test_a_kind_without_time_takes_only_the_worked_out_ones_away(client: TestCli
     hand = add_document(mine, operator, "B", kind_id=invoice, date=date(2026, 3, 14), content=None,
                         dates=[("keep_until", date(2030, 1, 1))])
     assert keep_of(hand) == (date(2030, 1, 1), True)
-    done = set_keep(client, invoice, None, existing=False)
-    assert done["changed"] == 1, "taking the time away always reaches the documents there"
+    asked = client.post(f"/api/v1/kinds/{invoice}/keeping/preview", json={"years": None})
+    assert asked.json() == {"documents": 2, "by_hand": 1, "expired": 0}
+    done = set_keep(client, invoice, None, existing=True)
+    assert done["changed"] == 1
     assert keep_of(worked) is None
     assert keep_of(hand) == (date(2030, 1, 1), True)
 
 
-def test_deleting_or_merging_a_kind_works_the_time_out_again(client: TestClient, operator: Account) -> None:
+def test_taking_a_time_away_for_new_ones_only_leaves_the_dates_as_set_by_hand(client: TestClient,
+                                                                             operator: Account) -> None:
+    mine = own_vault(operator)
+    invoice = kind_id(client, "invoice")
+    set_keep(client, invoice, 10)
+    worked = add_document(mine, operator, "A", kind_id=invoice, date=date(2026, 3, 14), content=None)
+    before = document(worked).change_seq
+    done = set_keep(client, invoice, None, existing=False)
+    assert (done["changed"], done["kind"]["keep_years"]) == (1, None)
+    assert keep_of(worked) == (date(2036, 12, 31), True)
+    assert document(worked).change_seq > before
+    # A new one gets no date, and a change of the old one leaves its date.
+    new = add_document(mine, operator, "B", kind_id=invoice, date=date(2026, 3, 14), content=None)
+    assert keep_of(new) is None
+    client.patch(f"/api/v1/documents/{worked}", json={"date": "2020-01-01"})
+    assert keep_of(worked) == (date(2036, 12, 31), True)
+
+
+def test_merging_into_a_kind_with_a_time_works_it_out_and_into_one_without_keeps_the_date(
+        client: TestClient, operator: Account) -> None:
     mine = own_vault(operator)
     kept = client.post("/api/v1/kinds", json={"name": "Beleg", "vault_id": mine}).json()["id"]
     other = client.post("/api/v1/kinds", json={"name": "Quittung", "vault_id": mine}).json()["id"]
+    plain = client.post("/api/v1/kinds", json={"name": "Zettel", "vault_id": mine}).json()["id"]
     set_keep(client, kept, 6)
     set_keep(client, other, 2)
     doc = add_document(mine, operator, "A", kind_id=kept, date=date(2026, 3, 14), content=None)
     assert keep_of(doc) == (date(2032, 12, 31), False)
     assert client.post(f"/api/v1/kinds/{kept}/merge", json={"into": other}).status_code == 200
     assert keep_of(doc) == (date(2028, 12, 31), False)
-    assert client.delete(f"/api/v1/kinds/{other}").status_code == 204
-    assert keep_of(doc) is None
+    assert client.post(f"/api/v1/kinds/{other}/merge", json={"into": plain}).status_code == 200
+    assert keep_of(doc) == (date(2028, 12, 31), True)
+
+
+def test_deleting_a_kind_never_takes_its_times_away(client: TestClient, operator: Account) -> None:
+    editor = make_account("editor")
+    household = shared_vault("Haushalt", operator, (editor, "edit"))
+    kind = client.post("/api/v1/kinds", json={"name": "Beleg", "vault_id": household}).json()["id"]
+    set_keep(client, kind, 6)
+    worked = add_document(household, operator, "A", kind_id=kind, date=date(2026, 3, 14), content=None)
+    hand = add_document(household, operator, "B", kind_id=kind, date=date(2026, 3, 14), content=None,
+                        dates=[("keep_until", date(2040, 1, 1))])
+    # The editor may not set the time, and deleting the kind (which they may, with force) does not take it away.
+    with new_client(editor) as session:
+        assert session.put(f"/api/v1/kinds/{kind}/keeping", json={"years": None, "existing": True}).status_code == 403
+        assert session.delete(f"/api/v1/kinds/{kind}").status_code == 409
+        assert session.delete(f"/api/v1/kinds/{kind}", params={"force": "true"}).status_code == 204
+    assert document(worked).kind_id is None
+    assert keep_of(worked) == (date(2032, 12, 31), True)
+    assert keep_of(hand) == (date(2040, 1, 1), True)
 
 
 def test_a_document_in_the_inbox_gets_it_and_filing_keeps_it(client: TestClient, operator: Account) -> None:
@@ -534,3 +574,209 @@ def test_a_document_that_was_just_read_gets_the_time_of_its_kind(client: TestCli
     process_all()
     assert document(made["id"]).status == "inbox"
     assert keep_of(made["id"]) == (date(2031, 12, 31), False)
+
+
+# --- After the review -------------------------------------------------------------------------------------------------
+
+
+def test_the_answers_count_only_what_the_person_may_see_but_every_document_changes(client: TestClient,
+                                                                                   operator: Account) -> None:
+    invoice = kind_id(client, "invoice")
+    lea = make_account("lea")
+    leas = [add_document(own_vault(lea), lea, f"Leas {i}", kind_id=invoice, date=date(2010, 1, 1), content=None)
+            for i in range(3)]
+    mine = add_document(own_vault(operator), operator, "Mein", kind_id=invoice, date=date(2026, 1, 1), content=None)
+    asked = client.post(f"/api/v1/kinds/{invoice}/keeping/preview", json={"years": 10}).json()
+    assert asked == {"documents": 1, "by_hand": 0, "expired": 0}
+    done = set_keep(client, invoice, 10)
+    assert (done["changed"], done["queued"]) == (1, False), "the personal vault of Lea is not told by the number"
+    assert keep_of(mine) == (date(2036, 12, 31), False)
+    assert all(keep_of(i) == (date(2020, 12, 31), False) for i in leas), "her documents are changed all the same"
+    done = set_keep(client, invoice, None)
+    assert (done["changed"], done["queued"]) == (1, False)
+    assert all(keep_of(i) is None for i in leas)
+
+
+def test_the_background_starts_above_the_limit_seen_and_unseen_ones_go_there_quietly(
+        client: TestClient, operator: Account, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(keeping, "AT_ONCE", 3)
+    invoice = kind_id(client, "invoice")
+    lea = make_account("lea")
+    mine = own_vault(operator)
+    seen = [add_document(mine, operator, f"D{i}", kind_id=invoice, date=date(2026, 1, 1), content=None)
+            for i in range(3)]
+    # Three the caller sees: done at once.
+    done = set_keep(client, invoice, 2)
+    assert (done["changed"], done["queued"]) == (3, False)
+    # And two of Lea on top: still three seen, done at once; hers in the background, without a word in the answer.
+    leas = [add_document(own_vault(lea), lea, f"L{i}", kind_id=invoice, date=date(2026, 1, 1), content=None)
+            for i in range(2)]
+    done = set_keep(client, invoice, 5)
+    assert (done["changed"], done["queued"]) == (3, False)
+    assert all(keep_of(i) == (date(2031, 12, 31), False) for i in seen)
+    jobs.run_pending(kinds=(jobs.KEEP,))
+    assert all(keep_of(i) == (date(2031, 12, 31), False) for i in leas)
+    # Four seen: the background.
+    seen.append(add_document(mine, operator, "D3", kind_id=invoice, date=date(2026, 1, 1), content=None))
+    done = set_keep(client, invoice, 8)
+    assert (done["changed"], done["queued"]) == (0, True)
+    jobs.run_pending(kinds=(jobs.KEEP,))
+    assert all(keep_of(i) == (date(2034, 12, 31), False) for i in seen + leas)
+
+
+def test_a_waiting_job_does_what_was_decided_last(client: TestClient, operator: Account,
+                                                  monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(keeping, "AT_ONCE", 2)
+    invoice = kind_id(client, "invoice")
+    mine = own_vault(operator)
+    ids = [add_document(mine, operator, f"D{i}", kind_id=invoice, date=date(2026, 1, 1), content=None)
+           for i in range(4)]
+    assert set_keep(client, invoice, 3)["queued"] is True
+    # Then "only for new ones" with another number: the documents there keep what they had (none), the job goes.
+    assert set_keep(client, invoice, 8, existing=False)["changed"] == 0
+    with SessionLocal() as db:
+        assert db.scalars(select(Job).where(Job.kind == jobs.KEEP, Job.state == "queued")).all() == []
+        # A job that still turns up (left from before) reads the decision and does nothing.
+        jobs.enqueue(db, jobs.KEEP, invoice, {"by": operator.id})
+        db.commit()
+    jobs.run_pending(kinds=(jobs.KEEP,))
+    assert all(keep_of(i) is None for i in ids)
+    # "For all" again, twice: one job, the newest decision.
+    assert set_keep(client, invoice, 8)["queued"] is True
+    assert set_keep(client, invoice, 6)["queued"] is True
+    with SessionLocal() as db:
+        assert len(db.scalars(select(Job).where(Job.kind == jobs.KEEP, Job.state == "queued")).all()) == 1
+    jobs.run_pending(kinds=(jobs.KEEP,))
+    assert all(keep_of(i) == (date(2032, 12, 31), False) for i in ids)
+
+
+def test_moving_takes_the_time_of_the_kind_along_or_the_one_the_other_vault_has(client: TestClient,
+                                                                               operator: Account) -> None:
+    mine = own_vault(operator)
+    household = shared_vault("Haushalt", operator)
+    beleg = client.post("/api/v1/kinds", json={"name": "Beleg", "vault_id": mine}).json()["id"]
+    set_keep(client, beleg, 4)
+    doc = add_document(mine, operator, "A", kind_id=beleg, date=date(2026, 3, 14), content=None)
+    assert keep_of(doc) == (date(2030, 12, 31), False)
+    # The household has no "Beleg": it is made there with the same time.
+    assert client.post(f"/api/v1/documents/{doc}/move", json={"vault_id": household}).status_code == 200
+    made = client.get("/api/v1/kinds", params={"vault_id": household}).json()
+    there = next(k for k in made if k["name"] == "Beleg")
+    assert there["vault_id"] == household and there["keep_years"] == 4
+    assert keep_of(doc) == (date(2030, 12, 31), False)
+    # Back to the own vault, whose "Beleg" has another time now (2 years): that one counts; by hand stays by hand.
+    set_keep(client, beleg, 2)
+    hand = add_document(household, operator, "B", kind_id=there["id"], date=date(2026, 3, 14), content=None,
+                        dates=[("keep_until", date(2040, 1, 1))])
+    for document_id in (doc, hand):
+        assert client.post(f"/api/v1/documents/{document_id}/move", json={"vault_id": mine}).status_code == 200
+    assert document(doc).kind_id == beleg
+    assert keep_of(doc) == (date(2028, 12, 31), False)
+    assert keep_of(hand) == (date(2040, 1, 1), True)
+
+
+def test_a_document_in_the_trash_is_worked_out_too_one_being_read_is_not(client: TestClient,
+                                                                        operator: Account) -> None:
+    invoice = kind_id(client, "invoice")
+    doc = add_document(own_vault(operator), operator, "A", kind_id=invoice, date=date(2026, 3, 14), content=None)
+    reading = add_document(own_vault(operator), operator, "Wird gelesen", kind_id=invoice, status="processing",
+                           content=None)
+    assert client.delete(f"/api/v1/documents/{doc}").status_code == 200
+    set_keep(client, invoice, 10)
+    assert keep_of(doc) == (date(2036, 12, 31), False)
+    assert keep_of(reading) is None
+
+
+def test_manual_is_said_only_on_keep_until(client: TestClient, operator: Account) -> None:
+    doc = add_document(own_vault(operator), operator, "A", content=None,
+                       dates=[("due", date(2026, 10, 20)), ("keep_until", date(2030, 1, 1))])
+    shown = client.get(f"/api/v1/documents/{doc}").json()["dates"]
+    assert shown == [{"kind": "due", "date": "2026-10-20"},
+                     {"kind": "keep_until", "date": "2030-01-01", "manual": True}]
+
+
+def test_may_go_is_ordered_by_when_the_time_ended_then_the_date_then_the_id(client: TestClient,
+                                                                            operator: Account) -> None:
+    mine = own_vault(operator)
+    late = add_document(mine, operator, "Spaet", date=date(2020, 1, 1), dates=[("keep_until", date(2025, 6, 30))],
+                        content=None)
+    tie_b = add_document(mine, operator, "Gleich B", date=date(2019, 1, 1),
+                         dates=[("keep_until", date(2024, 12, 31))], content=None)
+    tie_a = add_document(mine, operator, "Gleich A", date=date(2018, 1, 1),
+                         dates=[("keep_until", date(2024, 12, 31))], content=None)
+    same = add_document(mine, operator, "Gleich 1", date=date(2018, 1, 1),
+                        dates=[("keep_until", date(2024, 12, 31))], content=None)
+    assert [d["id"] for d in may_go(client)["items"]] == [tie_a, same, tie_b, late]
+
+
+def test_may_go_shows_an_editor_what_is_over_and_a_reader_nothing(client: TestClient, operator: Account) -> None:
+    editor, reader = make_account("editor"), make_account("reader")
+    household = shared_vault("Haushalt", operator, (editor, "edit"), (reader, "read"))
+    doc = add_document(household, operator, "Alt", dates=[("keep_until", date(2020, 12, 31))], content=None)
+    with new_client(editor) as session:
+        assert [d["id"] for d in may_go(session)["items"]] == [doc]
+        assert session.post("/api/v1/documents/trash", json={"ids": [doc]}).json()["trashed"] == [doc]
+    assert client.post(f"/api/v1/documents/{doc}/restore").status_code == 200
+    with new_client(reader) as session:
+        assert may_go(session)["total"] == 0
+
+
+def test_today_is_the_day_where_the_person_is(client: TestClient, operator: Account,
+                                               monkeypatch: pytest.MonkeyPatch) -> None:
+    add_document(own_vault(operator), operator, "Alt", dates=[("keep_until", date(2026, 12, 31))], content=None)
+    # 31.12.2026 23:30 UTC: already 1 January in Auckland and in Berlin, still the 31st in New York.
+    freeze(monkeypatch, datetime(2026, 12, 31, 23, 30, tzinfo=UTC))
+    for zone, today, over in (("Pacific/Auckland", date(2027, 1, 1), 1), ("Europe/Berlin", date(2027, 1, 1), 1),
+                              ("America/New_York", date(2026, 12, 31), 0)):
+        with SessionLocal() as db:
+            row = db.get(Account, operator.id)
+            assert row is not None
+            row.profile = {**(row.profile or {}), "timezone": zone}
+            db.commit()
+            assert keeping.today_of(row) == today, zone
+            assert keeping.may_go_count(db, operator.id) == over, zone
+            assert keeping.expired(db, operator.id, keeping.today_of(row))[1] == over, zone
+
+
+def test_a_proposal_of_the_ai_in_the_inbox_brings_the_time_of_its_kind(client: TestClient, operator: Account,
+                                                                      monkeypatch: pytest.MonkeyPatch) -> None:
+    import json
+
+    import httpx
+
+    from app.services import ai
+
+    from .files import make_pdf
+    from .intake import upload_and_read
+    from .test_ai import Model, set_up
+
+    stand_in = Model()
+    stand_in.text = json.dumps({"title": "Wartung Heizung", "sender": "Elektro Brandt GmbH", "kind": "Rechnung",
+                                "date": "2025-10-06", "amount": 224.91})
+    ai.transport = httpx.MockTransport(stand_in.handle)
+    monkeypatch.setattr(ai, "resolver", lambda host, port: ["93.184.216.34"])
+    try:
+        set_up(client)
+        set_keep(client, kind_id(client, "invoice"), 2)
+        found = upload_and_read(client, "scan.pdf", make_pdf([
+            "Elektro Brandt GmbH, Werkstrasse 3, 12345 Lindenau\nWartung der Heizung in der Ferienwohnung"]),
+            shared_vault("Haushalt", operator))
+    finally:
+        ai.transport = None
+    assert found["kind"]["key"] == "invoice" and found["suggest"]["kind"] == "ai"
+    assert keep_of(found["id"]) == (date(2027, 12, 31), False)
+
+
+def test_the_parts_of_a_split_keep_the_time_of_the_kind(client: TestClient, operator: Account) -> None:
+    from .test_pagetools import made
+
+    invoice = kind_id(client, "invoice")
+    set_keep(client, invoice, 3)
+    whole = made(client, "stapel.pdf", "Alpha", "Beta")
+    changed = client.patch(f"/api/v1/documents/{whole['id']}", json={"kind_id": invoice, "date": "2026-02-01",
+                                                                      "status": "filed"})
+    assert changed.status_code == 200, changed.text
+    answer = client.post(f"/api/v1/documents/{whole['id']}/split", json={
+        "base_version": 1, "parts": [{"pages": [{"page": 1}]}, {"pages": [{"page": 2}]}]})
+    assert answer.status_code == 201, answer.text
+    assert [keep_of(p["id"]) for p in answer.json()["items"]] == [(date(2029, 12, 31), False)] * 2

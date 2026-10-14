@@ -101,6 +101,14 @@ describe('may go', () => {
     expect(page.button('In den Papierkorb')).toBeTruthy()
   })
 
+  it('says honestly that only the first ones can be picked when more may go than came', async () => {
+    server.answers['GET /api/v1/keeping?limit=500'] = { items: ITEMS, total: 612 }
+    await page.show(<Section />)
+    await until(() => rows().length > 0)
+    expect(page.text).toContain('Gezeigt und auswählbar sind die ersten 10 von 612.')
+    expect(page.text).toContain('Alle 10 auswählen')
+  })
+
   it('says so when nothing may go, and has no chip then', async () => {
     server.answers['GET /api/v1/keeping?limit=500'] = { items: [], total: 0 }
     await page.show(<Section />)
