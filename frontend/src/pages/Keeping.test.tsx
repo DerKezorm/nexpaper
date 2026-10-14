@@ -165,6 +165,16 @@ describe('the line "Aufbewahren bis"', () => {
     expect([...page.box.querySelectorAll('button')].map((b) => plain(b.textContent))).not.toContain('Aufbewahren bis')
   })
 
+  it('works it out anew from the draft when the kind was changed and not saved yet, and shows none for a kind without', async () => {
+    const stored: DateEntry[] = [{ kind: 'keep_until', date: '2036-12-31', manual: false }]
+    await page.show(<Terms start={stored} keep={{ kindName: 'Rechnung', years: 8, base: 2026, fresh: false }} sent={vi.fn()} />)
+    expect(page.box.querySelector<HTMLInputElement>('input[aria-label="Aufbewahren bis"]')!.value).toBe('2034-12-31')
+    expect(page.text).toContain('Aus der Art Rechnung: 8 Jahre nach Ende 2026.')
+    page.close()
+    await page.show(<Terms start={stored} keep={{ kindName: 'Bank', years: null, base: 2026, fresh: false }} sent={vi.fn()} />)
+    expect(page.box.querySelector('input[aria-label="Aufbewahren bis"]')).toBeNull()
+  })
+
   it('without a time of the kind, a date set by hand is just a term', async () => {
     const sent = vi.fn()
     await page.show(<Terms start={[{ kind: 'keep_until', date: '2030-01-01', manual: true }]} keep={{ kindName: 'Bank', years: null, base: 2026, fresh: true }} sent={sent} />)

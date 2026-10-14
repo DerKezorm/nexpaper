@@ -210,7 +210,8 @@ export function OrderPage() {
         <ul className="card divide-y divide-line p-0" aria-label={t(`order.tabs.${what}`)}>
           {shown.map((entry) => (
             <li key={entry.id} className="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3">
-              <div className="min-w-0 flex-1">
+              {/* A kind keeps room for its name and numbers: on a phone the keeping time goes to a line of its own. */}
+              <div className={`flex-1 ${what === 'kinds' ? 'min-w-44' : 'min-w-0'}`}>
                 <p className="font-semibold break-words">{what === 'kinds' ? <KindPill kind={{ name: entry.name, hue: entry.hue ?? 30 }} /> : <bdi>{entry.name}</bdi>}</p>
                 <p className="mt-0.5 text-sm text-muted">
                   {(!vault || (what === 'kinds' && entry.vault_id === null)) && vaults.length > 1 && (

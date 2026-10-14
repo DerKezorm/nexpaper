@@ -428,6 +428,31 @@ def test_the_list_of_the_export_names_until_when_to_keep(client: TestClient, ope
     assert exports.CSV_HEADINGS["en"][-1] == "Keep until"
 
 
+def test_the_list_of_a_packed_export_has_the_date_of_each(client: TestClient, operator: Account) -> None:
+    import shutil
+    import zipfile
+
+    from .conftest import DATA_DIR
+
+    shutil.rmtree(f"{DATA_DIR}/exports", ignore_errors=True)
+    mine = own_vault(operator)
+    invoice = kind_id(client, "invoice")
+    set_keep(client, invoice, 10)
+    add_document(mine, operator, "Strom", kind_id=invoice, date=date(2026, 3, 14), amount=8400)
+    add_document(mine, operator, "Brief", date=date(2026, 4, 1), dates=[("keep_until", date(2040, 1, 1))])
+    add_document(mine, operator, "Ohne", date=date(2026, 5, 1))
+    made = client.post("/api/v1/exports", headers={"X-Nexpaper-Language": "de"}, json={
+        "date_from": "2026-01-01", "date_to": "2026-12-31", "vault_ids": [mine],
+        "content": {"pdf": True, "original": False, "csv": True, "xml": False}})
+    assert made.status_code == 201, made.text
+    jobs.run_pending(kinds=(jobs.EXPORT,))
+    answer = client.get(f"/api/v1/exports/{made.json()['id']}/file")
+    assert answer.status_code == 200, answer.text
+    listing = zipfile.ZipFile(io.BytesIO(answer.content)).read("liste.csv").decode("utf-8-sig")
+    rows = {row[1]: row[-1] for row in csv.reader(io.StringIO(listing), delimiter=";")}
+    assert rows == {"Titel": "Aufbewahren bis", "Strom": "2036-12-31", "Brief": "2040-01-01", "Ohne": ""}
+
+
 def test_a_database_before_keeping_is_brought_up_and_its_terms_count_as_set_by_hand(tmp_path: Any,
                                                                                     monkeypatch: Any) -> None:
     import sqlite3
