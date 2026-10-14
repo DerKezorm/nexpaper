@@ -10,7 +10,7 @@ from __future__ import annotations
 from typing import Annotated, Literal
 
 from fastapi import APIRouter
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, StrictInt
 
 from ..deps import Account as Caller
 from ..deps import DbSession
@@ -31,9 +31,10 @@ class Lead(BaseModel):
 class LeadIn(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    due: int | None = None
-    cancel: int | None = None
-    warranty: int | None = None
+    # Whole numbers only: ``true`` is not a 1.
+    due: StrictInt | None = None
+    cancel: StrictInt | None = None
+    warranty: StrictInt | None = None
 
 
 class LeadOptions(BaseModel):
@@ -99,7 +100,7 @@ class RemindersIn(BaseModel):
     mail: bool | None = None
     lead: LeadIn | None = None
     same_day: bool | None = None
-    muted: list[Annotated[int, Field(ge=1, le=2**31 - 1)]] | None = Field(default=None,
+    muted: list[Annotated[StrictInt, Field(ge=1, le=2**31 - 1)]] | None = Field(default=None,
                                                                            max_length=reminders.MUTED_MAX)
     muted_shared: bool | None = None
 
@@ -130,7 +131,7 @@ def put_reminders(payload: RemindersIn, account: Caller, db: DbSession) -> dict[
     change = payload.model_dump(exclude_unset=True)
     if "lead" in change:
         change["lead"] = {key: value for key, value in (change["lead"] or {}).items() if value is not None}
-    for key in ("rhythm", "push", "mail", "same_day", "muted_shared"):
+    for key in ("rhythm", "push", "mail", "same_day", "muted_shared", "muted"):
         if key in change and change[key] is None:
             del change[key]
     reminders.save(db, account, change)

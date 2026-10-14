@@ -201,4 +201,5 @@ everything), or mutes a vault.
 Only people who may change a document are reminded of it (edit or manage in its vault, or a share with edit); a reader
 is not. The rights and the muted vaults are part of the query that runs right before a message goes out, so nobody is
 told about a document they lost meanwhile. Each reminder is written down before it is sent and goes out once, also when
-two runs meet; at most 20 per person and day, the rest in one message.
+two runs meet; at most 20 per person and day, the rest in one message. The update that brings reminders sends none for deadlines that were there before: the first look marks the
+open leads as reminded.

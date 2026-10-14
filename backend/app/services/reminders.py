@@ -25,6 +25,10 @@ in one transaction under the write lock **before** anything is sent; only what t
 runs at once (two processes, a restart in the middle) therefore send each reminder once. A message that fails on the
 way is not tried again: better one missing than ten.
 
+**The update.** Deadlines that were there before this version existed must not all remind at once on the first day:
+the schema step leaves a ``seed`` row per person, and their first look (``_seed``) marks the leads that are open
+already as reminded, without a message. The day itself and "later" go on as ever.
+
 **The brake.** At most ``PER_DAY`` messages per person and day, the most urgent first; what is over that goes into one
 message ("and 14 more") once a day. What is over the limit after that one went waits for the next day.
 
@@ -42,6 +46,7 @@ import asyncio
 import html
 import importlib
 import logging
+import os
 from dataclasses import dataclass, field
 from datetime import date as Date
 from datetime import datetime, timedelta
@@ -93,6 +98,8 @@ TITLE_MAX = 120
 MUTED_MAX = 500
 
 LEAD, DAY, LATER, WEEK, BATCH = "lead", "day", "later", "week", "batch"
+#: Left by the schema step for every person that existed at the update (see ``_seed``).
+SEED = "seed"
 SINGLE_STAGES = (LEAD, DAY, LATER)
 TAG = "deadline"
 DEADLINES_PATH = "/fristen"
@@ -164,19 +171,33 @@ def shared_count(db: Session, uid: int) -> int:
     ) or 0)
 
 
+def server_zone_name() -> str:
+    """The IANA name of the server's own zone when it can be found (``TZ``, else where ``/etc/localtime`` points),
+    else the abbreviation the zone has right now."""
+    named = os.environ.get("TZ", "").lstrip(":")
+    if timezones.valid_time_zone(named):
+        return named
+    try:
+        target = os.path.realpath("/etc/localtime").replace("\\", "/")
+    except OSError:
+        target = ""
+    if "zoneinfo/" in target and timezones.valid_time_zone(target.rsplit("zoneinfo/", 1)[1]):
+        return target.rsplit("zoneinfo/", 1)[1]
+    return str(datetime.now().astimezone().tzinfo or "")
+
+
 def zone_name(account: Account) -> str:
     profile = account.profile if isinstance(account.profile, dict) else {}
     name = profile.get("timezone")
-    if timezones.valid_time_zone(name):
-        return str(name)
-    return str(datetime.now().astimezone().tzinfo or "")
+    return str(name) if timezones.valid_time_zone(name) else server_zone_name()
 
 
 def view(db: Session, account: Account) -> dict[str, Any]:
     """What Mein Konto, Erinnerungen shows: the choices, what the ways need, and the vaults (edit or manage: can be
     muted; read only: named, nothing to choose)."""
     prefs = preferences_of(db, account.id)
-    muted = set(muted_of(db, account.id))
+    # Only vaults the person would be reminded about today: a mute whose right is gone is no choice any more.
+    muted = set(muted_of(db, account.id)) & editable_vaults(db, account.id)
     mine: list[dict[str, Any]] = []
     read_only: list[dict[str, Any]] = []
     for item in vaults.listing(db, account.id):
@@ -238,17 +259,21 @@ def save(db: Session, account: Account, change: dict[str, Any]) -> None:
     row.same_day = bool(change.get("same_day", current.same_day))
     row.muted_shared = bool(change.get("muted_shared", current.muted_shared))
     row.updated_at = clock.now()
-    if "muted" in change:
-        wanted = set(change["muted"] or [])
-        if len(wanted) > MUTED_MAX or not wanted <= editable_vaults(db, account.id):
-            # A vault the person may not change things in, or none at all: the same answer (no list of vaults).
+    editable = editable_vaults(db, account.id)
+    stored = set(muted_of(db, account.id))
+    if change.get("muted") is not None:
+        asked = set(change["muted"])
+        # What the person never had muted and may not change things in: the same answer as one that does not exist.
+        # What they had muted and lost the right to is dropped without a word (the mute no longer does anything).
+        if len(asked) > MUTED_MAX or not asked <= editable | stored:
             raise error("bad_reminder", "This value is not one nexpaper offers.", 422, field="muted")
-        db.execute(delete(ReminderMute).where(ReminderMute.user_id == account.id,
-                                              ReminderMute.vault_id.not_in(wanted)))
-        for vault_id in sorted(wanted):
-            db.execute(sqlite_insert(ReminderMute).values(user_id=account.id, vault_id=vault_id,
-                                                          created_at=clock.now())
-                       .on_conflict_do_nothing(index_elements=["user_id", "vault_id"]))
+        keep = asked & editable
+    else:
+        keep = stored & editable
+    db.execute(delete(ReminderMute).where(ReminderMute.user_id == account.id, ReminderMute.vault_id.not_in(keep)))
+    for vault_id in sorted(keep):
+        db.execute(sqlite_insert(ReminderMute).values(user_id=account.id, vault_id=vault_id, created_at=clock.now())
+                   .on_conflict_do_nothing(index_elements=["user_id", "vault_id"]))
     db.commit()
     logger.info("Reminder choices changed fields=%s", ",".join(sorted(change)) or "nothing")
 
@@ -473,12 +498,15 @@ def due_singles(db: Session, uid: int, prefs: Preferences, today: Date) -> list[
     return out
 
 
-def _claim(db: Session, uid: int, date_id: int | None, keys: list[tuple[str, Date]], today: Date) -> bool:
-    """Writes the rows; whether at least one of them is new (then the message is this run's to send)."""
+def _claim(db: Session, uid: int, date_id: int | None, keys: list[tuple[str, Date]], today: Date,
+           *, counted: bool = True) -> bool:
+    """Writes the rows; whether at least one of them is new (then the message is this run's to send). Rows that are
+    not ``counted`` say "already gone" without being a message of today (they stay out of the brake)."""
     added = False
     for stage, day in keys:
         statement = sqlite_insert(ReminderSent).values(user_id=uid, date_id=date_id, stage=stage, day=day,
-                                                       sent_day=today, sent_at=clock.now())
+                                                       sent_day=today if counted else today - timedelta(days=1),
+                                                       sent_at=clock.now())
         if date_id is None:
             statement = statement.on_conflict_do_nothing(index_elements=["user_id", "stage", "day"],
                                                          index_where=ReminderSent.date_id.is_(None))
@@ -596,6 +624,26 @@ class Summary:
     weekly: int = 0
 
 
+def _seed(db: Session, account: Account, today: Date) -> None:
+    """The first look at a person after the update to this version: every deadline whose lead is already open now is
+    marked as reminded ahead, without a message, so the update itself brings no flood for deadlines that were there
+    before. The day itself and "later" go on as ever. The schema step leaves one ``seed`` row per person that existed;
+    this takes it away again (so it happens once, and never for a person who came later)."""
+    uid = account.id
+    marker = (ReminderSent.user_id == uid, ReminderSent.stage == SEED, ReminderSent.date_id.is_(None))
+    if not db.scalar(select(func.count()).select_from(ReminderSent).where(*marker)):
+        return
+    changes.write_lock(db)
+    if not db.scalar(select(func.count()).select_from(ReminderSent).where(*marker)):
+        return  # a run at the same time did it
+    for item in due_singles(db, uid, preferences_of(db, uid), today):
+        ahead = [key for key in item.keys if key[0] == LEAD]
+        if ahead:
+            _claim(db, uid, item.deadline.row.id, ahead, today, counted=False)
+    db.execute(delete(ReminderSent).where(*marker))
+    db.commit()
+
+
 def _person(uid: int, now: datetime, summary: Summary) -> None:
     from ..db import SessionLocal
 
@@ -605,9 +653,10 @@ def _person(uid: int, now: datetime, summary: Summary) -> None:
         if account is None or account.blocked_at is not None:
             return
         local = now.astimezone(timezones.zone_of(account))
+        today = local.date()
+        _seed(db, account, today)
         if local.hour < HOUR:
             return
-        today = local.date()
         prefs = preferences_of(db, uid)
         problem = mail_problem(db, account)
         by_push = prefs.push and push.has_devices(db, uid)

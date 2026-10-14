@@ -451,7 +451,12 @@ deadline; `weekly`, a mail on Mondays; `both`), `push`, `mail`, `lead` (`{due, c
 `mail_problem` (`no_server`, `no_address`, `unconfirmed` or null), `vaults` (edit or manage: `{id, name, icon, personal,
 personal_of_other, muted, others}`), `read_only` (never reminded) and `shared` (documents shared with `edit`).
 `PUT /api/v1/me/reminders` changes what it is sent and answers the same; switching mail or the weekly mail on without a
-way to mail is `409 mail_unavailable`, a vault the caller may not change things in (or none) `422 bad_reminder`.
+way to mail is `409 mail_unavailable`, a vault the caller may not change things in (or none) `422 bad_reminder`. A
+field sent as `null` is left as it is; `lead` takes whole numbers from `options` (`true` is `422`). `muted` lists only
+vaults the person is still reminded about: a mute whose right is gone is not listed, and a list that still names it is
+saved without it. `time_zone` is the one the browser reported, else the server's (its IANA name when it can be found).
+The first look after an update from a version without reminders marks the leads already open as reminded, without a
+message; the day itself still comes.
 `POST /api/v1/me/reminders/test` sends a test message on every way that is on (`{push: {sent, gone, failed}, mail,
 by_push, by_mail}`; `409 reminders_no_way`). A browser or a device; a key is turned away.
 

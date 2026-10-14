@@ -29,6 +29,7 @@ from app.models import Account, Document, ReminderSent, VaultMember
 from app.services import (
     apikeys,
     backups,
+    brakes,
     deadlines,
     devices,
     documents,
@@ -556,6 +557,238 @@ def test_the_test_message_goes_where_the_reminders_go(town: Town, mails: list[Em
         assert answer.status_code == 409 and answer.json()["detail"]["code"] == "reminders_no_way"
 
 
+def test_a_mute_whose_right_is_gone_blocks_nothing(town: Town) -> None:
+    """tom muted "Haushalt", then lost the right to change things in it: the mute is no choice any more. It is not
+    listed, saving the tab (which sends what it got) works, and the row is cleaned up."""
+    choose(town.tom, muted=[town.house])
+    with SessionLocal() as db:
+        member = db.get(VaultMember, (town.house, town.tom.id))
+        assert member is not None
+        member.right = "read"
+        db.commit()
+    mine = own_vault(town.tom)
+    with new_client(town.tom) as tom:
+        found = tom.get("/api/v1/me/reminders").json()
+        assert found["muted"] == [] and [v["id"] for v in found["vaults"]] == [mine]
+        assert [v["id"] for v in found["read_only"]] == [town.house]
+        # What the page does: sends the list it was given, plus the vault the person muted now.
+        answer = tom.put("/api/v1/me/reminders", json={"muted": [*found["muted"], mine]})
+        assert answer.status_code == 200 and answer.json()["muted"] == [mine]
+        with SessionLocal() as db:
+            assert reminders.muted_of(db, town.tom.id) == [mine], "the row of the lost vault is gone"
+    # A page that was open before the right went still names the lost vault: saved all the same, it is dropped.
+    choose(town.jule, muted=[town.house])
+    with SessionLocal() as db:
+        member = db.get(VaultMember, (town.house, town.jule.id))
+        assert member is not None
+        member.right = "read"
+        db.commit()
+    with new_client(town.jule) as jule:
+        answer = jule.put("/api/v1/me/reminders", json={"muted": [town.house, own_vault(town.jule)]})
+        assert answer.status_code == 200 and answer.json()["muted"] == [own_vault(town.jule)]
+    with SessionLocal() as db:
+        assert reminders.muted_of(db, town.jule.id) == [own_vault(town.jule)], "the row of the lost vault is gone"
+
+
+def test_a_lost_mute_is_cleaned_by_any_save_and_does_not_come_back(town: Town) -> None:
+    choose(town.tom, muted=[town.house])
+    with SessionLocal() as db:
+        member = db.get(VaultMember, (town.house, town.tom.id))
+        assert member is not None
+        member.right = "read"
+        db.commit()
+    with new_client(town.tom) as tom:
+        assert tom.put("/api/v1/me/reminders", json={"same_day": False}).status_code == 200
+    with SessionLocal() as db:
+        assert reminders.muted_of(db, town.tom.id) == []
+        member = db.get(VaultMember, (town.house, town.tom.id))
+        assert member is not None
+        member.right = "edit"
+        db.commit()
+    with new_client(town.tom) as tom:
+        assert tom.get("/api/v1/me/reminders").json()["muted"] == []
+
+
+def test_a_vault_never_muted_and_not_to_be_changed_is_still_refused(town: Town) -> None:
+    """The lost mute is dropped without a word; a vault the person never had muted is the same 422 as before."""
+    choose(town.tom, muted=[town.house])
+    with SessionLocal() as db:
+        member = db.get(VaultMember, (town.house, town.tom.id))
+        assert member is not None
+        member.right = "read"
+        db.commit()
+    with new_client(town.tom) as tom:
+        for vault in (town.bobs, 999999):
+            answer = tom.put("/api/v1/me/reminders", json={"muted": [vault]})
+            assert answer.status_code == 422 and answer.json()["detail"]["code"] == "bad_reminder"
+        assert tom.put("/api/v1/me/reminders", json={"muted": [town.house]}).status_code == 200
+
+
+def test_nothing_sent_for_a_field_changes_nothing_and_numbers_are_whole_numbers(town: Town) -> None:
+    choose(town.jule, muted=[town.house], lead={"due": 7}, push=False)
+    with new_client(town.jule) as jule:
+        before = jule.get("/api/v1/me/reminders").json()
+        answer = jule.put("/api/v1/me/reminders", json={"muted": None, "rhythm": None, "push": None, "lead": None})
+        assert answer.status_code == 200 and answer.json() == before
+        assert answer.json()["muted"] == [town.house] and answer.json()["push"] is False
+        assert jule.put("/api/v1/me/reminders", json={"lead": {"due": None}}).json() == before
+        for body in ({"lead": {"due": True}}, {"lead": {"cancel": False}}, {"lead": {"warranty": 30.0}},
+                     {"lead": {"due": "3"}}, {"muted": [True]}, {"muted": [town.house, 1.5]}):
+            answer = jule.put("/api/v1/me/reminders", json=body)
+            assert answer.status_code == 422, body
+        assert jule.get("/api/v1/me/reminders").json() == before
+
+
+def test_the_numbers_of_a_choice_are_checked_as_whole_numbers_before_anything_else() -> None:
+    """``true`` is not a 1, in the lead and in the list of vaults (a vault 1 may well exist and be the caller's)."""
+    from pydantic import ValidationError
+
+    from app.routers.reminders import RemindersIn
+
+    assert RemindersIn.model_validate({"lead": {"due": 7}, "muted": [4]}).lead is not None
+    for body in ({"lead": {"due": True}}, {"lead": {"cancel": True}}, {"lead": {"warranty": True}},
+                 {"muted": [True]}, {"muted": [1.0]}, {"muted": ["1"]}):
+        with pytest.raises(ValidationError):
+            RemindersIn.model_validate(body)
+
+
+def test_the_zone_of_the_server_is_named_by_its_iana_name(town: Town, monkeypatch: pytest.MonkeyPatch) -> None:
+    with SessionLocal() as db:
+        row = db.get(Account, town.jule.id)
+        assert row is not None
+        row.profile = {}
+        db.commit()
+    monkeypatch.setenv("TZ", "Europe/Berlin")
+    with new_client(town.jule) as jule:
+        assert jule.get("/api/v1/me/reminders").json()["time_zone"] == "Europe/Berlin"
+        monkeypatch.setenv("TZ", "Not/AZone")
+        assert jule.get("/api/v1/me/reminders").json()["time_zone"] not in ("", "Not/AZone")
+    # The zone the browser reported wins over the server's.
+    set_profile(town.jule, "America/New_York")
+    with new_client(town.jule) as jule:
+        assert jule.get("/api/v1/me/reminders").json()["time_zone"] == "America/New_York"
+
+
+# --- The first look after the update ----------------------------------------------------------------------------------
+
+
+def undo_last_step_and_redo_it() -> None:
+    """The database as the update finds it: the step runs on the tables of today (here with documents already in)."""
+    with database.engine.begin() as connection:
+        for table in ("reminders_sent", "reminder_mutes", "reminder_settings"):
+            connection.exec_driver_sql(f"DROP TABLE {table}")
+        database._step_reminders(connection)
+
+
+def seed_marks(stage: str) -> int:
+    with SessionLocal() as db:
+        return int(db.scalar(select(func.count()).select_from(ReminderSent).where(ReminderSent.stage == stage)) or 0)
+
+
+def test_the_update_brings_no_flood_for_deadlines_that_were_there(town: Town) -> None:
+    for n in range(30):
+        town.add(f"Frist {n}", town.mine, town.jule, dates=[("due", TODAY + (1 + n % 3) * DAY)])
+    town.add("Heute", town.mine, town.jule, dates=[("due", TODAY)])
+    undo_last_step_and_redo_it()
+    assert seed_marks("seed") == 5, "one mark per person that existed"
+    assert run(at(TODAY, 7)).messages == 0  # the first look, before the hour: marks, sends nothing
+    assert seed_marks("seed") == 0 and seed_marks("lead") == 30
+    run(at(TODAY, 8))
+    assert town.got() == [("jule", "Zahlen bis Do, 08.10.: Heute")], "the day itself goes on"
+    for n, day in enumerate((TODAY + DAY, TODAY + 2 * DAY, TODAY + 3 * DAY)):
+        run(at(day, 8))
+        assert len(town.got()) == 10, f"day {n + 1}: one for each, on its day"
+    run(at(TODAY + 4 * DAY, 8))
+    assert town.got() == []
+
+
+def test_a_deadline_entered_after_the_update_is_reminded_ahead_as_ever(town: Town) -> None:
+    undo_last_step_and_redo_it()
+    run(at(TODAY, 7))
+    town.add("Neu", town.mine, town.jule, dates=[("due", TODAY + 2 * DAY)])
+    run(at(TODAY, 8))
+    assert town.got() == [("jule", "Zahlen bis Sa, 10.10.: Neu")]
+
+
+def test_without_a_mark_nothing_is_held_back(town: Town) -> None:
+    """A person who came after the update has no mark: the lead goes."""
+    town.add("Bald", town.mine, town.jule, dates=[("due", TODAY + 2 * DAY)])
+    run(at(TODAY, 8))
+    assert town.got() == [("jule", "Zahlen bis Sa, 10.10.: Bald")]
+
+
+# --- Gaps the check found ---------------------------------------------------------------------------------------------
+
+
+def test_the_weekly_mail_shows_a_title_and_a_name_as_text_not_as_markup(town: Town, mails: list[EmailMessage]) -> None:
+    choose(town.jule, rhythm="weekly")
+    with SessionLocal() as db:
+        row = db.get(Account, town.jule.id)
+        assert row is not None
+        row.display_name = "<i>Jule</i> & Co"
+        db.commit()
+    monday = Date(2026, 10, 12)
+    for title in ('<img src=x onerror="alert(1)">', '<b>fett</b> & "quote"'):
+        town.add(title, town.mine, town.jule, dates=[("due", monday + 2 * DAY)])
+    run(at(monday, 8))
+    assert len(mails) == 1
+    markup = mails[0].get_body(("html",)).get_content()  # type: ignore[union-attr]
+    assert "<img" not in markup and "<b>" not in markup and "<i>" not in markup
+    assert "&lt;img src=x onerror=&quot;alert(1)&quot;&gt;" in markup
+    assert "&lt;b&gt;fett&lt;/b&gt; &amp; &quot;quote&quot;" in markup
+    assert "&lt;i&gt;Jule&lt;/i&gt; &amp; Co" in markup
+    plain = mails[0].get_body(("plain",)).get_content()  # type: ignore[union-attr]
+    assert "<img src=x" in plain, "the plain text is plain text"
+
+
+@pytest.mark.parametrize(("zone", "offset"), [("Pacific/Auckland", 13), ("Pacific/Kiritimati", 14)])
+def test_eight_o_clock_in_a_zone_ahead_of_utc_is_already_the_next_day_there(town: Town, zone: str,
+                                                                            offset: int) -> None:
+    """At 8 o'clock in Auckland on the 9th it is still the 8th in UTC: the day is the person's, not the server's."""
+    set_profile(town.jule, zone, mail="jule@example.com")
+    town.add("Hier", town.mine, town.jule, dates=[("due", Date(2026, 10, 9))])
+    moment = datetime(2026, 10, 9, 8, 0, tzinfo=UTC) - timedelta(hours=offset)
+    assert moment.date() == Date(2026, 10, 8)
+    run(moment - timedelta(minutes=1))
+    assert town.got() == [], "7:59 there"
+    run(moment)
+    assert town.messages()[0]["body"] == "Heute."
+
+
+def test_the_test_message_has_a_brake(town: Town) -> None:
+    brakes.forget()
+    try:
+        with new_client(town.jule) as jule:
+            for _ in range(brakes.LIMITS["push_test"]):
+                assert jule.post("/api/v1/me/reminders/test").status_code == 200
+            answer = jule.post("/api/v1/me/reminders/test")
+            assert answer.status_code == 429 and "retry-after" in answer.headers
+            assert answer.json()["detail"]["code"] == "push_too_often"
+            assert len(town.messages()) == brakes.LIMITS["push_test"], "the message over the limit was not sent"
+        with new_client(town.tom) as tom:
+            assert tom.post("/api/v1/me/reminders/test").status_code == 200, "the brake is per person"
+    finally:
+        brakes.forget()
+
+
+@pytest.mark.parametrize("scope", ["read", "upload"])
+def test_no_api_key_of_any_scope_reaches_the_reminders(town: Town, scope: str) -> None:
+    apikeys.forget()
+    with SessionLocal() as db:
+        settings_service.save(db, {"api_keys_allowed": True})
+    with new_client(town.jule) as jule:
+        secret = jule.post("/api/v1/api-keys", json={"name": "program", "scope": scope}).json()["secret"]
+    header = {"Authorization": f"Bearer {secret}"}
+    with TestClient(new_client().app, base_url="http://testserver") as program:
+        assert program.get("/api/v1/me/reminders", headers=header).status_code == 401
+        assert program.put("/api/v1/me/reminders", json={"same_day": False}, headers=header).status_code == 401
+        assert program.post("/api/v1/me/reminders/test", headers=header).status_code == 401
+    assert town.messages() == []
+    with SessionLocal() as db:
+        assert reminders.preferences_of(db, town.jule.id).same_day is True
+    apikeys.forget()
+
+
 # --- The schema and the backup ----------------------------------------------------------------------------------------
 
 
@@ -573,15 +806,22 @@ def test_a_database_of_schema_11_comes_up_with_the_reminder_tables(scratch: Path
         connection.executescript((RECORDS / "v11.sql").read_text(encoding="utf-8"))
         connection.execute("INSERT INTO vaults (id, name, folder, icon, created_at) VALUES (1, 'Haushalt', 'Haushalt', "
                            "'folder', '2026-10-01 08:00:00')")
+        connection.execute("INSERT INTO users (id, name, display_name, whats_new_seen, role, sign_in, password_hash, "
+                           "email, oidc_subject, language, created_at, failed_logins, totp_secret_enc, totp_recovery, "
+                           "totp_last_step) VALUES (1, 'jule', 'Jule', '', 'member', 'password', '', '', '', 'de', "
+                           "'2026-10-01 08:00:00', 0, '', '', 0)")
         connection.execute("PRAGMA user_version = 11")
         connection.commit()
     database.init_db()
     with closing(sqlite3.connect(scratch)) as connection:
         assert connection.execute("PRAGMA user_version").fetchone()[0] == database.SCHEMA_VERSION
         for statement in ("SELECT count(*) FROM reminder_settings", "SELECT count(*) FROM reminder_mutes",
-                          "SELECT count(*) FROM reminders_sent"):
+                          "SELECT count(*) FROM reminders_sent WHERE stage <> 'seed'"):
             assert connection.execute(statement).fetchone()[0] == 0
         assert connection.execute("SELECT name FROM vaults").fetchall() == [("Haushalt",)]
+        # The one mark of the person that existed: their first look after the update marks the open leads.
+        assert connection.execute("SELECT user_id, stage, date_id FROM reminders_sent").fetchall() == [
+            (1, "seed", None)]
 
 
 def test_the_backup_holds_the_reminders(town: Town, tmp_path: Path) -> None:

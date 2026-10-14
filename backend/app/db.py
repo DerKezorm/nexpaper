@@ -357,6 +357,12 @@ def _step_reminders(connection: Connection) -> None:
         ),
         "CREATE UNIQUE INDEX uq_reminders_sent_person ON reminders_sent (user_id, stage, day) WHERE date_id IS NULL",
         "CREATE INDEX ix_reminders_sent_user_day ON reminders_sent (user_id, sent_day)",
+        # One mark per person that exists now: their first look after the update marks the leads already open as
+        # reminded, so the update brings no flood for deadlines that were there before (``reminders._seed``).
+        (
+            "INSERT INTO reminders_sent (user_id, date_id, stage, day, sent_day, sent_at) "
+            "SELECT id, NULL, 'seed', date('now'), date('now'), datetime('now') FROM users"
+        ),
     ):
         connection.exec_driver_sql(statement)
 
