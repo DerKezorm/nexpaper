@@ -437,6 +437,33 @@ def test_a_later_that_ran_out_is_not_shown(house: House) -> None:
         assert listing(tom)["soon"]["items"][0]["snoozed_until"] is None
 
 
+def test_a_later_ends_on_its_day_and_counts_the_day_of_the_person(house: House) -> None:
+    """Later until tomorrow: tomorrow it is over (the person is reminded that day again), on the list and on the
+    document, and the day is the person's own, not the server's."""
+    doc = house.add("Rechnung", house.house, house.tom, dates=[("due", TODAY + 5 * DAY)])
+    with new_client(house.tom) as tom:
+        assert tom.put(f"/api/v1/documents/{doc}/dates/due/snooze", json={"days": 1}).json() == {"until": "2026-10-09"}
+        assert tom.get(f"/api/v1/documents/{doc}").json()["dates"][0]["snoozed_until"] == "2026-10-09"
+        freeze(house.monkeypatch, NOON + DAY)
+        assert listing(tom)["soon"]["items"][0]["snoozed_until"] is None
+        assert tom.get(f"/api/v1/documents/{doc}").json()["dates"][0]["snoozed_until"] is None
+        # Back to the 8th at noon UTC; in a zone 14 hours ahead it is the 9th already, and the later is over there.
+        freeze(house.monkeypatch, NOON)
+        set_zone(house.tom, "Pacific/Kiritimati")
+        assert listing(tom)["soon"]["items"][0]["snoozed_until"] is None
+        assert tom.get(f"/api/v1/documents/{doc}").json()["dates"][0]["snoozed_until"] is None
+
+
+def test_ending_later_ends_only_the_own(house: House) -> None:
+    doc = house.add("Rechnung", house.house, house.tom, dates=[("due", TODAY + 5 * DAY)])
+    with new_client(house.tom) as tom, new_client(house.jule) as jule:
+        tom.put(f"/api/v1/documents/{doc}/dates/due/snooze", json={"days": 3})
+        jule.put(f"/api/v1/documents/{doc}/dates/due/snooze", json={"days": 7})
+        assert jule.delete(f"/api/v1/documents/{doc}/dates/due/snooze").status_code == 204
+        assert listing(tom)["soon"]["items"][0]["snoozed_until"] == "2026-10-11"
+        assert listing(jule)["soon"]["items"][0]["snoozed_until"] is None
+
+
 # --- Device, key, upload key ------------------------------------------------------------------------------------------
 
 
@@ -459,6 +486,12 @@ def test_a_device_does_what_the_browser_does_and_keys_only_read(house: House, ke
             return {"Authorization": f"Bearer {token}"}
 
         assert program.get("/api/v1/deadlines", headers=as_(keys["device"])).json()["soon"]["total"] == 1
+        # A key marks nothing done, whatever its scope.
+        for scope in ("read", "upload"):
+            answer = program.post(f"/api/v1/documents/{doc}/dates/due/done", headers=as_(keys[scope]))
+            assert answer.status_code == 401, (scope, answer.status_code)
+        with SessionLocal() as db:
+            assert db.scalar(select(DocumentDate.done_at).where(DocumentDate.document_id == doc)) is None
         assert program.put(f"/api/v1/documents/{doc}/dates/due/snooze", json={"days": 1},
                            headers=as_(keys["device"])).status_code == 200
         assert program.post(f"/api/v1/documents/{doc}/dates/due/done", headers=as_(keys["device"])).status_code == 200
@@ -537,16 +570,155 @@ def test_cancelled_holds_the_renewal_and_without_a_renewal_nothing_moves(house: 
     assert end_of(cancelled) == end_of(plain) == end_of(thrown) == Date(2026, 9, 30)
 
 
-def test_never_twice_from_the_same_end_even_when_it_is_put_back(house: House) -> None:
+def test_a_page_that_is_behind_does_not_undo_a_renewal(house: House) -> None:
+    """The page was opened before the contract renewed and sends its old end back with a changed notice period: the
+    new end stays, the notice period changes, and the contract goes on renewing. Another day is taken as meant."""
+    doc = house.add("Vertrag", house.mine, house.jule)
+    contract(doc, house.jule.id, Date(2026, 10, 7))
+    with SessionLocal() as db:
+        assert deadlines.renew_due(db, TODAY) == 1
+    assert end_of(doc) == Date(2027, 10, 7)
+    with new_client(house.jule) as jule:
+        answer = jule.patch(f"/api/v1/documents/{doc}", json={"dates": [
+            {"kind": "contract_end", "date": "2026-10-07", "notice": {"n": 6, "unit": "weeks"}, "renew_months": 12}]})
+        assert answer.status_code == 200, answer.text
+        term = answer.json()["dates"][0]
+        assert term["date"] == "2027-10-07" and term["notice"] == {"n": 6, "unit": "weeks"}
+    with SessionLocal() as db:
+        assert deadlines.renew_due(db, TODAY + 40 * DAY) == 0
+    assert end_of(doc) == Date(2027, 10, 7) and len(renewals(doc)) == 1
+    # The year after, it renews again.
+    with SessionLocal() as db:
+        assert deadlines.renew_due(db, Date(2027, 10, 8)) == 1
+    assert end_of(doc) == Date(2028, 10, 7)
+    # A person who means another end sets another day.
+    contract(doc, house.jule.id, Date(2026, 10, 6))
+    assert end_of(doc) == Date(2026, 10, 6)
+
+
+def test_never_twice_from_the_same_end(house: House) -> None:
     doc = house.add("Vertrag", house.mine, house.jule)
     contract(doc, house.jule.id, Date(2026, 10, 1))
     with SessionLocal() as db:
         assert deadlines.renew_due(db, TODAY) == 1
-    # Somebody puts the old end back by hand (or the clock jumps back and the same end comes round again).
-    contract(doc, house.jule.id, Date(2026, 10, 1))
-    with SessionLocal() as db:
         assert deadlines.renew_due(db, TODAY) == 0
-    assert end_of(doc) == Date(2026, 10, 1) and len(renewals(doc)) == 1
+        # The clock jumps back: the end is in the future for it, nothing to do.
+        assert deadlines.renew_due(db, Date(2026, 9, 1)) == 0
+    assert end_of(doc) == Date(2027, 10, 1) and len(renewals(doc)) == 1
+
+
+def test_the_day_does_not_drift_to_the_end_of_the_month(house: House) -> None:
+    """Counted from the end a person set: 30.01. plus one month is 28.02., then 30.03. and 30.04., not 31.03.; a
+    quarter from 30.08. is 30.11., 28.02., then 30.05. (an end that is a month's last day, 30.11., stays a last day)."""
+    monthly = house.add("Monatlich", house.mine, house.jule)
+    contract(monthly, house.jule.id, Date(2026, 1, 30), renew=1)
+    quarterly = house.add("Vierteljährlich", house.mine, house.jule)
+    contract(quarterly, house.jule.id, Date(2025, 8, 30), renew=3)
+    ends = []
+    for day in (Date(2026, 2, 1), Date(2026, 3, 1), Date(2026, 3, 31)):
+        with SessionLocal() as db:
+            deadlines.renew_due(db, day)
+        ends.append((end_of(monthly), end_of(quarterly)))
+    assert ends[0] == (Date(2026, 2, 28), Date(2026, 2, 28))
+    assert ends[1] == (Date(2026, 3, 30), Date(2026, 5, 30))
+    assert ends[2] == (Date(2026, 4, 30), Date(2026, 5, 30))
+    # The last day to cancel follows the end that was reached.
+    with SessionLocal() as db:
+        notice = db.scalar(select(DocumentDate.notice_date).where(DocumentDate.document_id == monthly))
+    assert notice == Date(2026, 1, 31)
+
+
+def test_the_count_starts_again_where_a_person_sets_the_end(house: House) -> None:
+    doc = house.add("Vertrag", house.mine, house.jule)
+    contract(doc, house.jule.id, Date(2026, 1, 30), renew=1)
+    with SessionLocal() as db:
+        deadlines.renew_due(db, Date(2026, 2, 1))
+    assert end_of(doc) == Date(2026, 2, 28)
+    contract(doc, house.jule.id, Date(2026, 4, 15), renew=1)
+    with SessionLocal() as db:
+        deadlines.renew_due(db, Date(2026, 4, 16))
+        deadlines.renew_due(db, Date(2026, 5, 16))
+    assert end_of(doc) == Date(2026, 6, 15)
+    # A new term of renewal counts from the end it has then.
+    with new_client(house.jule) as jule:
+        jule.patch(f"/api/v1/documents/{doc}", json={"set_dates": [{"kind": "contract_end", "renew_months": 3}]})
+    with SessionLocal() as db:
+        deadlines.renew_due(db, Date(2026, 6, 16))
+    assert end_of(doc) == Date(2026, 9, 15)
+
+
+def test_an_end_exactly_today_is_where_it_stops(house: House) -> None:
+    doc = house.add("Vertrag", house.mine, house.jule)
+    contract(doc, house.jule.id, Date(2025, 10, 8))
+    with SessionLocal() as db:
+        assert deadlines.renew_due(db, TODAY) == 1
+    assert end_of(doc) == TODAY
+    assert deadlines.next_end(Date(2025, 10, 8), 12, TODAY) == TODAY
+    assert deadlines.next_end(Date(2025, 10, 8), 12, TODAY, after=TODAY) == Date(2027, 10, 8)
+
+
+def test_on_its_last_day_to_cancel_a_contract_is_due_that_day(house: House) -> None:
+    """The SQL of the list, the menu and the search agrees with the reckoning on the day itself."""
+    doc = house.add("Vertrag", house.mine, house.jule)
+    contract(doc, house.jule.id, Date(2027, 1, 8))
+    with new_client(house.jule) as jule:
+        item = listing(jule)["soon"]["items"][0]
+        assert (item["what"], item["date"], item["days"]) == ("cancel", "2026-10-08", 0)
+        assert jule.get("/api/v1/counts").json()["deadlines"] == 1
+        assert found(jule, "frist:<0") == ["Vertrag"]
+    freeze(house.monkeypatch, NOON + DAY)
+    with new_client(house.jule) as jule:
+        item = listing(jule)["later"]["items"][0]
+        assert (item["what"], item["date"], item["missed"]) == ("ends", "2027-01-08", "2026-10-08")
+        assert jule.get("/api/v1/counts").json()["deadlines"] == 0
+
+
+# --- Single terms (a page that may be behind) -------------------------------------------------------------------------
+
+
+def test_single_terms_change_only_what_they_name(house: House) -> None:
+    doc = house.add("Rechnung", house.mine, house.jule, dates=[("due", Date(2026, 10, 20)),
+                                                              ("warranty_end", Date(2028, 10, 1))])
+    with new_client(house.jule) as jule:
+        seq = jule.get(f"/api/v1/documents/{doc}").json()["change_seq"]
+        answer = jule.patch(f"/api/v1/documents/{doc}", json={"set_dates": [
+            {"kind": "due", "date": "2026-10-25"},
+            {"kind": "contract_end", "date": "2027-03-31", "notice": {"n": 1, "unit": "months"}, "renew_months": 12}]})
+        assert answer.status_code == 200, answer.text
+        shown = {d["kind"]: d for d in answer.json()["dates"]}
+        assert shown["due"]["date"] == "2026-10-25" and shown["warranty_end"]["date"] == "2028-10-01"
+        assert shown["contract_end"]["last_to_cancel"] == "2027-02-28" and answer.json()["change_seq"] > seq
+        # Only the notice period: the day stays.
+        term = jule.patch(f"/api/v1/documents/{doc}", json={"set_dates": [
+            {"kind": "contract_end", "notice": {"n": 2, "unit": "weeks"}}]}).json()
+        shown = {d["kind"]: d for d in term["dates"]}
+        assert shown["contract_end"]["date"] == "2027-03-31" and shown["contract_end"]["notice"]["unit"] == "weeks"
+        removed = jule.patch(f"/api/v1/documents/{doc}", json={"remove_dates": ["warranty_end"]}).json()
+        assert sorted(d["kind"] for d in removed["dates"]) == ["contract_end", "due"]
+        events = jule.get(f"/api/v1/documents/{doc}/events").json()
+        assert [e["detail"] for e in events if e["action"] == "changed"].count({"fields": ["dates"]}) == 3
+        # Nothing to change is no change.
+        same = jule.patch(f"/api/v1/documents/{doc}", json={"set_dates": [{"kind": "due", "date": "2026-10-25"}]})
+        assert same.json()["change_seq"] == removed["change_seq"]
+
+
+@pytest.mark.parametrize(("body", "code", "field"), [
+    ({"set_dates": [{"kind": "contract_end", "renew_months": 12}]}, "invalid_date", "set_dates[0]"),
+    ({"set_dates": [{"kind": "due", "date": "1800-01-01"}]}, "invalid_date", "set_dates[0]"),
+    ({"set_dates": [{"kind": "due", "date": "2026-10-20", "renew_months": 12}]}, "invalid_terms", "set_dates[0]"),
+    ({"dates": [], "set_dates": [{"kind": "due", "date": "2026-10-20"}]}, "invalid_input", None),
+    ({"dates": [], "remove_dates": ["due"]}, "invalid_input", None),
+])
+def test_single_terms_that_cannot_be_taken(house: House, body: dict[str, Any], code: str, field: str | None) -> None:
+    doc = house.add("Rechnung", house.mine, house.jule, dates=[("due", Date(2026, 10, 20))])
+    with new_client(house.jule) as jule:
+        answer = jule.patch(f"/api/v1/documents/{doc}", json=body)
+    assert answer.status_code == 422 and answer.json()["detail"]["code"] == code, answer.text
+    if field:
+        assert answer.json()["detail"]["field"] == field
+    with SessionLocal() as db:
+        assert [r.date for r in db.scalars(select(DocumentDate).where(DocumentDate.document_id == doc))] == [
+            Date(2026, 10, 20)]
 
 
 def test_two_runs_at_once_renew_once(house: House) -> None:
@@ -704,9 +876,10 @@ def test_a_database_of_schema_10_with_dates_comes_up_with_open_deadlines(scratch
     database.init_db()
     with closing(sqlite3.connect(scratch)) as connection:
         assert connection.execute("PRAGMA user_version").fetchone()[0] == database.SCHEMA_VERSION
-        row = connection.execute("SELECT kind, date, notice_n, renew_months, notice_date, done_at, renewed_from "
-                                 "FROM document_dates").fetchone()
-        assert row == ("contract_end", "2026-12-31", None, None, None, None, None)
+        row = connection.execute("SELECT kind, date, notice_n, renew_months, notice_date, done_at, renewed_from, "
+                                 "renew_anchor FROM document_dates").fetchone()
+        # A contract that was there counts its terms from the end it has.
+        assert row == ("contract_end", "2026-12-31", None, None, None, None, None, "2026-12-31")
         assert connection.execute("SELECT count(*) FROM deadline_snoozes").fetchone()[0] == 0
 
 

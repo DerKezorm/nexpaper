@@ -172,7 +172,7 @@ export function TagEditor({ tags, onChange, label, known = [] }: { tags: string[
  * (`dates[n]`, n counted in `dates`) with the value it refused. `done` and `onDone` (the document page): each deadline
  * says whether it is paid, cancelled or claimed, with a button to mark it so or to take that back.
  */
-export function Dates({ dates, onChange, onDraft, start, why, refused, done, onDone }: { dates: DateEntry[]; onChange: (dates: DateEntry[]) => void; onDraft?: (dates: DateEntry[]) => void; start: string | null; why?: string; refused?: { field: string; value: string } | null; done?: Partial<Record<string, DocumentDate['done']>>; onDone?: (kind: DateKind, done: boolean) => void }) {
+export function Dates({ dates, onChange, onDraft, start, why, refused, done, onDone }: { dates: DateEntry[]; onChange: (dates: DateEntry[]) => void; onDraft?: (dates: DateEntry[]) => void; start: string | null; why?: string; refused?: { field: string; value: string; kind?: string } | null; done?: Partial<Record<string, DocumentDate['done']>>; onDone?: (kind: DateKind, done: boolean) => void }) {
   const { t } = useTranslation()
   const [adding, setAdding] = useState(false)
   const free = DATE_KINDS.filter((kind) => !dates.some((d) => d.kind === kind))
@@ -193,7 +193,7 @@ export function Dates({ dates, onChange, onDraft, start, why, refused, done, onD
                 value={entry.date}
                 label={t(`docs.dateKinds.${entry.kind}`)}
                 // The server counts the terms as they were sent, in the order of the list given here.
-                refused={refused && refused.field === `dates[${dates.findIndex((d) => d.kind === entry.kind)}]` ? refused.value : undefined}
+                refused={refused && (refused.kind ? refused.kind === entry.kind : refused.field === `dates[${dates.findIndex((d) => d.kind === entry.kind)}]`) ? refused.value : undefined}
                 onChange={onDraft && ((day) => day && onDraft(dates.map((d) => (d.kind === entry.kind ? { ...d, date: day } : d))))}
                 onCommit={(day) => day && change(entry.kind, { date: day })}
                 className="input h-9 w-full"

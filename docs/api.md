@@ -413,7 +413,11 @@ list most first (`years` the newest first). `senders` and `tags` are `{name, cou
 A date of a document is a deadline when it is `due`, `contract_end` or `warranty_end` (`keep_until` is none). A contract
 may carry its notice period and renewal: `PATCH /documents/{id}` takes in `dates` per entry `notice` (`{"n": 1 to 24,
 "unit": "weeks" | "months"}`) and `renew_months` (1 to 120); left out they stay, `null` takes them away; on any other kind
-`422 invalid_terms` naming the field. Each date in an answer carries `notice`, `renew_months`, `last_to_cancel` (the end
+`422 invalid_terms` naming the field. A page that may be behind sends single terms instead of the whole list:
+`set_dates` (at most 4, `[{kind, date?, notice?, renew_months?}]`: only the kinds named, and of them only what is sent; a
+left-out `date` keeps the day, a new term needs one) and `remove_dates` (`[kind]`); not together with `dates`
+(`422 invalid_input`), a refused day names `set_dates[n]`. A contract that renewed by itself keeps its new end when the
+end it renewed from comes back in `dates` (a page that is behind); another day is taken as meant. Each date in an answer carries `notice`, `renew_months`, `last_to_cancel` (the end
 minus the period, to the day of the calendar: 31.12. minus 3 months is 30.09.), `done` (`{at, by}`), `renewed_from` and
 the caller's own `snoozed_until`.
 
@@ -433,7 +437,9 @@ off for the caller alone and answers `{until}`; `DELETE …/snooze` ends that (`
 history). A key reads the list and changes nothing.
 
 A contract that renews and that nobody cancelled moves its end on by itself once it has passed: to the first end that
-is today or later, once per end (`renewed` in the history with `from` and `to`, a new number for `/changes`).
+is today or later, once per end (`renewed` in the history with `from` and `to`, a new number for `/changes`). The terms
+are counted from the end a person last set (or the end when the renewal changed), so 30.01. plus a month each time is
+28.02., 30.03., 30.04.
 
 ### Settings (the operator, in a browser)
 

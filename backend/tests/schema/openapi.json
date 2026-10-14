@@ -869,6 +869,62 @@
         "title": "DateOut",
         "type": "object"
       },
+      "DateSet": {
+        "additionalProperties": false,
+        "description": "One term in ``set_dates``: the kind it is, and only what is to change. A day left out keeps the day the term has\n(a new term needs one); ``notice`` and ``renew_months`` as in ``dates``.",
+        "properties": {
+          "date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Date"
+          },
+          "kind": {
+            "enum": [
+              "due",
+              "contract_end",
+              "warranty_end",
+              "keep_until"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "notice": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NoticeIn"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "renew_months": {
+            "anyOf": [
+              {
+                "maximum": 120.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Renew Months"
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "title": "DateSet",
+        "type": "object"
+      },
       "DeadlinesOut": {
         "properties": {
           "counts": {
@@ -1256,7 +1312,7 @@
       },
       "DocumentPatch": {
         "additionalProperties": false,
-        "description": "Only the fields that are sent change. ``sender`` is a name (made if new), empty or null removes it; ``amount``\nis in cents; ``tags`` and ``dates`` replace the whole list.",
+        "description": "Only the fields that are sent change. ``sender`` is a name (made if new), empty or null removes it; ``amount``\nis in cents; ``tags`` and ``dates`` replace the whole list. ``set_dates`` changes only the terms it names, and only\nwhat it sends of them; ``remove_dates`` takes terms away by kind (not together with ``dates``). A page that may be\nbehind sends those, so it never sends back a day it did not see change (a contract that renewed meanwhile).",
         "properties": {
           "amount": {
             "anyOf": [
@@ -1309,6 +1365,27 @@
             ],
             "title": "Kind Id"
           },
+          "remove_dates": {
+            "anyOf": [
+              {
+                "items": {
+                  "enum": [
+                    "due",
+                    "contract_end",
+                    "warranty_end",
+                    "keep_until"
+                  ],
+                  "type": "string"
+                },
+                "maxItems": 4,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Remove Dates"
+          },
           "sender": {
             "anyOf": [
               {
@@ -1320,6 +1397,21 @@
               }
             ],
             "title": "Sender"
+          },
+          "set_dates": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/DateSet"
+                },
+                "maxItems": 4,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Set Dates"
           },
           "status": {
             "anyOf": [
@@ -11378,7 +11470,7 @@
             "description": "Successful Response"
           },
           "422": {
-            "description": "A field is wrong. A date that is out of range (1900 to 2200) or no date answers `invalid_date` with `field`: `date`, or `dates[n]` for the n-th term of `dates`."
+            "description": "A field is wrong. A date that is out of range (1900 to 2200) or no date answers `invalid_date` with `field`: `date`, or `dates[n]` for the n-th term of `dates` (`set_dates[n]` for single terms)."
           }
         },
         "security": [

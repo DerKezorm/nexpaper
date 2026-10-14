@@ -2,7 +2,7 @@
  * The inbox's data: what waits there for the person, and what of a document's fields changed (the draft of the inbox
  * against the document as the server has it).
  */
-import { documentsApi, type DocumentInfo, type DocumentPatch } from '../api/client'
+import { documentsApi, type DateSet, type DocumentInfo, type DocumentPatch } from '../api/client'
 import type { DateEntry } from '../components/DocumentFields'
 
 /** Everything waiting in the inbox that the person may add to: being read first, then the newest. */
@@ -82,6 +82,27 @@ export function changesOf(d: DocumentInfo, f: Draft): DocumentPatch {
   if (f.date !== was.date) out.date = f.date || null
   if (f.amount !== was.amount) out.amount = f.amount
   if (JSON.stringify(f.tags) !== JSON.stringify(was.tags)) out.tags = f.tags
-  if (JSON.stringify(f.dates) !== JSON.stringify(was.dates)) out.dates = f.dates
-  return out
+  return { ...out, ...datesChanged(was.dates, f.dates) }
+}
+
+/**
+ * What changed in the terms, as single terms (`set_dates`, `remove_dates`): a page sends only what the person changed,
+ * so a page that is behind never sends back a day it did not see change (a contract that renewed meanwhile).
+ */
+export function datesChanged(was: DateEntry[], now: DateEntry[]): Pick<DocumentPatch, 'set_dates' | 'remove_dates'> {
+  const setDates: DateSet[] = []
+  for (const entry of now) {
+    const before = was.find((d) => d.kind === entry.kind)
+    if (!before) {
+      setDates.push({ ...entry })
+      continue
+    }
+    const changed: DateSet = { kind: entry.kind }
+    if (entry.date !== before.date) changed.date = entry.date
+    if (JSON.stringify(entry.notice ?? null) !== JSON.stringify(before.notice ?? null)) changed.notice = entry.notice ?? null
+    if ((entry.renew_months ?? null) !== (before.renew_months ?? null)) changed.renew_months = entry.renew_months ?? null
+    if (Object.keys(changed).length > 1) setDates.push(changed)
+  }
+  const removeDates = was.filter((d) => !now.some((x) => x.kind === d.kind)).map((d) => d.kind)
+  return { ...(setDates.length ? { set_dates: setDates } : {}), ...(removeDates.length ? { remove_dates: removeDates } : {}) }
 }

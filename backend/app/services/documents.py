@@ -152,7 +152,12 @@ def rows(db: Session, uid: int, documents: list[Document]) -> list[Row]:
     every_row = [r for found in date_rows.values() for r in found]
     done_by = {a.id: a for a in db.scalars(select(Account).where(
         Account.id.in_({r.done_by for r in every_row if r.done_by})))} if any(r.done_by for r in every_row) else {}
-    snoozes = deadlines.snoozes_of(db, uid, [r.id for r in every_row], deadlines.server_today())
+    # "Later" ends on the caller's own day, as on the deadlines page.
+    snoozes: dict[int, Date] = {}
+    if every_row:
+        caller = db.get(Account, uid)
+        today = deadlines.today_of(caller) if caller is not None else deadlines.server_today()
+        snoozes = deadlines.snoozes_of(db, uid, [r.id for r in every_row], today)
     notes = dict(db.execute(select(Note.document_id, func.count()).where(Note.document_id.in_(ids))
                             .group_by(Note.document_id)).all())
     wanted = {d.duplicate_of for d in documents if d.duplicate_of}
@@ -339,45 +344,76 @@ def create_from_file(
     return document
 
 
-def _set_dates(db: Session, document: Document, dates: list[tuple[Any, ...]]) -> bool:
-    """Replaces the dated terms of a document; True when something changed. Each entry is ``(kind, date)`` or
+def _set_dates(db: Session, document: Document, dates: list[tuple[Any, ...]], *, only_these: bool = False,
+               field: str = "dates") -> bool:
+    """Sets the dated terms of a document; True when something changed. Each entry is ``(kind, date)`` or
     ``(kind, date, terms)``; ``terms`` may name ``notice`` (``{"n", "unit"}`` or nothing) and ``renew_months`` of a
-    contract: what it names is set, what it leaves out stays as it was."""
+    contract: what it names is set, what it leaves out stays as it was. The whole list replaces the terms the document
+    has; ``only_these`` changes the kinds named and leaves the others (``set_dates``), and there a date of ``None``
+    keeps the day the term has.
+
+    A contract that renewed by itself keeps its new end when the end it renewed from comes back (a page that still shows
+    the old one sends it with its other fields): a person who means another end sets another day. The end a person sets,
+    or the end when the term of renewal changes, is where the renewal counts its terms from (``renew_anchor``)."""
     from . import deadlines
 
-    wanted: dict[str, tuple[Date, dict[str, Any]]] = {}
+    wanted: dict[str, tuple[Date | None, dict[str, Any]]] = {}
+    places: dict[str, str] = {}
     for index, entry in enumerate(dates):
         kind, day = entry[0], entry[1]
         terms: dict[str, Any] = dict(entry[2]) if len(entry) > 2 and entry[2] else {}
-        place = f"dates[{index}]"
+        place = f"{field}[{index}]"
         if kind not in DATE_KINDS:
             raise error("invalid_date_kind", "No such kind of date.", 422, field=place)
         deadlines.check_terms(kind, terms.get("notice"), terms.get("renew_months"), place)
-        wanted[kind] = (check_date(day, place), terms)  # type: ignore[assignment]
+        if day is None and not only_these:
+            raise error("invalid_date", "This date is out of range.", 422, field=place)
+        wanted[kind] = (check_date(day, place), terms)
+        places[kind] = place
     current = {row.kind: row for row in db.scalars(select(DocumentDate).where(DocumentDate.document_id == document.id))}
     changed = False
-    for kind, row in current.items():
-        if kind not in wanted:
-            db.delete(row)
-            changed = True
+    if not only_these:
+        for kind, row in current.items():
+            if kind not in wanted:
+                db.delete(row)
+                changed = True
     for kind, (day, terms) in wanted.items():
         row = current.get(kind)
         if row is None:
+            if day is None:
+                raise error("invalid_date", "A new term needs its day.", 422, field=places[kind])
             row = DocumentDate(document_id=document.id, kind=kind, date=day)
             db.add(row)
             changed = True
         before = (row.date, row.notice_n, row.notice_unit, row.renew_months)
-        row.date = day
+        stale = (kind == "contract_end" and day is not None and row.renewed_from is not None
+                 and day == row.renewed_from and row.date is not None and row.date != row.renewed_from)
+        if day is not None and not stale and day != row.date:
+            row.date = day
+            row.renew_anchor = day
         if "notice" in terms:
             notice = terms["notice"]
             row.notice_n = notice["n"] if notice else None
             row.notice_unit = notice["unit"] if notice else None
-        if "renew_months" in terms:
+        if "renew_months" in terms and terms["renew_months"] != row.renew_months:
             row.renew_months = terms["renew_months"]
+            row.renew_anchor = row.date
+        if kind == "contract_end" and row.renew_anchor is None:
+            row.renew_anchor = row.date
         deadlines.store_terms(row)
         if before != (row.date, row.notice_n, row.notice_unit, row.renew_months):
             changed = True
     return changed
+
+
+def _remove_dates(db: Session, document: Document, kinds: list[str]) -> bool:
+    """Takes the terms of the kinds named away (``remove_dates``); True when one was there."""
+    gone = False
+    for row in db.scalars(select(DocumentDate).where(DocumentDate.document_id == document.id,
+                                                     DocumentDate.kind.in_(kinds))):
+        db.delete(row)
+        gone = True
+    return gone
 
 
 # --- Changing ---------------------------------------------------------------------------------------------------------
@@ -446,6 +482,17 @@ def update_fields(db: Session, uid: int, document_id: int, patch: dict[str, Any]
     if "dates" in patch and _set_dates(db, document, [
         (d["kind"], d["date"], {k: d[k] for k in ("notice", "renew_months") if k in d}) for d in patch["dates"]
     ]):
+        changed.append("dates")
+    # Single terms (a page sends only what it changed, so it never sends back what it did not see change).
+    some = False
+    if patch.get("set_dates"):
+        some = _set_dates(db, document, [
+            (d["kind"], d.get("date"), {k: d[k] for k in ("notice", "renew_months") if k in d})
+            for d in patch["set_dates"]
+        ], only_these=True, field="set_dates")
+    if patch.get("remove_dates"):
+        some = _remove_dates(db, document, list(patch["remove_dates"])) or some
+    if some and "dates" not in changed:
         changed.append("dates")
     if not changed:
         db.rollback()

@@ -533,6 +533,9 @@ class DocumentDate(Base):
     done_at: Mapped[datetime | None] = mapped_column(UtcDateTime, nullable=True)
     done_by: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     renewed_from: Mapped[Any] = mapped_column(Date, nullable=True)
+    #: The end of a contract as a person last set it (or the term changed): the renewal counts from here in whole terms,
+    #: so a contract to the 30th does not drift to the end of the month after a February.
+    renew_anchor: Mapped[Any] = mapped_column(Date, nullable=True)
 
 
 class DocumentTag(Base):
