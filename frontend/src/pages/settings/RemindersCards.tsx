@@ -74,17 +74,19 @@ export function RemindersPart({ me }: { me: Me }) {
     <>
       <Card icon={Bell} title={t('reminders.how.title')} text={t('reminders.how.text')}>
         <SubHead title={t('reminders.when')} />
-        <Segment
-          label={t('reminders.rhythmLabel')}
-          value={r.rhythm}
-          onChange={(rhythm) => save({ rhythm })}
-          options={[
-            { value: 'single', label: t('reminders.rhythm.single') },
-            { value: 'weekly', label: t('reminders.rhythm.weekly'), disabled: !mailOk && r.rhythm !== 'weekly' },
-            { value: 'both', label: t('reminders.rhythm.both'), disabled: !mailOk && r.rhythm !== 'both' },
-          ]}
-        />
-        <p className="text-sm text-muted">{t(`reminders.rhythmHint.${r.rhythm}`)}</p>
+        <div>
+          <Segment
+            label={t('reminders.rhythmLabel')}
+            value={r.rhythm}
+            onChange={(rhythm) => save({ rhythm })}
+            options={[
+              { value: 'single', label: t('reminders.rhythm.single') },
+              { value: 'weekly', label: t('reminders.rhythm.weekly'), disabled: !mailOk && r.rhythm !== 'weekly' },
+              { value: 'both', label: t('reminders.rhythm.both'), disabled: !mailOk && r.rhythm !== 'both' },
+            ]}
+          />
+          <p className="mt-2 text-sm text-muted">{t(`reminders.rhythmHint.${r.rhythm}`)}</p>
+        </div>
         {!mailOk && r.rhythm === 'single' && <p className="text-xs text-muted">{mailWhy}</p>}
         <SubHead title={t('reminders.where')} />
         <div className="space-y-2">
