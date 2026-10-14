@@ -486,7 +486,7 @@ export type DocumentInfo = {
   amount: number | null
   currency: string
   tags: string[]
-  dates: { kind: string; date: string }[]
+  dates: DocumentDate[]
   pages: number
   source: string
   status: 'processing' | 'inbox' | 'filed' | 'trash'
@@ -596,7 +596,7 @@ export type InboxPage = {
   all: number
   reading: number
 }
-export type MenuCounts = { inbox: number; reading: number; trash: number }
+export type MenuCounts = { inbox: number; reading: number; trash: number; deadlines?: number; deadlines_overdue?: number }
 export type FiledMany = { filed: number[]; failed: { id: number; code: string }[] }
 
 export const inboxApi = {
@@ -772,7 +772,7 @@ export type SearchResult = {
   items: SearchHit[]
   total: number
   next: string | null
-  understood: { words: string[]; phrases: string[]; kinds: string[]; senders: string[]; tags: string[]; amounts: { op: '<' | '>' | '='; cents: number }[] }
+  understood: { words: string[]; phrases: string[]; kinds: string[]; senders: string[]; tags: string[]; amounts: { op: '<' | '>' | '='; cents: number }[]; deadlines?: (string | number)[] }
 }
 export type SearchFilters = {
   vault_id?: number
@@ -786,6 +786,8 @@ export type SearchFilters = {
   trash?: boolean
   /** Only what was shared with the person one by one (true), or only what lies in their vaults (false). */
   via_share?: boolean
+  /** Only documents with a deadline that is open, overdue, done, or open within that many days (`30`). */
+  deadline?: string
   cursor?: string
   limit?: number
 }
@@ -807,7 +809,7 @@ export type SearchOverview = {
 
 export const searchApi = {
   find: (q: string, filters: SearchPage = {}, signal?: AbortSignal) => api<SearchResult>('/api/v1/search', { query: { q, ...filters }, signal }),
-  overview: (filters: Pick<SearchFilters, 'vault_id' | 'status' | 'via_share'> = {}, signal?: AbortSignal) =>
+  overview: (filters: Pick<SearchFilters, 'vault_id' | 'status' | 'via_share' | 'deadline'> = {}, signal?: AbortSignal) =>
     api<SearchOverview>('/api/v1/search/overview', { query: filters, signal }),
   text: (document: number, version: number) => api<VersionText>(`/api/v1/documents/${document}/versions/${version}/text`),
 }
@@ -960,8 +962,73 @@ export type DocumentPatch = Partial<{
   amount: number | null
   status: 'inbox' | 'filed'
   tags: string[]
-  dates: { kind: DateKind; date: string }[]
+  dates: DateIn[]
 }>
+/** A notice period of a contract. */
+export type Notice = { n: number; unit: 'weeks' | 'months' }
+/** A date as `PATCH` takes it: a contract may carry its notice period and renewal (left out: they stay, `null`: gone). */
+export type DateIn = { kind: DateKind; date: string; notice?: Notice | null; renew_months?: number | null }
+/** A date of a document as the server has it: with a contract's terms, the last day to cancel worked out from them,
+ * who marked it done and when, and the person's own "later". */
+export type DocumentDate = {
+  kind: string
+  date: string
+  notice?: Notice | null
+  renew_months?: number | null
+  last_to_cancel?: string | null
+  done?: { at: string; by: Person | null } | null
+  renewed_from?: string | null
+  snoozed_until?: string | null
+}
+
+// ---- Deadlines (F1) ---------------------------------------------------------------------------------------------------
+
+export type DeadlineKind = 'due' | 'contract_end' | 'warranty_end'
+export type DeadlineWhat = 'pay' | 'cancel' | 'ends' | 'warranty'
+export type Deadline = {
+  document_id: number
+  title: string
+  status: 'inbox' | 'filed'
+  vault_id: number
+  via_share: boolean
+  sender: string | null
+  amount: number | null
+  currency: string
+  kind: DeadlineKind
+  what: DeadlineWhat
+  /** The day to act by and how far it is from today (below 0: overdue). */
+  date: string
+  days: number
+  end: string
+  notice: Notice | null
+  renew_months: number | null
+  renews_to: string | null
+  missed: string | null
+  done: { at: string; by: Person | null } | null
+  snoozed_until: string | null
+}
+export type DeadlineSection = { total: number; items: Deadline[] }
+export type Deadlines = {
+  today: string
+  soon_days: number
+  overdue: DeadlineSection
+  soon: DeadlineSection
+  later: DeadlineSection
+  done: DeadlineSection | null
+  counts: Record<string, number>
+  shared: number
+}
+export type DeadlineQuery = { vault_id?: number; shared?: boolean; what?: 'pay' | 'cancel' | 'warranty'; done?: boolean; limit?: number }
+
+export const deadlinesApi = {
+  list: (query: DeadlineQuery = {}) => api<Deadlines>('/api/v1/deadlines', { query: query as Record<string, string | number | boolean | undefined> }),
+  /** Paid, cancelled, claimed: for everybody. */
+  done: (id: number, kind: DeadlineKind) => api<DocumentInfo>(`/api/v1/documents/${id}/dates/${kind}/done`, { method: 'POST' }),
+  reopen: (id: number, kind: DeadlineKind) => api<DocumentInfo>(`/api/v1/documents/${id}/dates/${kind}/done`, { method: 'DELETE' }),
+  /** Later, only for oneself: 1, 3 or 7 days. */
+  snooze: (id: number, kind: DeadlineKind, days: 1 | 3 | 7) => api<{ until: string }>(`/api/v1/documents/${id}/dates/${kind}/snooze`, { method: 'PUT', body: { days } }),
+  unsnooze: (id: number, kind: DeadlineKind) => api<void>(`/api/v1/documents/${id}/dates/${kind}/snooze`, { method: 'DELETE' }),
+}
 export type DocumentNote = { id: number; author: Person | null; text: string; created_at: string; updated_at: string | null; mine: boolean }
 export type DocumentEvent = { id: number; at: string; action: string; by: Person | null; by_link: string; detail: Record<string, unknown> | null }
 export type DocumentVersion = {

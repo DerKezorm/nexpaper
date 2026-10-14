@@ -1576,7 +1576,9 @@
         "nur diese Art",
         "nur dieser Absender",
         "nur mit diesem Tag",
-        "Betrag über 100 €"
+        "Betrag über 100 €",
+        "noch zu zahlen, kündigen, melden",
+        "Frist in den nächsten 30 Tagen"
       ],
       "helpParts": "Teile von Wörtern gehen auch: „werke“ findet „Stadtwerke“. Groß und klein ist egal.",
       "allVaults": "Alle Tresore",
@@ -1609,7 +1611,9 @@
         "art:rechnung",
         "absender:hansa",
         "tag:auto",
-        "betrag:>100"
+        "betrag:>100",
+        "frist:offen",
+        "frist:<30"
       ],
       "sharedOut": "mit Personen geteilt",
       "linkOut": "Link nach außen",
@@ -2625,5 +2629,150 @@
     "uploadShort": "Hochladen",
     "camera": "Fotografieren",
     "cameraShort": "Kamera"
+  },
+  "deadlines": {
+    "menu": "Fristen",
+    "title": "Fristen",
+    "intro": "Was bezahlt, gekündigt oder bei der Garantie gemeldet werden muss, aus allen Tresoren, in denen du bearbeiten darfst.",
+    "filters": "Fristen filtern",
+    "filter": {
+      "all": "Alle",
+      "pay": "Zahlen",
+      "cancel": "Kündigen",
+      "warranty": "Garantie"
+    },
+    "allVaults": "Alle Tresore",
+    "myVault": "Mein Tresor",
+    "shared": "Einzeln geteilt",
+    "showDone": "Erledigte zeigen",
+    "showDoneCount": "Erledigte zeigen ({{count}})",
+    "nothing": "Nichts offen",
+    "nothingHint": "Fristen entstehen aus den Terminen der Dokumente: fällig am, Vertrag bis, Garantie bis.",
+    "overdue": "Überfällig",
+    "soon": "Nächste {{days}} Tage",
+    "soonEmpty": "In den nächsten zwei Wochen steht nichts an.",
+    "later": "Später",
+    "done": "Erledigt",
+    "doneEmpty": "Noch nichts erledigt.",
+    "showAll": "Alle {{count}} zeigen",
+    "badgeOverdue": "Etwas ist überfällig",
+    "badgeSoon": "In den nächsten 14 Tagen",
+    "inInbox": "im Eingang",
+    "what": {
+      "pay": {
+        "name": "Zahlen bis",
+        "done": "Bezahlt",
+        "doneShort": "bezahlt"
+      },
+      "cancel": {
+        "name": "Kündigen bis",
+        "done": "Gekündigt",
+        "doneShort": "gekündigt"
+      },
+      "ends": {
+        "name": "Vertrag endet",
+        "done": "Gekündigt",
+        "doneShort": "gekündigt"
+      },
+      "warranty": {
+        "name": "Garantie bis",
+        "done": "Erledigt",
+        "doneShort": "erledigt"
+      }
+    },
+    "relative": {
+      "today": "heute",
+      "tomorrow": "morgen",
+      "sinceYesterday": "seit gestern",
+      "since": "seit {{count}} Tagen",
+      "inDays_one": "in {{count}} Tag",
+      "inDays_other": "in {{count}} Tagen",
+      "inMonths_one": "in {{count}} Monat",
+      "inMonths_other": "in {{count}} Monaten"
+    },
+    "weekdays": [
+      "So",
+      "Mo",
+      "Di",
+      "Mi",
+      "Do",
+      "Fr",
+      "Sa"
+    ],
+    "months": [
+      "Jan",
+      "Feb",
+      "Mär",
+      "Apr",
+      "Mai",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Okt",
+      "Nov",
+      "Dez"
+    ],
+    "dayDate": "{{day}}, {{date}}",
+    "contractLine": "Vertrag bis {{end}}, {{notice}} Kündigungsfrist.",
+    "renewsTo": "Ohne Kündigung verlängert er sich bis {{date}}.",
+    "endsItself": "Er endet danach von selbst.",
+    "missed": "Der letzte Kündigungstag war der {{date}}.",
+    "missedRenews": "Ohne Kündigung läuft der Vertrag bis {{to}} weiter, nexpaper trägt das am {{on}} selbst ein.",
+    "undo": "Rückgängig",
+    "laterButton": "Später",
+    "laterMenu": {
+      "1": "Morgen",
+      "3": "In 3 Tagen",
+      "7": "In einer Woche"
+    },
+    "laterHint": "Nur für dich. Die anderen im Tresor werden weiter erinnert.",
+    "snoozed": "Erinnert dich wieder am {{day}}, {{date}}",
+    "again": "Jetzt wieder",
+    "saidDone": "{{done}}: {{title}}. Keine Erinnerungen mehr dazu.",
+    "saidOpen": "Wieder offen.",
+    "saidLater": "Erinnert dich wieder am {{day}}, {{date}}. Die anderen im Tresor weiter wie eingestellt.",
+    "notice": {
+      "weeks_one": "{{count}} Woche",
+      "weeks_other": "{{count}} Wochen",
+      "months_one": "{{count}} Monat",
+      "months_other": "{{count}} Monate"
+    },
+    "terms": {
+      "notice": "Kündigungsfrist",
+      "noticeNumber": "Kündigungsfrist, Zahl",
+      "noticeUnit": "Kündigungsfrist, Einheit",
+      "weeks": "Wochen",
+      "months": "Monate",
+      "noNotice": "Keine Kündigungsfrist",
+      "addNotice": "Frist eintragen",
+      "renew": "Verlängert sich um",
+      "renewLabel": "Verlängerung",
+      "renewNone": "gar nicht, endet einfach",
+      "renewMonths_one": "{{count}} Monat",
+      "renewMonths_other": "{{count}} Monate",
+      "lastDay": "Letzter Kündigungstag:",
+      "passedRenews": ". Schon vorbei, der Vertrag läuft bis {{date}} weiter.",
+      "passed": ". Schon vorbei.",
+      "hint": "Wann die Kündigung ankommen muss, steht im Vertrag. nexpaper rechnet nur nach und erinnert rechtzeitig."
+    },
+    "markAs": "Als {{what}} markieren",
+    "archive": {
+      "filter": "Frist",
+      "any": "Egal",
+      "open": "offen",
+      "overdue": "überfällig",
+      "days30": "nächste 30 Tage",
+      "done": "erledigt"
+    },
+    "events": {
+      "done": {
+        "due": "hat die Rechnung als bezahlt markiert",
+        "contract_end": "hat den Vertrag als gekündigt markiert",
+        "warranty_end": "hat die Garantie als erledigt markiert"
+      },
+      "reopened": "hat die Frist wieder geöffnet",
+      "renewed": "hat den Vertrag von selbst verlängert bis {{date}}"
+    }
   }
 }

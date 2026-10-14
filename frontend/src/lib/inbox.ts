@@ -31,6 +31,13 @@ export type Draft = {
   vault_id: number
 }
 
+/** A date of the document as the fields edit it: a contract with its notice period and renewal. */
+export function dateEntry(x: DocumentInfo['dates'][number]): DateEntry {
+  const kind = x.kind as DateEntry['kind']
+  // Terms only where there are some: left out, they stay as they are on the server.
+  return { kind, date: x.date, ...(kind === 'contract_end' && x.notice ? { notice: x.notice } : {}), ...(kind === 'contract_end' && x.renew_months ? { renew_months: x.renew_months } : {}) }
+}
+
 export function draftOf(d: DocumentInfo): Draft {
   return {
     title: d.title,
@@ -39,7 +46,7 @@ export function draftOf(d: DocumentInfo): Draft {
     date: d.date ?? '',
     amount: d.amount,
     tags: d.tags,
-    dates: d.dates.map((x) => ({ kind: x.kind as DateEntry['kind'], date: x.date })),
+    dates: d.dates.map(dateEntry),
     vault_id: d.vault_id,
   }
 }

@@ -1,4 +1,4 @@
-import { Archive, FolderLock, Inbox, ListTree, Trash2 } from 'lucide-react'
+import { Archive, CalendarClock, FolderLock, Inbox, ListTree, Trash2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
@@ -48,26 +48,36 @@ function Toast() {
   )
 }
 
-/** The menu items of the mock. */
+/** The menu items of the mock, with "Fristen" after the archive. On the phone the bottom bar has room for five: "Ordnung"
+ * moves into the account menu there (`phone: false`). */
 const NAV = [
-  { to: '/eingang', label: 'app.inbox', icon: Inbox },
-  { to: '/', label: 'app.archive', icon: Archive },
-  { to: '/tresore', label: 'app.vaults', icon: FolderLock },
-  { to: '/ordnung', label: 'order.menu', icon: ListTree },
-  { to: '/papierkorb', label: 'app.trash', icon: Trash2 },
+  { to: '/eingang', label: 'app.inbox', icon: Inbox, phone: true },
+  { to: '/', label: 'app.archive', icon: Archive, phone: true },
+  { to: '/fristen', label: 'deadlines.menu', icon: CalendarClock, phone: true },
+  { to: '/tresore', label: 'app.vaults', icon: FolderLock, phone: true },
+  { to: '/ordnung', label: 'order.menu', icon: ListTree, phone: false },
+  { to: '/papierkorb', label: 'app.trash', icon: Trash2, phone: true },
 ]
 /** How often the menu asks again how much waits in the inbox (besides after every change the app makes itself). */
 const COUNT_EVERY_MS = 60_000
 
-/** How many documents wait in the inbox or are being read, and how many are in the trash, for the badges of the menu. */
-function useMenuCounts(): { inbox: number; trash: number } {
+/** How many documents wait in the inbox or are being read, how many deadlines are overdue or come in the next 14 days
+ * (and whether one is overdue), and how many are in the trash, for the badges of the menu. */
+function useMenuCounts(): { inbox: number; trash: number; deadlines: number; overdue: boolean } {
   const { pathname } = useLocation()
-  const [count, setCount] = useState({ inbox: 0, trash: 0 })
+  const [count, setCount] = useState({ inbox: 0, trash: 0, deadlines: 0, overdue: false })
   useEffect(() => {
     let alive = true
     const ask = () =>
       void inboxApi.counts().then(
-        (found) => alive && setCount({ inbox: (Number(found.inbox) || 0) + (Number(found.reading) || 0), trash: Number(found.trash) || 0 }),
+        (found) =>
+          alive &&
+          setCount({
+            inbox: (Number(found.inbox) || 0) + (Number(found.reading) || 0),
+            trash: Number(found.trash) || 0,
+            deadlines: Number(found.deadlines) || 0,
+            overdue: (Number(found.deadlines_overdue) || 0) > 0,
+          }),
         () => undefined,
       )
     ask()
@@ -93,7 +103,8 @@ export function AppShell() {
 
 function Frame({ t }: { t: (key: string) => string }) {
   const counts = useMenuCounts()
-  const badge = (to: string) => (to === '/eingang' ? counts.inbox : to === '/papierkorb' ? counts.trash : 0)
+  const badge = (to: string) => (to === '/eingang' ? counts.inbox : to === '/papierkorb' ? counts.trash : to === '/fristen' ? counts.deadlines : 0)
+  const deadlineBadge = counts.overdue ? 'bg-warn text-paper' : 'bg-accent text-accent-ink'
   return (
     <div className="lg:flex">
       <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col border-r border-line px-4 py-6 lg:flex">
@@ -111,7 +122,12 @@ function Frame({ t }: { t: (key: string) => string }) {
               className={({ isActive }) => `flex items-center gap-3 rounded-xl px-3 py-2.5 font-semibold transition ${isActive ? 'bg-accent-soft text-accent' : 'text-ink-2 hover:bg-sheet-2'}`}
             >
               <Icon size={19} aria-hidden /> {t(label)}
-              {badge(to) > 0 && (
+              {badge(to) > 0 && to === '/fristen' && (
+                <span className={`ml-auto rounded-full px-1.5 text-xs font-bold ${deadlineBadge}`} title={t(counts.overdue ? 'deadlines.badgeOverdue' : 'deadlines.badgeSoon')} data-testid="deadline-count">
+                  {badge(to)}
+                </span>
+              )}
+              {badge(to) > 0 && to !== '/fristen' && (
                 <span className={`ml-auto rounded-full px-1.5 text-xs font-bold ${to === '/eingang' ? 'bg-accent text-accent-ink' : 'bg-sheet-2 text-ink-2'}`} data-testid={to === '/eingang' ? 'inbox-count' : 'trash-count'}>
                   {badge(to)}
                 </span>
@@ -137,10 +153,11 @@ function Frame({ t }: { t: (key: string) => string }) {
       </main>
 
       <nav className="fixed inset-x-0 bottom-0 z-30 flex border-t border-line bg-sheet/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden" aria-label={t('app.mainMenu')}>
-        {NAV.map(({ to, label, icon: Icon }) => (
+        {NAV.filter((n) => n.phone).map(({ to, label, icon: Icon }) => (
           <NavLink key={to} to={to} end={to === '/'} className={({ isActive }) => `relative flex flex-1 flex-col items-center gap-0.5 py-2.5 text-[0.7rem] font-bold ${isActive ? 'text-accent' : 'text-muted'}`}>
             <Icon size={21} aria-hidden /> {t(label)}
             {to === '/eingang' && badge(to) > 0 && <span className="absolute top-1.5 left-1/2 ml-2 rounded-full bg-accent px-1 text-[0.6rem] text-accent-ink">{badge(to)}</span>}
+            {to === '/fristen' && badge(to) > 0 && <span className={`absolute top-1.5 left-1/2 ml-2 rounded-full px-1 text-[0.6rem] ${deadlineBadge}`}>{badge(to)}</span>}
           </NavLink>
         ))}
       </nav>

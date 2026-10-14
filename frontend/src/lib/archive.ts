@@ -5,10 +5,18 @@
 import type { SearchFilters, SearchOrder } from '../api/client'
 
 /** The filters as the address holds them. */
-export type Chosen = { vault: string; kind: string; sender: string; tag: string; owner: string; year: string }
-export const KEYS: (keyof Chosen)[] = ['vault', 'kind', 'sender', 'tag', 'owner', 'year']
+export type Chosen = { vault: string; kind: string; sender: string; tag: string; owner: string; year: string; deadline: string }
+export const KEYS: (keyof Chosen)[] = ['vault', 'kind', 'sender', 'tag', 'owner', 'year', 'deadline']
 /** The filters that open the table; the vault alone keeps the overview. */
-export const NARROWING: (keyof Chosen)[] = ['kind', 'sender', 'tag', 'owner', 'year']
+export const NARROWING: (keyof Chosen)[] = ['kind', 'sender', 'tag', 'owner', 'year', 'deadline']
+/** The filter "Frist" (the mock's `FRIST_FILTER`): open, overdue, the next 30 days, done; the key of its words under
+ * `deadlines.archive`. */
+export const DEADLINE_FILTER: [string, string][] = [
+  ['open', 'open'],
+  ['overdue', 'overdue'],
+  ['30', 'days30'],
+  ['done', 'done'],
+]
 
 export const ORDERS: SearchOrder[] = ['-date', 'date', '-title', 'title', '-sender', 'sender', '-amount', 'amount']
 export const SIZES = [25, 50, 100]
@@ -26,6 +34,7 @@ export function filtersOf(chosen: Chosen): SearchFilters {
     ...(chosen.tag ? { tag: chosen.tag } : {}),
     ...(number(chosen.owner) ? { owner_id: number(chosen.owner) } : {}),
     ...(year ? { date_from: `${year}-01-01`, date_to: `${year}-12-31` } : {}),
+    ...(DEADLINE_FILTER.some(([value]) => value === chosen.deadline) ? { deadline: chosen.deadline } : {}),
   }
 }
 

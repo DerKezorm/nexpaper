@@ -88,7 +88,7 @@ describe('after the sign-in', () => {
     // The sidebar holds the mark, the camera under the upload button (as the mock), archive, inbox and vaults, and the
     // person's menu. The round button of the phone leads to the quick upload.
     const side = box.querySelector('aside')!
-    expect([...side.querySelectorAll('a')].map((a) => a.getAttribute('href'))).toEqual(['/kamera', '/eingang', '/', '/tresore', '/ordnung', '/papierkorb'])
+    expect([...side.querySelectorAll('a')].map((a) => a.getAttribute('href'))).toEqual(['/kamera', '/eingang', '/', '/fristen', '/tresore', '/ordnung', '/papierkorb'])
     expect(side.textContent).toContain('NEXPAPER')
     expect(side.querySelector('[data-testid="inbox-count"]')!.textContent).toBe('3')
     expect(side.querySelector('[data-testid="trash-count"]')!.textContent).toBe('4')
@@ -122,7 +122,7 @@ describe('after the sign-in', () => {
     await show('/')
     await click(box.querySelector('aside button[aria-haspopup="true"]'))
     const items = [...document.querySelectorAll('aside .card a, aside .card button')].map((item) => item.textContent?.trim())
-    expect(items).toEqual(['Mein Konto', 'Einstellungen', 'Über nexpaper', 'Abmelden'])
+    expect(items).toEqual(['Mein Konto', 'Ordnung', 'Einstellungen', 'Über nexpaper', 'Abmelden'])
   })
 
   it('leaves the settings out of the menu of a member', async () => {
@@ -130,7 +130,7 @@ describe('after the sign-in', () => {
     await show('/')
     await click(box.querySelector('aside button[aria-haspopup="true"]'))
     const items = [...document.querySelectorAll('aside .card a, aside .card button')].map((item) => item.textContent?.trim())
-    expect(items).toEqual(['Mein Konto', 'Über nexpaper', 'Abmelden'])
+    expect(items).toEqual(['Mein Konto', 'Ordnung', 'Über nexpaper', 'Abmelden'])
   })
 })
 

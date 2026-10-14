@@ -4,13 +4,15 @@
  * dates with their kind (due, contract until, warranty until, keep until). Each part keeps nothing of its own: the page
  * holds the values and decides when they are saved.
  */
-import { Plus, X } from 'lucide-react'
+import { Check, Plus, X } from 'lucide-react'
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import type { DateKind } from '../api/client'
-import { dayInDays } from '../lib/dates'
+import type { DateKind, DocumentDate, Notice } from '../api/client'
+import { dayInDays, shortDate } from '../lib/dates'
 import { YEAR_FROM, YEAR_TO, expandYear, yearOf } from '../lib/dateInput'
+import { addMonths, daysBetween, isDay, lastToCancel, useDayName, whatOfKind } from '../lib/deadlines'
+import { personName } from '../lib/people'
 import { amountText, parseAmount } from '../lib/money'
 import { Chip, WhyBadge } from './docs'
 import { TagPicker } from './TagPicker'
@@ -19,7 +21,8 @@ import { TagPicker } from './TagPicker'
 const SETTLED_YEAR = 1000
 
 const DATE_KINDS: DateKind[] = ['due', 'contract_end', 'warranty_end', 'keep_until']
-export type DateEntry = { kind: DateKind; date: string }
+/** A date of a document; a contract may carry its notice period and how many months it renews by. */
+export type DateEntry = { kind: DateKind; date: string; notice?: Notice | null; renew_months?: number | null }
 
 /** A labelled field with where its proposal came from. */
 export function Field({ label, why, children }: { label: string; why?: string; children: ReactNode }) {
@@ -163,38 +166,45 @@ export function TagEditor({ tags, onChange, label, known = [] }: { tags: string[
 }
 
 /**
- * The dates of a document with their kind; each kind once. A new one starts at the document's date. `onChange` is called
- * when a date stands; a page that keeps a draft takes every keystroke through `onDraft` too. `refused` is the field the
- * server turned down (`dates[n]`, n counted in `dates`) with the value it refused.
+ * The dates of a document with their kind; each kind once. A new one starts at the document's date, a contract with a
+ * notice period of 3 months and a renewal of 12 (the mock's `Dates`). `onChange` is called when a date stands; a page
+ * that keeps a draft takes every keystroke through `onDraft` too. `refused` is the field the server turned down
+ * (`dates[n]`, n counted in `dates`) with the value it refused. `done` and `onDone` (the document page): each deadline
+ * says whether it is paid, cancelled or claimed, with a button to mark it so or to take that back.
  */
-export function Dates({ dates, onChange, onDraft, start, why, refused }: { dates: DateEntry[]; onChange: (dates: DateEntry[]) => void; onDraft?: (dates: DateEntry[]) => void; start: string | null; why?: string; refused?: { field: string; value: string } | null }) {
+export function Dates({ dates, onChange, onDraft, start, why, refused, done, onDone }: { dates: DateEntry[]; onChange: (dates: DateEntry[]) => void; onDraft?: (dates: DateEntry[]) => void; start: string | null; why?: string; refused?: { field: string; value: string } | null; done?: Partial<Record<string, DocumentDate['done']>>; onDone?: (kind: DateKind, done: boolean) => void }) {
   const { t } = useTranslation()
   const [adding, setAdding] = useState(false)
   const free = DATE_KINDS.filter((kind) => !dates.some((d) => d.kind === kind))
   const today = dayInDays(0)
+  const change = (kind: DateKind, patch: Partial<DateEntry>) => onChange(dates.map((d) => (d.kind === kind ? { ...d, ...patch } : d)))
   return (
     <div className="text-sm">
       <div className="flex items-center justify-between">
         <span className="font-semibold">{t('docs.fields.dates')}</span>
         <WhyBadge why={why} />
       </div>
-      <div className="mt-1 space-y-1.5">
+      <div className="mt-1 space-y-2">
         {[...dates].sort((a, b) => DATE_KINDS.indexOf(a.kind) - DATE_KINDS.indexOf(b.kind)).map((entry) => (
-          <div key={entry.kind} className="flex items-start gap-2">
-            <span className="w-32 pt-2 text-ink-2">{t(`docs.dateKinds.${entry.kind}`)}</span>
-            <DateInput
-              value={entry.date}
-              label={t(`docs.dateKinds.${entry.kind}`)}
-              // The server counts the terms as they were sent, in the order of the list given here.
-              refused={refused && refused.field === `dates[${dates.findIndex((d) => d.kind === entry.kind)}]` ? refused.value : undefined}
-              onChange={onDraft && ((day) => day && onDraft(dates.map((d) => (d.kind === entry.kind ? { ...d, date: day } : d))))}
-              onCommit={(day) => day && onChange(dates.map((d) => (d.kind === entry.kind ? { ...d, date: day } : d)))}
-              className="input h-9 w-full"
-              wrapperClass="min-w-0 flex-1"
-            />
-            <button type="button" onClick={() => onChange(dates.filter((d) => d.kind !== entry.kind))} className="mt-1.5 rounded-full p-1.5 text-muted hover:bg-sheet-2" aria-label={t('docs.fields.removeDate', { kind: t(`docs.dateKinds.${entry.kind}`) })}>
-              <X size={14} aria-hidden />
-            </button>
+          <div key={entry.kind}>
+            <div className="flex items-start gap-2">
+              <span className="w-32 shrink-0 pt-2 text-ink-2">{t(`docs.dateKinds.${entry.kind}`)}</span>
+              <DateInput
+                value={entry.date}
+                label={t(`docs.dateKinds.${entry.kind}`)}
+                // The server counts the terms as they were sent, in the order of the list given here.
+                refused={refused && refused.field === `dates[${dates.findIndex((d) => d.kind === entry.kind)}]` ? refused.value : undefined}
+                onChange={onDraft && ((day) => day && onDraft(dates.map((d) => (d.kind === entry.kind ? { ...d, date: day } : d))))}
+                onCommit={(day) => day && change(entry.kind, { date: day })}
+                className="input h-9 w-full"
+                wrapperClass="min-w-0 flex-1"
+              />
+              <button type="button" onClick={() => onChange(dates.filter((d) => d.kind !== entry.kind))} className="mt-1.5 rounded-full p-1.5 text-muted hover:bg-sheet-2" aria-label={t('docs.fields.removeDate', { kind: t(`docs.dateKinds.${entry.kind}`) })}>
+                <X size={14} aria-hidden />
+              </button>
+            </div>
+            {onDone && entry.kind !== 'keep_until' && <DoneLine kind={entry.kind} done={done?.[entry.kind] ?? null} onDone={(on) => onDone(entry.kind, on)} />}
+            {entry.kind === 'contract_end' && <ContractTerms entry={entry} today={today} change={(patch) => change('contract_end', patch)} />}
           </div>
         ))}
         {adding ? (
@@ -203,7 +213,8 @@ export function Dates({ dates, onChange, onDraft, start, why, refused }: { dates
               <Chip
                 key={kind}
                 onClick={() => {
-                  onChange([...dates, { kind, date: start ?? today }])
+                  const day = start ?? today
+                  onChange([...dates, kind === 'contract_end' ? { kind, date: day, notice: { n: 3, unit: 'months' }, renew_months: 12 } : { kind, date: day }])
                   setAdding(false)
                 }}
               >
@@ -220,6 +231,113 @@ export function Dates({ dates, onChange, onDraft, start, why, refused }: { dates
         )}
       </div>
       <p className="mt-1 text-xs text-muted">{t('docs.fields.datesHint')}</p>
+    </div>
+  )
+}
+
+
+const RENEW_CHOICES = [0, 1, 3, 6, 12, 24]
+
+/** Notice period and renewal of a contract, and the last day to cancel worked out from them (the mock's
+ * `ContractTerms`). The number of the period is taken when the field is left or Enter is pressed. */
+function ContractTerms({ entry, today, change }: { entry: DateEntry; today: string; change: (patch: Partial<DateEntry>) => void }) {
+  const { t, i18n } = useTranslation()
+  const dayName = useDayName()
+  const notice = entry.notice ?? null
+  const [typed, setTyped] = useState(notice ? String(notice.n) : '')
+  const shown = notice ? String(notice.n) : ''
+  const [was, setWas] = useState(shown)
+  if (was !== shown) {
+    // The period came anew from outside (saved, another document): the field shows it.
+    setWas(shown)
+    setTyped(shown)
+  }
+  const commit = () => {
+    if (!notice) return
+    const n = Math.min(24, Math.max(1, Math.round(Number(typed)) || 1))
+    setTyped(String(n))
+    if (n !== notice.n) change({ notice: { ...notice, n } })
+  }
+  const last = notice && isDay(entry.date) ? lastToCancel(entry.date, notice) : null
+  const passed = last !== null && daysBetween(today, last) < 0
+  const renew = entry.renew_months ?? 0
+  const choices = RENEW_CHOICES.includes(renew) ? RENEW_CHOICES : [...RENEW_CHOICES, renew].sort((a, b) => a - b)
+  return (
+    <div className="mt-1.5 space-y-1.5 rounded-xl bg-sheet-2/70 px-3 py-2.5" data-testid="contract-terms">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="w-32 text-ink-2">{t('deadlines.terms.notice')}</span>
+        {notice ? (
+          <>
+            <input
+              type="number"
+              min={1}
+              max={24}
+              value={typed}
+              onChange={(event) => setTyped(event.target.value)}
+              onBlur={commit}
+              onKeyDown={(event) => event.key === 'Enter' && commit()}
+              className="input h-9 w-16 text-center"
+              aria-label={t('deadlines.terms.noticeNumber')}
+            />
+            <select value={notice.unit} onChange={(event) => change({ notice: { ...notice, unit: event.target.value as Notice['unit'] } })} className="input h-9 w-auto" aria-label={t('deadlines.terms.noticeUnit')}>
+              <option value="weeks">{t('deadlines.terms.weeks')}</option>
+              <option value="months">{t('deadlines.terms.months')}</option>
+            </select>
+            <button type="button" onClick={() => change({ notice: null })} className="rounded-full p-1.5 text-muted hover:bg-sheet hover:text-ink" aria-label={t('deadlines.terms.noNotice')} title={t('deadlines.terms.noNotice')}>
+              <X size={14} aria-hidden />
+            </button>
+          </>
+        ) : (
+          <button type="button" onClick={() => change({ notice: { n: 3, unit: 'months' } })} className="inline-flex items-center gap-1 text-xs font-semibold text-accent">
+            <Plus size={13} aria-hidden /> {t('deadlines.terms.addNotice')}
+          </button>
+        )}
+      </div>
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="w-32 text-ink-2">{t('deadlines.terms.renew')}</span>
+        <select value={renew} onChange={(event) => change({ renew_months: Number(event.target.value) || null })} className="input h-9 w-auto" aria-label={t('deadlines.terms.renewLabel')}>
+          {choices.map((months) => (
+            <option key={months} value={months}>
+              {months === 0 ? t('deadlines.terms.renewNone') : t('deadlines.terms.renewMonths', { count: months })}
+            </option>
+          ))}
+        </select>
+      </div>
+      {last && (
+        <p className={`pt-0.5 text-sm ${passed ? 'text-warn' : 'text-ink'}`} data-testid="last-to-cancel">
+          {t('deadlines.terms.lastDay')} <span className="font-semibold">{dayName(last)}</span>
+          {passed && (renew ? t('deadlines.terms.passedRenews', { date: shortDate(addMonths(entry.date, renew), i18n.language) }) : t('deadlines.terms.passed'))}
+        </p>
+      )}
+      <p className="text-xs text-muted">{t('deadlines.terms.hint')}</p>
+    </div>
+  )
+}
+
+/** Paid, cancelled, claimed: ends the reminders for everybody (the mock's `DoneLine`). */
+function DoneLine({ kind, done, onDone }: { kind: DateKind; done: DocumentDate['done']; onDone: (done: boolean) => void }) {
+  const { t, i18n } = useTranslation()
+  const what = whatOfKind(kind)
+  return (
+    <div className="mt-1 flex flex-wrap items-center gap-2 pl-34">
+      {done ? (
+        <>
+          <span className="inline-flex items-center gap-1 rounded-full bg-ok-soft px-2.5 py-0.5 text-xs font-semibold text-ok">
+            <Check size={12} aria-hidden /> {t(`deadlines.what.${what}.done`)}
+          </span>
+          <span className="text-xs text-muted">
+            {done.by ? `${personName(done.by)}, ` : ''}
+            {shortDate(done.at, i18n.language)}
+          </span>
+          <button type="button" onClick={() => onDone(false)} className="text-xs font-semibold text-accent hover:underline">
+            {t('deadlines.undo')}
+          </button>
+        </>
+      ) : (
+        <button type="button" onClick={() => onDone(true)} className="inline-flex items-center gap-1 text-xs font-semibold text-accent hover:underline">
+          <Check size={12} aria-hidden /> {t('deadlines.markAs', { what: t(`deadlines.what.${what}.doneShort`) })}
+        </button>
+      )}
     </div>
   )
 }

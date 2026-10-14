@@ -1576,7 +1576,9 @@
         "only this kind",
         "only this sender",
         "only with this tag",
-        "amount over 100 €"
+        "amount over 100 €",
+        "still to pay, cancel, claim",
+        "deadline in the next 30 days"
       ],
       "helpParts": "Parts of words work too: “werke” finds “Stadtwerke”. Upper and lower case do not matter.",
       "allVaults": "All vaults",
@@ -1609,7 +1611,9 @@
         "kind:invoice",
         "sender:hansa",
         "tag:car",
-        "amount:>100"
+        "amount:>100",
+        "deadline:open",
+        "deadline:<30"
       ],
       "sharedOut": "shared with people",
       "linkOut": "link to the outside",
@@ -2625,5 +2629,150 @@
     "uploadShort": "Upload",
     "camera": "Take a photo",
     "cameraShort": "Camera"
+  },
+  "deadlines": {
+    "menu": "Deadlines",
+    "title": "Deadlines",
+    "intro": "What has to be paid, cancelled or claimed under a warranty, from every vault where you may edit.",
+    "filters": "Filter the deadlines",
+    "filter": {
+      "all": "All",
+      "pay": "Pay",
+      "cancel": "Cancel",
+      "warranty": "Warranty"
+    },
+    "allVaults": "All vaults",
+    "myVault": "My vault",
+    "shared": "Shared with me",
+    "showDone": "Show done",
+    "showDoneCount": "Show done ({{count}})",
+    "nothing": "Nothing open",
+    "nothingHint": "Deadlines come from the dates of the documents: due, contract until, warranty until.",
+    "overdue": "Overdue",
+    "soon": "Next {{days}} days",
+    "soonEmpty": "Nothing comes up in the next two weeks.",
+    "later": "Later",
+    "done": "Done",
+    "doneEmpty": "Nothing done yet.",
+    "showAll": "Show all {{count}}",
+    "badgeOverdue": "Something is overdue",
+    "badgeSoon": "In the next 14 days",
+    "inInbox": "in the inbox",
+    "what": {
+      "pay": {
+        "name": "Pay by",
+        "done": "Paid",
+        "doneShort": "paid"
+      },
+      "cancel": {
+        "name": "Cancel by",
+        "done": "Cancelled",
+        "doneShort": "cancelled"
+      },
+      "ends": {
+        "name": "Contract ends",
+        "done": "Cancelled",
+        "doneShort": "cancelled"
+      },
+      "warranty": {
+        "name": "Warranty until",
+        "done": "Done",
+        "doneShort": "done"
+      }
+    },
+    "relative": {
+      "today": "today",
+      "tomorrow": "tomorrow",
+      "sinceYesterday": "since yesterday",
+      "since": "{{count}} days ago",
+      "inDays_one": "in {{count}} day",
+      "inDays_other": "in {{count}} days",
+      "inMonths_one": "in {{count}} month",
+      "inMonths_other": "in {{count}} months"
+    },
+    "weekdays": [
+      "Sun",
+      "Mon",
+      "Tue",
+      "Wed",
+      "Thu",
+      "Fri",
+      "Sat"
+    ],
+    "months": [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec"
+    ],
+    "dayDate": "{{day}}, {{date}}",
+    "contractLine": "Contract until {{end}}, {{notice}} notice.",
+    "renewsTo": "Without notice it renews until {{date}}.",
+    "endsItself": "It ends by itself after that.",
+    "missed": "The last day to cancel was {{date}}.",
+    "missedRenews": "Without notice the contract runs on until {{to}}; nexpaper enters that itself on {{on}}.",
+    "undo": "Undo",
+    "laterButton": "Later",
+    "laterMenu": {
+      "1": "Tomorrow",
+      "3": "In 3 days",
+      "7": "In a week"
+    },
+    "laterHint": "Only for you. The others in the vault are still reminded.",
+    "snoozed": "Reminds you again on {{day}}, {{date}}",
+    "again": "Now again",
+    "saidDone": "{{done}}: {{title}}. No more reminders about it.",
+    "saidOpen": "Open again.",
+    "saidLater": "Reminds you again on {{day}}, {{date}}. The others in the vault as they set it.",
+    "notice": {
+      "weeks_one": "{{count}} week",
+      "weeks_other": "{{count}} weeks",
+      "months_one": "{{count}} month",
+      "months_other": "{{count}} months"
+    },
+    "terms": {
+      "notice": "Notice period",
+      "noticeNumber": "Notice period, number",
+      "noticeUnit": "Notice period, unit",
+      "weeks": "Weeks",
+      "months": "Months",
+      "noNotice": "No notice period",
+      "addNotice": "Enter a notice period",
+      "renew": "Renews by",
+      "renewLabel": "Renewal",
+      "renewNone": "not at all, it just ends",
+      "renewMonths_one": "{{count}} month",
+      "renewMonths_other": "{{count}} months",
+      "lastDay": "Last day to cancel:",
+      "passedRenews": ". Already past, the contract runs on until {{date}}.",
+      "passed": ". Already past.",
+      "hint": "When the notice has to arrive is in the contract. nexpaper only does the sums and reminds you in time."
+    },
+    "markAs": "Mark as {{what}}",
+    "archive": {
+      "filter": "Deadline",
+      "any": "Any",
+      "open": "open",
+      "overdue": "overdue",
+      "days30": "next 30 days",
+      "done": "done"
+    },
+    "events": {
+      "done": {
+        "due": "marked the bill as paid",
+        "contract_end": "marked the contract as cancelled",
+        "warranty_end": "marked the warranty as done"
+      },
+      "reopened": "opened the deadline again",
+      "renewed": "renewed the contract by itself until {{date}}"
+    }
   }
 }

@@ -31,6 +31,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
   ApiError,
   catalogApi,
+  deadlinesApi,
   documentApi,
   TRASH_DAYS,
   documentsApi,
@@ -69,6 +70,7 @@ import { formatBytes } from '../lib/bytes'
 import { copyText } from '../lib/copy'
 import { shortDate } from '../lib/dates'
 import { useVaultTags } from '../lib/tags'
+import { dateEntry } from '../lib/inbox'
 import { problemOf, refusedOf, refusedValue, shownAtField } from '../lib/dateInput'
 import { errorText } from '../lib/errors'
 import { eventWhat, eventWho, standsAlone } from '../lib/events'
@@ -490,7 +492,17 @@ function Details({ document: d, canEdit, vaults, path, change, problem, onShare,
       onProblem(error instanceof ApiError ? { code: error.code, values: error.values } : { code: 'internal_error' })
     }
   }
-  const dates = d.dates.map((x) => ({ kind: x.kind as DateEntry['kind'], date: x.date }))
+  const dates = d.dates.map(dateEntry)
+  const done = Object.fromEntries(d.dates.map((x) => [x.kind, x.done ?? null]))
+  const markDone = async (kind: DateEntry['kind'], on: boolean) => {
+    if (kind === 'keep_until') return
+    onProblem(null)
+    try {
+      onMoved(await (on ? deadlinesApi.done(d.id, kind) : deadlinesApi.reopen(d.id, kind)))
+    } catch (error) {
+      onProblem(error instanceof ApiError ? { code: error.code, values: error.values } : { code: 'internal_error' })
+    }
+  }
   const addTag = (name: string) => {
     const word = name.trim().replace(/^#/, '')
     if (word && !d.tags.some((had) => had.toLocaleLowerCase() === word.toLocaleLowerCase())) void change({ tags: [...d.tags, word] })
@@ -598,7 +610,7 @@ function Details({ document: d, canEdit, vaults, path, change, problem, onShare,
         </div>
       </Row>
       {canEdit ? (
-        <Dates dates={dates} onChange={(next) => void change({ dates: next })} start={d.date} refused={refusedOf(problem)} />
+        <Dates dates={dates} onChange={(next) => void change({ dates: next })} start={d.date} refused={refusedOf(problem)} done={done} onDone={(kind, on) => void markDone(kind, on)} />
       ) : dates.length ? (
         <Row label={t('docs.fields.dates')}>{dates.map((x) => `${t(`docs.dateKinds.${x.kind}`)} ${shortDate(x.date, i18n.language)}`).join(', ')}</Row>
       ) : null}

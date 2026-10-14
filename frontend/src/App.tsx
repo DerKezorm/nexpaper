@@ -7,6 +7,7 @@ import { AboutPage } from './pages/AboutPage'
 import { AccountPage } from './pages/AccountPage'
 import { ForgotPage, InvitePage, LoginPage, MailConfirmPage, ResetPage, SenderConfirmPage, SetupPage } from './pages/AuthPages'
 import { ArchivePage } from './pages/ArchivePage'
+import { DeadlinesPage } from './pages/DeadlinesPage'
 import { DocumentPage } from './pages/DocumentPage'
 import { InboxPage } from './pages/InboxPage'
 import { ExportLinkPage } from './pages/ExportLinkPage'
@@ -135,6 +136,7 @@ export default function App() {
           <Route path="eingang" element={<InboxPage />} />
           <Route path="eingang/:id" element={<InboxPage />} />
           <Route path="dokument/:id" element={<DocumentPage />} />
+          <Route path="fristen" element={<DeadlinesPage />} />
           <Route path="papierkorb" element={<TrashPage />} />
           <Route path="tresore" element={<VaultsPage />} />
           <Route path="ordnung" element={<OrderPage />} />

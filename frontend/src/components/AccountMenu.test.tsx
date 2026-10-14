@@ -49,6 +49,8 @@ describe('the account menu', () => {
     const entries = [...box.querySelectorAll('a, button:not([aria-haspopup])')].map((item) => [item.textContent?.trim(), item.getAttribute('href')])
     expect(entries).toEqual([
       ['Mein Konto', '/konto'],
+      // Only on the phone (lg:hidden): its bottom bar holds the deadlines instead.
+      ['Ordnung', '/ordnung'],
       ['Einstellungen', '/einstellungen'],
       ['Über nexpaper', '/ueber'],
       ['Abmelden', null],
@@ -60,7 +62,7 @@ describe('the account menu', () => {
     try {
       await open(true)
       const entries = [...box.querySelectorAll('a, button:not([aria-haspopup])')].map((item) => item.textContent?.trim())
-      expect(entries).toEqual(['Mein Konto', 'Über nexpaper', 'Abmelden'])
+      expect(entries).toEqual(['Mein Konto', 'Ordnung', 'Über nexpaper', 'Abmelden'])
     } finally {
       asMember.on = false
     }
