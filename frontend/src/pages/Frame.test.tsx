@@ -81,7 +81,7 @@ afterEach(() => {
 
 describe('after the sign-in', () => {
   it('opens on the archive, with the menu of the mock: archive, inbox with its count, vaults', async () => {
-    answers['GET /api/v1/counts'] = { inbox: 2, reading: 1, trash: 4 }
+    answers['GET /api/v1/counts'] = { inbox: 2, reading: 1, trash: 4, deadlines: 6, deadlines_overdue: 1 }
     sessionStorage.setItem('nexpaper.startShown', '1')
     await show('/')
     expect(box.querySelector('h1')!.textContent).toBe('Archiv')
@@ -92,6 +92,14 @@ describe('after the sign-in', () => {
     expect(side.textContent).toContain('NEXPAPER')
     expect(side.querySelector('[data-testid="inbox-count"]')!.textContent).toBe('3')
     expect(side.querySelector('[data-testid="trash-count"]')!.textContent).toBe('4')
+    // Deadlines: overdue and the next 14 days; something is overdue, so the number is drawn in the warning colour.
+    const deadlines = side.querySelector('[data-testid="deadline-count"]')!
+    expect(deadlines.textContent).toBe('6')
+    expect(deadlines.className).toContain('bg-warn')
+    expect(deadlines.getAttribute('title')).toBe('Etwas ist überfällig')
+    // The phone's bar: five, the deadlines instead of Order.
+    const bar = box.querySelector('main ~ nav')!
+    expect([...bar.querySelectorAll('a')].map((a) => a.getAttribute('href'))).toEqual(['/eingang', '/', '/fristen', '/tresore', '/papierkorb'])
     expect(box.querySelector('main a[href="/schnell"]')!.getAttribute('aria-label')).toBe('Hochladen')
   })
 

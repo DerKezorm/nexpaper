@@ -32,6 +32,8 @@ describe('how far away a day is', () => {
     expect(relative(-1)).toEqual({ key: 'sinceYesterday', count: 1 })
     expect(relative(-3)).toEqual({ key: 'since', count: 3 })
     expect(relative(23)).toEqual({ key: 'inDays', count: 23 })
+    expect(relative(45)).toEqual({ key: 'inDays', count: 45 })
+    expect(relative(60)).toEqual({ key: 'inMonths', count: 2 })
     expect(relative(84)).toEqual({ key: 'inMonths', count: 3 })
   })
 

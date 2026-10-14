@@ -196,6 +196,20 @@ def test_done_is_left_out_unless_asked_for_and_says_who_and_when(house: House) -
     assert "Abschlag Wasser" not in titles(found["overdue"])
 
 
+def test_a_cancelled_contract_keeps_its_last_day_to_cancel_as_its_day(house: House) -> None:
+    """Cancelled in time: the day it stands on (and is sorted by) stays the last day to cancel, not the end."""
+    cancelled = house.add("Gekündigter Vertrag", house.mine, house.jule)
+    contract(cancelled, house.jule.id, Date(2026, 12, 31))
+    paid = house.add("Bezahlte Rechnung", house.mine, house.jule, dates=[("due", Date(2026, 10, 5))])
+    with SessionLocal() as db:
+        deadlines.set_done(db, house.jule.id, cancelled, "contract_end", True)
+        deadlines.set_done(db, house.jule.id, paid, "due", True)
+    with new_client(house.jule) as jule:
+        done = listing(jule, done=True)["done"]["items"]
+    assert [(d["title"], d["what"], d["date"]) for d in done] == [
+        ("Gekündigter Vertrag", "cancel", "2026-09-30"), ("Bezahlte Rechnung", "pay", "2026-10-05")]
+
+
 def test_filters_by_what_and_by_vault(house: House) -> None:
     house.stock()
     with new_client(house.jule) as jule:
