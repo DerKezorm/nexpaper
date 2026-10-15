@@ -17,8 +17,11 @@ it for the documents already there changes every document of the kind (it is a k
 every vault's documents, may have), but the numbers the question shows count only what the person may see. Many
 documents are done in the background (a job ``keep``), each with a new number for the feed and a line in its history.
 
-**Nothing goes by itself.** "May go" (``expired``) lists the filed documents whose time is over in the vaults where the
-person may change things; putting them in the trash is the person's doing, with the trash's 30 days.
+**Nothing goes by itself, unless a kind says so.** "May go" (``expired``) lists the filed documents whose time is over
+in the vaults where the person may change things; putting them in the trash is the person's doing, with the trash's 30
+days. A kind can have the switch "expired documents into the trash by themselves" (``Kind.auto_trash``, off from the
+start, only with a keeping time, set by whoever sets the time): then ``services/autotrash.py`` does it once a day.
+Nothing is ever deleted for good by it.
 """
 
 from __future__ import annotations
@@ -29,7 +32,7 @@ from dataclasses import dataclass
 from datetime import date as Date
 from datetime import datetime
 
-from sqlalchemy import ColumnElement, Integer, String, and_, cast, delete, func, select
+from sqlalchemy import ColumnElement, Integer, String, and_, cast, delete, exists, func, select
 from sqlalchemy.orm import Session
 
 from .. import clock
@@ -235,6 +238,9 @@ def set_kind(db: Session, uid: int, kind_id: int, years: int | None, existing: b
     kind = _kind_to_set(db, uid, kind_id)
     kind.keep_years = years
     kind.keep_new_only = not existing
+    if years is None:
+        # No keeping time, nothing to put in the trash when it is over.
+        kind.auto_trash = False
     with_time = and_(Document.kind_id == kind.id, Document.status.in_(WITH_TIME))
     seen = set(db.scalars(select(Document.id).where(with_time, rights.visible_clause(uid)).limit(AT_ONCE + 1)))
     queued = len(seen) > AT_ONCE
@@ -290,6 +296,37 @@ def run_job(db: Session, kind_id: int, payload: object) -> None:
     logger.info("Keeping time worked out kind_id=%s changed=%s", kind_id, total)
 
 
+# --- Into the trash by itself ---------------------------------------------------------------------------------------
+
+
+def auto_trash_state(db: Session, uid: int, kind_id: int, today: Date) -> tuple[Kind, int]:
+    """The kind and how many of its filed documents the caller may see are over their keeping time now: what the switch
+    would put in the trash at its next run. Needs the right to set the keeping time."""
+    kind = _kind_to_set(db, uid, kind_id)
+    from . import autotrash  # here and not at the top: autotrash reads the dates this module names
+
+    found = autotrash.due(db, kind.id, today, rights.visible_clause(uid))
+    db.rollback()
+    return kind, found
+
+
+def set_auto_trash(db: Session, uid: int, kind_id: int, enabled: bool) -> Kind:
+    """Switches "expired documents into the trash by themselves" for a kind. Only a kind with a keeping time can have it
+    (409 ``no_keeping_time``); switching it off is always possible. The task looks at the kind's documents on its own
+    at its next run, nothing happens here."""
+    changes.write_lock(db)
+    kind = _kind_to_set(db, uid, kind_id)
+    if enabled and not kind.keep_years:
+        raise error("no_keeping_time", "Set a keeping time for the kind first.", 409)
+    if bool(kind.auto_trash) != enabled:
+        kind.auto_trash = enabled
+        db.commit()
+        logger.info("Expired documents into the trash by themselves kind_id=%s enabled=%s", kind.id, enabled)
+    else:
+        db.rollback()
+    return kind
+
+
 # --- May go ---------------------------------------------------------------------------------------------------------
 
 
@@ -304,6 +341,14 @@ def _over(uid: int, today: Date, vault_id: int | None = None) -> list[ColumnElem
     if vault_id is not None:
         clauses.append(Document.vault_id == vault_id)
     return clauses
+
+
+def expired_clauses(uid: int, today: Date) -> list[ColumnElement[bool]]:
+    """The conditions of "may go" for a query over documents (the archive's filter): filed, in a vault where ``uid`` may
+    change things, ``keep_until`` before ``today``."""
+    return [Document.status == FILED, Document.vault_id.in_(_may_change_vaults(uid)),
+            exists().where(DocumentDate.document_id == Document.id, DocumentDate.kind == KEEP,
+                           DocumentDate.date < today)]
 
 
 def expired(db: Session, uid: int, today: Date, *, vault_id: int | None = None, limit: int = 100,
@@ -333,5 +378,6 @@ def may_go_count(db: Session, uid: int, today: Date | None = None, *,
         DocumentDate, DocumentDate.document_id == Document.id).where(*_over(uid, today), *where)) or 0)
 
 
-__all__ = ["AT_ONCE", "CHOICES", "KEEP", "YEARS_MAX", "Preview", "Setting", "expired", "may_go_count", "preview",
-           "refresh", "run_job", "set_kind", "stamp", "take", "today_of", "until"]
+__all__ = ["AT_ONCE", "CHOICES", "KEEP", "YEARS_MAX", "Preview", "Setting", "auto_trash_state", "expired",
+           "expired_clauses", "may_go_count", "preview", "refresh", "run_job", "set_auto_trash", "set_kind", "stamp",
+           "take", "today_of", "until"]

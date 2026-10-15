@@ -130,6 +130,10 @@ TABLE = [
     # kinds, edit against manage); "may go" and many documents into the trash look at each document on its own.
     Row("POST", "/api/v1/kinds/{k}/keeping/preview", {"years": 10}, "operator", 403),
     Row("PUT", "/api/v1/kinds/{k}/keeping", {"years": 10, "existing": True}, "operator", 403),
+    # D4: the switch "expired documents into the trash by themselves" is set like the keeping time
+    # (``test_autotrash.py`` has the vault's kinds, edit against manage).
+    Row("POST", "/api/v1/kinds/{k}/auto-trash/preview", None, "operator", 403),
+    Row("PUT", "/api/v1/kinds/{k}/auto-trash", {"enabled": False}, "operator", 403),
     Row("GET", "/api/v1/keeping", None, "any", 200),
     Row("POST", "/api/v1/documents/trash", {"ids": [2**31 - 1]}, "any", 200),
     # Deadlines (F1): only the deadlines of what the caller may change; done and later need `edit` (this document has

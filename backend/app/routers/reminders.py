@@ -61,6 +61,9 @@ class ReminderVaultMine(ReminderVault):
 
 
 class RemindersOut(BaseModel):
+    #: Deadlines are on for the caller (`profile.deadlines`, `PUT /api/v1/me/preferences`); off, nothing is reminded and
+    #: no weekly mail comes.
+    deadlines: bool
     #: ``single`` (one message per deadline), ``weekly`` (a mail on Mondays) or ``both``.
     rhythm: Rhythm
     push: bool
@@ -90,6 +93,9 @@ class RemindersOut(BaseModel):
     shared: int
     #: How many documents the weekly mail would say may go (their keeping time is over), the muted vaults left out.
     may_go: int
+    #: How many documents nexpaper put in the trash by itself in the last seven days (the same vaults, the muted ones
+    #: left out).
+    trashed: int
 
 
 class RemindersIn(BaseModel):

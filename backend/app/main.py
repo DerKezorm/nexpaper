@@ -84,6 +84,7 @@ from .services import (
     storage,
     totp,
 )
+from .services import autotrash as autotrash_service
 from .services import deadlines as deadlines_service
 from .services import intake as intake_service
 from .services import manifest as manifest_service
@@ -184,6 +185,7 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
         tasks.append(asyncio.create_task(intake_service.run_forever(stop)))
         tasks.append(asyncio.create_task(deadlines_service.run_forever(stop)))
         tasks.append(asyncio.create_task(reminders_service.run_forever(stop)))
+        tasks.append(asyncio.create_task(autotrash_service.run_forever(stop)))
     logger.info("nexpaper %s started", __version__)
     with SessionLocal() as db:
         accounts.announce_setup_code(db)

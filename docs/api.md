@@ -220,7 +220,7 @@ answers `404 not_found`, exactly like one that does not exist; one they see but 
   may change through a share of the document alone (no vault number is given for those; `?shared=true` lists just
   them), `all` is the sum of both. `GET /counts` gives `{"inbox", "reading", "trash", "deadlines",
   "deadlines_overdue"}`, the numbers the menu shows (`deadlines`: open deadlines that are overdue or come in the next
-  14 days, see "Deadlines"). `POST /inbox/file` `{"ids" (at most 200), "vault_id", "kind_id", "add_tags" (at most 10)}` files many at
+  14 days, see "Deadlines"; both are 0 for somebody who switched deadlines off, `profile.deadlines`). `POST /inbox/file` `{"ids" (at most 200), "vault_id", "kind_id", "add_tags" (at most 10)}` files many at
   once: the proposals stay as they are and filing takes them over, `vault_id` moves each document first (`edit` in both
   vaults), `kind_id` and `add_tags` apply to all. Every document is checked on its own, as a single change would be;
   the answer is `{"filed": [ids], "failed": [{"id", "code"}]}` with the code a single change would have given
@@ -382,7 +382,9 @@ began, and up to 25 ms later by chance, errors too: its time tells nothing about
 - Filters as parameters: `vault_id`, `kind_id`, `owner_id`, `sender` and `tag` (a name, exactly), `date_from`, `date_to`,
   `status` (`processing`, `inbox`, `filed`; without it everything but the trash), `trash=true` (the trash instead, and only
   the caller's own documents in it), `via_share=true` (only what was shared with the caller one by one) or `false` (only
-  what lies in the caller's vaults), `deadline` (`open`, `overdue`, `done`, or a number of days, as `frist:`).
+  what lies in the caller's vaults), `deadline` (`open`, `overdue`, `done`, or a number of days, as `frist:`),
+  `keep=expired` (only filed documents whose keeping time is over, in the vaults where the caller may change things:
+  what `GET /keeping` lists, with the other filters, the sort and the pages of the archive's table).
 - `limit` (1 to 100, 50), `cursor` (the `next` of the page before; `422 invalid_cursor` for anything else).
 - Numbered pages instead of the cursor (the archive's table): `page` (from 1, at most 100,000) and `sort`: `-date` (the
   usual), `date`, `title`, `-title`, `sender`, `-sender`, `amount`, `-amount`; a minus is the largest (the newest, Z)
@@ -452,8 +454,13 @@ deadline; `weekly`, a mail on Mondays; `both`), `push`, `mail`, `lead` (`{due, c
 `muted` (vault ids), `muted_shared` (nothing about documents reached through a share alone), and what that needs:
 `hour` and `time_zone` (8 o'clock in the person's zone), `push_devices`, `mail_address` (confirmed, else empty),
 `mail_problem` (`no_server`, `no_address`, `unconfirmed` or null), `vaults` (edit or manage: `{id, name, icon, personal,
-personal_of_other, muted, others}`), `read_only` (never reminded), `shared` (documents shared with `edit`) and `may_go`
-(how many documents the weekly mail would say may go, their keeping time is over, the muted vaults left out).
+personal_of_other, muted, others}`), `read_only` (never reminded), `shared` (documents shared with `edit`), `may_go`
+(how many documents the weekly mail would say may go, their keeping time is over, the muted vaults left out), `trashed`
+(how many documents nexpaper put in the trash by itself in the last seven days, same vaults) and `deadlines` (whether
+the caller uses deadlines at all: `profile.deadlines`, changed with `PUT /api/v1/me/preferences {"deadlines": false}`,
+on from the start). With deadlines off nothing is reminded (no single reminder, no weekly mail), `POST …/test` is
+`409 deadlines_off`, and `GET /deadlines` still answers (the switch is about the web app and the messages, not about
+the data); the renewal of a contract does not depend on any person.
 `PUT /api/v1/me/reminders` changes what it is sent and answers the same; switching mail or the weekly mail on without a
 way to mail is `409 mail_unavailable`, a vault the caller may not change things in (or none) `422 bad_reminder`. A
 field sent as `null` is left as it is; `lead` takes whole numbers from `options` (`true` is `422`). `muted` lists only
@@ -467,7 +474,7 @@ by_push, by_mail}`; `409 reminders_no_way`). A browser or a device; a key is tur
 A reminder names the kind of deadline, its day and the title of the document, never an amount, the text, notes or tags,
 and opens the document. It goes from 8 o'clock in the person's zone, once per deadline and stage: ahead by the lead,
 on the day itself (when chosen), and when a "later" ends; missed ones up to 2 days late. At most 20 a day per person,
-the rest in one message. The weekly mail goes on Mondays when something comes up: the deadlines of the week, what is overdue, and how many documents may go (see keeping, below); a muted vault counts in none of these.
+the rest in one message. The weekly mail goes on Mondays when something comes up: the deadlines of the week, what is overdue, how many documents may go (see keeping, below) and how many nexpaper put in the trash by itself in the last seven days; a muted vault counts in none of these.
 
 ### Settings (the operator, in a browser)
 
@@ -851,7 +858,7 @@ person, which stays whatever happens to the kind or the date. A `keep_until` sen
 hand; sending the date the document already has leaves it as it was made, `"manual": false` in the term says "from the
 kind" outright, and leaving `keep_until` out of `dates` works it out from the kind again. Deleting a kind, or merging
 it into one without a keeping time, leaves the dates where they are, as set by hand. Nothing is ever deleted because
-its time is over.
+its time is over, unless a kind has the switch below.
 
 - `POST /kinds/{id}/keeping/preview` `{"years"}` (1 to 30, or `null` for taking the time away): what the question
   before setting it says, counted over the documents the caller may see (not in the trash, not being read):
@@ -864,6 +871,18 @@ its time is over.
   the background (`queued: true`, `changed` 0; one job, which does what was decided last when it runs). Each document
   whose term changed gets a new number for `GET /changes` and a line in its history (`fields: ["keep_until"]`, `by:
   catalog`). A kind of the whole server is the operator's, in a browser; a kind of a vault needs `manage` there.
+- `POST /kinds/{id}/auto-trash/preview` (no body): `{"kind", "due"}`, `due` being the filed documents of the kind that
+  the caller may see and whose keeping time is over now, which the switch below would put in the trash at its next
+  run. Changes nothing. Same rights as setting the time.
+- `PUT /kinds/{id}/auto-trash` `{"enabled"}`: the switch "expired documents into the trash by themselves"
+  (`auto_trash` on the kind, in `GET /kinds`, `GET /order/kinds` and in every document's `kind`). Off from the start,
+  and only for a kind with a keeping time (`409 no_keeping_time`); taking the time away switches it off. Same rights as
+  setting the time: the operator in a browser for a kind of the server, `manage` for a kind of a vault. Switching it on
+  changes nothing at once. Once a day (the loop looks every hour) nexpaper puts the filed documents of such a kind whose
+  `keep_until` has passed in the trash (30 days to get them back): at most 500 a day, the rest the next day, each
+  document once (one that was restored stays; the history line `auto_trashed` with `keep_until` in its `detail` and no
+  person is the mark), with a new number for `GET /changes`. Nothing is deleted for good. A kind made in another vault
+  for a document that moves there does not take the switch along.
 - `GET /keeping` (`vault_id`, `limit` at most 500, `offset`): the filed documents whose `keep_until` is before today (the
   caller's time zone), in the vaults where the caller may change things (`edit` or `manage`; documents only shared with
   them are not looked at), the ones over longest first, then by date and id: `{"items" (as `GET /documents/{id}`),

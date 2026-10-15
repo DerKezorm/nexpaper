@@ -75,6 +75,8 @@ class KindEntry(OrderEntry):
     keep_years: int | None = None
     #: The last decision about the documents already there was "for new ones only" (they kept what they had).
     keep_new_only: bool = False
+    #: Its documents whose keeping time is over go to the trash by themselves, once a day (`PUT /kinds/{id}/keeping`).
+    auto_trash: bool = False
 
 
 class OrderPage(BaseModel):

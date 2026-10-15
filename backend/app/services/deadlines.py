@@ -100,6 +100,14 @@ def today_of(account: Account) -> Date:
     return clock.now().astimezone(timezones.zone_of(account)).date()
 
 
+def wanted(account: Account) -> bool:
+    """Whether the person uses deadlines at all (``profile.deadlines``, on from the start; Mein Konto, Erinnerungen).
+    Off, they get no number in the menu, no reminders and no weekly mail; the dates on the documents stay as they are
+    and the renewal of a contract (which hangs on the document, not on a person) goes on."""
+    profile = account.profile if isinstance(account.profile, dict) else {}
+    return profile.get("deadlines") is not False
+
+
 def server_today() -> Date:
     return clock.now().astimezone().date()
 

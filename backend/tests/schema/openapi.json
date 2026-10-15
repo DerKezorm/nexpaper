@@ -487,6 +487,37 @@
         "title": "AuthorizeIn",
         "type": "object"
       },
+      "AutoTrashIn": {
+        "additionalProperties": false,
+        "properties": {
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "enabled"
+        ],
+        "title": "AutoTrashIn",
+        "type": "object"
+      },
+      "AutoTrashOut": {
+        "properties": {
+          "due": {
+            "title": "Due",
+            "type": "integer"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/KindOut"
+          }
+        },
+        "required": [
+          "kind",
+          "due"
+        ],
+        "title": "AutoTrashOut",
+        "type": "object"
+      },
       "ChangeOut": {
         "properties": {
           "document": {
@@ -3396,6 +3427,11 @@
       },
       "KindEntry": {
         "properties": {
+          "auto_trash": {
+            "default": false,
+            "title": "Auto Trash",
+            "type": "boolean"
+          },
           "can_change": {
             "title": "Can Change",
             "type": "boolean"
@@ -3544,6 +3580,11 @@
       },
       "KindOut": {
         "properties": {
+          "auto_trash": {
+            "default": false,
+            "title": "Auto Trash",
+            "type": "boolean"
+          },
           "hue": {
             "title": "Hue",
             "type": "integer"
@@ -6605,6 +6646,10 @@
       },
       "RemindersOut": {
         "properties": {
+          "deadlines": {
+            "title": "Deadlines",
+            "type": "boolean"
+          },
           "hour": {
             "title": "Hour",
             "type": "integer"
@@ -6690,6 +6735,10 @@
             "title": "Time Zone",
             "type": "string"
           },
+          "trashed": {
+            "title": "Trashed",
+            "type": "integer"
+          },
           "vaults": {
             "items": {
               "$ref": "#/components/schemas/ReminderVaultMine"
@@ -6699,6 +6748,7 @@
           }
         },
         "required": [
+          "deadlines",
           "rhythm",
           "push",
           "mail",
@@ -6715,7 +6765,8 @@
           "vaults",
           "read_only",
           "shared",
-          "may_go"
+          "may_go",
+          "trashed"
         ],
         "title": "RemindersOut",
         "type": "object"
@@ -9182,7 +9233,7 @@
   "info": {
     "summary": "The interface the web app speaks, and the one native apps and scripts use.",
     "title": "nexpaper",
-    "version": "1.4.0"
+    "version": "1.4.1"
   },
   "openapi": "3.1.0",
   "paths": {
@@ -15859,6 +15910,112 @@
         ]
       }
     },
+    "/api/v1/kinds/{kind_id}/auto-trash": {
+      "put": {
+        "description": "Off from the start, and only for a kind with a keeping time (`409 no_keeping_time`). Once a day the filed\ndocuments of the kind whose `keep_until` has passed go to the trash (30 days to get them back), each once, at most\n500 a day. Nothing is deleted for good. Switching it on changes nothing now; the next run does the work.",
+        "operationId": "set_auto_trash_api_v1_kinds__kind_id__auto_trash_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "kind_id",
+            "required": true,
+            "schema": {
+              "title": "Kind Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AutoTrashIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AutoTrashOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Switch expired documents of a kind into the trash by themselves on or off (manage in its vault; the operator for the server's)",
+        "tags": [
+          "keeping"
+        ]
+      }
+    },
+    "/api/v1/kinds/{kind_id}/auto-trash/preview": {
+      "post": {
+        "description": "Counts only documents the caller may see.",
+        "operationId": "preview_auto_trash_api_v1_kinds__kind_id__auto_trash_preview_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "kind_id",
+            "required": true,
+            "schema": {
+              "title": "Kind Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AutoTrashOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Whether expired documents of a kind go to the trash by themselves, and how many would go now; changes nothing (manage in its vault; the operator for the server's)",
+        "tags": [
+          "keeping"
+        ]
+      }
+    },
     "/api/v1/kinds/{kind_id}/keeping": {
       "put": {
         "operationId": "set_keeping_api_v1_kinds__kind_id__keeping_put",
@@ -19508,6 +19665,25 @@
               ],
               "description": "Only documents with a deadline that is open, overdue, done, or open and due within this many days (overdue ones included)",
               "title": "Deadline"
+            }
+          },
+          {
+            "description": "`expired`: only filed documents whose keeping time is over, in the vaults where the caller may change things (what `GET /api/v1/keeping` lists)",
+            "in": "query",
+            "name": "keep",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "const": "expired",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "`expired`: only filed documents whose keeping time is over, in the vaults where the caller may change things (what `GET /api/v1/keeping` lists)",
+              "title": "Keep"
             }
           }
         ],

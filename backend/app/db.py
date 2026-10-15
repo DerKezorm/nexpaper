@@ -46,7 +46,7 @@ _settings.data_dir.mkdir(parents=True, exist_ok=True)
 BUSY_SECONDS = 15
 
 #: The version of the schema the models describe.
-SCHEMA_VERSION = 13
+SCHEMA_VERSION = 14
 
 
 def _step_v2(connection: Connection) -> None:
@@ -381,6 +381,12 @@ def _step_reminders(connection: Connection) -> None:
         connection.exec_driver_sql(statement)
 
 
+def _step_auto_trash(connection: Connection) -> None:
+    """Expired documents into the trash by themselves (D4): one switch per kind, off for every kind there is. One added
+    column with a default, nothing else; written out as it stood when the step was made."""
+    connection.exec_driver_sql("ALTER TABLE kinds ADD COLUMN auto_trash BOOLEAN DEFAULT 0 NOT NULL")
+
+
 #: ``MIGRATIONS[n]`` brings a database from version ``n - 1`` to ``n``. Version 1 is the first schema; it has no step.
 #: Later steps are written out as the tables stood then, not taken from the models, which move on.
 MIGRATIONS: dict[int, Callable[[Connection], None]] = {
@@ -396,6 +402,8 @@ MIGRATIONS: dict[int, Callable[[Connection], None]] = {
     12: _step_keeping,
     # F2, reminders.
     13: _step_reminders,
+    # D4, expired documents into the trash by themselves.
+    14: _step_auto_trash,
 }
 
 def _has_column(connection: Connection, table: str, column: str) -> bool:

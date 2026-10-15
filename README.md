@@ -17,7 +17,8 @@ over what you already have in Paperless-ngx.
   last day to cancel worked out from the notice period. nexpaper reminds the people who may edit the vault, by push, by
   mail or in a weekly overview, each reminder once.
 - **Keeping times.** A kind can say how many years its documents are kept. When the time is over the document shows up
-  as "may go"; nexpaper never deletes anything by itself.
+  in the archive under "May go". Nothing is deleted by itself; a kind can ask nexpaper to put its expired documents in
+  the trash once a day (off from the start, they stay there for 30 days).
 - **For small firms.** E-invoices (ZUGFeRD, Factur-X, XRechnung) are read from their data, there is a history of who
   changed what, and an export for the tax adviser (a ZIP with the PDFs and a list). No claim of GoBD compliance.
 - **No Redis, no Celery, no Postgres.** One container, SQLite, plain readable files on the disk.
@@ -258,8 +259,8 @@ Going back from 1.1.0 to 1.0.1: there, the sign-in through the provider works on
 checks the second factor itself" on; otherwise only the password does. Coming up to 1.1.0 again brings everything back.
 
 **From 1.4.0 on there is no way back to an older version.** 1.4.0 changes the database (schema 11 to 13: deadlines,
-keeping times, reminders), and an older nexpaper does not open it: it stops at the start with a message that the
-database is newer. That includes going back to 1.1.0 or 1.0.1, which was possible until 1.3.0. Make a backup before you
+keeping times, reminders; 1.4.1 adds the switch of the kinds, schema 14), and an older nexpaper does not open it: it
+stops at the start with a message that the database is newer. That includes going back to 1.1.0 or 1.0.1, which was possible until 1.3.0. Make a backup before you
 update (Settings, Backups; nexpaper also makes one itself before it changes the database). The only way back is to
 restore that backup with the older version, and what was entered after the update is lost with it. The first start after
 the update sends no wave of reminders for deadlines that were entered before.
@@ -324,7 +325,11 @@ days and can be brought back; one deleted for good, a key, a link or a device th
 Dates on a document come with a kind: due, contract until, warranty until, keep until. The **Deadlines** page (between
 Archive and Vaults, with the number for the next 14 days) lists what falls due, what has to be cancelled and what a
 warranty still covers, from every vault where you may edit: overdue, the next two weeks, later. A deadline can be marked
-as done (paid, cancelled) and opened again, or put off for you alone by a day, three days or a week.
+as done (paid, cancelled) and opened again, or put off for you alone by a day, three days or a week. Whoever does not
+use deadlines switches them off for themselves (My account, Reminders): no menu item, no number, no reminders, no
+weekly overview, no filter "Deadline" in the archive, and no "paid" or "later" on a document. The dates on the
+documents stay, the search words with `deadline:` keep working, and everybody else is unaffected. They are on from the
+start.
 
 - **Contracts.** Besides "contract until" a contract has a **notice period** (weeks or months) and a **renewal** (months).
   nexpaper works out the last day to cancel and shows it beside the field. Without a cancellation the end moves on by the
@@ -339,9 +344,16 @@ as done (paid, cancelled) and opened again, or put off for you alone by a day, t
   Mail needs the mail server of the operator and a confirmed address.
 - **Keeping times** (Organise, Kinds, column "Keep"). A kind can have a time in years, counted from the end of the year
   of the document date; no kind has one from the start. Setting it asks whether it also applies to the documents already
-  there (a date set by hand stays). Documents whose time is over are listed on the Deadlines page under "May go", where
-  you choose what goes to the trash (30 days, see Filing). The usual times shown beside the setting are a help and carry
-  no guarantee; nexpaper makes no claim of GoBD compliance or legal advice.
+  there (a date set by hand stays). Documents whose time is over are listed in the archive under the filter "May go"
+  (a table with the column "Keep until", boxes and "Move to the trash"; the overview of the archive says how many there
+  are) and on the Deadlines page, where you choose what goes to the trash (30 days, see Filing). The question when you set
+  a time always says what happens once it is over. The usual times shown beside the setting are a help and carry no
+  guarantee; nexpaper makes no claim of GoBD compliance or legal advice.
+- **Expired ones into the trash by themselves** (Organise, Kinds, switch below the time; off from the start, only for
+  a kind with a time, set by whoever sets the time). When it is on, nexpaper puts the filed documents of the kind whose
+  time is over in the trash once a day, at most 500 a day, each document only once (one you restore stays), with a line
+  in its history and in the weekly overview. Switching it on asks first and says how many documents would go at once.
+  Nothing is deleted for good by it; the trash empties itself after 30 days as always.
 - Search words: `deadline:open`, `deadline:overdue`, `deadline:<30`, `keep:expired`. The same data is open to programs
   (`docs/api.md`).
 

@@ -34,6 +34,8 @@ class KindOut(BaseModel):
     vault_id: int | None = None
     #: How many years its documents are kept (`keep_until` is worked out from it); empty: no keeping time.
     keep_years: int | None = None
+    #: Its documents whose keeping time is over go to the trash by themselves, once a day (off from the start).
+    auto_trash: bool = False
 
 
 class NoticeOut(BaseModel):
@@ -148,7 +150,8 @@ def kind_out(kind: Kind | None) -> KindOut | None:
     if kind is None:
         return None
     return KindOut(id=kind.id, key=kind.key, name=kind.name, hue=kind.hue, position=kind.position,
-                   vault_id=kind.vault_id, keep_years=kind.keep_years)
+                   vault_id=kind.vault_id, keep_years=kind.keep_years,
+                   auto_trash=bool(kind.auto_trash))
 
 
 def dates_out(row: Row) -> list[DateOut]:

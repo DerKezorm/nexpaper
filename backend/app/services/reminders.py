@@ -72,7 +72,7 @@ from ..models import (
     Share,
     VaultMember,
 )
-from . import changes, deadlines, keeping, mailer, notices, push, settings_service, timezones, vaults
+from . import autotrash, changes, deadlines, keeping, mailer, notices, push, settings_service, timezones, vaults
 
 logger = logging.getLogger("nexpaper.reminders")
 
@@ -210,6 +210,7 @@ def view(db: Session, account: Account) -> dict[str, Any]:
         else:
             read_only.append(entry)
     return {
+        "deadlines": deadlines.wanted(account),
         "rhythm": prefs.rhythm,
         "push": prefs.push,
         "mail": prefs.mail,
@@ -227,6 +228,7 @@ def view(db: Session, account: Account) -> dict[str, Any]:
         "read_only": read_only,
         "shared": shared_count(db, account.id),
         "may_go": may_go_count(db, account.id, prefs, keeping.today_of(account)),
+        "trashed": trashed_count(db, account.id, prefs),
     }
 
 
@@ -303,8 +305,13 @@ WORDS: dict[str, dict[str, str]] = {
         "frist": "Frist", "fristen": "Fristen", "overdue_part": ", {n} überfällig",
         "hello": "Guten Morgen {name}, das steht diese Woche an:",
         "overdue": "Überfällig", "week": "Diese Woche", "nothing": "nichts", "may_go": "Darf weg",
-        "may_go_one": "Bei einem Dokument ist die Aufbewahrungszeit um.",
-        "may_go_many": "Bei {n} Dokumenten ist die Aufbewahrungszeit um.",
+        "may_go_one": "Bei einem Dokument ist die Aufbewahrungszeit um. Es steht im Archiv unter „Darf weg“.",
+        "may_go_many": "Bei {n} Dokumenten ist die Aufbewahrungszeit um. Sie stehen im Archiv unter „Darf weg“.",
+        "trashed": "Papierkorb",
+        "trashed_one": "Ein Dokument hat nexpaper in den Papierkorb gelegt, seine Aufbewahrungszeit war um. "
+                       "Dort lässt es sich 30 Tage zurückholen.",
+        "trashed_many": "{n} Dokumente hat nexpaper in den Papierkorb gelegt, ihre Aufbewahrungszeit war um. "
+                        "Dort lassen sie sich 30 Tage zurückholen.",
         "and_more": "und {n} weitere",
         "all": "Alle Fristen in nexpaper öffnen",
         "week_why": "Diese Mail kommt, weil du unter Mein Konto, Erinnerungen die Wochenübersicht eingeschaltet hast.",
@@ -327,8 +334,13 @@ WORDS: dict[str, dict[str, str]] = {
         "frist": "deadline", "fristen": "deadlines", "overdue_part": ", {n} overdue",
         "hello": "Good morning {name}, this is what comes up this week:",
         "overdue": "Overdue", "week": "This week", "nothing": "nothing", "may_go": "May go",
-        "may_go_one": "The keeping time of one document is over.",
-        "may_go_many": "The keeping time of {n} documents is over.",
+        "may_go_one": "The keeping time of one document is over. It is in the archive under \"May go\".",
+        "may_go_many": "The keeping time of {n} documents is over. They are in the archive under \"May go\".",
+        "trashed": "Trash",
+        "trashed_one": "nexpaper put one document in the trash, its keeping time was over. It can be restored there "
+                       "for 30 days.",
+        "trashed_many": "nexpaper put {n} documents in the trash, their keeping time was over. They can be restored "
+                        "there for 30 days.",
         "and_more": "and {n} more",
         "all": "Open all deadlines in nexpaper",
         "week_why": "This mail comes because you switched on the weekly overview under My account, Reminders.",
@@ -537,6 +549,13 @@ def may_go_count(db: Session, uid: int, prefs: Preferences, today: Date) -> int:
     return keeping.may_go_count(db, uid, today, where=mute_clauses(uid, prefs))
 
 
+def trashed_count(db: Session, uid: int, prefs: Preferences, now: datetime | None = None) -> int:
+    """How many documents nexpaper put in the trash by itself in the last seven days (a kind with the switch "expired
+    documents into the trash by themselves"), in the vaults where the person may change things, the muted vaults left
+    out: the weekly mail's line "N documents were put in the trash"."""
+    return autotrash.trashed_since(db, uid, (now or clock.now()) - timedelta(days=7), where=mute_clauses(uid, prefs))
+
+
 # --- The weekly mail --------------------------------------------------------------------------------------------------
 
 
@@ -545,17 +564,20 @@ class Week:
     overdue: list[deadlines.Deadline]
     week: list[deadlines.Deadline]
     may_go: int
+    #: Documents nexpaper put in the trash by itself in the last seven days.
+    trashed: int = 0
 
     @property
     def empty(self) -> bool:
-        return not self.overdue and not self.week and not self.may_go
+        return not self.overdue and not self.week and not self.may_go and not self.trashed
 
 
-def week_of(db: Session, uid: int, prefs: Preferences, today: Date) -> Week:
-    """What comes up from today to six days on, what is overdue (open, the muted vaults left out), what may go."""
+def week_of(db: Session, uid: int, prefs: Preferences, today: Date, now: datetime | None = None) -> Week:
+    """What comes up from today to six days on, what is overdue (open, the muted vaults left out), what may go, and
+    what nexpaper put in the trash by itself in the seven days before ``now``."""
     found = deadlines.open_for(db, uid, today, until=today + timedelta(days=6), where=mute_clauses(uid, prefs))
     return Week(overdue=[d for d in found if d.worked.date < today], week=[d for d in found if d.worked.date >= today],
-                may_go=may_go_count(db, uid, prefs, today))
+                may_go=may_go_count(db, uid, prefs, today), trashed=trashed_count(db, uid, prefs, now))
 
 
 def week_mail(account: Account, week: Week, lang: str, base: str, today: Date) -> EmailMessage:
@@ -584,6 +606,9 @@ def week_mail(account: Account, week: Week, lang: str, base: str, today: Date) -
     if week.may_go:
         sections.append((words["may_go"], [words["may_go_one"] if week.may_go == 1
                                            else words["may_go_many"].format(n=week.may_go)], False))
+    if week.trashed:
+        sections.append((words["trashed"], [words["trashed_one"] if week.trashed == 1
+                                            else words["trashed_many"].format(n=week.trashed)], False))
     link = f"{base}{DEADLINES_PATH}" if base else ""
     text = [words["hello"].format(name=name), ""]
     for head, entries, _warn in sections:
@@ -645,7 +670,8 @@ def _person(uid: int, now: datetime, summary: Summary) -> None:
     outs: list[Out] = []
     with SessionLocal() as db:
         account = db.get(Account, uid)
-        if account is None or account.blocked_at is not None:
+        if account is None or account.blocked_at is not None or not deadlines.wanted(account):
+            # Somebody who switched deadlines off hears nothing: no reminder, no weekly mail.
             return
         local = now.astimezone(timezones.zone_of(account))
         today = local.date()
@@ -665,7 +691,7 @@ def _person(uid: int, now: datetime, summary: Summary) -> None:
         if prefs.weekly and problem is None:
             monday = today - timedelta(days=today.weekday())
             if today <= monday + timedelta(days=CATCH_UP_DAYS) and _claim(db, uid, None, [(WEEK, monday)], today):
-                week = week_of(db, uid, prefs, today)
+                week = week_of(db, uid, prefs, today, now)
                 if not week.empty:
                     outs.append(Out(texts={}, url=DEADLINES_PATH, tag=f"{TAG}-week",
                                     mail=week_mail(account, week, lang, base, today)))
@@ -748,6 +774,8 @@ async def run_forever(stop: asyncio.Event) -> None:
 def send_test(db: Session, account: Account) -> dict[str, Any]:
     """A message on every way the person switched on: push to the devices, a mail when reminders or the weekly mail go
     by mail. ``reminders_no_way`` when there is none."""
+    if not deadlines.wanted(account):
+        raise error("deadlines_off", "Deadlines are switched off for this account.", 409)
     prefs = preferences_of(db, account.id)
     by_push = prefs.push and prefs.single and push.has_devices(db, account.id)
     by_mail = (prefs.mail and prefs.single or prefs.weekly) and mail_problem(db, account) is None
@@ -771,5 +799,5 @@ def send_test(db: Session, account: Account) -> dict[str, Any]:
 __all__ = [
     "BATCH", "CATCH_UP_DAYS", "DAY", "HOUR", "LATER", "LEAD", "LEADS", "PER_DAY", "WEEK", "Due", "Preferences",
     "Summary", "due_singles", "may_go_count", "preferences_of", "run_forever", "run_once", "save", "send_test",
-    "view", "week_mail", "week_of", "words_for",
+    "trashed_count", "view", "week_mail", "week_of", "words_for",
 ]

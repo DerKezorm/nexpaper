@@ -25,9 +25,10 @@ from sqlalchemy import create_engine, func, select
 
 from app import db as database
 from app.db import SessionLocal
-from app.models import Account, Document, ReminderSent, VaultMember
+from app.models import Account, Document, Kind, ReminderSent, VaultMember
 from app.services import (
     apikeys,
+    autotrash,
     backups,
     brakes,
     deadlines,
@@ -885,7 +886,7 @@ def test_a_database_of_schema_12_comes_up_with_the_reminder_tables(scratch: Path
         connection.commit()
     database.init_db()
     with closing(sqlite3.connect(scratch)) as connection:
-        assert connection.execute("PRAGMA user_version").fetchone()[0] == database.SCHEMA_VERSION == 13
+        assert connection.execute("PRAGMA user_version").fetchone()[0] == database.SCHEMA_VERSION
         for statement in ("SELECT count(*) FROM reminder_settings", "SELECT count(*) FROM reminder_mutes",
                           "SELECT count(*) FROM reminders_sent WHERE stage <> 'seed'"):
             assert connection.execute(statement).fetchone()[0] == 0
@@ -910,3 +911,171 @@ def test_the_backup_holds_the_reminders(town: Town, tmp_path: Path) -> None:
         assert brief.usable and brief.schema == database.SCHEMA_VERSION
     finally:
         path.unlink(missing_ok=True)
+
+
+# --- D4: expired documents put in the trash by themselves ------------------------------------------------------------
+
+
+def trash_kind(vault: int) -> int:
+    """A kind of the vault with a keeping time of a year and the switch on."""
+    with SessionLocal() as db:
+        kind = Kind(key="", name="Beleg", name_key="beleg", hue=30, position=0, vault_id=vault, keep_years=1,
+                    auto_trash=True)
+        db.add(kind)
+        db.commit()
+        return kind.id
+
+
+def trash_day(day: Date) -> int:
+    with SessionLocal() as db:
+        return autotrash.run(db, day)
+
+
+def test_the_weekly_mail_says_what_nexpaper_put_in_the_trash(town: Town, mails: list[EmailMessage],
+                                                              monkeypatch: pytest.MonkeyPatch) -> None:
+    choose(town.jule, rhythm="weekly")
+    monday = Date(2026, 10, 12)
+    kind = trash_kind(town.house)
+    freeze(monkeypatch, at(monday - 3 * DAY, 3))
+    for n in range(3):
+        town.add(f"Haus {n}", town.house, town.jule, kind_id=kind, date=Date(2020, 1, 1))
+    town.add("Von Lea", town.house, town.lea, kind_id=kind, date=Date(2020, 1, 1))
+    assert trash_day(monday - 3 * DAY) == 4
+    freeze(monkeypatch, at(monday, 7))
+    run(at(monday, 9))
+    assert len(mails) == 1, "nothing else comes up this week, the trash alone is a reason to write"
+    assert mails[0]["Subject"] == "Diese Woche: keine Fristen"
+    plain = mails[0].get_body(("plain",)).get_content()  # type: ignore[union-attr]
+    assert "PAPIERKORB" in plain and "4 Dokumente hat nexpaper in den Papierkorb gelegt" in plain
+    assert "30 Tage" in plain
+    html = mails[0].get_body(("html",)).get_content()  # type: ignore[union-attr]
+    assert "Papierkorb" in html
+    run(at(monday + DAY, 9))
+    assert len(mails) == 1, "the week was looked at on Monday"
+
+
+def test_the_trash_line_in_english_and_for_one_document(town: Town, mails: list[EmailMessage],
+                                                         monkeypatch: pytest.MonkeyPatch) -> None:
+    set_profile(town.jule, mail="jule@example.com", language="en")
+    choose(town.jule, rhythm="weekly")
+    monday = Date(2026, 10, 12)
+    kind = trash_kind(town.house)
+    freeze(monkeypatch, at(monday - DAY, 3))
+    town.add("Haus", town.house, town.jule, kind_id=kind, date=Date(2020, 1, 1))
+    assert trash_day(monday - DAY) == 1
+    freeze(monkeypatch, at(monday, 7))
+    run(at(monday, 9))
+    plain = mails[0].get_body(("plain",)).get_content()  # type: ignore[union-attr]
+    assert "TRASH" in plain and "nexpaper put one document in the trash" in plain
+
+
+def test_a_muted_vault_and_a_reader_hear_nothing_about_the_trash(town: Town, mails: list[EmailMessage],
+                                                                  monkeypatch: pytest.MonkeyPatch) -> None:
+    monday = Date(2026, 10, 12)
+    kind = trash_kind(town.house)
+    freeze(monkeypatch, at(monday - 2 * DAY, 3))
+    town.add("Haus", town.house, town.jule, kind_id=kind, date=Date(2020, 1, 1))
+    assert trash_day(monday - 2 * DAY) == 1
+    freeze(monkeypatch, at(monday, 7))
+    choose(town.jule, rhythm="weekly", muted=[town.house])
+    choose(town.lea, rhythm="weekly")
+    choose(town.tom, rhythm="weekly")
+    run(at(monday, 9))
+    assert sorted(str(m["To"]) for m in mails) == ["tom@example.com"]
+    with new_client(town.lea) as lea, new_client(town.tom) as tom, new_client(town.jule) as jule:
+        assert lea.get("/api/v1/me/reminders").json()["trashed"] == 0
+        assert tom.get("/api/v1/me/reminders").json()["trashed"] == 1
+        assert jule.get("/api/v1/me/reminders").json()["trashed"] == 0
+
+
+def test_what_was_put_in_the_trash_over_a_week_ago_is_not_mentioned(town: Town, mails: list[EmailMessage],
+                                                                     monkeypatch: pytest.MonkeyPatch) -> None:
+    monday = Date(2026, 10, 12)
+    kind = trash_kind(town.house)
+    freeze(monkeypatch, at(monday - 9 * DAY, 3))
+    town.add("Haus", town.house, town.jule, kind_id=kind, date=Date(2020, 1, 1))
+    assert trash_day(monday - 9 * DAY) == 1
+    freeze(monkeypatch, at(monday, 7))
+    choose(town.jule, rhythm="weekly")
+    run(at(monday, 9))
+    assert mails == []
+
+
+# --- D4: deadlines switched off for one person --------------------------------------------------------------------------
+
+
+def switch_deadlines(person: Account, on: bool) -> None:
+    with new_client(person) as session:
+        answer = session.put("/api/v1/me/preferences", json={"deadlines": on})
+        assert answer.status_code == 200 and answer.json()["deadlines"] is on
+
+
+def test_deadlines_are_on_from_the_start_and_the_choice_is_the_persons_own(town: Town) -> None:
+    with new_client(town.jule) as jule:
+        assert jule.get("/api/v1/auth/me").json()["profile"]["deadlines"] is True
+        assert jule.put("/api/v1/me/preferences", json={"deadlines": "no"}).status_code == 422
+        assert jule.put("/api/v1/me/preferences", json={"deadlines": None}).status_code == 422
+    switch_deadlines(town.tom, False)
+    with new_client(town.jule) as jule, new_client(town.tom) as tom:
+        assert jule.get("/api/v1/auth/me").json()["profile"]["deadlines"] is True
+        assert tom.get("/api/v1/auth/me").json()["profile"]["deadlines"] is False
+        assert tom.get("/api/v1/me/reminders").json()["deadlines"] is False
+        assert jule.get("/api/v1/me/reminders").json()["deadlines"] is True
+        # The choice does not disturb the other profile values.
+        assert tom.get("/api/v1/auth/me").json()["profile"]["timezone"] == "Europe/Berlin"
+    switch_deadlines(town.tom, True)
+    with new_client(town.tom) as tom:
+        assert tom.get("/api/v1/me/reminders").json()["deadlines"] is True
+
+
+def test_somebody_who_switched_deadlines_off_gets_no_number_and_no_reminder(town: Town) -> None:
+    town.add("Rechnung", town.house, town.jule, dates=[("due", TODAY + DAY)])
+    town.add("Überfällig", town.house, town.jule, dates=[("due", TODAY - DAY)])
+    with new_client(town.jule) as jule, new_client(town.tom) as tom:
+        assert jule.get("/api/v1/counts").json()["deadlines"] == 2
+        assert tom.get("/api/v1/counts").json()["deadlines"] == 2
+    switch_deadlines(town.tom, False)
+    with new_client(town.jule) as jule, new_client(town.tom) as tom:
+        assert jule.get("/api/v1/counts").json()["deadlines"] == 2
+        off = tom.get("/api/v1/counts").json()
+        assert (off["deadlines"], off["deadlines_overdue"]) == (0, 0)
+        # The other numbers stay.
+        assert set(off) == set(jule.get("/api/v1/counts").json())
+        # Testing the ways says why it does not go.
+        assert tom.post("/api/v1/me/reminders/test").status_code == 409
+        assert tom.post("/api/v1/me/reminders/test").json()["detail"]["code"] == "deadlines_off"
+    run(at(TODAY, 8))
+    got = town.got()
+    assert {person for person, _title in got} == {"jule"}, "the others are reminded as before, tom is not"
+    # Switched on again: the reminders come back for what is due.
+    switch_deadlines(town.tom, True)
+    town.add("Noch eine", town.house, town.jule, dates=[("due", TODAY + DAY)])
+    run(at(TODAY, 9))
+    assert "tom" in {person for person, _title in town.got()}
+
+
+def test_somebody_who_switched_deadlines_off_gets_no_weekly_mail(town: Town, mails: list[EmailMessage]) -> None:
+    monday = Date(2026, 10, 12)
+    for person in (town.jule, town.tom):
+        choose(person, rhythm="weekly")
+    town.add("Nächste", town.house, town.jule, dates=[("due", monday + 2 * DAY)])
+    switch_deadlines(town.tom, False)
+    run(at(monday, 9))
+    assert [str(m["To"]) for m in mails] == ["jule@example.com"]
+
+
+def test_deadlines_off_changes_nothing_about_the_documents(town: Town) -> None:
+    """The dates stay, a contract still renews by itself (it hangs on the document), and the person still reads their
+    deadlines through the interface (an app may ask)."""
+    doc = town.add("Vertrag", town.house, town.jule)
+    contract(doc, town.jule.id, TODAY - DAY, n=3, renew=12)
+    switch_deadlines(town.jule, False)
+    with SessionLocal() as db:
+        assert deadlines.renew_due(db, TODAY) == 1
+    with new_client(town.jule) as jule:
+        shown = jule.get(f"/api/v1/documents/{doc}").json()
+        assert any(d["kind"] == "contract_end" and d["date"] == "2027-10-07" for d in shown["dates"])
+        assert jule.get("/api/v1/deadlines").status_code == 200
+        # Done and later still work through the interface; the web app simply does not offer them.
+        assert jule.post(f"/api/v1/documents/{doc}/dates/contract_end/done").status_code == 200
+

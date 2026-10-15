@@ -1,8 +1,10 @@
 """Keeping documents: the keeping time of a kind, the documents whose time is over, and many documents into the trash.
 
 The keeping time of a kind of the whole server is the operator's (in a browser), the one of a vault's kind belongs to
-whoever manages the vault. The question before setting it counts only documents the caller may see. "May go" lists the
-filed documents whose time is over in the vaults where the caller may change things; nothing is ever deleted by itself.
+whoever manages the vault, and so does the switch that puts the expired documents of the kind in the trash once a day
+by themselves. The question before setting it counts only documents the caller may see. "May go" lists the filed
+documents whose time is over in the vaults where the caller may change things; nothing is ever deleted for good by
+itself.
 """
 
 from __future__ import annotations
@@ -10,7 +12,7 @@ from __future__ import annotations
 from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, Query, Request
-from pydantic import BaseModel, ConfigDict, Field, StrictInt
+from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictInt
 
 from ..deps import Account as Caller
 from ..deps import DbSession, Reader, require_browser_account, require_operator
@@ -87,6 +89,46 @@ def set_keeping(kind_id: int, payload: KeepIn, request: Request, account: Caller
     shown = kind_out(done.kind)
     assert shown is not None
     return KeepOut(kind=shown, changed=done.changed, queued=done.queued)
+
+
+class AutoTrashIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    enabled: StrictBool
+
+
+class AutoTrashOut(BaseModel):
+    kind: KindOut
+    #: Filed documents of the kind that the caller may see and whose keeping time is over now: what the switch would
+    #: put in the trash at its next run (once a day).
+    due: int
+
+
+@router.post("/kinds/{kind_id}/auto-trash/preview", response_model=AutoTrashOut,
+             summary="Whether expired documents of a kind go to the trash by themselves, and how many would go now; "
+                     "changes nothing (manage in its vault; the operator for the server's)")
+def preview_auto_trash(kind_id: int, request: Request, account: Caller, db: DbSession) -> AutoTrashOut:
+    """Counts only documents the caller may see."""
+    who = _who(request, account, db, kind_id)
+    kind, due = keeping.auto_trash_state(db, who.id, kind_id, keeping.today_of(who))
+    shown = kind_out(kind)
+    assert shown is not None
+    return AutoTrashOut(kind=shown, due=due)
+
+
+@router.put("/kinds/{kind_id}/auto-trash", response_model=AutoTrashOut,
+            summary="Switch expired documents of a kind into the trash by themselves on or off (manage in its vault; "
+                    "the operator for the server's)")
+def set_auto_trash(kind_id: int, payload: AutoTrashIn, request: Request, account: Caller,
+                   db: DbSession) -> AutoTrashOut:
+    """Off from the start, and only for a kind with a keeping time (`409 no_keeping_time`). Once a day the filed
+    documents of the kind whose `keep_until` has passed go to the trash (30 days to get them back), each once, at most
+    500 a day. Nothing is deleted for good. Switching it on changes nothing now; the next run does the work."""
+    who = _who(request, account, db, kind_id)
+    kind = keeping.set_auto_trash(db, who.id, kind_id, payload.enabled)
+    _kind, due = keeping.auto_trash_state(db, who.id, kind_id, keeping.today_of(who))
+    shown = kind_out(kind)
+    assert shown is not None
+    return AutoTrashOut(kind=shown, due=due)
 
 
 class MayGoPage(BaseModel):

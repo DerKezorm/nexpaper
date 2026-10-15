@@ -247,6 +247,9 @@ TOKEN_ROUTES = {
     # Keeping (F3): the keeping time of a kind and many documents into the trash.
     ("POST", "/api/v1/kinds/{kind_id}/keeping/preview"),
     ("PUT", "/api/v1/kinds/{kind_id}/keeping"),
+    # D4: expired documents of a kind into the trash by themselves.
+    ("PUT", "/api/v1/kinds/{kind_id}/auto-trash"),
+    ("POST", "/api/v1/kinds/{kind_id}/auto-trash/preview"),
     ("POST", "/api/v1/documents/trash"),
     # Deadlines (F1): done and open again for everybody, later for oneself.
     ("POST", "/api/v1/documents/{document_id}/dates/{kind}/done"),

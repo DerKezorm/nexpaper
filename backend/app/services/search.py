@@ -104,6 +104,9 @@ class Filters:
     via_share: bool | None = None
     #: Only documents with a deadline that is ``open``, ``overdue``, ``done``, or open within that many days.
     deadline: str | int | None = None
+    #: ``expired``: only filed documents whose keeping time is over, in the vaults where the caller may change things
+    #: (the archive's "may go", what ``GET /api/v1/keeping`` lists).
+    keep: str | None = None
     #: Today for the deadlines (the caller's day); the server's when not given.
     today: Date | None = None
 
@@ -270,7 +273,9 @@ def where(uid: int, query: searchtext.Query, filters: Filters, scope: list[str])
     today = filters.today or deadlines.server_today()
     for wanted in ([filters.deadline] if filters.deadline is not None else []) + list(query.deadlines):
         clauses.append(deadline_clause(wanted, today))
-    return clauses + filter_clauses(query) + text_clauses(query, scope)
+    if filters.keep == "expired":
+        clauses += keeping.expired_clauses(uid, today)
+    return clauses + filter_clauses(query, today) + text_clauses(query, scope)
 
 
 def deadline_clause(wanted: str | int, today: Date) -> ColumnElement[bool]:

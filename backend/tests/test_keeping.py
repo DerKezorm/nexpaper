@@ -591,7 +591,7 @@ def _brought_up(path: Any, anchors: list[tuple[Any]]) -> None:
     from app import db as database
 
     with closing(sqlite3.connect(path)) as connection:
-        assert connection.execute("PRAGMA user_version").fetchone()[0] == database.SCHEMA_VERSION == 13
+        assert connection.execute("PRAGMA user_version").fetchone()[0] == database.SCHEMA_VERSION
         # What a person set before keeping existed counts as set by hand; nothing else does.
         assert connection.execute("SELECT kind, manual FROM document_dates ORDER BY id").fetchall() == [
             ("keep_until", 1), ("due", 0), ("contract_end", 0)]
@@ -878,3 +878,74 @@ def test_the_parts_of_a_split_keep_the_time_of_the_kind(client: TestClient, oper
         "base_version": 1, "parts": [{"pages": [{"page": 1}]}, {"pages": [{"page": 2}]}]})
     assert answer.status_code == 201, answer.text
     assert [keep_of(p["id"]) for p in answer.json()["items"]] == [(date(2029, 12, 31), False)] * 2
+
+
+# --- The archive's filter "may go" (D4) -------------------------------------------------------------------------------
+
+
+def found_ids(session: TestClient, **params: Any) -> list[int]:
+    answer = session.get("/api/v1/search", params={"q": "", "status": "filed", "limit": 100, **params})
+    assert answer.status_code == 200, answer.text
+    return sorted(item["document"]["id"] for item in answer.json()["items"])
+
+
+def test_the_search_filter_keep_expired_is_the_list_of_may_go(client: TestClient, operator: Account) -> None:
+    reader, lea = make_account("reader"), make_account("lea")
+    mine = own_vault(operator)
+    household = shared_vault("Haushalt", operator, (reader, "read"))
+    over = date(2024, 12, 31)
+    a = add_document(mine, operator, "Alt eins", dates=[("keep_until", over)], content=None)
+    b = add_document(household, operator, "Alt zwei", dates=[("keep_until", date(2023, 12, 31))], content=None)
+    add_document(mine, operator, "Läuft noch", dates=[("keep_until", date(2026, 10, 14))], content=None)
+    add_document(mine, operator, "Im Eingang", status="inbox", dates=[("keep_until", over)], content=None)
+    gone = add_document(mine, operator, "Im Papierkorb", dates=[("keep_until", over)], content=None)
+    client.delete(f"/api/v1/documents/{gone}")
+    add_document(mine, operator, "Ohne Frist", content=None)
+    leas = add_document(own_vault(lea), lea, "Leas", dates=[("keep_until", over)], content=None)
+    # Shared on its own, even with edit: not a place to clear out, so not "may go" either.
+    with new_client(lea) as session:
+        assert session.put(f"/api/v1/documents/{leas}/shares/{operator.id}", json={"right": "edit"}).status_code == 200
+    assert found_ids(client, keep="expired") == [a, b]
+    assert found_ids(client, keep="expired") == sorted(d["id"] for d in may_go(client)["items"])
+    # With the other filters, the numbered pages and the order of the archive's table.
+    assert found_ids(client, keep="expired", vault_id=household) == [b]
+    assert found_ids(client, keep="expired", q="eins") == [a]
+    page = client.get("/api/v1/search", params={"q": "", "status": "filed", "keep": "expired", "limit": 1, "page": 2,
+                                                  "sort": "date"})
+    assert page.status_code == 200 and page.json()["total"] == 2 and len(page.json()["items"]) == 1
+    # Everything the person sees is the filter's "all", too: the filter only narrows.
+    assert leas in found_ids(client) and leas not in found_ids(client, keep="expired")
+    # Only reading in the vault: nothing to clear out there, though the person sees the document.
+    with new_client(reader) as session:
+        assert b in found_ids(session)
+        assert found_ids(session, keep="expired") == []
+    assert client.get("/api/v1/search", params={"keep": "running"}).status_code == 422
+
+
+def test_the_search_filter_and_the_keyword_count_the_day_of_the_person(client: TestClient, operator: Account,
+                                                                      monkeypatch: pytest.MonkeyPatch) -> None:
+    """A term is over on the day after its date, wherever the person is: late in the evening at the server it is already
+    tomorrow in Auckland."""
+    freeze(monkeypatch, datetime(2026, 10, 14, 20, 0, tzinfo=UTC))
+    mine = own_vault(operator)
+    doc = add_document(mine, operator, "Heute zu Ende", dates=[("keep_until", date(2026, 10, 14))], content=None)
+    assert found_ids(client, keep="expired") == []
+    assert client.get("/api/v1/search", params={"q": "aufbewahren:abgelaufen"}).json()["total"] == 0
+    with SessionLocal() as db:
+        row = db.get(Account, operator.id)
+        assert row is not None
+        row.profile = {"timezone": "Pacific/Auckland"}
+        db.commit()
+    assert found_ids(client, keep="expired") == [doc]
+    assert client.get("/api/v1/search", params={"q": "aufbewahren:abgelaufen"}).json()["total"] == 1
+
+
+def test_a_key_that_reads_filters_by_may_go_too_and_an_upload_key_does_not(client: TestClient, operator: Account) -> None:
+    add_document(own_vault(operator), operator, "Alt", dates=[("keep_until", date(2020, 12, 31))], content=None)
+    with TestClient(client.app, base_url="http://testserver") as program:
+        read = program.get("/api/v1/search", params={"keep": "expired", "q": ""},
+                           headers={"Authorization": f"Bearer {upload_key(operator, 'read')}"})
+        assert read.status_code == 200 and read.json()["total"] == 1
+        upload = program.get("/api/v1/search", params={"keep": "expired", "q": ""},
+                             headers={"Authorization": f"Bearer {upload_key(operator)}"})
+        assert upload.status_code == 403

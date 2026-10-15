@@ -192,11 +192,15 @@ def find(
     deadline: str | None = Query(default=None, pattern=r"^(open|overdue|done|[0-9]{1,4})$",
                                  description="Only documents with a deadline that is open, overdue, done, or open and "
                                              "due within this many days (overdue ones included)"),
+    keep: Literal["expired"] | None = Query(
+        default=None, description="`expired`: only filed documents whose keeping time is over, in the vaults where the "
+                                  "caller may change things (what `GET /api/v1/keeping` lists)"),
 ) -> SearchOut:
     brakes.take("search", account.id)
     filters = search.Filters(vault_id=vault_id, kind_id=kind_id, sender=sender, tag=tag, owner_id=owner_id,
                              date_from=date_from, date_to=date_to, status=status, trash=trash,
-                             via_share=via_share, deadline=_deadline(deadline), today=deadlines.today_of(account))
+                             via_share=via_share, deadline=_deadline(deadline), keep=keep,
+                             today=deadlines.today_of(account))
     began = clock()
     try:
         result = search.find(db, account.id, q, filters, cursor=cursor, limit=limit, order=sort, page=page)

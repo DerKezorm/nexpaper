@@ -209,8 +209,9 @@ def create_kind(db: Session, uid: int | None, name: str, hue: int, vault_id: int
 def kind_in_vault(db: Session, vault_id: int, uid: int | None, name: str, hue: int, like: Kind | None = None) -> Kind:
     """The kind of that name for documents of the vault, made when there is none: what a document brings along when it
     comes to a vault (a move, an import). A kind made for a document that moves takes the keeping time of the kind it
-    had (``like``); a kind the vault has already keeps its own. The caller holds the write lock and has checked the
-    right to add there."""
+    had (``like``), but not the switch that puts expired documents in the trash by themselves: that is for whoever
+    manages the vault to decide; a kind the vault has already keeps its own. The caller holds the write lock and has
+    checked the right to add there."""
     name = clean_word(name, KIND_MAX, "invalid_name")
     found = kind_called(db, vault_id, name_key(name))
     if found is None:
@@ -600,7 +601,7 @@ def entries(db: Session, uid: int, what: str, *, vault_id: int | None = None, q:
                                    "can_change": (right == MANAGE) if row.vault_id is not None else None}
         if what == "kinds":
             item.update(key=row.key, hue=row.hue, position=row.position, keep_years=row.keep_years,
-                        keep_new_only=row.keep_new_only)
+                        keep_new_only=row.keep_new_only, auto_trash=bool(row.auto_trash))
         out.append(item)
     return out, total
 

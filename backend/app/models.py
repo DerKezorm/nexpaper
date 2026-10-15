@@ -462,6 +462,9 @@ class Kind(Base):
     #: The last decision about the documents already there was "for new ones only": a time set then did not reach
     #: them, a time taken away then left their worked-out dates as set by hand.
     keep_new_only: Mapped[bool] = mapped_column(Boolean, default=False, server_default=text("0"))
+    #: Documents of this kind whose keeping time is over go to the trash once a day by themselves
+    #: (``services/autotrash.py``). Off from the start; only with a keeping time.
+    auto_trash: Mapped[bool] = mapped_column(Boolean, default=False, server_default=text("0"))
 
 
 class Tag(Base):
