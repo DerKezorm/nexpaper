@@ -133,6 +133,12 @@ class DocumentOut(BaseModel):
     #: The check of the files found a problem: ``missing`` (a file is gone from the disk) or ``changed`` (a file does
     #: not have its checksum any more); empty when all is well (``services/filecheck.py``).
     files_state: Literal["", "missing", "changed"] = ""
+    #: The nightly task will put it in the trash by itself (or will, once it is filed from the inbox): its kind has the
+    #: switch on, its `keep_until` is over for the caller, and it was not put there before (one a person restored is
+    #: left alone). The same condition as the task's, in one place.
+    auto_trash_due: bool = False
+    #: It is in the trash because the task put it there, not a person.
+    auto_trashed: bool = False
 
 
 def _suggest(value: object) -> dict[str, str]:
@@ -183,4 +189,5 @@ def document_out(row: Row) -> DocumentOut:
         split_suggested=row.split,
         suggest=_suggest(document.suggest), share_count=row.share_count, link_count=row.link_count,
         einvoice=row.einvoice, files_state=document.files_state,  # type: ignore[arg-type]
+        auto_trash_due=row.auto_trash_due, auto_trashed=row.auto_trashed,
     )

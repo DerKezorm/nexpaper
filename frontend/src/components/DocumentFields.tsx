@@ -31,7 +31,18 @@ export type DateEntry = { kind: DateKind; date: string; notice?: Notice | null; 
  * from, and whether the document is as it was saved (`fresh`: its stored date stands; otherwise a kind or a date was
  * changed in the draft and the page works the date out itself, as the server will on saving).
  */
-export type KeepContext = { kindName: string | null; years: number | null; base: number; fresh: boolean }
+export type KeepContext = {
+  kindName: string | null
+  years: number | null
+  base: number
+  fresh: boolean
+  /**
+   * The kind has the switch "expired ones into the trash by themselves" and the document is one the nightly task would
+   * take: `inbox` (it goes once it is filed) or `filed`. `over` is the server's verdict that the time is over (the
+   * document page); left out, the date shown decides (the inbox, where the date is being edited).
+   */
+  auto?: { where: 'inbox' | 'filed'; over?: boolean } | null
+}
 const KEEP: DateKind = 'keep_until'
 
 /** A labelled field with where its proposal came from. */
@@ -200,6 +211,14 @@ export function Dates({ dates, onChange, onDraft, start, why, refused, done, onD
   const byHand = (day: string): DateEntry => ({ kind: KEEP, date: day, manual: true })
   const withoutKeep = dates.filter((d) => d.kind !== KEEP)
   const change = (kind: DateKind, patch: Partial<DateEntry>) => onChange(dates.map((d) => (d.kind === kind ? { ...d, ...patch } : d)))
+  /** The time is over and the nightly task will take the document: said under "Aufbewahren bis". */
+  const goesTonight = (day: string) => !!keep?.auto && (keep.auto.over ?? day < today)
+  const tonight = (
+    <span className="font-semibold text-warn" data-testid="goes-tonight">
+      {' '}
+      {t(keep?.auto?.where === 'inbox' ? 'keeping.goesTonightInbox' : 'keeping.goesTonight')}
+    </span>
+  )
   return (
     <div className="text-sm">
       <div className="flex items-center justify-between">
@@ -236,8 +255,10 @@ export function Dates({ dates, onChange, onDraft, start, why, refused, done, onD
                   <button type="button" onClick={() => onChange(withoutKeep)} className="font-semibold text-accent hover:underline">
                     {t('keeping.back', { kind: keep.kindName, years: yearsText(keep.years) })}
                   </button>
+                  {goesTonight(entry.date) && tonight}
                 </p>
               )}
+              {entry.kind === KEEP && !(keep?.years && keep.kindName) && goesTonight(entry.date) && <p className="mt-1 pl-34 text-xs">{tonight}</p>}
             </div>
           )
         })}
@@ -258,7 +279,7 @@ export function Dates({ dates, onChange, onDraft, start, why, refused, done, onD
             </div>
             <p className="mt-1 pl-34 text-xs text-muted">
               {t('keeping.fromKind', { kind: keep.kindName ?? '', years: yearsText(worked.years), year: keep.base })}
-              {worked.date < today && <span className="font-semibold text-warn"> {t('keeping.over')}</span>}
+              {goesTonight(worked.date) ? tonight : worked.date < today && <span className="font-semibold text-warn"> {t('keeping.over')}</span>}
             </p>
           </div>
         )}

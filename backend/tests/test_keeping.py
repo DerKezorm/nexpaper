@@ -446,7 +446,7 @@ def test_may_go_lists_what_is_over_where_the_person_may_change_things(client: Te
         assert keeping.may_go_count(db, operator.id) == 2
     # Only reading in the vault: nothing to clear out there.
     with new_client(reader) as session:
-        assert may_go(session) == {"items": [], "total": 0}
+        assert may_go(session) == {"items": [], "total": 0, "auto_trashed": 0}
         assert may_go(session, vault_id=household)["total"] == 0
     # Shared on its own, even with edit: not a place to clear out.
     with new_client(lea) as session:

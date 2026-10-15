@@ -659,12 +659,9 @@ def merge_tag(db: Session, uid: int, tag_id: int, into_id: int) -> Tag:
     return target  # type: ignore[return-value]
 
 
-def merge_kind(db: Session, uid: int, kind_id: int, into_id: int) -> Kind:
-    """The documents of the kind go to another kind they may have, and the kind goes. A kind of a vault merges into one
-    of the server's or of the same vault (``manage`` there); a kind of the server only into another of the server's
-    (the router has checked that the caller is the operator). Rules that named the kind name the other one."""
-    ensure_kinds(db)
-    changes.write_lock(db)
+def merge_pair(db: Session, uid: int, kind_id: int, into_id: int) -> tuple[Kind, Kind]:
+    """The two kinds of a merge, with every check (404 for what the caller may not see, 403 without ``manage``, 422 for
+    the same kind or another vault)."""
     source = db.get(Kind, kind_id)
     if source is None:
         raise error("not_found", "Not found.", 404)
@@ -678,6 +675,16 @@ def merge_kind(db: Session, uid: int, kind_id: int, into_id: int) -> Kind:
     if (source.vault_id is None and target.vault_id is not None) or (
             target.vault_id is not None and target.vault_id != source.vault_id):
         raise error("merge_other_vault", "Entries merge within one vault.", 422)
+    return source, target
+
+
+def merge_kind(db: Session, uid: int, kind_id: int, into_id: int) -> Kind:
+    """The documents of the kind go to another kind they may have, and the kind goes. A kind of a vault merges into one
+    of the server's or of the same vault (``manage`` there); a kind of the server only into another of the server's
+    (the router has checked that the caller is the operator). Rules that named the kind name the other one."""
+    ensure_kinds(db)
+    changes.write_lock(db)
+    source, target = merge_pair(db, uid, kind_id, into_id)
     from . import rules  # here and not at the top: the rules read the catalog
 
     ids = _documents_of_kind(db, source.id)

@@ -119,6 +119,10 @@ class Row:
     date_rows: list[DocumentDate] = field(default_factory=list)
     done_by: dict[int, Account] = field(default_factory=dict)
     snoozes: dict[int, Date] = field(default_factory=dict)
+    #: The nightly task will put it in the trash (or will once it is filed): ``services/autotrash.pending``.
+    auto_trash_due: bool = False
+    #: It is in the trash because the task put it there.
+    auto_trashed: bool = False
 
 
 def rows(db: Session, uid: int, documents: list[Document]) -> list[Row]:
@@ -172,6 +176,13 @@ def rows(db: Session, uid: int, documents: list[Document]) -> list[Row]:
     from . import einvoices
 
     invoices = einvoices.formats(db, ids)
+    from . import autotrash
+
+    caller = db.get(Account, uid)
+    going = autotrash.pending(
+        db, [d.id for d in documents if d.status in (FILED, INBOX)],
+        keeping.today_of(caller) if caller is not None else deadlines.server_today())
+    put_away = autotrash.put_by_itself(db, [d.id for d in documents if d.status == TRASH])
     out = []
     for document in documents:
         access = accesses[document.id]
@@ -189,6 +200,7 @@ def rows(db: Session, uid: int, documents: list[Document]) -> list[Row]:
             date_rows=date_rows[document.id],
             done_by={r.done_by: done_by[r.done_by] for r in date_rows[document.id] if r.done_by in done_by},
             snoozes={r.id: snoozes[r.id] for r in date_rows[document.id] if r.id in snoozes},
+            auto_trash_due=document.id in going, auto_trashed=document.id in put_away,
         ))
     return out
 

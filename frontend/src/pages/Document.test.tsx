@@ -286,6 +286,21 @@ describe('deadlines on the page of a document', () => {
     expect(server.changes()).toEqual([])
   })
 
+  it('says under "Aufbewahren bis" that nexpaper puts the document in the trash tonight, only when the server says it will', async () => {
+    const over = { ...base, kind: { ...tax, keep_years: 2, auto_trash: true }, date: '2020-05-01', dates: [{ kind: 'keep_until', date: '2022-12-31', manual: false }] }
+    server.answers['GET /api/v1/documents/7'] = { ...over, auto_trash_due: true }
+    await show()
+    await until(() => page.text.includes('Einkommensteuerbescheid 2025'))
+    expect(page.text).toContain('Die Zeit ist um. nexpaper legt es heute Nacht in den Papierkorb.')
+    page.close()
+    // The task took it once and a person restored it (the kind still has the switch): left alone, so no announcement.
+    server.answers['GET /api/v1/documents/7'] = { ...over, auto_trash_due: false }
+    await show()
+    await until(() => page.text.includes('Einkommensteuerbescheid 2025'))
+    expect(page.text).not.toContain('heute Nacht')
+    expect(page.text).toContain('Die Zeit ist um, es darf weg.')
+  })
+
   it('tells that nexpaper put the document in the trash by itself, and until when it was to be kept', async () => {
     server.answers['GET /api/v1/documents/7/events'] = [
       { id: 4, at: '2026-10-15T03:00:00Z', action: 'auto_trashed', by: null, by_link: '', detail: { keep_until: '2024-12-31' } },

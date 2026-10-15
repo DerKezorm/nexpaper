@@ -1108,6 +1108,16 @@
             ],
             "title": "Amount"
           },
+          "auto_trash_due": {
+            "default": false,
+            "title": "Auto Trash Due",
+            "type": "boolean"
+          },
+          "auto_trashed": {
+            "default": false,
+            "title": "Auto Trashed",
+            "type": "boolean"
+          },
           "can_share": {
             "title": "Can Share",
             "type": "boolean"
@@ -4377,6 +4387,11 @@
       },
       "MayGoPage": {
         "properties": {
+          "auto_trashed": {
+            "default": 0,
+            "title": "Auto Trashed",
+            "type": "integer"
+          },
           "items": {
             "items": {
               "$ref": "#/components/schemas/DocumentOut"
@@ -4521,6 +4536,24 @@
           "trash"
         ],
         "title": "MenuCounts",
+        "type": "object"
+      },
+      "MergeEffect": {
+        "properties": {
+          "auto_trash": {
+            "title": "Auto Trash",
+            "type": "boolean"
+          },
+          "expired": {
+            "title": "Expired",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "auto_trash",
+          "expired"
+        ],
+        "title": "MergeEffect",
         "type": "object"
       },
       "MergeItem": {
@@ -8987,6 +9020,21 @@
           "token"
         ],
         "title": "PairedOut",
+        "type": "object"
+      },
+      "app__routers__keeping__MergeIn": {
+        "additionalProperties": false,
+        "properties": {
+          "into": {
+            "maximum": 2147483647.0,
+            "title": "Into",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "into"
+        ],
+        "title": "MergeIn",
         "type": "object"
       },
       "app__routers__oidc__PasswordIn": {
@@ -16185,6 +16233,64 @@
         "summary": "Move all documents of a kind to another kind they may have, and delete it (manage in its vault; the operator for the server's)",
         "tags": [
           "catalog"
+        ]
+      }
+    },
+    "/api/v1/kinds/{kind_id}/merge/preview": {
+      "post": {
+        "description": "Counts only documents the caller may see; the checks are those of the merge itself.",
+        "operationId": "preview_merge_api_v1_kinds__kind_id__merge_preview_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "kind_id",
+            "required": true,
+            "schema": {
+              "title": "Kind Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/app__routers__keeping__MergeIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MergeEffect"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "What merging a kind into another would do to the nightly task; changes nothing (manage in its vault; the operator for the server's)",
+        "tags": [
+          "keeping"
         ]
       }
     },

@@ -498,6 +498,7 @@ export function ArchivePage({ slots = appSlots }: { slots?: Slots }) {
             onPick={(key, value) => go({ [key]: value })}
             onAllSenders={() => setAllSenders(true)}
             mayGo={mayGo.total}
+            away={mayGo.away}
             onMayGo={() => go({ keep: 'expired' })}
             table={<Table hits={newest} vaultById={vaultById} vaultName={vaultName} searching={false} order="-date" bare />}
           />
@@ -620,15 +621,30 @@ type OverviewProps = {
   onAllSenders: () => void
   /** How many documents may go (their keeping time is over); the hint shows only above 0. */
   mayGo: number
+  /** How many documents nexpaper put in the trash by itself in the last 30 days (and are still there); the note shows
+   * only above 0, whatever the person's switch for deadlines says. */
+  away: number
   onMayGo: () => void
 }
 
-function Overview({ data, newest, table, onAll, onPick, onAllSenders, mayGo, onMayGo }: OverviewProps) {
+function Overview({ data, newest, table, onAll, onPick, onAllSenders, mayGo, away, onMayGo }: OverviewProps) {
   const { t, i18n } = useTranslation()
   const n = (value: number) => value.toLocaleString(i18n.language)
   const most = data.years.reduce((all, y) => Math.max(all, y.count), 1)
   return (
     <div className="space-y-6" data-testid="overview">
+      {away > 0 && (
+        <Link to="/papierkorb" data-testid="auto-trashed-hint" className="card flex w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-sheet-2/60">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-accent">
+            <Trash2 size={18} aria-hidden />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block font-semibold">{t('keeping.awayHint', { count: away, n: n(away) })}</span>
+            <span className="block text-sm text-muted">{t('keeping.awayHintText')}</span>
+          </span>
+          <span className="shrink-0 text-sm font-semibold text-accent">{t('keeping.awayHintOpen')}</span>
+        </Link>
+      )}
       {mayGo > 0 && (
         <button
           type="button"
@@ -841,6 +857,14 @@ function Row({ hit, vault, vaultName, searching, keep }: { hit: SearchHit; vault
             )}
             {when}
           </div>
+          {/* On a phone "Aufbewahren bis" has no column: it stands under the title, and the title keeps its width. */}
+          {keep && kept && (
+            <div className="text-xs text-muted md:hidden" data-testid="keep-until-small">
+              <Archive size={12} className="mr-1 inline align-[-1px]" aria-hidden />
+              {t('keeping.until', { date: shortDate(kept.date, i18n.language) })} · {kept.from === 'kind' ? t('keeping.fromKindShort', { years: t('keeping.years', { count: kept.years ?? 0 }) }) : t('keeping.byHandShort')}
+              {d.auto_trash_due && <span className="block font-semibold text-accent">{t('keeping.goesItself')}</span>}
+            </div>
+          )}
           {searching && hit.excerpt && (
             <p className="mt-0.5 line-clamp-2 text-sm text-muted" data-testid="excerpt">
               {hit.excerpt.source === 'notes' && <MessageSquare size={12} className="mr-1 inline" aria-label={t('docs.archive.inNote')} />}
@@ -858,12 +882,12 @@ function Row({ hit, vault, vaultName, searching, keep }: { hit: SearchHit; vault
         </span>
         <span className="hidden text-sm text-ink-2 tabular-nums md:block">{when}</span>
         {keep ? (
-          <span className="shrink-0 text-right text-sm text-ink-2 md:text-left" data-testid="keep-until">
+          <span className="hidden shrink-0 text-right text-sm text-ink-2 md:block md:text-left" data-testid="keep-until">
             <span className="inline-flex items-center gap-1 tabular-nums">
               <Archive size={13} className="text-muted" aria-hidden /> {kept ? shortDate(kept.date, i18n.language) : ''}
             </span>
             {kept && <span className="block text-xs text-muted">{kept.from === 'kind' ? t('keeping.fromKindShort', { years: t('keeping.years', { count: kept.years ?? 0 }) }) : t('keeping.byHandShort')}</span>}
-            {d.kind?.auto_trash && <span className="block text-xs font-semibold text-accent">{t('keeping.goesItself')}</span>}
+            {d.auto_trash_due && <span className="block text-xs font-semibold text-accent">{t('keeping.goesItself')}</span>}
           </span>
         ) : (
           <span className="w-20 shrink-0 text-right text-sm font-semibold tabular-nums md:w-auto">{money(d.amount, i18n.language, d.currency)}</span>
@@ -889,7 +913,7 @@ function Row({ hit, vault, vaultName, searching, keep }: { hit: SearchHit; vault
 function KeepBar({ hits, total, picked, allOnPage, onPage, onEverything, onTrash }: { hits: SearchHit[]; total: number; picked: number; allOnPage: boolean; onPage: () => void; onEverything: () => void; onTrash: () => void }) {
   const { t, i18n } = useTranslation()
   const n = (value: number) => value.toLocaleString(i18n.language)
-  const anyAuto = hits.some((hit) => hit.document.kind?.auto_trash)
+  const anyAuto = hits.some((hit) => hit.document.auto_trash_due)
   return (
     <div className="space-y-3" data-testid="keep-bar">
       <p className="max-w-2xl text-sm text-muted">

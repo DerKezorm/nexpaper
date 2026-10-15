@@ -107,7 +107,7 @@ describe('the filter "Darf weg"', () => {
   const list = () => [
     gone(11, 'Kontoauszüge 2014'),
     gone(12, 'Dachrinne', { dates: [{ kind: 'keep_until', date: '2023-06-30', manual: true }] }),
-    gone(13, 'Quittung Tankstelle', { kind: { ...kind, id: 2, name: 'Quittung', auto_trash: true } }),
+    gone(13, 'Quittung Tankstelle', { kind: { ...kind, id: 2, name: 'Quittung', auto_trash: true }, auto_trash_due: true }),
   ]
   const boxes = () => [...page.box.querySelectorAll<HTMLInputElement>('[data-testid="row"] input[type="checkbox"]')]
   const trashing = () => server.calls.filter((c) => c.method === 'POST' && c.url === '/api/v1/documents/trash')
@@ -149,10 +149,70 @@ describe('the filter "Darf weg"', () => {
     // A kind that goes by itself says so; the others do not.
     expect(untils[2]).toContain('geht von selbst in den Papierkorb')
     expect(untils[0]).not.toContain('von selbst')
-    expect(page.text).toContain('Arten mit dem Schalter „Abgelaufene selbst in den Papierkorb“ gehen einmal am Tag von selbst')
+    expect(page.text).toContain('Arten mit dem Schalter „Abgelaufene selbst in den Papierkorb“ gehen einmal am Tag, nachts, von selbst')
     // No tiles and no export here, and the chip is on.
     expect(page.button('Kacheln')).toBeUndefined()
     expect(page.button('Darf weg 3')).toBeTruthy()
+  })
+
+  it('tells in the overview what nexpaper put in the trash by itself lately, with or without something that may go', async () => {
+    server.answers['GET /api/v1/keeping?limit=1'] = { items: [], total: 0, auto_trashed: 4 }
+    await show()
+    const note = page.box.querySelector<HTMLAnchorElement>('[data-testid="auto-trashed-hint"]')!
+    expect(plain(note.textContent)).toContain('nexpaper hat 4 Dokumente in den Papierkorb gelegt (Aufbewahrung um)')
+    expect(note.getAttribute('href')).toBe('/papierkorb')
+    expect(page.box.querySelector('[data-testid="may-go-hint"]')).toBeNull()
+    page.close()
+    // Both notes, one document in the singular.
+    server.answers['GET /api/v1/keeping?limit=1'] = { items: [], total: 3, auto_trashed: 1 }
+    await show()
+    expect(plain(page.box.querySelector('[data-testid="auto-trashed-hint"]')!.textContent)).toContain('nexpaper hat 1 Dokument in den Papierkorb gelegt (Aufbewahrung um)')
+    expect(page.box.querySelector('[data-testid="may-go-hint"]')).not.toBeNull()
+    page.close()
+    // Nothing put away lately: no note.
+    server.answers['GET /api/v1/keeping?limit=1'] = { items: [], total: 3, auto_trashed: 0 }
+    await show()
+    expect(page.box.querySelector('[data-testid="auto-trashed-hint"]')).toBeNull()
+  })
+
+  it('tells it whatever the person said about deadlines', async () => {
+    auth.me = { ...me, profile: { ...me.profile, deadlines: false } }
+    server.answers['GET /api/v1/keeping?limit=1'] = { items: [], total: 0, auto_trashed: 2 }
+    await show()
+    expect(plain(page.box.querySelector('[data-testid="auto-trashed-hint"]')!.textContent)).toContain('nexpaper hat 2 Dokumente in den Papierkorb gelegt')
+  })
+
+  it('says "geht von selbst" only for a document the task will take, not for one it took once and a person restored', async () => {
+    const restored = gone(14, 'Zurückgeholt', { kind: { ...kind, id: 2, name: 'Quittung', auto_trash: true }, auto_trash_due: false })
+    server.answers[KEEP] = result([gone(13, 'Quittung Tankstelle', { kind: { ...kind, id: 2, name: 'Quittung', auto_trash: true }, auto_trash_due: true }), restored], 2)
+    await show('/?keep=expired')
+    await until(() => rows().length === 2)
+    const untils = [...page.box.querySelectorAll('[data-testid="keep-until"]')].map((x) => plain(x.textContent))
+    expect(untils[0]).toContain('geht von selbst in den Papierkorb')
+    expect(untils[1]).not.toContain('von selbst')
+    // Nothing is said at the top about the kind's switch when it is only the restored one.
+    server.answers[KEEP] = result([restored], 1)
+    page.close()
+    await show('/?keep=expired')
+    await until(() => rows().length === 1)
+    expect(page.text).not.toContain('Arten mit dem Schalter')
+  })
+
+  it('puts "Aufbewahren bis" under the title on a phone, where the column has no room', async () => {
+    await show('/?keep=expired')
+    await until(() => boxes().length === 3)
+    const small = [...page.box.querySelectorAll('[data-testid="keep-until-small"]')].map((x) => plain(x.textContent))
+    expect(small).toHaveLength(3)
+    expect(small[0]).toContain('bis 31.12.2024')
+    expect(small[0]).toContain('aus der Art, 10 Jahre')
+    expect(small[1]).toContain('von Hand gesetzt')
+    expect(small[2]).toContain('geht von selbst in den Papierkorb')
+    expect(small[0]).not.toContain('von selbst')
+    // The column of the wide table is hidden below md, the line under the title is hidden from md on.
+    const wide = page.box.querySelector('[data-testid="keep-until"]')!.className.split(' ')
+    expect(wide).toContain('hidden')
+    expect(wide).toContain('md:block')
+    expect(page.box.querySelector('[data-testid="keep-until-small"]')!.className).toContain('md:hidden')
   })
 
   it('does not say that something goes by itself when nothing of it is on the page', async () => {

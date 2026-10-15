@@ -493,7 +493,14 @@ function Details({ document: d, canEdit, vaults, path, change, problem, onShare,
     }
   }
   const dates = d.dates.map(dateEntry)
-  const keep = { kindName: d.kind?.name ?? null, years: d.kind?.keep_years ?? null, base: baseYear(d.date, d.added_at), fresh: true }
+  const keep = {
+    kindName: d.kind?.name ?? null,
+    years: d.kind?.keep_years ?? null,
+    base: baseYear(d.date, d.added_at),
+    fresh: true,
+    // The server says whether the nightly task will take it (it knows a document it took once is left alone).
+    auto: d.auto_trash_due ? { where: d.status === 'inbox' ? ('inbox' as const) : ('filed' as const), over: true } : null,
+  }
   const done = Object.fromEntries(d.dates.map((x) => [x.kind, x.done ?? null]))
   const markDone = async (kind: DateEntry['kind'], on: boolean) => {
     if (kind === 'keep_until') return

@@ -210,7 +210,7 @@ and no weekly mail is sent to them, and the web app shows no deadlines. The date
 ## Expired documents into the trash by themselves
 
 A kind with a keeping time can be set (by whoever sets the time: the operator for the kinds of the server, a manager for
-those of a vault) to have its expired documents put in the trash once a day. It is off for every kind from the start, it
+those of a vault) to have its expired documents put in the trash once a day, at night. It is off for every kind from the start, it
 asks first and says how many documents it would affect at once. It only ever uses the trash of every other deletion (30
 days, then the files go): it deletes nothing for good by itself, takes at most 500 documents a day, takes a document
 only once (one that was restored stays), and leaves a line in the history of each document and in the weekly mail of the

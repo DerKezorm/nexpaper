@@ -9,15 +9,21 @@ import { inboxChanged, useSay } from './say'
 /** How many are fetched at once (the most the server gives and takes in one go). */
 const MOST = 500
 
-/** How many documents may go (the number of the archive's chip and hint), asked for with one document; again after
- * `reload`. 0 while it is unknown. */
-export function useMayGoCount(): { total: number; reload: () => void } {
+/** How many documents may go (the number of the archive's chip and hint), and how many nexpaper put in the trash by
+ * itself lately (`away`, the note that leads to the trash), asked for with one document; again after `reload`. 0 while
+ * it is unknown. */
+export function useMayGoCount(): { total: number; away: number; reload: () => void } {
   const [total, setTotal] = useState(0)
+  const [away, setAway] = useState(0)
   const [again, setAgain] = useState(0)
   useEffect(() => {
     let alive = true
     keepingApi.mayGo({ limit: 1 }).then(
-      (answer) => alive && setTotal(typeof answer.total === 'number' ? answer.total : 0),
+      (answer) => {
+        if (!alive) return
+        setTotal(typeof answer.total === 'number' ? answer.total : 0)
+        setAway(typeof answer.auto_trashed === 'number' ? answer.auto_trashed : 0)
+      },
       () => undefined,
     )
     return () => {
@@ -25,7 +31,7 @@ export function useMayGoCount(): { total: number; reload: () => void } {
     }
   }, [again])
   const reload = useCallback(() => setAgain((n) => n + 1), [])
-  return { total, reload }
+  return { total, away, reload }
 }
 
 export type MayGoState = { items: DocumentInfo[]; total: number; problem: string | null; reload: () => void }

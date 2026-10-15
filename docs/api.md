@@ -872,13 +872,20 @@ its time is over, unless a kind has the switch below.
   whose term changed gets a new number for `GET /changes` and a line in its history (`fields: ["keep_until"]`, `by:
   catalog`). A kind of the whole server is the operator's, in a browser; a kind of a vault needs `manage` there.
 - `POST /kinds/{id}/auto-trash/preview` (no body): `{"kind", "due"}`, `due` being the filed documents of the kind that
-  the caller may see and whose keeping time is over now, which the switch below would put in the trash at its next
-  run. Changes nothing. Same rights as setting the time.
+  the caller may see and whose keeping time is over now and which the switch below would put in the trash at its next
+  run (one the task took once and a person restored is not counted: it is left alone). Changes nothing. Same rights
+  as setting the time.
+- `POST /kinds/{id}/merge/preview` `{"into"}`: what merging the kind into another (`POST /kinds/{id}/merge`) would do
+  to the switch below: `{"auto_trash", "expired"}`, `auto_trash` being whether the target has the switch on and
+  `expired` how many filed documents of the kind that the caller may see would be over their keeping time under the
+  target (dates set by hand stay, the others are worked out again from the target's years) and would go to the trash at
+  the next run (0 without the switch). Same checks and rights as the merge itself. Changes nothing.
 - `PUT /kinds/{id}/auto-trash` `{"enabled"}`: the switch "expired documents into the trash by themselves"
   (`auto_trash` on the kind, in `GET /kinds`, `GET /order/kinds` and in every document's `kind`). Off from the start,
   and only for a kind with a keeping time (`409 no_keeping_time`); taking the time away switches it off. Same rights as
   setting the time: the operator in a browser for a kind of the server, `manage` for a kind of a vault. Switching it on
-  changes nothing at once. Once a day (the loop looks every hour) nexpaper puts the filed documents of such a kind whose
+  changes nothing at once. Once a day, at night (3 o'clock, the server's time; a night the server was off for is made up
+  at the next start, and the very first start only notes the night) nexpaper puts the filed documents of such a kind whose
   `keep_until` has passed in the trash (30 days to get them back): at most 500 a day, the rest the next day, each
   document once (one that was restored stays; the history line `auto_trashed` with `keep_until` in its `detail` and no
   person is the mark), with a new number for `GET /changes`. Nothing is deleted for good. A kind made in another vault
@@ -886,7 +893,10 @@ its time is over, unless a kind has the switch below.
 - `GET /keeping` (`vault_id`, `limit` at most 500, `offset`): the filed documents whose `keep_until` is before today (the
   caller's time zone), in the vaults where the caller may change things (`edit` or `manage`; documents only shared with
   them are not looked at), the ones over longest first, then by date and id: `{"items" (as `GET /documents/{id}`),
-  "total"}`.
+  "total", "auto_trashed"}`; `auto_trashed` is how many documents nexpaper put in the trash by itself in the last 30
+  days and that are still there, in those vaults. Every document in an answer has `auto_trash_due` (the task will put
+  it in the trash, or will once it is filed from the inbox: its kind has the switch on, its `keep_until` is over for
+  the caller, and it was not taken before) and `auto_trashed` (it is in the trash because the task put it there).
 - `POST /documents/trash` `{"ids"}` (at most 500): many documents into the trash for 30 days, each checked as
   `DELETE /documents/{id}` would be: `{"trashed": [ids], "failed": [{"id", "code"}]}`; one the caller may not see fails
   as `not_found`.

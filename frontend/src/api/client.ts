@@ -519,6 +519,11 @@ export type DocumentInfo = {
   /** What the check of the files found: `missing` (a file is gone from the disk), `changed` (a file no longer has its
    * checksum); empty or left out when all is well. */
   files_state?: '' | 'missing' | 'changed'
+  /** The nightly task will put it in the trash by itself (or will once it is filed from the inbox): its kind has the
+   * switch on, its keeping time is over and it was not put there before (one a person restored is left alone). */
+  auto_trash_due?: boolean
+  /** It is in the trash because the task put it there, not a person. */
+  auto_trashed?: boolean
 }
 export type DocumentShare = { user: Person; right: 'read' | 'edit'; created_at: string }
 export type DocumentLink = {
@@ -1262,7 +1267,15 @@ export const remindersApi = {
 
 export type KeepPreview = { documents: number; by_hand: number; expired: number }
 export type KeepSet = { kind: DocumentKind; changed: number; queued: boolean }
-export type MayGoPage = { items: DocumentInfo[]; total: number }
+export type MayGoPage = {
+  items: DocumentInfo[]
+  total: number
+  /** Documents nexpaper put in the trash by itself in the last 30 days and that are still there (vaults where the person may change things). */
+  auto_trashed?: number
+}
+/** What merging a kind into another does to the nightly task: whether the target has the switch, and how many of the
+ * documents the person sees would be over their keeping time under it. */
+export type MergeEffect = { auto_trash: boolean; expired: number }
 /** The switch "expired documents into the trash by themselves" of a kind, and how many the person sees that would go now. */
 export type AutoTrash = { kind: DocumentKind; due: number }
 export type TrashResult = { trashed: number[]; failed: { id: number; code: string }[] }
@@ -1278,6 +1291,8 @@ export const keepingApi = {
   setAutoTrash: (kindId: number, enabled: boolean) => api<AutoTrash>(`/api/v1/kinds/${kindId}/auto-trash`, { method: 'PUT', body: { enabled } }),
   /** Filed documents whose keeping time is over, in the vaults where the person may change things. */
   mayGo: (query: { vault_id?: number; limit?: number; offset?: number } = {}) => api<MayGoPage>('/api/v1/keeping', { query }),
+  /** What merging the kind into another would do to the switch of the target (the question before the merge). */
+  mergeEffect: (kindId: number, into: number) => api<MergeEffect>(`/api/v1/kinds/${kindId}/merge/preview`, { method: 'POST', body: { into } }),
   /** Many documents into the trash, each checked on its own. */
   trashMany: (ids: number[]) => api<TrashResult>('/api/v1/documents/trash', { method: 'POST', body: { ids } }),
 }

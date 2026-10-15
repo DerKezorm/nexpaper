@@ -53,6 +53,19 @@ describe('the trash', () => {
     expect(plain(rows[3].textContent)).toContain('endgültig weg am 01.11.2026')
   })
 
+  it('says of a document nexpaper put in the trash by itself that it did, and of the others nothing', async () => {
+    server.answers['GET /api/v1/documents?status=trash&after=0&limit=500'] = {
+      items: [{ ...doc(1, 'Mein Brief', 'edit', 1), auto_trashed: true }, { ...doc(2, 'Toms Brief', 'edit', 2), auto_trashed: false }, doc(3, 'Ohne Angabe', 'edit', 2)],
+      next: null,
+    }
+    await page.show(<TrashPage />, '/papierkorb')
+    const rows = [...page.box.querySelectorAll('ul li')]
+    const put = rows.map((row) => row.querySelector('[data-testid="put-away"]'))
+    expect(put.map((x) => (x ? plain(x.textContent) : null))).toEqual([null, null, expect.stringContaining('von selbst, Aufbewahrung um')])
+    // It stays restorable, as always.
+    expect([...rows[2].querySelectorAll('button')].map((b) => plain(b.textContent)?.trim())).toContain('Wiederherstellen')
+  })
+
   it('offers restoring to whoever may change it, and deleting for good to the managers and the owner', async () => {
     await page.show(<TrashPage />, '/papierkorb')
     const rows = [...page.box.querySelectorAll('ul li')]

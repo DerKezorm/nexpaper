@@ -18,7 +18,7 @@ over what you already have in Paperless-ngx.
   mail or in a weekly overview, each reminder once.
 - **Keeping times.** A kind can say how many years its documents are kept. When the time is over the document shows up
   in the archive under "May go". Nothing is deleted by itself; a kind can ask nexpaper to put its expired documents in
-  the trash once a day (off from the start, they stay there for 30 days).
+  the trash once a day, at night (off from the start, they stay there for 30 days).
 - **For small firms.** E-invoices (ZUGFeRD, Factur-X, XRechnung) are read from their data, there is a history of who
   changed what, and an export for the tax adviser (a ZIP with the PDFs and a list). No claim of GoBD compliance.
 - **No Redis, no Celery, no Postgres.** One container, SQLite, plain readable files on the disk.
@@ -351,8 +351,11 @@ start.
   guarantee; nexpaper makes no claim of GoBD compliance or legal advice.
 - **Expired ones into the trash by themselves** (Organise, Kinds, switch below the time; off from the start, only for
   a kind with a time, set by whoever sets the time). When it is on, nexpaper puts the filed documents of the kind whose
-  time is over in the trash once a day, at most 500 a day, each document only once (one you restore stays), with a line
-  in its history and in the weekly overview. Switching it on asks first and says how many documents would go at once.
+  time is over in the trash once a day, at night (3 o'clock, server time; a night the server was off for is made up at
+  the next start), at most 500 a day, each document only once (one you restore stays), with a line in its history, in
+  the weekly overview and in a note on the archive. A date you set by hand counts like any other. Switching it on asks
+  first and says how many documents would go at once; a document filed later whose time is already over goes the next
+  night, and the document page and the inbox say so.
   Nothing is deleted for good by it; the trash empties itself after 30 days as always.
 - Search words: `deadline:open`, `deadline:overdue`, `deadline:<30`, `keep:expired`. The same data is open to programs
   (`docs/api.md`).

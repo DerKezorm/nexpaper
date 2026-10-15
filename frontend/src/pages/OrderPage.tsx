@@ -7,7 +7,7 @@
  * The lists come from `GET /api/v1/order/...`, which looks at the vaults the person is in and nothing else.
  */
 import { Archive, GitMerge, Info, Pencil, Plus, Tags, Trash2, Users } from 'lucide-react'
-import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useSearchParams } from 'react-router-dom'
 
@@ -140,7 +140,11 @@ export function OrderPage() {
           text: (
             <>
               <p>{t('keeping.auto.askText')}</p>
-              <p className="mt-2 font-semibold">{state.due > 0 ? t('keeping.auto.nowSome', { count: state.due, n: state.due.toLocaleString(i18n.language) }) : t('keeping.auto.nowNone')}</p>
+              {/* A kind of the whole server reaches the documents of every vault; the number counts what this person sees. */}
+              {entry.vault_id === null && <p className="mt-2">{t('keeping.everywhere')}</p>}
+              <p className="mt-2 font-semibold">
+                {state.due > 0 ? t('keeping.auto.nowSome', { count: state.due, n: state.due.toLocaleString(i18n.language) }) : t(entry.vault_id === null ? 'keeping.auto.nowNoneSeen' : 'keeping.auto.nowNone')}
+              </p>
               {state.due > 500 && <p className="mt-1">{t('keeping.auto.limit')}</p>}
             </>
           ),
@@ -170,18 +174,42 @@ export function OrderPage() {
       },
     })
   }
-  /** After the person chose where an entry goes: asks once more, with the numbers, then merges. */
+  /** After the person chose where an entry goes: asks once more, with the numbers, then merges. A kind that goes into
+   * one with the switch "expired ones into the trash by themselves" says what that does to its documents. */
   const merge = (entry: OrderEntry, into: OrderEntry) => {
     const count = entry.documents + entry.in_trash
-    ask({
-      title: t('confirm.merge.title'),
-      text: count > 0 ? t(`confirm.merge.${what}`, { count, from: iso(entry.name), into: iso(into.name) }) : t('confirm.merge.unused', { from: iso(entry.name) }),
-      confirm: t('confirm.merge.confirm'),
-      run: async () => {
-        await orderApi.merge(what, entry.id, into.id)
-        refresh(t('order.done.merged'))
-      },
-    })
+    const open = (extra: ReactNode) =>
+      ask({
+        title: t('confirm.merge.title'),
+        text: (
+          <>
+            {count > 0 ? t(`confirm.merge.${what}`, { count, from: iso(entry.name), into: iso(into.name) }) : t('confirm.merge.unused', { from: iso(entry.name) })}
+            {extra}
+          </>
+        ),
+        confirm: t('confirm.merge.confirm'),
+        run: async () => {
+          await orderApi.merge(what, entry.id, into.id)
+          refresh(t('order.done.merged'))
+        },
+      })
+    if (what !== 'kinds' || !into.auto_trash || count === 0) {
+      open(null)
+      return
+    }
+    keepingApi.mergeEffect(entry.id, into.id).then(
+      (effect) =>
+        open(
+          effect.auto_trash ? (
+            <>
+              {' '}
+              {effect.expired > 0 ? t('keeping.mergeAuto', { count: effect.expired, n: effect.expired.toLocaleString(i18n.language) }) : t('keeping.mergeAutoNone')}
+              {into.vault_id === null && <> {t('keeping.mergeSeen')}</>}
+            </>
+          ) : null,
+        ),
+      (error: unknown) => setProblem(error instanceof ApiError ? error.code : 'internal_error'),
+    )
   }
 
   return (
@@ -443,6 +471,7 @@ function KeepDialog({ entry, years, onClose, onDone }: { entry: OrderEntry; year
             <p className="font-semibold">{t('keeping.existing', { count: found.documents, n: count(found.documents) })}</p>
             <ul className="mt-1.5 list-disc space-y-0.5 pl-5 text-ink-2">
               {found.by_hand > 0 && <li>{t('keeping.byHand', { count: found.by_hand, n: count(found.by_hand) })}</li>}
+              {entry.vault_id === null && <li>{t('keeping.everywhere')}</li>}
               {removing ? (
                 <li>{t('keeping.removeChoice')}</li>
               ) : found.expired > 0 ? (

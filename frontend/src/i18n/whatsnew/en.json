@@ -15,7 +15,7 @@
       {
         "title": "Expired ones into the trash by themselves",
         "where": "Organise, Kinds",
-        "body": "Every kind with a keeping time has a switch “Put expired ones in the trash by themselves”, off from the start. When it is on, nexpaper puts the expired documents of the kind in the trash once a day, at most 500 a day and each document only once; whoever restores one keeps it. Switching it on asks first and says how many documents it would affect right away. Nothing is deleted for good by it: they stay in the trash for 30 days. The history of the document and the weekly overview say what nexpaper put away."
+        "body": "Every kind with a keeping time has a switch “Put expired ones in the trash by themselves”, off from the start. When it is on, nexpaper puts the expired documents of the kind in the trash once a day, at night at 3 o'clock, at most 500 a day and each document only once; whoever restores one keeps it. That includes a date set by hand and documents you file later whose time is already over; the document page and the inbox say so under “Keep until”. Switching it on asks first and says how many documents it would affect right away (for a kind that applies to every vault the number counts only what you see). Nothing is deleted for good by it: they stay in the trash for 30 days. The history of the document, the weekly overview, a line in the archive overview and the trash say what nexpaper put away."
       },
       {
         "title": "Clearer what happens when the time is over",

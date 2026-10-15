@@ -989,6 +989,8 @@ function Detail({ document: d, next, slots, search, onChanged }: { document: Doc
               years: kinds.find((k) => k.id === f.kind_id)?.keep_years ?? null,
               base: baseYear(f.date, d.added_at),
               fresh: f.kind_id === (d.kind?.id ?? null) && f.date === (d.date ?? '') && f.vault_id === d.vault_id,
+              // Filing it with a time that is over puts it in the trash that night, when its kind has the switch on.
+              auto: kinds.find((k) => k.id === f.kind_id)?.auto_trash ? { where: 'inbox' } : null,
             }}
           />
 

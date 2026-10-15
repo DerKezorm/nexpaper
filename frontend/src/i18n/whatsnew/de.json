@@ -15,7 +15,7 @@
       {
         "title": "Abgelaufene selbst in den Papierkorb",
         "where": "Ordnung, Arten",
-        "body": "Für jede Art mit Aufbewahrungsfrist gibt es einen Schalter „Abgelaufene selbst in den Papierkorb“, ab Werk aus. Ist er an, legt nexpaper abgelaufene Dokumente der Art einmal am Tag in den Papierkorb, höchstens 500 am Tag und jedes Dokument nur einmal; wer eines zurückholt, behält es. Das Einschalten fragt vorher und nennt, wie viele Dokumente es sofort träfe. Endgültig gelöscht wird dabei nichts: im Papierkorb bleiben sie 30 Tage. Der Verlauf des Dokuments und die Wochenübersicht sagen, was nexpaper weggelegt hat."
+        "body": "Für jede Art mit Aufbewahrungsfrist gibt es einen Schalter „Abgelaufene selbst in den Papierkorb“, ab Werk aus. Ist er an, legt nexpaper abgelaufene Dokumente der Art einmal am Tag, nachts um 3 Uhr, in den Papierkorb, höchstens 500 am Tag und jedes Dokument nur einmal; wer eines zurückholt, behält es. Das gilt auch für ein von Hand gesetztes Datum und für Dokumente, die du später ablegst und deren Zeit schon um ist; die Dokumentseite und der Eingang sagen es unter „Aufbewahren bis“. Das Einschalten fragt vorher und nennt, wie viele Dokumente es sofort träfe (bei einer Art für alle Tresore zählt die Zahl nur, was du siehst). Endgültig gelöscht wird dabei nichts: im Papierkorb bleiben sie 30 Tage. Der Verlauf des Dokuments, die Wochenübersicht, eine Zeile in der Übersicht des Archivs und der Papierkorb sagen, was nexpaper weggelegt hat."
       },
       {
         "title": "Klarer, was nach Ablauf geschieht",

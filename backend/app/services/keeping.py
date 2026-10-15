@@ -32,12 +32,12 @@ from dataclasses import dataclass
 from datetime import date as Date
 from datetime import datetime
 
-from sqlalchemy import ColumnElement, Integer, String, and_, cast, delete, exists, func, select
+from sqlalchemy import ColumnElement, Integer, String, and_, cast, delete, exists, func, or_, select
 from sqlalchemy.orm import Session
 
 from .. import clock
 from ..errors import error
-from ..models import EDIT, FILED, INBOX, MANAGE, TRASH, Account, Document, DocumentDate, Job, Kind, VaultMember
+from ..models import EDIT, FILED, INBOX, MANAGE, TRASH, Account, Document, DocumentDate, Event, Job, Kind, VaultMember
 from . import changes, jobs, rights, timezones
 
 logger = logging.getLogger("nexpaper.keeping")
@@ -327,6 +327,28 @@ def set_auto_trash(db: Session, uid: int, kind_id: int, enabled: bool) -> Kind:
     return kind
 
 
+def merge_effect(db: Session, uid: int, kind_id: int, into_id: int, today: Date) -> tuple[Kind, int]:
+    """What merging a kind into another does to the nightly task, for the question before it: the target kind and how
+    many filed documents of the kind that the caller may see would be over their keeping time under the target (a
+    date a person set stays as it is, the others are worked out again from the target's years) and would therefore
+    be put in the trash by the task, when the target has the switch on. 0 when it has not. Changes nothing."""
+    from . import autotrash, catalog  # here and not at the top: catalog reads this module
+
+    _source, target = catalog.merge_pair(db, uid, kind_id, into_id)
+    found = 0
+    if target.auto_trash and target.keep_years:
+        manual = select(DocumentDate.document_id).where(
+            DocumentDate.kind == KEEP, DocumentDate.manual.is_(True), DocumentDate.date < today)
+        manual_any = select(DocumentDate.document_id).where(DocumentDate.kind == KEEP, DocumentDate.manual.is_(True))
+        worked_out = and_(Document.id.not_in(manual_any), _base_year() + target.keep_years < today.year)
+        found = int(db.scalar(select(func.count()).select_from(Document).where(
+            Document.kind_id == kind_id, Document.status == FILED, rights.visible_clause(uid),
+            ~exists().where(Event.document_id == Document.id, Event.action == autotrash.AUTO_TRASHED),
+            or_(Document.id.in_(manual), worked_out))) or 0)
+    db.rollback()
+    return target, found
+
+
 # --- May go ---------------------------------------------------------------------------------------------------------
 
 
@@ -379,5 +401,5 @@ def may_go_count(db: Session, uid: int, today: Date | None = None, *,
 
 
 __all__ = ["AT_ONCE", "CHOICES", "KEEP", "YEARS_MAX", "Preview", "Setting", "auto_trash_state", "expired",
-           "expired_clauses", "may_go_count", "preview", "refresh", "run_job", "set_auto_trash", "set_kind", "stamp",
-           "take", "today_of", "until"]
+           "expired_clauses", "may_go_count", "merge_effect", "preview", "refresh", "run_job", "set_auto_trash",
+           "set_kind", "stamp", "take", "today_of", "until"]

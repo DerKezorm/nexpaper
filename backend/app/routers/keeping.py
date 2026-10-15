@@ -9,17 +9,19 @@ itself.
 
 from __future__ import annotations
 
+from datetime import timedelta
 from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, Query, Request
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictInt
 
+from .. import clock
 from ..deps import Account as Caller
 from ..deps import DbSession, Reader, require_browser_account, require_operator
 from ..errors import error
 from ..models import Account as AccountRow
 from ..models import Kind
-from ..services import documents, keeping
+from ..services import autotrash, documents, keeping
 from .schemas import DocumentOut, KindOut, document_out, kind_out
 
 router = APIRouter(prefix="/api/v1", tags=["keeping"])
@@ -131,10 +133,38 @@ def set_auto_trash(kind_id: int, payload: AutoTrashIn, request: Request, account
     return AutoTrashOut(kind=shown, due=due)
 
 
+class MergeIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    #: The kind the documents would go to (the same number `POST /kinds/{id}/merge` takes).
+    into: StrictInt = Field(le=2**31 - 1)
+
+
+class MergeEffect(BaseModel):
+    #: The kind the documents would go to has the switch "expired ones into the trash by themselves" on.
+    auto_trash: bool
+    #: Filed documents of the kind the caller may see that would be over their keeping time under that kind and go to
+    #: the trash at the next night's run (0 when the target has no switch).
+    expired: int
+
+
+@router.post("/kinds/{kind_id}/merge/preview", response_model=MergeEffect,
+             summary="What merging a kind into another would do to the nightly task; changes nothing (manage in its "
+                     "vault; the operator for the server's)")
+def preview_merge(kind_id: int, payload: MergeIn, request: Request, account: Caller, db: DbSession) -> MergeEffect:
+    """Counts only documents the caller may see; the checks are those of the merge itself."""
+    who = _who(request, account, db, kind_id)
+    target, found = keeping.merge_effect(db, who.id, kind_id, payload.into, keeping.today_of(who))
+    return MergeEffect(auto_trash=bool(target.auto_trash), expired=found)
+
+
 class MayGoPage(BaseModel):
     #: The documents, the ones whose time is over longest first. Their `dates` hold the `keep_until`.
     items: list[DocumentOut]
     total: int
+    #: How many documents nexpaper put in the trash by itself in the last 30 days and that are still there, in the
+    #: vaults where the caller may change things (the archive's note leads to the trash page). Independent of the
+    #: caller's switch for deadlines.
+    auto_trashed: int = 0
 
 
 @router.get("/keeping", response_model=MayGoPage,
@@ -146,7 +176,10 @@ def may_go(account: Reader, db: DbSession, vault_id: int | None = Query(default=
     the caller may only read, and documents only shared with them, are not looked at."""
     found, total = keeping.expired(db, account.id, keeping.today_of(account), vault_id=vault_id, limit=limit,
                                    offset=offset)
-    return MayGoPage(items=[document_out(r) for r in documents.rows(db, account.id, found)], total=total)
+    since = clock.now() - timedelta(days=documents.TRASH_DAYS)
+    gone = autotrash.trashed_since(db, account.id, since, still_in_trash=True)
+    return MayGoPage(items=[document_out(r) for r in documents.rows(db, account.id, found)], total=total,
+                     auto_trashed=gone)
 
 
 class TrashIn(BaseModel):

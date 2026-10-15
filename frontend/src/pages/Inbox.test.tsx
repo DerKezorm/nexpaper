@@ -184,6 +184,19 @@ describe('the inbox', () => {
     expect(server.called('PATCH', '/api/v1/documents/11')!.body).toEqual({ title: 'Mein Titel', status: 'filed' })
   })
 
+  it('says before filing that a document whose keeping time is over goes to the trash that night, when its kind has the switch', async () => {
+    const switched = { ...invoice, keep_years: 2, auto_trash: true }
+    server.answers['GET /api/v1/kinds?vault_id=9'] = [switched, health]
+    server.answers['GET /api/v1/kinds'] = [switched, health]
+    server.answers[INBOX] = inboxOf([doc(11, 'Rechnung Heizungswartung', '2026-10-08T07:42:00Z', { kind: switched, date: '2020-05-01', dates: [] }), teeth])
+    await show('/eingang/11')
+    await until(() => page.text.includes('Die Zeit ist um. Legst du es ab, legt nexpaper es heute Nacht in den Papierkorb.'))
+    // Another kind (no switch), or a time that still runs: nothing to say.
+    await page.click([...page.box.querySelectorAll<HTMLElement>('[role="radiogroup"][aria-label="Art"] [role="radio"]')].find((b) => plain(b.textContent) === 'Gesundheit'))
+    await until(() => !page.text.includes('heute Nacht'))
+    expect(server.changes()).toEqual([])
+  })
+
   it('files with Ctrl+Enter, from any field', async () => {
     await show('/eingang/11')
     await act(async () => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', ctrlKey: true })))

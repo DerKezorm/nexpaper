@@ -118,7 +118,7 @@ export function MayGo({ items, total, vaults, mineId, onChanged }: { items: Docu
                         <Archive size={13} className="text-muted" aria-hidden /> {t('keeping.until', { date: shortDate(kept.date, i18n.language) })}
                       </span>
                       <span className="block text-xs text-muted">{kept.from === 'kind' ? t('keeping.fromKindShort', { years: t('keeping.years', { count: kept.years ?? 0 }) }) : t('keeping.byHandShort')}</span>
-                      {d.kind?.auto_trash && <span className="block text-xs font-semibold text-accent">{t('keeping.goesItself')}</span>}
+                      {d.auto_trash_due && <span className="block text-xs font-semibold text-accent">{t('keeping.goesItself')}</span>}
                     </span>
                   )}
                 </li>

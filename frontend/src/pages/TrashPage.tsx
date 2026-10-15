@@ -89,6 +89,12 @@ export function TrashPage() {
                 <p className="truncate text-sm text-ink-2">
                   {d.sender ? <><bdi>{d.sender.name}</bdi> · </> : ''}
                   {d.trash_ends_at ? t('docs.trash.until', { date: shortDate(d.trash_ends_at, i18n.language) }) : ''}
+                  {d.auto_trashed && (
+                    <span data-testid="put-away">
+                      {d.trash_ends_at ? ' · ' : ''}
+                      {t('keeping.putAway')}
+                    </span>
+                  )}
                 </p>
               </div>
               {canEdit(d) && (
