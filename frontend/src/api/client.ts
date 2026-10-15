@@ -1237,6 +1237,7 @@ export type Reminders = {
   vaults: (ReminderVault & { muted: boolean; others: number })[]
   read_only: ReminderVault[]
   shared: number
+  may_go: number
 }
 export type RemindersChange = Partial<Pick<Reminders, 'rhythm' | 'push' | 'mail' | 'same_day' | 'muted' | 'muted_shared'>> & { lead?: Partial<ReminderLead> }
 export type ReminderTest = { push: PushResult; mail: boolean; by_push: boolean; by_mail: boolean }

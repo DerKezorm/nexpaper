@@ -33,6 +33,7 @@ const BASE: Reminders = {
   ],
   read_only: [{ id: 3, name: 'Tom', icon: 'user', personal: false, personal_of_other: true }],
   shared: 0,
+  may_go: 0,
 }
 
 function deadline(id: number, title: string, fields: Partial<Deadline>): Deadline {
@@ -102,6 +103,20 @@ describe('my account, reminders', () => {
     expect(page.text).toContain('Guten Morgen Jule, das steht diese Woche an:')
     expect(page.text).toContain('Mo, 05.10. · Zahlen: Kurtaxe Abrechnung')
     expect(page.text).not.toContain('212')
+    // Nothing may go: no block, as in the real mail.
+    expect(page.text).not.toContain('Darf weg')
+    expect(page.text).not.toContain('Aufbewahrungszeit')
+  })
+
+  it('shows the documents that may go in the preview of the weekly overview, the number the server gives', async () => {
+    answer({ may_go: 5 })
+    await page.show(<AccountPage />, '/konto?tab=erinnerungen')
+    expect(page.text).toContain('Darf weg')
+    expect(page.text).toContain('Bei 5 Dokumenten ist die Aufbewahrungszeit um.')
+    page.close()
+    answer({ may_go: 1 })
+    await page.show(<AccountPage />, '/konto?tab=erinnerungen')
+    expect(page.text).toContain('Bei einem Dokument ist die Aufbewahrungszeit um.')
   })
 
   it('sends only what changed, at once', async () => {
@@ -165,6 +180,10 @@ describe('my account, reminders', () => {
     await page.show(<AccountPage />, '/konto?tab=erinnerungen')
     expect(cards()).toEqual(['How you are reminded', 'How early', 'Which vaults', 'What it looks like'])
     expect(page.text).toContain('Cancel by Thu, Oct 22: Handyvertrag Telekom')
+    page.close()
+    answer({ may_go: 2 })
+    await page.show(<AccountPage />, '/konto?tab=erinnerungen')
+    expect(page.text).toContain('The keeping time of 2 documents is over.')
   })
 })
 

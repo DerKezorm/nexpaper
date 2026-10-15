@@ -483,6 +483,25 @@ def test_a_muted_vault_does_not_count_in_the_documents_that_may_go(town: Town, m
     assert "Bei 3 " not in plain and "Bei 6 " not in plain and "Bei 5 " not in plain
 
 
+def test_the_preview_counts_what_may_go_like_the_weekly_mail(town: Town, mails: list[EmailMessage],
+                                                              monkeypatch: pytest.MonkeyPatch) -> None:
+    """``may_go`` of the own choices is the number the mail would say: the muted vaults left out, nothing for somebody
+    who may only read, nothing of what is not over yet."""
+    monday = Date(2026, 10, 12)
+    freeze(monkeypatch, at(monday, 9))
+    for n in range(2):
+        town.add(f"Alt {n}", town.mine, town.jule, dates=[("keep_until", monday - 30 * DAY)])
+    for n in range(3):
+        town.add(f"Haus {n}", town.house, town.jule, dates=[("keep_until", monday - 30 * DAY)])
+    town.add("Noch nicht", town.house, town.jule, dates=[("keep_until", monday + 30 * DAY)])
+    with new_client(town.jule) as jule, new_client(town.lea) as lea:
+        assert jule.get("/api/v1/me/reminders").json()["may_go"] == 5
+        assert lea.get("/api/v1/me/reminders").json()["may_go"] == 0
+        assert jule.put("/api/v1/me/reminders", json={"muted": [town.house]}).json()["may_go"] == 2
+        assert jule.get("/api/v1/me/reminders").json()["may_go"] == 2
+        assert jule.put("/api/v1/me/reminders", json={"muted": [town.house, town.mine]}).json()["may_go"] == 0
+
+
 def test_with_every_vault_muted_the_weekly_mail_does_not_mention_what_may_go(town: Town, mails: list[EmailMessage]) -> None:
     choose(town.jule, rhythm="weekly", muted=[town.house, town.mine])
     monday = Date(2026, 10, 12)

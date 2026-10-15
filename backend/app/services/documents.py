@@ -359,7 +359,8 @@ def _set_dates(db: Session, document: Document, dates: list[tuple[Any, ...]], *,
 
     A contract that renewed by itself keeps its new end when the end it renewed from comes back (a page that still shows
     the old one sends it with its other fields): a person who means another end sets another day. The end a person sets,
-    or the end when the term of renewal changes, is where the renewal counts its terms from (``renew_anchor``)."""
+    or the end when the term of renewal changes, is where the renewal counts its terms from (``renew_anchor``). Setting
+    another end also lets go of the guard (``renewed_from``): setting the old end later on takes effect."""
     from . import deadlines
 
     wanted: dict[str, tuple[Date | None, dict[str, Any]]] = {}
@@ -416,6 +417,9 @@ def _set_dates(db: Session, document: Document, dates: list[tuple[Any, ...]], *,
         if day is not None and not stale and day != row.date:
             row.date = day
             row.renew_anchor = day
+            # A person who sets another end has left the renewal that just happened behind: the guard against pages
+            # that are behind is for that renewal only, so the old end counts as any other day from now on.
+            row.renewed_from = None
         if "notice" in terms:
             notice = terms["notice"]
             row.notice_n = notice["n"] if notice else None

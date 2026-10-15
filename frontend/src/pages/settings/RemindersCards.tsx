@@ -271,6 +271,12 @@ function Preview({ me, r }: { me: Me; r: Reminders }) {
                 {week.length === 0 && <li className="text-muted">{t('reminders.week.nothing')}</li>}
               </ul>
             </div>
+            {r.may_go > 0 && (
+              <div>
+                <p className="text-xs font-bold tracking-wide text-muted uppercase">{t('reminders.week.mayGo')}</p>
+                <p className="mt-1">{t('reminders.week.mayGo', { count: r.may_go })}</p>
+              </div>
+            )}
             <p className="font-semibold text-accent underline">{t('reminders.week.all')}</p>
             <p className="text-xs text-muted">{t('reminders.week.why')}</p>
           </div>

@@ -88,6 +88,8 @@ class RemindersOut(BaseModel):
     read_only: list[ReminderVault]
     #: Documents shared with the caller with ``edit``, in no vault of theirs to change things in.
     shared: int
+    #: How many documents the weekly mail would say may go (their keeping time is over), the muted vaults left out.
+    may_go: int
 
 
 class RemindersIn(BaseModel):

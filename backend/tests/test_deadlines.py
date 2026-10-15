@@ -596,6 +596,50 @@ def test_a_page_that_is_behind_does_not_undo_a_renewal(house: House) -> None:
     assert end_of(doc) == Date(2026, 10, 6)
 
 
+def test_another_end_set_by_hand_lets_go_of_the_guard_against_a_page_that_is_behind(house: House) -> None:
+    """The guard (``renewed_from``) is for the renewal that just happened. A person who then sets another end has left
+    it behind: setting the old end again later on takes effect, in both forms of the change."""
+    doc = house.add("Vertrag", house.mine, house.jule)
+    contract(doc, house.jule.id, Date(2026, 10, 7))
+    with SessionLocal() as db:
+        assert deadlines.renew_due(db, TODAY) == 1
+
+    def guard() -> Date | None:
+        with SessionLocal() as db:
+            return db.scalar(select(DocumentDate.renewed_from).where(DocumentDate.document_id == doc,
+                                                                    DocumentDate.kind == "contract_end"))
+
+    assert end_of(doc) == Date(2027, 10, 7) and guard() == Date(2026, 10, 7)
+    with new_client(house.jule) as jule:
+        # The same end as now changes nothing, the old end is a page that is behind: the guard stays.
+        assert jule.patch(f"/api/v1/documents/{doc}", json={"set_dates": [
+            {"kind": "contract_end", "date": "2027-10-07"}]}).status_code == 200
+        assert jule.patch(f"/api/v1/documents/{doc}", json={"set_dates": [
+            {"kind": "contract_end", "date": "2026-10-07"}]}).status_code == 200
+        assert end_of(doc) == Date(2027, 10, 7) and guard() == Date(2026, 10, 7)
+        # Another day is meant: it is set, and the guard is gone.
+        assert jule.patch(f"/api/v1/documents/{doc}", json={"set_dates": [
+            {"kind": "contract_end", "date": "2027-03-01"}]}).status_code == 200
+        assert end_of(doc) == Date(2027, 3, 1) and guard() is None
+        # The old end now is an end like any other.
+        assert jule.patch(f"/api/v1/documents/{doc}", json={"set_dates": [
+            {"kind": "contract_end", "date": "2026-10-07"}]}).status_code == 200
+        assert end_of(doc) == Date(2026, 10, 7)
+    # And the contract renews from it again (once; the guard is back with that renewal).
+    with SessionLocal() as db:
+        assert deadlines.renew_due(db, TODAY) == 1
+        assert deadlines.renew_due(db, TODAY) == 0
+    assert end_of(doc) == Date(2027, 10, 7) and guard() == Date(2026, 10, 7)
+    # The whole list lets go of it the same way.
+    with new_client(house.jule) as jule:
+        assert jule.patch(f"/api/v1/documents/{doc}", json={"dates": [
+            {"kind": "contract_end", "date": "2027-03-01", "renew_months": 12}]}).status_code == 200
+        assert guard() is None
+        assert jule.patch(f"/api/v1/documents/{doc}", json={"dates": [
+            {"kind": "contract_end", "date": "2026-10-07", "renew_months": 12}]}).status_code == 200
+        assert end_of(doc) == Date(2026, 10, 7)
+
+
 def test_never_twice_from_the_same_end(house: House) -> None:
     doc = house.add("Vertrag", house.mine, house.jule)
     contract(doc, house.jule.id, Date(2026, 10, 1))

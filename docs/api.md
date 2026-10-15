@@ -419,7 +419,8 @@ may carry its notice period and renewal: `PATCH /documents/{id}` takes in `dates
 `set_dates` (at most 4, `[{kind, date?, notice?, renew_months?}]`: only the kinds named, and of them only what is sent; a
 left-out `date` keeps the day, a new term needs one) and `remove_dates` (`[kind]`); not together with `dates`
 (`422 invalid_input`), a refused day names `set_dates[n]`. A contract that renewed by itself keeps its new end when the
-end it renewed from comes back in `dates` (a page that is behind); another day is taken as meant. Each date in an answer carries `notice`, `renew_months`, `last_to_cancel` (the end
+end it renewed from comes back in `dates` (a page that is behind); another day is taken as meant, and it ends that
+protection: the old end set later on takes effect. Each date in an answer carries `notice`, `renew_months`, `last_to_cancel` (the end
 minus the period, to the day of the calendar: 31.12. minus 3 months is 30.09.), `done` (`{at, by}`), `renewed_from` and
 the caller's own `snoozed_until`.
 
@@ -451,7 +452,8 @@ deadline; `weekly`, a mail on Mondays; `both`), `push`, `mail`, `lead` (`{due, c
 `muted` (vault ids), `muted_shared` (nothing about documents reached through a share alone), and what that needs:
 `hour` and `time_zone` (8 o'clock in the person's zone), `push_devices`, `mail_address` (confirmed, else empty),
 `mail_problem` (`no_server`, `no_address`, `unconfirmed` or null), `vaults` (edit or manage: `{id, name, icon, personal,
-personal_of_other, muted, others}`), `read_only` (never reminded) and `shared` (documents shared with `edit`).
+personal_of_other, muted, others}`), `read_only` (never reminded), `shared` (documents shared with `edit`) and `may_go`
+(how many documents the weekly mail would say may go, their keeping time is over, the muted vaults left out).
 `PUT /api/v1/me/reminders` changes what it is sent and answers the same; switching mail or the weekly mail on without a
 way to mail is `409 mail_unavailable`, a vault the caller may not change things in (or none) `422 bad_reminder`. A
 field sent as `null` is left as it is; `lead` takes whole numbers from `options` (`true` is `422`). `muted` lists only

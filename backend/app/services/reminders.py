@@ -226,6 +226,7 @@ def view(db: Session, account: Account) -> dict[str, Any]:
         "vaults": mine,
         "read_only": read_only,
         "shared": shared_count(db, account.id),
+        "may_go": may_go_count(db, account.id, prefs, keeping.today_of(account)),
     }
 
 

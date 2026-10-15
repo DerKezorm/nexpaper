@@ -6636,6 +6636,10 @@
             ],
             "title": "Mail Problem"
           },
+          "may_go": {
+            "title": "May Go",
+            "type": "integer"
+          },
           "muted": {
             "items": {
               "type": "integer"
@@ -6710,7 +6714,8 @@
           "mail_problem",
           "vaults",
           "read_only",
-          "shared"
+          "shared",
+          "may_go"
         ],
         "title": "RemindersOut",
         "type": "object"
