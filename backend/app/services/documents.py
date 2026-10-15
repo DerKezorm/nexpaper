@@ -48,7 +48,7 @@ from ..models import (
     Version,
 )
 from ..names import name_key
-from . import catalog, changes, filecheck, filetypes, jobs, rights, storage
+from . import catalog, changes, filecheck, filetypes, jobs, keeping, rights, storage
 
 logger = logging.getLogger("nexpaper.documents")
 
@@ -277,6 +277,7 @@ def create(
     for tag in catalog.tags_named(db, vault_id, owner_id, tags or []):
         db.add(DocumentTag(document_id=document.id, tag_id=tag.id))
     _set_dates(db, document, dates or [])
+    keeping.refresh(db, [document.id])
     changes.record(db, document.id, changes.CREATED, user_id=created_by or owner_id, detail={"source": source})
     if content is not None:
         import hashlib
@@ -352,6 +353,10 @@ def _set_dates(db: Session, document: Document, dates: list[tuple[Any, ...]], *,
     has; ``only_these`` changes the kinds named and leaves the others (``set_dates``), and there a date of ``None``
     keeps the day the term has.
 
+    ``keep_until`` is not one of the terms a list replaces: it is set by hand when it is sent (``terms["manual"]`` says
+    how it was meant, ``keeping.take``) and worked out from the kind when it is left out of a whole list, or sent with
+    ``manual: false``. ``set_dates`` without a day or a ``manual`` leaves it alone.
+
     A contract that renewed by itself keeps its new end when the end it renewed from comes back (a page that still shows
     the old one sends it with its other fields): a person who means another end sets another day. The end a person sets,
     or the end when the term of renewal changes, is where the renewal counts its terms from (``renew_anchor``)."""
@@ -370,8 +375,28 @@ def _set_dates(db: Session, document: Document, dates: list[tuple[Any, ...]], *,
             raise error("invalid_date", "This date is out of range.", 422, field=place)
         wanted[kind] = (check_date(day, place), terms)
         places[kind] = place
-    current = {row.kind: row for row in db.scalars(select(DocumentDate).where(DocumentDate.document_id == document.id))}
     changed = False
+    # The keeping time: set by hand or worked out from the kind, never dropped just because a single term left it out.
+    sent_keep = wanted.pop(keeping.KEEP, None)
+    if not only_these:
+        day, terms = sent_keep if sent_keep is not None else (None, {})
+        changed = keeping.take(db, document, day, terms.get("manual"))
+    elif sent_keep is not None:
+        day, terms = sent_keep
+        manual = terms.get("manual")
+        if day is not None:
+            changed = keeping.take(db, document, day, manual)
+        elif manual is False:
+            changed = keeping.take(db, document, None, False)
+        elif manual:
+            # A day left out keeps the day it has, and is set by hand from now on.
+            kept = db.scalar(select(DocumentDate).where(DocumentDate.document_id == document.id,
+                                                        DocumentDate.kind == keeping.KEEP))
+            if kept is None:
+                raise error("invalid_date", "A new term needs its day.", 422, field=places[keeping.KEEP])
+            changed = keeping.take(db, document, kept.date, True)
+    current = {row.kind: row for row in db.scalars(select(DocumentDate).where(
+        DocumentDate.document_id == document.id, DocumentDate.kind != keeping.KEEP))}
     if not only_these:
         for kind, row in current.items():
             if kind not in wanted:
@@ -407,10 +432,14 @@ def _set_dates(db: Session, document: Document, dates: list[tuple[Any, ...]], *,
 
 
 def _remove_dates(db: Session, document: Document, kinds: list[str]) -> bool:
-    """Takes the terms of the kinds named away (``remove_dates``); True when one was there."""
+    """Takes the terms of the kinds named away (``remove_dates``); True when one was there. A ``keep_until`` worked out
+    from the kind is not one a person can take away (it would be worked out again): only one set by hand goes, and the
+    kind's keeping time then works it out anew."""
     gone = False
     for row in db.scalars(select(DocumentDate).where(DocumentDate.document_id == document.id,
                                                      DocumentDate.kind.in_(kinds))):
+        if row.kind == keeping.KEEP and not row.manual:
+            continue
         db.delete(row)
         gone = True
     return gone
@@ -480,20 +509,26 @@ def update_fields(db: Session, uid: int, document_id: int, patch: dict[str, Any]
                 db.add(DocumentTag(document_id=document.id, tag_id=tag_id))
             changed.append("tags")
     if "dates" in patch and _set_dates(db, document, [
-        (d["kind"], d["date"], {k: d[k] for k in ("notice", "renew_months") if k in d}) for d in patch["dates"]
+        (d["kind"], d["date"], {k: d[k] for k in ("notice", "renew_months", "manual") if k in d})
+        for d in patch["dates"]
     ]):
         changed.append("dates")
     # Single terms (a page sends only what it changed, so it never sends back what it did not see change).
     some = False
     if patch.get("set_dates"):
         some = _set_dates(db, document, [
-            (d["kind"], d.get("date"), {k: d[k] for k in ("notice", "renew_months") if k in d})
+            (d["kind"], d.get("date"), {k: d[k] for k in ("notice", "renew_months", "manual") if k in d})
             for d in patch["set_dates"]
         ], only_these=True, field="set_dates")
     if patch.get("remove_dates"):
         some = _remove_dates(db, document, list(patch["remove_dates"])) or some
     if some and "dates" not in changed:
         changed.append("dates")
+    # Worked out from the kind again (another kind, another date, filed now, or taken back from a person): unless the
+    # terms changed anyway, a field of its own in the history.
+    worked_out = {"kind", "date", "status", "dates"} & set(changed) and keeping.refresh(db, [document.id])
+    if worked_out and "dates" not in changed:
+        changed.append(keeping.KEEP)
     if not changed:
         db.rollback()
         return document

@@ -51,6 +51,7 @@ from ..models import (
     TRASH,
     Account,
     Document,
+    DocumentDate,
     Export,
     ExportLink,
     Kind,
@@ -83,14 +84,17 @@ PACKED_KINDS = (filetypes.PDF, filetypes.JPEG, filetypes.PNG, filetypes.HEIC, fi
 CSV_NAME = {"de": "liste.csv", "en": "list.csv"}
 CSV_HEADINGS = {
     "de": ("Datum", "Titel", "Absender", "Art", "Betrag", "Währung", "Rechnungsnummer", "Tresor", "Datei",
-           "Fällig am", "Vertrag bis", "Kündigen bis", "Garantie bis", "Erledigt"),
+           "Fällig am", "Vertrag bis", "Kündigen bis", "Garantie bis", "Erledigt", "Aufbewahren bis"),
     "en": ("Date", "Title", "Sender", "Kind", "Amount", "Currency", "Invoice number", "Vault", "File",
-           "Due", "Contract until", "Cancel by", "Warranty until", "Done"),
+           "Due", "Contract until", "Cancel by", "Warranty until", "Done", "Keep until"),
 }
 #: The deadlines in the list (F1): the columns of the dates, and the word for a deadline that is done.
 DEADLINE_COLUMNS = ("due", "contract_end", "notice", "warranty_end")
 DONE_WORD = {"de": {"due": "bezahlt", "contract_end": "gekündigt", "warranty_end": "erledigt"},
              "en": {"due": "paid", "contract_end": "cancelled", "warranty_end": "done"}}
+#: The columns made here (a date, an amount, a currency, the day to keep until): taken as they are; every other one
+#: came from a person.
+MADE_HERE = (0, 4, 5, 14)
 #: The start of a field a spreadsheet takes for a formula.
 FORMULA_START = ("=", "+", "-", "@", "\t", "\r")
 NO_DATE = {"de": "ohne Datum", "en": "undated"}
@@ -475,6 +479,8 @@ def _pack(db: Session, export_id: int) -> None:
     entries: list[Entry] = []
     rows: list[tuple[str, ...]] = []
     invoice_numbers = einvoices.numbers(db, [item.document.id for item in found])
+    keep_until = dict(db.execute(select(DocumentDate.document_id, DocumentDate.date).where(
+        DocumentDate.document_id.in_([item.document.id for item in found]), DocumentDate.kind == "keep_until")).all())
     terms = _terms(db, [item.document.id for item in found], language)
     vaults: set[int] = set()
     size = 0
@@ -508,6 +514,7 @@ def _pack(db: Session, export_id: int) -> None:
             amount_text(document.amount, language), document.currency if document.amount is not None else "",
             invoice_numbers.get(document.id, ""), item.vault.name if item.vault else "", first,
             *terms.get(document.id, ("",) * (len(DEADLINE_COLUMNS) + 1)),
+            keep_until[document.id].isoformat() if document.id in keep_until else "",
         ))
     if size > MAX_BYTES:
         raise PackError("too_large")
@@ -583,7 +590,7 @@ def _csv(rows: list[tuple[str, ...]], language: str) -> bytes:
     writer.writerow(CSV_HEADINGS[language])
     for row in rows:
         # The amount (made here, a number) stays as it is; every text that came from a person is made safe.
-        writer.writerow([cell if index in (0, 4, 5) else safe_cell(cell) for index, cell in enumerate(row)])
+        writer.writerow([cell if index in MADE_HERE else safe_cell(cell) for index, cell in enumerate(row)])
     return "﻿".encode() + out.getvalue().encode("utf-8")
 
 

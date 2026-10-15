@@ -752,6 +752,17 @@
             "title": "Kind",
             "type": "string"
           },
+          "manual": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manual"
+          },
           "notice": {
             "anyOf": [
               {
@@ -815,6 +826,17 @@
               }
             ],
             "title": "Last To Cancel"
+          },
+          "manual": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manual"
           },
           "notice": {
             "anyOf": [
@@ -894,6 +916,17 @@
             ],
             "title": "Kind",
             "type": "string"
+          },
+          "manual": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manual"
           },
           "notice": {
             "anyOf": [
@@ -3155,6 +3188,79 @@
         "title": "InvoiceLineOut",
         "type": "object"
       },
+      "KeepIn": {
+        "additionalProperties": false,
+        "properties": {
+          "existing": {
+            "default": false,
+            "title": "Existing",
+            "type": "boolean"
+          },
+          "years": {
+            "anyOf": [
+              {
+                "maximum": 30.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Years"
+          }
+        },
+        "required": [
+          "years"
+        ],
+        "title": "KeepIn",
+        "type": "object"
+      },
+      "KeepOut": {
+        "properties": {
+          "changed": {
+            "title": "Changed",
+            "type": "integer"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/KindOut"
+          },
+          "queued": {
+            "title": "Queued",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "kind",
+          "changed",
+          "queued"
+        ],
+        "title": "KeepOut",
+        "type": "object"
+      },
+      "KeepPreview": {
+        "properties": {
+          "by_hand": {
+            "title": "By Hand",
+            "type": "integer"
+          },
+          "documents": {
+            "title": "Documents",
+            "type": "integer"
+          },
+          "expired": {
+            "title": "Expired",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "documents",
+          "by_hand",
+          "expired"
+        ],
+        "title": "KeepPreview",
+        "type": "object"
+      },
       "KeyIn": {
         "properties": {
           "days": {
@@ -3310,6 +3416,22 @@
             "title": "In Trash",
             "type": "integer"
           },
+          "keep_new_only": {
+            "default": false,
+            "title": "Keep New Only",
+            "type": "boolean"
+          },
+          "keep_years": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Keep Years"
+          },
           "key": {
             "title": "Key",
             "type": "string"
@@ -3429,6 +3551,17 @@
           "id": {
             "title": "Id",
             "type": "integer"
+          },
+          "keep_years": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Keep Years"
           },
           "key": {
             "title": "Key",
@@ -4199,6 +4332,27 @@
           "last"
         ],
         "title": "MailOut",
+        "type": "object"
+      },
+      "MayGoPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/DocumentOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total"
+        ],
+        "title": "MayGoPage",
         "type": "object"
       },
       "MemberIn": {
@@ -5782,6 +5936,29 @@
           "display_name"
         ],
         "title": "PersonRef",
+        "type": "object"
+      },
+      "PreviewIn": {
+        "additionalProperties": false,
+        "properties": {
+          "years": {
+            "anyOf": [
+              {
+                "maximum": 30.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Years"
+          }
+        },
+        "required": [
+          "years"
+        ],
+        "title": "PreviewIn",
         "type": "object"
       },
       "ProbeOut": {
@@ -7829,6 +8006,49 @@
           "languages"
         ],
         "title": "TextOut",
+        "type": "object"
+      },
+      "TrashIn": {
+        "additionalProperties": false,
+        "properties": {
+          "ids": {
+            "items": {
+              "type": "integer"
+            },
+            "maxItems": 500,
+            "minItems": 1,
+            "title": "Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "ids"
+        ],
+        "title": "TrashIn",
+        "type": "object"
+      },
+      "TrashOut": {
+        "properties": {
+          "failed": {
+            "items": {
+              "$ref": "#/components/schemas/Refused"
+            },
+            "title": "Failed",
+            "type": "array"
+          },
+          "trashed": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Trashed",
+            "type": "array"
+          }
+        },
+        "required": [
+          "trashed",
+          "failed"
+        ],
+        "title": "TrashOut",
         "type": "object"
       },
       "Understood": {
@@ -11772,6 +11992,54 @@
         ]
       }
     },
+    "/api/v1/documents/trash": {
+      "post": {
+        "description": "Like `DELETE /documents/{id}` for each: `edit` on the document. One the caller may not see fails as\n`not_found`, exactly as one that does not exist; the others go on.",
+        "operationId": "trash_many_api_v1_documents_trash_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TrashIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrashOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Put many documents in the trash for 30 days, each checked on its own",
+        "tags": [
+          "keeping",
+          "documents"
+        ]
+      }
+    },
     "/api/v1/documents/{document_id}": {
       "delete": {
         "operationId": "trash_api_v1_documents__document_id__delete",
@@ -15291,6 +15559,87 @@
         ]
       }
     },
+    "/api/v1/keeping": {
+      "get": {
+        "description": "Nothing goes by itself: the person picks and puts them in the trash (`POST /documents/trash`). A vault where\nthe caller may only read, and documents only shared with them, are not looked at.",
+        "operationId": "may_go_api_v1_keeping_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "vault_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 2147483647,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Vault Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 100,
+              "maximum": 500,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "maximum": 10000000,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MayGoPage"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Filed documents whose keeping time is over, in the vaults where the caller may change things",
+        "tags": [
+          "keeping"
+        ]
+      }
+    },
     "/api/v1/kinds": {
       "get": {
         "description": "With ``vault_id``, the choice for a document of that vault: the server's kinds and that vault's, one entry per\nname. Without it, the server's kinds and those of every vault the caller is in (a name may repeat across vaults).",
@@ -15502,6 +15851,121 @@
         "summary": "Rename or recolor a kind (edit in its vault; the operator for the server's)",
         "tags": [
           "catalog"
+        ]
+      }
+    },
+    "/api/v1/kinds/{kind_id}/keeping": {
+      "put": {
+        "operationId": "set_keeping_api_v1_kinds__kind_id__keeping_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "kind_id",
+            "required": true,
+            "schema": {
+              "title": "Kind Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KeepIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KeepOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Set or take away the keeping time of a kind (manage in its vault; the operator for the server's)",
+        "tags": [
+          "keeping"
+        ]
+      }
+    },
+    "/api/v1/kinds/{kind_id}/keeping/preview": {
+      "post": {
+        "description": "Only documents the caller may see are counted; setting it changes every document of the kind.",
+        "operationId": "preview_api_v1_kinds__kind_id__keeping_preview_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "kind_id",
+            "required": true,
+            "schema": {
+              "title": "Kind Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PreviewIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KeepPreview"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "What setting a keeping time for the documents of a kind already there would do; changes nothing (manage in its vault; the operator for the server's)",
+        "tags": [
+          "keeping"
         ]
       }
     },

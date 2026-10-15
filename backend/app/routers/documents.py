@@ -40,6 +40,10 @@ class DateIn(BaseModel):
     model_config = ConfigDict(extra="forbid")
     kind: Literal["due", "contract_end", "warranty_end", "keep_until"]
     date: Date
+    #: Only for `keep_until`: `true` set by hand (it stays when the kind, the date or the vault changes), `false` worked
+    #: out from the kind's keeping time (the date sent is not used). Left out: the date it has now stays as it was
+    #: made, another one counts as set by hand. A `keep_until` left out of `dates` is worked out from the kind again.
+    manual: bool | None = None
     notice: NoticeIn | None = None
     renew_months: StrictInt | None = Field(default=None, ge=1, le=120)
 
@@ -53,6 +57,9 @@ class DateSet(BaseModel):
     date: Date | None = None
     notice: NoticeIn | None = None
     renew_months: StrictInt | None = Field(default=None, ge=1, le=120)
+    #: Only for `keep_until`, as in `dates`: `true` set by hand, `false` worked out from the kind's keeping time again
+    #: (the term is dropped and worked out right away). With no day, `true` keeps the day it has as set by hand.
+    manual: bool | None = None
 
 
 class DocumentPatch(BaseModel):

@@ -12,18 +12,21 @@ import { Link } from 'react-router-dom'
 import { ApiError, deadlinesApi, remindersApi, vaultsApi, type Deadline, type DeadlineQuery, type Deadlines, type DeadlineSection, type DeadlineWhat, type Vault } from '../api/client'
 import { Button } from '../components/Button'
 import { Chip } from '../components/docs'
+import { MayGo, MayGoChip } from '../components/MayGo'
 import { VaultIcon } from '../components/VaultIcon'
 import { shortDate } from '../lib/dates'
 import { addDays, LATER_SHOWN, relative, SNOOZE_DAYS, useDayName, weekday } from '../lib/deadlines'
 import { errorText } from '../lib/errors'
 import { money } from '../lib/money'
 import { personName } from '../lib/people'
+import { useMayGo } from '../lib/mayGo'
 import { inboxChanged, iso, listOf, useSay } from '../lib/say'
 import { useAuth } from '../state/auth'
 
 const ICON: Record<DeadlineWhat, LucideIcon> = { pay: Receipt, cancel: ScrollText, ends: CalendarClock, warranty: ShieldCheck }
-type Filter = 'all' | 'pay' | 'cancel' | 'warranty'
-const FILTERS: Filter[] = ['all', 'pay', 'cancel', 'warranty']
+/** `go`: "Darf weg", the documents whose keeping time is over (`components/MayGo.tsx`). */
+type Filter = 'all' | 'pay' | 'cancel' | 'warranty' | 'go'
+const FILTERS: Exclude<Filter, 'go'>[] = ['all', 'pay', 'cancel', 'warranty']
 
 /** "12.10.": a day without its year. */
 function dayMonth(day: string, language: string): string {
@@ -53,7 +56,7 @@ export function DeadlinesPage() {
   }, [])
 
   const load = useCallback(() => {
-    const query: DeadlineQuery = { done: true, ...(filter !== 'all' ? { what: filter } : {}) }
+    const query: DeadlineQuery = { done: true, ...(filter !== 'all' && filter !== 'go' ? { what: filter } : {}) }
     if (vault === 'shared') query.shared = true
     else if (vault !== 'all') query.vault_id = Number(vault)
     return deadlinesApi.list(query).then(
@@ -68,10 +71,22 @@ export function DeadlinesPage() {
     void load()
   }, [load])
 
+  // "Darf weg": the count on the chip is the whole of it; the section follows the vault chosen on this page. Documents
+  // seen through a share alone are not in it (the server looks at vaults where the person may change things).
+  const mayGoAll = useMayGo()
+  const vaultNumber = /^\d+$/.test(vault) ? Number(vault) : undefined
+  const mayGoVault = useMayGo(vaultNumber, vaultNumber !== undefined)
+  const mayGo = vault === 'all' ? mayGoAll : vault === 'shared' ? { ...mayGoAll, items: [], total: 0 } : mayGoVault
+
   const changed = useCallback(() => {
     inboxChanged()
     return load()
   }, [load])
+  const goChanged = () => {
+    mayGoAll.reload()
+    mayGoVault.reload()
+    void load()
+  }
 
   const section = (part: DeadlineSection | null | undefined): DeadlineSection => ({ total: part?.total ?? 0, items: listOf(part?.items) })
   const overdue = section(found?.overdue)
@@ -99,6 +114,7 @@ export function DeadlinesPage() {
             {t(`deadlines.filter.${value}`)}
           </Chip>
         ))}
+        <MayGoChip count={mayGoAll.total} active={filter === 'go'} onClick={() => setFilter('go')} />
         <span className="mx-1 w-px shrink-0 bg-line" />
         <Chip active={vault === 'all'} onClick={() => setVault('all')}>
           {t('deadlines.allVaults')}
@@ -114,7 +130,7 @@ export function DeadlinesPage() {
           </Chip>
         )}
       </div>
-      <label className="mb-6 inline-flex cursor-pointer items-center gap-2 text-sm text-ink-2">
+      <label className={`mb-6 inline-flex cursor-pointer items-center gap-2 text-sm text-ink-2 ${filter === 'go' ? 'invisible' : ''}`}>
         <input type="checkbox" checked={showDone} onChange={(event) => setShowDone(event.target.checked)} className="h-4 w-4 accent-[var(--accent)]" />
         {done.total > 0 ? t('deadlines.showDoneCount', { count: done.total }) : t('deadlines.showDone')}
       </label>
@@ -125,11 +141,22 @@ export function DeadlinesPage() {
         </p>
       )}
 
-      {found === null ? null : open === 0 && !showDone ? (
-        <div className="card p-12 text-center">
-          <Check size={30} className="mx-auto text-ok" aria-hidden />
-          <p className="mt-3 font-display text-xl font-semibold">{t('deadlines.nothing')}</p>
-          <p className="mt-1 text-sm text-ink-2">{t('deadlines.nothingHint')}</p>
+      {mayGoAll.problem && filter === 'go' && (
+        <p role="alert" className="mb-4 text-sm text-bad">
+          {errorText(mayGoAll.problem)}
+        </p>
+      )}
+
+      {filter === 'go' ? (
+        <MayGo items={mayGo.items} total={mayGo.total} vaults={vaults} mineId={me?.id ?? 0} onChanged={goChanged} />
+      ) : found === null ? null : open === 0 && !showDone ? (
+        <div className="space-y-7">
+          <div className="card p-12 text-center">
+            <Check size={30} className="mx-auto text-ok" aria-hidden />
+            <p className="mt-3 font-display text-xl font-semibold">{t('deadlines.nothing')}</p>
+            <p className="mt-1 text-sm text-ink-2">{t('deadlines.nothingHint')}</p>
+          </div>
+          {filter === 'all' && mayGo.total > 0 && <MayGo items={mayGo.items} total={mayGo.total} vaults={vaults} mineId={me?.id ?? 0} onChanged={goChanged} />}
         </div>
       ) : (
         <div className="space-y-7">
@@ -144,6 +171,7 @@ export function DeadlinesPage() {
             onChanged={changed}
           />
           {showDone && <Section title={t('deadlines.done')} part={done} empty={t('deadlines.doneEmpty')} vaultOf={vaultOf} mutedOf={mutedOf} onChanged={changed} />}
+          {filter === 'all' && mayGo.total > 0 && <MayGo items={mayGo.items} total={mayGo.total} vaults={vaults} mineId={me?.id ?? 0} onChanged={goChanged} />}
         </div>
       )}
     </div>

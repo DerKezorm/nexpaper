@@ -71,6 +71,10 @@ class KindEntry(OrderEntry):
     key: str
     hue: int
     position: int
+    #: How many years its documents are kept; empty: no keeping time (`PUT /kinds/{id}/keeping`).
+    keep_years: int | None = None
+    #: The last decision about the documents already there was "for new ones only" (they kept what they had).
+    keep_new_only: bool = False
 
 
 class OrderPage(BaseModel):

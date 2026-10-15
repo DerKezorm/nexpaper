@@ -35,7 +35,14 @@ export type Draft = {
 export function dateEntry(x: DocumentInfo['dates'][number]): DateEntry {
   const kind = x.kind as DateEntry['kind']
   // Terms only where there are some: left out, they stay as they are on the server.
-  return { kind, date: x.date, ...(kind === 'contract_end' && x.notice ? { notice: x.notice } : {}), ...(kind === 'contract_end' && x.renew_months ? { renew_months: x.renew_months } : {}) }
+  return {
+    kind,
+    date: x.date,
+    ...(kind === 'contract_end' && x.notice ? { notice: x.notice } : {}),
+    ...(kind === 'contract_end' && x.renew_months ? { renew_months: x.renew_months } : {}),
+    // A keeping time says whether a person set it (else it is worked out from the kind).
+    ...(kind === 'keep_until' ? { manual: !!x.manual } : {}),
+  }
 }
 
 export function draftOf(d: DocumentInfo): Draft {
@@ -101,6 +108,8 @@ export function datesChanged(was: DateEntry[], now: DateEntry[]): Pick<DocumentP
     if (entry.date !== before.date) changed.date = entry.date
     if (JSON.stringify(entry.notice ?? null) !== JSON.stringify(before.notice ?? null)) changed.notice = entry.notice ?? null
     if ((entry.renew_months ?? null) !== (before.renew_months ?? null)) changed.renew_months = entry.renew_months ?? null
+    // A keeping time that a person took over from the kind (or gave back to it) says so, with or without a new day.
+    if (entry.kind === 'keep_until' && entry.manual !== undefined && entry.manual !== before.manual) changed.manual = entry.manual
     if (Object.keys(changed).length > 1) setDates.push(changed)
   }
   const removeDates = was.filter((d) => !now.some((x) => x.kind === d.kind)).map((d) => d.kind)

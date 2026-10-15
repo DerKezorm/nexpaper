@@ -58,4 +58,14 @@ describe('what a page sends of the terms', () => {
     expect(datesChanged([contract, due], [due])).toEqual({ remove_dates: ['contract_end'] })
     expect(datesChanged([contract, due], [contract, due])).toEqual({})
   })
+
+  it('says whether a keeping time was set by hand, with or without a new day', () => {
+    const worked = { kind: 'keep_until' as const, date: '2036-12-31', manual: false }
+    // Another day is by hand; the same day taken over by hand sends only the mark; the kind's own day sends nothing.
+    expect(datesChanged([worked], [{ kind: 'keep_until', date: '2040-06-30', manual: true }])).toEqual({ set_dates: [{ kind: 'keep_until', date: '2040-06-30', manual: true }] })
+    expect(datesChanged([worked], [{ ...worked, manual: true }])).toEqual({ set_dates: [{ kind: 'keep_until', manual: true }] })
+    expect(datesChanged([worked], [worked])).toEqual({})
+    // Given back to the kind: the term leaves the list, and the kind works it out again.
+    expect(datesChanged([{ ...worked, manual: true }], [])).toEqual({ remove_dates: ['keep_until'] })
+  })
 })

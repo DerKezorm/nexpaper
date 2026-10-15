@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from datetime import date as Date
 from datetime import datetime, timedelta
-from typing import Literal
+from typing import Any, Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, model_serializer
 
 from ..models import Account, Kind
 from ..services import documents as documents_service
@@ -32,6 +32,8 @@ class KindOut(BaseModel):
     position: int
     #: The vault this kind belongs to; empty for the kinds of the whole server.
     vault_id: int | None = None
+    #: How many years its documents are kept (`keep_until` is worked out from it); empty: no keeping time.
+    keep_years: int | None = None
 
 
 class NoticeOut(BaseModel):
@@ -59,6 +61,17 @@ class DateOut(BaseModel):
     renewed_from: Date | None = None
     #: "Later" of the caller on this deadline, while it lasts.
     snoozed_until: Date | None = None
+    #: Only on `keep_until` (left out for the other kinds): `true` set by a person; `false` worked out from the kind's
+    #: keeping time, and worked out again when the kind, the date or the vault changes.
+    manual: bool | None = None
+
+    # No return annotation: pydantic would take it for the schema of the answer.
+    @model_serializer(mode="wrap")
+    def _manual_only_where_it_means_something(self, handler: Any):
+        data = handler(self)
+        if self.manual is None:
+            data.pop("manual", None)
+        return data
 
 
 class DuplicateOut(BaseModel):
@@ -135,14 +148,14 @@ def kind_out(kind: Kind | None) -> KindOut | None:
     if kind is None:
         return None
     return KindOut(id=kind.id, key=kind.key, name=kind.name, hue=kind.hue, position=kind.position,
-                   vault_id=kind.vault_id)
+                   vault_id=kind.vault_id, keep_years=kind.keep_years)
 
 
 def dates_out(row: Row) -> list[DateOut]:
     if not row.date_rows:
         return [DateOut(kind=kind, date=day) for kind, day in row.dates]
     return [DateOut(
-        kind=r.kind, date=r.date,
+        kind=r.kind, date=r.date, manual=r.manual if r.kind == "keep_until" else None,
         notice=NoticeOut(n=r.notice_n, unit=r.notice_unit) if r.notice_n and r.notice_unit else None,  # type: ignore[arg-type]
         renew_months=r.renew_months, last_to_cancel=r.notice_date,
         done=DoneOut(at=r.done_at, by=person(row.done_by.get(r.done_by)) if r.done_by else None) if r.done_at else None,

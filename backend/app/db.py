@@ -46,7 +46,7 @@ _settings.data_dir.mkdir(parents=True, exist_ok=True)
 BUSY_SECONDS = 15
 
 #: The version of the schema the models describe.
-SCHEMA_VERSION = 12
+SCHEMA_VERSION = 13
 
 
 def _step_v2(connection: Connection) -> None:
@@ -326,6 +326,20 @@ def _step_deadlines(connection: Connection) -> None:
         connection.exec_driver_sql(statement)
 
 
+def _step_keeping(connection: Connection) -> None:
+    """Keeping documents (F3): how long the documents of a kind are kept, whether that was set for new documents only,
+    and the mark on a dated term that a person set it (a ``keep_until`` worked out from the kind has none). Three added
+    columns with a default, nothing else."""
+    for statement in (
+        "ALTER TABLE kinds ADD COLUMN keep_years INTEGER",
+        "ALTER TABLE kinds ADD COLUMN keep_new_only BOOLEAN DEFAULT 0 NOT NULL",
+        "ALTER TABLE document_dates ADD COLUMN manual BOOLEAN DEFAULT 0 NOT NULL",
+        # Every keep_until there was came from a person: before this step nothing worked one out.
+        "UPDATE document_dates SET manual = 1 WHERE kind = 'keep_until'",
+    ):
+        connection.exec_driver_sql(statement)
+
+
 def _step_reminders(connection: Connection) -> None:
     """Reminders (F2): how each person wants to be reminded, the vaults a person muted, and every reminder that went
     (or is going) out, once per deadline, person, stage and day. Three tables, nothing else; written out as they stood
@@ -378,8 +392,10 @@ MIGRATIONS: dict[int, Callable[[Connection], None]] = {
     10: _step_files,
     # F1, deadlines.
     11: _step_deadlines,
+    # F3, keeping documents.
+    12: _step_keeping,
     # F2, reminders.
-    12: _step_reminders,
+    13: _step_reminders,
 }
 
 def _has_column(connection: Connection, table: str, column: str) -> bool:

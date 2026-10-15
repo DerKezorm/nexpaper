@@ -473,7 +473,7 @@ export type Vault = {
   members: VaultMember[]
 }
 /** `vault_id` is the vault a kind belongs to; empty for the kinds of the whole server. */
-export type DocumentKind = { id: number; key: string; name: string; hue: number; position: number; vault_id?: number | null }
+export type DocumentKind = { id: number; key: string; name: string; hue: number; position: number; vault_id?: number | null; keep_years?: number | null }
 export type DocumentInfo = {
   id: number
   vault_id: number
@@ -970,14 +970,17 @@ export type DocumentPatch = Partial<{
 /** A notice period of a contract. */
 export type Notice = { n: number; unit: 'weeks' | 'months' }
 /** A date as `PATCH` takes it: a contract may carry its notice period and renewal (left out: they stay, `null`: gone). */
-export type DateIn = { kind: DateKind; date: string; notice?: Notice | null; renew_months?: number | null }
-/** One term of `set_dates`: the kind and what changes of it. */
-export type DateSet = { kind: DateKind; date?: string; notice?: Notice | null; renew_months?: number | null }
+export type DateIn = { kind: DateKind; date: string; notice?: Notice | null; renew_months?: number | null; manual?: boolean }
+/** One term of `set_dates`: the kind and what changes of it. For `keep_until`, `manual: false` works it out from the kind
+ * again, `manual: true` without a `date` sets the day it has by hand. */
+export type DateSet = { kind: DateKind; date?: string; notice?: Notice | null; renew_months?: number | null; manual?: boolean }
 /** A date of a document as the server has it: with a contract's terms, the last day to cancel worked out from them,
  * who marked it done and when, and the person's own "later". */
 export type DocumentDate = {
   kind: string
   date: string
+  /** Only on `keep_until`: set by a person (otherwise worked out from the kind's keeping time). */
+  manual?: boolean
   notice?: Notice | null
   renew_months?: number | null
   last_to_cancel?: string | null
@@ -1125,6 +1128,9 @@ export type OrderEntry = {
   key?: string
   hue?: number
   position?: number
+  /** Only kinds: how many years their documents are kept (empty: not set), and whether only for newly filed ones. */
+  keep_years?: number | null
+  keep_new_only?: boolean
 }
 export type OrderPage = { items: OrderEntry[]; total: number }
 export type OrderQuery = { vault_id?: number; q?: string; order?: 'name' | 'documents'; limit?: number; offset?: number }
@@ -1239,4 +1245,23 @@ export const remindersApi = {
   get: () => api<Reminders>('/api/v1/me/reminders'),
   save: (change: RemindersChange) => api<Reminders>('/api/v1/me/reminders', { method: 'PUT', body: change }),
   test: () => api<ReminderTest>('/api/v1/me/reminders/test', { method: 'POST' }),
+}
+
+// ---- Keeping documents (F3): the keeping time of a kind, what may go ---------------------------------------------------
+
+export type KeepPreview = { documents: number; by_hand: number; expired: number }
+export type KeepSet = { kind: DocumentKind; changed: number; queued: boolean }
+export type MayGoPage = { items: DocumentInfo[]; total: number }
+export type TrashResult = { trashed: number[]; failed: { id: number; code: string }[] }
+
+export const keepingApi = {
+  /** What setting `years` (null: taking the time away) for the documents of the kind already there would do (only
+   * documents the person sees). */
+  preview: (kindId: number, years: number | null) => api<KeepPreview>(`/api/v1/kinds/${kindId}/keeping/preview`, { method: 'POST', body: { years } }),
+  /** Sets the keeping time (`null` takes it away). `existing`: also for the documents already there. */
+  set: (kindId: number, years: number | null, existing: boolean) => api<KeepSet>(`/api/v1/kinds/${kindId}/keeping`, { method: 'PUT', body: { years, existing } }),
+  /** Filed documents whose keeping time is over, in the vaults where the person may change things. */
+  mayGo: (query: { vault_id?: number; limit?: number; offset?: number } = {}) => api<MayGoPage>('/api/v1/keeping', { query }),
+  /** Many documents into the trash, each checked on its own. */
+  trashMany: (ids: number[]) => api<TrashResult>('/api/v1/documents/trash', { method: 'POST', body: { ids } }),
 }

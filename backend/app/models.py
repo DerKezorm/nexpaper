@@ -456,6 +456,12 @@ class Kind(Base):
     position: Mapped[int] = mapped_column(Integer, default=0)
     vault_id: Mapped[int | None] = mapped_column(ForeignKey("vaults.id", ondelete="CASCADE"), nullable=True)
     created_by: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    #: How many years documents of this kind are kept (``services/keeping.py``); empty: no keeping time. The kinds that
+    #: come with nexpaper have none.
+    keep_years: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    #: The last decision about the documents already there was "for new ones only": a time set then did not reach
+    #: them, a time taken away then left their worked-out dates as set by hand.
+    keep_new_only: Mapped[bool] = mapped_column(Boolean, default=False, server_default=text("0"))
 
 
 class Tag(Base):
@@ -536,6 +542,9 @@ class DocumentDate(Base):
     #: The end of a contract as a person last set it (or the term changed): the renewal counts from here in whole terms,
     #: so a contract to the 30th does not drift to the end of the month after a February.
     renew_anchor: Mapped[Any] = mapped_column(Date, nullable=True)
+    #: Set by a person, not worked out from the kind (only ``keep_until`` is ever worked out): a change of the kind, the
+    #: date or the vault leaves it as it is (``services/keeping.py``).
+    manual: Mapped[bool] = mapped_column(Boolean, default=False, server_default=text("0"))
 
 
 class DocumentTag(Base):

@@ -263,6 +263,7 @@ def test_a_database_of_1_0_1_gets_the_additions_and_the_later_steps(scratch: Pat
         connection.execute("PRAGMA user_version = 10")
         connection.commit()
     database.init_db()
+    # Since 1.4 the steps after 10 follow the additions (1.0.1 cannot open it any more, and need not).
     assert version_of(scratch) == database.SCHEMA_VERSION
     current = fresh_schema_sql()
     with sqlite3.connect(":memory:") as connection:

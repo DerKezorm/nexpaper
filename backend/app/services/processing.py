@@ -42,7 +42,21 @@ from sqlalchemy.orm import Session
 from .. import clock
 from ..errors import error
 from ..models import EDIT, FILED, INBOX, PROCESSING, TRASH, Document, Job, Version, VersionText
-from . import changes, filetypes, jobs, limits, ocr, pages, rights, search_index, separators, similar, sorting, storage
+from . import (
+    changes,
+    filetypes,
+    jobs,
+    keeping,
+    limits,
+    ocr,
+    pages,
+    rights,
+    search_index,
+    separators,
+    similar,
+    sorting,
+    storage,
+)
 
 logger = logging.getLogger("nexpaper.processing")
 
@@ -391,6 +405,8 @@ def _finish(db: Session, document_id: int, version_n: int, work: Run) -> None:
         if document.status == PROCESSING:
             # A document taken over from Paperless is filed as it was there, unless it carried an inbox tag.
             document.status = FILED if data.get("file_as") == FILED else INBOX
+            # Now that the kind and the date are settled: the keeping time of the kind, if it has one.
+            keeping.refresh(db, [document.id])
         elif document.status == TRASH and never_read:
             # Put in the trash while it waited to be read: restored, it goes to the inbox like any new document.
             document.trashed_status = INBOX

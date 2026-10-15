@@ -5,7 +5,7 @@
  */
 import { act } from 'react'
 
-import type { Deadline, Me } from '../api/client'
+import type { Deadline, DocumentInfo, Me } from '../api/client'
 import { Dates, type DateEntry } from '../components/DocumentFields'
 import { changeLanguage } from '../i18n'
 import { Page, Server, plain } from '../test/harness'
@@ -42,6 +42,14 @@ const WATER = deadline(6, 'Abschlag Wasser Oktober', {
   date: '2026-10-01', end: '2026-10-01', days: -7, amount: 4800, done: { at: '2026-09-29T08:00:00Z', by: { id: 3, name: 'tom', display_name: 'Tom' } },
 })
 
+function gone(id: number, title: string, vault_id: number, keep: string): DocumentInfo {
+  return {
+    id, vault_id, title, date: '2013-12-31', added_at: '2026-10-02T10:00:00Z', status: 'filed', sender: { id: id + 100, name: `Absender ${id}` }, kind: null,
+    dates: [{ kind: 'keep_until', date: keep, manual: true }],
+  } as unknown as DocumentInfo
+}
+const WEG = [gone(21, 'Gehaltsabrechnungen 2013', 1, '2023-12-31'), gone(22, 'Kontoauszug Dezember', 2, '2024-12-31')]
+
 const LIST = {
   today: '2026-10-08', soon_days: 14,
   overdue: { total: 1, items: [KURTAXE] },
@@ -60,6 +68,9 @@ beforeEach(async () => {
       { id: 1, name: 'jule', icon: 'user', personal_of: 1, my_right: 'manage', documents: 3, size: 0, members: [] },
       { id: 2, name: 'Haushalt', icon: 'home', personal_of: null, my_right: 'edit', documents: 9, size: 0, members: [] },
     ],
+    'GET /api/v1/keeping?limit=500': { items: WEG, total: 2 },
+    'GET /api/v1/keeping?vault_id=2&limit=500': { items: [WEG[1]], total: 1 },
+    'POST /api/v1/documents/trash': { trashed: [21], failed: [] },
     'POST /api/v1/documents/5/dates/due/done': {},
     'DELETE /api/v1/documents/6/dates/due/done': {},
     'PUT /api/v1/documents/5/dates/due/snooze': { until: '2026-10-11' },
@@ -79,7 +90,7 @@ describe('the deadlines page', () => {
   it('has the sections of the mock and says each deadline as it does', async () => {
     await page.show(<DeadlinesPage />, '/fristen')
     expect(page.box.querySelector('h1')!.textContent).toBe('Fristen')
-    expect(headings()).toEqual(['Überfällig1', 'Nächste 14 Tage2', 'Später1'])
+    expect(headings()).toEqual(['Überfällig1', 'Nächste 14 Tage2', 'Später1', 'Darf weg 2'])
     const [kurtaxe, prophylaxe, fitness, mobile] = rows().map((row) => plain(row.textContent))
     expect(kurtaxe).toContain('Zahlen bis Mo, 05.10.2026')
     expect(kurtaxe).toContain('seit 3 Tagen')
@@ -154,6 +165,77 @@ describe('the deadlines page', () => {
     expect(page.box.querySelector('h1')!.textContent).toBe('Deadlines')
     expect(plain(rows()[0].textContent)).toContain('Pay by Mon, 10/05/2026')
     expect(plain(rows()[0].textContent)).toContain('3 days ago')
+  })
+})
+
+describe('may go ("Darf weg") on the deadlines page', () => {
+  const sections = () => [...page.box.querySelectorAll('section')].map((s) => plain(s.querySelector('h2')!.textContent))
+
+  it('is a filter with its number, and below the other sections at "Alle"', async () => {
+    await page.show(<DeadlinesPage />, '/fristen')
+    expect(plain(page.button('Darf weg 2')!.textContent)).toBe('Darf weg 2')
+    // The deadlines first, then what may go; the number of the deadlines (menu, sections) does not include it.
+    expect(sections()).toEqual(['Überfällig1', 'Nächste 14 Tage2', 'Später1', 'Darf weg 2'])
+    expect(rows().length).toBe(4)
+  })
+
+  it('shows only what may go under its filter, with nothing to tick for the done ones', async () => {
+    await page.show(<DeadlinesPage />, '/fristen')
+    await page.click(page.button('Darf weg 2'))
+    expect(sections()).toEqual(['Darf weg 2'])
+    expect(rows().length).toBe(0)
+    expect(page.box.querySelector('label.invisible')).toBeTruthy()
+    expect(page.text).toContain('Gehaltsabrechnungen 2013')
+    expect(page.text).toContain('Kontoauszug Dezember')
+  })
+
+  it('follows the vault chosen on the page, and a share alone has none', async () => {
+    await page.show(<DeadlinesPage />, '/fristen')
+    await page.click(page.button('Darf weg 2'))
+    await page.click(page.button('Haushalt'))
+    expect(server.called('GET', '/api/v1/keeping?vault_id=2&limit=500')).toBeTruthy()
+    expect(page.text).toContain('Kontoauszug Dezember')
+    expect(page.text).not.toContain('Gehaltsabrechnungen 2013')
+    // The number on the chip is still the whole of it.
+    expect(plain(page.button('Darf weg 2')!.textContent)).toBe('Darf weg 2')
+  })
+
+  it('has nothing for what is seen through a share alone, and the chip keeps the whole number', async () => {
+    server.answers['GET /api/v1/deadlines?done=true'] = { ...LIST, shared: 1 }
+    server.answers['GET /api/v1/deadlines?done=true&shared=true'] = { ...LIST, shared: 1 }
+    await page.show(<DeadlinesPage />, '/fristen')
+    await page.click(page.button('Darf weg 2'))
+    await page.click(page.button('Einzeln geteilt'))
+    expect(page.text).not.toContain('Gehaltsabrechnungen 2013')
+    expect(page.text).toContain('Nichts, dessen Aufbewahrungszeit um ist.')
+    expect(plain(page.button('Darf weg 2')!.textContent)).toBe('Darf weg 2')
+    expect(server.calls.some((c) => c.url.startsWith('/api/v1/keeping?vault_id'))).toBe(false)
+  })
+
+  it('is not there when nothing may go, and nothing is asked of the trash by the page itself', async () => {
+    server.answers['GET /api/v1/keeping?limit=500'] = { items: [], total: 0 }
+    await page.show(<DeadlinesPage />, '/fristen')
+    expect(page.button('Darf weg')).toBeUndefined()
+    expect(sections()).toEqual(['Überfällig1', 'Nächste 14 Tage2', 'Später1'])
+    expect(server.changes()).toEqual([])
+  })
+
+  it('stays below the empty card when no deadline is open', async () => {
+    server.answers['GET /api/v1/deadlines?done=true'] = { ...LIST, overdue: { total: 0, items: [] }, soon: { total: 0, items: [] }, later: { total: 0, items: [] }, done: { total: 0, items: [] } }
+    await page.show(<DeadlinesPage />, '/fristen')
+    expect(page.text).toContain('Nichts offen')
+    expect(sections()).toEqual(['Darf weg 2'])
+  })
+
+  it('puts the picked ones in the trash only after the question', async () => {
+    await page.show(<DeadlinesPage />, '/fristen')
+    await page.click(page.button('Darf weg 2'))
+    await page.check(page.box.querySelector<HTMLInputElement>('input[aria-label="Gehaltsabrechnungen 2013 auswählen"]'))
+    await page.click(page.button('In den Papierkorb (1)'))
+    expect(server.changes()).toEqual([])
+    expect(plain(page.dialog!.textContent)).toContain('1 Dokument in den Papierkorb?')
+    await page.inDialog('In den Papierkorb')
+    expect(server.called('POST', '/api/v1/documents/trash')!.body).toEqual({ ids: [21] })
   })
 })
 

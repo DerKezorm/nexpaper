@@ -12,6 +12,8 @@
 * ``frist:offen`` / ``deadline:open``, ``frist:überfällig`` / ``deadline:overdue``, ``frist:erledigt`` /
   ``deadline:done``, ``frist:<30`` / ``deadline:<30``: a deadline of the document that is open, overdue, done, or
   open and due within that many days (overdue ones included; ``services/deadlines.py``).
+* ``aufbewahren:abgelaufen`` / ``keep:expired``: the keeping time is over (``aufbewahren:läuft`` / ``keep:running``:
+  it is not over yet); another word finds nothing.
 
 Nothing a person types reaches SQL or FTS5 as syntax: every word is cut into the tokens FTS5 itself would make and
 handed over inside double quotes, so ``NEAR``, ``*``, ``-``, ``(``, ``^`` and quotes are just characters. Filters are
@@ -45,6 +47,10 @@ KIND_KEYS = ("art", "kind")
 SENDER_KEYS = ("absender", "sender")
 TAG_KEYS = ("tag",)
 AMOUNT_KEYS = ("betrag", "amount")
+KEEP_KEYS = ("aufbewahren", "keep")
+#: The words of ``aufbewahren:`` / ``keep:`` (folded) and what they ask for; any other word asks for ``none``.
+KEEP_WORDS = {"abgelaufen": "expired", "expired": "expired", "laeuft": "running", "lauft": "running",
+              "running": "running"}
 DEADLINE_KEYS = ("frist", "deadline")
 #: What ``frist:`` takes, in both languages, and the most days of ``frist:<n``.
 DEADLINE_WORDS = {"offen": "open", "open": "open", "überfällig": "overdue", "ueberfaellig": "overdue",
@@ -108,6 +114,8 @@ class Query:
     senders: list[str] = field(default_factory=list)
     tags: list[str] = field(default_factory=list)
     amounts: list[Amount] = field(default_factory=list)
+    #: ``expired``, ``running`` or ``none`` (a word the search does not know: nothing is found).
+    keeps: list[str] = field(default_factory=list)
     #: ``open``, ``overdue``, ``done``, or a number of days (``frist:<30``).
     deadlines: list[str | int] = field(default_factory=list)
 
@@ -117,7 +125,8 @@ class Query:
 
     @property
     def empty(self) -> bool:
-        return not (self.has_text or self.kinds or self.senders or self.tags or self.amounts or self.deadlines)
+        return not (self.has_text or self.kinds or self.senders or self.tags or self.amounts or self.deadlines
+                    or self.keeps)
 
     def patterns(self) -> list[str]:
         """Regular expressions for the places a hit is marked at, as the index finds them: a word of
@@ -209,6 +218,10 @@ def parse(raw: str) -> Query:
             if name in DEADLINE_KEYS:
                 if clean:
                     query.deadlines.append(_deadline(clean))
+                continue
+            if name in KEEP_KEYS:
+                if clean:
+                    query.keeps.append(KEEP_WORDS.get(fold(clean), "none"))
                 continue
             if name in KIND_KEYS + SENDER_KEYS + TAG_KEYS:
                 if clean:

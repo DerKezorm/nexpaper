@@ -12,6 +12,7 @@ import { Link } from 'react-router-dom'
 import type { DateKind, DocumentDate, Notice } from '../api/client'
 import { dayInDays, shortDate } from '../lib/dates'
 import { YEAR_FROM, YEAR_TO, expandYear, yearOf } from '../lib/dateInput'
+import { keepUntil } from '../lib/keeping'
 import { addMonths, daysBetween, isDay, lastToCancel, useDayName, whatOfKind } from '../lib/deadlines'
 import { personName } from '../lib/people'
 import { amountText, parseAmount } from '../lib/money'
@@ -22,8 +23,16 @@ import { TagPicker } from './TagPicker'
 const SETTLED_YEAR = 1000
 
 const DATE_KINDS: DateKind[] = ['due', 'contract_end', 'warranty_end', 'keep_until']
-/** A date of a document; a contract may carry its notice period and how many months it renews by. */
-export type DateEntry = { kind: DateKind; date: string; notice?: Notice | null; renew_months?: number | null }
+/** A date of a document; a contract may carry its notice period and how many months it renews by. `manual` only for
+ * `keep_until`: set by hand (`false`: worked out from the kind). */
+export type DateEntry = { kind: DateKind; date: string; notice?: Notice | null; renew_months?: number | null; manual?: boolean }
+/**
+ * What `keep_until` is worked out from (the mock's `Dates`): the kind's name and keeping time, the year the time counts
+ * from, and whether the document is as it was saved (`fresh`: its stored date stands; otherwise a kind or a date was
+ * changed in the draft and the page works the date out itself, as the server will on saving).
+ */
+export type KeepContext = { kindName: string | null; years: number | null; base: number; fresh: boolean }
+const KEEP: DateKind = 'keep_until'
 
 /** A labelled field with where its proposal came from. */
 export function Field({ label, why, children }: { label: string; why?: string; children: ReactNode }) {
@@ -173,11 +182,23 @@ export function TagEditor({ tags, onChange, label, known = [] }: { tags: string[
  * (`dates[n]`, n counted in `dates`) with the value it refused. `done` and `onDone` (the document page): each deadline
  * says whether it is paid, cancelled or claimed, with a button to mark it so or to take that back.
  */
-export function Dates({ dates, onChange, onDraft, start, why, refused, done, onDone }: { dates: DateEntry[]; onChange: (dates: DateEntry[]) => void; onDraft?: (dates: DateEntry[]) => void; start: string | null; why?: string; refused?: { field: string; value: string; kind?: string } | null; done?: Partial<Record<string, DocumentDate['done']>>; onDone?: (kind: DateKind, done: boolean) => void }) {
+export function Dates({ dates, onChange, onDraft, start, why, refused, done, onDone, keep }: { dates: DateEntry[]; onChange: (dates: DateEntry[]) => void; onDraft?: (dates: DateEntry[]) => void; start: string | null; why?: string; refused?: { field: string; value: string; kind?: string } | null; done?: Partial<Record<string, DocumentDate['done']>>; onDone?: (kind: DateKind, done: boolean) => void; keep?: KeepContext }) {
   const { t } = useTranslation()
   const [adding, setAdding] = useState(false)
-  const free = DATE_KINDS.filter((kind) => !dates.some((d) => d.kind === kind))
   const today = dayInDays(0)
+  // "Aufbewahren bis" worked out from the kind: the stored one while nothing it rests on was changed, else the sum.
+  const stored = dates.find((d) => d.kind === KEEP)
+  const fromKind = stored ? stored.manual === false : !!keep?.years
+  const worked = (() => {
+    if (!fromKind || !keep) return null
+    if (stored && keep.fresh) return { date: stored.date, years: Number(stored.date.slice(0, 4)) - keep.base }
+    return keep.years ? { date: keepUntil(keep.base, keep.years), years: keep.years } : null
+  })()
+  const shown = dates.filter((d) => !(d.kind === KEEP && fromKind))
+  const free = DATE_KINDS.filter((kind) => !shown.some((d) => d.kind === kind) && !(kind === KEEP && worked))
+  const yearsText = (years: number) => t('keeping.years', { count: years })
+  const byHand = (day: string): DateEntry => ({ kind: KEEP, date: day, manual: true })
+  const withoutKeep = dates.filter((d) => d.kind !== KEEP)
   const change = (kind: DateKind, patch: Partial<DateEntry>) => onChange(dates.map((d) => (d.kind === kind ? { ...d, ...patch } : d)))
   return (
     <div className="text-sm">
@@ -186,28 +207,61 @@ export function Dates({ dates, onChange, onDraft, start, why, refused, done, onD
         <WhyBadge why={why} />
       </div>
       <div className="mt-1 space-y-2">
-        {[...dates].sort((a, b) => DATE_KINDS.indexOf(a.kind) - DATE_KINDS.indexOf(b.kind)).map((entry) => (
-          <div key={entry.kind}>
+        {[...shown].sort((a, b) => DATE_KINDS.indexOf(a.kind) - DATE_KINDS.indexOf(b.kind)).map((entry) => {
+          // A "keep until" in this list was set by hand: changing it keeps it so.
+          const set = (d: DateEntry, day: string) => (d.kind !== entry.kind ? d : entry.kind === KEEP ? byHand(day) : { ...d, date: day })
+          return (
+            <div key={entry.kind}>
+              <div className="flex items-start gap-2">
+                <span className="w-32 shrink-0 pt-2 text-ink-2">{t(`docs.dateKinds.${entry.kind}`)}</span>
+                <DateInput
+                  value={entry.date}
+                  label={t(`docs.dateKinds.${entry.kind}`)}
+                  // The server counts the terms as they were sent, in the order of the list given here.
+                  refused={refused && (refused.kind ? refused.kind === entry.kind : refused.field === `dates[${dates.findIndex((d) => d.kind === entry.kind)}]`) ? refused.value : undefined}
+                  onChange={onDraft && ((day) => day && onDraft(dates.map((d) => set(d, day))))}
+                  onCommit={(day) => day && onChange(dates.map((d) => set(d, day)))}
+                  className="input h-9 w-full"
+                  wrapperClass="min-w-0 flex-1"
+                />
+                <button type="button" onClick={() => onChange(dates.filter((d) => d.kind !== entry.kind))} className="mt-1.5 rounded-full p-1.5 text-muted hover:bg-sheet-2" aria-label={t('docs.fields.removeDate', { kind: t(`docs.dateKinds.${entry.kind}`) })}>
+                  <X size={14} aria-hidden />
+                </button>
+              </div>
+              {onDone && entry.kind !== KEEP && <DoneLine kind={entry.kind} done={done?.[entry.kind] ?? null} onDone={(on) => onDone(entry.kind, on)} />}
+              {entry.kind === 'contract_end' && <ContractTerms entry={entry} today={today} change={(patch) => change('contract_end', patch)} />}
+              {entry.kind === KEEP && keep?.years && keep.kindName && (
+                <p className="mt-1 pl-34 text-xs text-muted">
+                  {t('keeping.byHandNote')}{' '}
+                  <button type="button" onClick={() => onChange(withoutKeep)} className="font-semibold text-accent hover:underline">
+                    {t('keeping.back', { kind: keep.kindName, years: yearsText(keep.years) })}
+                  </button>
+                </p>
+              )}
+            </div>
+          )
+        })}
+        {worked && keep && (
+          <div>
             <div className="flex items-start gap-2">
-              <span className="w-32 shrink-0 pt-2 text-ink-2">{t(`docs.dateKinds.${entry.kind}`)}</span>
+              <span className="w-32 shrink-0 pt-2 text-ink-2">{t('docs.dateKinds.keep_until')}</span>
               <DateInput
-                value={entry.date}
-                label={t(`docs.dateKinds.${entry.kind}`)}
-                // The server counts the terms as they were sent, in the order of the list given here.
-                refused={refused && (refused.kind ? refused.kind === entry.kind : refused.field === `dates[${dates.findIndex((d) => d.kind === entry.kind)}]`) ? refused.value : undefined}
-                onChange={onDraft && ((day) => day && onDraft(dates.map((d) => (d.kind === entry.kind ? { ...d, date: day } : d))))}
-                onCommit={(day) => day && change(entry.kind, { date: day })}
+                value={worked.date}
+                label={t('docs.dateKinds.keep_until')}
+                refused={refused && stored && (refused.kind ? refused.kind === KEEP : refused.field === `dates[${dates.indexOf(stored)}]`) ? refused.value : undefined}
+                onChange={onDraft && ((day) => day && onDraft([...withoutKeep, byHand(day)]))}
+                onCommit={(day) => day && day !== worked.date && onChange([...withoutKeep, byHand(day)])}
                 className="input h-9 w-full"
                 wrapperClass="min-w-0 flex-1"
               />
-              <button type="button" onClick={() => onChange(dates.filter((d) => d.kind !== entry.kind))} className="mt-1.5 rounded-full p-1.5 text-muted hover:bg-sheet-2" aria-label={t('docs.fields.removeDate', { kind: t(`docs.dateKinds.${entry.kind}`) })}>
-                <X size={14} aria-hidden />
-              </button>
+              <span className="w-7 shrink-0" />
             </div>
-            {onDone && entry.kind !== 'keep_until' && <DoneLine kind={entry.kind} done={done?.[entry.kind] ?? null} onDone={(on) => onDone(entry.kind, on)} />}
-            {entry.kind === 'contract_end' && <ContractTerms entry={entry} today={today} change={(patch) => change('contract_end', patch)} />}
+            <p className="mt-1 pl-34 text-xs text-muted">
+              {t('keeping.fromKind', { kind: keep.kindName ?? '', years: yearsText(worked.years), year: keep.base })}
+              {worked.date < today && <span className="font-semibold text-warn"> {t('keeping.over')}</span>}
+            </p>
           </div>
-        ))}
+        )}
         {adding ? (
           <div className="flex flex-wrap gap-1.5">
             {free.map((kind) => (
@@ -215,7 +269,7 @@ export function Dates({ dates, onChange, onDraft, start, why, refused, done, onD
                 key={kind}
                 onClick={() => {
                   const day = start ?? today
-                  onChange([...dates, kind === 'contract_end' ? { kind, date: day, notice: { n: 3, unit: 'months' }, renew_months: 12 } : { kind, date: day }])
+                  onChange(kind === KEEP ? [...withoutKeep, byHand(day)] : [...dates, kind === 'contract_end' ? { kind, date: day, notice: { n: 3, unit: 'months' }, renew_months: 12 } : { kind, date: day }])
                   setAdding(false)
                 }}
               >

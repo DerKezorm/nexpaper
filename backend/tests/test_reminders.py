@@ -438,8 +438,7 @@ def test_an_english_person_gets_english_words(town: Town) -> None:
     assert message["body"] == "14 days to go. After that the contract renews until Jan 22, 2028."
 
 
-def test_the_weekly_mail_goes_on_monday_only_when_something_comes_up(town: Town, mails: list[EmailMessage],
-                                                                      monkeypatch: pytest.MonkeyPatch) -> None:
+def test_the_weekly_mail_goes_on_monday_only_when_something_comes_up(town: Town, mails: list[EmailMessage]) -> None:
     choose(town.jule, rhythm="weekly")
     monday = Date(2026, 10, 12)
     run(at(monday, 8))
@@ -447,7 +446,8 @@ def test_the_weekly_mail_goes_on_monday_only_when_something_comes_up(town: Town,
     town.add("Nächste", town.mine, town.jule, dates=[("due", monday + 8 * DAY)])
     run(at(monday + DAY, 8))
     assert mails == [], "the week was looked at on Monday"
-    monkeypatch.setattr(reminders, "may_go_count", lambda _db, _uid: 5)
+    for n in range(5):
+        town.add(f"Alt {n}", town.mine, town.jule, dates=[("keep_until", monday - 30 * DAY)])
     run(at(monday + 7 * DAY, 7, 59))
     assert mails == []
     run(at(monday + 7 * DAY, 9))
@@ -459,6 +459,37 @@ def test_the_weekly_mail_goes_on_monday_only_when_something_comes_up(town: Town,
     assert "Guten Morgen jule" in plain
     run(at(monday + 8 * DAY, 8))
     assert len(mails) == 1
+
+
+def test_a_muted_vault_does_not_count_in_the_documents_that_may_go(town: Town, mails: list[EmailMessage]) -> None:
+    choose(town.jule, rhythm="weekly")
+    monday = Date(2026, 10, 12)
+    for n in range(2):
+        town.add(f"Alt {n}", town.mine, town.jule, dates=[("keep_until", monday - 30 * DAY)])
+    for n in range(3):
+        town.add(f"Haus {n}", town.house, town.jule, dates=[("keep_until", monday - 30 * DAY)])
+    # A document of somebody else in the shared vault counts as well; somebody who may only read has none to clear.
+    town.add("Lea", town.house, town.lea, dates=[("keep_until", monday - 30 * DAY)])
+    with SessionLocal() as db:
+        assert reminders.may_go_count(db, town.jule.id, reminders.preferences_of(db, town.jule.id), monday) == 6
+        assert reminders.may_go_count(db, town.lea.id, reminders.preferences_of(db, town.lea.id), monday) == 0
+    choose(town.jule, muted=[town.house])
+    with SessionLocal() as db:
+        assert reminders.may_go_count(db, town.jule.id, reminders.preferences_of(db, town.jule.id), monday) == 2
+    run(at(monday, 9))
+    assert len(mails) == 1
+    plain = mails[0].get_body(("plain",)).get_content()  # type: ignore[union-attr]
+    assert "Bei 2 Dokumenten ist die Aufbewahrungszeit um." in plain
+    assert "Bei 3 " not in plain and "Bei 6 " not in plain and "Bei 5 " not in plain
+
+
+def test_with_every_vault_muted_the_weekly_mail_does_not_mention_what_may_go(town: Town, mails: list[EmailMessage]) -> None:
+    choose(town.jule, rhythm="weekly", muted=[town.house, town.mine])
+    monday = Date(2026, 10, 12)
+    town.add("Alt", town.house, town.jule, dates=[("keep_until", monday - 30 * DAY)])
+    town.add("Alt zwei", town.mine, town.jule, dates=[("keep_until", monday - 30 * DAY)])
+    run(at(monday, 9))
+    assert mails == []
 
 
 def test_the_weekly_mail_missed_on_monday_comes_until_wednesday(town: Town, mails: list[EmailMessage]) -> None:
@@ -820,6 +851,25 @@ def test_a_database_of_schema_11_comes_up_with_the_reminder_tables(scratch: Path
             assert connection.execute(statement).fetchone()[0] == 0
         assert connection.execute("SELECT name FROM vaults").fetchall() == [("Haushalt",)]
         # The one mark of the person that existed: their first look after the update marks the open leads.
+        assert connection.execute("SELECT user_id, stage, date_id FROM reminders_sent").fetchall() == [
+            (1, "seed", None)]
+
+
+def test_a_database_of_schema_12_comes_up_with_the_reminder_tables(scratch: Path) -> None:
+    with closing(sqlite3.connect(scratch)) as connection:
+        connection.executescript((RECORDS / "v12.sql").read_text(encoding="utf-8"))
+        connection.execute("INSERT INTO users (id, name, display_name, whats_new_seen, role, sign_in, password_hash, "
+                           "email, oidc_subject, language, created_at, failed_logins, totp_secret_enc, totp_recovery, "
+                           "totp_last_step) VALUES (1, 'jule', 'Jule', '', 'member', 'password', '', '', '', 'de', "
+                           "'2026-10-01 08:00:00', 0, '', '', 0)")
+        connection.execute("PRAGMA user_version = 12")
+        connection.commit()
+    database.init_db()
+    with closing(sqlite3.connect(scratch)) as connection:
+        assert connection.execute("PRAGMA user_version").fetchone()[0] == database.SCHEMA_VERSION == 13
+        for statement in ("SELECT count(*) FROM reminder_settings", "SELECT count(*) FROM reminder_mutes",
+                          "SELECT count(*) FROM reminders_sent WHERE stage <> 'seed'"):
+            assert connection.execute(statement).fetchone()[0] == 0
         assert connection.execute("SELECT user_id, stage, date_id FROM reminders_sent").fetchall() == [
             (1, "seed", None)]
 

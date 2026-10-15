@@ -33,8 +33,8 @@ already as reminded, without a message. The day itself and "later" go on as ever
 message ("and 14 more") once a day. What is over the limit after that one went waits for the next day.
 
 **The weekly mail** goes on Mondays from ``HOUR`` o'clock (missed: up to ``CATCH_UP_DAYS`` days later), and only when
-something comes up: the deadlines of the week, what is overdue, how many documents may go (block F3; ``may_go_count``
-asks it once it is there). It needs a mail server and a confirmed address, like a reminder by mail.
+something comes up: the deadlines of the week, what is overdue, how many documents may go (``keeping.may_go_count``, the
+muted vaults left out). It needs a mail server and a confirmed address, like a reminder by mail.
 
 **What a message says**: the kind of deadline, its day and the title of the document ("Kündigen bis Mi, 30.09.:
 Handyvertrag"), in the person's language. Never an amount, the text, notes or tags. A tap opens the document.
@@ -44,7 +44,6 @@ from __future__ import annotations
 
 import asyncio
 import html
-import importlib
 import logging
 import os
 from dataclasses import dataclass, field
@@ -73,7 +72,7 @@ from ..models import (
     Share,
     VaultMember,
 )
-from . import changes, deadlines, mailer, notices, push, settings_service, timezones, vaults
+from . import changes, deadlines, keeping, mailer, notices, push, settings_service, timezones, vaults
 
 logger = logging.getLogger("nexpaper.reminders")
 
@@ -531,15 +530,10 @@ def sent_today(db: Session, uid: int, today: Date) -> int:
         ReminderSent.date_id.is_not(None))) or 0)
 
 
-def may_go_count(db: Session, uid: int) -> int:
-    """How many documents of the person may go (their keeping time is over): block F3's ``keeping.may_go_count``
-    once it is there; 0 until then."""
-    try:
-        keeping = importlib.import_module(f"{__package__}.keeping")
-    except ModuleNotFoundError:
-        return 0
-    count = getattr(keeping, "may_go_count", None)
-    return int(count(db, uid)) if callable(count) else 0
+def may_go_count(db: Session, uid: int, prefs: Preferences, today: Date) -> int:
+    """How many documents of the person may go (their keeping time is over), ``keeping.may_go_count`` without the
+    vaults the person muted: a muted vault is not mentioned in the weekly mail, whatever it holds."""
+    return keeping.may_go_count(db, uid, today, where=mute_clauses(uid, prefs))
 
 
 # --- The weekly mail --------------------------------------------------------------------------------------------------
@@ -560,7 +554,7 @@ def week_of(db: Session, uid: int, prefs: Preferences, today: Date) -> Week:
     """What comes up from today to six days on, what is overdue (open, the muted vaults left out), what may go."""
     found = deadlines.open_for(db, uid, today, until=today + timedelta(days=6), where=mute_clauses(uid, prefs))
     return Week(overdue=[d for d in found if d.worked.date < today], week=[d for d in found if d.worked.date >= today],
-                may_go=may_go_count(db, uid))
+                may_go=may_go_count(db, uid, prefs, today))
 
 
 def week_mail(account: Account, week: Week, lang: str, base: str, today: Date) -> EmailMessage:

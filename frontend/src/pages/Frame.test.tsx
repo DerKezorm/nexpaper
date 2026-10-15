@@ -97,6 +97,8 @@ describe('after the sign-in', () => {
     expect(deadlines.textContent).toBe('6')
     expect(deadlines.className).toContain('bg-warn')
     expect(deadlines.getAttribute('title')).toBe('Etwas ist überfällig')
+    // "Darf weg" (the keeping time is over) is no deadline: the menu neither counts it nor even asks for it.
+    expect(calls.some((c) => c.url.startsWith('/api/v1/keeping'))).toBe(false)
     // The phone's bar: five, the deadlines instead of Order.
     const bar = box.querySelector('main ~ nav')!
     expect([...bar.querySelectorAll('a')].map((a) => a.getAttribute('href'))).toEqual(['/eingang', '/', '/fristen', '/tresore', '/papierkorb'])
