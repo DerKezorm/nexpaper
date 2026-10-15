@@ -1,4 +1,31 @@
 {
+  "1.4.0": {
+    "lead": "Deadlines on a page of their own, reminders for invoices, cancellations and warranties, and a keeping time for every kind.",
+    "sections": [
+      {
+        "title": "Deadlines in one place",
+        "where": "Deadlines, Document, Inbox",
+        "body": "The menu now has Deadlines, between Archive and Vaults, with the number for the next 14 days. The page shows what has to be paid, cancelled or claimed under a warranty, from all vaults where you may edit: what is overdue, the next two weeks, and what comes later. A deadline can be marked as done (paid, cancelled) and opened again, or put off with “Later” for you alone to tomorrow, in three days or in a week. For a contract you enter the notice period and the renewal: nexpaper works out the last day to cancel and shows it beside the field, and without a cancellation “Contract until” moves on by itself after it has run out. When a cancellation has to arrive is written in the contract; nexpaper only does the sums."
+      },
+      {
+        "title": "Reminders by push and mail",
+        "where": "My account, Reminders",
+        "body": "nexpaper now reminds you in good time: of an invoice that falls due three days ahead, of the last day to cancel 14 days ahead, of a warranty that runs out 30 days ahead, each once more on the day itself, at 8 in the morning in your time zone. How early, whether by push to the phone or by mail, whether one by one, once a week or both, you set under My account, Reminders. There you can also mute single vaults, and a test message shows that everything arrives. The weekly overview comes on Mondays at 8 by mail and only when something is coming up. Everybody who may edit in the vault is reminded; somebody who only reads gets nothing. The message holds the kind, the date and the title of the document, never the amount, the text or the notes. From the start, reminders come one by one by push; mail and the weekly overview are off."
+      },
+      {
+        "title": "Keeping times for kinds",
+        "where": "Organise, Kinds",
+        "body": "Every kind can get a keeping time in years, in the column “Keep”. The kinds of the server are kept by the operator, those of a vault by whoever manages it. From the start no kind has one. Years are counted from the end of the year in the document date, and nexpaper asks whether the time should also apply to the documents that are already there; what was set by hand stays. When the time is over, the document appears on the Deadlines page under “May go”. nexpaper never deletes by itself: you choose what goes to the trash, where it stays for another 30 days. The usual times it names are a help without guarantee and no legal advice."
+      }
+    ],
+    "smallTitle": "Also",
+    "small": [
+      "Before the update: make a backup. nexpaper makes one itself before it changes the database, but after that no older version opens this database any more; the way back is only through the backup.",
+      "Deadlines that are already entered cause no flood of reminders at the first start: what was inside its lead before is not reminded again, the day itself is still announced. A “Keep until” that exists already counts as set by hand.",
+      "New search words: `deadline:open`, `deadline:overdue`, `deadline:<30` (the next open deadline in less than 30 days) and `keep:expired`, plus a “Deadline” filter in the archive. The export for the tax adviser names the deadlines and “Keep until” in its list.",
+      "For programs: `GET /api/v1/deadlines`, the keeping time of kinds under `/api/v1/kinds/{id}/keeping` and the settings under `/api/v1/me/reminders`. `GET /api/v1/dashboard` also names the last day to cancel as `notice` and leaves out what is done."
+    ]
+  },
   "1.3.0": {
     "lead": "Titles that say more, your own instructions for the AI, and an intake folder that may lie anywhere in the container.",
     "sections": [

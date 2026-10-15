@@ -13,6 +13,11 @@ over what you already have in Paperless-ngx.
   checksum. The search understands parts of words and filters (`kind:invoice amount:>100`).
 - **Tools for pages.** Turn, delete and order pages, join documents, split a stack at blank separator sheets. Every
   change is a new version; nothing is overwritten.
+- **Deadlines and reminders.** What has to be paid, cancelled or claimed under a warranty stands on one page, with the
+  last day to cancel worked out from the notice period. nexpaper reminds the people who may edit the vault, by push, by
+  mail or in a weekly overview, each reminder once.
+- **Keeping times.** A kind can say how many years its documents are kept. When the time is over the document shows up
+  as "may go"; nexpaper never deletes anything by itself.
 - **For small firms.** E-invoices (ZUGFeRD, Factur-X, XRechnung) are read from their data, there is a history of who
   changed what, and an export for the tax adviser (a ZIP with the PDFs and a list). No claim of GoBD compliance.
 - **No Redis, no Celery, no Postgres.** One container, SQLite, plain readable files on the disk.
@@ -252,6 +257,13 @@ needs doing by hand. The way back is under Settings, Backups.
 Going back from 1.1.0 to 1.0.1: there, the sign-in through the provider works only if its entry had "The provider
 checks the second factor itself" on; otherwise only the password does. Coming up to 1.1.0 again brings everything back.
 
+**From 1.4.0 on there is no way back to an older version.** 1.4.0 changes the database (schema 11 to 13: deadlines,
+keeping times, reminders), and an older nexpaper does not open it: it stops at the start with a message that the
+database is newer. That includes going back to 1.1.0 or 1.0.1, which was possible until 1.3.0. Make a backup before you
+update (Settings, Backups; nexpaper also makes one itself before it changes the database). The only way back is to
+restore that backup with the older version, and what was entered after the update is lost with it. The first start after
+the update sends no wave of reminders for deadlines that were entered before.
+
 ## Environment
 
 | Variable | Default | Meaning |
@@ -307,6 +319,32 @@ XRechnung) are read from their data, with limits on the size and the shape of th
 Everything that deletes or locks out asks first, and says whether it can be undone (a document in the trash stays 30
 days and can be brought back; one deleted for good, a key, a link or a device that is locked out cannot).
 
+## Deadlines, reminders and keeping times
+
+Dates on a document come with a kind: due, contract until, warranty until, keep until. The **Deadlines** page (between
+Archive and Vaults, with the number for the next 14 days) lists what falls due, what has to be cancelled and what a
+warranty still covers, from every vault where you may edit: overdue, the next two weeks, later. A deadline can be marked
+as done (paid, cancelled) and opened again, or put off for you alone by a day, three days or a week.
+
+- **Contracts.** Besides "contract until" a contract has a **notice period** (weeks or months) and a **renewal** (months).
+  nexpaper works out the last day to cancel and shows it beside the field. Without a cancellation the end moves on by the
+  renewal after it has passed, once per end, with a line in the history. When a notice has to arrive is written in the
+  contract; nexpaper only does the sums.
+- **Reminders** (My account, Reminders). Everybody who may edit in a vault is reminded of its deadlines, at 8 in the
+  morning in their own time zone: an invoice 3 days ahead, the last day to cancel 14 days ahead, a warranty 30 days
+  ahead (each changeable), and once more on the day itself unless it is done. Way: push, mail, or a **weekly overview**
+  by mail on Mondays, only when something is coming up. A person can mute single vaults; somebody who may only read gets
+  nothing. Every reminder goes out once, a missed one is made up for two days, and at most 20 a day go to one person, the
+  rest in one message. It names the kind, the day and the title of the document, never the amount, the text or the notes.
+  Mail needs the mail server of the operator and a confirmed address.
+- **Keeping times** (Organise, Kinds, column "Keep"). A kind can have a time in years, counted from the end of the year
+  of the document date; no kind has one from the start. Setting it asks whether it also applies to the documents already
+  there (a date set by hand stays). Documents whose time is over are listed on the Deadlines page under "May go", where
+  you choose what goes to the trash (30 days, see Filing). The usual times shown beside the setting are a help and carry
+  no guarantee; nexpaper makes no claim of GoBD compliance or legal advice.
+- Search words: `deadline:open`, `deadline:overdue`, `deadline:<30`, `keep:expired`. The same data is open to programs
+  (`docs/api.md`).
+
 ## Push
 
 Notices arrive by Web Push, to every device a person signs up (My account, Devices and apps): of a new sign-in, of an
@@ -314,7 +352,8 @@ export that is ready or failed or a finished import from Paperless, of a second 
 the operator unlinked from a sign-in provider; operators also hear when the check of the files finds something wrong or
 a restore fails. It needs https (or localhost). On an iPhone it works only for the app added to the home screen (Share,
 Add to Home Screen) and only from iOS 16.4. The server makes its own keys; the operator can add a contact and further
-push services. A push never carries the content of a document.
+push services. A push never carries the content of a document; a reminder of a deadline names only its kind, its day and
+the title (see Deadlines, reminders and keeping times).
 
 ## On the phone
 

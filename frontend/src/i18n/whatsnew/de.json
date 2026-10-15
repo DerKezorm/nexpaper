@@ -1,4 +1,31 @@
 {
+  "1.4.0": {
+    "lead": "Fristen mit eigener Seite, Erinnerungen an Rechnungen, Kündigungen und Garantien, und eine Aufbewahrungsfrist je Art.",
+    "sections": [
+      {
+        "title": "Fristen an einem Ort",
+        "where": "Fristen, Dokument, Eingang",
+        "body": "Im Menü steht jetzt Fristen, zwischen Archiv und Tresore, mit der Zahl für die nächsten 14 Tage. Die Seite zeigt, was bezahlt, gekündigt oder bei der Garantie gemeldet werden muss, aus allen Tresoren, in denen du bearbeiten darfst: Überfälliges, die nächsten zwei Wochen und was später kommt. Eine Frist lässt sich als erledigt markieren (bezahlt, gekündigt) und wieder öffnen, oder mit „Später“ für dich auf morgen, in drei Tagen oder in einer Woche schieben. Bei einem Vertrag trägst du Kündigungsfrist und Verlängerung ein: nexpaper rechnet den letzten Kündigungstag aus und zeigt ihn neben dem Feld, und ohne Kündigung rückt „Vertrag bis“ nach dem Ablauf von selbst weiter. Wann eine Kündigung ankommen muss, steht im Vertrag; nexpaper rechnet nur nach."
+      },
+      {
+        "title": "Erinnerungen per Push und Mail",
+        "where": "Mein Konto, Erinnerungen",
+        "body": "nexpaper erinnert jetzt rechtzeitig: an eine fällige Rechnung drei Tage vorher, an den letzten Kündigungstag 14 Tage vorher, an eine ablaufende Garantie 30 Tage vorher, jeweils noch einmal am Tag selbst, um 8 Uhr in deiner Zeitzone. Wie früh, ob per Push aufs Handy oder per Mail, ob einzeln, einmal die Woche oder beides, stellst du unter Mein Konto, Erinnerungen ein. Dort lassen sich auch einzelne Tresore stumm schalten, und eine Testnachricht zeigt, dass alles ankommt. Die Wochenübersicht kommt montags um 8 Uhr per Mail und nur, wenn etwas ansteht. Erinnert werden alle, die im Tresor bearbeiten dürfen; wer nur liest, bekommt nichts. In der Nachricht stehen Art, Datum und Titel des Dokuments, nie Betrag, Text oder Notizen. Ab Werk kommen Erinnerungen einzeln per Push, Mail und Wochenübersicht sind aus."
+      },
+      {
+        "title": "Aufbewahrung je Art",
+        "where": "Ordnung, Arten",
+        "body": "Jede Art kann eine Aufbewahrungsfrist in Jahren bekommen, in der Spalte „Aufbewahren“ (die Arten des Servers pflegt der Betreiber, die eines Tresors, wer ihn verwaltet). Ab Werk hat keine Art eine Frist. Gezählt wird ab dem Ende des Jahres im Dokumentdatum, und nexpaper fragt, ob die Frist auch für die schon vorhandenen Dokumente gelten soll; was von Hand gesetzt wurde, bleibt. Ist die Zeit um, steht das Dokument auf der Seite Fristen unter „Darf weg“. nexpaper löscht nie von selbst: du wählst aus, was in den Papierkorb soll, und dort bleibt es noch 30 Tage. Die genannten üblichen Fristen sind eine Hilfe ohne Gewähr und keine Rechtsauskunft."
+      }
+    ],
+    "smallTitle": "Außerdem",
+    "small": [
+      "Vor dem Update: Mach eine Sicherung. nexpaper legt vor dem Umbau der Datenbank zwar selbst eine an, aber danach öffnet keine ältere Fassung diese Datenbank mehr; der Rückweg geht nur über die Sicherung.",
+      "Schon eingetragene Fristen lösen beim ersten Start keine Welle von Erinnerungen aus: Wer vorher schon im Vorlauf stand, wird nicht noch einmal gemahnt, der Tag selbst wird weiter gemeldet. Ein schon vorhandenes „Aufbewahren bis“ gilt als von Hand gesetzt.",
+      "Neue Suchwörter: `frist:offen`, `frist:überfällig`, `frist:<30` (die nächste offene Frist in weniger als 30 Tagen) und `aufbewahren:abgelaufen`, dazu ein Filter „Frist“ im Archiv. Der Export für den Steuerberater nennt die Fristen und „Aufbewahren bis“ in der Liste.",
+      "Für Programme: `GET /api/v1/deadlines`, die Aufbewahrung der Arten unter `/api/v1/kinds/{id}/keeping` und die Einstellungen unter `/api/v1/me/reminders`. `GET /api/v1/dashboard` nennt zusätzlich den letzten Kündigungstag als `notice` und lässt Erledigtes weg."
+    ]
+  },
   "1.3.0": {
     "lead": "Titel, die mehr sagen, eigene Anweisungen an die KI und ein Eingangsordner, der im Container überall liegen darf.",
     "sections": [
