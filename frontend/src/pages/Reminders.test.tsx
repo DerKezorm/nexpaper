@@ -8,14 +8,14 @@ import { act } from 'react'
 import type { Deadline, Me, Reminders } from '../api/client'
 import { changeLanguage } from '../i18n'
 import { Page, Server, plain } from '../test/harness'
-import { idle } from '../test/wait'
+import { idle, until } from '../test/wait'
 import { AccountPage } from './AccountPage'
 import { DeadlinesPage } from './DeadlinesPage'
 
 const me: Me = {
   id: 1, name: 'jule', display_name: 'Jule', role: 'member', sign_in: 'password', email: 'jule@example.com', language: 'de', email_confirmed: true,
   email_pending: '', oidc_linked: false, two_factor: true, totp: true, passkeys: 0, two_factor_recovery_left: 8, avatar: null, version: '0.0.1',
-  whats_new_seen: '0.0.1', session_stage: 'full', profile: { mode: 'system', quick_start: true, view: 'list', default_vault: null, timezone: 'Europe/Berlin', timezone_source: 'browser', ai: true, notify_login: true },
+  whats_new_seen: '0.0.1', session_stage: 'full', profile: { mode: 'system', quick_start: true, view: 'list', default_vault: null, timezone: 'Europe/Berlin', timezone_source: 'browser', ai: true, notify_login: true, deadlines: true },
 }
 const auth = { status: 'signedIn', me: me as Me | null, setMe: vi.fn(), refresh: vi.fn(async () => undefined), signOut: vi.fn(async () => undefined) }
 vi.mock('../state/auth', () => ({ useAuth: () => auth }))
@@ -24,6 +24,7 @@ const server = new Server()
 const page = new Page()
 
 const BASE: Reminders = {
+  deadlines: true, trashed: 0,
   rhythm: 'single', push: true, mail: false, lead: { due: 3, cancel: 14, warranty: 30 }, same_day: true, muted: [], muted_shared: false,
   options: { due: [1, 3, 7, 14], cancel: [7, 14, 30, 60], warranty: [7, 14, 30, 60] }, hour: 8, time_zone: 'Europe/Berlin', push_devices: 2,
   mail_address: 'jule@example.com', mail_problem: null,
@@ -59,6 +60,8 @@ function answer(r: Partial<Reminders> = {}): void {
 
 beforeEach(async () => {
   await changeLanguage('de', false)
+  auth.me = me
+  auth.setMe.mockClear()
   server.answers = {
     'GET /api/v1/deadlines?limit=50': LIST,
     'GET /api/v1/deadlines?done=true': { ...LIST, done: { total: 0, items: [] } },
@@ -84,7 +87,7 @@ describe('my account, reminders', () => {
   it('has the four cards of the mock with the choices from the start', async () => {
     await page.show(<AccountPage />, '/konto?tab=erinnerungen')
     expect(page.box.querySelector('[role="tab"][aria-selected="true"]')!.textContent).toContain('Erinnerungen')
-    expect(cards()).toEqual(['Wie du erinnert wirst', 'Wie früh', 'Welche Tresore', 'So sieht es aus'])
+    expect(cards()).toEqual(['Fristen verwenden', 'Wie du erinnert wirst', 'Wie früh', 'Welche Tresore', 'So sieht es aus'])
     expect(page.text).toContain('Je Frist eine Nachricht, so früh wie unten eingestellt.')
     expect(toggle('Push aufs Handy und in den Browser')!.getAttribute('aria-checked')).toBe('true')
     expect(page.text).toContain('Auf 2 Geräten eingeschaltet. Tippen öffnet das Dokument.')
@@ -117,6 +120,19 @@ describe('my account, reminders', () => {
     answer({ may_go: 1 })
     await page.show(<AccountPage />, '/konto?tab=erinnerungen')
     expect(page.text).toContain('Bei einem Dokument ist die Aufbewahrungszeit um.')
+  })
+
+  it('says in the preview what nexpaper put in the trash by itself in the last week', async () => {
+    await page.show(<AccountPage />, '/konto?tab=erinnerungen')
+    expect(page.text).not.toContain('hat nexpaper in den Papierkorb gelegt')
+    page.close()
+    answer({ trashed: 3 })
+    await page.show(<AccountPage />, '/konto?tab=erinnerungen')
+    expect(page.text).toContain('3 Dokumente hat nexpaper in den Papierkorb gelegt, ihre Aufbewahrungszeit war um. Dort lassen sie sich 30 Tage zurückholen.')
+    page.close()
+    answer({ trashed: 1 })
+    await page.show(<AccountPage />, '/konto?tab=erinnerungen')
+    expect(page.text).toContain('Ein Dokument hat nexpaper in den Papierkorb gelegt')
   })
 
   it('sends only what changed, at once', async () => {
@@ -152,7 +168,7 @@ describe('my account, reminders', () => {
     expect(page.text).toContain('Die Wochenübersicht geht per Mail an jule@example.com.')
     expect(page.text).toContain('Montags um 8 Uhr eine Mail mit allem, was in dieser Woche ansteht.')
     expect(toggle('Push aufs Handy und in den Browser')).toBeNull()
-    expect(cards()).toEqual(['Wie du erinnert wirst', 'Welche Tresore', 'So sieht es aus'])
+    expect(cards()).toEqual(['Fristen verwenden', 'Wie du erinnert wirst', 'Welche Tresore', 'So sieht es aus'])
   })
 
   it('warns when no single reminder can reach the person', async () => {
@@ -178,12 +194,74 @@ describe('my account, reminders', () => {
   it('comes in English too', async () => {
     await changeLanguage('en', false)
     await page.show(<AccountPage />, '/konto?tab=erinnerungen')
-    expect(cards()).toEqual(['How you are reminded', 'How early', 'Which vaults', 'What it looks like'])
+    expect(cards()).toEqual(['Use deadlines', 'How you are reminded', 'How early', 'Which vaults', 'What it looks like'])
     expect(page.text).toContain('Cancel by Thu, Oct 22: Handyvertrag Telekom')
     page.close()
     answer({ may_go: 2 })
     await page.show(<AccountPage />, '/konto?tab=erinnerungen')
     expect(page.text).toContain('The keeping time of 2 documents is over.')
+  })
+})
+
+describe('deadlines on or off for the person', () => {
+  const off = { ...me, profile: { ...me.profile, deadlines: false } } as Me
+
+  it('is on from the start, with a switch at the top that asks before it switches off', async () => {
+    server.answers['PUT /api/v1/me/preferences'] = { ...me.profile, deadlines: false }
+    await page.show(<AccountPage />, '/konto?tab=erinnerungen')
+    expect(toggle('Fristen verwenden')!.getAttribute('aria-checked')).toBe('true')
+    expect(page.text).toContain('Gilt nur für dich. Die anderen im Haushalt behalten ihre Einstellungen.')
+    await page.click(toggle('Fristen verwenden'))
+    await until(() => page.dialog)
+    expect(plain(page.dialog!.textContent)).toContain('Fristen ausschalten?')
+    expect(plain(page.dialog!.textContent)).toContain('Die Termine an den Dokumenten bleiben.')
+    // Nothing was sent, and Abbrechen sends nothing either.
+    expect(server.changes()).toEqual([])
+    await page.inDialog('Abbrechen')
+    expect(server.changes()).toEqual([])
+    expect(auth.setMe).not.toHaveBeenCalled()
+    await page.click(toggle('Fristen verwenden'))
+    await until(() => page.dialog)
+    await page.inDialog('Ausschalten')
+    await until(() => server.called('PUT', '/api/v1/me/preferences'))
+    expect(server.called('PUT', '/api/v1/me/preferences')!.body).toEqual({ deadlines: false })
+    expect(server.changes()).toEqual(['PUT /api/v1/me/preferences'])
+    expect(auth.setMe).toHaveBeenCalledWith(expect.objectContaining({ profile: expect.objectContaining({ deadlines: false }) }))
+  })
+
+  it('says that deadlines are off, with the way to switch them on again, and nothing else', async () => {
+    auth.me = off
+    server.answers['PUT /api/v1/me/preferences'] = { ...me.profile, deadlines: true }
+    await page.show(<AccountPage />, '/konto?tab=erinnerungen')
+    expect(cards()).toEqual(['Fristen sind aus'])
+    expect(page.text).toContain('Im Menü steht kein Punkt Fristen, du bekommst keine Erinnerungen und keine Wochenübersicht.')
+    expect(page.text).toContain('Die Termine an den Dokumenten bleiben, und die anderen Personen sind nicht betroffen.')
+    expect(toggle('Fristen verwenden')).toBeNull()
+    expect(page.button('Testnachricht schicken')).toBeUndefined()
+    // Switching on needs no question; it goes back to the choices.
+    await page.click(page.button('Fristen einschalten'))
+    expect(server.called('PUT', '/api/v1/me/preferences')!.body).toEqual({ deadlines: true })
+    expect(auth.setMe).toHaveBeenCalledWith(expect.objectContaining({ profile: expect.objectContaining({ deadlines: true }) }))
+    auth.me = me
+  })
+
+  it('shows a refusal of the server and stays as it is', async () => {
+    server.fails['PUT /api/v1/me/preferences'] = { status: 422, code: 'bad_preference' }
+    await page.show(<AccountPage />, '/konto?tab=erinnerungen')
+    await page.click(toggle('Fristen verwenden'))
+    await until(() => page.dialog)
+    await page.inDialog('Ausschalten')
+    expect(auth.setMe).not.toHaveBeenCalled()
+    expect(plain(page.dialog!.textContent)).toContain('Diesen Wert bietet nexpaper nicht an.')
+  })
+
+  it('reads the same in English', async () => {
+    await changeLanguage('en', false)
+    auth.me = off
+    await page.show(<AccountPage />, '/konto?tab=erinnerungen')
+    expect(cards()).toEqual(['Deadlines are off'])
+    expect(page.button('Switch deadlines on')).toBeTruthy()
+    auth.me = me
   })
 })
 

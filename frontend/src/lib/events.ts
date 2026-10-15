@@ -94,6 +94,9 @@ export function eventWhat(event: DocumentEvent, t: TFunction, context: EventCont
       return t('docs.events.linkCopied')
     case 'trashed':
       return t('docs.events.trashed')
+    case 'auto_trashed':
+      // nexpaper itself put it there: its keeping time was over (D4, a kind with "expired ones into the trash by themselves").
+      return typeof detail.keep_until === 'string' ? t('docs.events.autoTrashed', { date: shortDate(detail.keep_until, i18n.language) }) : t('docs.events.something')
     case 'restored':
       return t('docs.events.restored')
     case 'note_added':

@@ -4,7 +4,9 @@ import { useTranslation } from 'react-i18next'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 
 import { inboxApi } from '../api/client'
+import { usesDeadlines } from '../lib/deadlines'
 import { INBOX_CHANGED, type NoticeLink } from '../lib/say'
+import { useAuth } from '../state/auth'
 import { AccountMenu } from './AccountMenu'
 import { Wordmark } from './Logo'
 import { CameraLink, DropSheet, UploadButton, UploadPanel, UploadRound } from './UploadPanel'
@@ -49,7 +51,8 @@ function Toast() {
 }
 
 /** The menu items of the mock, with "Fristen" after the archive. On the phone the bottom bar has room for five: "Ordnung"
- * moves into the account menu there (`phone: false`). */
+ * moves into the account menu there (`phone: false`). Whoever switched deadlines off has no "Fristen", and "Ordnung"
+ * takes its place in the bar (`menuFor`). */
 const NAV = [
   { to: '/eingang', label: 'app.inbox', icon: Inbox, phone: true },
   { to: '/', label: 'app.archive', icon: Archive, phone: true },
@@ -58,6 +61,10 @@ const NAV = [
   { to: '/ordnung', label: 'order.menu', icon: ListTree, phone: false },
   { to: '/papierkorb', label: 'app.trash', icon: Trash2, phone: true },
 ]
+/** The menu of a person: without deadlines no "Fristen", and the bar of the phone shows "Ordnung" again. */
+function menuFor(deadlines: boolean) {
+  return deadlines ? NAV : NAV.filter((item) => item.to !== '/fristen').map((item) => (item.to === '/ordnung' ? { ...item, phone: true } : item))
+}
 /** How often the menu asks again how much waits in the inbox (besides after every change the app makes itself). */
 const COUNT_EVERY_MS = 60_000
 
@@ -103,6 +110,8 @@ export function AppShell() {
 
 function Frame({ t }: { t: (key: string) => string }) {
   const counts = useMenuCounts()
+  const { me } = useAuth()
+  const items = menuFor(usesDeadlines(me))
   const badge = (to: string) => (to === '/eingang' ? counts.inbox : to === '/papierkorb' ? counts.trash : to === '/fristen' ? counts.deadlines : 0)
   const deadlineBadge = counts.overdue ? 'bg-warn text-paper' : 'bg-accent text-accent-ink'
   return (
@@ -114,7 +123,7 @@ function Frame({ t }: { t: (key: string) => string }) {
         <UploadButton />
         <CameraLink />
         <nav className="mt-5 space-y-1" aria-label={t('app.mainMenu')}>
-          {NAV.map(({ to, label, icon: Icon }) => (
+          {items.map(({ to, label, icon: Icon }) => (
             <NavLink
               key={to}
               to={to}
@@ -153,7 +162,7 @@ function Frame({ t }: { t: (key: string) => string }) {
       </main>
 
       <nav className="fixed inset-x-0 bottom-0 z-30 flex border-t border-line bg-sheet/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden" aria-label={t('app.mainMenu')}>
-        {NAV.filter((n) => n.phone).map(({ to, label, icon: Icon }) => (
+        {items.filter((n) => n.phone).map(({ to, label, icon: Icon }) => (
           <NavLink key={to} to={to} end={to === '/'} className={({ isActive }) => `relative flex flex-1 flex-col items-center gap-0.5 py-2.5 text-[0.7rem] font-bold ${isActive ? 'text-accent' : 'text-muted'}`}>
             <Icon size={21} aria-hidden /> {t(label)}
             {to === '/eingang' && badge(to) > 0 && <span className="absolute top-1.5 left-1/2 ml-2 rounded-full bg-accent px-1 text-[0.6rem] text-accent-ink">{badge(to)}</span>}

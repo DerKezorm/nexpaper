@@ -3,6 +3,7 @@ import { Navigate, Outlet, Route, Routes, useLocation, useNavigate } from 'react
 
 import { inboxApi } from './api/client'
 import { AppShell } from './components/AppShell'
+import { usesDeadlines } from './lib/deadlines'
 import { AboutPage } from './pages/AboutPage'
 import { AccountPage } from './pages/AccountPage'
 import { ForgotPage, InvitePage, LoginPage, MailConfirmPage, ResetPage, SenderConfirmPage, SetupPage } from './pages/AuthPages'
@@ -20,6 +21,13 @@ import { TrashPage } from './pages/TrashPage'
 import { VaultsPage } from './pages/VaultsPage'
 import { useAuth } from './state/auth'
 import { UploadProvider } from './state/uploads'
+
+/** The page "Fristen", for somebody who uses deadlines; whoever switched them off (My account, Reminders) lands in the
+ * archive, also from an old link. */
+function DeadlinesRoute() {
+  const { me } = useAuth()
+  return usesDeadlines(me) ? <DeadlinesPage /> : <Navigate to="/" replace />
+}
 
 /** The camera and its edge finder load only on its own page (a chunk of its own; OpenCV comes in its worker). */
 const CameraPage = lazy(() => import('./pages/CameraPage'))
@@ -136,7 +144,7 @@ export default function App() {
           <Route path="eingang" element={<InboxPage />} />
           <Route path="eingang/:id" element={<InboxPage />} />
           <Route path="dokument/:id" element={<DocumentPage />} />
-          <Route path="fristen" element={<DeadlinesPage />} />
+          <Route path="fristen" element={<DeadlinesRoute />} />
           <Route path="papierkorb" element={<TrashPage />} />
           <Route path="tresore" element={<VaultsPage />} />
           <Route path="ordnung" element={<OrderPage />} />

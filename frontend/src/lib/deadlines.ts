@@ -5,8 +5,14 @@
  */
 import { useTranslation } from 'react-i18next'
 
-import type { DeadlineKind, DeadlineWhat, Notice } from '../api/client'
+import type { DeadlineKind, DeadlineWhat, Me, Notice } from '../api/client'
 import { shortDate } from './dates'
+
+/** Whether the person uses deadlines (My account, Reminders; on from the start). Off, the menu has no "Fristen", the
+ * archive no filter "Frist" and a document no "paid" or "later"; the dates themselves stay on the documents. */
+export function usesDeadlines(me: { profile?: Pick<Me['profile'], 'deadlines'> } | null | undefined): boolean {
+  return me?.profile?.deadlines !== false
+}
 
 function parse(day: string): Date {
   const [y, m, d] = day.split('-').map(Number)

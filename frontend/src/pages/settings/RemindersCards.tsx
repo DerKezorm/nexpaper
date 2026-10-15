@@ -3,15 +3,17 @@
  * Each person sets it for themselves; who is reminded at all is everybody who may change things in the vault. A change
  * is saved at once. Mail (and the weekly overview, which is a mail) is greyed out with its reason when it cannot go.
  */
-import { Bell, Clock, Eye, FolderLock, Mail, Smartphone } from 'lucide-react'
+import { Bell, CalendarClock, Clock, Eye, FolderLock, Mail, Smartphone } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Trans, useTranslation } from 'react-i18next'
 
-import { deadlinesApi, remindersApi, type Deadline, type Me, type ReminderLead, type Reminders, type RemindersChange } from '../../api/client'
+import { authApi, deadlinesApi, remindersApi, type Deadline, type Me, type ReminderLead, type Reminders, type RemindersChange } from '../../api/client'
 import { LogoMark } from '../../components/Logo'
+import { useConfirm } from '../../components/useConfirm'
 import { VaultIcon } from '../../components/VaultIcon'
-import { weekday } from '../../lib/deadlines'
+import { usesDeadlines, weekday } from '../../lib/deadlines'
 import { useSay } from '../../lib/say'
+import { useAuth } from '../../state/auth'
 import { Button, Card, Feedback, Segment, SubHead, Toggle, useAction } from './ui'
 
 const LEADS: (keyof ReminderLead)[] = ['due', 'cancel', 'warranty']
@@ -32,9 +34,12 @@ function useShortDay(): (day: string) => string {
 export function RemindersPart({ me }: { me: Me }) {
   const { t } = useTranslation()
   const say = useSay()
+  const { setMe } = useAuth()
+  const { ask, dialog } = useConfirm()
   const [r, setR] = useState<Reminders | null>(null)
   const action = useAction()
   const probe = useAction()
+  const on = usesDeadlines(me)
 
   useEffect(() => {
     let alive = true
@@ -47,6 +52,36 @@ export function RemindersPart({ me }: { me: Me }) {
     }
   }, [])
 
+  /** Deadlines for this person on or off (`profile.deadlines`): the menu, the reminders and the weekly mail follow. */
+  const switchDeadlines = async (value: boolean) => {
+    const profile = await authApi.preferences({ deadlines: value })
+    setMe({ ...me, profile })
+    say(t(value ? 'reminders.use.saidOn' : 'reminders.use.saidOff'))
+    if (value) setR(await remindersApi.get())
+  }
+  const askOff = () =>
+    ask({
+      title: t('reminders.use.askTitle'),
+      text: t('reminders.use.askText'),
+      confirm: t('reminders.use.askConfirm'),
+      danger: false,
+      run: () => switchDeadlines(false),
+    })
+
+  // Off: this tab says so and offers to switch them on again; nothing else here would do anything.
+  if (!on) {
+    return (
+      <>
+        <Card icon={CalendarClock} title={t('reminders.use.offTitle')} text={t('reminders.use.offText')}>
+          <Button primary onClick={() => void action.run(() => switchDeadlines(true))} busy={action.busy}>
+            {t('reminders.use.offButton')}
+          </Button>
+          <Feedback problem={action.problem} values={action.values} />
+        </Card>
+        {dialog}
+      </>
+    )
+  }
   if (!r) return null
 
   const save = (change: RemindersChange) => {
@@ -72,6 +107,10 @@ export function RemindersPart({ me }: { me: Me }) {
   const mailWhy = r.mail_problem ? t(`reminders.mailWhy.${r.mail_problem}`) : ''
   return (
     <>
+      <Card icon={CalendarClock} title={t('reminders.use.title')} text={t('reminders.use.text')}>
+        <Toggle label={t('reminders.use.label')} hint={t('reminders.use.hint')} checked onChange={askOff} />
+      </Card>
+
       <Card icon={Bell} title={t('reminders.how.title')} text={t('reminders.how.text')}>
         <SubHead title={t('reminders.when')} />
         <div>
@@ -183,6 +222,7 @@ export function RemindersPart({ me }: { me: Me }) {
       <Card icon={Eye} title={t('reminders.preview.title')} text={t('reminders.preview.text')}>
         <Preview me={me} r={r} />
       </Card>
+      {dialog}
     </>
   )
 }
@@ -275,6 +315,12 @@ function Preview({ me, r }: { me: Me; r: Reminders }) {
               <div>
                 <p className="text-xs font-bold tracking-wide text-muted uppercase">{t('reminders.week.mayGo')}</p>
                 <p className="mt-1">{t('reminders.week.mayGo', { count: r.may_go })}</p>
+              </div>
+            )}
+            {r.trashed > 0 && (
+              <div>
+                <p className="text-xs font-bold tracking-wide text-muted uppercase">{t('reminders.week.trashedHead')}</p>
+                <p className="mt-1">{t('reminders.week.trashed', { count: r.trashed })}</p>
               </div>
             )}
             <p className="font-semibold text-accent underline">{t('reminders.week.all')}</p>

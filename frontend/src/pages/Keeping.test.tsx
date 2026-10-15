@@ -16,7 +16,7 @@ import { OrderPage } from './OrderPage'
 const me: Me = {
   id: 1, name: 'jule', display_name: 'Jule', role: 'operator', sign_in: 'password', email: '', language: 'de', email_confirmed: false,
   email_pending: '', oidc_linked: false, two_factor: true, totp: true, passkeys: 0, two_factor_recovery_left: 8, avatar: null, version: '0.0.1',
-  whats_new_seen: '0.0.1', session_stage: 'full', profile: { mode: 'system', quick_start: true, view: 'list', default_vault: null, timezone: 'Europe/Berlin', timezone_source: 'browser', ai: true, notify_login: true },
+  whats_new_seen: '0.0.1', session_stage: 'full', profile: { mode: 'system', quick_start: true, view: 'list', default_vault: null, timezone: 'Europe/Berlin', timezone_source: 'browser', ai: true, notify_login: true, deadlines: true },
 }
 const auth = { status: 'signedIn', me: me as Me | null, setMe: vi.fn(), refresh: vi.fn(async () => undefined), signOut: vi.fn(async () => undefined) }
 vi.mock('../state/auth', () => ({ useAuth: () => auth }))
@@ -88,7 +88,11 @@ describe('the column "Aufbewahren" of the kinds', () => {
     expect(text).toContain('Ende des Jahres im Dokumentdatum plus 2 Jahre, also für eines vom 08.10.2026 der 31.12.2028.')
     expect(text).toContain('Auch für die 453 vorhandenen?')
     expect(text).toContain('1 mit einem von Hand gesetzten Datum behalten es.')
-    expect(text).toContain('Bei 220 wäre die Zeit schon um. Sie erscheinen unter Fristen, „Darf weg“, gelöscht wird nichts von selbst.')
+    expect(text).toContain('Bei 220 wäre die Zeit schon um.')
+    // The upper paragraph says what happens when the time is over: it is listed, nothing is deleted by itself.
+    expect(text).toContain('Ist die Zeit um, steht das Dokument im Archiv unter „Darf weg“. nexpaper löscht nichts von selbst, du entscheidest, was in den Papierkorb kommt.')
+    expect(text).not.toContain('unter Fristen')
+    expect(text).not.toContain('legt nexpaper es einmal am Tag von selbst')
     // Abbrechen sets nothing.
     await page.inDialog('Abbrechen')
     expect(server.changes()).toEqual(['POST /api/v1/kinds/30/keeping/preview'])
@@ -134,6 +138,123 @@ describe('the column "Aufbewahren" of the kinds', () => {
     await page.choose(page.select('Rechnung, aufbewahren'), '8')
     await until(() => server.called('PUT', '/api/v1/kinds/30/keeping'))
     expect(server.called('PUT', '/api/v1/kinds/30/keeping')!.body).toEqual({ years: 8, existing: true })
+  })
+})
+
+describe('the switch "Abgelaufene selbst in den Papierkorb"', () => {
+  const steuer = { ...KINDS[1], keep_years: 10 }
+  const switchOf = (name: string) =>
+    [...page.box.querySelectorAll('ul[aria-label] > li')].find((li) => plain(li.textContent).includes(name))?.querySelector<HTMLButtonElement>('button[role="switch"]') ?? null
+
+  /** What was changed: the questions (previews) change nothing. */
+  const changed = () => server.changes().filter((c) => !c.endsWith('/preview'))
+
+  beforeEach(() => {
+    server.answers['POST /api/v1/kinds/31/auto-trash/preview'] = { kind: { ...steuer, auto_trash: false }, due: 7 }
+    server.answers['PUT /api/v1/kinds/31/auto-trash'] = { kind: { ...steuer, auto_trash: true }, due: 7 }
+  })
+
+  it('is there for a kind with a time that the person may set, off from the start, and only said for the others', async () => {
+    server.answers['GET /api/v1/order/kinds?order=name&limit=500'] = { items: [KINDS[0], KINDS[1], KINDS[2], { ...KINDS[3], auto_trash: true }], total: 4 }
+    await page.show(<OrderPage />, '/ordnung?tab=kinds')
+    await until(() => rows().length === 4)
+    // Rechnung has no time: no switch. Steuer and Mietvertrag may be set here: a switch, off.
+    expect(switchOf('Rechnung')).toBeNull()
+    expect(switchOf('Steuer')!.getAttribute('aria-checked')).toBe('false')
+    expect(switchOf('Mietvertrag')!.getAttribute('aria-checked')).toBe('false')
+    expect(rows()[1]).toContain('Abgelaufene selbst in den Papierkorb')
+    // Beleg is only read here: no switch, but it says that its documents go by themselves.
+    expect(switchOf('Beleg')).toBeNull()
+    expect(rows()[3]).toContain('Abgelaufene gehen einmal am Tag von selbst in den Papierkorb.')
+    expect(rows()[0]).not.toContain('Abgelaufene')
+    expect(changed()).toEqual([])
+  })
+
+  it('asks before switching on, with the number that would go, and sends nothing before the click', async () => {
+    await page.show(<OrderPage />, '/ordnung?tab=kinds')
+    await until(() => rows().length === 4)
+    await page.click(switchOf('Steuer'))
+    await until(() => page.dialog)
+    expect(changed()).toEqual([])
+    const text = plain(page.dialog!.textContent)
+    expect(text).toContain('Steuer: Abgelaufene selbst in den Papierkorb legen?')
+    expect(text).toContain('Einmal am Tag legt nexpaper die Dokumente dieser Art in den Papierkorb, deren Aufbewahrungszeit um ist.')
+    expect(text).toContain('30 Tage zurückholen, danach sind sie endgültig weg')
+    expect(text).toContain('Das trifft schon jetzt 7 Dokumente')
+    // Abbrechen sends nothing, and the switch stays off.
+    await page.inDialog('Abbrechen')
+    expect(changed()).toEqual([])
+    expect(switchOf('Steuer')!.getAttribute('aria-checked')).toBe('false')
+    // Einschalten does.
+    await page.click(switchOf('Steuer'))
+    await until(() => page.dialog)
+    await page.inDialog('Einschalten')
+    await until(() => server.called('PUT', '/api/v1/kinds/31/auto-trash'))
+    expect(server.called('PUT', '/api/v1/kinds/31/auto-trash')!.body).toEqual({ enabled: true })
+    expect(changed()).toEqual(['PUT /api/v1/kinds/31/auto-trash'])
+  })
+
+  it('says when nothing would go right now, and when more than a day brings', async () => {
+    server.answers['POST /api/v1/kinds/31/auto-trash/preview'] = { kind: { ...steuer, auto_trash: false }, due: 0 }
+    server.answers['POST /api/v1/kinds/32/auto-trash/preview'] = { kind: { ...KINDS[2], auto_trash: false }, due: 1200 }
+    await page.show(<OrderPage />, '/ordnung?tab=kinds')
+    await until(() => rows().length === 4)
+    await page.click(switchOf('Steuer'))
+    await until(() => page.dialog)
+    expect(plain(page.dialog!.textContent)).toContain('Im Moment trifft das kein Dokument.')
+    await page.inDialog('Abbrechen')
+    await page.click(switchOf('Mietvertrag'))
+    await until(() => page.dialog)
+    expect(plain(page.dialog!.textContent)).toContain('Das trifft schon jetzt 1.200 Dokumente')
+    expect(plain(page.dialog!.textContent)).toContain('Es gehen höchstens 500 am Tag, der Rest an den nächsten Tagen.')
+    await page.inDialog('Abbrechen')
+    expect(changed()).toEqual([])
+  })
+
+  it('switches off at once, without a question', async () => {
+    server.answers['GET /api/v1/order/kinds?order=name&limit=500'] = { items: [KINDS[0], { ...steuer, auto_trash: true }, KINDS[2], KINDS[3]], total: 4 }
+    server.answers['PUT /api/v1/kinds/31/auto-trash'] = { kind: { ...steuer, auto_trash: false }, due: 0 }
+    await page.show(<OrderPage />, '/ordnung?tab=kinds')
+    await until(() => rows().length === 4)
+    expect(switchOf('Steuer')!.getAttribute('aria-checked')).toBe('true')
+    await page.click(switchOf('Steuer'))
+    await until(() => server.called('PUT', '/api/v1/kinds/31/auto-trash'))
+    expect(page.dialog).toBeNull()
+    expect(server.called('PUT', '/api/v1/kinds/31/auto-trash')!.body).toEqual({ enabled: false })
+    expect(server.calls.some((c) => c.url.endsWith('/auto-trash/preview'))).toBe(false)
+  })
+
+  it('makes the question about the time say that expired ones go by themselves, when the switch is on', async () => {
+    server.answers['GET /api/v1/order/kinds?order=name&limit=500'] = { items: [KINDS[0], { ...steuer, auto_trash: true }, KINDS[2], KINDS[3]], total: 4 }
+    server.answers['POST /api/v1/kinds/31/keeping/preview'] = { documents: 21, by_hand: 0, expired: 3 }
+    await page.show(<OrderPage />, '/ordnung?tab=kinds')
+    await until(() => rows().length === 4)
+    await page.choose(page.select('Steuer, aufbewahren'), '5')
+    await until(() => page.dialog)
+    const text = plain(page.dialog!.textContent)
+    expect(text).toContain('Ist die Zeit um, legt nexpaper es einmal am Tag von selbst in den Papierkorb (30 Tage zurückholbar).')
+    expect(text).not.toContain('nexpaper löscht nichts von selbst')
+    expect(text).toContain('Bei 3 wäre die Zeit schon um.')
+    expect(text).toContain('Sie kommen beim nächsten Lauf in den Papierkorb')
+    await page.inDialog('Abbrechen')
+    // Taking the time away takes the switch with it, and the question says so.
+    await page.choose(page.select('Steuer, aufbewahren'), '0')
+    await until(() => page.dialog)
+    expect(plain(page.dialog!.textContent)).toContain('Der Schalter „Abgelaufene selbst in den Papierkorb“ geht für diese Art mit aus.')
+    await page.inDialog('Abbrechen')
+  })
+
+  it('reads the same in English', async () => {
+    await changeLanguage('en', false)
+    await page.show(<OrderPage />, '/ordnung?tab=kinds')
+    await until(() => rows().length === 4)
+    await page.click(switchOf('Steuer'))
+    await until(() => page.dialog)
+    const text = plain(page.dialog!.textContent)
+    expect(text).toContain('put expired documents in the trash by themselves?')
+    expect(text).toContain('This affects 7 documents right now')
+    await page.inDialog('Cancel')
+    expect(changed()).toEqual([])
   })
 })
 

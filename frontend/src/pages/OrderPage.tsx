@@ -120,6 +120,38 @@ export function OrderPage() {
     setKeeping({ entry, years })
   }
 
+  /** "Abgelaufene selbst in den Papierkorb" for a kind: off at once, on only after the question with the number of
+   * documents that would go right away (the ones this person sees). */
+  const autoFor = (entry: OrderEntry, on: boolean) => {
+    setProblem(null)
+    const name = iso(entry.name)
+    const set = async (value: boolean) => {
+      await keepingApi.setAutoTrash(entry.id, value)
+      refresh(t(value ? 'keeping.auto.saidOn' : 'keeping.auto.saidOff', { name }))
+    }
+    if (!on) {
+      set(false).catch((error: unknown) => setProblem(error instanceof ApiError ? error.code : 'internal_error'))
+      return
+    }
+    keepingApi.autoTrash(entry.id).then(
+      (state) =>
+        ask({
+          title: t('keeping.auto.askTitle', { name }),
+          text: (
+            <>
+              <p>{t('keeping.auto.askText')}</p>
+              <p className="mt-2 font-semibold">{state.due > 0 ? t('keeping.auto.nowSome', { count: state.due, n: state.due.toLocaleString(i18n.language) }) : t('keeping.auto.nowNone')}</p>
+              {state.due > 500 && <p className="mt-1">{t('keeping.auto.limit')}</p>}
+            </>
+          ),
+          confirm: t('keeping.auto.confirm'),
+          danger: false,
+          run: () => set(true),
+        }),
+      (error: unknown) => setProblem(error instanceof ApiError ? error.code : 'internal_error'),
+    )
+  }
+
   /** Asks, then deletes. The number of documents it reaches is in the question. */
   const remove = (entry: OrderEntry) => {
     const count = entry.documents + entry.in_trash
@@ -221,6 +253,7 @@ export function OrderPage() {
                 </p>
               </div>
               {what === 'kinds' && <KeepSelect entry={entry} onPick={(years) => keepFor(entry, years)} />}
+              {what === 'kinds' && entry.keep_years ? <AutoTrashSwitch entry={entry} onChange={(on) => autoFor(entry, on)} /> : null}
               {entry.can_change && (
                 <div className="flex shrink-0 items-center gap-1">
                   <IconButton icon={Pencil} text={t('order.rename')} name={entry.name} onClick={() => setRenaming(entry)} />
@@ -322,6 +355,29 @@ function KeepSelect({ entry, onPick }: { entry: OrderEntry; onPick: (years: numb
   )
 }
 
+/** "Abgelaufene selbst in den Papierkorb" beside the keeping time of a kind: a switch for whoever may set the time, else
+ * a sentence when it is on. Only for a kind with a time. */
+function AutoTrashSwitch({ entry, onChange }: { entry: OrderEntry; onChange: (on: boolean) => void }) {
+  const { t } = useTranslation()
+  const on = Boolean(entry.auto_trash)
+  if (!entry.can_change) return on ? <span className="basis-full text-sm text-muted">{t('keeping.auto.fixed')}</span> : null
+  return (
+    <span className="flex shrink-0 items-center gap-2 text-sm" data-testid="auto-trash" title={t('keeping.auto.hint')}>
+      <span className="text-ink-2">{t('keeping.auto.label')}</span>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={on}
+        aria-label={t('keeping.auto.label')}
+        onClick={() => onChange(!on)}
+        className={`relative h-6 w-10 shrink-0 rounded-full transition ${on ? 'bg-accent' : 'bg-line'}`}
+      >
+        <span className={`absolute top-1 h-4 w-4 rounded-full bg-sheet shadow transition-all ${on ? 'left-5' : 'left-1'}`} />
+      </button>
+    </span>
+  )
+}
+
 /**
  * Setting a keeping time, or taking it away (`years` 0): also for the documents already there? Says how many there are
  * (only the ones the person may see), how many were set by hand (they stay) and, for a time, how many may go at once.
@@ -377,7 +433,11 @@ function KeepDialog({ entry, years, onClose, onDone }: { entry: OrderEntry; year
   return (
     <Dialog title={removing ? t('keeping.removeTitle', { name: entry.name }) : t('keeping.dialogTitle', { name: entry.name, years: yearsText })} onClose={onClose}>
       <div className="space-y-3 text-sm">
-        <p className="text-ink-2">{removing ? t('keeping.removeText') : t('keeping.dialogText', { years: yearsText, today: shortDate(today, i18n.language), year: Number(today.slice(0, 4)) + years })}</p>
+        <p className="text-ink-2">
+          {removing
+            ? `${t('keeping.removeText')}${entry.auto_trash ? ` ${t('keeping.removeAuto')}` : ''}`
+            : `${t('keeping.dialogText', { years: yearsText, today: shortDate(today, i18n.language), year: Number(today.slice(0, 4)) + years })} ${t(entry.auto_trash ? 'keeping.afterTextAuto' : 'keeping.afterText')}`}
+        </p>
         {found && (
           <div className="rounded-xl border border-line bg-sheet-2/50 p-4">
             <p className="font-semibold">{t('keeping.existing', { count: found.documents, n: count(found.documents) })}</p>
@@ -386,7 +446,10 @@ function KeepDialog({ entry, years, onClose, onDone }: { entry: OrderEntry; year
               {removing ? (
                 <li>{t('keeping.removeChoice')}</li>
               ) : found.expired > 0 ? (
-                <li>{t('keeping.expired', { count: found.expired, n: count(found.expired) })}</li>
+                <>
+                  <li>{t('keeping.expired', { count: found.expired, n: count(found.expired) })}</li>
+                  {entry.auto_trash && <li>{t('keeping.expiredAuto', { count: found.expired })}</li>}
+                </>
               ) : (
                 <li>{t('keeping.noneExpired')}</li>
               )}

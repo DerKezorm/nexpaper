@@ -839,7 +839,9 @@
     "cursor_and_page": "The list of results has changed. Start the search again.",
     "mail_unavailable": "Reminders by mail need a mail server and a confirmed address.",
     "reminders_no_way": "No way is switched on that reaches you.",
-    "bad_reminder": "This value is not one nexpaper offers."
+    "bad_reminder": "This value is not one nexpaper offers.",
+    "deadlines_off": "Deadlines are switched off for you.",
+    "no_keeping_time": "Set a keeping time for the kind first."
   },
   "ready": {
     "title": "Ready for the internet?",
@@ -1854,7 +1856,8 @@
       "textRead": "read the text",
       "filesMissing": "found a missing file when checking the files",
       "filesChanged": "found a changed file when checking the files",
-      "filesWhole": "found everything in order again when checking the files"
+      "filesWhole": "found everything in order again when checking the files",
+      "autoTrashed": "put the document in the trash by itself (keep until {{date}})"
     },
     "trash": {
       "title": "Trash",
@@ -2643,15 +2646,15 @@
     "newOnly": "Keeping applies to newly filed ones",
     "removed": "{{name}}: no keeping time any more. Dates set by hand stay.",
     "infoLead": "Keep",
-    "info": "counts from the end of the year of the document's date: an invoice of 14.03.2026 kept for 10 years until 31.12.2036. Once the time is over, the document is listed under Deadlines, “May go”. nexpaper never deletes anything by itself.",
+    "info": "counts from the end of the year of the document's date: an invoice of 14.03.2026 kept for 10 years until 31.12.2036. Once the time is over, the document is in the archive under “May go”. nexpaper deletes nothing by itself, you decide what goes to the trash. If you want, switch on “Put expired ones in the trash by themselves” for a kind: then nexpaper puts expired documents in the trash once a day, where they can be restored for 30 days.",
     "examples": "Examples from Germany, as of 2026, without guarantee: businesses keep accounting vouchers such as invoices for 8 years, books and annual accounts for 10, business letters for 6. Privately, invoices for work on a house are kept 2 years, otherwise there is mostly no duty. What applies to you, your tax adviser knows.",
     "dialogTitle": "{{name}}: keep for {{years}}",
     "dialogText": "Every newly filed document of this kind gets “Keep until”: the end of the year of its date plus {{years}}, so for one dated {{today}} it is 31.12.{{year}}.",
     "existing_one": "Also for the {{n}} already there?",
     "existing_other": "Also for the {{n}} already there?",
     "byHand": "{{n}} with a date set by hand keep it.",
-    "expired_one": "For {{n}} the time would already be over. It is listed under Deadlines, “May go”; nothing is deleted by itself.",
-    "expired_other": "For {{n}} the time would already be over. They are listed under Deadlines, “May go”; nothing is deleted by itself.",
+    "expired_one": "For {{n}} the time would already be over.",
+    "expired_other": "For {{n}} the time would already be over.",
     "noneExpired": "For none of them would the time be over yet.",
     "onlyNew": "Only for new ones",
     "forAll": "For all {{n}}",
@@ -2668,7 +2671,7 @@
     "trashRunning": "The time is not over yet.",
     "trashAnyway": "Move to the trash anyway",
     "mayGo": "May go",
-    "mayGoIntro": "The keeping time is over. nexpaper never deletes anything by itself: choose what goes to the trash.",
+    "mayGoIntro": "The keeping time is over. nexpaper deletes nothing by itself, you decide what goes to the trash. The same list is in the archive under “May go”.",
     "mayGoEmpty": "Nothing whose keeping time is over.",
     "pickAll": "Select all {{n}}",
     "pick": "Select {{title}}",
@@ -2692,7 +2695,40 @@
     "removeText": "Newly filed documents of this kind no longer get “Keep until”. Nothing is deleted.",
     "removeChoice": "“For all” takes away the date worked out from the kind, “Only for new ones” leaves it, from then on as set by hand.",
     "removedNew": "{{name}}: no keeping time any more for newly filed ones. The ones already there keep their date.",
-    "firstOnly": "Shown and selectable are the first {{shown}} of {{total}}. What you move to the trash makes room for the next ones."
+    "firstOnly": "Shown and selectable are the first {{shown}} of {{total}}. What you move to the trash makes room for the next ones.",
+    "afterText": "Once the time is over, the document is in the archive under “May go”. nexpaper deletes nothing by itself, you decide what goes to the trash.",
+    "afterTextAuto": "Once the time is over, nexpaper puts it in the trash by itself, once a day (restorable for 30 days).",
+    "removeAuto": "The switch “Put expired ones in the trash by themselves” goes off for this kind as well.",
+    "expiredAuto_one": "It goes to the trash at the next run, because “Put expired ones in the trash by themselves” is on for this kind.",
+    "expiredAuto_other": "They go to the trash at the next run, because “Put expired ones in the trash by themselves” is on for this kind.",
+    "filterLabel": "Keeping",
+    "archiveHint_one": "One document may go",
+    "archiveHint_other": "{{n}} documents may go",
+    "archiveHintText": "Their keeping time is over.",
+    "archiveHintOpen": "Look at them",
+    "archiveIntro": "The keeping time of these documents is over, in the vaults where you may change things. Choose what goes to the trash; it can be restored there for 30 days.",
+    "archiveIntroAuto": "Kinds with the switch “Put expired ones in the trash by themselves” go by themselves once a day; the column says so.",
+    "untilColumn": "Keep until",
+    "goesItself": "goes to the trash by itself",
+    "pickShown": "All {{n}} on this page",
+    "pickEverything": "Choose all {{n}} documents",
+    "pickFirst": "Choose the first {{n}}",
+    "picked": "{{n}} chosen",
+    "auto": {
+      "label": "Put expired ones in the trash by themselves",
+      "hint": "Once a day, at most 500. They stay in the trash for 30 days.",
+      "fixed": "Expired documents go to the trash by themselves, once a day.",
+      "aria": "{{name}}, put expired ones in the trash by themselves",
+      "askTitle": "{{name}}: put expired documents in the trash by themselves?",
+      "askText": "Once a day nexpaper puts the documents of this kind whose keeping time is over in the trash. They can be restored there for 30 days, after that they are gone for good, files on the server included.",
+      "nowNone": "Right now this affects no document.",
+      "nowSome_one": "This affects {{n}} document right now: it goes to the trash within the next hour.",
+      "nowSome_other": "This affects {{n}} documents right now: they go to the trash within the next hour.",
+      "limit": "At most 500 go per day, the rest on the following days.",
+      "confirm": "Switch on",
+      "saidOn": "{{name}}: expired documents now go to the trash by themselves.",
+      "saidOff": "{{name}}: expired documents stay in the archive until you put them in the trash."
+    }
   },
   "deadlines": {
     "menu": "Deadlines",
@@ -2928,8 +2964,8 @@
       "weekHead": "This week",
       "nothing": "nothing",
       "mayGo": "May go",
-      "mayGo_one": "The keeping time of one document is over.",
-      "mayGo_other": "The keeping time of {{count}} documents is over.",
+      "mayGo_one": "The keeping time of one document is over. It is in the archive under “May go”.",
+      "mayGo_other": "The keeping time of {{count}} documents is over. They are in the archive under “May go”.",
       "all": "Open all deadlines in nexpaper",
       "why": "This mail comes because you switched on the weekly overview under My account, Reminders.",
       "short": {
@@ -2937,12 +2973,29 @@
         "cancel": "Cancel",
         "ends": "Cancel",
         "warranty": "Warranty"
-      }
+      },
+      "trashedHead": "Trash",
+      "trashed_one": "nexpaper put one document in the trash, its keeping time was over. It can be restored there for 30 days.",
+      "trashed_other": "nexpaper put {{count}} documents in the trash, their keeping time was over. They can be restored there for 30 days."
     },
     "remindedHow": "You are reminded the way you set it under <account>My account, Reminders</account>.",
     "datesNote": "Everybody who may change things in the vault is reminded, each the way they set it under <account>My account, Reminders</account>.",
     "muted": "muted",
     "mutedTitle": "You muted the reminders of this vault.",
-    "saved": "Saved."
+    "saved": "Saved.",
+    "use": {
+      "title": "Use deadlines",
+      "text": "Only for you. Everyone else in the household keeps their own settings.",
+      "label": "Use deadlines",
+      "hint": "Off: no Deadlines in the menu, no reminders, no weekly overview. The dates on the documents stay.",
+      "offTitle": "Deadlines are off",
+      "offText": "The menu has no Deadlines item, you get no reminders and no weekly overview. The dates on the documents stay, and the other people are not affected.",
+      "offButton": "Switch deadlines on",
+      "askTitle": "Switch deadlines off?",
+      "askText": "You will get no reminders and no weekly overview any more, and the menu loses Deadlines. The dates on the documents stay. You can switch deadlines on again here at any time.",
+      "askConfirm": "Switch off",
+      "saidOn": "Deadlines are on again.",
+      "saidOff": "Deadlines are off."
+    }
   }
 }

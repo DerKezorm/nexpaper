@@ -9,22 +9,21 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 
-import { keepingApi, type DocumentInfo, type Vault } from '../api/client'
+import type { DocumentInfo, Vault } from '../api/client'
 import { shortDate } from '../lib/dates'
 import { keptOf } from '../lib/keeping'
-import { inboxChanged, useSay } from '../lib/say'
+import { useTrashMany } from '../lib/mayGo'
 import { vaultLabel } from '../lib/vaultLabel'
 import { Button } from './Button'
 import { Chip, KindPill } from './docs'
-import { useConfirm } from './useConfirm'
 import { VaultIcon } from './VaultIcon'
 
 /** How many the section shows before "Alle N zeigen". */
 const FIRST = 8
-/** The filter chip "Darf weg 12"; only while something may go. */
+/** The filter chip "Darf weg 12"; only while something may go (or while it is the filter in use). */
 export function MayGoChip({ count, active, onClick }: { count: number; active: boolean; onClick: () => void }) {
   const { t, i18n } = useTranslation()
-  if (count <= 0) return null
+  if (count <= 0 && !active) return null
   return (
     <Chip active={active} onClick={onClick}>
       {t('keeping.mayGo')} <span className="tabular-nums opacity-80">{count.toLocaleString(i18n.language)}</span>
@@ -34,9 +33,11 @@ export function MayGoChip({ count, active, onClick }: { count: number; active: b
 
 export function MayGo({ items, total, vaults, mineId, onChanged }: { items: DocumentInfo[]; total: number; vaults: Vault[]; mineId: number; onChanged: () => void }) {
   const { t, i18n } = useTranslation()
-  const say = useSay()
-  const { ask, dialog } = useConfirm()
   const [picked, setPicked] = useState<Set<number>>(new Set())
+  const { trash: askTrash, dialog } = useTrashMany(() => {
+    setPicked(new Set())
+    onChanged()
+  })
   const [all, setAll] = useState(false)
   const n = (value: number) => value.toLocaleString(i18n.language)
   const shownItems = all ? items : items.slice(0, FIRST)
@@ -51,28 +52,7 @@ export function MayGo({ items, total, vaults, mineId, onChanged }: { items: Docu
   const vaultOf = (id: number) => vaults.find((v) => v.id === id)
 
   /** Asks, then puts the picked ones in the trash, each checked on its own by the server. */
-  const trash = () => {
-    const ids = items.filter((d) => picked.has(d.id)).map((d) => d.id)
-    if (!ids.length) return
-    ask({
-      title: t('keeping.askTitle', { count: ids.length, n: n(ids.length) }),
-      text: t('keeping.askText', { count: ids.length }),
-      confirm: t('keeping.toTrash'),
-      danger: false,
-      run: async () => {
-        const done = await keepingApi.trashMany(ids)
-        setPicked(new Set())
-        inboxChanged()
-        onChanged()
-        const gone = done.trashed.length
-        const notice = t('keeping.done', { count: gone, n: n(gone) })
-        say(done.failed.length ? `${notice} ${t('keeping.failed', { count: done.failed.length, n: n(done.failed.length) })}` : notice, undefined, {
-          to: '/papierkorb',
-          label: t('docs.inbox.trashLink'),
-        })
-      },
-    })
-  }
+  const trash = () => askTrash(items.filter((d) => picked.has(d.id)).map((d) => d.id))
 
   return (
     <section aria-label={t('keeping.mayGo')}>
@@ -138,6 +118,7 @@ export function MayGo({ items, total, vaults, mineId, onChanged }: { items: Docu
                         <Archive size={13} className="text-muted" aria-hidden /> {t('keeping.until', { date: shortDate(kept.date, i18n.language) })}
                       </span>
                       <span className="block text-xs text-muted">{kept.from === 'kind' ? t('keeping.fromKindShort', { years: t('keeping.years', { count: kept.years ?? 0 }) }) : t('keeping.byHandShort')}</span>
+                      {d.kind?.auto_trash && <span className="block text-xs font-semibold text-accent">{t('keeping.goesItself')}</span>}
                     </span>
                   )}
                 </li>

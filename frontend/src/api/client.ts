@@ -140,6 +140,8 @@ export type Profile = {
   ai: boolean
   /** A push and a mail when the account signs in from a new device. */
   notify_login: boolean
+  /** Deadlines for this person (My account, Reminders); off: no menu item, no reminders, no weekly mail. */
+  deadlines: boolean
 }
 
 export type Me = {
@@ -473,7 +475,7 @@ export type Vault = {
   members: VaultMember[]
 }
 /** `vault_id` is the vault a kind belongs to; empty for the kinds of the whole server. */
-export type DocumentKind = { id: number; key: string; name: string; hue: number; position: number; vault_id?: number | null; keep_years?: number | null }
+export type DocumentKind = { id: number; key: string; name: string; hue: number; position: number; vault_id?: number | null; keep_years?: number | null; auto_trash?: boolean }
 export type DocumentInfo = {
   id: number
   vault_id: number
@@ -788,6 +790,8 @@ export type SearchFilters = {
   via_share?: boolean
   /** Only documents with a deadline that is open, overdue, done, or open within that many days (`30`). */
   deadline?: string
+  /** `expired`: only filed documents whose keeping time is over, in the vaults where the person may change things. */
+  keep?: 'expired'
   cursor?: string
   limit?: number
 }
@@ -1131,6 +1135,8 @@ export type OrderEntry = {
   /** Only kinds: how many years their documents are kept (empty: not set), and whether only for newly filed ones. */
   keep_years?: number | null
   keep_new_only?: boolean
+  /** Only kinds: expired documents go to the trash by themselves, once a day. */
+  auto_trash?: boolean
 }
 export type OrderPage = { items: OrderEntry[]; total: number }
 export type OrderQuery = { vault_id?: number; q?: string; order?: 'name' | 'documents'; limit?: number; offset?: number }
@@ -1221,6 +1227,8 @@ export type ReminderRhythm = 'single' | 'weekly' | 'both'
 export type ReminderLead = { due: number; cancel: number; warranty: number }
 export type ReminderVault = { id: number; name: string; icon: string; personal: boolean; personal_of_other: boolean }
 export type Reminders = {
+  /** Deadlines are on for the person; off, nothing is reminded and no weekly mail comes. */
+  deadlines: boolean
   rhythm: ReminderRhythm
   push: boolean
   mail: boolean
@@ -1238,6 +1246,8 @@ export type Reminders = {
   read_only: ReminderVault[]
   shared: number
   may_go: number
+  /** Documents nexpaper put in the trash by itself in the last seven days. */
+  trashed: number
 }
 export type RemindersChange = Partial<Pick<Reminders, 'rhythm' | 'push' | 'mail' | 'same_day' | 'muted' | 'muted_shared'>> & { lead?: Partial<ReminderLead> }
 export type ReminderTest = { push: PushResult; mail: boolean; by_push: boolean; by_mail: boolean }
@@ -1253,6 +1263,8 @@ export const remindersApi = {
 export type KeepPreview = { documents: number; by_hand: number; expired: number }
 export type KeepSet = { kind: DocumentKind; changed: number; queued: boolean }
 export type MayGoPage = { items: DocumentInfo[]; total: number }
+/** The switch "expired documents into the trash by themselves" of a kind, and how many the person sees that would go now. */
+export type AutoTrash = { kind: DocumentKind; due: number }
 export type TrashResult = { trashed: number[]; failed: { id: number; code: string }[] }
 
 export const keepingApi = {
@@ -1261,6 +1273,9 @@ export const keepingApi = {
   preview: (kindId: number, years: number | null) => api<KeepPreview>(`/api/v1/kinds/${kindId}/keeping/preview`, { method: 'POST', body: { years } }),
   /** Sets the keeping time (`null` takes it away). `existing`: also for the documents already there. */
   set: (kindId: number, years: number | null, existing: boolean) => api<KeepSet>(`/api/v1/kinds/${kindId}/keeping`, { method: 'PUT', body: { years, existing } }),
+  /** Whether expired documents of the kind go to the trash by themselves, and how many would go now. */
+  autoTrash: (kindId: number) => api<AutoTrash>(`/api/v1/kinds/${kindId}/auto-trash/preview`, { method: 'POST' }),
+  setAutoTrash: (kindId: number, enabled: boolean) => api<AutoTrash>(`/api/v1/kinds/${kindId}/auto-trash`, { method: 'PUT', body: { enabled } }),
   /** Filed documents whose keeping time is over, in the vaults where the person may change things. */
   mayGo: (query: { vault_id?: number; limit?: number; offset?: number } = {}) => api<MayGoPage>('/api/v1/keeping', { query }),
   /** Many documents into the trash, each checked on its own. */

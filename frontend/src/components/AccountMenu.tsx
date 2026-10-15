@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 
+import { usesDeadlines } from '../lib/deadlines'
 import { useAuth } from '../state/auth'
 import { Avatar } from './Avatar'
 
@@ -66,8 +67,9 @@ export function AccountMenu({ up = false }: { up?: boolean }) {
           <Link to="/konto" className={item}>
             <User size={16} /> {t('account.mine')}
           </Link>
-          {/* On the phone the bottom bar has room for five: Order lives here there (the mock's App). */}
-          <Link to="/ordnung" className={`${item} lg:hidden`}>
+          {/* On the phone the bottom bar has room for five: Order lives here there (the mock's App), unless deadlines
+              are off and Order takes their place in the bar. */}
+          <Link to="/ordnung" className={`${item} ${usesDeadlines(me) ? 'lg:hidden' : 'hidden'}`}>
             <ListTree size={16} /> {t('order.menu')}
           </Link>
           {me.role === 'operator' && (

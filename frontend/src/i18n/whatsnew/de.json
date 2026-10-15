@@ -1,4 +1,33 @@
 {
+  "1.4.1": {
+    "lead": "Fristen lassen sich je Person ausschalten, „Darf weg“ steht im Archiv, und abgelaufene Dokumente können von selbst in den Papierkorb.",
+    "sections": [
+      {
+        "title": "Fristen je Person ausschalten",
+        "where": "Mein Konto, Erinnerungen",
+        "body": "Wer Fristen nicht nutzt, schaltet sie dort für sich aus. Dann fehlt der Menüpunkt Fristen samt Zahl (am Handy steht in der Leiste wieder Ordnung), es kommen keine Erinnerungen und keine Wochenübersicht, und im Archiv gibt es den Filter Frist nicht. Die Termine an den Dokumenten bleiben, nur „bezahlt“ und „später“ fehlen für dich; die Suchwörter mit frist: gehen weiter. Die anderen im Haushalt sind nicht betroffen. Ab Werk sind Fristen an."
+      },
+      {
+        "title": "„Darf weg“ im Archiv",
+        "where": "Archiv",
+        "body": "Das Archiv hat einen Filter „Darf weg“: die Dokumente, deren Aufbewahrungszeit um ist, als Tabelle mit der Spalte „Aufbewahren bis“ und der Angabe, ob das Datum aus der Art kommt oder von Hand gesetzt wurde. Mit den Kästchen wählst du aus, was in den Papierkorb soll; nexpaper fragt vorher wie immer. Gibt es etwas wegzuräumen, sagt die Übersicht des Archivs es in einer Zeile. Auf der Seite Fristen bleibt der Abschnitt."
+      },
+      {
+        "title": "Abgelaufene selbst in den Papierkorb",
+        "where": "Ordnung, Arten",
+        "body": "Für jede Art mit Aufbewahrungsfrist gibt es einen Schalter „Abgelaufene selbst in den Papierkorb“, ab Werk aus. Ist er an, legt nexpaper abgelaufene Dokumente der Art einmal am Tag in den Papierkorb, höchstens 500 am Tag und jedes Dokument nur einmal; wer eines zurückholt, behält es. Das Einschalten fragt vorher und nennt, wie viele Dokumente es sofort träfe. Endgültig gelöscht wird dabei nichts: im Papierkorb bleiben sie 30 Tage. Der Verlauf des Dokuments und die Wochenübersicht sagen, was nexpaper weggelegt hat."
+      },
+      {
+        "title": "Klarer, was nach Ablauf geschieht",
+        "where": "Ordnung, Arten",
+        "body": "Die Rückfrage bei „N Jahre aufbewahren“ sagt jetzt immer, was nach Ablauf geschieht: Das Dokument steht im Archiv unter „Darf weg“ und nichts wird von selbst gelöscht, oder nexpaper legt es von selbst in den Papierkorb, wenn der Schalter der Art an ist."
+      }
+    ],
+    "smallTitle": "Außerdem",
+    "small": [
+      "Das Update ergänzt eine Spalte an den Arten (Schema 14). nexpaper legt vorher selbst eine Sicherung an; zurück auf 1.4.0 geht es nur über diese Sicherung."
+    ]
+  },
   "1.4.0": {
     "lead": "Fristen mit eigener Seite, Erinnerungen an Rechnungen, Kündigungen und Garantien, und eine Aufbewahrungsfrist je Art.",
     "sections": [

@@ -17,7 +17,7 @@ import { ArchivePage } from './ArchivePage'
 const me: Me = {
   id: 1, name: 'jule', display_name: 'Jule', role: 'operator', sign_in: 'password', email: '', language: 'de', email_confirmed: false,
   email_pending: '', oidc_linked: false, two_factor: true, totp: true, passkeys: 0, two_factor_recovery_left: 8, avatar: null, version: '0.0.1',
-  whats_new_seen: '0.0.1', session_stage: 'full', profile: { mode: 'system', quick_start: true, view: 'list', default_vault: null, timezone: 'Europe/Berlin', timezone_source: 'browser', ai: true, notify_login: true },
+  whats_new_seen: '0.0.1', session_stage: 'full', profile: { mode: 'system', quick_start: true, view: 'list', default_vault: null, timezone: 'Europe/Berlin', timezone_source: 'browser', ai: true, notify_login: true, deadlines: true },
 }
 const auth = { status: 'signedIn', me: me as Me | null, setMe: vi.fn((next: Me) => (auth.me = next)), refresh: vi.fn(async () => undefined), signOut: vi.fn(async () => undefined) }
 vi.mock('../state/auth', () => ({ useAuth: () => auth }))
@@ -98,6 +98,175 @@ beforeEach(async () => {
 afterEach(() => {
   page.close()
   vi.unstubAllGlobals()
+})
+
+describe('the filter "Darf weg"', () => {
+  const KEEP = table('', '&keep=expired')
+  const gone = (id: number, title: string, extra: Record<string, unknown> = {}) =>
+    hit(doc(id, title, '2014-03-01', { dates: [{ kind: 'keep_until', date: '2024-12-31', manual: false }], ...extra }))
+  const list = () => [
+    gone(11, 'Kontoauszüge 2014'),
+    gone(12, 'Dachrinne', { dates: [{ kind: 'keep_until', date: '2023-06-30', manual: true }] }),
+    gone(13, 'Quittung Tankstelle', { kind: { ...kind, id: 2, name: 'Quittung', auto_trash: true } }),
+  ]
+  const boxes = () => [...page.box.querySelectorAll<HTMLInputElement>('[data-testid="row"] input[type="checkbox"]')]
+  const trashing = () => server.calls.filter((c) => c.method === 'POST' && c.url === '/api/v1/documents/trash')
+
+  beforeEach(() => {
+    server.answers['GET /api/v1/keeping?limit=1'] = { items: [], total: 3 }
+    server.answers[KEEP] = result(list(), 3)
+    server.answers['POST /api/v1/documents/trash'] = { trashed: [11, 13], failed: [] }
+  })
+
+  it('has no chip and no hint while nothing may go', async () => {
+    server.answers['GET /api/v1/keeping?limit=1'] = { items: [], total: 0 }
+    await show()
+    expect(page.button('Darf weg')).toBeUndefined()
+    expect(page.box.querySelector('[data-testid="may-go-hint"]')).toBeNull()
+  })
+
+  it('says in the overview how many may go, and the hint and the chip open the filter', async () => {
+    await show()
+    const hint = page.box.querySelector<HTMLButtonElement>('[data-testid="may-go-hint"]')!
+    expect(plain(hint.textContent)).toContain('3 Dokumente dürfen weg')
+    expect(plain(hint.textContent)).toContain('Die Aufbewahrungszeit ist um.')
+    expect(plain(page.button('Darf weg 3')!.textContent)).toBe('Darf weg 3')
+    // Only the number of what the person may clear out is asked for, with one document.
+    expect(server.calls.filter((c) => c.url.startsWith('/api/v1/keeping')).map((c) => c.url)).toEqual(['/api/v1/keeping?limit=1'])
+    await page.click(hint)
+    expect(where()).toBe('/?keep=expired')
+    expect(server.called('GET', KEEP.slice(4))).toBeTruthy()
+    // The table is the archive's, with a box in front of every row and the day until when to keep.
+    expect(plain(page.box.querySelector('[data-testid="hit-count"]')!.textContent)).toBe('3 Dokumente')
+    expect(page.box.querySelector('[data-testid="pill"]')!.textContent).toContain('Darf weg')
+    expect(boxes()).toHaveLength(3)
+    expect(plain(page.box.querySelector('[data-testid="table"]')!.textContent)).toContain('Aufbewahren bis')
+    const untils = [...page.box.querySelectorAll('[data-testid="keep-until"]')].map((x) => plain(x.textContent))
+    expect(untils[0]).toContain('31.12.2024')
+    expect(untils[0]).toContain('aus der Art, 10 Jahre')
+    expect(untils[1]).toContain('30.06.2023')
+    expect(untils[1]).toContain('von Hand gesetzt')
+    // A kind that goes by itself says so; the others do not.
+    expect(untils[2]).toContain('geht von selbst in den Papierkorb')
+    expect(untils[0]).not.toContain('von selbst')
+    expect(page.text).toContain('Arten mit dem Schalter „Abgelaufene selbst in den Papierkorb“ gehen einmal am Tag von selbst')
+    // No tiles and no export here, and the chip is on.
+    expect(page.button('Kacheln')).toBeUndefined()
+    expect(page.button('Darf weg 3')).toBeTruthy()
+  })
+
+  it('does not say that something goes by itself when nothing of it is on the page', async () => {
+    server.answers[KEEP] = result([gone(11, 'Kontoauszüge 2014')], 1)
+    await show('/?keep=expired')
+    await until(() => rows().length === 1)
+    expect(page.text).toContain('Bei diesen Dokumenten ist die Aufbewahrungszeit um')
+    expect(page.text).not.toContain('Arten mit dem Schalter')
+  })
+
+  it('ticks, asks and only then puts in the trash, each one on its own', async () => {
+    await show('/?keep=expired')
+    await until(() => boxes().length === 3)
+    // Nothing ticked: the button waits.
+    expect(page.button('In den Papierkorb')!.disabled).toBe(true)
+    await page.click(boxes()[0])
+    await page.click(boxes()[2])
+    expect(plain(page.box.querySelector('[data-testid="keep-bar"]')!.textContent)).toContain('2 ausgewählt')
+    await page.click(page.button('In den Papierkorb (2)'))
+    await until(() => page.dialog)
+    expect(plain(page.dialog!.textContent)).toContain('2 Dokumente in den Papierkorb?')
+    expect(plain(page.dialog!.textContent)).toContain('30 Tage im Papierkorb')
+    // Asked, not sent; Abbrechen sends nothing either and keeps what was ticked.
+    expect(trashing()).toEqual([])
+    await page.inDialog('Abbrechen')
+    expect(trashing()).toEqual([])
+    expect(boxes().filter((box) => box.checked)).toHaveLength(2)
+    await page.click(page.button('In den Papierkorb (2)'))
+    await until(() => page.dialog)
+    await page.inDialog('In den Papierkorb')
+    await until(() => trashing().length === 1)
+    expect(trashing()[0].body).toEqual({ ids: [11, 13] })
+    // The list is asked for again, and the ticks are gone.
+    await until(() => server.calls.filter((c) => c.url === KEEP.slice(4)).length === 2)
+    await until(() => boxes().every((box) => !box.checked))
+  })
+
+  it('ticks the page with one box, and all of them (up to 500) with the link under it', async () => {
+    const many = (from: number, count: number) => Array.from({ length: count }, (_, i) => gone(from + i, `Beleg ${from + i}`))
+    server.answers[KEEP] = result(many(1, 50), 130)
+    server.answers[table('', '&keep=expired', 'limit=100&sort=-date&page=1')] = result(many(1, 100), 130)
+    server.answers[table('', '&keep=expired', 'limit=100&sort=-date&page=2')] = result(many(101, 30), 130)
+    await show('/?keep=expired')
+    await until(() => boxes().length === 50)
+    expect(page.text).not.toContain('Alle 130 Dokumente auswählen')
+    await page.click(page.box.querySelector<HTMLInputElement>('[data-testid="keep-bar"] input[type="checkbox"]'))
+    expect(boxes().every((box) => box.checked)).toBe(true)
+    expect(plain(page.box.querySelector('[data-testid="keep-bar"]')!.textContent)).toContain('50 ausgewählt')
+    await page.click(page.button('Alle 130 Dokumente auswählen'))
+    await until(() => plain(page.box.querySelector('[data-testid="keep-bar"]')!.textContent).includes('130 ausgewählt'))
+    await page.click(page.button('In den Papierkorb (130)'))
+    await until(() => page.dialog)
+    expect(plain(page.dialog!.textContent)).toContain('130 Dokumente in den Papierkorb?')
+    expect(trashing()).toEqual([])
+    await page.inDialog('Abbrechen')
+    // Ticking the page again lets go of it.
+    await page.click(page.box.querySelector<HTMLInputElement>('[data-testid="keep-bar"] input[type="checkbox"]'))
+    expect(boxes().every((box) => !box.checked)).toBe(true)
+  })
+
+  it('lets go of the ticks when the filter changes', async () => {
+    server.answers[table('', '&vault_id=9&keep=expired')] = result(list(), 3)
+    await show('/?keep=expired')
+    await until(() => boxes().length === 3)
+    await page.click(boxes()[1])
+    expect(plain(page.box.querySelector('[data-testid="keep-bar"]')!.textContent)).toContain('1 ausgewählt')
+    await page.click(page.button('Haushalt'))
+    expect(where()).toBe('/?keep=expired&vault=9')
+    await until(() => server.called('GET', table('', '&vault_id=9&keep=expired').slice(4)))
+    await until(() => !plain(page.box.querySelector('[data-testid="keep-bar"]')!.textContent).includes('ausgewählt'))
+  })
+
+  it('leaves the filter with the pill, and keeps the chip while it is the filter in use', async () => {
+    server.answers['GET /api/v1/keeping?limit=1'] = { items: [], total: 0 }
+    server.answers[KEEP] = result([], 0)
+    await show('/?keep=expired')
+    await until(() => page.text.includes('Nichts gefunden') || page.box.querySelector('[data-testid="pill"]'))
+    expect(page.button('Darf weg 0')).toBeTruthy()
+    await page.click(page.box.querySelector<HTMLButtonElement>('[data-testid="pill"] button'))
+    expect(where()).toBe('/')
+  })
+
+  it('ignores any other word for the filter', async () => {
+    await show('/?keep=all')
+    await until(() => page.box.querySelector('[data-testid="overview"]'))
+    expect(server.calls.some((c) => c.url.includes('keep='))).toBe(false)
+  })
+
+  it('reads the same in English', async () => {
+    await changeLanguage('en', false)
+    await show('/?keep=expired')
+    await until(() => boxes().length === 3)
+    expect(plain(page.box.querySelector('[data-testid="table"]')!.textContent)).toContain('Keep until')
+    expect(page.text).toContain('Choose what goes to the trash')
+    expect(page.button('Move to the trash')!.disabled).toBe(true)
+  })
+})
+
+describe('the filter "Frist" for somebody who switched deadlines off', () => {
+  it('is in the filters of everybody else and gone for them, also from the address', async () => {
+    await show()
+    await page.click(page.button('Filter'))
+    expect(page.box.querySelector('select[aria-label="Frist"]')).toBeTruthy()
+    page.close()
+    auth.me = { ...me, profile: { ...me.profile, deadlines: false } }
+    server.answers[table('', '')] = result(three())
+    await show('/?deadline=open&all=1')
+    await until(() => rows().length === 3)
+    expect(server.calls.some((c) => c.url.includes('deadline='))).toBe(false)
+    expect(page.box.querySelector('[data-testid="pill"]')).toBeNull()
+    await page.click(page.button('Filter'))
+    expect(page.box.querySelector('select[aria-label="Frist"]')).toBeNull()
+    expect(page.box.querySelector('select[aria-label="Art"]')).toBeTruthy()
+  })
 })
 
 describe('the overview of the archive', () => {

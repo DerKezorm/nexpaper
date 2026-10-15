@@ -18,7 +18,7 @@ import { DocumentPage } from './DocumentPage'
 const me: Me = {
   id: 1, name: 'jule', display_name: 'Jule', role: 'operator', sign_in: 'password', email: '', language: 'de', email_confirmed: false,
   email_pending: '', oidc_linked: false, two_factor: true, totp: true, passkeys: 0, two_factor_recovery_left: 8, avatar: null, version: '0.0.1',
-  whats_new_seen: '0.0.1', session_stage: 'full', profile: { mode: 'system', quick_start: true, view: 'list', default_vault: null, timezone: 'Europe/Berlin', timezone_source: 'browser', ai: true, notify_login: true },
+  whats_new_seen: '0.0.1', session_stage: 'full', profile: { mode: 'system', quick_start: true, view: 'list', default_vault: null, timezone: 'Europe/Berlin', timezone_source: 'browser', ai: true, notify_login: true, deadlines: true },
 }
 const auth = { status: 'signedIn', me: me as Me | null, setMe: vi.fn(), refresh: vi.fn(async () => undefined), signOut: vi.fn(async () => undefined) }
 vi.mock('../state/auth', () => ({ useAuth: () => auth }))
@@ -257,6 +257,44 @@ describe('a document for somebody who may change it', () => {
     await show()
     await until(() => page.box.querySelector('[data-testid="shared-box"]'))
     expect(plain(page.box.querySelector('[data-testid="shared-box"]')!.textContent)).toContain('Link für Steuerbüro Kessler, bis 31.10.2026, 2× geöffnet')
+  })
+})
+
+describe('deadlines on the page of a document', () => {
+  const withDue = { ...base, dates: [{ kind: 'due', date: '2026-10-20', done: null }, ...base.dates] }
+
+  it('offers "paid" next to a due date, as before', async () => {
+    server.answers['GET /api/v1/documents/7'] = withDue
+    await show()
+    await until(() => input('Fällig am'))
+    expect(page.button('Als bezahlt markieren')).toBeTruthy()
+  })
+
+  it('keeps the dates but offers no "paid", "cancelled" or "done" to somebody who switched deadlines off', async () => {
+    auth.me = { ...me, profile: { ...me.profile, deadlines: false } }
+    server.answers['GET /api/v1/documents/7'] = { ...withDue, dates: [...withDue.dates, { kind: 'contract_end', date: '2027-01-31', notice: { n: 3, unit: 'months' }, renew_months: 12, done: null }] }
+    await show()
+    await until(() => input('Fällig am'))
+    // The date fields and the terms of the contract stay.
+    expect(input('Fällig am')!.value).toBe('2026-10-20')
+    expect(input('Vertrag bis')!.value).toBe('2027-01-31')
+    expect(page.text).toContain('Letzter Kündigungstag')
+    // The marks that belong to a reminder do not.
+    expect(page.button('Als bezahlt markieren')).toBeUndefined()
+    expect(page.button('Als gekündigt markieren')).toBeUndefined()
+    expect(page.text).not.toContain('Rückgängig')
+    expect(server.changes()).toEqual([])
+  })
+
+  it('tells that nexpaper put the document in the trash by itself, and until when it was to be kept', async () => {
+    server.answers['GET /api/v1/documents/7/events'] = [
+      { id: 4, at: '2026-10-15T03:00:00Z', action: 'auto_trashed', by: null, by_link: '', detail: { keep_until: '2024-12-31' } },
+      { id: 1, at: '2026-09-18T18:15:00Z', action: 'created', by: { id: 1, name: 'jule', display_name: 'Jule' }, by_link: '', detail: { source: 'upload' } },
+    ]
+    await show()
+    await page.click([...page.box.querySelectorAll<HTMLElement>('[role="tab"]')].find((tab) => plain(tab.textContent).startsWith('Verlauf')))
+    await until(() => page.text.includes('von selbst in den Papierkorb gelegt'))
+    expect(page.text).toContain('nexpaper hat das Dokument von selbst in den Papierkorb gelegt (Aufbewahren bis 31.12.2024)')
   })
 })
 

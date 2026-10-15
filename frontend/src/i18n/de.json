@@ -839,7 +839,9 @@
     "cursor_and_page": "Die Trefferliste hat sich geändert. Starte die Suche neu.",
     "mail_unavailable": "Erinnerungen per Mail brauchen einen Mailserver und eine bestätigte Adresse.",
     "reminders_no_way": "Kein Weg ist eingeschaltet, der dich erreicht.",
-    "bad_reminder": "Diesen Wert bietet nexpaper nicht an."
+    "bad_reminder": "Diesen Wert bietet nexpaper nicht an.",
+    "deadlines_off": "Fristen sind für dich ausgeschaltet.",
+    "no_keeping_time": "Lege zuerst eine Aufbewahrungsfrist für die Art fest."
   },
   "ready": {
     "title": "Bereit fürs Internet?",
@@ -1854,7 +1856,8 @@
       "textRead": "hat den Text gelesen",
       "filesMissing": "fand beim Prüfen der Dateien eine fehlende Datei",
       "filesChanged": "fand beim Prüfen der Dateien eine veränderte Datei",
-      "filesWhole": "fand beim Prüfen der Dateien alles wieder in Ordnung"
+      "filesWhole": "fand beim Prüfen der Dateien alles wieder in Ordnung",
+      "autoTrashed": "hat das Dokument von selbst in den Papierkorb gelegt (Aufbewahren bis {{date}})"
     },
     "trash": {
       "title": "Papierkorb",
@@ -2643,15 +2646,15 @@
     "newOnly": "Aufbewahren gilt für neu abgelegte",
     "removed": "{{name}}: keine Aufbewahrungsfrist mehr. Von Hand gesetzte bleiben.",
     "infoLead": "Aufbewahren",
-    "info": "zählt ab dem Ende des Jahres im Dokumentdatum: eine Rechnung vom 14.03.2026 mit 10 Jahren bis 31.12.2036. Ist die Zeit um, steht das Dokument unter Fristen, „Darf weg“. nexpaper löscht nie von selbst.",
+    "info": "zählt ab dem Ende des Jahres im Dokumentdatum: eine Rechnung vom 14.03.2026 mit 10 Jahren bis 31.12.2036. Ist die Zeit um, steht das Dokument im Archiv unter „Darf weg“. nexpaper löscht nichts von selbst, du entscheidest, was in den Papierkorb kommt. Wer will, schaltet für eine Art „Abgelaufene selbst in den Papierkorb“ ein: dann legt nexpaper abgelaufene Dokumente einmal am Tag in den Papierkorb, wo sie 30 Tage zurückholbar sind.",
     "examples": "Beispiele aus Deutschland, Stand 2026, ohne Gewähr: Firmen heben Buchungsbelege wie Rechnungen 8 Jahre auf, Bücher und Jahresabschlüsse 10, Geschäftsbriefe 6. Privat gilt für Handwerkerrechnungen rund ums Haus 2 Jahre, sonst meist keine Pflicht. Was für dich gilt, weiß dein Steuerberater.",
     "dialogTitle": "{{name}}: {{years}} aufbewahren",
     "dialogText": "Jedes neu abgelegte Dokument dieser Art bekommt „Aufbewahren bis“: Ende des Jahres im Dokumentdatum plus {{years}}, also für eines vom {{today}} der 31.12.{{year}}.",
     "existing_one": "Auch für das {{n}} vorhandene?",
     "existing_other": "Auch für die {{n}} vorhandenen?",
     "byHand": "{{n}} mit einem von Hand gesetzten Datum behalten es.",
-    "expired_one": "Bei {{n}} wäre die Zeit schon um. Es erscheint unter Fristen, „Darf weg“, gelöscht wird nichts von selbst.",
-    "expired_other": "Bei {{n}} wäre die Zeit schon um. Sie erscheinen unter Fristen, „Darf weg“, gelöscht wird nichts von selbst.",
+    "expired_one": "Bei {{n}} wäre die Zeit schon um.",
+    "expired_other": "Bei {{n}} wäre die Zeit schon um.",
     "noneExpired": "Bei keinem wäre die Zeit schon um.",
     "onlyNew": "Nur für neue",
     "forAll": "Für alle {{n}}",
@@ -2668,7 +2671,7 @@
     "trashRunning": "Die Zeit ist noch nicht um.",
     "trashAnyway": "Trotzdem in den Papierkorb",
     "mayGo": "Darf weg",
-    "mayGoIntro": "Die Aufbewahrungszeit ist um. nexpaper löscht nie von selbst: wähle aus, was in den Papierkorb soll.",
+    "mayGoIntro": "Die Aufbewahrungszeit ist um. nexpaper löscht nichts von selbst, du entscheidest, was in den Papierkorb kommt. Dieselbe Liste steht im Archiv unter „Darf weg“.",
     "mayGoEmpty": "Nichts, dessen Aufbewahrungszeit um ist.",
     "pickAll": "Alle {{n}} auswählen",
     "pick": "{{title}} auswählen",
@@ -2692,7 +2695,40 @@
     "removeText": "Neu abgelegte Dokumente dieser Art bekommen kein „Aufbewahren bis“ mehr. Gelöscht wird nichts.",
     "removeChoice": "„Für alle“ nimmt das aus der Art errechnete Datum weg, „Nur für neue“ lässt es stehen, dann als von Hand gesetzt.",
     "removedNew": "{{name}}: keine Aufbewahrungsfrist mehr für neu abgelegte. Die vorhandenen behalten ihr Datum.",
-    "firstOnly": "Gezeigt und auswählbar sind die ersten {{shown}} von {{total}}. Was du in den Papierkorb legst, macht Platz für die nächsten."
+    "firstOnly": "Gezeigt und auswählbar sind die ersten {{shown}} von {{total}}. Was du in den Papierkorb legst, macht Platz für die nächsten.",
+    "afterText": "Ist die Zeit um, steht das Dokument im Archiv unter „Darf weg“. nexpaper löscht nichts von selbst, du entscheidest, was in den Papierkorb kommt.",
+    "afterTextAuto": "Ist die Zeit um, legt nexpaper es einmal am Tag von selbst in den Papierkorb (30 Tage zurückholbar).",
+    "removeAuto": "Der Schalter „Abgelaufene selbst in den Papierkorb“ geht für diese Art mit aus.",
+    "expiredAuto_one": "Es kommt beim nächsten Lauf in den Papierkorb, weil für diese Art „Abgelaufene selbst in den Papierkorb“ an ist.",
+    "expiredAuto_other": "Sie kommen beim nächsten Lauf in den Papierkorb, weil für diese Art „Abgelaufene selbst in den Papierkorb“ an ist.",
+    "filterLabel": "Aufbewahrung",
+    "archiveHint_one": "Ein Dokument darf weg",
+    "archiveHint_other": "{{n}} Dokumente dürfen weg",
+    "archiveHintText": "Die Aufbewahrungszeit ist um.",
+    "archiveHintOpen": "Ansehen",
+    "archiveIntro": "Bei diesen Dokumenten ist die Aufbewahrungszeit um, in den Tresoren, in denen du bearbeiten darfst. Wähle aus, was in den Papierkorb soll; dort lässt es sich 30 Tage zurückholen.",
+    "archiveIntroAuto": "Arten mit dem Schalter „Abgelaufene selbst in den Papierkorb“ gehen einmal am Tag von selbst, das steht dann in der Spalte.",
+    "untilColumn": "Aufbewahren bis",
+    "goesItself": "geht von selbst in den Papierkorb",
+    "pickShown": "Alle {{n}} auf dieser Seite",
+    "pickEverything": "Alle {{n}} Dokumente auswählen",
+    "pickFirst": "Die ersten {{n}} auswählen",
+    "picked": "{{n}} ausgewählt",
+    "auto": {
+      "label": "Abgelaufene selbst in den Papierkorb",
+      "hint": "Einmal am Tag, höchstens 500. Im Papierkorb bleiben sie 30 Tage.",
+      "fixed": "Abgelaufene gehen einmal am Tag von selbst in den Papierkorb.",
+      "aria": "{{name}}, Abgelaufene selbst in den Papierkorb",
+      "askTitle": "{{name}}: Abgelaufene selbst in den Papierkorb legen?",
+      "askText": "Einmal am Tag legt nexpaper die Dokumente dieser Art in den Papierkorb, deren Aufbewahrungszeit um ist. Dort lassen sie sich 30 Tage zurückholen, danach sind sie endgültig weg, auch die Dateien auf dem Server.",
+      "nowNone": "Im Moment trifft das kein Dokument.",
+      "nowSome_one": "Das trifft schon jetzt {{n}} Dokument: Es kommt in der nächsten Stunde in den Papierkorb.",
+      "nowSome_other": "Das trifft schon jetzt {{n}} Dokumente: Sie kommen in der nächsten Stunde in den Papierkorb.",
+      "limit": "Es gehen höchstens 500 am Tag, der Rest an den nächsten Tagen.",
+      "confirm": "Einschalten",
+      "saidOn": "{{name}}: Abgelaufene gehen jetzt von selbst in den Papierkorb.",
+      "saidOff": "{{name}}: Abgelaufene bleiben im Archiv, bis du sie in den Papierkorb legst."
+    }
   },
   "deadlines": {
     "menu": "Fristen",
@@ -2928,8 +2964,8 @@
       "weekHead": "Diese Woche",
       "nothing": "nichts",
       "mayGo": "Darf weg",
-      "mayGo_one": "Bei einem Dokument ist die Aufbewahrungszeit um.",
-      "mayGo_other": "Bei {{count}} Dokumenten ist die Aufbewahrungszeit um.",
+      "mayGo_one": "Bei einem Dokument ist die Aufbewahrungszeit um. Es steht im Archiv unter „Darf weg“.",
+      "mayGo_other": "Bei {{count}} Dokumenten ist die Aufbewahrungszeit um. Sie stehen im Archiv unter „Darf weg“.",
       "all": "Alle Fristen in nexpaper öffnen",
       "why": "Diese Mail kommt, weil du unter Mein Konto, Erinnerungen die Wochenübersicht eingeschaltet hast.",
       "short": {
@@ -2937,12 +2973,29 @@
         "cancel": "Kündigen",
         "ends": "Kündigen",
         "warranty": "Garantie"
-      }
+      },
+      "trashedHead": "Papierkorb",
+      "trashed_one": "Ein Dokument hat nexpaper in den Papierkorb gelegt, seine Aufbewahrungszeit war um. Dort lässt es sich 30 Tage zurückholen.",
+      "trashed_other": "{{count}} Dokumente hat nexpaper in den Papierkorb gelegt, ihre Aufbewahrungszeit war um. Dort lassen sie sich 30 Tage zurückholen."
     },
     "remindedHow": "Erinnert wirst du so, wie du es unter <account>Mein Konto, Erinnerungen</account> eingestellt hast.",
     "datesNote": "Erinnert werden alle, die im Tresor bearbeiten dürfen, jede Person so, wie sie es unter <account>Mein Konto, Erinnerungen</account> eingestellt hat.",
     "muted": "stumm",
     "mutedTitle": "Für diesen Tresor hast du Erinnerungen stumm geschaltet.",
-    "saved": "Gespeichert."
+    "saved": "Gespeichert.",
+    "use": {
+      "title": "Fristen verwenden",
+      "text": "Gilt nur für dich. Die anderen im Haushalt behalten ihre Einstellungen.",
+      "label": "Fristen verwenden",
+      "hint": "Aus: kein Menüpunkt Fristen, keine Erinnerungen, keine Wochenübersicht. Die Termine an den Dokumenten bleiben.",
+      "offTitle": "Fristen sind aus",
+      "offText": "Im Menü steht kein Punkt Fristen, du bekommst keine Erinnerungen und keine Wochenübersicht. Die Termine an den Dokumenten bleiben, und die anderen Personen sind nicht betroffen.",
+      "offButton": "Fristen einschalten",
+      "askTitle": "Fristen ausschalten?",
+      "askText": "Du bekommst keine Erinnerungen und keine Wochenübersicht mehr, und im Menü steht Fristen nicht mehr. Die Termine an den Dokumenten bleiben. Hier kannst du Fristen jederzeit wieder einschalten.",
+      "askConfirm": "Ausschalten",
+      "saidOn": "Fristen sind wieder an.",
+      "saidOff": "Fristen sind aus."
+    }
   }
 }

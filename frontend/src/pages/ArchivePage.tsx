@@ -7,7 +7,7 @@
  * braked by the server (120 a minute) and every answer takes 25 to 50 ms on purpose: the field waits until the typing
  * pauses, a request that is no longer wanted is stopped, and a brake is waited out.
  */
-import { ArrowDown, ArrowUp, ChevronLeft, ChevronRight, Download, FileCode2, LayoutGrid, Link2, List, ListTree, MessageSquare, Search, SlidersHorizontal, Users, X } from 'lucide-react'
+import { Archive, ArrowDown, ArrowUp, ChevronLeft, ChevronRight, Download, FileCode2, LayoutGrid, Link2, List, ListTree, MessageSquare, Search, SlidersHorizontal, Trash2, Users, X } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useSearchParams } from 'react-router-dom'
@@ -31,13 +31,17 @@ import {
 import { Button } from '../components/Button'
 import { Dialog } from '../components/Dialog'
 import { SenderPicker } from '../components/SenderPicker'
+import { MayGoChip } from '../components/MayGo'
 import { Chip, DocThumb, FileSign, KindPill, Marked } from '../components/docs'
 import { Avatar } from '../components/Avatar'
 import { VaultIcon } from '../components/VaultIcon'
-import { DEADLINE_FILTER, DEFAULT_SIZE, filtersOf, KEYS, NARROWING, nextOrder, orderOf, pageList, pageOf, SIZES, sizeOf, type Chosen } from '../lib/archive'
+import { DEADLINE_FILTER, DEFAULT_SIZE, filtersOf, KEYS, NARROWING, nextOrder, orderOf, pageList, pageOf, PICK_MOST, SIZES, sizeOf, type Chosen } from '../lib/archive'
 import { shortDate } from '../lib/dates'
+import { usesDeadlines } from '../lib/deadlines'
 import { errorText } from '../lib/errors'
 import { oneOfEachName, representative } from '../lib/kinds'
+import { keptOf } from '../lib/keeping'
+import { useMayGoCount, useTrashMany } from '../lib/mayGo'
 import { money } from '../lib/money'
 import { asAvatarPerson, personName } from '../lib/people'
 import { iso, listOf } from '../lib/say'
@@ -80,7 +84,13 @@ export function ArchivePage({ slots = appSlots }: { slots?: Slots }) {
   const { me, setMe } = useAuth()
   const [params, setParams] = useSearchParams()
   const q = params.get('q') ?? ''
-  const chosen = useMemo(() => Object.fromEntries(KEYS.map((key) => [key, params.get(key) ?? ''])) as Chosen, [params])
+  const deadlinesOn = usesDeadlines(me)
+  const chosen = useMemo(() => {
+    const asked = Object.fromEntries(KEYS.map((key) => [key, params.get(key) ?? ''])) as Chosen
+    // The filter "Darf weg" knows one word; whoever switched deadlines off has no filter "Frist" (the address is ignored).
+    return { ...asked, keep: asked.keep === 'expired' ? 'expired' : '', ...(deadlinesOn ? {} : { deadline: '' }) }
+  }, [params, deadlinesOn])
+  const keepMode = chosen.keep === 'expired'
   const showAll = params.get('all') === '1'
   const order = orderOf(params.get('sort'))
   const size = sizeOf(params.get('n'))
@@ -112,6 +122,14 @@ export function ArchivePage({ slots = appSlots }: { slots?: Slots }) {
   const [took, setTook] = useState<number | null>(null)
   const [problem, setProblem] = useState<Problem | null>(null)
   const [again, setAgain] = useState(0)
+  /** The filter "Darf weg": the documents ticked for the trash (across pages; cleared when the filter changes). */
+  const [picked, setPicked] = useState<Set<number>>(new Set())
+  const mayGo = useMayGoCount()
+  const { trash: askTrash, dialog: trashDialog } = useTrashMany(() => {
+    setPicked(new Set())
+    setAgain((n) => n + 1)
+    mayGo.reload()
+  })
   const searchBox = useRef<HTMLDivElement>(null)
   const field = useRef<HTMLInputElement>(null)
   const top = useRef<HTMLDivElement>(null)
@@ -156,6 +174,9 @@ export function ArchivePage({ slots = appSlots }: { slots?: Slots }) {
 
   const filters = useMemo(() => filtersOf(chosen), [chosen])
   const filterKey = JSON.stringify(filters)
+  useEffect(() => {
+    setPicked(new Set())
+  }, [filterKey, q])
   const vaultFilters = useMemo(() => {
     const { status, vault_id, via_share } = filters
     return { status, vault_id, via_share }
@@ -282,7 +303,7 @@ export function ArchivePage({ slots = appSlots }: { slots?: Slots }) {
   const toOverview = () => {
     setTyped('')
     sent.current = ''
-    go({ q: '', all: '', kind: '', sender: '', tag: '', owner: '', year: '', deadline: '' })
+    go({ q: '', all: '', kind: '', sender: '', tag: '', owner: '', year: '', deadline: '', keep: '' })
   }
   const toPage = (n: number) => {
     go({ page: n > 1 ? String(n) : '' }, { keepPage: true })
@@ -305,7 +326,40 @@ export function ArchivePage({ slots = appSlots }: { slots?: Slots }) {
     ['tag', t('docs.archive.tag'), chosen.tag],
     ['owner', t('docs.archive.owner'), chosen.owner && personName(people.find((p) => String(p.id) === chosen.owner) ?? { id: 0, name: chosen.owner, display_name: '' })],
     ['deadline', t('deadlines.archive.filter'), chosen.deadline && t(`deadlines.archive.${DEADLINE_FILTER.find(([value]) => value === chosen.deadline)?.[1] ?? 'open'}`)],
+    ['keep', t('keeping.filterLabel'), keepMode && t('keeping.mayGo')],
   ].filter(([, , value]) => value) as [keyof Chosen, string, string][]
+
+  /** Ticks every document of the filter on this page, or lets go of them. */
+  const onPage = hits ?? []
+  const allOnPage = onPage.length > 0 && onPage.every((hit) => picked.has(hit.document.id))
+  const togglePage = () =>
+    setPicked((had) => {
+      const next = new Set(had)
+      for (const hit of onPage) {
+        if (allOnPage) next.delete(hit.document.id)
+        else next.add(hit.document.id)
+      }
+      return next
+    })
+  const toggleOne = (id: number) =>
+    setPicked((had) => {
+      const next = new Set(had)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  /** Every document of the filter, up to `PICK_MOST` (pages of 100 from the search). */
+  const pickEverything = async () => {
+    const ids: number[] = []
+    const wanted = Math.min(total, PICK_MOST)
+    for (let number = 1; ids.length < wanted; number += 1) {
+      const found = await searchApi.find(q, { ...filters, limit: 100, sort: order, page: number })
+      const items = listOf<SearchHit>(found.items)
+      if (items.length === 0) break
+      ids.push(...items.map((hit) => hit.document.id))
+    }
+    setPicked(new Set(ids.slice(0, wanted)))
+  }
 
   return (
     <div ref={top} className="page space-y-5 pt-6 pb-28 lg:pt-8 lg:pb-12">
@@ -321,7 +375,7 @@ export function ArchivePage({ slots = appSlots }: { slots?: Slots }) {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {listing && (
+          {listing && !keepMode && (
             <div role="radiogroup" aria-label={t('docs.archive.view')} className="inline-flex rounded-full border border-line bg-sheet p-0.5">
               {([['list', List, t('docs.archive.list')], ['grid', LayoutGrid, t('docs.archive.tiles')]] as const).map(([value, Icon, label]) => (
                 <button
@@ -339,7 +393,7 @@ export function ArchivePage({ slots = appSlots }: { slots?: Slots }) {
               ))}
             </div>
           )}
-          {slots.ExportDialog && (
+          {slots.ExportDialog && !keepMode && (
             <Button variant="line" size="sm" onClick={() => setExporting(true)}>
               <Download size={15} aria-hidden /> {t('docs.archive.export')}
             </Button>
@@ -414,13 +468,14 @@ export function ArchivePage({ slots = appSlots }: { slots?: Slots }) {
             <Users size={14} aria-hidden /> {t('docs.archive.sharedToMe')}
           </Chip>
         )}
+        <MayGoChip count={mayGo.total} active={keepMode} onClick={() => choose({ keep: keepMode ? '' : 'expired' })} />
         <span className="mx-1 h-5 w-px shrink-0 bg-line" />
         <Chip active={more || narrowing > 0} onClick={() => setMore(!more)}>
           <SlidersHorizontal size={14} aria-hidden /> {narrowing > 0 ? t('docs.archive.filterCount', { count: narrowing }) : t('docs.archive.filter')}
         </Chip>
       </div>
 
-      {more && <Filters chosen={chosen} choose={choose} kinds={kinds} senders={senders} tags={tags} people={people} years={(overview ?? whole)?.years ?? []} active={narrowing} />}
+      {more && <Filters chosen={chosen} choose={choose} kinds={kinds} senders={senders} tags={tags} people={people} years={(overview ?? whole)?.years ?? []} active={narrowing} deadlines={deadlinesOn} />}
 
       {problem && (
         <p role="alert" className="rounded-xl border border-bad/40 bg-bad/10 px-3 py-2 text-sm text-bad">
@@ -442,6 +497,8 @@ export function ArchivePage({ slots = appSlots }: { slots?: Slots }) {
             onAll={() => go({ all: '1' })}
             onPick={(key, value) => go({ [key]: value })}
             onAllSenders={() => setAllSenders(true)}
+            mayGo={mayGo.total}
+            onMayGo={() => go({ keep: 'expired' })}
             table={<Table hits={newest} vaultById={vaultById} vaultName={vaultName} searching={false} order="-date" bare />}
           />
         )
@@ -477,9 +534,29 @@ export function ArchivePage({ slots = appSlots }: { slots?: Slots }) {
           {hits && hits.length === 0 && !problem && <Empty title={t('docs.archive.nothingTitle')} text={t('docs.archive.nothingText')} />}
           {!hits && !problem && <p className="text-sm text-muted">{t('docs.loading')}</p>}
 
+          {keepMode && hits && hits.length > 0 && (
+            <KeepBar
+              hits={hits}
+              total={total}
+              picked={picked.size}
+              allOnPage={allOnPage}
+              onPage={togglePage}
+              onEverything={() => void pickEverything()}
+              onTrash={() => askTrash([...picked])}
+            />
+          )}
+
           {hits && hits.length > 0 &&
-            (view === 'list' ? (
-              <Table hits={hits} vaultById={vaultById} vaultName={vaultName} searching={!!q} order={order} onOrder={(next) => go({ sort: next === '-date' ? '' : next })} />
+            (view === 'list' || keepMode ? (
+              <Table
+                hits={hits}
+                vaultById={vaultById}
+                vaultName={vaultName}
+                searching={!!q}
+                order={order}
+                onOrder={(next) => go({ sort: next === '-date' ? '' : next })}
+                keep={keepMode ? { picked, toggle: toggleOne, all: allOnPage, toggleAll: togglePage } : undefined}
+              />
             ) : (
               <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
                 {hits.map((hit) => (
@@ -494,6 +571,7 @@ export function ArchivePage({ slots = appSlots }: { slots?: Slots }) {
         </>
       )}
 
+      {trashDialog}
       {allSenders && overview && (
         <SenderDialog
           senders={overview.senders}
@@ -540,14 +618,34 @@ type OverviewProps = {
   onAll: () => void
   onPick: (key: keyof Chosen, value: string) => void
   onAllSenders: () => void
+  /** How many documents may go (their keeping time is over); the hint shows only above 0. */
+  mayGo: number
+  onMayGo: () => void
 }
 
-function Overview({ data, newest, table, onAll, onPick, onAllSenders }: OverviewProps) {
+function Overview({ data, newest, table, onAll, onPick, onAllSenders, mayGo, onMayGo }: OverviewProps) {
   const { t, i18n } = useTranslation()
   const n = (value: number) => value.toLocaleString(i18n.language)
   const most = data.years.reduce((all, y) => Math.max(all, y.count), 1)
   return (
     <div className="space-y-6" data-testid="overview">
+      {mayGo > 0 && (
+        <button
+          type="button"
+          onClick={onMayGo}
+          data-testid="may-go-hint"
+          className="card flex w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-sheet-2/60"
+        >
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-accent">
+            <Archive size={18} aria-hidden />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block font-semibold">{t('keeping.archiveHint', { count: mayGo, n: n(mayGo) })}</span>
+            <span className="block text-sm text-muted">{t('keeping.archiveHintText')}</span>
+          </span>
+          <span className="shrink-0 text-sm font-semibold text-accent">{t('keeping.archiveHintOpen')}</span>
+        </button>
+      )}
       {newest.length > 0 && (
         <section aria-label={t('docs.archive.newest')}>
           <div className="mb-2 flex items-baseline justify-between gap-3 px-1">
@@ -637,6 +735,8 @@ function Pick({ children, count, onClick }: { children: ReactNode; count: number
 
 /** The columns of the table: from `md` a grid, the vault from `lg`; below, title, sender and date in two lines. Title
  * and sender share what is left, the title twice as much: fixed widths cut the titles short on a laptop. */
+/** The same with the box to tick in front (the filter "Darf weg"): the amount gives way to "Aufbewahren bis". */
+const COLUMNS_KEEP = 'md:grid md:grid-cols-[1.5rem_minmax(0,2fr)_minmax(0,1fr)_7rem_5.5rem_11rem] lg:grid-cols-[1.5rem_minmax(0,2fr)_minmax(0,1fr)_7rem_minmax(0,8rem)_5.5rem_11rem] md:items-center md:gap-3'
 const COLUMNS = 'md:grid md:grid-cols-[1.5rem_minmax(0,2fr)_minmax(0,1fr)_7rem_5.5rem_6rem] lg:grid-cols-[1.5rem_minmax(0,2fr)_minmax(0,1fr)_7rem_minmax(0,8rem)_5.5rem_6rem] md:items-center md:gap-3'
 
 type TableProps = {
@@ -648,9 +748,13 @@ type TableProps = {
   onOrder?: (order: SearchOrder) => void
   /** Without the heading and the months (the newest of the overview). */
   bare?: boolean
+  /** The filter "Darf weg": a box in front of every row and "Aufbewahren bis" in place of the amount. */
+  keep?: KeepPick
 }
 
-function Table({ hits, vaultById, vaultName, searching, order, onOrder, bare = false }: TableProps) {
+type KeepPick = { picked: Set<number>; toggle: (id: number) => void; all: boolean; toggleAll: () => void }
+
+function Table({ hits, vaultById, vaultName, searching, order, onOrder, bare = false, keep }: TableProps) {
   const { t, i18n } = useTranslation()
   const byDate = !bare && order.endsWith('date')
   const monthName = (key: string) => {
@@ -669,7 +773,7 @@ function Table({ hits, vaultById, vaultName, searching, order, onOrder, bare = f
       )
       month = key
     }
-    rows.push(<Row key={hit.document.id} hit={hit} vault={vaultById.get(hit.document.vault_id)} vaultName={vaultName} searching={searching} />)
+    rows.push(<Row key={hit.document.id} hit={hit} vault={vaultById.get(hit.document.vault_id)} vaultName={vaultName} searching={searching} keep={keep} />)
   }
   const head = (column: 'title' | 'sender' | 'date' | 'amount', label: string, right = false) => {
     const on = order === column || order === `-${column}`
@@ -690,14 +794,17 @@ function Table({ hits, vaultById, vaultName, searching, order, onOrder, bare = f
   return (
     <div className="card overflow-hidden p-0" data-testid="table">
       {!bare && (
-        <div className={`hidden border-b border-line px-4 py-2.5 text-xs font-bold tracking-wide text-muted ${COLUMNS}`}>
-          <span />
-          {head('title', t('docs.archive.colTitle'))}
-          {head('sender', t('docs.archive.sender'))}
-          <span className="uppercase">{t('docs.archive.kind')}</span>
-          <span className="hidden uppercase lg:block">{t('docs.archive.colVault')}</span>
-          {head('date', t('docs.archive.colDate'))}
-          {head('amount', t('docs.archive.colAmount'), true)}
+        <div className={`hidden items-center border-b border-line pl-4 text-xs font-bold tracking-wide text-muted md:flex`}>
+          {keep && <span className="w-4 shrink-0" aria-hidden />}
+          <div className={`min-w-0 flex-1 py-2.5 ${keep ? COLUMNS_KEEP : COLUMNS} ${keep ? 'px-4' : 'pr-4'}`}>
+            <span />
+            {head('title', t('docs.archive.colTitle'))}
+            {head('sender', t('docs.archive.sender'))}
+            <span className="uppercase">{t('docs.archive.kind')}</span>
+            <span className="hidden uppercase lg:block">{t('docs.archive.colVault')}</span>
+            {head('date', t('docs.archive.colDate'))}
+            {keep ? <span className="uppercase">{t('keeping.untilColumn')}</span> : head('amount', t('docs.archive.colAmount'), true)}
+          </div>
         </div>
       )}
       <ul className="divide-y divide-line">{rows}</ul>
@@ -705,13 +812,13 @@ function Table({ hits, vaultById, vaultName, searching, order, onOrder, bare = f
   )
 }
 
-function Row({ hit, vault, vaultName, searching }: { hit: SearchHit; vault: Vault | undefined; vaultName: (v: Vault) => string; searching: boolean }) {
+function Row({ hit, vault, vaultName, searching, keep }: { hit: SearchHit; vault: Vault | undefined; vaultName: (v: Vault) => string; searching: boolean; keep?: KeepPick }) {
   const { t, i18n } = useTranslation()
   const d = hit.document
   const when = shortDate(d.date ?? d.added_at, i18n.language)
-  return (
-    <li data-testid="row">
-      <Link to={`/dokument/${d.id}`} className={`flex items-center gap-3 px-4 py-2 hover:bg-sheet-2/60 ${COLUMNS}`}>
+  const kept = keep ? keptOf(d) : null
+  const link = (
+      <Link to={`/dokument/${d.id}`} className={`flex items-center gap-3 py-2 hover:bg-sheet-2/60 ${keep ? `min-w-0 flex-1 px-4 ${COLUMNS_KEEP}` : `px-4 ${COLUMNS}`}`}>
         <DocThumb document={d} className="w-6 shrink-0" />
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
@@ -750,9 +857,61 @@ function Row({ hit, vault, vaultName, searching }: { hit: SearchHit; vault: Vaul
           <span className="truncate">{vault && !d.via_share ? vaultName(vault) : t('docs.archive.sharedLower')}</span>
         </span>
         <span className="hidden text-sm text-ink-2 tabular-nums md:block">{when}</span>
-        <span className="w-20 shrink-0 text-right text-sm font-semibold tabular-nums md:w-auto">{money(d.amount, i18n.language, d.currency)}</span>
+        {keep ? (
+          <span className="shrink-0 text-right text-sm text-ink-2 md:text-left" data-testid="keep-until">
+            <span className="inline-flex items-center gap-1 tabular-nums">
+              <Archive size={13} className="text-muted" aria-hidden /> {kept ? shortDate(kept.date, i18n.language) : ''}
+            </span>
+            {kept && <span className="block text-xs text-muted">{kept.from === 'kind' ? t('keeping.fromKindShort', { years: t('keeping.years', { count: kept.years ?? 0 }) }) : t('keeping.byHandShort')}</span>}
+            {d.kind?.auto_trash && <span className="block text-xs font-semibold text-accent">{t('keeping.goesItself')}</span>}
+          </span>
+        ) : (
+          <span className="w-20 shrink-0 text-right text-sm font-semibold tabular-nums md:w-auto">{money(d.amount, i18n.language, d.currency)}</span>
+        )}
       </Link>
+  )
+  if (!keep) return <li data-testid="row">{link}</li>
+  return (
+    <li data-testid="row" className="flex items-center pl-4">
+      <input
+        type="checkbox"
+        checked={keep.picked.has(d.id)}
+        onChange={() => keep.toggle(d.id)}
+        className="h-4 w-4 shrink-0 accent-[var(--accent)]"
+        aria-label={t('keeping.pick', { title: d.title })}
+      />
+      {link}
     </li>
+  )
+}
+
+/** Above the table of the filter "Darf weg": what it is, the box that ticks the page, and the way to the trash. */
+function KeepBar({ hits, total, picked, allOnPage, onPage, onEverything, onTrash }: { hits: SearchHit[]; total: number; picked: number; allOnPage: boolean; onPage: () => void; onEverything: () => void; onTrash: () => void }) {
+  const { t, i18n } = useTranslation()
+  const n = (value: number) => value.toLocaleString(i18n.language)
+  const anyAuto = hits.some((hit) => hit.document.kind?.auto_trash)
+  return (
+    <div className="space-y-3" data-testid="keep-bar">
+      <p className="max-w-2xl text-sm text-muted">
+        {t('keeping.archiveIntro')}
+        {anyAuto && ` ${t('keeping.archiveIntroAuto')}`}
+      </p>
+      <div className="card flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-2.5">
+        <label className="inline-flex cursor-pointer items-center gap-2 text-sm font-semibold">
+          <input type="checkbox" checked={allOnPage} onChange={onPage} className="h-4 w-4 accent-[var(--accent)]" />
+          {t('keeping.pickShown', { n: n(hits.length) })}
+        </label>
+        {allOnPage && total > hits.length && (
+          <button type="button" onClick={onEverything} className="text-sm font-semibold text-accent hover:underline">
+            {total > PICK_MOST ? t('keeping.pickFirst', { n: n(PICK_MOST) }) : t('keeping.pickEverything', { n: n(total) })}
+          </button>
+        )}
+        <span className="ml-auto text-sm text-muted">{picked > 0 ? t('keeping.picked', { n: n(picked) }) : ''}</span>
+        <Button size="sm" variant={picked ? 'primary' : 'line'} disabled={!picked} onClick={onTrash}>
+          <Trash2 size={15} aria-hidden /> {picked > 0 ? t('keeping.toTrashCount', { n: n(picked) }) : t('keeping.toTrash')}
+        </Button>
+      </div>
+    </div>
   )
 }
 
@@ -897,9 +1056,11 @@ type FiltersProps = {
   people: Person[]
   years: { year: number }[]
   active: number
+  /** The filter "Frist" only for somebody who uses deadlines. */
+  deadlines: boolean
 }
 
-function Filters({ chosen, choose, kinds, senders, tags, people, years, active }: FiltersProps) {
+function Filters({ chosen, choose, kinds, senders, tags, people, years, active, deadlines }: FiltersProps) {
   const { t } = useTranslation()
   // The years the archive has, and the chosen one even when it has none (an address from elsewhere).
   const yearOptions = [...new Set([...years.map((y) => String(y.year)), ...(chosen.year ? [chosen.year] : [])])].sort().reverse()
@@ -915,10 +1076,12 @@ function Filters({ chosen, choose, kinds, senders, tags, people, years, active }
       <Select label={t('docs.archive.tag')} value={chosen.tag} onChange={(tag) => choose({ tag })} options={tags.map((g) => [g.name, g.name])} empty={t('docs.archive.all')} />
       <Select label={t('docs.archive.owner')} value={chosen.owner} onChange={(owner) => choose({ owner })} options={people.map((p) => [String(p.id), personName(p)])} empty={t('docs.archive.all')} />
       <Select label={t('docs.archive.year')} value={chosen.year} onChange={(year) => choose({ year })} options={yearOptions.map((y) => [y, y])} empty={t('docs.archive.anytime')} />
-      <Select label={t('deadlines.archive.filter')} value={chosen.deadline} onChange={(deadline) => choose({ deadline })} options={DEADLINE_FILTER.map(([value, word]) => [value, t(`deadlines.archive.${word}`)])} empty={t('deadlines.archive.any')} />
+      {deadlines && (
+        <Select label={t('deadlines.archive.filter')} value={chosen.deadline} onChange={(deadline) => choose({ deadline })} options={DEADLINE_FILTER.map(([value, word]) => [value, t(`deadlines.archive.${word}`)])} empty={t('deadlines.archive.any')} />
+      )}
       <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-sm font-semibold text-accent sm:col-span-2 lg:col-span-7">
         {active > 0 && (
-          <button type="button" onClick={() => choose({ kind: '', sender: '', tag: '', owner: '', year: '', deadline: '' })} className="text-left">
+          <button type="button" onClick={() => choose({ kind: '', sender: '', tag: '', owner: '', year: '', deadline: '', keep: '' })} className="text-left">
             {t('docs.archive.reset')}
           </button>
         )}

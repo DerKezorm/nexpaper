@@ -5,10 +5,10 @@
 import type { SearchFilters, SearchOrder } from '../api/client'
 
 /** The filters as the address holds them. */
-export type Chosen = { vault: string; kind: string; sender: string; tag: string; owner: string; year: string; deadline: string }
-export const KEYS: (keyof Chosen)[] = ['vault', 'kind', 'sender', 'tag', 'owner', 'year', 'deadline']
+export type Chosen = { vault: string; kind: string; sender: string; tag: string; owner: string; year: string; deadline: string; keep: string }
+export const KEYS: (keyof Chosen)[] = ['vault', 'kind', 'sender', 'tag', 'owner', 'year', 'deadline', 'keep']
 /** The filters that open the table; the vault alone keeps the overview. */
-export const NARROWING: (keyof Chosen)[] = ['kind', 'sender', 'tag', 'owner', 'year', 'deadline']
+export const NARROWING: (keyof Chosen)[] = ['kind', 'sender', 'tag', 'owner', 'year', 'deadline', 'keep']
 /** The filter "Frist" (the mock's `FRIST_FILTER`): open, overdue, the next 30 days, done; the key of its words under
  * `deadlines.archive`. */
 export const DEADLINE_FILTER: [string, string][] = [
@@ -21,6 +21,9 @@ export const DEADLINE_FILTER: [string, string][] = [
 export const ORDERS: SearchOrder[] = ['-date', 'date', '-title', 'title', '-sender', 'sender', '-amount', 'amount']
 export const SIZES = [25, 50, 100]
 export const DEFAULT_SIZE = 50
+
+/** The most documents "Alle auswählen" reaches in the filter "Darf weg" (what one request to the trash takes). */
+export const PICK_MOST = 500
 
 /** What the server is asked for: the archive is what was filed. */
 export function filtersOf(chosen: Chosen): SearchFilters {
@@ -35,6 +38,8 @@ export function filtersOf(chosen: Chosen): SearchFilters {
     ...(number(chosen.owner) ? { owner_id: number(chosen.owner) } : {}),
     ...(year ? { date_from: `${year}-01-01`, date_to: `${year}-12-31` } : {}),
     ...(DEADLINE_FILTER.some(([value]) => value === chosen.deadline) ? { deadline: chosen.deadline } : {}),
+    // "Darf weg": the keeping time is over, in the vaults where the person may change things.
+    ...(chosen.keep === 'expired' ? { keep: 'expired' as const } : {}),
   }
 }
 

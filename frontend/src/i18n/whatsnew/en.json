@@ -1,4 +1,33 @@
 {
+  "1.4.1": {
+    "lead": "Deadlines can be switched off per person, “May go” is in the archive, and expired documents can go to the trash by themselves.",
+    "sections": [
+      {
+        "title": "Switch deadlines off per person",
+        "where": "My account, Reminders",
+        "body": "If you do not use deadlines, switch them off there, for yourself. Then the menu has no Deadlines item and no number (on the phone the bar has Organise again), there are no reminders and no weekly overview, and the archive has no Deadline filter. The dates on the documents stay, only “paid” and “later” are gone for you; the search words with deadline: keep working. The others in the household are not affected. Deadlines are on from the start."
+      },
+      {
+        "title": "“May go” in the archive",
+        "where": "Archive",
+        "body": "The archive has a filter “May go”: the documents whose keeping time is over, as a table with the column “Keep until” and whether the date comes from the kind or was set by hand. With the boxes you choose what goes to the trash; nexpaper asks first, as always. When there is something to clear out, the overview of the archive says so in one line. The Deadlines page keeps its section."
+      },
+      {
+        "title": "Expired ones into the trash by themselves",
+        "where": "Organise, Kinds",
+        "body": "Every kind with a keeping time has a switch “Put expired ones in the trash by themselves”, off from the start. When it is on, nexpaper puts the expired documents of the kind in the trash once a day, at most 500 a day and each document only once; whoever restores one keeps it. Switching it on asks first and says how many documents it would affect right away. Nothing is deleted for good by it: they stay in the trash for 30 days. The history of the document and the weekly overview say what nexpaper put away."
+      },
+      {
+        "title": "Clearer what happens when the time is over",
+        "where": "Organise, Kinds",
+        "body": "The question for “N years” of keeping now always says what happens once the time is over: the document is in the archive under “May go” and nothing is deleted by itself, or nexpaper puts it in the trash by itself when the switch of the kind is on."
+      }
+    ],
+    "smallTitle": "Also",
+    "small": [
+      "The update adds a column to the kinds (schema 14). nexpaper makes a backup itself first; going back to 1.4.0 works only through that backup."
+    ]
+  },
   "1.4.0": {
     "lead": "Deadlines on a page of their own, reminders for invoices, cancellations and warranties, and a keeping time for every kind.",
     "sections": [

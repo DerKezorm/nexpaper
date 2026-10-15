@@ -18,7 +18,7 @@ const operator: Me = {
   id: 1, name: 'jule', display_name: 'Jule', role: 'operator', sign_in: 'password', email: '', language: 'de', email_confirmed: false, email_pending: '',
   oidc_linked: false, two_factor: true, totp: true, passkeys: 0, two_factor_recovery_left: 8, avatar: null, version: '0.0.1', whats_new_seen: '0.0.1',
   session_stage: 'full', second_factor_required: false, mail: false,
-  profile: { mode: 'system', quick_start: true, view: 'list', default_vault: null, timezone: 'Europe/Berlin', timezone_source: 'browser', ai: true, notify_login: true },
+  profile: { mode: 'system', quick_start: true, view: 'list', default_vault: null, timezone: 'Europe/Berlin', timezone_source: 'browser', ai: true, notify_login: true, deadlines: true },
 }
 const auth = { status: 'signedIn' as string, me: operator as Me | null, setMe: vi.fn(), refresh: vi.fn(async () => undefined), signOut: vi.fn(async () => undefined) }
 vi.mock('../state/auth', () => ({ useAuth: () => auth, safeNext: (next: string | null) => next ?? '/' }))
@@ -97,12 +97,44 @@ describe('after the sign-in', () => {
     expect(deadlines.textContent).toBe('6')
     expect(deadlines.className).toContain('bg-warn')
     expect(deadlines.getAttribute('title')).toBe('Etwas ist überfällig')
-    // "Darf weg" (the keeping time is over) is no deadline: the menu neither counts it nor even asks for it.
-    expect(calls.some((c) => c.url.startsWith('/api/v1/keeping'))).toBe(false)
+    // "Darf weg" (the keeping time is over) is no deadline: the menu does not count it. The archive asks for its own
+    // number (one document, for the chip and the hint), nothing else.
+    expect(calls.filter((c) => c.url.startsWith('/api/v1/keeping')).map((c) => c.url)).toEqual(['/api/v1/keeping?limit=1'])
     // The phone's bar: five, the deadlines instead of Order.
     const bar = box.querySelector('main ~ nav')!
     expect([...bar.querySelectorAll('a')].map((a) => a.getAttribute('href'))).toEqual(['/eingang', '/', '/fristen', '/tresore', '/papierkorb'])
     expect(box.querySelector('main a[href="/schnell"]')!.getAttribute('aria-label')).toBe('Hochladen')
+  })
+
+  it('has no deadlines for somebody who switched them off: no menu item, no number, Order in the phone bar, the page leads to the archive', async () => {
+    auth.me = { ...operator, profile: { ...operator.profile, deadlines: false } }
+    answers['GET /api/v1/counts'] = { inbox: 2, reading: 1, trash: 4, deadlines: 0, deadlines_overdue: 0 }
+    sessionStorage.setItem('nexpaper.startShown', '1')
+    await show('/')
+    const side = box.querySelector('aside')!
+    expect([...side.querySelectorAll('a')].map((a) => a.getAttribute('href'))).toEqual(['/kamera', '/eingang', '/', '/tresore', '/ordnung', '/papierkorb'])
+    expect(side.querySelector('[data-testid="deadline-count"]')).toBeNull()
+    expect(side.textContent).not.toContain('Fristen')
+    // The bar of the phone gets Order back, and the account menu does not list it a second time.
+    const bar = box.querySelector('main ~ nav')!
+    expect([...bar.querySelectorAll('a')].map((a) => a.getAttribute('href'))).toEqual(['/eingang', '/', '/tresore', '/ordnung', '/papierkorb'])
+    await click(box.querySelector('aside button[aria-haspopup="true"]'))
+    const hidden = [...document.querySelectorAll('aside .card a')].find((a) => a.getAttribute('href') === '/ordnung')!
+    expect(hidden.className).toContain('hidden')
+    expect(hidden.className).not.toContain('lg:hidden')
+    // The old address and a bookmark lead to the archive; the deadlines are not even asked for.
+    act(() => root.unmount())
+    box.remove()
+    await show('/fristen')
+    expect(box.querySelector('h1')!.textContent).toBe('Archiv')
+    expect(calls.some((c) => c.url.startsWith('/api/v1/deadlines'))).toBe(false)
+  })
+
+  it('shows the deadlines page and the menu item to everybody else', async () => {
+    answers['GET /api/v1/deadlines?done=true'] = { today: '2026-10-08', soon_days: 14, overdue: { total: 0, items: [] }, soon: { total: 0, items: [] }, later: { total: 0, items: [] }, done: null, counts: {}, shared: 0 }
+    await show('/fristen')
+    expect(box.querySelector('h1')!.textContent).toBe('Fristen')
+    expect(box.querySelector('aside a[href="/fristen"]')).toBeTruthy()
   })
 
   it('opens on the inbox when something waits there, once per visit, and the menu still reaches the archive', async () => {
