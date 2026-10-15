@@ -29,7 +29,7 @@ def test_a_display_name_is_not_too_long_and_has_no_control_characters(client: Te
 
 
 DEFAULTS = {"mode": "system", "quick_start": True, "view": "list", "ai": True, "notify_login": True,
-            "timezone_source": "browser", "default_vault": None, "timezone": ""}
+            "deadlines": True, "timezone_source": "browser", "default_vault": None, "timezone": ""}
 
 
 def test_light_or_dark_is_kept_with_the_account(client: TestClient, account: Account) -> None:
