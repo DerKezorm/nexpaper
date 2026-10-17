@@ -1,5 +1,5 @@
 /**
- * The archive (`/`), as the mock draws it. Without a search or a filter it is an overview: the newest documents and
+ * The archive (`/`). Without a search or a filter it is an overview: the newest documents and
  * how the archive spreads over senders, kinds, years and tags (`GET /api/v1/search/overview`), each a way into the
  * table. A search, a filter or "show all" opens the table: numbered pages, sortable by its columns (`GET
  * /api/v1/search` with `page` and `sort`), so thousands of documents never become one endless list. Everything stands in

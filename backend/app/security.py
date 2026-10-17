@@ -2,7 +2,7 @@
 
 Built after nextrmnl's: Argon2id for passwords, sessions as random tokens of which the database knows only the
 hash, a brake per sender in memory and a lock per account in the database: five failures, then a quarter of an hour
-of rest, per account and per address (decided 06.10.2026).
+of rest, per account and per address.
 
 Sessions come in two lengths: with "stay signed in on this device" one lasts until it was not used for
 ``session_days`` (sliding, checked here, not left to the cookie); without, it ends with the browser and after

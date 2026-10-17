@@ -191,7 +191,7 @@ def test_a_webp_with_too_many_pixels_is_turned_into_an_error_not_a_crash(client:
 
 
 def test_an_e_invoice_in_xml_is_kept_and_gets_a_readable_page(client: TestClient, operator: object) -> None:
-    # B6: the XML stays the original; nexpaper sets a readable PDF from its data (``test_einvoices.py`` has more).
+    # The XML stays the original; nexpaper sets a readable PDF from its data (``test_einvoices.py`` has more).
     document = upload_and_read(client, "rechnung.xml", files.invoice_xml())
     assert document["status"] == "inbox" and document["pages"] == 1 and document["process_error"] == ""
     assert version_of(document["id"]).archive_path.endswith(".pdf")

@@ -50,7 +50,7 @@ function Toast() {
   )
 }
 
-/** The menu items of the mock, with "Fristen" after the archive. On the phone the bottom bar has room for five: "Ordnung"
+/** The menu items, with "Fristen" after the archive. On the phone the bottom bar has room for five: "Ordnung"
  * moves into the account menu there (`phone: false`). Whoever switched deadlines off has no "Fristen", and "Ordnung"
  * takes its place in the bar (`menuFor`). */
 const NAV = [

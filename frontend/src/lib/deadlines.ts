@@ -1,5 +1,5 @@
 /**
- * Deadlines as the page and the fields show them (the mock's `fristen.ts`): the last day to cancel a contract worked
+ * Deadlines as the page and the fields show them: the last day to cancel a contract worked
  * out while it is typed (the server works it out the same way, `services/deadlines.py`), the words of each kind of
  * deadline, and how far away a day is.
  */
@@ -65,7 +65,7 @@ export function whatOfKind(kind: DeadlineKind | string): DeadlineWhat {
   return kind === 'due' ? 'pay' : kind === 'contract_end' ? 'cancel' : 'warranty'
 }
 
-/** The words of "in 4 Tagen", "seit gestern" (the mock's `relative`): a key under `deadlines.relative` and its count. */
+/** The words of "in 4 Tagen", "seit gestern": a key under `deadlines.relative` and its count. */
 export function relative(days: number): { key: string; count: number } {
   if (days === 0) return { key: 'today', count: 0 }
   if (days === 1) return { key: 'tomorrow', count: 1 }

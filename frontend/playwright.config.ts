@@ -1,5 +1,5 @@
 /**
- * End to end, headless: the sign-in through a provider (Pflichttests 33 and 34 of the shared sign-in blueprint). The
+ * End to end, headless: the sign-in through a provider (through a stand-in OpenID Connect provider). The
  * built interface is served by the real backend, as in the container. Own data folder and own ports (the backend on
  * 18566, the stand-in sign-in provider on 18567), so that a running development server (8560, 5571) is never measured.
  *

@@ -77,7 +77,7 @@ from . import autotrash, changes, deadlines, keeping, mailer, notices, push, set
 logger = logging.getLogger("nexpaper.reminders")
 
 RHYTHMS = ("single", "weekly", "both")
-#: The days ahead a person may choose, per kind of deadline (the mock's lists), and what they are from the start.
+#: The days ahead a person may choose, per kind of deadline, and what they are from the start.
 LEADS: dict[str, tuple[int, ...]] = {"due": (1, 3, 7, 14), "cancel": (7, 14, 30, 60), "warranty": (7, 14, 30, 60)}
 DEFAULT_LEAD = {"due": 3, "cancel": 14, "warranty": 30}
 #: The lead a deadline takes, by what it asks for: a contract that only ends takes the one of cancelling.

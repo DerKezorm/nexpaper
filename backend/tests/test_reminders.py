@@ -44,7 +44,7 @@ from .conftest import make_account, new_client
 from .fake_push import FakePushService
 from .papers import Date, add_document, freeze, own_vault, shared_vault
 
-#: Thursday, the 8th of October 2026 (the mock's today); 8 o'clock in Berlin is 6 o'clock UTC.
+#: Thursday, the 8th of October 2026; 8 o'clock in Berlin is 6 o'clock UTC.
 TODAY = Date(2026, 10, 8)
 DAY = timedelta(days=1)
 RECORDS = Path(__file__).parent / "schema"

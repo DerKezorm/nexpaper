@@ -405,7 +405,7 @@ def _add_version(db: Session, uid: int, document: Document, made: Made, origin: 
         processing._keep_text(db, version, text[0], text[1], text[2])
     document.current_version = n
     document.pages = made.pages
-    # The small pages of a long version are drawn in the background, as after reading a document (B4).
+    # The small pages of a long version are drawn in the background, as after reading a document.
     pages.queue_background(db, document.id, n, made.pages)
     return version
 

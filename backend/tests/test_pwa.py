@@ -77,7 +77,7 @@ def test_the_built_app_serves_the_worker_and_the_manifest_fresh(tmp_path: Path) 
 
 
 def test_phones_get_png_symbols_and_notifications_a_png_icon_and_a_badge() -> None:
-    """Review of B6: iPhone and Android want PNG for the home screen, a maskable one, and notifications draw no SVG."""
+    """iPhone and Android want PNG for the home screen, a maskable one, and notifications draw no SVG."""
     import struct
 
     def size_of(name: str) -> tuple[int, int]:
@@ -100,7 +100,7 @@ def test_phones_get_png_symbols_and_notifications_a_png_icon_and_a_badge() -> No
     assert "icon: '/icon-192.png'" in worker and "badge: '/badge-96.png'" in worker
 
 
-# --- The manifest in the language of the browser (#job-215) ------------------------------------------------------------
+# --- The manifest in the language of the browser ------------------------------------------------------------
 
 I18N = PUBLIC.parent / "src" / "i18n"
 

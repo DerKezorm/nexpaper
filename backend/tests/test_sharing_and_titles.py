@@ -1,4 +1,4 @@
-"""Round two of block B4: how many people and links a document is shared with (only for who may share it), where its
+"""How many people and links a document is shared with (only for who may share it), where its
 file lies (relative, nothing above the folder for documents), deleting for good only from a browser, and titles that
 cannot turn the direction of their text around."""
 

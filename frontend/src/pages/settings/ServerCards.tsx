@@ -1,5 +1,5 @@
 /**
- * The operator's part of the settings, as the mock (and nexlore): accounts and invitations, mail, API keys, backups,
+ * The operator's part of the settings, as the mock: accounts and invitations, mail, API keys, backups,
  * languages and the log. Sign-in (password, public address, second factor, providers, authentik) is in
  * ``SignInCards.tsx``. Everything here is the
  * server's; it applies to all. The operator manages accounts and does not read the documents in them.
@@ -64,7 +64,7 @@ export function useServerSettings() {
   /**
    * The public address. While the authentik button registered the old one, or a provider entered by hand is on, the
    * server asks first (409 `public_url_change`, nothing saved): the question comes back for the page to ask
-   * (Bauplan 04, card 1); with `confirm` it is saved. Null: saved, or refused for another reason (shown by `problem`).
+   *; with `confirm` it is saved. Null: saved, or refused for another reason (shown by `problem`).
    */
   const saveAddress = async (public_url: string, confirm = false): Promise<AddressQuestion | null> => {
     let question: AddressQuestion | null = null

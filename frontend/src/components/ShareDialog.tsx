@@ -1,5 +1,5 @@
 /**
- * "Share" on a document, as the mock draws it: with people of this server (one document, a right) on the left, by a link
+ * "Share" on a document: with people of this server (one document, a right) on the left, by a link
  * to the outside on the right. The dialog loads what it shows itself (who it is shared with, the links, the people, the
  * operator's rules) and changes it through the API at once; the document page that opens it comes with its block.
  *

@@ -21,7 +21,7 @@ LIMITS = {
     #: Searches, from a browser, a device or a program: two a second for a minute, enough for a search field that asks
     #: while somebody types (with a short pause), far below what measuring the time of answers needs.
     "search": 120,
-    #: The page tools (B5): each run copies a whole document; a person works through a stack by hand far below this.
+    #: The page tools: each run copies a whole document; a person works through a stack by hand far below this.
     "pagetools": 30,
 }
 #: The code and the sentence of the answer.

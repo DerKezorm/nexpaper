@@ -26,8 +26,8 @@ ROOT = Path(__file__).resolve().parents[2]
 WORDS = [("cla" + "ude"), ("anthro" + "pic"), ("co-" + "authored-by"), ("generated " + "with")]
 PATTERN = re.compile("|".join(re.escape(word) for word in WORDS), re.IGNORECASE)
 _C, _A = "cla" + "ude", "anthro" + "pic"
-#: Product names that may stand as such, only in these files (decided 28.09.2026: the MCP page shows the command of
-#: that program, the AI settings a tile for that provider). The same list as in the hook's scanner. They are taken out
+#: Product names that may stand as such, only in these files (the MCP page shows the command of
+#: that program, the AI settings a tile for that provider). They are taken out
 #: of the text before the check, so an attribution next to them is still found.
 PRODUCT_NAMES = {
     "frontend/src/lib/mcp.ts": re.compile(f"{_C} mcp add|{_C.capitalize()} Code"),

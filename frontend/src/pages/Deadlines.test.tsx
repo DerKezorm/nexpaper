@@ -1,5 +1,5 @@
 /**
- * The deadlines page against a stand-in of the server (the mock's `FristenPage`, its today the 8th of October 2026):
+ * The deadlines page against a stand-in of the server (its today is the 8th of October 2026):
  * the sections, the words of each deadline, done and undo, later only for oneself, the filters; and the terms of a
  * contract in the fields of a document.
  */
@@ -87,7 +87,7 @@ const rows = () => [...page.box.querySelectorAll('[data-testid="deadline"]')]
 const headings = () => [...page.box.querySelectorAll('section h2')].map((h) => plain(h.textContent))
 
 describe('the deadlines page', () => {
-  it('has the sections of the mock and says each deadline as it does', async () => {
+  it('has its sections and says each deadline as it does', async () => {
     await page.show(<DeadlinesPage />, '/fristen')
     expect(page.box.querySelector('h1')!.textContent).toBe('Fristen')
     expect(headings()).toEqual(['Überfällig1', 'Nächste 14 Tage2', 'Später1', 'Darf weg 2'])

@@ -1,5 +1,5 @@
 /**
- * Settings, Backups: the two cards that belong to the backup, as the mock puts them under it. "Check files" (every file
+ * Settings, Backups: the two cards that belong to the backup. "Check files" (every file
  * carries a checksum; once a week and on a click nexpaper looks whether all documents are still there and unchanged)
  * and "Storage" (what the data folder holds, the free room, and a warning when the database lies on a network share).
  * One request fills both; while a check runs, the page asks again every few seconds.

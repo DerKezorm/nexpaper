@@ -1,5 +1,5 @@
 /**
- * The camera, as the mock: the edges of the page are found while the camera runs (OpenCV with jscanify in a worker of
+ * The camera: the edges of the page are found while the camera runs (OpenCV with jscanify in a worker of
  * its own, `public/scanner/worker.js`, loaded only here), the shutter fires by itself once the page holds still, the
  * corners can be pulled by hand, colour, greyscale or black and white, several pages make one document. The page is
  * straightened here (`lib/scan.ts`), the pages become one PDF, and the PDF goes up through the same queue as every other

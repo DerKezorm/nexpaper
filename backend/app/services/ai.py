@@ -2,7 +2,7 @@
 
 Taken over from nexlore (``services/ai.py``), where the checks of the address were worked out in a security review.
 This block holds the setting and the test of the service; the proposals themselves come with the block that sorts
-documents (B6).
+documents.
 
 * **The operator decides, for everybody.** One service for the whole server, set up only by the operator: none (from
   the start), a local model in the own network (Ollama or any service that speaks ``/v1/chat/completions``, a key

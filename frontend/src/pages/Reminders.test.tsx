@@ -1,5 +1,5 @@
 /**
- * My account, Reminders against a stand-in of the server (the mock's `Reminders.tsx`): the four cards with the choices
+ * My account, Reminders against a stand-in of the server: the four cards with the choices
  * from the start, a change goes out at once with only what changed, mail greyed out with its reason, the weekly overview
  * alone, the test message; and the mark of a muted vault and the way to these choices on the deadlines page.
  */
@@ -84,7 +84,7 @@ const toggle = (label: string) => page.box.querySelector<HTMLButtonElement>(`[ro
 const cards = () => [...page.box.querySelectorAll('section h2')].map((h) => plain(h.textContent))
 
 describe('my account, reminders', () => {
-  it('has the four cards of the mock with the choices from the start', async () => {
+  it('has the four cards with the choices from the start', async () => {
     await page.show(<AccountPage />, '/konto?tab=erinnerungen')
     expect(page.box.querySelector('[role="tab"][aria-selected="true"]')!.textContent).toContain('Erinnerungen')
     expect(cards()).toEqual(['Fristen verwenden', 'Wie du erinnert wirst', 'Wie früh', 'Welche Tresore', 'So sieht es aus'])

@@ -1,5 +1,5 @@
 /**
- * My account, Reminders (the mock's `Reminders.tsx`): how and when the person hears of deadlines, and for which vaults.
+ * My account, Reminders: how and when the person hears of deadlines, and for which vaults.
  * Each person sets it for themselves; who is reminded at all is everybody who may change things in the vault. A change
  * is saved at once. Mail (and the weekly overview, which is a mail) is greyed out with its reason when it cannot go.
  */
@@ -241,7 +241,7 @@ function Preview({ me, r }: { me: Me; r: Reminders }) {
       alive = false
     }
   }, [])
-  // The mock shows a contract; without one, the next deadline of any kind.
+  // A contract is shown; without one, the next deadline of any kind.
   const ahead = all.filter((x) => x.days >= 0)
   const shown = ahead.find((x) => x.what === 'cancel') ?? ahead[0]
   const week = all.filter((x) => x.days >= 0 && x.days <= 6)

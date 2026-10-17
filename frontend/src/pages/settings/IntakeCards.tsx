@@ -1,7 +1,6 @@
 /**
- * Inputs, as the mock: Settings, Inputs (the intake folder and the mailbox for documents, for the operator) and My
- * account, Upload (the addresses a person forwards from, the own subfolder). Wording and order follow the mock; what it
- * only played (the connection, the search) is real here: the folder must be a place nexpaper may take files from, the
+ * Inputs: Settings, Inputs (the intake folder and the mailbox for documents, for the operator) and My
+ * account, Upload (the addresses a person forwards from, the own subfolder). The folder must be a place nexpaper may take files from, the
  * mailbox is tried with the server, and an address counts once the link mailed to it was opened.
  */
 import { AtSign, FolderInput, Mail, Trash2 } from 'lucide-react'

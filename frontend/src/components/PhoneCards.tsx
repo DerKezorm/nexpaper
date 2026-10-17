@@ -95,7 +95,7 @@ export function ShortcutCard() {
   )
 }
 
-/** "Wohin deine Uploads gehen": the vaults the person may add to, as the mock's buttons; kept with the account. */
+/** "Wohin deine Uploads gehen": the vaults the person may add to; kept with the account. */
 export function UploadVaultCard() {
   const { t } = useTranslation()
   const { me, setMe } = useAuth()

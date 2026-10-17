@@ -1,6 +1,6 @@
 /**
  * What the upload is made of on screen: the button of the menu, the sheet that says "drop it" while files are dragged
- * over the page (the mock's wording), the list of uploads with their progress and what came of each, and the sentence
+ * over the page, the list of uploads with their progress and what came of each, and the sentence
  * after a run. The queue itself is `lib/uploader.ts`.
  */
 import { AlertTriangle, Camera, Check, Copy, FileText, Loader2, Pause, Upload, X } from 'lucide-react'
@@ -26,7 +26,7 @@ export function UploadButton() {
   )
 }
 
-/** Below it on the computer, as the mock: the camera (a laptop has one too). */
+/** Below it on the computer: the camera (a laptop has one too). */
 export function CameraLink() {
   const { t } = useTranslation()
   return (

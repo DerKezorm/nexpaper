@@ -124,7 +124,7 @@ def _step_phone(connection: Connection) -> None:
 
 
 def _step_intake(connection: Connection) -> None:
-    """Inputs (block B8): what came in through the intake folder or the mailbox, and the addresses people forward
+    """Inputs: what came in through the intake folder or the mailbox, and the addresses people forward
     documents from. Only tables of its own; written out as they stood when the step was made."""
     for statement in (
         (
@@ -151,7 +151,7 @@ def _step_intake(connection: Connection) -> None:
 
 
 def _step_search(connection: Connection) -> None:
-    """Text and search (B3): the text of every version, the search index and what it holds per document. The index is
+    """Text and search: the text of every version, the search index and what it holds per document. The index is
     filled by a job (``services/search_index.py``), queued here: the documents that are there are indexed right after
     the start, in short transactions, while the app already answers. Each document that was read gets a job ``text``
     that reads its text (``processing.read_text``)."""
@@ -202,7 +202,7 @@ def _step_search(connection: Connection) -> None:
 
 
 def _step_paperless_export(connection: Connection) -> None:
-    """The Paperless import and the export for the tax adviser (B9): what was taken from a Paperless server, the ZIPs
+    """The Paperless import and the export for the tax adviser: what was taken from a Paperless server, the ZIPs
     people asked for, and the links to them. Only tables of its own; written out as they stood when the step was
     made."""
     for statement in (
@@ -237,7 +237,7 @@ def _step_paperless_export(connection: Connection) -> None:
 
 
 def _step_pagetools(connection: Connection) -> None:
-    """Page tools (B5): what a version is beyond its file (how it came about, whether it is read yet, its blank pages),
+    """Page tools: what a version is beyond its file (how it came about, whether it is read yet, its blank pages),
     and the document an upload in pieces becomes a new version of. Only a table and a column of its own."""
     for statement in (
         (
@@ -254,7 +254,7 @@ def _step_pagetools(connection: Connection) -> None:
 
 
 def _step_sorting(connection: Connection) -> None:
-    """Sorting documents in (B6): the rules, the data of e-invoices, and the kinds of a vault. Tables of its own and the
+    """Sorting documents in: the rules, the data of e-invoices, and the kinds of a vault. Tables of its own and the
     two columns of ``kinds``; written out as they stood when the step was made."""
     for statement in (
         (
@@ -287,7 +287,7 @@ def _step_sorting(connection: Connection) -> None:
 
 
 def _step_files(connection: Connection) -> None:
-    """Checking the files (B10): the checksum of the searchable copy of a version, and what the last check of the files
+    """Checking the files: the checksum of the searchable copy of a version, and what the last check of the files
     found for a document. Two added columns, nothing else. The search index is not touched (a backup leaves it out and
     builds it anew after a restore: ``models.SEARCH_STATEMENTS`` are run at every start)."""
     for statement in (
@@ -392,9 +392,9 @@ def _step_auto_trash(connection: Connection) -> None:
 MIGRATIONS: dict[int, Callable[[Connection], None]] = {
     2: _step_v2, 3: _step_v3, 4: _step_phone, 5: _step_intake, 6: _step_search,
     7: _step_paperless_export, 8: _step_pagetools,
-    # B6, sorting documents in.
+    # Sorting documents in.
     9: _step_sorting,
-    # B10, checking the files.
+    # Checking the files.
     10: _step_files,
     # F1, deadlines.
     11: _step_deadlines,

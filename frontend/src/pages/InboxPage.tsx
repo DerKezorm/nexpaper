@@ -1,5 +1,5 @@
 /**
- * The inbox (`/eingang`, `/eingang/<id>`), as the mock draws it: everything new waits here, in the vaults the person may
+ * The inbox (`/eingang`, `/eingang/<id>`): everything new waits here, in the vaults the person may
  * add to, until somebody looks at it and files it. Above, a filter by vault with the numbers ("Alle 4 · Mein Tresor 1 ·
  * Haushalt 3"), a search and filters; on the left the list, a page of 50 at a time from `GET /api/v1/inbox`, each entry
  * with the vault it waits in and who brought it (what is still being read shimmers), with boxes to select many and file
@@ -63,7 +63,7 @@ const SOURCE_ICON: Record<string, typeof Mail> = { upload: Upload, camera: Smart
 const POLL_MS = 4000
 /** What the worker could not read at all; the rest of the codes (`ocr_*`) leave the pages and only the text is missing. */
 const UNREADABLE = ['encrypted', 'broken', 'too_many_pages', 'too_large', 'timeout', 'failed']
-/** From this width the list and one document stand side by side (the mock's `lg`). */
+/** From this width the list and one document stand side by side. */
 const WIDE = 1024
 
 function wide(): boolean {
@@ -653,7 +653,7 @@ function Detail({ document: d, next, slots, search, onChanged }: { document: Doc
   const invoice = useEInvoice(d)
   // The tags of the vault the document ends up in, to choose from.
   const vaultTags = useVaultTags([f.vault_id])
-  // "Immer so?": what the person just chose for the kind or the vault, offered as a rule for this sender (B6).
+  // "Immer so?": what the person just chose for the kind or the vault, offered as a rule for this sender.
   const [offer, setOffer] = useState<{ kind_id?: number; vault_id?: number } | null>(null)
   const [remembered, setRemembered] = useState<string | null>(null)
   const [makingKind, setMakingKind] = useState(false)
@@ -787,7 +787,7 @@ function Detail({ document: d, next, slots, search, onChanged }: { document: Doc
   const SplitPanel = slots.SplitPanel
   const PageEditor = slots.PageEditor
   if (SplitPanel && d.split_suggested)
-    // A batch scan with a proposal to split: the proposal takes the place of the details, as in the mock.
+    // A batch scan with a proposal to split: the proposal takes the place of the details.
     return (
       <SplitPanel
         document={d}

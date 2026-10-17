@@ -1,5 +1,5 @@
 /**
- * Pflichttests 33 and 34 of the shared sign-in blueprint (copied once from bauplaene/oidc, then nexpaper's file).
+ * Sign-in through an OpenID Connect provider, end to end.
  *
  * The provider is the stand-in of e2e/fake-provider.mjs (an OpenID Connect provider over http on its own port with a
  * key made at its start, sending the browser straight back with a code for whoever POST /oidc/next named). Never a real

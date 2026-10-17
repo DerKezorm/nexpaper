@@ -33,14 +33,14 @@ function chip(name: string): HTMLButtonElement {
 }
 
 describe('the card of the text recognition', () => {
-  it('shows the words of the mock, the six languages and the queue', async () => {
+  it('shows its words, the six languages and the queue', async () => {
     await page.show(<OcrCard />)
     expect(page.text).toContain('Texterkennung')
     expect(page.text).toContain('Damit die Suche auch in Fotos und Scans findet. PDFs, die schon Text haben, bleiben, wie sie sind.')
     expect([...document.querySelectorAll('button[aria-pressed]')].map((b) => b.textContent)).toEqual(['Deutsch', 'Englisch', 'Französisch', 'Niederländisch', 'Polnisch', 'Türkisch'])
     expect(chip('Deutsch').getAttribute('aria-pressed')).toBe('true')
     expect(chip('Polnisch').getAttribute('aria-pressed')).toBe('false')
-    // Nothing is loaded later: the hint says so instead of the mock's promise.
+    // Nothing is loaded later: the hint says so.
     expect(page.text).toContain('Diese sechs bringt nexpaper mit, nachgeladen wird nichts.')
     expect(page.text).not.toContain('beim ersten Gebrauch')
     expect(document.querySelector('[data-testid="queue-line"]')!.textContent).toBe(

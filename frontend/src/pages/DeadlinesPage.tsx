@@ -1,5 +1,5 @@
 /**
- * Deadlines (the mock's `FristenPage`): what has to be paid, cancelled or claimed under a warranty, from every vault where
+ * Deadlines: what has to be paid, cancelled or claimed under a warranty, from every vault where
  * the person may change things (like the inbox). Overdue first, then the next 14 days, then later. "Bezahlt",
  * "Gekündigt" or "Erledigt" ends the reminders for everybody; "Später" only pauses them for oneself. Everything comes
  * from `GET /api/v1/deadlines`, the rights are the server's.

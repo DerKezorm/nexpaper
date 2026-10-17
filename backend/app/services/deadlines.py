@@ -155,7 +155,7 @@ class Worked:
 
 def work_out(kind: str, day: Date, *, notice_date: Date | None, renew_months: int | None, done: bool,
              today: Date) -> Worked:
-    """The deadline of one date (the mock's ``deadlines``)."""
+    """The deadline of one date."""
     if kind != "contract_end":
         return Worked(what=WHAT[kind], date=day)
     renews_to = None

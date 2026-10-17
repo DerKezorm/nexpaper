@@ -573,7 +573,7 @@ def _ocr(source: Path, target: Path, languages: list[str], request: dict[str, An
     return "done"
 
 
-# --- Page tools (B5) --------------------------------------------------------------------------------------------------
+# --- Page tools --------------------------------------------------------------------------------------------------
 
 #: The turns a page may get, in degrees clockwise.
 TURNS = (0, 90, 180, 270)

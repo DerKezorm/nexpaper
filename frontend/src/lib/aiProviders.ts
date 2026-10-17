@@ -1,5 +1,5 @@
 /**
- * The kinds of AI service the operator can choose (Settings, AI), as the mock shows them. The names of
+ * The kinds of AI service the operator can choose (Settings, AI). The names of
  * providers stand here and nowhere else: the server knows only the kind of interface (`openai`, `messages`, `local`)
  * and an address. For the Messages API the address is the provider's own; the field is not shown for it.
  */

@@ -73,7 +73,7 @@ afterEach(() => {
 })
 
 describe('the quick upload', () => {
-  it('has the two ways in, where files go, the latest documents and what waits, in the words of the mock', async () => {
+  it('has the two ways in, where files go, the latest documents and what waits', async () => {
     await show(<QuickPage />, '/schnell')
     expect(page.text).toContain('Fotografieren')
     expect(page.text).toContain('Brief, Rechnung, Beleg. Mehrere Seiten gehen.')

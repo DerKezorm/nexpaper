@@ -1,6 +1,6 @@
 /**
  * The frame of the app and the pages around it, against a stand-in of the server: after the sign-in the archive and the
- * menu of the mock with the count of the inbox; the settings as one row of nine tabs for the operator and
+ * menu with the count of the inbox; the settings as one row of nine tabs for the operator and
  * nothing for a member; the page of the link in the mail to a new address (one press confirms, a link that does not
  * hold says so).
  */
@@ -85,7 +85,7 @@ describe('after the sign-in', () => {
     sessionStorage.setItem('nexpaper.startShown', '1')
     await show('/')
     expect(box.querySelector('h1')!.textContent).toBe('Archiv')
-    // The sidebar holds the mark, the camera under the upload button (as the mock), archive, inbox and vaults, and the
+    // The sidebar holds the mark, the camera under the upload button, archive, inbox and vaults, and the
     // person's menu. The round button of the phone leads to the quick upload.
     const side = box.querySelector('aside')!
     expect([...side.querySelectorAll('a')].map((a) => a.getAttribute('href'))).toEqual(['/kamera', '/eingang', '/', '/fristen', '/tresore', '/ordnung', '/papierkorb'])
@@ -198,7 +198,7 @@ describe('a link to a document', () => {
 })
 
 describe('the settings', () => {
-  it('are one row of thirteen tabs for the operator, in the order of the mock, and the part is in the address', async () => {
+  it('are one row of thirteen tabs for the operator, in their order, and the part is in the address', async () => {
     await show('/einstellungen')
     expect([...box.querySelectorAll('[role="tab"]')].map((item) => item.textContent?.trim())).toEqual([
       'Konten', 'Anmeldung', 'Mail', 'KI', 'Ablage', 'Eingänge', 'Teilen', 'Web Push', 'Sicherung', 'Sprachen', 'Import', 'Log', 'API',

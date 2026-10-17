@@ -225,7 +225,7 @@ export const authApi = {
   whatsNewSeen: () => api<Me>('/api/v1/me/whats-new/seen', { method: 'POST' }),
 }
 
-// ---- Sign-in providers (the shared module `vendor/nexoidc`, Bauplan 04) -----------------------------------------------
+// ---- Sign-in providers (the shared module `vendor/nexoidc`) -----------------------------------------------
 
 /** An entry of the provider list as the operator sees it (never the secret). `managed`: "" by hand, "authentik" by the
  * authentik button. */
@@ -678,7 +678,7 @@ export const accountsApi = {
     api<void>(`/api/v1/accounts/${id}`, { method: 'DELETE', body }),
 }
 
-// --- Inputs: the intake folder and the mailbox (block B8) ---------------------------------------------------------------
+// --- Inputs: the intake folder and the mailbox ---------------------------------------------------------------
 
 export type MailLast = { at: string | null; ok: boolean; code: string; mails: number; files: number; unknown: number; skipped?: number; flagged?: number; deferred?: number }
 export type IntakeSettings = {
@@ -958,7 +958,7 @@ export const exportsApi = {
   publicFileUrl: (token: string) => `/api/v1/x/${encodeURIComponent(token)}/file`,
 }
 
-// ---- One document: fields, notes, history, versions; the catalog (block B4) --------------------------------------------
+// ---- One document: fields, notes, history, versions; the catalog --------------------------------------------
 
 export type DateKind = 'due' | 'contract_end' | 'warranty_end' | 'keep_until'
 /** What `PATCH /documents/{id}` takes: only the fields sent change. `sender` is a name (made when new; empty takes it
@@ -1152,7 +1152,7 @@ export const orderApi = {
   merge: (what: OrderWhat, id: number, into: number) => api<unknown>(`/api/v1/${what}/${id}/merge`, { method: 'POST', body: { into } }),
 }
 
-// ---- Sorting in: rules and e-invoices (B6) ----------------------------------------------------------------------------
+// ---- Sorting in: rules and e-invoices ----------------------------------------------------------------------------
 
 export type RuleCondition =
   | { field: 'sender'; op: 'is' | 'contains'; values: string[] }

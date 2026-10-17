@@ -18289,7 +18289,7 @@
     },
     "/api/v1/oidc/me/address": {
       "post": {
-        "description": "Offered on the account page when the provider knows the account by another address (Bauplan 01). It is the\naccount's address from then on, but not confirmed: the mail intake counts it only once the person opened the link\nnexpaper sends (a provider's word is not the person's). It goes again with the last link.",
+        "description": "Offered on the account page when the provider knows the account by another address. It is the\naccount's address from then on, but not confirmed: the mail intake counts it only once the person opened the link\nnexpaper sends (a provider's word is not the person's). It goes again with the last link.",
         "operationId": "take_provider_address_api_v1_oidc_me_address_post",
         "requestBody": {
           "content": {

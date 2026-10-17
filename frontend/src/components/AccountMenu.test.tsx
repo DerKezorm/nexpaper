@@ -1,4 +1,4 @@
-/** The person's menu holds what the mock shows, in its order: own account, settings, about, sign out. */
+/** The person's menu holds its entries in this order: own account, settings, about, sign out. */
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { MemoryRouter } from 'react-router-dom'

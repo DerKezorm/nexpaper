@@ -1,6 +1,6 @@
 /**
  * Places on the pages of the archive, the inbox and a document where other blocks plug in their own parts: the page
- * tools, joining, splitting and new versions (block B5), the export for the tax adviser (block B9). A place stays hidden
+ * tools, joining, splitting and new versions, the export for the tax adviser. A place stays hidden
  * (no menu item, no empty box) while nothing is put into it. The pages take these as a prop, so a test can hand in its
  * own; the app fills `slots` once, where it starts.
  */
@@ -35,7 +35,7 @@ export type Slots = {
   ExportDialog?: ComponentType<ExportDialogProps>
 }
 
-/** What the app plugs in: the export (B9) and the page tools (B5). */
+/** What the app plugs in: the export and the page tools. */
 export const slots: Slots = {
   ExportDialog,
   PageEditor: PageEditorSlot,

@@ -7,23 +7,23 @@ answer, and nothing in the answer, in its time or in an error can tell the perso
 **The same file** is the same SHA-256, found by an index. It is checked when the file arrives (the piece-by-piece upload
 answers "already there" before anything is sent) and kept on the document.
 
-**A file that looks the same** is the same sheet scanned or photographed again (B3). The picture and the text must both
+**A file that looks the same** is the same sheet scanned or photographed again. The picture and the text must both
 say so:
 
 * the picture: the fingerprints of the first pages (``app/worker.py``, 1024 bits) differ in at most ``PICTURE_BITS``,
 * the text: nearly the same words and nearly the same numbers (``text_alike``).
 
-Measured (``tests/test_similar_text.py``; ``docs/search.md`` has the numbers):
+Measured (``tests/test_similar_text.py``):
 
-* The picture alone does not carry. B2 set ``THRESHOLD_BITS`` to 16 for the same file drawn again (other brightness,
-  blur, size, JPEG); its reviewer found 32 of 45 pairs of monthly invoices of one form within it. Real rescans (turned
+* The picture alone does not carry. ``THRESHOLD_BITS`` was set to 16 for the same file drawn again (other brightness,
+  blur, size, JPEG); yet 32 of 45 pairs of monthly invoices of one form lay within it. Real rescans (turned
   by up to one degree, specks, another brightness, JPEG) of the same sheet lay 125 to 298 bits apart, monthly invoices
   106 to 202, unrelated pages from 92 up: a sheet turned a little moves every gradient. So the picture only rules out
   what does not look alike at all (``PICTURE_BITS``, a third of the bits; unrelated pages lie at half on average).
 * The text decides. Monthly invoices of one form share 95 % of their words but only 51 to 71 % of their numbers (date,
   invoice number, period, amounts); the same sheet read twice by Tesseract shared all its words and 93 % of its
   numbers. Hence 80 % for both. That is not enough alone: a phone invoice with fixed prices and contract lines shared
-  80 % of its numbers with the next month (found by the reviewer of B3), a rent the same amount every month. So the
+  80 % of its numbers with the next month (measured), a rent the same amount every month. So the
   numbers that tell one sheet from the next must agree too (``distinct``): the longest number (an invoice number) and
   the dates. A rescan where the recognition misread one of them is not called alike: no hint is the safe side.
 
@@ -43,7 +43,7 @@ from sqlalchemy.orm import Session
 from ..models import TRASH, Document, Version, VersionText
 from . import rights, searchtext
 
-#: How many of the 1024 bits may differ for two first pages to be the same file drawn again (B2; ``similar_file``).
+#: How many of the 1024 bits may differ for two first pages to be the same file drawn again (``similar_file``).
 THRESHOLD_BITS = 16
 #: How many may differ for two first pages that could be the same sheet scanned again: a third of the bits.
 PICTURE_BITS = 340

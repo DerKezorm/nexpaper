@@ -19,7 +19,7 @@ receipt in grey 160 **315**, a bar across the sheet **24742**, ruled paper **208
 of dust larger than about 0.7 mm do count: such a sheet is taken for a page, which costs only a proposal not made (the
 person cuts by hand), while a page taken for an empty one would lose a page. So the threshold sits low, at 12.
 
-**Why 60 grey levels.** The reviewer's series (ink of a page per step; text in grey 150/160/170/180, show-through
+**Why 60 grey levels.** A series (ink of a page per step; text in grey 150/160/170/180, show-through
 185/170): at 80 a page in grey 160 measured 0 (taken for empty), at 70 grey 170 still 0, at 60 grey 170 is found (835)
 and the emptiest noisy sheet stays 0; at 50 noise begins to count (6), at 30 dust does. Still taken for empty: writing
 paler than grey 180 and a yellow highlighter alone. Strong show-through (grey 185 and darker) counts as ink at 60: a

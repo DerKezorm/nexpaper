@@ -43,7 +43,7 @@ from . import changes, jobs, rights, timezones
 logger = logging.getLogger("nexpaper.keeping")
 
 KEEP = "keep_until"
-#: The years the interface offers (the mock's list); the interface takes any other number from 1 to ``YEARS_MAX`` too.
+#: The years the interface offers; the interface takes any other number from 1 to ``YEARS_MAX`` too.
 CHOICES = (1, 2, 3, 5, 6, 8, 10, 30)
 YEARS_MAX = 30
 #: The statuses a document has a worked-out keeping time in: not while it is being read (its kind is not settled).

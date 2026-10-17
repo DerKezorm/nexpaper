@@ -3,7 +3,7 @@
  * a dashboard card (`/api/v1`). List, make, delete. A key is shown once, right after it was made, with the header line
  * a program needs and a command to try it; afterwards only its first characters.
  *
- * A key only reads, or only uploads (a scanner, a script: "Schlüssel zum Hochladen", as the mock), and never more than
+ * A key only reads, or only uploads (a scanner, a script: "Schlüssel zum Hochladen"), and never more than
  * its account; it runs out after 30, 90 or 365 days, or never. A week before, the list marks it. A key the operator blocked stays in the list, marked, until the account deletes it.
  */
 import { KeyRound, Plus, Trash2 } from 'lucide-react'
@@ -21,7 +21,7 @@ import { useAuth } from '../state/auth'
 /** Days until a key runs out. A key to read with has a year as the default: a key that never runs out is the one nobody
  * remembers when it leaks. A key to upload with (the iPhone shortcut, a scanner) has no end as the default: it can only
  * put documents into its owner's inbox, and a shortcut that stops working after a year is a worse surprise than that.
- * Everything stays a choice (the operator's decision of 10.10.2026). */
+ * Everything stays a choice. */
 const LIFETIMES = ['365', '90', '30', 'never'] as const
 type Lifetime = (typeof LIFETIMES)[number]
 const WEEK = 7 * 24 * 60 * 60 * 1000

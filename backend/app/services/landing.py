@@ -4,7 +4,7 @@ the provider.
 The shared sign-in module carries what the protocol needs in its attempt cookie; where nexpaper lands afterwards is
 nexpaper's own business. The page travels in a cookie of its own beside the attempt, signed with a key derived from
 the server secret, and is checked with ``safe_next`` going in and coming back: only a path of nexpaper itself, never
-another host (Bauplan 06: ``next`` only to paths of the same app).
+another host.
 """
 
 from __future__ import annotations

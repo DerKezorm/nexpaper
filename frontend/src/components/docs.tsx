@@ -1,5 +1,5 @@
 /**
- * The small pieces the pages with documents share, as the mock draws them (`attrappe/src/components/ui.tsx`): the kind
+ * The small pieces the pages with documents share: the kind
  * as a coloured pill, where a proposal came from, marks of a search in a text (ranges from the server, never HTML), a
  * filter chip, a menu that drops down, and the little picture of a document.
  */

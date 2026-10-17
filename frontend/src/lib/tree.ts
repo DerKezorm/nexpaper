@@ -1,4 +1,4 @@
-/** The sample paths as the tree the mock shows: each folder once, indented. */
+/** The sample paths as a tree: each folder once, indented. */
 export function treeOf(paths: string[]): string {
   const lines: string[] = []
   const open: string[] = []

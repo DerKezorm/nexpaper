@@ -1,4 +1,4 @@
-"""A floor under the search (the measurement of ``tools/search_bench.py`` at a size a test can afford): 5,000 made-up
+"""A floor under the search (a measurement at a size a test can afford): 5,000 made-up
 documents of about 4 KB of text each, indexed by the real code, searched by the real code for three people with
 different rights. The limits are generous on purpose (measured: tens of milliseconds a search, about 17 KB of index
 per document), so that this only turns red when something got worse by a lot: a search that reads every text, an

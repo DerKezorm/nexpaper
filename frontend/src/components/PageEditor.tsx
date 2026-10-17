@@ -1,5 +1,5 @@
 /**
- * "Seiten bearbeiten" on a document, as the mock draws it: tap a page, then turn it, move it or delete it; "Speichern" makes a
+ * "Seiten bearbeiten" on a document: tap a page, then turn it, move it or delete it; "Speichern" makes a
  * new version on the server (the original file stays as it came). "Ab hier eigenes Dokument" splits the document at the page
  * chosen (both parts go to the inbox, the document to the trash) after one more click to confirm.
  *

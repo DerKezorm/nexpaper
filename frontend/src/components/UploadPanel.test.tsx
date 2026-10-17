@@ -1,6 +1,6 @@
 /**
  * Uploading as the person sees it: the button in the menu opens the dialog for files (PDF, pictures, XML), the whole page
- * takes dropped files and says so ("Loslassen zum Hochladen", as in the mock), the list shows each upload with its
+ * takes dropped files and says so ("Loslassen zum Hochladen"), the list shows each upload with its
  * progress and what came of it, and one sentence says how the run ended.
  */
 import { act } from 'react'
@@ -88,7 +88,7 @@ describe('the buttons', () => {
     const click = vi.spyOn(input, 'click')
     await page.click(page.button('Hochladen'))
     expect(click).toHaveBeenCalledTimes(1)
-    // The round button of the phone has the same name and leads to the quick upload, as in the mock.
+    // The round button of the phone has the same name and leads to the quick upload.
     const round = document.querySelector<HTMLAnchorElement>('a[aria-label="Hochladen"]')!
     expect(round.getAttribute('href')).toBe('/schnell')
   })
@@ -116,7 +116,7 @@ describe('the buttons', () => {
 })
 
 describe('the sheet for dropping', () => {
-  it('appears while files are dragged over the page, with the words of the mock, and goes when they leave', async () => {
+  it('appears while files are dragged over the page, with its words, and goes when they leave', async () => {
     await show()
     expect(page.text).not.toContain('Loslassen zum Hochladen')
     await act(async () => void drag('dragover'))
@@ -341,7 +341,7 @@ describe('after files were chosen or dropped', () => {
   }
   const where = () => document.querySelector('[data-testid="where"]')!.textContent
 
-  it('the inbox opens, as in the mock, and the app is told when the run is through', async () => {
+  it('the inbox opens, and the app is told when the run is through', async () => {
     api.send.mockResolvedValue({ items: [accepted('a.pdf')] })
     const told = vi.fn()
     window.addEventListener(INBOX_CHANGED, told)

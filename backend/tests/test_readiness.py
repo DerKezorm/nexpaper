@@ -149,7 +149,7 @@ def test_cookies_are_secure_only_over_https(client: TestClient, operator: Accoun
 
 def test_the_cookies_name_how_long_a_sign_in_lasts(client: TestClient, operator: Account,
                                                    monkeypatch: pytest.MonkeyPatch) -> None:
-    """#job-215: the sentence says the number of NEXPAPER_SESSION_DAYS, and so does the sign-in page before anybody is
+    """The sentence says the number of NEXPAPER_SESSION_DAYS, and so does the sign-in page before anybody is
     signed in (the interface had 30 days fixed in its texts)."""
     monkeypatch.setattr(get_settings(), "session_days", 9)
     for found in (points(client), points(https_client(operator))):
@@ -197,7 +197,7 @@ def test_the_operators_reset_tells_the_person(client: TestClient, operator: Acco
     assert told == [("anna", "tester")]
 
 
-# --- The list of proxies is looked at, and so is the brake (B10) ----------------------------------------------------
+# --- The list of proxies is looked at, and so is the brake ----------------------------------------------------
 
 
 @pytest.mark.parametrize("spec", ["0.0.0.0/0", "::/0", "203.0.113.5", "8.8.8.0/24", "10.0.0.0/8, 0.0.0.0/0", "2001:db8::/32",

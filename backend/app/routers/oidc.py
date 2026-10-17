@@ -1,7 +1,7 @@
 """Sign-in through OpenID Connect providers, their list, linking, and the authentik button.
 
 The protocol, who an identity is, the provider list and the button live in the shared module ``vendor/nexoidc``
-(the blueprint "Anmeldung mit OIDC und authentik", the same in every nex app); this router puts nexpaper around it:
+(the same in every nex app); this router puts nexpaper around it:
 sessions and their stages, the sign-in brake, the password asked again before linking, the second factor, the page a
 sign-in started from (``services/landing.py``), and the error answers.
 
@@ -411,7 +411,7 @@ def my_providers(account: BrowserAccount) -> list[dict[str, Any]]:
             if not entry.enabled:
                 continue
             link = links.get(entry.id)
-            # The address the provider knows, offered when it is not the account's own (Bauplan 01): an account
+            # The address the provider knows, offered when it is not the account's own: an account
             # through the provider only follows it anyway.
             offered = link.email if link is not None and link.email and link.email.strip().lower() != own else None
             out.append({"slug": entry.slug, "label": entry.label, "linked": link is not None, "address": offered})
@@ -428,7 +428,7 @@ async def link_start(
     with store() as s:
         row = s.db.get(AccountRow, account.id)
         assert row is not None
-        # The same brake as before start and return (Bauplan 02, "Ablauf" 4): a braked sender links nothing.
+        # The same brake as before start and return: a braked sender links nothing.
         wait = brake.wait_seconds(_brake_key(request))
         if wait:
             raise error("too_many_attempts", "Too many attempts. Try again later.", 429, retry_after=wait)
@@ -466,7 +466,7 @@ def unlink(slug: Annotated[str, Path(max_length=40)], account: BrowserAccount) -
 # for the entry the authentik button makes (its slug is ``authentik``).
 @router.post("/me/address", summary="Take the address the provider knows as the own one (unconfirmed)")
 def take_provider_address(payload: TakeAddressIn, account: BrowserAccount) -> dict[str, Any]:
-    """Offered on the account page when the provider knows the account by another address (Bauplan 01). It is the
+    """Offered on the account page when the provider knows the account by another address. It is the
     account's address from then on, but not confirmed: the mail intake counts it only once the person opened the link
     nexpaper sends (a provider's word is not the person's). It goes again with the last link."""
     with store() as s:
@@ -517,6 +517,6 @@ def operator_unlink(
         if not removed:
             raise error("not_found", "Not found.", 404)
     if account_id != operator.id:
-        # Never unseen (Bauplan 01): the account hears of it, with the provider's name.
+        # Never unseen: the account hears of it, with the provider's name.
         tell.person(account_id, _unlinked_notice(entry.label, operator.display_name or operator.name))
     logger.warning("Operator unlinked account %s from provider %s by=%s", account_id, provider_id, operator.name)

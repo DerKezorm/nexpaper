@@ -1,8 +1,8 @@
 """"Looks like a document you have": the picture and the text must both say so.
 
 The thresholds of ``services/similar.py`` are set by these cases: ten monthly invoices of one form (the case that
-fools a picture hash: the reviewer of B2 measured 32 of 45 pairs within 16 bits) must not be called alike; the same
-invoice read twice must. The numbers measured are printed (``pytest -s``) and kept in ``docs/search.md``.
+fools a picture hash: 32 of 45 pairs lay within 16 bits) must not be called alike; the same
+invoice read twice must. The numbers measured are printed (``pytest -s``).
 """
 
 from __future__ import annotations
@@ -144,7 +144,7 @@ def test_the_picture_of_a_rescan_moves_far_and_only_rules_out_what_does_not_look
 
 
 def phone_invoice(month: int) -> str:
-    """A made-up phone invoice whose prices and contract lines stay the same every month (the reviewer's case)."""
+    """A made-up phone invoice whose prices and contract lines stay the same every month."""
     return "\n".join([
         "Mobilfunk Welle GmbH, Wellenweg 9, 12345 Lindenau",
         f"Rechnung Nr. MW-{month:02d}7{month * 37 % 100:02d}41",
@@ -170,7 +170,7 @@ def rent(month: int) -> str:
 
 
 def test_invoices_with_fixed_lines_and_a_rent_are_never_called_alike_and_their_rescan_is() -> None:
-    """The reviewer's cases: a phone invoice with fixed prices and contract lines (numbers in common: 0.80 before) and
+    """A phone invoice with fixed prices and contract lines (numbers in common: 0.80 before) and
     a rent with the same amount every month. What tells one month from the next is the invoice number and the dates."""
     for make in (phone_invoice, rent):
         months = [make(m) for m in range(1, 7)]

@@ -2,7 +2,7 @@
  * One document against a stand-in of the server: the fields saved one by one for somebody who may change them, nothing
  * to change for a reader (only notes, which everybody who sees a document may write), the downloads, the trash, moving,
  * the text page by page, notes (own ones changed, a manager deletes any), versions with their downloads, the history in
- * words, and the places of block B5 that stay hidden until its parts are plugged in.
+ * words, and the places of the page tools that stay hidden until their parts are plugged in.
  */
 import { act } from 'react'
 import { Route, Routes, useLocation } from 'react-router-dom'
@@ -188,13 +188,13 @@ describe('a document for somebody who may change it', () => {
     expect([...page.box.querySelectorAll('[role="menu"] a')].map((a) => a.getAttribute('href'))).toEqual(['/api/v1/documents/7/versions/1/archive', '/api/v1/documents/7/versions/1/file'])
     await page.click(page.button('Mehr'))
     const items = [...page.box.querySelectorAll('[role="menu"] [role="menuitem"]')].map((item) => plain(item.querySelector('.font-semibold')!.textContent))
-    // Without the parts of block B5 there is no new version and no joining.
+    // Without the parts of the page tools there is no new version and no joining.
     expect(items).toEqual(['Text kopieren', 'Verschieben', 'In den Papierkorb'])
     await page.click([...page.box.querySelectorAll<HTMLButtonElement>('[role="menuitem"]')].find((b) => plain(b.textContent)?.includes('In den Papierkorb')))
     // It is asked first, with what happens: 30 days, and it can be brought back. Abbrechen sends nothing.
     expect(server.changes()).toEqual([])
     expect(plain(page.dialog!.textContent)).toContain('liegt 30 Tage im Papierkorb und lässt sich in dieser Zeit zurückholen')
-    // Its keeping time still runs (the mock's TrashDialog): the question says until when, and the button says so too.
+    // Its keeping time still runs: the question says until when, and the button says so too.
     expect(plain(page.dialog!.querySelector('[data-testid="keep-running"]')?.textContent)).toBe(
       'Aufbewahren bis 31.12.2036So lange sollen Dokumente der Art Steuer bleiben (10 Jahre). Die Zeit ist noch nicht um.',
     )
@@ -207,7 +207,7 @@ describe('a document for somebody who may change it', () => {
     expect(where()).toBe('/')
   })
 
-  it('shows the places of block B5 once their parts are plugged in', async () => {
+  it('shows the places of the page tools once their parts are plugged in', async () => {
     const PageEditor = () => <p>page editor</p>
     const NewVersion = () => <p>new version</p>
     const MergeDialog = () => <p>merge</p>
@@ -222,7 +222,7 @@ describe('a document for somebody who may change it', () => {
     expect(page.text).toContain('bring back 1')
   })
 
-  it('has the page tools of block B5 in their places: the editor, the menu, the versions with their state', async () => {
+  it('has the page tools in their places: the editor, the menu, the versions with their state', async () => {
     const jule = { id: 1, name: 'jule', display_name: 'Jule' }
     const row = (n: number, over: Record<string, unknown>) => ({ n, current: false, pages: 6, size: 1000, sha256: 'x', created_at: '2026-09-19T08:00:00Z', created_by: jule, note: '', kind: 'pdf', has_archive: false, has_pages: true, origin: '', from_n: null, state: 'ready', error: '', ...over })
     server.answers['GET /api/v1/documents/7/versions'] = [

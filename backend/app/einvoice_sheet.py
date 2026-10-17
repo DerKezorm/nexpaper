@@ -2,9 +2,10 @@
 
 Set **in the worker process** (``app/worker.py`` loads this file by its path), like the reading of the XML: what is set
 comes from outside. No library and no font file: the PDF is written here with the two standard fonts every PDF reader
-has (Helvetica and Helvetica-Bold, WinAnsi), their widths for breaking lines below. The plan named Typst; it would add
-some 30 MB and a program of its own to the image for one plain page, and fpdf2 is not there on every machine nexpaper
-is developed on. A character the fonts do not have becomes ``?``; the XML stays the original and keeps it.
+has (Helvetica and Helvetica-Bold, WinAnsi), their widths for breaking lines below. A typesetting program such as
+Typst would add some 30 MB and a program of its own to the image for one plain page, and fpdf2 is not there on every
+machine nexpaper is developed on. A character the fonts do not have becomes ``?``; the XML stays the original and
+keeps it.
 """
 
 from __future__ import annotations

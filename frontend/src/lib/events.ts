@@ -119,7 +119,7 @@ export function eventWhat(event: DocumentEvent, t: TFunction, context: EventCont
     case 'text_read':
       return t('docs.events.textRead')
     case 'proposed': {
-      // B6: which fields nexpaper filled in when the document came (rules, the e-invoice, the text, the AI); a move to
+      // Which fields nexpaper filled in when the document came (rules, the e-invoice, the text, the AI); a move to
       // another vault has a line of its own.
       const fields = Array.isArray(detail.fields) ? detail.fields.filter((f): f is string => typeof f === 'string' && f !== 'vault') : []
       return fields.length ? t('sorting.events.proposed', { fields: list(t, fields) }) : t('docs.events.something')

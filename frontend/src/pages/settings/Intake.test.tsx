@@ -1,5 +1,5 @@
 /**
- * Inputs, against a stand-in of the server: Settings, Inputs with the words of the mock (the folder with a line per
+ * Inputs, against a stand-in of the server: Settings, Inputs with its words (the folder with a line per
  * person, the mailbox with its fields and "Afterwards"), "Save and try" that saves and then tries, the server's refusals
  * in the words of the card, the password never shown; My account, Upload with the addresses forwarded from, adding one
  * (a mail with a link), removing one, the own mailbox address and subfolder; the page of the link in that mail.
@@ -63,7 +63,7 @@ function toggle(label: string): HTMLButtonElement {
 }
 
 describe('Settings, Inputs', () => {
-  it('shows both cards with the words of the mock', async () => {
+  it('shows both cards with their words', async () => {
     await page.show(<IntakeCards />)
     for (const words of [
       'Eingangsordner', 'Für den Scanner im Netz oder alles, was per Freigabe hereinkommt.', 'Eingangsordner beobachten', 'Ordner im Container',

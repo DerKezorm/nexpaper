@@ -1,5 +1,5 @@
 /**
- * The fields of a document as the inbox and the document page edit them (the mock's `InboxPage` and `DocumentPage`):
+ * The fields of a document as the inbox and the document page edit them:
  * an amount typed the way people type it, the tags as chips, and the
  * dates with their kind (due, contract until, warranty until, keep until). Each part keeps nothing of its own: the page
  * holds the values and decides when they are saved.
@@ -27,7 +27,7 @@ const DATE_KINDS: DateKind[] = ['due', 'contract_end', 'warranty_end', 'keep_unt
  * `keep_until`: set by hand (`false`: worked out from the kind). */
 export type DateEntry = { kind: DateKind; date: string; notice?: Notice | null; renew_months?: number | null; manual?: boolean }
 /**
- * What `keep_until` is worked out from (the mock's `Dates`): the kind's name and keeping time, the year the time counts
+ * What `keep_until` is worked out from: the kind's name and keeping time, the year the time counts
  * from, and whether the document is as it was saved (`fresh`: its stored date stands; otherwise a kind or a date was
  * changed in the draft and the page works the date out itself, as the server will on saving).
  */
@@ -188,7 +188,7 @@ export function TagEditor({ tags, onChange, label, known = [] }: { tags: string[
 
 /**
  * The dates of a document with their kind; each kind once. A new one starts at the document's date, a contract with a
- * notice period of 3 months and a renewal of 12 (the mock's `Dates`). `onChange` is called when a date stands; a page
+ * notice period of 3 months and a renewal of 12. `onChange` is called when a date stands; a page
  * that keeps a draft takes every keystroke through `onDraft` too. `refused` is the field the server turned down
  * (`dates[n]`, n counted in `dates`) with the value it refused. `done` and `onDone` (the document page): each deadline
  * says whether it is paid, cancelled or claimed, with a button to mark it so or to take that back.
@@ -316,8 +316,8 @@ export function Dates({ dates, onChange, onDraft, start, why, refused, done, onD
 
 const RENEW_CHOICES = [0, 1, 3, 6, 12, 24]
 
-/** Notice period and renewal of a contract, and the last day to cancel worked out from them (the mock's
- * `ContractTerms`). The number of the period is taken when the field is left or Enter is pressed. */
+/** Notice period and renewal of a contract, and the last day to cancel worked out from them.
+ * The number of the period is taken when the field is left or Enter is pressed. */
 function ContractTerms({ entry, today, change }: { entry: DateEntry; today: string; change: (patch: Partial<DateEntry>) => void }) {
   const { t, i18n } = useTranslation()
   const dayName = useDayName()
@@ -392,7 +392,7 @@ function ContractTerms({ entry, today, change }: { entry: DateEntry; today: stri
   )
 }
 
-/** Paid, cancelled, claimed: ends the reminders for everybody (the mock's `DoneLine`). */
+/** Paid, cancelled, claimed: ends the reminders for everybody. */
 function DoneLine({ kind, done, onDone }: { kind: DateKind; done: DocumentDate['done']; onDone: (done: boolean) => void }) {
   const { t, i18n } = useTranslation()
   const what = whatOfKind(kind)

@@ -195,7 +195,7 @@ def test_a_redirect_is_not_followed_and_a_large_answer_not_read(client: TestClie
         seen.append(str(request.url))
         if len(seen) == 1:
             return httpx.Response(301, headers={"Location": "http://127.0.0.1:8560/api/v1/auth/me"})
-        # Past the limit: the body is thrown away unread, its status still counts (finding of the review of B6).
+        # Past the limit: the body is thrown away unread, its status still counts (a finding of the review).
         return httpx.Response(410, content=b"x" * (push.ANSWER_MAX + 1))
 
     monkeypatch.setattr(push, "transport", httpx.MockTransport(answer))
@@ -420,7 +420,7 @@ def test_a_message_never_carries_what_a_person_stored(client: TestClient, accoun
         assert word not in str(came.message)
 
 
-# --- Findings of the review of B6 -----------------------------------------------------------------------------------
+# --- Findings of the review -----------------------------------------------------------------------------------
 
 
 @pytest.mark.parametrize("endpoint", ["https://[::1", "https://[push.example.com]/x", "https://[fcm.googleapis.com]/x",

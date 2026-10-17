@@ -1,5 +1,5 @@
 /**
- * The own account, Security, as the mock: the second factor (a code from an app), passkeys, and the signed-in devices
+ * The own account, Security: the second factor (a code from an app), passkeys, and the signed-in devices
  * with "sign out everywhere else" and the notice of a new sign-in. The server decides; the cards show and ask.
  */
 import { Fingerprint, Laptop, ShieldCheck, Smartphone, Trash2 } from 'lucide-react'
@@ -341,7 +341,7 @@ export function PasskeysCard({ me }: { me: Me }) {
 export function DevicesCard({ me }: { me: Me }) {
   const { t, i18n } = useTranslation()
   const [list, setList] = useState<SignedSession[] | null>(null)
-  // The paired devices and apps stand here too, as the mock: a phone paired by a QR code, the iPhone shortcut, an app.
+  // The paired devices and apps stand here too: a phone paired by a QR code, the iPhone shortcut, an app.
   const [paired, setPaired] = useState<PairedDevice[]>([])
   const [taking, setTaking] = useState<PairedDevice | null>(null)
   const action = useAction()

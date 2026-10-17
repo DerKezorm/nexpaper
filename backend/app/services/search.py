@@ -8,7 +8,7 @@ once more (``visible``), so the number, the order and the excerpts follow only w
 filtered or counted afterwards. Each person may search ``brakes.LIMITS["search"]`` times a minute
 (typing with a pause between keystrokes stays well below it).
 
-**How a word is found** (decided by the measurement in ``docs/search.md``): a word of ``searchtext.MIDDLE_MIN``
+**How a word is found:** a word of ``searchtext.MIDDLE_MIN``
 letters and more anywhere in a word, through the trigram index ``doc_tri`` (``werke`` finds ``Stadtwerke``, ``abschlag``
 finds ``Stromabschlag``); a shorter word at the start of a word, through the word index ``doc_fts``; a phrase as its
 words in a row, through the word index. Every term must be found, each in any of the fields.

@@ -1,8 +1,7 @@
 """Deadlines (F1): the last day to cancel, the sections of the page, done and later, the renewal by itself, the rights,
 the search words, the dashboard, the export, the step from schema 10 and the backup.
 
-The clock stands still in every test (``freeze``); the people here live in UTC, so "today" is the 8th of October 2026,
-the mock's today.
+The clock stands still in every test (``freeze``); the people here live in UTC, so "today" is the 8th of October 2026.
 """
 
 from __future__ import annotations
@@ -119,7 +118,7 @@ class House:
         return self.ids[name]
 
     def stock(self) -> dict[str, int]:
-        """The mock's deadlines: overdue, soon, later, a contract whose last day passed, one done, one in the inbox."""
+        """A set of deadlines: overdue, soon, later, a contract whose last day passed, one done, one in the inbox."""
         self.add("Kurtaxe", self.house, self.tom, dates=[("due", Date(2026, 10, 5))], amount=21200)
         self.add("Prophylaxe", self.house, self.jule, dates=[("due", TODAY)], amount=9640)
         self.add("Kaffeevollautomat", self.house, self.tom, dates=[("warranty_end", Date(2026, 10, 19))])

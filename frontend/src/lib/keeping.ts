@@ -1,11 +1,11 @@
 /**
- * Keeping documents (the mock's `keepOf`): until when a document is kept, and why. The server works `keep_until` out
+ * Keeping documents: until when a document is kept, and why. The server works `keep_until` out
  * from the kind (`services/keeping.py`); here the same sum is done for what the page shows before it is saved (a kind
  * chosen in the inbox, a date typed), and the stored one is read with where it came from.
  */
 import type { DocumentInfo } from '../api/client'
 
-/** The years the select offers (the mock's list). */
+/** The years the select offers. */
 export const KEEP_CHOICES = [1, 2, 3, 5, 6, 8, 10, 30]
 
 /** The year a keeping time counts from: of the document's date, else of the day it came in. */

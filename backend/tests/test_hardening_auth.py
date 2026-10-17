@@ -254,7 +254,7 @@ def test_operator_settings_only_from_the_operator_networks(client: TestClient, m
     assert away.get("/api/v1/api-keys").status_code == 200
 
 
-# --- The second factor, required from the start (B7) -----------------------------------------------------------------
+# --- The second factor, required from the start -----------------------------------------------------------------
 
 
 @pytest.fixture
@@ -425,7 +425,7 @@ def test_a_full_session_reaches_the_same_routes() -> None:
 
 def test_five_wrong_passwords_lock_the_account_for_a_quarter_of_an_hour(later: Callable[[float], None]) -> None:
     make_account("anna")
-    # Five, as decided (06.10.2026); written out, not taken from the code it checks.
+    # Five; written out, not taken from the code it checks.
     for number in range(5):
         answer = fresh(f"198.51.100.{number + 1}").post("/api/v1/auth/login", json={"name": "anna", "password": "no"})
         assert answer.status_code == 401
@@ -662,7 +662,7 @@ def test_a_time_step_is_taken_once_also_by_two_at_the_same_moment() -> None:
         assert totp.claim_step(db, account.id, step + 1) is True
 
 
-# --- A lock that strangers cause does not keep the owner out of the code step (B10) ----------------------------------
+# --- A lock that strangers cause does not keep the owner out of the code step ----------------------------------
 
 
 def with_second_factor(name: str) -> tuple[Account, str, list[str]]:

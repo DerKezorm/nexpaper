@@ -64,7 +64,7 @@ DEFAULTS: dict[str, Any] = {
     "ai_model": "",
     #: Sealed with the server's secret (context ``operator:ai-key``); never shown again.
     "ai_key_enc": "",
-    #: Documents in a personal vault never go to the AI (B6): there they get rules and what nexpaper reads itself only.
+    #: Documents in a personal vault never go to the AI: there they get rules and what nexpaper reads itself only.
     "ai_skip_personal": True,
     #: The most documents sent to the AI in one day (UTC), on the whole server; 0 is no limit. A large delivery (a
     #: folder, a mailbox) would otherwise send every document to a service that is paid for by the request. ``ai_day``

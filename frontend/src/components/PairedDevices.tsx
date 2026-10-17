@@ -1,5 +1,5 @@
 /**
- * "Gerät koppeln", under My account, Devices and apps, as the mock: a code shown as a QR code and for typing, valid for
+ * "Gerät koppeln", under My account, Devices and apps: a code shown as a QR code and for typing, valid for
  * five minutes and once. The device trades it for a token of its own (`POST /api/v1/devices/pair`); this page asks the
  * server now and then whether that happened and says so. The paired device then stands with the signed-in devices under
  * Security, where it can be signed out. Apps that sign in through the browser (OAuth with PKCE) need no code here.

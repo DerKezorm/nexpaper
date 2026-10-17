@@ -228,7 +228,7 @@ _told_unavailable = False
 
 
 def recognize_text(db: Session, document: Document, version: Version, run: Run) -> Outcome:
-    """The step that reads the text (B3): what the PDF carries, and where a page carries none, what Tesseract
+    """The step that reads the text: what the PDF carries, and where a page carries none, what Tesseract
     recognises (``app/worker.py`` ``recognize``). The searchable copy goes to ``run.searchable``, the text of the pages
     to ``run.text``. Its time limit follows the pages and the pace of the last documents, with the operator's ceiling
     (``ocr.time_limit``)."""
@@ -294,11 +294,11 @@ def _read_texts(path: Path) -> list[str]:
 
 #: The steps of a run, in order: the first reads the file (it failing means the document cannot be read), the ones
 #: after it add to what it found (them failing leaves the document readable, with the reason). The last one measures the
-#: ink of the pages for the blank separator pages (``services/separators.py``, B5); it never fails.
+#: ink of the pages for the blank separator pages (``services/separators.py``); it never fails.
 STEPS: list[Callable[[Session, Document, Version, Run], Outcome]] = [read_file, recognize_text,
                                                                       separators.find_blanks]
 #: Called in ``_finish`` under the write lock with what the steps found, before the document goes to the inbox: what
-#: other blocks keep of a run (B5: the blank pages; B6: the e-invoice, and the proposals for the fields,
+#: other parts keep of a run (the blank pages; the e-invoice, and the proposals for the fields,
 #: ``services/sorting.py``).
 FINISHERS: list[Callable[[Session, Document, Version, dict[str, Any]], None]] = [separators.keep_blanks,
                                                                                  sorting.finish]

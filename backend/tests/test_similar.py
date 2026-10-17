@@ -118,12 +118,12 @@ def first_scan(client: TestClient, operator: object) -> dict[str, Any]:
 
 def test_the_same_sheet_scanned_again_gets_its_fingerprint_and_is_called_alike_only_with_its_text(
         client: TestClient, first_scan: dict[str, Any]) -> None:
-    """A picture hash alone calls most follow-up invoices of one form a copy (the reviewer measured a median distance of 13
-    bits of 1024 for monthly invoices), so the hint needs the text too (B3, ``tests/test_similar_text.py``)."""
+    """A picture hash alone calls most follow-up invoices of one form a copy (a median distance of 13
+    bits of 1024 for monthly invoices), so the hint needs the text too (``tests/test_similar_text.py``)."""
     assert first_scan["duplicate"] is None
     assert version_of(first_scan["id"]).phash and len(version_of(first_scan["id"]).phash) == 256
     again = upload_and_read(client, "Rechnung 1 neu.jpg", as_jpeg(ImageEnhance.Brightness(invoice(1)).enhance(0.9)))
-    # Alike once the text says so too (B3): where the text is recognised; without the recognition never by the picture.
+    # Alike once the text says so too: where the text is recognised; without the recognition never by the picture.
     if ocr.available():
         assert again["duplicate"] == {"document_id": first_scan["id"], "title": "Rechnung 1", "kind": "similar"}
     else:
@@ -218,7 +218,7 @@ def test_the_nearest_document_wins_among_several(client: TestClient, operator: o
 
 def test_a_reader_of_the_shared_copy_learns_nothing_of_the_same_file_in_a_vault_he_cannot_see(
         client: TestClient, operator: object) -> None:
-    """The reviewer found `duplicate: same` in the history (`processed`) of the copy in the shared vault: anybody who could
+    """`duplicate: same` stood in the history (`processed`) of the copy in the shared vault: anybody who could
     read that document could tell that its maker keeps the file elsewhere. Nothing of it may stand in any answer."""
     lea, tom = make_account("lea"), make_account("tom")
     household = shared_vault("Household", make_account("boss"), (lea, "edit"), (tom, "read"))

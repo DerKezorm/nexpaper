@@ -34,7 +34,7 @@ describe('shipped languages', () => {
     expect(dashed.map(([key]) => key)).toEqual([])
   })
 
-  it('say trash in English, never bin (decided 06.10.2026)', () => {
+  it('say trash in English, never bin', () => {
     expect([...english].filter(([, text]) => /\bbins?\b/i.test(text)).map(([key, text]) => `${key}: ${text}`)).toEqual([])
     // Floor: the English texts are read at all.
     expect(english.size).toBeGreaterThan(300)
@@ -47,7 +47,7 @@ describe('shipped languages', () => {
     }
   })
 
-  it('call the program version Version in German (decided 06.10.2026)', () => {
+  it('call the program version Version in German', () => {
     const about = [...german].filter(([key]) => key.startsWith('about.'))
     expect(about.filter(([, text]) => /Fassung/.test(text)).map(([key, text]) => `${key}: ${text}`)).toEqual([])
     expect(german.get('about.version')).toBe('Version')
@@ -70,16 +70,16 @@ function strings(tree: unknown): string[] {
 const PROGRAM_FASSUNG =
   /Fassung\s+(?:\d|von\s+nex)|\b(?:neue|neuen|neuere|neueren|neueste|neuesten|erste|ersten|diese|dieser|jede|jeder|je|nächste|nächsten)\s+Fassung(?!en)(?!\s+(?:einer|eines|der|des|deiner|deines)\b)|Fassungen\s+und\s+was/
 
-// The entries are empty until the text of the first release is written (block B10); the checks hold for every entry that comes.
+// The entries are empty until the text of the first release is written; the checks hold for every entry that comes.
 describe('what is new', () => {
   const german = strings(whatsNewDe)
   const english = strings(whatsNewEn)
 
-  it('call the program version Version in German, in released entries too (decided 06.10.2026)', () => {
+  it('call the program version Version in German, in released entries too', () => {
     expect(german.filter((text) => PROGRAM_FASSUNG.test(text))).toEqual([])
   })
 
-  it('say trash in English (decided 06.10.2026)', () => {
+  it('say trash in English', () => {
     expect(english.filter((text) => /\bbins?\b/i.test(text))).toEqual([])
   })
 

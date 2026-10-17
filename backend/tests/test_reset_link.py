@@ -1,5 +1,5 @@
-"""``python -m app.reset_link``: the way back in for an operator who forgot their own password on a server without mail
-(#job-215). The link it prints is the one the interface makes (``services/resets.py``): once, 24 hours, the lock lifted,
+"""``python -m app.reset_link``: the way back in for an operator who forgot their own password on a server without mail.
+The link it prints is the one the interface makes (``services/resets.py``): once, 24 hours, the lock lifted,
 the second factor kept, a line in the log without the link."""
 
 from __future__ import annotations

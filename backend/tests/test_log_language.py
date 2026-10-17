@@ -96,7 +96,7 @@ def test_the_scan_sees_calls_on_named_loggers_and_on_getlogger() -> None:
     assert [message_texts(call) for call in calls] == [["a"], ["b"], ["c"], ["d"]]
 
 
-# --- The family's English words in what the server says (decided 06.10.2026) ------------------------------------------
+# --- The family's English words in what the server says ------------------------------------------
 #
 # The trash is "trash", never "bin"; a rule "applies", it never "Holds". Checked wherever the server speaks to people:
 # log lines, the API's own documentation (summary=, description=), refusals (detail=, error(), detail() and the typed

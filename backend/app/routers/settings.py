@@ -183,8 +183,8 @@ def _an_active_provider(db: DbSession) -> bool:
 
 def _ask_before_the_address(db: DbSession, request: Request, value: str, *, confirm: bool) -> None:
     """The public address is part of every provider's redirect address: saving another one (or none, which falls back
-    to the request's) asks first while the authentik button registered the old one or a provider entered by hand is on
-    (Bauplan 04, card 1). 409 ``public_url_change`` with the question, nothing saved."""
+    to the request's) asks first while the authentik button registered the old one or a provider entered by hand is on:
+    409 ``public_url_change`` with the question, nothing saved."""
     from ..services.oidc_store import SqlStore
     from ..vendor.nexoidc import authentik
 

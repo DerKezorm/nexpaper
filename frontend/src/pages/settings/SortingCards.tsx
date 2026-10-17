@@ -1,5 +1,5 @@
 /**
- * Filing, as the mock's cards under Settings, Ablage: the kinds (the operator's short list) and the rules. The rules card
+ * Filing, the cards under Settings, Ablage: the kinds (the operator's short list) and the rules. The rules card
  * is also on the vaults page, for everybody who manages a vault: there it shows the rules of those vaults; under
  * Settings the operator sees the rules for the whole server too and may make them. A rule reads as a sentence ("Wenn
  * Absender ist „Stadtwerke Lindenau“ → Art Rechnung, Tag strom"), with how often it applied, a switch, its place in

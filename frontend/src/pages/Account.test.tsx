@@ -1,5 +1,5 @@
 /**
- * My account in the interface, against a stand-in of the server: the seven tabs of the mock in their order and in the
+ * My account in the interface, against a stand-in of the server: the seven tabs in their order and in the
  * address, the mail address with the link it waits for (the password asked again, the old address standing until the
  * link is opened, withdrawn on request), pairing a device (the key shown once, then blocked), API keys (off until the
  * operator allows them, the key shown once) and the choices of the look.
@@ -107,7 +107,7 @@ afterEach(() => {
 })
 
 describe('the tabs', () => {
-  it('are the seven of the mock, in their order', async () => {
+  it('are the seven tabs, in their order', async () => {
     await show()
     const tabs = [...box.querySelectorAll('[role="tab"]')].map((item) => item.textContent?.trim())
     expect(tabs).toEqual(['Profil', 'Sicherheit', 'Geräte und Apps', 'Hochladen', 'Erinnerungen', 'KI', 'Aussehen'])
@@ -366,7 +366,7 @@ describe('devices and apps', () => {
     expect(calls.find((call) => call.method === 'POST' && call.url === '/api/v1/api-keys')!.body).toEqual({ name: 'Scanner', days: 365, scope: 'upload' })
   })
 
-  it('makes a key for uploading, as the mock, with the command that uploads and the limits', async () => {
+  it('makes a key for uploading, with the command that uploads and the limits', async () => {
     answers['GET /api/v1/api-keys'] = { allowed: true, keys: [] }
     answers['POST /api/v1/api-keys'] = {
       key: { id: 2, name: 'Scanner im Flur', scope: 'upload', prefix: 'npk_Up12', created_at: '2026-10-08T10:00:00Z', last_used_at: null, expires_at: null, blocked: false },

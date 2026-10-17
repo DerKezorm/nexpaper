@@ -47,7 +47,7 @@ function SignedIn({ children }: { children: ReactNode }) {
 }
 
 const QUICK_SHOWN = 'nexpaper.quickShown'
-/** Narrower than this is a phone (the mock's `md`). */
+/** Narrower than this is a phone. */
 const PHONE_WIDTH = 768
 
 /** On the phone nexpaper opens on the quick upload, once per visit; "Alles" from there stays in the full app. The switch

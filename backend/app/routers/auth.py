@@ -271,7 +271,7 @@ def start(
     An account that must set up a second factor first gets a session that may do only that, for a quarter of an hour,
     and nothing else happens yet. A full session brings the cookies and, when this browser is new for the account, the
     notice to the other devices (``services/notices.py``). ``by_provider``: it came in through a provider whose entry
-    checks the second factor itself; "require a second factor" does not send this session to set one up (Bauplan 01),
+    checks the second factor itself; "require a second factor" does not send this session to set one up,
     and the session keeps that mark."""
     agent = request.headers.get("user-agent", "")
     account.second_factor_by_provider = by_provider

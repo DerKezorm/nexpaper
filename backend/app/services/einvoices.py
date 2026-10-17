@@ -2,7 +2,7 @@
 
 The worker reads the XML (inside a ZUGFeRD or Factur-X PDF, or an XRechnung that came as XML) in its own process; what
 comes back is checked once more here (``einvoice_reader.summary``: only known keys of the expected types) and kept in
-``einvoices``, one row for the version that carries it. A later version (pages turned or joined, B5) no longer carries
+``einvoices``, one row for the version that carries it. A later version (pages turned or joined) no longer carries
 the XML; the document shows the data of the newest version that did. The rights are those of reading the document.
 """
 

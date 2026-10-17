@@ -7,7 +7,7 @@ function hueOf(name: string): number {
   return hash
 }
 
-/** A person as their picture, or a round letter in their colour, as the mock shows accounts. */
+/** A person as their picture, or a round letter in their colour. */
 export function Avatar({ person, size = 32 }: { person: { id: number; name: string; display_name?: string; avatar: string | null }; size?: number }) {
   const shown = person.display_name || person.name
   const url = avatarUrl(person)

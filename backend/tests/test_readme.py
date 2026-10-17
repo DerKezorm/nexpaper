@@ -51,7 +51,7 @@ def test_the_screenshot_folder_holds_both_looks_of_every_picture() -> None:
 
 
 def test_the_compose_block_of_the_readme_is_hardened_as_the_compose_file() -> None:
-    """#job-215: whoever copies the block under "Start" gets the same hardening as ``docker-compose.yml`` (the project
+    """Whoever copies the block under "Start" gets the same hardening as ``docker-compose.yml`` (the project
     page takes the block from here)."""
     compose = (ROOT / "docker-compose.yml").read_text(encoding="utf-8")
     plain = [line for line in compose.splitlines() if line.strip() and not line.strip().startswith("#")]

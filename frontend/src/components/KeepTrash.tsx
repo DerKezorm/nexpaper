@@ -1,5 +1,5 @@
 /**
- * Into the trash while the keeping time still runs (the mock's `TrashDialog`): the question names "Aufbewahren bis …",
+ * Into the trash while the keeping time still runs: the question names "Aufbewahren bis …",
  * where it came from, and the button says "Trotzdem in den Papierkorb", so that nobody throws away by mistake what has
  * to be kept. Without a running keeping time the question stays as it always was. Used through `useConfirm`.
  */

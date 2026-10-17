@@ -1,5 +1,5 @@
 /**
- * "Exportieren" in the archive, as the mock draws it: period, vaults, what goes in, and what the ZIP will hold (the
+ * "Exportieren" in the archive: period, vaults, what goes in, and what the ZIP will hold (the
  * server counts it, with the person's rights, while the choice changes). The ZIP is packed in the background; the
  * person gets a notice when it is ready, or hands it out at once as a link for somebody without an account (the tax
  * adviser), whose address is copied right away. Below, the person's exports: state, download, links, delete.

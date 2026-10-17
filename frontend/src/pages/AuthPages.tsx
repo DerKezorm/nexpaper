@@ -1,9 +1,9 @@
 /**
- * The pages before signing in, built as the mock's: the first account (with the setup code from the server's log),
+ * The pages before signing in: the first account (with the setup code from the server's log),
  * signing in (password, then the second factor; a passkey alone; or a button per sign-in provider), setting up the
  * second factor right after the password where the operator asks for one, and accepting an invitation.
  *
- * Sign-in providers as the shared blueprint lays them out (Bauplan 04): the password form, the line "or", a button per
+ * Sign-in providers: the password form, the line "or", a button per
  * active provider in the order of the operator's list. With the password sign-in off only the buttons show, and small
  * at the bottom the operator's way in with the password. An error from `?error=` stands above the form, as a sentence
  * of the module (`oidc.error.*`), never as the raw code.
@@ -101,7 +101,7 @@ export function SetupPage() {
   )
 }
 
-/** "Auf diesem Gerät angemeldet bleiben", as the mock: on from the start. `days`: how long such a sign-in lasts without
+/** "Auf diesem Gerät angemeldet bleiben": on from the start. `days`: how long such a sign-in lasts without
  * use (`NEXPAPER_SESSION_DAYS`, from `/auth/methods`); the sentence waits until the server said it. */
 function Remember({ on, onChange, days }: { on: boolean; onChange: (value: boolean) => void; days?: number }) {
   const { t } = useTranslation()
@@ -140,7 +140,7 @@ export function LoginPage() {
   const [remember, setRemember] = useState(true)
   const [busy, setBusy] = useState(false)
   const [problem, setProblem] = useState<string | null>(params.get('error'))
-  // Password sign-in off: the form waits behind "Sign in as the operator with a password" (Bauplan 04).
+  // Password sign-in off: the form waits behind "Sign in as the operator with a password".
   const [operatorWay, setOperatorWay] = useState(false)
   const next = safeNext(params.get('next'))
 
@@ -253,7 +253,7 @@ export function LoginPage() {
   }
 
   const providers = methods?.providers ?? []
-  // Password sign-in off: only the buttons, the form behind the operator's way in (Bauplan 04).
+  // Password sign-in off: only the buttons, the form behind the operator's way in.
   const passwordShown = !methods || methods.password || providers.length === 0 || operatorWay
   return (
     <AuthFrame title={t('auth.login.title')} text={t('auth.login.text')}>
@@ -296,7 +296,7 @@ export function LoginPage() {
 type Enrolment = { secret: string; uri: string; qr_svg: string }
 
 /**
- * Right after the password, an account without a second factor sets it up here before it gets anywhere (the mock):
+ * Right after the password, an account without a second factor sets it up here before it gets anywhere:
  * the QR code and the key for the app, a code to confirm, then the recovery codes, shown once, and "I have them".
  * Only then does the server make the session a full one.
  */
@@ -468,7 +468,7 @@ export function InvitePage() {
           <Primary busy={busy}>{t('auth.invite.submit')}</Primary>
         </form>
       )}
-      {/* Through a sign-in provider: the invitation is the permission for the new account (Bauplan 04). */}
+      {/* Through a sign-in provider: the invitation is the permission for the new account. */}
       {methods && methods.providers.length > 0 && (
         <>
           {methods.password && <OrLine />}
@@ -693,7 +693,7 @@ export function MailConfirmPage() {
   )
 }
 
-/** The page of the link in the mail to an address a person forwards documents from (block B8): one press confirms it,
+/** The page of the link in the mail to an address a person forwards documents from: one press confirms it,
  * as with the own mail address (a mail program that only looks at a link must not do it). Nobody has to be signed in. */
 export function SenderConfirmPage() {
   const { t } = useTranslation()

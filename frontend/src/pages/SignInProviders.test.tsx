@@ -1,7 +1,7 @@
 /**
- * Sign-in through providers as the shared blueprint lays it out (Bauplan 04), against a stand-in of the server: the
- * sign-in and invitation pages with a button per provider, the three cards under Settings, Sign-in (the form in the
- * blueprint's order, the questions before an issuer or an address changes, the steps of the authentik button with their
+ * Sign-in through providers, against a stand-in of the server: the
+ * sign-in and invitation pages with a button per provider, the three cards under Settings, Sign-in (the form in a fixed
+ * order, the questions before an issuer or an address changes, the steps of the authentik button with their
  * names and reasons), the row per provider on the account page, and the marks in the account list.
  */
 import { Route, Routes } from 'react-router-dom'
@@ -132,7 +132,7 @@ describe('Settings, Sign-in', () => {
     expect(rows[1]).not.toContain('über authentik eingerichtet')
   })
 
-  it('opens the form with the fields in the order of the blueprint and suggests the short name', async () => {
+  it('opens the form with the fields in a fixed order and suggests the short name', async () => {
     await page.show(<Cards />)
     await page.click(page.button('Anbieter hinzufügen'))
     const form = document.querySelector('[data-testid="provider-form"]')!
@@ -211,7 +211,7 @@ describe('Settings, Sign-in', () => {
   })
 
   // A password account that comes in through a provider with "the provider checks the second factor itself" is not sent
-  // away (Bauplan 04); both hints under "Require a second factor" say so and name that switch.
+  // away; both hints under "Require a second factor" say so and name that switch.
   for (const language of ['de', 'en'] as const) {
     for (const own of [true, false]) {
       it(`names the provider switch that exempts a sign-in (${language}, ${own ? 'with' : 'without'} an own second factor)`, async () => {

@@ -163,12 +163,12 @@ class AuthSession(Base):
     remember: Mapped[bool] = mapped_column(Boolean, default=True, server_default=text("1"))
     stage: Mapped[str] = mapped_column(String(8), default=STAGE_FULL, server_default=text("'full'"))
     #: The session came in through a provider whose entry checks the second factor itself: "require a second factor"
-    #: does not send it to set one up (Bauplan 01); the same account signing in with its password still is.
+    #: does not send it to set one up; the same account signing in with its password still is.
     second_factor_by_provider: Mapped[bool] = mapped_column(Boolean, default=False, server_default=text("0"))
 
 
 class OidcProvider(Base):
-    """A sign-in provider (OpenID Connect), one row each, the columns as the shared blueprint names them (Bauplan 01).
+    """A sign-in provider (OpenID Connect), one row each, the columns the shared module expects.
     Read and written only through ``services/oidc_store.py`` for the shared module ``vendor/nexoidc``.
 
     Not part of a numbered schema step: an addition (``db.ADDITIONS``) that 1.0.1 opens without knowing it, so that
@@ -612,7 +612,7 @@ class Upload(Base):
     #: The API key that started it (a scanner, the iPhone shortcut): such a key sees and goes on with only its own
     #: uploads. Empty for a browser or a device. Last column: the phone block's step adds it at the end.
     api_key_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    #: A new version of this document, not a document of its own (the page tools, B5). Last column: the step of the
+    #: A new version of this document, not a document of its own (the page tools). Last column: the step of the
     #: page tools adds it at the end.
     target_document_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
@@ -747,7 +747,7 @@ class Pairing(Base):
 
 
 class VersionText(Base):
-    """The text of a version, page by page (B3): what a PDF carried and what the recognition read. The pages are kept
+    """The text of a version, page by page: what a PDF carried and what the recognition read. The pages are kept
     in one text, separated by a form feed (``\\f``). A version whose file was not read yet has no row."""
 
     __tablename__ = "version_texts"
@@ -782,8 +782,7 @@ class SearchEntry(Base):
 #: ``version_texts``, the rest in the tables of its own), and an entry is dropped by its rowid (``contentless_delete``,
 #: SQLite 3.43). Case and accents do not count.
 FTS_TABLE = "doc_fts"
-#: Parts of words, as trigrams: a word found in the middle (``werke`` in ``Stadtwerke``). What it covers was decided by
-#: the measurement in ``docs/search.md``.
+#: Parts of words, as trigrams: a word found in the middle (``werke`` in ``Stadtwerke``).
 #: Both carry a column ``scope``: who may find the entry (``v<vault>v`` for its vault, ``u<person>u`` for each person it
 #: is shared with), so that a search reads only the entries of what the caller may see (``services/search.py``).
 TRI_TABLE = "doc_tri"
@@ -900,7 +899,7 @@ __all__ = [
 ]
 
 
-# --- Inputs: the intake folder and the mailbox (block B8) ------------------------------------------------------------
+# --- Inputs: the intake folder and the mailbox ------------------------------------------------------------
 
 
 class IntakeItem(Base):
@@ -966,7 +965,7 @@ class MailSender(Base):
 __all__ += ["IntakeItem", "MailSender"]
 
 
-# --- Paperless import and export for the tax adviser (block B9) ------------------------------------------------------
+# --- Paperless import and export for the tax adviser ------------------------------------------------------
 
 
 class PaperlessItem(Base):
@@ -1049,7 +1048,7 @@ class ExportLink(Base):
 __all__ += ["Export", "ExportLink", "PaperlessItem"]
 
 
-# --- Page tools: versions and blank separator pages (block B5) -------------------------------------------------------
+# --- Page tools: versions and blank separator pages -------------------------------------------------------
 
 
 class VersionInfo(Base):

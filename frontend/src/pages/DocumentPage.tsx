@@ -1,9 +1,9 @@
 /**
- * One document (`/dokument/<id>`), as the mock draws it: the pages on the left (pdf.js, the pictures of the pages first
+ * One document (`/dokument/<id>`): the pages on the left (pdf.js, the pictures of the pages first
  * because they are quicker, the strip of pages below), on the right details, the recognised text, notes, versions and
  * the history. Sharing with people and by link, downloading the searchable PDF or the original, copying the text,
  * moving it and putting it in the trash. What the person may change follows their right (`my_right`); the server
- * refuses the rest anyway. The page tools, joining and new versions come from block B5 through `slots`.
+ * refuses the rest anyway. The page tools, joining and new versions come from the page tools through `slots`.
  */
 import {
   ArrowLeft,

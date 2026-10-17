@@ -1,5 +1,5 @@
 /**
- * The phone's start, as the mock: nothing but the two ways in (camera, file) and what happened to the last uploads.
+ * The phone's start: nothing but the two ways in (camera, file) and what happened to the last uploads.
  * "Alles" leads into the full app. Large targets, one thumb. Where the files go is the person's choice (only vaults they
  * may add to); choosing here keeps it with the account. `/teilen` is the same page with what another app shared on top
  * (Android's share menu): it goes up only when the person says so (`lib/shared.ts`).

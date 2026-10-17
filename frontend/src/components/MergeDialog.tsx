@@ -1,5 +1,5 @@
 /**
- * "Mit anderem zusammenfügen" on a document, as the mock draws it: search a document, and its pages come after those of this
+ * "Mit anderem zusammenfügen" on a document: search a document, and its pages come after those of this
  * one. More than one may be chosen; the order can be changed, and the first one keeps its fields (title, sender, kind, date)
  * and gets the notes and tags of the others, which go to the trash. On the server it is a new version of the first document.
  *

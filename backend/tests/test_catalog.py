@@ -109,7 +109,7 @@ def test_a_sender_is_renamed_for_all_its_documents_and_their_files_follow(client
 
 
 def test_a_name_from_a_vault_one_cannot_see_answers_like_a_name_nobody_uses(client: TestClient, operator: Account) -> None:
-    """The oracle the prüfer found: renaming to a name that exists only in somebody else's personal vault must look
+    """An oracle: renaming to a name that exists only in somebody else's personal vault must look
     exactly like renaming to a fresh one (same id, same answer), and it must not merge anything."""
     bob = make_account("bob")
     add_document(own_vault(bob), bob, "Befund", sender="Dr. Secret", tags=["Anwalt"], content=None)

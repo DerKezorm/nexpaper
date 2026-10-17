@@ -1,5 +1,5 @@
 /**
- * Every language choice of the family lists the languages by their names (decided 06.10.2026): Deutsch, English, and
+ * Every language choice of the family lists the languages by their names: Deutsch, English, and
  * a language the operator added in its place among them, not simply at the end.
  */
 

@@ -1,5 +1,5 @@
 /**
- * Settings, Import against a stand-in of the server: the words of the mock, "connect and look" (it saves, then looks),
+ * Settings, Import against a stand-in of the server: its words, "connect and look" (it saves, then looks),
  * the owners with their proposed people and a changed choice, where it goes, the start with what was chosen, the run
  * with its progress, the skipped ones with their reasons, stopping and going on, the token never shown, and the
  * server's refusals in the words of the card.
@@ -68,7 +68,7 @@ async function connect() {
 }
 
 describe('Settings, Import', () => {
-  it('starts with the words of the mock', async () => {
+  it('starts with its words', async () => {
     await page.show(<ImportCard />)
     for (const words of [
       'Aus Paperless übernehmen',

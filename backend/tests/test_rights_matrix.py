@@ -106,16 +106,16 @@ TABLE = [
     # The start of the archive: counts only what the caller may see (``test_search_pages.py``).
     Row("GET", "/api/v1/search/overview", None, "any", 200),
     Row("GET", "/api/v1/documents/{d}/versions/{x}/text", None, "read", 404),
-    # Deleting for good from the trash (B4): a manager of the vault, or the owner while they may change it (the editor
+    # Deleting for good from the trash: a manager of the vault, or the owner while they may change it (the editor
     # owns this one), from a signed-in browser only; the document is not in the trash here, so who may gets 409.
     Row("POST", "/api/v1/documents/{d}/purge", None, "edit-browser", 404),
-    # Sorting in (B6): the e-invoice is read like the file (this document carries none: 404 for everybody, the rights
+    # Sorting in: the e-invoice is read like the file (this document carries none: 404 for everybody, the rights
     # come first all the same, ``test_einvoices.py`` has the ones that do); a rule from a document needs ``manage`` in
     # the vault it arrived in.
     Row("GET", "/api/v1/documents/{d}/einvoice", None, "read", 404),
     Row("GET", "/api/v1/documents/{d}/versions/{x}/einvoice", None, "read", 404),
     Row("POST", "/api/v1/documents/{d}/rule", {"tags": ["regel"]}, "manage", 404),
-    # The page tools (B5).
+    # The page tools.
     Row("POST", "/api/v1/documents/{d}/pages", {"base_version": 1, "pages": [{"page": 1, "turn": 0}]}, "edit", 404),
     Row("POST", "/api/v1/documents/{d}/merge", {"base_version": 1, "others": [{"id": 2**31 - 1, "base_version": 1}]},
         "edit", 404),

@@ -8,9 +8,7 @@ written to a real nexpaper.
     python tools/search_bench.py --documents 200000 --folder <empty folder>
     python tools/search_bench.py --documents 5000 --folder <folder> --keep
 
-Earlier versions of this script compared ways of finding a part of a word (word index only, trigrams over the metadata
-only, trigrams without positions); ``docs/search.md`` keeps those numbers. It now measures what nexpaper does: word
-index and trigram index over everything, each entry with its scope.
+It measures what nexpaper does: word index and trigram index over everything, each entry with its scope.
 
 The base database (documents without index) is made once and kept in the folder (``base.db``); the measurement works
 on a copy (``indexed.db``, kept with ``--keep``). Run it from ``backend/``.

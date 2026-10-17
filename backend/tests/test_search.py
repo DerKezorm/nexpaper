@@ -76,7 +76,7 @@ def test_every_word_must_be_found_in_one_of_the_fields(browser: TestClient) -> N
 
 
 def test_a_part_of_a_word_is_found_in_the_middle_too(browser: TestClient) -> None:
-    assert found(browser, "werke") == {"Abschlag Strom Oktober"}  # "Stadtwerke" (the mock's own example)
+    assert found(browser, "werke") == {"Abschlag Strom Oktober"}  # "Stadtwerke"
     assert found(browser, "abschlag") == {"Abschlag Strom Oktober"}  # title, and "Stromabschlag" in the text
     assert found(browser, "rechnung") == {"Kfz-Versicherung 2026"}  # only inside "Beitragsrechnung"
     assert found(browser, "versich") == {"Kfz-Versicherung 2026"}

@@ -1,5 +1,5 @@
 /**
- * Sorting in (B6) against a stand-in of the server: the e-invoice in the inbox (the note, the mark in the list, where
+ * Sorting in against a stand-in of the server: the e-invoice in the inbox (the note, the mark in the list, where
  * the due date came from), "Als Regel merken" after choosing a kind or a vault, the box and the XML in the document's
  * download menu, the rules card (as sentences, on and off, order, a new rule, the operator's for the whole server),
  * the kinds card, the switch for personal vaults on the AI card, and the history line of the proposals.

@@ -237,7 +237,7 @@ def files_of(version: Version, content: Content) -> list[tuple[str, str, str]]:
         out.append(("pdf", searchable, ".pdf"))
     if content.original and not (content.pdf and searchable == version.original_path):
         out.append(("original", version.original_path, original_ext))
-    # The XML inside a ZUGFeRD or Factur-X PDF is not a file of its own: ``_pack`` adds it from the e-invoice (B6).
+    # The XML inside a ZUGFeRD or Factur-X PDF is not a file of its own: ``_pack`` adds it from the e-invoice.
     return out
 
 

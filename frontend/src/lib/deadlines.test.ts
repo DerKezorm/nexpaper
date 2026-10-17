@@ -26,7 +26,7 @@ describe('the last day to cancel', () => {
 })
 
 describe('how far away a day is', () => {
-  it('counts days and says them as the mock does', () => {
+  it('counts days and says them', () => {
     expect(daysBetween('2026-10-08', '2026-10-05')).toBe(-3)
     expect(relative(0)).toEqual({ key: 'today', count: 0 })
     expect(relative(1)).toEqual({ key: 'tomorrow', count: 1 })

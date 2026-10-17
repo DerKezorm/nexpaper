@@ -1,4 +1,4 @@
-"""A new password by a link (B10): the operator cannot set a password; they send a link, by mail where mail works,
+"""A new password by a link: the operator cannot set a password; they send a link, by mail where mail works,
 otherwise shown to them once. A person can ask for a link on the sign-in page where mail works. The link works once for
 24 hours, is stored as a hash, and sets a password the person chose: every session ends, the second factor stays."""
 

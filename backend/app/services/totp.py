@@ -188,7 +188,7 @@ def provider_only(account: Account) -> bool:
 
 
 def provider_checks(_db: Session, account: Account) -> bool:
-    """"Require a second factor" does not reach this account here (Bauplan 01, "Zweiter Faktor"): it signs in through a
+    """"Require a second factor" does not reach this account here: it signs in through a
     provider only (the provider's way in is the only one; its own second factor, if it has one, is still asked after a
     provider that does not check it), or the session that asks came in through a provider whose entry checks the
     second factor itself (``second_factor_by_provider``). The same account with its password is asked as before."""

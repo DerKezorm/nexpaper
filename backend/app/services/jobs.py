@@ -107,7 +107,7 @@ def recover(db: Session) -> None:
     search_index.queue_if_stale(db)
     from . import separators
 
-    # The documents in the inbox that were read without looking for blank separator pages (before block B5).
+    # The documents in the inbox that were read without looking for blank separator pages (before the page tools).
     separators.queue_missing(db)
 
 

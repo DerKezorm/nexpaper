@@ -2,7 +2,7 @@ import type { ButtonHTMLAttributes } from 'react'
 
 type Props = ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'primary' | 'soft' | 'ghost' | 'line'; size?: 'sm' | 'md' }
 
-/** The buttons of the pages with documents and vaults, as the mock draws them: a filled one for the main step, a soft one
+/** The buttons of the pages with documents and vaults: a filled one for the main step, a soft one
  * for the usual, a bare one for the quiet, an outlined one beside it. (The settings have their own, in `settings/ui`.) */
 export function Button({ variant = 'soft', size = 'md', className = '', type = 'button', ...rest }: Props) {
   const base = 'inline-flex items-center justify-center gap-2 rounded-full font-semibold transition disabled:opacity-50 disabled:pointer-events-none'

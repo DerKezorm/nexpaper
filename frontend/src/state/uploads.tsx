@@ -1,6 +1,6 @@
 /**
  * The uploads of this page: one queue (`lib/uploader.ts`) for the whole app, a hidden file input that the button in the
- * menu and the one in the phone's header both open, and the whole page as a place to drop files on (the mock's way). The
+ * menu and the one in the phone's header both open, and the whole page as a place to drop files on. The
  * list of what is being uploaded and what came of it is `components/UploadPanel.tsx`.
  */
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ChangeEvent, type ReactNode } from 'react'
@@ -42,7 +42,7 @@ export function UploadProvider({ children, uploader: given }: { children: ReactN
   const [dragging, setDragging] = useState(false)
   const navigate = useNavigate()
   const { pathname } = useLocation()
-  // After files were chosen or dropped in the full app, the inbox opens (as the mock does): that is where they land. The
+  // After files were chosen or dropped in the full app, the inbox opens: that is where they land. The
   // phone's pages keep their own list.
   const toInbox = useRef(() => {})
   toInbox.current = () => {

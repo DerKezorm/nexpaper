@@ -1,5 +1,5 @@
 /**
- * The own account in tabs, everything personal in one place, as the mock: Profile (picture, display name, name, role,
+ * The own account in tabs, everything personal in one place: Profile (picture, display name, name, role,
  * mail address with its link, language), Security (password, second factor, passkeys, the sign-in providers, the
  * signed-in devices and the notice of a new sign-in), Devices and apps (pairing by a QR code, the iPhone shortcut, API
  * keys, Web Push on the devices), Upload (where uploads go, where a phone starts), Reminders (of deadlines), AI (the own switch, and what the operator set up) and Looks (light or dark, the
@@ -86,7 +86,7 @@ export function AccountPage() {
   )
 }
 
-/** "KI beim Einsortieren", as the mock: the own switch, and below it what the operator set up for everybody. */
+/** "KI beim Einsortieren": the own switch, and below it what the operator set up for everybody. */
 function AiPart({ me }: { me: Me }) {
   const { t } = useTranslation()
   const { setMe } = useAuth()

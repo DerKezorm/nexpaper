@@ -1,5 +1,5 @@
 /**
- * "Stapelscan aufteilen?" in the inbox, as the mock draws it: the blank separator pages the server found mark where one
+ * "Stapelscan aufteilen?" in the inbox: the blank separator pages the server found mark where one
  * letter ends. A click between two pages cuts there or joins again; a page taken for a separator by mistake can be kept. Each
  * part becomes a document of its own in the inbox (the separators are dropped), the stack goes to the trash. "Als ein
  * Dokument behalten" puts the proposal away for good.

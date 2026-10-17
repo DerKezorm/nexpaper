@@ -1,9 +1,8 @@
 /**
- * My account, Security, Sign-in providers (Bauplan 04): one row per active provider with its state and "Link" or
+ * My account, Security, Sign-in providers: one row per active provider with its state and "Link" or
  * "Unlink". Linking asks for the own password first and then goes to the provider; the way back lands on this page
  * with `?linked=<short name>`, said here by the provider's name. An account that signs in through a provider only
- * keeps its last link. Where the provider knows the account by another address, the row offers it (Bauplan 01: only an
- * account through the provider only follows it by itself); taken, it is not confirmed yet: the mail intake counts it
+ * keeps its last link. Where the provider knows the account by another address, the row offers it; taken, it is not confirmed yet: the mail intake counts it
  * only once the person opened the link nexpaper sends.
  */
 import { ShieldCheck } from 'lucide-react'

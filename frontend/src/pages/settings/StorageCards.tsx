@@ -1,5 +1,5 @@
 /**
- * Settings, Storage: the limits on what comes in (the mock's tab "Ablage", with the card that shows how the files lie on
+ * Settings, Storage: the limits on what comes in (with the card that shows how the files lie on
  * the disk; the queue is on the card of the text recognition, `OcrCard`). The operator's numbers count from the next file on.
  */
 import { FolderTree, Upload } from 'lucide-react'

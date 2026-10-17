@@ -1,5 +1,5 @@
 /**
- * One page of a document as a picture from the server (the small size), as the page tools show it: B4's `PagePicture`
+ * One page of a document as a picture from the server (the small size), as the page tools show it:
  * (fetched only near the screen, through the one queue of `lib/pictures.ts` that honours `Retry-After`), turned as the
  * editor has it before it is saved. Each version has its own address, so a new version never shows an old picture.
  */

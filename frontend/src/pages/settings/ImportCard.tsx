@@ -1,7 +1,6 @@
 /**
- * Settings, Import: taking documents over from Paperless-ngx, as the mock draws it. Address and token, "connect and
- * look" (what Paperless holds, how it is translated, who is who, where it goes), then the run with its progress. What
- * the mock only played is real here: the server connects to Paperless, the run is a job in the background that goes on
+ * Settings, Import: taking documents over from Paperless-ngx. Address and token, "connect and
+ * look" (what Paperless holds, how it is translated, who is who, where it goes), then the run with its progress. The server connects to Paperless, the run is a job in the background that goes on
  * after a stop, and a second run takes only what is new. The token goes to the server once and never comes back.
  */
 import { ArrowRight, Inbox } from 'lucide-react'

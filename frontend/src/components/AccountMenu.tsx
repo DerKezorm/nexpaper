@@ -67,7 +67,7 @@ export function AccountMenu({ up = false }: { up?: boolean }) {
           <Link to="/konto" className={item}>
             <User size={16} /> {t('account.mine')}
           </Link>
-          {/* On the phone the bottom bar has room for five: Order lives here there (the mock's App), unless deadlines
+          {/* On the phone the bottom bar has room for five: Order lives here there, unless deadlines
               are off and Order takes their place in the bar. */}
           <Link to="/ordnung" className={`${item} ${usesDeadlines(me) ? 'lg:hidden' : 'hidden'}`}>
             <ListTree size={16} /> {t('order.menu')}

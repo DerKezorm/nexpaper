@@ -214,7 +214,7 @@ TOKEN_ROUTES = {
     ("GET", "/api/v1/shortcut"),
     # Where the own documents can be sent (the mailbox, the own subfolder): an app may show it.
     ("GET", "/api/v1/me/intake"),
-    # Exports for the tax adviser (B9): a device may look, delete and revoke; making one, its ZIP and its links need
+    # Exports for the tax adviser: a device may look, delete and revoke; making one, its ZIP and its links need
     # the browser, and a key reaches none of it.
     ("GET", "/api/v1/exports/preview"),
     ("GET", "/api/v1/exports"),
@@ -222,21 +222,21 @@ TOKEN_ROUTES = {
     ("DELETE", "/api/v1/exports/{export_id}"),
     ("GET", "/api/v1/exports/{export_id}/links"),
     ("DELETE", "/api/v1/exports/{export_id}/links/{link_id}"),
-    # The kinds of a vault (B6): made, changed and deleted by whoever may edit the vault; the ones of the whole server
+    # The kinds of a vault: made, changed and deleted by whoever may edit the vault; the ones of the whole server
     # stay the operator's, in a browser (``test_vault_kinds.py``).
     ("POST", "/api/v1/kinds"),
     ("PATCH", "/api/v1/kinds/{kind_id}"),
     ("DELETE", "/api/v1/kinds/{kind_id}"),
     ("POST", "/api/v1/kinds/{kind_id}/merge"),
     ("POST", "/api/v1/inbox/file"),
-    # Sorting documents in (B6): the rules of the vaults a person manages, and a rule from a document in the inbox. The
+    # Sorting documents in: the rules of the vaults a person manages, and a rule from a document in the inbox. The
     # operator's rules for the whole server need the browser (``/settings/rules``).
     ("GET", "/api/v1/rules"),
     ("POST", "/api/v1/rules"),
     ("PATCH", "/api/v1/rules/{rule_id}"),
     ("DELETE", "/api/v1/rules/{rule_id}"),
     ("POST", "/api/v1/documents/{document_id}/rule"),
-    # The page tools (B5): changing pages, joining, splitting, versions.
+    # The page tools: changing pages, joining, splitting, versions.
     ("POST", "/api/v1/documents/{document_id}/pages"),
     ("POST", "/api/v1/documents/{document_id}/merge"),
     ("POST", "/api/v1/documents/{document_id}/split"),
@@ -296,14 +296,14 @@ READ_ROUTES = {
     # The phone: what the quick upload shows.
     ("GET", "/api/v1/quick"),
     ("GET", "/api/v1/documents/{document_id}/origin"),
-    # The search and the text of a document (B3).
+    # The search and the text of a document.
     ("GET", "/api/v1/search"),
     ("GET", "/api/v1/search/overview"),
     ("GET", "/api/v1/documents/{document_id}/versions/{number}/text"),
-    # The e-invoice of a document: its data and its XML (B6), read like the file.
+    # The e-invoice of a document: its data and its XML, read like the file.
     ("GET", "/api/v1/documents/{document_id}/einvoice"),
     ("GET", "/api/v1/documents/{document_id}/versions/{number}/einvoice"),
-    # The blank separator pages of a document (B5).
+    # The blank separator pages of a document.
     ("GET", "/api/v1/documents/{document_id}/separators"),
     # The documents whose keeping time is over (F3).
     ("GET", "/api/v1/keeping"),

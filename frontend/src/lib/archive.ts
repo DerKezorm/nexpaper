@@ -9,7 +9,7 @@ export type Chosen = { vault: string; kind: string; sender: string; tag: string;
 export const KEYS: (keyof Chosen)[] = ['vault', 'kind', 'sender', 'tag', 'owner', 'year', 'deadline', 'keep']
 /** The filters that open the table; the vault alone keeps the overview. */
 export const NARROWING: (keyof Chosen)[] = ['kind', 'sender', 'tag', 'owner', 'year', 'deadline', 'keep']
-/** The filter "Frist" (the mock's `FRIST_FILTER`): open, overdue, the next 30 days, done; the key of its words under
+/** The filter "Frist": open, overdue, the next 30 days, done; the key of its words under
  * `deadlines.archive`. */
 export const DEADLINE_FILTER: [string, string][] = [
   ['open', 'open'],

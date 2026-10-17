@@ -1,7 +1,6 @@
 /**
  * Vaults: one personal vault per person, shared vaults from the operator. Each card shows who may do what; the rights are
- * changed right there. Below: what others shared one by one, and the open links the person made. As the mock draws it,
- * with the lists from the server in place of its invented ones.
+ * changed right there. Below: what others shared one by one, and the open links the person made.
  */
 import { FileText, FolderLock, Link2, ListTree, Plus, Settings2, Users, X } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
@@ -200,7 +199,7 @@ export function VaultsPage() {
         </section>
       )}
 
-      {/* The rules of the vaults the person manages (B6); the operator's for the whole server are under Settings. */}
+      {/* The rules of the vaults the person manages; the operator's for the whole server are under Settings. */}
       <RulesCard />
 
       <p className="text-xs text-muted">{t('vaults.note')}</p>

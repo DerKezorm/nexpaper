@@ -1,11 +1,11 @@
 /**
- * Settings, Sign-in: three cards one below the other, as the shared sign-in blueprint lays them out for every nex app
- * (Bauplan 04). Order, wording and behaviour come from there; the parts (card, switch, field, button, question) and
+ * Settings, Sign-in: three cards one below the other, the same in every nex app.
+ * Order, wording and behaviour come from the shared module; the parts (card, switch, field, button, question) and
  * the colours are nexpaper's own.
  *
  * 1. Sign-in: password sign-in (locked on while no provider is active), the public address, the second factor.
  * 2. Sign-in providers: the list with its marks, the drag handle, and the form as a dialog.
- * 3. authentik in one step: address, token, "Set up", the blueprint, and the steps with the reason of a failure.
+ * 3. authentik in one step: address, token, "Set up", the authentik blueprint file, and the steps with the reason of a failure.
  */
 import { Download, GripVertical, KeyRound, Shield, Sparkles } from 'lucide-react'
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
@@ -297,7 +297,7 @@ const EMPTY: OidcProviderForm = {
 
 type FieldName = 'label' | 'slug' | 'issuer' | 'client_id' | 'client_secret' | 'scopes' | 'id'
 
-/** The provider form as a dialog, the fields in the blueprint's order. */
+/** The provider form as a dialog, the fields in a fixed order. */
 function ProviderDialog({ entry, publicUrl, onClose, onSaved }: { entry: OidcProvider | null; publicUrl: string; onClose: () => void; onSaved: () => Promise<void> }) {
   const { t } = useTranslation()
   const [form, setForm] = useState<OidcProviderForm>(
@@ -506,7 +506,7 @@ function AuthentikCard({
     setAsking(null)
     return run(async () => {
       const answer = await oidcApi.authentik(authentik.url, authentik.token, confirm, unset ? proposal : '')
-      // Not a failure: the button waits for the operator's yes (Bauplan 04, card 3), nothing was changed.
+      // Not a failure: the button waits for the operator's yes, nothing was changed.
       const count = authentikIssuerChange(answer)
       if (count !== null) {
         setAsking(count)

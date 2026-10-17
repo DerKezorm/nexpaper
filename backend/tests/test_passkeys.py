@@ -318,7 +318,7 @@ def test_the_operator_reset_takes_the_passkeys_too(client: TestClient, operator:
     assert passkey_sign_in(browser("203.0.113.12"), key)[0].status_code == 401
 
 
-# --- Challenges: nobody who is not signed in crowds out the rest (B10) --------------------------------------------------
+# --- Challenges: nobody who is not signed in crowds out the rest --------------------------------------------------
 
 
 def test_a_sender_holds_a_limited_number_of_open_sign_in_challenges(monkeypatch: pytest.MonkeyPatch) -> None:

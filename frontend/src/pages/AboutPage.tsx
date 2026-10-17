@@ -1,5 +1,5 @@
 /**
- * About nexpaper, as the mock (and nexlore): version, licence, where it comes from, whether a newer one is out, and
+ * About nexpaper, as the mock: version, licence, where it comes from, whether a newer one is out, and
  * what it is built with. Reached from the account menu.
  *
  * The switch for the daily check stands here, where its answer shows, and the page says what goes out. Every account

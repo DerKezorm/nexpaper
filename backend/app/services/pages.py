@@ -174,7 +174,7 @@ def ensure(db: Session, document: Document, version: Version, page: int | None, 
     if document.status == "processing":
         raise error("not_ready", "The document is still being read.", 409)
     kind = filetypes.KIND_OF_EXTENSION.get(Path(version.original_path).suffix.lower())
-    # An e-invoice that is XML only has pages once nexpaper set its readable copy (B6).
+    # An e-invoice that is XML only has pages once nexpaper set its readable copy.
     if version.pages < 1 or (kind == filetypes.XML and not version.archive_path):
         raise error("not_found", "Not found.", 404)
     if page is not None and not 1 <= page <= version.pages:

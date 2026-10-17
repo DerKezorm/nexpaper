@@ -45,7 +45,7 @@ VERSION = Annotated[int, PathParam(ge=1, le=2**31 - 1, description="The number o
 
 #: An answer to a search is sent at the next multiple of this many seconds after the search began: what is left of
 #: the time a search takes (the index still looks up whether a word exists at all on the server, a few hundred
-#: microseconds) disappears in the step. Measured in ``docs/search.md``.
+#: microseconds) disappears in the step.
 TIME_STEP = 0.025
 #: And then a random wait of up to this many seconds (from ``secrets``): a search that ends right at the edge of a step
 #: cannot be used to tell one step from the next by sending it again and again.

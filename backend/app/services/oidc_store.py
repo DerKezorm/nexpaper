@@ -1,7 +1,7 @@
 """nexpaper's side of the shared sign-in module ``vendor/nexoidc``: the ``Store`` over its tables, the start-up
 configuration, the migration from the single provider of 1.0.1 to the list, and the way back to 1.0.1.
 
-The module (the shared blueprint "Anmeldung mit OIDC und authentik") runs the protocol, decides who an identity is and
+The shared module runs the protocol, decides who an identity is and
 keeps the provider list; it never sees a database. What is nexpaper's own lives here: accounts and their names, what an
 invitation brings, the address an account takes from its provider (never confirmed by that alone: the mail intake
 counts only an address the person confirmed), and the encryption of the client secrets with the server secret.
@@ -41,7 +41,7 @@ from . import accounts, settings_service
 logger = logging.getLogger("nexpaper.oidc")
 
 APP_NAME = "nexpaper"
-#: Where the API lies: the paths are ``/api/v1/oidc/<slug>/start`` and so on (Bauplan 06, "Pfad der Schnittstelle").
+#: Where the API lies: the paths are ``/api/v1/oidc/<slug>/start`` and so on.
 API_PREFIX = "/api/v1"
 #: Where nexpaper's sign-in and account pages are, as the module sends the browser there.
 LOGIN_PAGE = "/login"
@@ -110,7 +110,7 @@ def has_links(db: Session, account_id: int) -> bool:
 
 def follows_provider(account: Account) -> bool:
     """An account that signs in through a provider only: its address is the provider's and follows it. Every other
-    account is only offered the provider's address (account page), never given it (Bauplan 01)."""
+    account is only offered the provider's address (account page), never given it."""
     return account.sign_in == SIGN_IN_OIDC and not account.password_hash
 
 
@@ -380,7 +380,7 @@ class SqlStore:
         self.db.rollback()
 
 
-# --- The migration from the single provider of 1.0.1 (Bauplan 01 "Umstieg", 06 "Wanderung") ------------------------
+# --- The migration from the single provider of 1.0.1 ------------------------
 
 #: The settings of the single provider before the list. They stay for one version (the way back), then go.
 LEGACY_KEYS = ("oidc_issuer", "oidc_client_id", "oidc_client_secret_enc", "oidc_provider_name", "oidc_auto_create")
@@ -395,8 +395,8 @@ MIGRATED = "oidc_list_migrated"
 FINGERPRINT = "oidc_legacy_fingerprint"
 #: The issuer 1.0.1 knows, as it wrote it, or ``migrate.CLOSED`` (``migrate.way_back``): stored, never read here.
 ANCHOR = "oidc_legacy_anchor"
-#: How nexpaper 1.0.1 behaved after the provider, from the start: it asked the code of its own second factor (Bauplan
-#: 06 "Wanderung": off for nexpaper), unless the operator had turned the switch on.
+#: How nexpaper 1.0.1 behaved after the provider, from the start: it asked the code of its own second factor,
+#: unless the operator had turned the switch on.
 TRUSTED_BEFORE = False
 #: The marker of the old authentik button: 1.0.1's button named the provider "authentik", the form never did.
 BUTTON_LABEL = "authentik"
@@ -416,8 +416,8 @@ def _legacy(values: dict[str, object]) -> migrate.Legacy:
 
 
 def trusted_before(values: dict[str, object]) -> bool:
-    """How 1.0.1 behaves after its provider today: without a code when its switch is on (the operator's decision of
-    10.10.2026: the switch decides the migrated entry)."""
+    """How 1.0.1 behaves after its provider today: without a code when its switch is on (the switch decides the migrated
+    entry)."""
     return bool(values.get(LEGACY_SECOND_FACTOR, TRUSTED_BEFORE))
 
 
@@ -435,7 +435,7 @@ def read_legacy(db: Session) -> tuple[migrate.Legacy, list[tuple[int, str]]]:
 
 def _provider_address_unconfirmed(db: Session) -> int:
     """1.0.1 took a provider's address as confirmed when the provider said ``email_verified``. From now on only the
-    person confirms an address (Bauplan 01, and the mail intake decides by confirmed addresses): such an address stays,
+    person confirms an address: such an address stays,
     unconfirmed, until the person opens the link nexpaper sends."""
     result = db.execute(
         update(Account)
@@ -474,7 +474,7 @@ def migrate_settings(*, backup: bool = True) -> Provider | None:
         if plan is not None and not has_entries:
             entry = migrate.apply(SqlStore(db), plan)
         # Written whatever happened, with the fingerprint (also "no provider"): a provider 1.0.1 sets up later is taken
-        # over at the next start, not thrown away; a subject the plan left out goes from the old column too.
+        # over at the next start, not thrown away; a subject the migration left out goes from the old column too.
         keep_way_back(db)
         db.commit()
         return entry

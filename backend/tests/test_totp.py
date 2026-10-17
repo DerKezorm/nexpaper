@@ -390,7 +390,7 @@ def test_required_mode_lets_an_account_without_a_second_factor_only_enrol(
 def test_an_account_through_a_provider_only_is_not_sent_to_set_one_up_but_may_enrol_its_own(
     client: TestClient, operator: Account, clock: Clock
 ) -> None:
-    """Bauplan 01 (decided 10.10.2026): "require a second factor" sends only password accounts to set one up. An account
+    """With "Require a second factor" on, only password accounts are sent to set one up. An account
     through a provider only (no password here) is not forced; its own second factor, if it makes one, is asked after a
     provider whose entry does not check it (``tests/test_oidc_app.py``)."""
     with SessionLocal() as db:
@@ -437,7 +437,7 @@ def test_an_account_from_a_provider_changes_its_factor_only_soon_after_signing_i
     assert stale.status_code == 403 and stale.json()["detail"]["code"] == "sign_in_again"
 
 
-# --- Recovery codes are kept as keyed hashes (B10) ------------------------------------------------------------------
+# --- Recovery codes are kept as keyed hashes ------------------------------------------------------------------
 
 
 def test_recovery_codes_are_stored_as_keyed_hashes_not_plain_sha256() -> None:

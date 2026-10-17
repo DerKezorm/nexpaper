@@ -43,7 +43,7 @@ CREATABLE = ("read", "upload")
 KEY_PREFIX = "npk_"
 #: How many keys an account may hold.
 MAX_KEYS = 20
-#: The choices for running out, in days; None: never (the default, design answer).
+#: The choices for running out, in days; None: never (the default).
 LIFETIMES = (30, 90, 365)
 #: Requests one key may make per minute.
 PER_MINUTE = 120

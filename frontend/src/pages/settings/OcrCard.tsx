@@ -1,5 +1,5 @@
 /**
- * Settings, Storage: the card "Text recognition" of the mock. The languages the recognition reads (the six the server
+ * Settings, Storage: the card "Text recognition". The languages the recognition reads (the six the server
  * carries), straightening, the switch for blank separator pages (kept now, acted on by the page tools later) and the
  * queue: how many documents are being read, how many wait, and how long a page took. A switch or a language is saved at
  * once; the longest time for one document (shown in minutes, kept in seconds) with its own button.

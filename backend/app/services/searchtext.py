@@ -1,6 +1,6 @@
 """What a search says, and where in a text it was found. Pure functions: no database, no settings.
 
-**The language** is the one of the archive's search field (the mock's help list), in German and in English:
+**The language** is the one of the archive's search field, in German and in English:
 
 * words: every one must be found, in the title, the sender, the text, the notes or the tags; a part of a word is enough
   (``werke`` finds ``Stadtwerke``),

@@ -26,7 +26,7 @@ type Texts = Record<string, unknown>
 export const APP_NAME = 'nexpaper'
 /**
  * The texts of sign-in through providers (`oidc.…`) come with the shared module `vendor/nexoidc`, the same words in
- * every nex app (Bauplan 04); nexpaper has invitations and more than one account.
+ * every nex app; nexpaper has invitations and more than one account.
  */
 const en: Texts = { ...ownEn, ...oidcWording(oidcEn, { singleAccount: false, invitations: true }) }
 const de: Texts = { ...ownDe, ...oidcWording(oidcDe, { singleAccount: false, invitations: true }) }

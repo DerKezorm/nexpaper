@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next'
  * close the dialog under it as well). */
 const open: symbol[] = []
 
-/** A dialog over the page, as the mock's: from below on a phone, in the middle on a larger screen. Escape and the scrim
+/** A dialog over the page: from below on a phone, in the middle on a larger screen. Escape and the scrim
  * close it, focus starts inside and comes back afterwards. `above`: over everything, also over the big view of a photo
  * (drawn into the body, outside the page behind, which stands still while that view is open). */
 export function Dialog({ title, onClose, children, wide = false, above = false }: { title: string; onClose: () => void; children: ReactNode; wide?: boolean; above?: boolean }) {

@@ -21,7 +21,7 @@ backend/data-*/
 # The camera: OpenCV.js is copied from node_modules at dev and build time (frontend/scripts/scanner-assets.mjs).
 frontend/public/scanner/opencv.js
 frontend/public/scanner/opencv.LICENSE.txt
-# Measurement scripts of the backend belong to the repository, whatever a local ignore list says about tools/.
+# Helper scripts of the backend belong to the repository, whatever a local ignore list says about tools/.
 !/backend/tools/
 
 # pdf.js: character maps, standard fonts and decoders, copied from node_modules at dev and build time

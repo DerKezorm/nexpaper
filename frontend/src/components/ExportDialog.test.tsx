@@ -1,5 +1,5 @@
 /**
- * The export dialog against a stand-in of the server: the words of the mock, the period and the vaults it starts with,
+ * The export dialog against a stand-in of the server: the words of the dialog, the period and the vaults it starts with,
  * the server's count (with the person's rights) replacing the archive's, the tree of the ZIP, what goes in, the ZIP and
  * the link for the tax adviser, the operator's switch for links, refusals, and the person's exports below.
  */
@@ -75,7 +75,7 @@ afterEach(() => {
 })
 
 describe('the export dialog', () => {
-  it('shows the words of the mock and starts from the archive', async () => {
+  it('shows its words and starts from the archive', async () => {
     await open()
     for (const words of [
       'Exportieren', 'Ein ZIP für den Steuerberater oder fürs eigene Archiv. Die Ordner darin heißen wie in nexpaper: Tresor, Jahr, Absender.',

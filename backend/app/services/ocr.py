@@ -2,7 +2,7 @@
 
 The image carries Tesseract with six languages (``LANGUAGES``) and nothing is loaded at run time: the operator picks
 among them. Straightening (``--deskew --rotate-pages``) is a switch. The switch for blank separator pages is kept here
-and shown, but only the page tools (B5) act on it.
+and shown, but only the page tools act on it.
 
 On a machine without ocrmypdf or Tesseract (a development machine under Windows) every document is read as before and
 only the text a PDF carries itself is found; ``available`` says so, and the card shows it.

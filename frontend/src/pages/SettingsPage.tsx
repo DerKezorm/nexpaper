@@ -57,8 +57,8 @@ function ServerPart({ part }: { part: Part }) {
     case 'signin':
       return (
         <div className="space-y-6">
-          {/* nexpaper's own look at the server (its points say "below"), then the three cards of the shared blueprint
-              (Bauplan 04), one below the other. */}
+          {/* nexpaper's own look at the server (its points say "below"), then the three cards of the shared module,
+             one below the other. */}
           <ReadinessCard />
           <SignInPart server={server} />
         </div>

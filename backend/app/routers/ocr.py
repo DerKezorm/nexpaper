@@ -82,6 +82,6 @@ def change(payload: OcrIn, operator: OperatorAccount, db: DbSession) -> OcrOut:
         if changes.get("ocr_blank_pages") is True:
             from ..services import separators
 
-            # The documents waiting in the inbox are looked at now (page tools, B5).
+            # The documents waiting in the inbox are looked at now (page tools).
             separators.queue_missing(db)
     return _view(db)

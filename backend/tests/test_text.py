@@ -51,7 +51,7 @@ def test_the_text_of_a_read_pdf_and_of_an_xml_invoice(client: TestClient, operat
     assert "Zählerstand ist 4711" in pages["pages"][0] and "Grüße aus Lindenau" in pages["pages"][1]
     # Found by the search right away, with what the PDF carried.
     assert client.get("/api/v1/search", params={"q": "zählerstand 4711"}).json()["total"] == 1
-    # An e-invoice as XML: the text of the readable page set from it (B6).
+    # An e-invoice as XML: the text of the readable page set from it.
     xml_text = client.get(f"/api/v1/documents/{xml['id']}/versions/1/text").json()
     assert xml_text["state"] == "done" and "2026-1001" in xml_text["pages"][0]
 

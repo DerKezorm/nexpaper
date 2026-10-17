@@ -136,7 +136,7 @@ def test_a_key_for_reading_does_not_upload_and_a_key_for_uploading_does(world: W
         refused = call(program, row, world, headers={"Authorization": f"Bearer {read_key}"})
         assert refused == 403, (row, refused)
         if "{u}" in row.template:
-            # A key reaches only the uploads it started (review of B7): the browser's upload is none of its business.
+            # A key reaches only the uploads it started (a finding of the review): the browser's upload is none of its business.
             assert call(program, row, world, headers={"Authorization": f"Bearer {write_key}"}) == 404, row
             started = program.post("/api/v1/uploads", headers={"Authorization": f"Bearer {write_key}"},
                                    json={"filename": "k.png", "size": len(DATA), "sha256": sha(DATA)})
@@ -195,7 +195,7 @@ def test_the_list_of_open_uploads_is_the_own_one_and_nobody_elses(world: World) 
     for who in (world.other, world.reader):
         with new_client(who) as stranger:
             assert stranger.get("/api/v1/uploads").json() == []
-    # A key for uploading lists the uploads it started and no other (review of B7), a key for reading does not list
+    # A key for uploading lists the uploads it started and no other, a key for reading does not list
     # at all (403), nobody without a sign-in does (401).
     write_key = upload_key(world.owner, "upload")
     read_key = upload_key(world.owner, "read")

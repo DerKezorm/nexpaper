@@ -1,5 +1,5 @@
 /**
- * "Darf weg" (the mock's `MayGo` on the deadlines page): the filed documents whose keeping time is over, in the vaults
+ * "Darf weg" (on the deadlines page): the filed documents whose keeping time is over, in the vaults
  * where the person may change things. Nothing goes by itself: pick, then "In den Papierkorb", after the question (30
  * days in the trash, as always). `useMayGo` (`lib/mayGo.ts`) fetches them (`GET /api/v1/keeping`), `MayGoChip` is the filter of the
  * page, `MayGo` the section. The deadlines page puts the three in its place.

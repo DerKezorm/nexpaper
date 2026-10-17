@@ -247,7 +247,7 @@ def test_a_document_still_being_read_or_in_the_trash_is_refused(client: TestClie
 
 def test_an_e_invoice_as_xml_has_its_readable_sheet_to_work_on_and_keeps_its_data(
         client: TestClient, operator: object) -> None:
-    """Sorting in (B6) sets a readable PDF for an XRechnung that came as XML: it has a page, so the tools work on that
+    """Sorting in sets a readable PDF for an XRechnung that came as XML: it has a page, so the tools work on that
     page and make a new version; the XML stays the original of version 1 and the data of the invoice stay with it."""
     invoice = upload_and_read(client, "rechnung.xml", files.invoice_xml())
     assert invoice["pages"] == 1 and invoice["einvoice"] == "UBL"

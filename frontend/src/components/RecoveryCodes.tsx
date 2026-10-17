@@ -1,4 +1,4 @@
-/** The recovery codes, shown once: the grid of the mock, to copy or to keep as a file. */
+/** The recovery codes, shown once: a grid, to copy or to keep as a file. */
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 

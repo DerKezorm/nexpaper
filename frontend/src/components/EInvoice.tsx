@@ -1,5 +1,5 @@
 /**
- * The e-invoice a document carries (ZUGFeRD, Factur-X, XRechnung), as the mock draws it: in the inbox the short note
+ * The e-invoice a document carries (ZUGFeRD, Factur-X, XRechnung): in the inbox the short note
  * that its fields come from the data of the invoice, on the document page the box with number, buyer reference, due
  * date, IBAN, the lines and the totals. Both load the data only for a document that carries one.
  */

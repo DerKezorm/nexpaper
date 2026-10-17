@@ -431,7 +431,7 @@ def test_a_page_cookie_nexpaper_did_not_sign_counts_for_nothing(
 def test_a_provider_that_checks_the_second_factor_spares_this_session_its_set_up_not_the_password_one(
     client: TestClient, operator: Account, provider: FakeProvider
 ) -> None:
-    """Bauplan 01 (decided 10.10.2026): through an entry that trusts the provider, a password account without a second
+    """Through an entry that trusts the provider, a password account without a second
     factor is not sent to set one up; its own sign-in with the password still is. Its device tokens and keys wait
     (they have no provider behind them), and the page says so."""
     configure(client, provider)
