@@ -9,9 +9,11 @@ import './i18n'
 import './index.css'
 import { openShare, sweepShared } from './lib/shared'
 import { followSystem } from './lib/theme'
+import { bearTranslatedPages } from './lib/translatedPage'
 import { AuthProvider } from './state/auth'
 
 followSystem()
+bearTranslatedPages()
 
 // The service worker from the start, not only for Web Push: Android's share menu sends files to it (`public/sw.js`).
 if ('serviceWorker' in navigator && window.isSecureContext) {
