@@ -1,4 +1,16 @@
 {
+  "1.4.2": {
+    "lead": "Eine vom Browser übersetzte Seite bringt nexpaper nicht mehr zum Absturz.",
+    "sections": [
+      {
+        "title": "Vom Browser übersetzte Seiten",
+        "where": "Jede Seite, wenn Chrome, Edge oder eine Erweiterung sie übersetzt",
+        "body": "Eine übersetzte Seite konnte leer werden, sobald sich etwas auf ihr änderte, weil der Browser die Texte gegen eigene getauscht hatte. nexpaper arbeitet auf so einer Seite jetzt weiter."
+      }
+    ],
+    "smallTitle": "Außerdem",
+    "small": []
+  },
   "1.4.1": {
     "lead": "Fristen lassen sich je Person ausschalten, „Darf weg“ steht im Archiv, und abgelaufene Dokumente können von selbst in den Papierkorb.",
     "sections": [

@@ -1,4 +1,16 @@
 {
+  "1.4.2": {
+    "lead": "A page the browser translated no longer takes nexpaper down.",
+    "sections": [
+      {
+        "title": "Pages the browser translated",
+        "where": "Every page, when Chrome, Edge or an extension translates it",
+        "body": "A translated page could go blank as soon as something on it changed, because the browser had swapped the texts for its own. nexpaper now keeps working on such a page."
+      }
+    ],
+    "smallTitle": "Also",
+    "small": []
+  },
   "1.4.1": {
     "lead": "Deadlines can be switched off per person, “May go” is in the archive, and expired documents can go to the trash by themselves.",
     "sections": [
