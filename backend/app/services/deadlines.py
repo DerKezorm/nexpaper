@@ -14,7 +14,7 @@ the one person who asks: the others in the vault are reminded as before.
 
 **Who sees which.** The deadlines of the documents the person may change: ``edit`` or ``manage`` in the vault, or a
 share with ``edit`` (``rights.editable_clause``), in the inbox or filed. Somebody who may only read gets no deadlines
-and is never reminded (the mock: "aus allen Tresoren, in denen du bearbeiten darfst"), the same as the inbox. The right
+and is never reminded, the same as the inbox. The right
 is in the query; nothing is filtered or counted afterwards.
 
 **Today** is the person's (``timezones.zone_of``); the clock is ``app.clock``, so a test sets it. The renewal runs on

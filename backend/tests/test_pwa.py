@@ -29,7 +29,7 @@ def test_the_policy_lets_the_service_worker_and_the_manifest_in(client: TestClie
 
 
 def test_the_manifest_names_the_app_its_shortcuts_and_the_share_target() -> None:
-    """As the mock: shortcuts to the quick upload and the camera, and the share target (POST with files) at /teilen,
+    """Shortcuts to the quick upload and the camera, and the share target (POST with files) at /teilen,
     which the service worker answers."""
     manifest = json.loads((PUBLIC / "manifest.webmanifest").read_text(encoding="utf-8"))
     assert manifest["name"] == "nexpaper" and manifest["short_name"] == "nexpaper"

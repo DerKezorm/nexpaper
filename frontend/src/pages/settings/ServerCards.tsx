@@ -1,5 +1,5 @@
 /**
- * The operator's part of the settings, as the mock: accounts and invitations, mail, API keys, backups,
+ * The operator's part of the settings: accounts and invitations, mail, API keys, backups,
  * languages and the log. Sign-in (password, public address, second factor, providers, authentik) is in
  * ``SignInCards.tsx``. Everything here is the
  * server's; it applies to all. The operator manages accounts and does not read the documents in them.

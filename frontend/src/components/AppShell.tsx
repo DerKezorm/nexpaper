@@ -100,7 +100,7 @@ function useMenuCounts(): { inbox: number; trash: number; deadlines: number; ove
 }
 
 /**
- * The frame of the mock: a sidebar on a large screen, a header on a phone, the menu below on a phone (inbox with the number of what waits there, archive, vaults, order, trash).
+ * The frame: a sidebar on a large screen, a header on a phone, the menu below on a phone (inbox with the number of what waits there, archive, vaults, order, trash).
  */
 export function AppShell() {
   const { t } = useTranslation()

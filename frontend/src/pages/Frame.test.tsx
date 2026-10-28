@@ -80,7 +80,7 @@ afterEach(() => {
 })
 
 describe('after the sign-in', () => {
-  it('opens on the archive, with the menu of the mock: archive, inbox with its count, vaults', async () => {
+  it('opens on the archive, with the menu: archive, inbox with its count, vaults', async () => {
     answers['GET /api/v1/counts'] = { inbox: 2, reading: 1, trash: 4, deadlines: 6, deadlines_overdue: 1 }
     sessionStorage.setItem('nexpaper.startShown', '1')
     await show('/')
