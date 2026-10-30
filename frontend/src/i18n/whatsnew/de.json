@@ -1,4 +1,31 @@
 {
+  "1.4.3": {
+    "lead": "Diesmal keine neue Funktion, sondern eine Nachricht: nexpaper gibt es jetzt als App für iPhone und iPad.",
+    "sections": [
+      {
+        "title": "nexpaper im App Store",
+        "where": "Mein Konto, Geräte und Apps, Gerät koppeln",
+        "body": "Mit der App scannst du Briefe mit der Kamera, schickst PDFs und Fotos aus anderen Apps über Teilen in deinen Eingang, legst ab, suchst im Volltext und behältst deine Fristen im Blick, auf Wunsch mit Erinnerung. Ohne Verbindung wartet jeder Scan auf dem Gerät und geht von selbst hoch, sobald dein Server erreichbar ist. Die App ist kostenlos und spricht nur mit deinem eigenen nexpaper. Zum Verbinden zeigst du unter „Gerät koppeln“ den QR-Code und scannst ihn mit der App, oder du meldest dich in der App über den Browser an.",
+        "link": {
+          "label": "nexpaper im App Store",
+          "href": "https://apps.apple.com/app/nexpaper/id6824032969"
+        }
+      },
+      {
+        "title": "Android: Tester gesucht",
+        "where": "GitHub, Discussions",
+        "body": "Wir möchten auch eine App für Android bauen. Bevor Google eine neue App in den Play Store lässt, muss sie in einem geschlossenen Test mit 20 Testern laufen. Wenn du ein Android-Gerät hast und mitmachen möchtest, melde dich in der Diskussion auf GitHub.",
+        "link": {
+          "label": "Zur Diskussion auf GitHub",
+          "href": "https://github.com/DerKezorm/nexpaper/discussions/3"
+        }
+      }
+    ],
+    "smallTitle": "Außerdem",
+    "small": [
+      "Sonst ändert sich nichts, auch nicht an der Datenbank."
+    ]
+  },
   "1.4.2": {
     "lead": "Eine vom Browser übersetzte Seite bringt nexpaper nicht mehr zum Absturz.",
     "sections": [

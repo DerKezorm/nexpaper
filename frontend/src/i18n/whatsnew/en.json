@@ -1,4 +1,31 @@
 {
+  "1.4.3": {
+    "lead": "No new feature this time, but news: nexpaper is now available as an app for iPhone and iPad.",
+    "sections": [
+      {
+        "title": "nexpaper on the App Store",
+        "where": "My account, Devices and apps, Pair a device",
+        "body": "With the app you scan letters with the camera, send PDFs and photos from other apps into your inbox through Share, file them, search the full text and keep an eye on your deadlines, with reminders if you like. Without a connection every scan waits on the device and uploads by itself once your server is reachable. The app is free and talks only to your own nexpaper. To connect it, show the QR code under “Pair a device” and scan it with the app, or sign in from the app through the browser.",
+        "link": {
+          "label": "nexpaper on the App Store",
+          "href": "https://apps.apple.com/app/nexpaper/id6824032969"
+        }
+      },
+      {
+        "title": "Android: testers wanted",
+        "where": "GitHub, Discussions",
+        "body": "We would like to build an app for Android as well. Before Google lets a new app into the Play Store, it has to run in a closed test with 20 testers. If you have an Android device and would like to help, sign up in the discussion on GitHub.",
+        "link": {
+          "label": "Go to the discussion on GitHub",
+          "href": "https://github.com/DerKezorm/nexpaper/discussions/3"
+        }
+      }
+    ],
+    "smallTitle": "Also",
+    "small": [
+      "Nothing else changes, the database neither."
+    ]
+  },
   "1.4.2": {
     "lead": "A page the browser translated no longer takes nexpaper down.",
     "sections": [
