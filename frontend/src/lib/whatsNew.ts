@@ -2,13 +2,14 @@
  * "What's new", as in nexlore: one written text per version, in `i18n/whatsnew/<language>.json`, keyed by
  * the version (`"0.2.0"`). Loaded only when needed: an account reads it once after an update.
  *
- * An entry has four fields: `lead`, `sections` (each with `title`, `where`, `body`), `smallTitle` and `small`. An entry
- * of another shape is left out, never shown half; `whatsNew.test.ts` makes sure none ships like that. Bug-fix
- * versions need no entry: without one there is no banner.
+ * An entry has four fields: `lead`, `sections` (each with `title`, `where`, `body` and, if wanted, a `link` such as the
+ * App Store), `smallTitle` and `small`. An entry of another shape is left out, never shown half; `whatsNew.test.ts`
+ * makes sure none ships like that. Bug-fix versions need no entry: without one there is no banner.
  */
 import { useEffect, useState } from 'react'
 
-export type WhatsNewSection = { title: string; where: string; body: string }
+export type WhatsNewLink = { label: string; href: string }
+export type WhatsNewSection = { title: string; where: string; body: string; link?: WhatsNewLink }
 export type WhatsNewEntry = { lead: string; sections: WhatsNewSection[]; smallTitle: string; small: string[] }
 type Entries = Record<string, WhatsNewEntry>
 
@@ -21,6 +22,13 @@ function isText(value: unknown): value is string {
   return typeof value === 'string' && value.trim() !== ''
 }
 
+/** A link leaves only to https, never to a script or a page of the app itself. */
+function isLink(value: unknown): value is WhatsNewLink {
+  if (!value || typeof value !== 'object') return false
+  const link = value as Partial<WhatsNewLink>
+  return isText(link.label) && isText(link.href) && link.href.startsWith('https://')
+}
+
 export function isEntry(value: unknown): value is WhatsNewEntry {
   if (!value || typeof value !== 'object') return false
   const entry = value as Partial<WhatsNewEntry>
@@ -28,7 +36,9 @@ export function isEntry(value: unknown): value is WhatsNewEntry {
     isText(entry.lead) &&
     Array.isArray(entry.sections) &&
     entry.sections.length > 0 &&
-    entry.sections.every((part) => !!part && isText(part.title) && isText(part.where) && isText(part.body)) &&
+    entry.sections.every(
+      (part) => !!part && isText(part.title) && isText(part.where) && isText(part.body) && (part.link === undefined || isLink(part.link)),
+    ) &&
     typeof entry.smallTitle === 'string' &&
     Array.isArray(entry.small) &&
     entry.small.every(isText)

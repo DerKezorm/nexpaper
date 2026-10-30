@@ -50,6 +50,15 @@ describe('an entry', () => {
     expect(isEntry(null)).toBe(false)
   })
 
+  it('takes a link under a section only to https', () => {
+    const linked = (link: unknown) => ({ ...good, sections: [{ ...good.sections[0], link }] })
+    expect(isEntry(linked({ label: 'App Store', href: 'https://apps.apple.com/app/id1' }))).toBe(true)
+    expect(isEntry(linked({ label: 'App Store', href: 'http://apps.apple.com/app/id1' }))).toBe(false)
+    expect(isEntry(linked({ label: 'App Store', href: 'javascript:alert(1)' }))).toBe(false)
+    expect(isEntry(linked({ label: '', href: 'https://apps.apple.com/app/id1' }))).toBe(false)
+    expect(isEntry(linked('https://apps.apple.com/app/id1'))).toBe(false)
+  })
+
   it('comes in German for German and in English for every other language', async () => {
     expect([fileFor('de'), fileFor('de-AT'), fileFor('en'), fileFor('es')]).toEqual(['de', 'de', 'en', 'en'])
     expect((await entriesFor('es'))[pkg.version]?.lead).toBe((en as Record<string, WhatsNewEntry>)[pkg.version]?.lead)

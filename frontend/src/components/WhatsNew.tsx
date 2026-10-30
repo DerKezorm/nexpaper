@@ -52,6 +52,11 @@ export function WhatsNewWindow({ version, entry, onClose }: { version: string; e
             <li key={part.title}>
               <h3 className="font-semibold">{part.title}</h3>
               <p className="text-sm text-ink-2">{part.body}</p>
+              {part.link && (
+                <a href={part.link.href} target="_blank" rel="noopener noreferrer" className="mt-1 inline-block text-sm font-semibold text-accent hover:underline">
+                  {part.link.label}
+                </a>
+              )}
               <p className="mt-1 text-xs text-muted">
                 <span className="font-bold">{t('whatsNew.where')}</span> {part.where}
               </p>
