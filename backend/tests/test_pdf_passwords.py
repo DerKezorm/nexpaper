@@ -544,6 +544,9 @@ def test_after_a_whole_round_the_password_is_nowhere_but_sealed(
     from app.services import logs
 
     password = f"Unik{secrets.token_hex(12)}Wert"
+    # The wrong one too: what a person typed is no less private for not fitting.
+    wrong = f"Falsch{secrets.token_hex(12)}Wert"
+    values = (password, wrong)
     caplog.set_level(logging.DEBUG)
     logs.setup()
     logs.apply_mode("trace")
@@ -555,7 +558,7 @@ def test_after_a_whole_round_the_password_is_nowhere_but_sealed(
                 return answer
 
             document = arrive(c, protected(password))
-            keep(unlock(c, document["id"], password[::-1]))
+            keep(unlock(c, document["id"], wrong))
             keep(unlock(c, document["id"], password, remember=True, name="Gehalt"))
             process_all()
             second = arrive(c, protected(password), name="Zwei.pdf")
@@ -568,16 +571,16 @@ def test_after_a_whole_round_the_password_is_nowhere_but_sealed(
     finally:
         logs.apply_mode("normal")
     for text in said:
-        assert password not in text
+        assert not any(value in text for value in values)
     for record in caplog.records:
-        assert password not in record.getMessage() and password not in repr(record.args)
-    spellings = {password.encode(codec) for codec in ("utf-8", "utf-16-le", "latin-1")}
+        assert not any(value in record.getMessage() or value in repr(record.args) for value in values)
+    spellings = {value.encode(codec) for value in values for codec in ("utf-8", "utf-16-le", "latin-1")}
 
     def clean(data: bytes, where: str) -> None:
         assert not any(spelling in data for spelling in spellings), where
 
     for path in Path(DATA_DIR).rglob("*"):
-        assert password not in path.name
+        assert not any(value in path.name for value in values)
         if not path.is_file():
             continue
         data = path.read_bytes()
@@ -595,12 +598,12 @@ def test_after_a_whole_round_the_password_is_nowhere_but_sealed(
         tables = [row[0] for row in connection.execute("SELECT name FROM sqlite_master WHERE type = 'table'")]
         for table in tables:
             for row in connection.execute(f'SELECT * FROM "{table}"'):  # noqa: S608 - the names come from SQLite
-                assert password not in repr(row), table
+                assert not any(value in repr(row) for value in values), table
         sealed = connection.execute("SELECT sealed FROM pdf_passwords").fetchall()
         assert len(sealed) == 1 and sealed[0][0]
     with SessionLocal() as db:
         for job in db.scalars(select(Job)):
-            assert password not in repr(job.payload) and password not in (job.error or "")
+            assert not any(value in repr(job.payload) or value in (job.error or "") for value in values)
     backup.unlink(missing_ok=True)
 
 
