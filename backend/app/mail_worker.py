@@ -320,6 +320,7 @@ class HtmlText(html.parser.HTMLParser):
     BLOCK = frozenset({"p", "div", "tr", "ul", "ol", "dl", "dt", "dd", "table", "blockquote", "pre", "section",
                        "article", "header", "footer", "address", "form", "fieldset", "center", "h1", "h2", "h3", "h4",
                        "h5", "h6", "hr", "body", "main", "nav", "aside", "figure", "figcaption", "caption"})
+    PARAGRAPH = frozenset({"p", "h1", "h2", "h3", "h4", "h5", "h6", "ul", "ol", "table", "blockquote"})
     VOID = frozenset({"br", "hr", "img", "input", "meta", "link", "area", "base", "col", "embed", "source", "track",
                       "wbr", "param"})
 
@@ -379,6 +380,9 @@ class HtmlText(html.parser.HTMLParser):
         if tag == "pre":
             self.pre = max(0, self.pre - 1)
             self.put("\n")
+        elif tag in self.PARAGRAPH:
+            # The end of a paragraph, a heading, a list or a table: an empty line after it (``tidy`` keeps one).
+            self.put("\n\n")
         elif tag in self.BLOCK:
             self.put("\n")
         elif tag == "a" and self.link is not None:
