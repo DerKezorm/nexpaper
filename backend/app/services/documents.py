@@ -467,11 +467,37 @@ def _remove_dates(db: Session, document: Document, kinds: list[str]) -> bool:
 def update_fields(db: Session, uid: int, document_id: int, patch: dict[str, Any]) -> Document:
     """Changes the fields named in ``patch`` (only those). Returns the document; the history records which fields
     changed, never their values."""
+    return change_fields(db, uid, document_id, patch)[0]
+
+
+def _tags_with(db: Session, document_id: int, add: list[str], remove: list[str]) -> list[str]:
+    """The names of the tags the document carries, without those of ``remove`` and with those of ``add`` it does not
+    carry yet (compared as ``names.name_key``): read under the caller's write lock, so that two changes at the same
+    time never take back each other's tags."""
+    have = list(db.scalars(select(Tag.name).join(DocumentTag, DocumentTag.tag_id == Tag.id)
+                           .where(DocumentTag.document_id == document_id).order_by(Tag.id)))
+    drop = {name_key(name) for name in remove}
+    names = [name for name in have if name_key(name) not in drop]
+    known = {name_key(name) for name in names}
+    for name in add:
+        if name_key(name) not in known:
+            known.add(name_key(name))
+            names.append(name)
+    return names
+
+
+def change_fields(db: Session, uid: int, document_id: int, patch: dict[str, Any]) -> tuple[Document, list[str]]:
+    """``update_fields``, and which fields changed (empty: nothing did, and nothing was written). Besides the fields of
+    ``update_fields``, ``patch`` may name ``add_tags`` and ``remove_tags`` (names): the tags the document carries at
+    the moment of the change, with these added or taken away (the archive's "Tag dazu" and "Tag weg" for many)."""
     changes.write_lock(db)
     access = rights.require_document(db, uid, document_id, EDIT)
     document = access.document
     if document.status == TRASH:
         raise error("in_trash", "Restore the document first.", 409)
+    if "add_tags" in patch or "remove_tags" in patch:
+        names = _tags_with(db, document.id, list(patch.get("add_tags") or []), list(patch.get("remove_tags") or []))
+        patch = {key: value for key, value in patch.items() if key not in ("add_tags", "remove_tags")} | {"tags": names}
     changed: list[str] = []
     rename = False
     if "title" in patch:
@@ -547,7 +573,7 @@ def update_fields(db: Session, uid: int, document_id: int, patch: dict[str, Any]
         changed.append(keeping.KEEP)
     if not changed:
         db.rollback()
-        return document
+        return document, []
     document.change_seq = changes.next_seq(db)
     _theirs(document, changed)
     detail: dict[str, Any] = {"fields": changed}
@@ -559,7 +585,7 @@ def update_fields(db: Session, uid: int, document_id: int, patch: dict[str, Any]
         jobs.enqueue(db, jobs.RENAME, document.id)
     catalog.prune(db, [old_sender] if old_sender != document.sender_id else [], old_tags)
     db.commit()
-    return document
+    return document, changed
 
 
 def _theirs(document: Document, fields: list[str]) -> None:
@@ -574,6 +600,11 @@ def _theirs(document: Document, fields: list[str]) -> None:
 def move(db: Session, uid: int, document_id: int, target_vault_id: int) -> Document:
     """To another vault: the caller needs ``edit`` in both (through the vault, a share is not enough to take a document
     out of the place it is kept)."""
+    return move_changed(db, uid, document_id, target_vault_id)[0]
+
+
+def move_changed(db: Session, uid: int, document_id: int, target_vault_id: int) -> tuple[Document, bool]:
+    """``move``, and whether it moved (False: it was in that vault already, nothing was written)."""
     changes.write_lock(db)
     access = rights.require_document(db, uid, document_id, EDIT)
     document = access.document
@@ -584,7 +615,7 @@ def move(db: Session, uid: int, document_id: int, target_vault_id: int) -> Docum
     rights.require_vault(db, uid, target_vault_id, EDIT)
     if target_vault_id == document.vault_id:
         db.rollback()
-        return document
+        return document, False
     source = document.vault_id
     document.vault_id = target_vault_id
     _theirs(document, ["vault"])
@@ -596,16 +627,21 @@ def move(db: Session, uid: int, document_id: int, target_vault_id: int) -> Docum
     changes.record(db, document.id, changes.MOVED, user_id=uid, detail={"from": source, "to": target_vault_id})
     jobs.enqueue(db, jobs.RENAME, document.id)
     db.commit()
-    return document
+    return document, True
 
 
 def trash(db: Session, uid: int, document_id: int) -> Document:
+    return trash_changed(db, uid, document_id)[0]
+
+
+def trash_changed(db: Session, uid: int, document_id: int) -> tuple[Document, bool]:
+    """``trash``, and whether it went there now (False: it was in the trash already, nothing was written)."""
     changes.write_lock(db)
     access = rights.require_document(db, uid, document_id, EDIT)
     document = access.document
     if document.status == TRASH:
         db.rollback()
-        return document
+        return document, False
     document.trashed_status = document.status if document.status in (INBOX, FILED) else FILED
     document.status = TRASH
     document.trashed_at = clock.now()
@@ -613,7 +649,7 @@ def trash(db: Session, uid: int, document_id: int) -> Document:
     changes.record(db, document.id, changes.TRASHED, user_id=uid)
     # Links stop with the trash (checked when one is opened); nothing else changes.
     db.commit()
-    return document
+    return document, True
 
 
 def restore(db: Session, uid: int, document_id: int) -> Document:

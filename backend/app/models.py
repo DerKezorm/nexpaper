@@ -1210,3 +1210,22 @@ class ReminderSent(Base):
 
 
 __all__ += ["ReminderMute", "ReminderSent", "ReminderSettings"]
+
+
+class SavedSearch(Base):
+    """A search a person keeps in their side bar ("Gemerkt", A1): a name and the known parts of the archive's address
+    (``services/saved.py`` keeps only those), never the documents it found. Only for the person; gone with them."""
+
+    __tablename__ = "saved_searches"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    name: Mapped[str] = mapped_column(String(60))
+    #: The parts of the address, sorted and encoded like a query string (``kind=3&q=strom&sort=-amount``).
+    query: Mapped[str] = mapped_column(String(1200))
+    #: The place in the side bar, from 0.
+    position: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utcnow)
+
+
+__all__ += ["SavedSearch"]

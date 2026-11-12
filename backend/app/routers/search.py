@@ -226,6 +226,62 @@ def find(
     ))
 
 
+class CurrencySum(BaseModel):
+    currency: str
+    #: The sum of the amounts in this currency, in cents (nothing is converted).
+    cents: int
+
+
+class SumOut(BaseModel):
+    #: How many documents the search finds in all (that the caller may see), as `total` of `GET /api/v1/search`.
+    total: int
+    #: One entry per currency at least one of them has an amount in, by currency.
+    sums: list[CurrencySum]
+    #: How many of them have no amount.
+    without: int
+
+
+@router.get(
+    "/search/sum", response_model=SumOut,
+    summary="The sums of the amounts of everything a search finds (not one page), per currency",
+    description="The same words and filters as `GET /api/v1/search`, the same rights, the same brake. Asked for after "
+                "the page itself: measured with 200,000 documents, counting the sums in the same request made the page "
+                "up to 155 ms slower (`docs/search.md`).",
+)
+def sum_of(
+    account: Reader, db: DbSession,
+    q: str = Query(default="", max_length=searchtext.MAX_LENGTH, description="The search, as typed"),
+    vault_id: ID = None, kind_id: ID = None, owner_id: ID = None,
+    sender: str | None = Query(default=None, min_length=1, max_length=160, description="A sender's name, exactly"),
+    tag: str | None = Query(default=None, min_length=1, max_length=40, description="A tag's name, exactly"),
+    date_from: Date | None = Query(default=None, description="The document's date, from this day"),
+    date_to: Date | None = Query(default=None, description="The document's date, up to this day"),
+    status: Literal["processing", "inbox", "filed"] | None = Query(
+        default=None, description="Only this status; without it everything but the trash"),
+    trash: bool = Query(default=False, description="Search the trash instead (only the caller's own documents)"),
+    via_share: bool | None = Query(default=None, description="Only documents seen through a share alone (true), or "
+                                   "only those of the caller's vaults (false)"),
+    deadline: str | None = Query(default=None, pattern=r"^(open|overdue|done|[0-9]{1,4})$",
+                                 description="Only documents with a deadline that is open, overdue, done, or open and "
+                                             "due within this many days (overdue ones included)"),
+    keep: Literal["expired"] | None = Query(
+        default=None, description="`expired`: only filed documents whose keeping time is over, in the vaults where the "
+                                  "caller may change things"),
+) -> SumOut:
+    brakes.take("search", account.id)
+    filters = search.Filters(vault_id=vault_id, kind_id=kind_id, sender=sender, tag=tag, owner_id=owner_id,
+                             date_from=date_from, date_to=date_to, status=status, trash=trash,
+                             via_share=via_share, deadline=_deadline(deadline), keep=keep,
+                             today=deadlines.today_of(account))
+    began = clock()
+    try:
+        found = search.summed(db, account.id, q, filters)
+    finally:
+        _wait_for_the_step(began)
+    return SumOut(total=found.total, sums=[CurrencySum(currency=c, cents=n) for c, n in found.sums],
+                  without=found.without)
+
+
 def _deadline(value: str | None) -> str | int | None:
     if value is None:
         return None

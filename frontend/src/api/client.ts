@@ -820,7 +820,46 @@ export const searchApi = {
   find: (q: string, filters: SearchPage = {}, signal?: AbortSignal) => api<SearchResult>('/api/v1/search', { query: { q, ...filters }, signal }),
   overview: (filters: Pick<SearchFilters, 'vault_id' | 'status' | 'via_share' | 'deadline'> = {}, signal?: AbortSignal) =>
     api<SearchOverview>('/api/v1/search/overview', { query: filters, signal }),
+  /** The sums of everything the search finds (asked for after the page: it takes its own time). */
+  sum: (q: string, filters: SearchFilters = {}, signal?: AbortSignal) => api<SearchSum>('/api/v1/search/sum', { query: { q, ...filters }, signal }),
   text: (document: number, version: number) => api<VersionText>(`/api/v1/documents/${document}/versions/${version}/text`),
+}
+
+// ---- The archive's table: many at once, saved searches (A1) ---------------------------------------------------------
+
+/** What the whole result of a search holds (not one page): the documents, the sum per currency in cents (nothing
+ * converted), and how many have no amount. */
+export type SearchSum = { total: number; sums: { currency: string; cents: number }[]; without: number }
+
+export type BulkAction ='add_tag' | 'remove_tag' | 'kind' | 'move' | 'trash'
+export type BulkChange = { ids: number[]; action: BulkAction; tag?: string; kind_id?: number; vault_id?: number }
+/** `forbidden` (no right, or no such document), `in_trash`, `kind_elsewhere`, `unchanged`, or the code of a single change. */
+export type BulkResult = { changed: number[]; skipped: { id: number; reason: string }[]; reasons: Record<string, number> }
+
+export const bulkApi = {
+  change: (change: BulkChange) => api<BulkResult>('/api/v1/documents/bulk', { method: 'POST', body: change }),
+}
+
+export type SavedSearch = {
+  id: number
+  name: string
+  /** The known parts of the archive's address, sorted. */
+  query: string
+  position: number
+  count: number | null
+  /** `no_access`: the vault of its filter is not one the person sees; `failed`: the search could not answer now. */
+  state: 'ok' | 'no_access' | 'failed'
+  /** It has the filter "Frist", which the person switched off. */
+  deadlines_off: boolean
+}
+
+export const savedApi = {
+  list: () => api<SavedSearch[]>('/api/v1/saved-searches'),
+  create: (name: string, query: string) => api<SavedSearch>('/api/v1/saved-searches', { method: 'POST', body: { name, query } }),
+  rename: (id: number, name: string) => api<SavedSearch>(`/api/v1/saved-searches/${id}`, { method: 'PATCH', body: { name } }),
+  up: (id: number) => api<SavedSearch[]>(`/api/v1/saved-searches/${id}/up`, { method: 'POST' }),
+  down: (id: number) => api<SavedSearch[]>(`/api/v1/saved-searches/${id}/down`, { method: 'POST' }),
+  remove: (id: number) => api<void>(`/api/v1/saved-searches/${id}`, { method: 'DELETE' }),
 }
 
 // ---- Paperless import (Settings, Import; the operator) ---------------------------------------------------------------

@@ -23,12 +23,13 @@ def test_every_kind_there_was_gets_the_switch_off(scratch: Path) -> None:  # noq
         connection.commit()
         before = schema_of(connection)
     database.init_db()
-    assert version_of(scratch) == database.SCHEMA_VERSION == 14
+    assert version_of(scratch) == database.SCHEMA_VERSION >= 14
     with closing(sqlite3.connect(scratch)) as connection:
         after = schema_of(connection)
         assert {name: columns[: len(before[name])] for name, columns in after.items() if name in before} == before
         assert [column[0] for column in after["kinds"][len(before["kinds"]):]] == ["auto_trash"]
-        assert set(after) == set(before)
+        # Later steps add tables of their own (15: the saved searches); step 14 adds none.
+        assert set(after) - {"saved_searches"} == set(before)
         # Off for every kind there was, with the time they had.
         assert connection.execute("SELECT id, keep_years, keep_new_only, auto_trash FROM kinds ORDER BY id"
                                   ).fetchall() == [(1, 10, 0, 0), (2, None, 1, 0)]

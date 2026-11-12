@@ -261,6 +261,13 @@ TOKEN_ROUTES = {
     ("GET", "/api/v1/me/reminders"),
     ("PUT", "/api/v1/me/reminders"),
     ("POST", "/api/v1/me/reminders/test"),
+    # A1: many documents changed at once, and the own saved searches.
+    ("POST", "/api/v1/documents/bulk"),
+    ("POST", "/api/v1/saved-searches"),
+    ("PATCH", "/api/v1/saved-searches/{saved_id}"),
+    ("POST", "/api/v1/saved-searches/{saved_id}/up"),
+    ("POST", "/api/v1/saved-searches/{saved_id}/down"),
+    ("DELETE", "/api/v1/saved-searches/{saved_id}"),
 }
 
 #: The routes that only read and that a program with an API key reaches too (as the browser and a device do). A route
@@ -309,6 +316,9 @@ READ_ROUTES = {
     ("GET", "/api/v1/keeping"),
     # The deadlines (F1).
     ("GET", "/api/v1/deadlines"),
+    # The own saved searches with their numbers of hits, and the sums of a search (A1).
+    ("GET", "/api/v1/saved-searches"),
+    ("GET", "/api/v1/search/sum"),
 }
 
 

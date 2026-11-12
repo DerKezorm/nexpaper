@@ -518,6 +518,107 @@
         "title": "AutoTrashOut",
         "type": "object"
       },
+      "BulkIn": {
+        "additionalProperties": false,
+        "properties": {
+          "action": {
+            "enum": [
+              "add_tag",
+              "remove_tag",
+              "kind",
+              "move",
+              "trash"
+            ],
+            "title": "Action",
+            "type": "string"
+          },
+          "ids": {
+            "items": {
+              "type": "integer"
+            },
+            "maxItems": 500,
+            "minItems": 1,
+            "title": "Ids",
+            "type": "array"
+          },
+          "kind_id": {
+            "anyOf": [
+              {
+                "maximum": 2147483647.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind Id"
+          },
+          "tag": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tag"
+          },
+          "vault_id": {
+            "anyOf": [
+              {
+                "maximum": 2147483647.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vault Id"
+          }
+        },
+        "required": [
+          "ids",
+          "action"
+        ],
+        "title": "BulkIn",
+        "type": "object"
+      },
+      "BulkOut": {
+        "properties": {
+          "changed": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Changed",
+            "type": "array"
+          },
+          "reasons": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Reasons",
+            "type": "object"
+          },
+          "skipped": {
+            "items": {
+              "$ref": "#/components/schemas/Skipped"
+            },
+            "title": "Skipped",
+            "type": "array"
+          }
+        },
+        "required": [
+          "changed",
+          "skipped",
+          "reasons"
+        ],
+        "title": "BulkOut",
+        "type": "object"
+      },
       "ChangeOut": {
         "properties": {
           "document": {
@@ -696,6 +797,24 @@
           }
         },
         "title": "CreateIn",
+        "type": "object"
+      },
+      "CurrencySum": {
+        "properties": {
+          "cents": {
+            "title": "Cents",
+            "type": "integer"
+          },
+          "currency": {
+            "title": "Currency",
+            "type": "string"
+          }
+        },
+        "required": [
+          "currency",
+          "cents"
+        ],
+        "title": "CurrencySum",
         "type": "object"
       },
       "DashboardOut": {
@@ -7014,6 +7133,97 @@
         "title": "RulePatch",
         "type": "object"
       },
+      "SavedIn": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "maxLength": 240,
+            "title": "Name",
+            "type": "string"
+          },
+          "query": {
+            "maxLength": 4000,
+            "title": "Query",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "query"
+        ],
+        "title": "SavedIn",
+        "type": "object"
+      },
+      "SavedOut": {
+        "properties": {
+          "count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Count"
+          },
+          "deadlines_off": {
+            "title": "Deadlines Off",
+            "type": "boolean"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "position": {
+            "title": "Position",
+            "type": "integer"
+          },
+          "query": {
+            "title": "Query",
+            "type": "string"
+          },
+          "state": {
+            "enum": [
+              "ok",
+              "no_access",
+              "failed"
+            ],
+            "title": "State",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "query",
+          "position",
+          "count",
+          "state",
+          "deadlines_off"
+        ],
+        "title": "SavedOut",
+        "type": "object"
+      },
+      "SavedRename": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "maxLength": 240,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "SavedRename",
+        "type": "object"
+      },
       "SearchHit": {
         "properties": {
           "document": {
@@ -7838,6 +8048,24 @@
         "title": "ShortcutOut",
         "type": "object"
       },
+      "Skipped": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "reason"
+        ],
+        "title": "Skipped",
+        "type": "object"
+      },
       "SnoozeIn": {
         "additionalProperties": false,
         "properties": {
@@ -8020,6 +8248,32 @@
           "document"
         ],
         "title": "StartOut",
+        "type": "object"
+      },
+      "SumOut": {
+        "properties": {
+          "sums": {
+            "items": {
+              "$ref": "#/components/schemas/CurrencySum"
+            },
+            "title": "Sums",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          },
+          "without": {
+            "title": "Without",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "total",
+          "sums",
+          "without"
+        ],
+        "title": "SumOut",
         "type": "object"
       },
       "TakeAddressIn": {
@@ -12093,6 +12347,53 @@
         "summary": "Upload one or more files (multipart/form-data, field 'file'); each becomes a document",
         "tags": [
           "uploads"
+        ]
+      }
+    },
+    "/api/v1/documents/bulk": {
+      "post": {
+        "description": "Every document is checked and changed on its own, as a single change would be, with a line in its history and a\nnew change number. Duplicates count once.",
+        "operationId": "change_many_api_v1_documents_bulk_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Change many documents at once: a tag added or taken away, a kind, another vault, the trash",
+        "tags": [
+          "archive"
         ]
       }
     },
@@ -19478,6 +19779,285 @@
         ]
       }
     },
+    "/api/v1/saved-searches": {
+      "get": {
+        "operationId": "list_saved_api_v1_saved_searches_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SavedOut"
+                  },
+                  "title": "Response List Saved Api V1 Saved Searches Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "The caller's saved searches, in their order, each with its number of hits",
+        "tags": [
+          "archive"
+        ]
+      },
+      "post": {
+        "operationId": "create_saved_api_v1_saved_searches_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SavedIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Keep a search of the archive under a name (at most 30)",
+        "tags": [
+          "archive"
+        ]
+      }
+    },
+    "/api/v1/saved-searches/{saved_id}": {
+      "delete": {
+        "operationId": "delete_saved_api_v1_saved_searches__saved_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "saved_id",
+            "required": true,
+            "schema": {
+              "maximum": 2147483647,
+              "minimum": 1,
+              "title": "Saved Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Delete a saved search (the documents stay as they are)",
+        "tags": [
+          "archive"
+        ]
+      },
+      "patch": {
+        "operationId": "rename_saved_api_v1_saved_searches__saved_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "saved_id",
+            "required": true,
+            "schema": {
+              "maximum": 2147483647,
+              "minimum": 1,
+              "title": "Saved Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SavedRename"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Rename a saved search",
+        "tags": [
+          "archive"
+        ]
+      }
+    },
+    "/api/v1/saved-searches/{saved_id}/down": {
+      "post": {
+        "operationId": "down_saved_api_v1_saved_searches__saved_id__down_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "saved_id",
+            "required": true,
+            "schema": {
+              "maximum": 2147483647,
+              "minimum": 1,
+              "title": "Saved Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SavedOut"
+                  },
+                  "title": "Response Down Saved Api V1 Saved Searches  Saved Id  Down Post",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Move a saved search one place down; answers the whole list",
+        "tags": [
+          "archive"
+        ]
+      }
+    },
+    "/api/v1/saved-searches/{saved_id}/up": {
+      "post": {
+        "operationId": "up_saved_api_v1_saved_searches__saved_id__up_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "saved_id",
+            "required": true,
+            "schema": {
+              "maximum": 2147483647,
+              "minimum": 1,
+              "title": "Saved Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SavedOut"
+                  },
+                  "title": "Response Up Saved Api V1 Saved Searches  Saved Id  Up Post",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Move a saved search one place up; answers the whole list",
+        "tags": [
+          "archive"
+        ]
+      }
+    },
     "/api/v1/search": {
       "get": {
         "description": "Words (each must be found, a part of a word is enough), \"a phrase\", art:/kind:, absender:/sender:, tag:, betrag:/amount: with >, < or = (comma or point), frist:/deadline: open, overdue, done or <n (days). Newest first, page by page with the cursor; or numbered pages in another order. Each range is [start, end) in UTF-16 code units of the text it belongs to.",
@@ -19937,6 +20517,281 @@
           }
         ],
         "summary": "How the documents the caller may see spread over senders, kinds, years and tags",
+        "tags": [
+          "search"
+        ]
+      }
+    },
+    "/api/v1/search/sum": {
+      "get": {
+        "description": "The same words and filters as `GET /api/v1/search`, the same rights, the same brake. Asked for after the page itself: measured with 200,000 documents, counting the sums in the same request made the page up to 155 ms slower (`docs/search.md`).",
+        "operationId": "sum_of_api_v1_search_sum_get",
+        "parameters": [
+          {
+            "description": "The search, as typed",
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "default": "",
+              "description": "The search, as typed",
+              "maxLength": 500,
+              "title": "Q",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "vault_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 2147483647,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Vault Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "kind_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 2147483647,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kind Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "owner_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 2147483647,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Owner Id"
+            }
+          },
+          {
+            "description": "A sender's name, exactly",
+            "in": "query",
+            "name": "sender",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 160,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "A sender's name, exactly",
+              "title": "Sender"
+            }
+          },
+          {
+            "description": "A tag's name, exactly",
+            "in": "query",
+            "name": "tag",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 40,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "A tag's name, exactly",
+              "title": "Tag"
+            }
+          },
+          {
+            "description": "The document's date, from this day",
+            "in": "query",
+            "name": "date_from",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "The document's date, from this day",
+              "title": "Date From"
+            }
+          },
+          {
+            "description": "The document's date, up to this day",
+            "in": "query",
+            "name": "date_to",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "The document's date, up to this day",
+              "title": "Date To"
+            }
+          },
+          {
+            "description": "Only this status; without it everything but the trash",
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "processing",
+                    "inbox",
+                    "filed"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only this status; without it everything but the trash",
+              "title": "Status"
+            }
+          },
+          {
+            "description": "Search the trash instead (only the caller's own documents)",
+            "in": "query",
+            "name": "trash",
+            "required": false,
+            "schema": {
+              "default": false,
+              "description": "Search the trash instead (only the caller's own documents)",
+              "title": "Trash",
+              "type": "boolean"
+            }
+          },
+          {
+            "description": "Only documents seen through a share alone (true), or only those of the caller's vaults (false)",
+            "in": "query",
+            "name": "via_share",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only documents seen through a share alone (true), or only those of the caller's vaults (false)",
+              "title": "Via Share"
+            }
+          },
+          {
+            "description": "Only documents with a deadline that is open, overdue, done, or open and due within this many days (overdue ones included)",
+            "in": "query",
+            "name": "deadline",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "pattern": "^(open|overdue|done|[0-9]{1,4})$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only documents with a deadline that is open, overdue, done, or open and due within this many days (overdue ones included)",
+              "title": "Deadline"
+            }
+          },
+          {
+            "description": "`expired`: only filed documents whose keeping time is over, in the vaults where the caller may change things",
+            "in": "query",
+            "name": "keep",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "const": "expired",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "`expired`: only filed documents whose keeping time is over, in the vaults where the caller may change things",
+              "title": "Keep"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SumOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "The sums of the amounts of everything a search finds (not one page), per currency",
         "tags": [
           "search"
         ]
