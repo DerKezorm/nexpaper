@@ -1055,7 +1055,8 @@ A person asks somebody without an account for files (U1). Off from the start: th
 - Without a sign-in: `GET /u/{token}`: `{"requested_by", "name", "until", "remaining", "max_mb"}`; `POST
   /u/{token}/files` (multipart, one file in `file`, with its length; the one path without `X-Nexpaper-Client`): 201
   `{"status": "arrived", "remaining"}`, or the reason (`415 unsupported_type`, `413 too_large`, `422 empty_file`, `411
-  length_required`, `429 request_busy`, `429 request_day_full`). Everything that does not work answers `404 not_found`
+  length_required`, `408 too_slow` (the body paused 20 s or came slower than 32 KB/s), `429 request_busy` (the hour, or
+  two files of the request on their way), `429 request_day_full` (256 MB per request and day, or the server's day)). Everything that does not work answers `404 not_found`
   alike and counts on a brake of its own. The document is `source` `request`, in the person's personal vault, and its
   `GET /documents/{id}/origin` says `unknown` with the request's name as `sender`.
 - The trial run of a restore names `revived_upload_requests`; "Ready for the internet?" has the point `upload_requests`.

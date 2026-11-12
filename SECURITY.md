@@ -100,13 +100,23 @@ has already is taken like any other, as a document of its own (the inbox says it
 and the count of files are the same either way, so the address is no way to learn what a person keeps. "How many still
 go" tells only how much of this one address was used.
 
-**Limits**: the files of a request (10 from the start, 50 at most; a slot is taken in one statement before a file is
-read, so two uploads at once never pass it), the size of a file as for every upload, 20 tries per request and 30 per
-sender's address and hour (a refused file counts as a try), 500 files and 2 GB on the whole server per day. A request
-lasts at most as long as a link, and each person has at most 20 open. What is refused costs little: the brake, the
-declared length (a body larger than one file is refused before it is read; one without a length is refused), the
-token, the hour and the day come before the body is read, and a file of the wrong kind is dropped after its first
-bytes. A file is read in the worker with its limits like every upload; there is no upload in pieces from outside.
+**Limits**: the files of a request (10 from the start, 50 at most; a place is held in memory while a file arrives and
+counted in the database only when it became a document, so two uploads at once never pass the number and a restart
+in the middle leaves nothing used up), two uploads of a request at once, the size of a file as for every upload (and
+at most what a request may take in a day), 20 tries per request and 30 per sender's address and hour (a refused file
+counts as a try), 256 MB per request and day, 500 files and 2 GB on the whole server per day. The days count what was
+read and what was taken, never what a sender announced: a sender who announces large files and sends them slowly
+holds two places of their own request and nothing of anybody else's. The body of a file must keep coming (no pause of
+20 seconds, all of it at 32 KB a second at least, after 30 seconds of grace); slower, the upload is broken off and
+holds nothing. A request lasts at most as long as a link, and each person has at most 20 open. What is refused costs
+little: the brake, the declared length (a body larger than one file is refused before it is read; one without a length
+is refused), the token, the hour and the request's place come before the body is read, and a file of the wrong kind
+is dropped after its first bytes (its bytes read still count on the day). A file is read in the worker with its
+limits like every upload; there is no upload in pieces from outside.
+
+**What one address can use at most**: 256 MB of the server's 2 GB a day (an eighth), 20 tries an hour, two
+connections at once each for at most its pace, and the files of its request; the rest of the day stays for the other
+requests. The person who made it can withdraw it at once; the operator's switch ends all of them.
 
 **The token** (`upr_` and 43 random characters) is found by its SHA-256 and kept sealed with the server's secret, so
 its maker can copy the address again; the database alone tells nobody a token, and the log masks it wherever it stands
@@ -116,7 +126,9 @@ brake of their own. Blocking an account ends its requests for good; deleting it 
 files is the only path without the tab header (a stranger has no tab of ours); it neither reads nor sets a session,
 so a page elsewhere that makes a browser send there gains nothing it could not do with the token itself. The operator
 sees how many requests are open and of how many people, never an address or a name. A restore names the requests it
-would open again (withdrawn or ended since the backup) in its trial run.
+would open again in its trial run: every one that is open in the backup (not withdrawn, before its end, not all its
+files there) and is withdrawn, used up or gone on this server now. Names (of a request, of a person) are set into the
+pages as text, never as markup, and into mails as text, never as a format.
 
 ## Paperless import and exports
 
