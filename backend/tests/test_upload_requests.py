@@ -954,3 +954,21 @@ def test_the_history_names_the_request_and_the_inbox_says_where_it_came_from(jul
                       if e["action"] == "created"]
         assert created["by"] is None and created["by_link"] == "Kanzlei Weber"
         assert created["detail"]["source"] == "request"
+
+
+def test_a_file_while_the_last_place_is_held_is_refused_before_it_is_read(jule: Account) -> None:
+    """The last place of a request held by a file under way: another file answers like a request without room, before
+    a byte of its body is read (and the one under way may still come)."""
+    with new_client(jule) as browser:
+        token = token_of(make(browser, max_files=1))
+    with SessionLocal() as db:
+        request_id = int(db.scalar(select(UploadRequest.id)) or 0)
+        held = upload_requests.hold(db, request_id, 1000)
+        assert held.refused == ""
+    with stranger() as outside:
+        assert send(outside, token).status_code == 404
+    with SessionLocal() as db:
+        assert settings_service.get(db, "upload_request_budget") in (None, {})
+    upload_requests.release(held)
+    with stranger() as outside:
+        assert send(outside, token).status_code == 201
