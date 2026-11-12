@@ -231,15 +231,18 @@ def read_file(db: Session, document: Document, version: Version, run: Run) -> Ou
         else:
             # An encrypted PDF comes out as a copy without its encryption there (``derived``), when it opens.
             request["opened_out"] = str(run.work)
-    owner_id = document.owner_id
+    from . import pdf_passwords
+
+    # Whose kept passwords may be tried on this file, if it turns out to need one: the person who brought it, never the
+    # owner of the document as such (``pdf_passwords.whose``).
+    person = pdf_passwords.whose(db, document, version) if kind == filetypes.PDF else None
     db.rollback()  # the worker may take long: no read transaction stays open meanwhile
     outcome = spawn(request, current.timeout_seconds)
     if outcome.ok or outcome.error != "encrypted" or "opened_out" not in request:
         return outcome
-    # It needs a password: once more with the passwords the owner keeps, if there are any (never anybody else's).
-    from . import pdf_passwords
-
-    kept = pdf_passwords.for_owner(db, owner_id)
+    # It needs a password: once more with the passwords of the person who brought the file, if there are any (never
+    # anybody else's).
+    kept = pdf_passwords.for_person(db, person)
     db.rollback()
     if not kept:
         return outcome
@@ -252,6 +255,7 @@ def read_file(db: Session, document: Document, version: Version, run: Run) -> Ou
     number = outcome.data.get("unlocked") if outcome.ok else None
     if isinstance(number, int) and 1 <= number <= len(kept):
         outcome.data["kept_password"] = kept[number - 1][0]
+        outcome.data["kept_by"] = person
     kept.clear()
     return outcome
 
@@ -473,8 +477,8 @@ def _finish(db: Session, document_id: int, version_n: int, work: Run) -> None:
 
 def _note_protected(db: Session, document: Document, version: Version, data: dict[str, Any]) -> None:
     """In the caller's transaction: the worker read an encrypted PDF from a copy without its encryption (``unlocked``):
-    the version is marked, and when a password the owner keeps opened it, the history says so (never which one) and the
-    entry notes when it last fitted."""
+    the version is marked, and when a kept password of the person who brought the file opened it, the history says so
+    (never which one) and the entry notes when it last fitted."""
     unlocked = data.get("unlocked")
     if not isinstance(unlocked, int) or isinstance(unlocked, bool):
         return
@@ -483,7 +487,8 @@ def _note_protected(db: Session, document: Document, version: Version, data: dic
     version.original_protected = pdf_passwords.PASSWORD if unlocked >= 1 else pdf_passwords.RESTRICTED
     entry = data.get("kept_password")
     if unlocked >= 1 and isinstance(entry, int):
-        pdf_passwords.matched(db, entry, document.owner_id)
+        by = data.get("kept_by")
+        pdf_passwords.matched(db, entry, by if isinstance(by, int) else None)
         changes.record(db, document.id, pdf_passwords.OPENED, detail={"by": "kept"})
 
 

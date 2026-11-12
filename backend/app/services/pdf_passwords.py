@@ -9,16 +9,30 @@ copy. The original stays as it came, with its checksum; the version is marked (`
 The password goes the shortest way: in the body of the request, into the worker on its standard input (never as an
 argument, never in its environment, never in a file), and nowhere else. It is never written to the table of jobs: the
 run is made in the request, so there is nothing to hand over to a job. A wrong password leaves the document as it was;
-every try counts against a brake (``TRIES_PER_DOCUMENT`` per document and hour, ``TRIES_PER_PERSON`` per person and
-hour).
+every try counts against a brake (``TRIES_PER_DOCUMENT`` per document, person and hour, so that nobody locks the owner
+out; ``TRIES_PER_PERSON`` per person and hour). A file that claims to be encrypted and opens with nothing is refused
+(``pdf_broken``) and nothing is written.
 
 **Kept passwords.** Only when the person ticks "keep it for future documents", under a name of their own, at most
 ``MAX``. Sealed with the server's secret (``security.encrypt_secret``, bound to the person: a row moved to somebody else
-does not open), never shown again, only renamed and deleted. When a protected PDF comes into the inbox of its owner (any
-way: browser, phone, the folder, the mailbox, the import) and the first run of the worker says it needs a password, the
-worker runs a second time with the owner's passwords, unsealed for that run only; never with anybody else's. The history
-then says it was opened with a kept password, never which. A new ``secret.key`` makes them unreadable: they are lost,
+does not open), never shown again, only renamed and deleted. A new ``secret.key`` makes them unreadable: they are lost,
 and the list says so (as for the mailbox's password).
+
+**Whose kept passwords are tried** (``whose``, the one place that decides it): a person's kept passwords are tried only
+on a file that this person brought, or that came for them into their own personal vault, and never by way of the owner
+of the document:
+
+* a file the person uploaded while signed in (browser, phone, camera, sharing, a device or an API key), as a new
+  document or as a new version: the passwords of the person who uploaded it (``versions.created_by``), whoever owns
+  the document;
+* a file from the intake folder or the mailbox (the plus address and "unknown" too): the passwords of the person it was
+  given to, and only while the document stands in that person's personal vault, where nobody else sees the outcome;
+  in a shared vault nothing is tried and the document waits with the field for the password;
+* anything else (the Paperless import, a version made by the page tools, a person who is gone): nothing is tried.
+
+They are tried only when the first run of the worker says the PDF needs a password: then the worker runs a second time
+with that one person's passwords, unsealed for that run only. The history then says it was opened with a kept password,
+never which.
 """
 
 from __future__ import annotations
@@ -33,7 +47,7 @@ from sqlalchemy.orm import Session
 
 from .. import clock
 from ..errors import error
-from ..models import EDIT, INBOX, PROCESSING, Document, PdfPassword, Version
+from ..models import EDIT, INBOX, PROCESSING, Document, PdfPassword, Vault, Version, VersionInfo
 from ..security import decrypt_secret, encrypt_secret
 from . import brakes, changes, jobs, limits, rights, storage
 
@@ -49,8 +63,14 @@ TRIES_PER_DOCUMENT = 5
 TRIES_PER_PERSON = 20
 #: What ``versions.original_protected`` holds.
 PASSWORD, RESTRICTED = "password", "restricted"
-#: The line in the history: who opened it (a person typed it, or a kept password of the owner did).
+#: The line in the history: who opened it (a person typed it, or a kept password did).
 OPENED = "pdf_opened"
+#: Where a document came from when a signed-in person uploaded the file themselves (``documents.SOURCES``).
+UPLOADED_SOURCES = ("upload", "camera", "share", "api")
+#: Where it came from when it was delivered for a person (the intake folder, the mailbox).
+DELIVERED_SOURCES = ("folder", "mail")
+#: The origin of a version a person uploaded (``pagetools.UPLOADED``).
+UPLOADED_VERSION = "uploaded"
 
 
 def _context(user_id: int) -> str:
@@ -130,23 +150,44 @@ def _keep(db: Session, uid: int, name: str, password: str) -> str:
     return "kept"
 
 
-def for_owner(db: Session, owner_id: int | None) -> list[tuple[int, str]]:
-    """The owner's kept passwords that can still be unsealed, oldest first, as (id, password): for one run of the
+def whose(db: Session, document: Document, version: Version) -> int | None:
+    """The person whose kept passwords may be tried on the file of ``version``, or nobody (the rule at the top of this
+    file). Never derived from the owner of the document."""
+    person = version.created_by
+    if not person:
+        return None
+    info = db.get(VersionInfo, version.id)
+    if info is not None:
+        # A version made after the first: only one a person uploaded is a file somebody brought.
+        return person if info.origin == UPLOADED_VERSION else None
+    if version.n != 1:
+        return None
+    if document.source in UPLOADED_SOURCES:
+        return person
+    if document.source in DELIVERED_SOURCES:
+        vault = db.get(Vault, document.vault_id)
+        return person if vault is not None and vault.personal_of == person else None
+    return None
+
+
+def for_person(db: Session, person: int | None) -> list[tuple[int, str]]:
+    """The person's kept passwords that can still be unsealed, oldest first, as (id, password): for one run of the
     worker, and for nothing else. Nobody else's are ever added."""
-    if not owner_id:
+    if not person:
         return []
     found = []
-    for row in entries(db, owner_id):
-        password = decrypt_secret(row.sealed, _context(owner_id))
+    for row in entries(db, person):
+        password = decrypt_secret(row.sealed, _context(person))
         if password:
             found.append((row.id, password))
     return found
 
 
-def matched(db: Session, entry_id: int, owner_id: int | None) -> None:
-    """Inside the caller's transaction: the entry opened a PDF just now (only if it is still the owner's)."""
+def matched(db: Session, entry_id: int, person: int | None) -> None:
+    """Inside the caller's transaction: the entry opened a PDF just now (only if it belongs to the person whose
+    passwords were tried)."""
     row = db.get(PdfPassword, entry_id)
-    if row is not None and row.user_id == owner_id:
+    if row is not None and person and row.user_id == person:
         row.last_matched_at = clock.now()
 
 
@@ -188,7 +229,7 @@ def open_with(db: Session, uid: int, document_id: int, password: str, *, keep: b
     if not source.is_file():
         raise error("file_missing", "The file of this version is missing on the disk.", 409)
     # Only now, after every reason that is no try at all: one try more, for the document and for the person.
-    brakes.take_hourly(("pdf_password_document", document.id, TRIES_PER_DOCUMENT),
+    brakes.take_hourly(("pdf_password_document", (document.id, uid), TRIES_PER_DOCUMENT),
                        ("pdf_password_person", uid, TRIES_PER_PERSON))
     version_id, version_n = version.id, version.n
     current = limits.current(db)
@@ -205,9 +246,14 @@ def open_with(db: Session, uid: int, document_id: int, password: str, *, keep: b
                         "The PDF could not be opened this time.", 422 if outcome.error in ("broken", "too_large")
                         else 503)
         unlocked = outcome.data.get("unlocked")
+        if not isinstance(unlocked, int) or isinstance(unlocked, bool):
+            # It claims to be encrypted, but nothing was opened (no encryption pikepdf can read): nothing is written,
+            # nothing is counted as opened.
+            logger.info("A PDF could not be opened: nothing to open document_id=%s", document_id)
+            raise error("pdf_broken", "This PDF cannot be opened, the file is damaged.", 422)
         with storage.files_of([document_id], 30):
-            return _settle(db, uid, document_id, version_id, version_n, out if unlocked is not None else None,
-                           unlocked, password if keep else "", kept_name)
+            return _settle(db, uid, document_id, version_id, version_n, out, unlocked,
+                           password if keep else "", kept_name)
     except storage.DocumentBusy:
         raise error("busy", "The files of this document are being worked on. Try again in a moment.", 409) from None
     finally:
@@ -225,8 +271,8 @@ def _run_unlock(source: Path, password: str, out: Path, current: Any) -> Any:
         passwords.clear()
 
 
-def _settle(db: Session, uid: int, document_id: int, version_id: int, version_n: int, opened: Path | None,
-            unlocked: int | None, keep_password: str, kept_name: str) -> Opened:
+def _settle(db: Session, uid: int, document_id: int, version_id: int, version_n: int, opened: Path, unlocked: int,
+            keep_password: str, kept_name: str) -> Opened:
     """Under the write lock: the opened copy becomes the version's searchable copy, the document is read again from it,
     and the password is kept when asked. A document that changed meanwhile (opened by another try, read, deleted) is
     left alone: ``409 not_protected``."""
@@ -237,7 +283,10 @@ def _settle(db: Session, uid: int, document_id: int, version_id: int, version_n:
     if not _locked(document) or version is None or version.n != version_n or document.current_version != version_n:
         db.rollback()
         raise error("not_protected", "This document does not wait for a password.", 409)
-    if opened is not None and opened.is_file():
+    if not opened.is_file():
+        db.rollback()
+        raise error("pdf_broken", "This PDF cannot be opened, the file is damaged.", 422)
+    if opened.is_file():
         old = version.archive_path
         target = storage.archive_target(db, document, version)
         version.archive_sha256 = storage.sha256_of(opened)
@@ -259,4 +308,4 @@ def _settle(db: Session, uid: int, document_id: int, version_id: int, version_n:
     return Opened(document, kept)
 
 
-__all__ = ["MAX", "Opened", "delete", "entries", "for_owner", "listed", "matched", "open_with", "rename"]
+__all__ = ["MAX", "Opened", "delete", "entries", "for_person", "listed", "matched", "open_with", "rename", "whose"]
