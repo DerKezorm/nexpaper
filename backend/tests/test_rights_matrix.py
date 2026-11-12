@@ -105,6 +105,8 @@ TABLE = [
     Row("GET", "/api/v1/search", None, "any", 200),
     # The start of the archive: counts only what the caller may see (``test_search_pages.py``).
     Row("GET", "/api/v1/search/overview", None, "any", 200),
+    # A1: the sums of a search count only what the caller may see (``test_archive_sum.py``).
+    Row("GET", "/api/v1/search/sum", None, "any", 200),
     Row("GET", "/api/v1/documents/{d}/versions/{x}/text", None, "read", 404),
     # Deleting for good from the trash: a manager of the vault, or the owner while they may change it (the editor
     # owns this one), from a signed-in browser only; the document is not in the trash here, so who may gets 409.
@@ -137,6 +139,9 @@ TABLE = [
     Row("POST", "/api/v1/kinds/{k}/merge/preview", {"into": 0}, "operator", 403),
     Row("GET", "/api/v1/keeping", None, "any", 200),
     Row("POST", "/api/v1/documents/trash", {"ids": [2**31 - 1]}, "any", 200),
+    # A1: many documents at once, each on its own (``test_archive_bulk.py``); the answer names the missing one
+    # `forbidden`, as one the caller may only read.
+    Row("POST", "/api/v1/documents/bulk", {"ids": [2**31 - 1], "action": "trash"}, "any", 200),
     # Deadlines (F1): only the deadlines of what the caller may change; done and later need `edit` (this document has
     # no due date, so whoever may gets 404 `no_such_date`, ``test_deadlines.py`` has the ones that do).
     Row("GET", "/api/v1/deadlines", None, "any", 200),

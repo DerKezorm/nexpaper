@@ -345,15 +345,75 @@ def measure(folder: Path, info: dict[str, Any], runs: int) -> dict[str, Any]:
     return result
 
 
+#: The searches the sum of the archive's table is measured with: no words (only what the archive always asks for), a
+#: filter, one word, two words.
+SUM_QUERIES = [
+    ("no words", ""),
+    ("filters only", "art:rechnung betrag:>100"),
+    ("one common word", "rechnung"),
+    ("two words", "stadtwerke abschlag"),
+]
+
+
+def measure_sums(folder: Path, info: dict[str, Any], runs: int) -> dict[str, Any]:
+    """The archive's table (a numbered page of 50, newest first, filed only) without and with the sums of the whole
+    result, on the indexed database kept by an earlier run (``--keep``). The two are asked in turns, so that a slow
+    moment of the machine falls on both."""
+    target = folder / "indexed.db"
+    if not target.is_file():
+        raise SystemExit("No indexed.db: run once with --keep first.")
+    engine = engine_for(target)
+    maker = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)
+    people = info["ids"]
+    out: dict[str, Any] = {}
+    with maker() as db:
+        for label, raw in SUM_QUERIES:
+            for who in ("anna", "carla"):
+                filters = search.Filters(status="filed")
+                plain: list[float] = []
+                summed: list[float] = []
+                alone: list[float] = []
+                found = None
+                for _ in range(runs):
+                    began = time.perf_counter()
+                    search.find(db, people[who], raw, filters, limit=50, page=1)
+                    plain.append((time.perf_counter() - began) * 1000)
+                    began = time.perf_counter()
+                    found = search.find(db, people[who], raw, filters, limit=50, page=1, with_sum=True)
+                    summed.append((time.perf_counter() - began) * 1000)
+                    began = time.perf_counter()
+                    search.summed(db, people[who], raw, filters)
+                    alone.append((time.perf_counter() - began) * 1000)
+                list_ms, with_ms = statistics.median(plain), statistics.median(summed)
+                out.setdefault(label, {"query": raw})[who] = {
+                    "total": found.total if found else 0,
+                    "list_ms": round(list_ms, 1), "list_with_sum_ms": round(with_ms, 1),
+                    "sum_alone_ms": round(statistics.median(alone), 1),
+                    "slower_ms": round(with_ms - list_ms, 1),
+                    "slower_percent": round((with_ms - list_ms) * 100 / list_ms, 1) if list_ms else 0.0,
+                }
+                print(label, who, json.dumps(out[label][who]), flush=True)
+    engine.dispose()
+    return out
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Search measurement with made-up documents.")
     parser.add_argument("--documents", type=int, default=5000)
     parser.add_argument("--folder", type=Path, required=True)
     parser.add_argument("--runs", type=int, default=5)
     parser.add_argument("--keep", action="store_true", help="keep the indexed database")
+    parser.add_argument("--sums", action="store_true",
+                        help="only the archive's table without and with its sums, on the database kept with --keep")
     args = parser.parse_args()
     folder: Path = args.folder
     folder.mkdir(parents=True, exist_ok=True)
+    if args.sums:
+        info = json.loads((folder / "base.json").read_text(encoding="utf-8"))
+        sums = measure_sums(folder, info, args.runs)
+        (folder / f"sums-{info['count']}.json").write_text(json.dumps(sums, indent=2, ensure_ascii=False),
+                                                         encoding="utf-8")
+        return 0
     base = folder / "base.db"
     meta = folder / "base.json"
     info = json.loads(meta.read_text(encoding="utf-8")) if meta.is_file() and base.is_file() else None

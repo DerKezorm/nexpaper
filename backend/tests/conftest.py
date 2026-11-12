@@ -43,6 +43,7 @@ from app.services import (  # noqa: E402
     oidc_store,
     passkeys,
     push,
+    saved,
     settings_service,
     storage,
     totp,
@@ -92,6 +93,7 @@ def clean_db(schema: None) -> Iterator[None]:
     notices.forget()
     push.forget()
     passkeys.forget()
+    saved.forget()
     # A test that ran the background loop leaves the flag "the server is stopping" set when the loop ends; a worker
     # started in a later test would take it as its own stop.
     jobs.stopping.clear()

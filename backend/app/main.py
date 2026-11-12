@@ -46,6 +46,7 @@ from .routers import (
     uploads,
     vaults,
 )
+from .routers import archive as archive_router
 from .routers import avatars as avatars_router
 from .routers import backups as backups_router
 from .routers import catalog as catalog_router
@@ -111,6 +112,7 @@ ROUTERS = [
     keeping_router,
     reminders_router,
     related_router,
+    archive_router,
 ]
 
 

@@ -7,7 +7,7 @@
  * braked by the server (120 a minute) and every answer takes 25 to 50 ms on purpose: the field waits until the typing
  * pauses, a request that is no longer wanted is stopped, and a brake is waited out.
  */
-import { Archive, ArrowDown, ArrowUp, ChevronLeft, ChevronRight, Download, FileCode2, LayoutGrid, Link2, List, ListTree, MessageSquare, Search, SlidersHorizontal, Trash2, Users, X } from 'lucide-react'
+import { Archive, ArrowDown, ArrowUp, Bookmark, BookmarkPlus, Check, CheckSquare, ChevronLeft, ChevronRight, Download, FileCode2, LayoutGrid, Link2, List, ListTree, MessageSquare, Search, SlidersHorizontal, Trash2, Users, X } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useSearchParams } from 'react-router-dom'
@@ -16,9 +16,13 @@ import {
   ApiError,
   authApi,
   catalogApi,
+  savedApi,
   documentsApi,
   searchApi,
   vaultsApi,
+  type BulkAction,
+  type BulkResult,
+  type DocumentInfo,
   type DocumentKind,
   type NameCount,
   type NameGroup,
@@ -26,12 +30,15 @@ import {
   type SearchHit,
   type SearchOrder,
   type SearchOverview,
+  type SearchSum,
   type Vault,
 } from '../api/client'
+import { BulkBar } from '../components/ArchiveBulk'
 import { Button } from '../components/Button'
 import { Dialog } from '../components/Dialog'
 import { SenderPicker } from '../components/SenderPicker'
 import { MayGoChip } from '../components/MayGo'
+import { SavedCount } from '../components/SavedNav'
 import { Chip, DocThumb, FileSign, KindPill, Marked } from '../components/docs'
 import { Avatar } from '../components/Avatar'
 import { VaultIcon } from '../components/VaultIcon'
@@ -44,7 +51,9 @@ import { keptOf } from '../lib/keeping'
 import { useMayGoCount, useTrashMany } from '../lib/mayGo'
 import { money } from '../lib/money'
 import { asAvatarPerson, personName } from '../lib/people'
-import { iso, listOf } from '../lib/say'
+import { outcomeLine } from '../lib/bulk'
+import { isSearch, keptOf as keptSearch, SAVED_MAX, SAVED_NAME_MAX, savedHint, useSaved } from '../lib/saved'
+import { inboxChanged, iso, listOf } from '../lib/say'
 import { useAuth } from '../state/auth'
 import { slots as appSlots, type Slots } from '../slots'
 
@@ -130,6 +139,15 @@ export function ArchivePage({ slots = appSlots }: { slots?: Slots }) {
     setAgain((n) => n + 1)
     mayGo.reload()
   })
+  /** The person's saved searches ("Merken", the chips on the phone). */
+  const saved = useSaved()
+  const [saving, setSaving] = useState(false)
+  /** "Auswählen" in the table: whether the boxes show, and the documents ticked (across pages, until the search
+   * changes). */
+  const [selecting, setSelecting] = useState(false)
+  const [selected, setSelected] = useState<Map<number, DocumentInfo>>(new Map())
+  /** The sums of the whole result of the table (not of the page). */
+  const [summed, setSummed] = useState<SearchSum | null>(null)
   const searchBox = useRef<HTMLDivElement>(null)
   const field = useRef<HTMLInputElement>(null)
   const top = useRef<HTMLDivElement>(null)
@@ -176,6 +194,7 @@ export function ArchivePage({ slots = appSlots }: { slots?: Slots }) {
   const filterKey = JSON.stringify(filters)
   useEffect(() => {
     setPicked(new Set())
+    setSelected(new Map())
   }, [filterKey, q])
   const vaultFilters = useMemo(() => {
     const { status, vault_id, via_share } = filters
@@ -241,6 +260,7 @@ export function ArchivePage({ slots = appSlots }: { slots?: Slots }) {
     if (!listing) return
     const stop = new AbortController()
     const began = performance.now()
+    setSummed(null)
     searchApi.find(q, { ...filters, limit: size, sort: order, page }, stop.signal).then(
       (found) => {
         if (stop.signal.aborted) return
@@ -261,6 +281,12 @@ export function ArchivePage({ slots = appSlots }: { slots?: Slots }) {
         setTotal(all)
         setTook((performance.now() - began) / 1000)
         setProblem(null)
+        // The sums of the whole result, after the page (measured: in the same request they slowed it down).
+        if (all > 0)
+          searchApi.sum(q, filters, stop.signal).then(
+            (found) => !stop.signal.aborted && typeof found?.total === 'number' && setSummed({ total: found.total, sums: listOf(found.sums), without: Number(found.without) || 0 }),
+            () => undefined,
+          )
       },
       (error: unknown) => !stopped(error, stop.signal) && setProblem(problemOf(error)),
     )
@@ -329,8 +355,62 @@ export function ArchivePage({ slots = appSlots }: { slots?: Slots }) {
     ['keep', t('keeping.filterLabel'), keepMode && t('keeping.mayGo')],
   ].filter(([, , value]) => value) as [keyof Chosen, string, string][]
 
+  // "Merken": the name it suggests, from what narrows ("„strom“ · Rechnung · Frist offen · Haushalt").
+  const savedHere = saved.list.find((entry) => isSearch(entry, params))
+  const chosenVault = chosen.vault === 'shared' ? t('docs.archive.sharedToMe') : chosen.vault ? (vaultById.get(Number(chosen.vault)) ? vaultName(vaultById.get(Number(chosen.vault))!) : '') : ''
+  const suggestion =
+    [q && t('saved.quoted', { q }), ...pills.map(([key, label, value]) => (key === 'kind' || key === 'sender' || key === 'year' ? value : `${label} ${value}`)), chosenVault].filter(Boolean).join(' · ') ||
+    t('saved.everything')
+  const deadlineIgnored = !deadlinesOn && Boolean(params.get('deadline'))
+
   /** Ticks every document of the filter on this page, or lets go of them. */
   const onPage = hits ?? []
+  /** "Auswählen": the boxes of the table (not in "Darf weg", which has its own, and not in the tiles). */
+  const choosing = selecting && !keepMode && view === 'list'
+  const allChosen = onPage.length > 0 && onPage.every((hit) => selected.has(hit.document.id))
+  const chooseAll = (on: boolean) =>
+    setSelected((had) => {
+      const next = new Map(had)
+      for (const hit of onPage) {
+        if (on) next.set(hit.document.id, hit.document)
+        else next.delete(hit.document.id)
+      }
+      return next
+    })
+  const chooseOne = (id: number) =>
+    setSelected((had) => {
+      const next = new Map(had)
+      const hit = onPage.find((h) => h.document.id === id)
+      if (next.has(id)) next.delete(id)
+      else if (hit) next.set(id, hit.document)
+      return next
+    })
+  const bulkDone = (result: BulkResult, action: BulkAction) => {
+    setSaid(outcomeLine(result, t, i18n.language))
+    // What went to the trash or elsewhere is no longer in the selection; the rest stays for the next action.
+    if (action === 'trash' || action === 'move')
+      setSelected((had) => {
+        const next = new Map(had)
+        for (const id of listOf<number>(result.changed)) next.delete(id)
+        return next
+      })
+    setAgain((value) => value + 1)
+    mayGo.reload()
+    inboxChanged()
+  }
+  // The euro first (most amounts are in it), the other currencies after it as the server sorted them.
+  const sums = [...(summed?.sums ?? [])].sort((a, b) => Number(b.currency === 'EUR') - Number(a.currency === 'EUR'))
+  const sumLine = summed && (
+    <p className="text-sm text-ink-2 tabular-nums" data-testid="sum">
+      {[
+        t('docs.archive.documents', { count: summed.total, n: n(summed.total) }),
+        sums.length > 0 && t('archiveSum.together', { sums: sums.map((s) => money(s.cents, i18n.language, s.currency || 'EUR')).join(', ') }),
+        sums.length > 0 && summed.without > 0 && t('archiveSum.without', { count: summed.without, n: n(summed.without) }),
+      ]
+        .filter(Boolean)
+        .join(' · ')}
+    </p>
+  )
   const allOnPage = onPage.length > 0 && onPage.every((hit) => picked.has(hit.document.id))
   const togglePage = () =>
     setPicked((had) => {
@@ -483,6 +563,25 @@ export function ArchivePage({ slots = appSlots }: { slots?: Slots }) {
         </p>
       )}
 
+      {!listing && saved.list.length > 0 && (
+        <div className="lg:hidden" data-testid="saved-chips">
+          <p className="mb-1.5 text-xs font-bold tracking-wide text-muted uppercase">{t('saved.title')}</p>
+          <div className="scroll-x -mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+            {saved.list.map((entry) => (
+              <Link
+                key={entry.id}
+                to={`/?${entry.query}`}
+                title={savedHint(entry, t) || undefined}
+                className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full border border-line bg-sheet px-3 text-sm font-semibold text-ink-2"
+              >
+                <Bookmark size={14} className="text-accent" aria-hidden /> <bdi>{entry.name}</bdi>
+                <SavedCount entry={entry} className="text-sm" />
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
       {!listing ? (
         nothingAtAll ? (
           <Empty title={t('docs.archive.emptyTitle')} text={t('docs.archive.emptyText')} />
@@ -518,6 +617,15 @@ export function ArchivePage({ slots = appSlots }: { slots?: Slots }) {
                 </button>
               </span>
             ))}
+            {savedHere ? (
+              <span className="inline-flex h-8 max-w-full items-center gap-1.5 rounded-full px-2 text-sm font-semibold text-accent" title={t('saved.keptTitle')} data-testid="kept-as">
+                <Bookmark size={15} className="shrink-0 fill-current" aria-hidden /> <span className="truncate">{t('saved.keptAs', { name: iso(savedHere.name) })}</span>
+              </span>
+            ) : (
+              <Button size="sm" variant="line" onClick={() => setSaving(true)}>
+                <BookmarkPlus size={15} aria-hidden /> {t('saved.keep')}
+              </Button>
+            )}
             {hits && !problem && (
               <p className="ml-auto text-sm text-ink-2" data-testid="hit-count">
                 {q ? (
@@ -530,7 +638,18 @@ export function ArchivePage({ slots = appSlots }: { slots?: Slots }) {
                 )}
               </p>
             )}
+            {hits && hits.length > 0 && !keepMode && view === 'list' && !choosing && (
+              <Button variant="ghost" size="sm" onClick={() => setSelecting(true)}>
+                <CheckSquare size={14} aria-hidden /> {t('docs.inbox.choose')}
+              </Button>
+            )}
           </div>
+
+          {deadlineIgnored && (
+            <p className="text-sm text-muted" data-testid="deadlines-off">
+              {t('saved.deadlinesOff')}
+            </p>
+          )}
 
           {hits && hits.length === 0 && !problem && <Empty title={t('docs.archive.nothingTitle')} text={t('docs.archive.nothingText')} />}
           {!hits && !problem && <p className="text-sm text-muted">{t('docs.loading')}</p>}
@@ -547,6 +666,37 @@ export function ArchivePage({ slots = appSlots }: { slots?: Slots }) {
             />
           )}
 
+          {choosing && hits && hits.length > 0 && (
+            <div className="flex items-center justify-between gap-2 px-1 text-xs text-muted">
+              <label className="inline-flex items-center gap-2">
+                <input type="checkbox" checked={allChosen} onChange={(event) => chooseAll(event.target.checked)} aria-label={t('docs.inbox.selectAll', { count: onPage.length })} className="h-4 w-4 accent-[var(--accent)]" />
+                <span>{t('docs.inbox.selectAll', { count: onPage.length })}</span>
+              </label>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setSelecting(false)
+                  setSelected(new Map())
+                }}
+              >
+                <Check size={14} aria-hidden /> {t('docs.inbox.chooseDone')}
+              </Button>
+            </div>
+          )}
+
+          {choosing && selected.size > 0 && (
+            <BulkBar
+              selected={[...selected.values()]}
+              vaults={vaults}
+              kinds={kinds}
+              tags={tags.map((g) => g.name)}
+              meId={me.id}
+              onClear={() => setSelected(new Map())}
+              onDone={bulkDone}
+            />
+          )}
+
           {hits && hits.length > 0 &&
             (view === 'list' || keepMode ? (
               <Table
@@ -557,13 +707,18 @@ export function ArchivePage({ slots = appSlots }: { slots?: Slots }) {
                 order={order}
                 onOrder={(next) => go({ sort: next === '-date' ? '' : next })}
                 keep={keepMode ? { picked, toggle: toggleOne, all: allOnPage, toggleAll: togglePage } : undefined}
+                select={choosing ? { picked: new Set(selected.keys()), toggle: chooseOne, all: allChosen, toggleAll: () => chooseAll(!allChosen) } : undefined}
+                footer={sumLine}
               />
             ) : (
-              <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-                {hits.map((hit) => (
-                  <Tile key={hit.document.id} hit={hit} />
-                ))}
-              </ul>
+              <>
+                <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+                  {hits.map((hit) => (
+                    <Tile key={hit.document.id} hit={hit} />
+                  ))}
+                </ul>
+                {sumLine && <div className="px-1 text-right">{sumLine}</div>}
+              </>
             ))}
 
           {hits && hits.length > 0 && (
@@ -573,6 +728,19 @@ export function ArchivePage({ slots = appSlots }: { slots?: Slots }) {
       )}
 
       {trashDialog}
+      {saving && (
+        <SaveDialog
+          suggestion={suggestion.slice(0, SAVED_NAME_MAX)}
+          full={saved.list.length >= SAVED_MAX}
+          onClose={() => setSaving(false)}
+          onSave={async (name) => {
+            await savedApi.create(name, keptSearch(params))
+            await saved.reload()
+            setSaving(false)
+            setSaid(t('saved.said', { name: iso(name) }))
+          }}
+        />
+      )}
       {allSenders && overview && (
         <SenderDialog
           senders={overview.senders}
@@ -599,6 +767,54 @@ export function ArchivePage({ slots = appSlots }: { slots?: Slots }) {
         />
       )}
     </div>
+  )
+}
+
+/** Keeping a search: a name, and what it means. Only for this person; the search runs again each time. */
+function SaveDialog({ suggestion, full, onClose, onSave }: { suggestion: string; full: boolean; onClose: () => void; onSave: (name: string) => Promise<void> }) {
+  const { t } = useTranslation()
+  const [name, setName] = useState(suggestion)
+  const [busy, setBusy] = useState(false)
+  const [problem, setProblem] = useState<Problem | null>(null)
+  return (
+    <Dialog title={t('saved.dialogTitle')} onClose={onClose}>
+      <form
+        onSubmit={(event) => {
+          event.preventDefault()
+          if (!name.trim() || full || busy) return
+          setBusy(true)
+          setProblem(null)
+          onSave(name.trim()).then(
+            () => setBusy(false),
+            (error: unknown) => {
+              setBusy(false)
+              setProblem(problemOf(error))
+            },
+          )
+        }}
+        className="space-y-4 text-sm"
+      >
+        <label className="block">
+          <span className="font-semibold">{t('saved.nameLabel')}</span>
+          <input value={name} onChange={(event) => setName(event.target.value)} maxLength={SAVED_NAME_MAX} data-autofocus className="input mt-1 h-11" />
+        </label>
+        <p className="text-ink-2">{t('saved.dialogText')}</p>
+        {full && <p className="font-semibold text-warn">{t('saved.full', { max: SAVED_MAX })}</p>}
+        {problem && (
+          <p role="alert" className="text-bad">
+            {errorText(problem.code, problem.values)}
+          </p>
+        )}
+        <div className="flex justify-end gap-2">
+          <Button type="button" variant="ghost" onClick={onClose}>
+            {t('saved.cancel')}
+          </Button>
+          <Button type="submit" variant="primary" disabled={!name.trim() || full || busy}>
+            <BookmarkPlus size={15} aria-hidden /> {t('saved.keep')}
+          </Button>
+        </div>
+      </form>
+    </Dialog>
   )
 }
 
@@ -766,11 +982,15 @@ type TableProps = {
   bare?: boolean
   /** The filter "Darf weg": a box in front of every row and "Aufbewahren bis" in place of the amount. */
   keep?: KeepPick
+  /** "Auswählen": a box in front of every row, the columns as they are. */
+  select?: KeepPick
+  /** Under the rows: the sums of the whole result. */
+  footer?: ReactNode
 }
 
 type KeepPick = { picked: Set<number>; toggle: (id: number) => void; all: boolean; toggleAll: () => void }
 
-function Table({ hits, vaultById, vaultName, searching, order, onOrder, bare = false, keep }: TableProps) {
+function Table({ hits, vaultById, vaultName, searching, order, onOrder, bare = false, keep, select, footer }: TableProps) {
   const { t, i18n } = useTranslation()
   const byDate = !bare && order.endsWith('date')
   const monthName = (key: string) => {
@@ -789,7 +1009,7 @@ function Table({ hits, vaultById, vaultName, searching, order, onOrder, bare = f
       )
       month = key
     }
-    rows.push(<Row key={hit.document.id} hit={hit} vault={vaultById.get(hit.document.vault_id)} vaultName={vaultName} searching={searching} keep={keep} />)
+    rows.push(<Row key={hit.document.id} hit={hit} vault={vaultById.get(hit.document.vault_id)} vaultName={vaultName} searching={searching} keep={keep} select={select} />)
   }
   const head = (column: 'title' | 'sender' | 'date' | 'amount', label: string, right = false) => {
     const on = order === column || order === `-${column}`
@@ -811,8 +1031,8 @@ function Table({ hits, vaultById, vaultName, searching, order, onOrder, bare = f
     <div className="card overflow-hidden p-0" data-testid="table">
       {!bare && (
         <div className={`hidden items-center border-b border-line pl-4 text-xs font-bold tracking-wide text-muted md:flex`}>
-          {keep && <span className="w-4 shrink-0" aria-hidden />}
-          <div className={`min-w-0 flex-1 py-2.5 ${keep ? COLUMNS_KEEP : COLUMNS} ${keep ? 'px-4' : 'pr-4'}`}>
+          {(keep || select) && <span className="w-4 shrink-0" aria-hidden />}
+          <div className={`min-w-0 flex-1 py-2.5 ${keep ? COLUMNS_KEEP : COLUMNS} ${keep || select ? 'px-4' : 'pr-4'}`}>
             <span />
             {head('title', t('docs.archive.colTitle'))}
             {head('sender', t('docs.archive.sender'))}
@@ -824,17 +1044,18 @@ function Table({ hits, vaultById, vaultName, searching, order, onOrder, bare = f
         </div>
       )}
       <ul className="divide-y divide-line">{rows}</ul>
+      {footer && <div className="flex justify-end border-t border-line px-4 py-2.5 text-right">{footer}</div>}
     </div>
   )
 }
 
-function Row({ hit, vault, vaultName, searching, keep }: { hit: SearchHit; vault: Vault | undefined; vaultName: (v: Vault) => string; searching: boolean; keep?: KeepPick }) {
+function Row({ hit, vault, vaultName, searching, keep, select }: { hit: SearchHit; vault: Vault | undefined; vaultName: (v: Vault) => string; searching: boolean; keep?: KeepPick; select?: KeepPick }) {
   const { t, i18n } = useTranslation()
   const d = hit.document
   const when = shortDate(d.date ?? d.added_at, i18n.language)
   const kept = keep ? keptOf(d) : null
   const link = (
-      <Link to={`/dokument/${d.id}`} className={`flex items-center gap-3 py-2 hover:bg-sheet-2/60 ${keep ? `min-w-0 flex-1 px-4 ${COLUMNS_KEEP}` : `px-4 ${COLUMNS}`}`}>
+      <Link to={`/dokument/${d.id}`} className={`flex items-center gap-3 py-2 hover:bg-sheet-2/60 ${keep ? `min-w-0 flex-1 px-4 ${COLUMNS_KEEP}` : select ? `min-w-0 flex-1 px-4 ${COLUMNS}` : `px-4 ${COLUMNS}`}`}>
         <DocThumb document={d} className="w-6 shrink-0" />
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
@@ -894,15 +1115,16 @@ function Row({ hit, vault, vaultName, searching, keep }: { hit: SearchHit; vault
         )}
       </Link>
   )
-  if (!keep) return <li data-testid="row">{link}</li>
+  const box = keep ?? select
+  if (!box) return <li data-testid="row">{link}</li>
   return (
     <li data-testid="row" className="flex items-center pl-4">
       <input
         type="checkbox"
-        checked={keep.picked.has(d.id)}
-        onChange={() => keep.toggle(d.id)}
+        checked={box.picked.has(d.id)}
+        onChange={() => box.toggle(d.id)}
         className="h-4 w-4 shrink-0 accent-[var(--accent)]"
-        aria-label={t('keeping.pick', { title: d.title })}
+        aria-label={keep ? t('keeping.pick', { title: d.title }) : t('docs.inbox.select', { title: d.title })}
       />
       {link}
     </li>

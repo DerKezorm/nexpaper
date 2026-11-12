@@ -121,11 +121,24 @@ class Hit:
 
 
 @dataclass
+class Summed:
+    """What the whole result of a search holds, not one page of it: how many documents, the sum of their amounts per
+    currency (cents, nothing converted) and how many have no amount."""
+
+    total: int
+    #: (currency, cents), by currency; only currencies at least one amount was given in.
+    sums: list[tuple[str, int]]
+    without: int
+
+
+@dataclass
 class Result:
     hits: list[Hit]
     total: int
     next: str | None
     query: searchtext.Query
+    #: Only when it was asked for (``find(..., with_sum=True)``).
+    summed: Summed | None = None
 
 
 def _escape_like(value: str) -> str:
@@ -336,10 +349,45 @@ def _order(order: str) -> list[ColumnElement[Any]]:
     return [column.is_(None), column.desc() if down else column.asc(), *newest]
 
 
+def _sum_of(db: Session, clauses: list[ColumnElement[bool]]) -> Summed:
+    """The number, the sums per currency and the number without an amount of the documents ``clauses`` find: one
+    grouped statement over the same conditions as the list (never a second copy of them)."""
+    rows = db.execute(
+        select(Document.currency, func.count(), func.count(Document.amount), func.sum(Document.amount))
+        .where(and_(*clauses)).group_by(Document.currency).order_by(Document.currency)
+    ).all()
+    total = sum(int(n) for _currency, n, _given, _cents in rows)
+    without = sum(int(n) - int(given) for _currency, n, given, _cents in rows)
+    sums = [(currency or "EUR", int(cents)) for currency, _n, given, cents in rows if int(given) > 0]
+    merged: dict[str, int] = {}
+    for currency, cents in sums:
+        # An empty currency is the euro (the column's default); it joins the euros instead of standing apart.
+        merged[currency] = merged.get(currency, 0) + cents
+    return Summed(total=total, sums=sorted(merged.items()), without=without)
+
+
+def summed(db: Session, uid: int, raw: str, filters: Filters) -> Summed:
+    """``_sum_of`` for what the search ``raw`` with ``filters`` finds for ``uid``: the rights, the words and the filters
+    of ``find`` (``where``), bounded in time like it."""
+    query = _parse(raw)
+    clauses = where(uid, query, filters, scope_of(db, uid) if query.has_text else [])
+    with changes.snapshot(db), _bounded(db):
+        return _sum_of(db, clauses)
+
+
+def counted(db: Session, uid: int, raw: str, filters: Filters) -> int:
+    """How many documents ``find`` would find in all, without fetching any (the saved searches show it)."""
+    query = _parse(raw)
+    clauses = where(uid, query, filters, scope_of(db, uid) if query.has_text else [])
+    with changes.snapshot(db), _bounded(db):
+        return int(db.scalar(select(func.count()).select_from(Document).where(and_(*clauses))) or 0)
+
+
 def find(db: Session, uid: int, raw: str, filters: Filters, *, cursor: str | None = None, limit: int = 50,
-         order: str = "-date", page: int | None = None) -> Result:
+         order: str = "-date", page: int | None = None, with_sum: bool = False) -> Result:
     """One page of what ``uid`` may see that the search ``raw`` finds, with the total: after ``cursor`` (newest first
-    only), or the numbered ``page`` in ``order``."""
+    only), or the numbered ``page`` in ``order``. ``with_sum``: the sums of the whole result too (``Summed``), counted
+    by the statement that counts the total."""
     if order not in ORDERS:
         raise error("invalid_order", "Sort by one of: " + ", ".join(ORDERS) + ".", 422)
     if cursor and (page is not None or order != "-date"):
@@ -350,8 +398,13 @@ def find(db: Session, uid: int, raw: str, filters: Filters, *, cursor: str | Non
     limit = max(1, min(limit, MAX_LIMIT))
     clauses = where(uid, query, filters, scope_of(db, uid) if query.has_text else [])
     key = _sort_key()
+    summary: Summed | None = None
     with changes.snapshot(db), _bounded(db):
-        total = int(db.scalar(select(func.count()).select_from(Document).where(and_(*clauses))) or 0)
+        if with_sum:
+            summary = _sum_of(db, clauses)
+            total = summary.total
+        else:
+            total = int(db.scalar(select(func.count()).select_from(Document).where(and_(*clauses))) or 0)
         statement = select(Document, key.label("sort_key")).where(and_(*clauses))
         if cursor:
             after_key, after_id = _read_cursor(cursor)
@@ -367,7 +420,7 @@ def find(db: Session, uid: int, raw: str, filters: Filters, *, cursor: str | Non
     # A numbered page has no cursor: the next one is the next number.
     paged = page is not None or order != "-date"
     next_cursor = _cursor(found[-1][1], found[-1][0].id) if more and found and not paged else None
-    return Result(hits=hits, total=total, next=next_cursor, query=query)
+    return Result(hits=hits, total=total, next=next_cursor, query=query, summed=summary)
 
 
 def _parse(raw: str) -> searchtext.Query:

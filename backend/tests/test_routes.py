@@ -265,6 +265,13 @@ TOKEN_ROUTES = {
     ("PUT", "/api/v1/documents/{document_id}/related/{other_id}"),
     ("DELETE", "/api/v1/documents/{document_id}/related/{other_id}"),
     ("POST", "/api/v1/documents/{document_id}/related/{other_id}/dismiss"),
+    # A1: many documents changed at once, and the own saved searches.
+    ("POST", "/api/v1/documents/bulk"),
+    ("POST", "/api/v1/saved-searches"),
+    ("PATCH", "/api/v1/saved-searches/{saved_id}"),
+    ("POST", "/api/v1/saved-searches/{saved_id}/up"),
+    ("POST", "/api/v1/saved-searches/{saved_id}/down"),
+    ("DELETE", "/api/v1/saved-searches/{saved_id}"),
 }
 
 #: The routes that only read and that a program with an API key reaches too (as the browser and a device do). A route
@@ -316,6 +323,9 @@ READ_ROUTES = {
     # Goes with (N1): what goes with a document and the proposals.
     ("GET", "/api/v1/documents/{document_id}/related"),
     ("GET", "/api/v1/documents/{document_id}/related/suggestions"),
+    # The own saved searches with their numbers of hits, and the sums of a search (A1).
+    ("GET", "/api/v1/saved-searches"),
+    ("GET", "/api/v1/search/sum"),
 }
 
 

@@ -937,3 +937,30 @@ none of it, a link to the outside never.
 - In the history, the other document of `related_set` and `related_unset` is named only for a caller who may see it:
   `detail.title`; for anybody else `detail.document` is `null`. Joining documents gives the one that stays the pairs of
   the ones joined into it (`detail.by` = `merge`); splitting leaves them with the document split.
+
+## The archive's table: sums, many at once, saved searches
+
+- `GET /search/sum` (the words and filters of `GET /search`, no page or order): the sums of everything the search finds,
+  not one page: `{"total", "sums": [{"currency", "cents"}], "without"}`, one entry per currency an amount was given in
+  (nothing converted), `without` the number with no amount. Same rights, brake and step in time as the search; asked for
+  after the page (`docs/search.md` has why).
+- `POST /documents/bulk` `{"ids", "action", "tag" | "kind_id" | "vault_id"}` (at most 500 ids; duplicates count once):
+  `add_tag` and `remove_tag` (a tag by its name, in whatever vault the document lies), `kind` (one of the server's for
+  all, a vault's own only for the documents of that vault), `move` (`edit` in the target vault, else 404 or 403 for the
+  whole call; sender, kind and tags go along by their names), `trash`. Every document is changed by the function a
+  single change uses, with its own check of the right, a line in its history and a new change number. Answer:
+  `{"changed": [ids], "skipped": [{"id", "reason"}], "reasons": {reason: n}}` with the reasons `forbidden` (no right to
+  change it, or no such document: the two are not told apart), `in_trash`, `kind_elsewhere`, `unchanged`. A browser or
+  a device; an API key never.
+- `GET /saved-searches`: the caller's saved searches in their order, `[{"id", "name", "query", "position", "count",
+  "state", "deadlines_off"}]`. `query` holds the known parts of the archive's address, sorted (`q`, `vault`, `kind`,
+  `sender`, `tag`, `owner`, `year`, `deadline`, `keep`, `all`, `sort`, `n`; never the page). `count` is what the search
+  finds now, counted with its rights and its brake (one brake for the whole list, the numbers kept for 20 seconds while
+  nothing changes); `state` `no_access` for a vault the caller does not see (whether it still exists or not, no
+  number), `failed` when the search could not answer. `deadlines_off`: the entry filters by deadline and the caller
+  switched deadlines off; it is counted without that filter, as the archive shows it.
+- `POST /saved-searches` `{"name", "query"}` (name 1 to 60 characters): parts the archive does not know, or values it
+  does not know, are dropped and never run; nothing left answers `422 nothing_to_keep`; the 31st answers
+  `409 too_many_saved`. `PATCH /saved-searches/{id}` `{"name"}`, `POST /saved-searches/{id}/up` and `/down` (answer the
+  whole list), `DELETE /saved-searches/{id}`. Another person's entry answers 404 like one that does not exist. They go
+  with the account.

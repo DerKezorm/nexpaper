@@ -9,6 +9,7 @@ import { INBOX_CHANGED, type NoticeLink } from '../lib/say'
 import { useAuth } from '../state/auth'
 import { AccountMenu } from './AccountMenu'
 import { Wordmark } from './Logo'
+import { SavedNav } from './SavedNav'
 import { CameraLink, DropSheet, UploadButton, UploadPanel, UploadRound } from './UploadPanel'
 import { WhatsNewBanner } from './WhatsNew'
 
@@ -116,7 +117,7 @@ function Frame({ t }: { t: (key: string) => string }) {
   const deadlineBadge = counts.overdue ? 'bg-warn text-paper' : 'bg-accent text-accent-ink'
   return (
     <div className="lg:flex">
-      <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col border-r border-line px-4 py-6 lg:flex">
+      <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col overflow-y-auto border-r border-line px-4 py-6 lg:flex">
         <div className="px-2 pb-6">
           <Wordmark />
         </div>
@@ -144,7 +145,8 @@ function Frame({ t }: { t: (key: string) => string }) {
             </NavLink>
           ))}
         </nav>
-        <div className="mt-auto">
+        <SavedNav />
+        <div className="mt-auto pt-4">
           <AccountMenu up />
         </div>
       </aside>

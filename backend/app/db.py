@@ -46,7 +46,7 @@ _settings.data_dir.mkdir(parents=True, exist_ok=True)
 BUSY_SECONDS = 15
 
 #: The version of the schema the models describe.
-SCHEMA_VERSION = 15
+SCHEMA_VERSION = 16
 
 
 def _step_v2(connection: Connection) -> None:
@@ -436,6 +436,20 @@ def _step_related(connection: Connection) -> None:
     )
 
 
+def _step_saved_searches(connection: Connection) -> None:
+    """Saved searches (A1): one table, a row per search a person keeps in the side bar. Nothing else; written out as it
+    stood when the step was made, so that the step moves to another number unchanged."""
+    for statement in (
+        (
+            "CREATE TABLE saved_searches ( id INTEGER NOT NULL, user_id INTEGER NOT NULL, name VARCHAR(60) NOT NULL, "
+            "query VARCHAR(1200) NOT NULL, position INTEGER NOT NULL, created_at DATETIME NOT NULL, PRIMARY KEY (id), "
+            "FOREIGN KEY(user_id) REFERENCES users (id) ON DELETE CASCADE )"
+        ),
+        "CREATE INDEX ix_saved_searches_user_id ON saved_searches (user_id)",
+    ):
+        connection.exec_driver_sql(statement)
+
+
 #: ``MIGRATIONS[n]`` brings a database from version ``n - 1`` to ``n``. Version 1 is the first schema; it has no step.
 #: Later steps are written out as the tables stood then, not taken from the models, which move on.
 MIGRATIONS: dict[int, Callable[[Connection], None]] = {
@@ -455,6 +469,8 @@ MIGRATIONS: dict[int, Callable[[Connection], None]] = {
     14: _step_auto_trash,
     # N1, goes with: numbers read from documents, pairs, proposals turned down.
     15: _step_related,
+    # A1, saved searches.
+    16: _step_saved_searches,
 }
 
 def _has_column(connection: Connection, table: str, column: str) -> bool:
