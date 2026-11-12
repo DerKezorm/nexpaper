@@ -835,7 +835,7 @@ export const searchApi = {
  * converted), and how many have no amount. */
 export type SearchSum = { total: number; sums: { currency: string; cents: number }[]; without: number }
 
-export type BulkAction ='add_tag' | 'remove_tag' | 'kind' | 'move' | 'trash'
+export type BulkAction = 'add_tag' | 'remove_tag' | 'kind' | 'move' | 'trash' | 'link'
 export type BulkChange = { ids: number[]; action: BulkAction; tag?: string; kind_id?: number; vault_id?: number }
 /** `forbidden` (no right, or no such document), `in_trash`, `kind_elsewhere`, `unchanged`, or the code of a single change. */
 export type BulkResult = { changed: number[]; skipped: { id: number; reason: string }[]; reasons: Record<string, number> }

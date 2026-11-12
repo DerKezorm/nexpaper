@@ -3044,6 +3044,7 @@
     "already": "Connected already",
     "searchExample": "linked:yes",
     "searchHelp": "goes with another document",
+    "inArchive": "goes with another document",
     "events": {
       "set": "connected it with {{title}}",
       "setOther": "connected it with another document",
@@ -3121,6 +3122,10 @@
       "unchanged": "already so",
       "other": "did not work"
     },
-    "whyCount": "{{n}} {{why}}"
+    "whyCount": "{{n}} {{why}}",
+    "link": "Connect with each other",
+    "linkHint": "Choose 2 to {{most}} documents.",
+    "linked": "{{n}} connected with each other.",
+    "linkedNot": "{{n}} connected with each other, {{not}} not ({{why}})."
   }
 }

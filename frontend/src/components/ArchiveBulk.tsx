@@ -3,14 +3,16 @@
  * another vault, the trash, for all of them in one request each (`POST /api/v1/documents/bulk`, 500 at most; more go
  * in turns). The server checks every document on its own and says what it did; the bar says it in one line ("12
  * geändert, 2 nicht (nur Lesen)"). Moving asks who sees the documents afterwards; the trash asks too (rule 13), with
- * the 30 days and how many are still within their keeping time. More actions can join `ACTIONS`.
+ * the 30 days and how many are still within their keeping time. More actions can join `ACTIONS`. "Miteinander
+ * verknüpfen" sets two to ten of them to go with each other (N1), without a question: each pair can be taken apart
+ * again.
  */
-import { Archive, FolderInput, Tag, Tags, Trash2, X } from 'lucide-react'
+import { Archive, FolderInput, Paperclip, Tag, Tags, Trash2, X } from 'lucide-react'
 import { useState, type ComponentType } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { ApiError, bulkApi, type BulkAction, type BulkResult, type DocumentInfo, type DocumentKind, type Vault } from '../api/client'
-import { BULK_MOST } from '../lib/bulk'
+import { BULK_MOST, LINK_MOST } from '../lib/bulk'
 import { dayInDays } from '../lib/dates'
 import { errorText } from '../lib/errors'
 import { keptOf } from '../lib/keeping'
@@ -156,6 +158,15 @@ export function BulkBar({ selected, vaults, kinds, tags, meId, onClear, onDone }
             <Icon size={15} aria-hidden /> {t(label)}
           </Button>
         ))}
+        <Button
+          variant="line"
+          size="sm"
+          onClick={() => void apply('link', {})}
+          disabled={busy || count < 2 || count > LINK_MOST}
+          title={count < 2 || count > LINK_MOST ? t('archiveBulk.linkHint', { most: LINK_MOST }) : undefined}
+        >
+          <Paperclip size={15} aria-hidden /> {t('archiveBulk.link')}
+        </Button>
       </div>
       {problem && !open && (
         <p role="alert" className="text-sm text-bad">

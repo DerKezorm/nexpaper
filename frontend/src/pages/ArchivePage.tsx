@@ -7,7 +7,7 @@
  * braked by the server (120 a minute) and every answer takes 25 to 50 ms on purpose: the field waits until the typing
  * pauses, a request that is no longer wanted is stopped, and a brake is waited out.
  */
-import { Archive, ArrowDown, ArrowUp, Bookmark, BookmarkPlus, Check, CheckSquare, ChevronLeft, ChevronRight, Download, FileCode2, LayoutGrid, Link2, List, ListTree, MessageSquare, Search, SlidersHorizontal, Trash2, Users, X } from 'lucide-react'
+import { Archive, ArrowDown, ArrowUp, Bookmark, BookmarkPlus, Check, CheckSquare, ChevronLeft, ChevronRight, Download, FileCode2, LayoutGrid, Link2, List, ListTree, MessageSquare, Paperclip, Search, SlidersHorizontal, Trash2, Users, X } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useSearchParams } from 'react-router-dom'
@@ -155,6 +155,8 @@ export function ArchivePage({ slots = appSlots }: { slots?: Slots }) {
     ...Array.from({ length: HELP }, (_, index): [string, string] => [t(`docs.archive.example.${index}`), t(`docs.archive.help.${index}`)]),
     // Keeping (F3): the documents whose keeping time is over.
     [t('keeping.searchExample'), t('keeping.searchHelp')],
+    // Goes with (N1): the documents something goes with.
+    [t('related.searchExample'), t('related.searchHelp')],
   ]
 
   // What the filters offer.
@@ -386,7 +388,7 @@ export function ArchivePage({ slots = appSlots }: { slots?: Slots }) {
       return next
     })
   const bulkDone = (result: BulkResult, action: BulkAction) => {
-    setSaid(outcomeLine(result, t, i18n.language))
+    setSaid(outcomeLine(result, t, i18n.language, action))
     // What went to the trash or elsewhere is no longer in the selection; the rest stays for the next action.
     if (action === 'trash' || action === 'move')
       setSelected((had) => {
@@ -1068,6 +1070,7 @@ function Row({ hit, vault, vaultName, searching, keep, select }: { hit: SearchHi
               {d.notes > 0 && <MessageSquare size={14} aria-label={t('docs.archive.withNote')} />}
               {(d.share_count ?? 0) > 0 && <Users size={14} aria-label={t('docs.archive.sharedOut')} />}
               {(d.link_count ?? 0) > 0 && <Link2 size={14} aria-label={t('docs.archive.linkOut')} />}
+              {d.has_related && <Paperclip size={14} aria-label={t('related.inArchive')} data-testid="goes-with" />}
             </span>
           </div>
           <div className="truncate text-sm text-ink-2 md:hidden">

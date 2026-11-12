@@ -527,7 +527,8 @@
               "remove_tag",
               "kind",
               "move",
-              "trash"
+              "trash",
+              "link"
             ],
             "title": "Action",
             "type": "string"
@@ -12565,7 +12566,7 @@
             "HTTPBearer": []
           }
         ],
-        "summary": "Change many documents at once: a tag added or taken away, a kind, another vault, the trash",
+        "summary": "Change many documents at once: a tag added or taken away, a kind, another vault, the trash, or set them to go with each other",
         "tags": [
           "archive"
         ]

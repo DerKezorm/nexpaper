@@ -329,3 +329,37 @@ def test_dates_stay_as_they_were(town: dict[str, Any]) -> None:
         row = db.get(Document, t["one"])
         assert row is not None and (row.title, row.sender_id, row.kind_id, row.date, row.amount) == before
     assert names_of(t["one"]) == ["neu", "strom"]
+
+
+def test_linking_together_sets_every_pair_the_caller_may_and_counts_honestly(town: dict[str, Any]) -> None:
+    """"Miteinander verknüpfen" (the archive's bar): every pair among the documents the caller may change; one they may
+    only read and one they may not see are left out alike, and leave no trace at those documents."""
+    t = town
+    with new_client(t["tom"]) as c:
+        done = bulk(c, [t["one"], t["two"], t["shared_edit"], t["seen"], t["private"]], "link")
+        assert done["changed"] == [t["one"], t["two"], t["shared_edit"]]
+        assert done["reasons"] == {"forbidden": 2}
+        assert {s["id"]: s["reason"] for s in done["skipped"]} == {t["seen"]: "forbidden", t["private"]: "forbidden"}
+        assert {e["id"] for e in c.get(f"/api/v1/documents/{t['one']}/related").json()} == {t["two"], t["shared_edit"]}
+        assert {e["id"] for e in c.get(f"/api/v1/documents/{t['two']}/related").json()} == {t["one"], t["shared_edit"]}
+        # Once more: every pair is there already.
+        again = bulk(c, [t["one"], t["two"]], "link")
+        assert again["changed"] == [] and again["reasons"] == {"unchanged": 2}
+        # One document, or more than ten: the whole call is refused.
+        for ids in ([t["one"]], list(range(1, 12))):
+            answer = c.post(PATH, json={"ids": ids, "action": "link"})
+            assert answer.status_code == 422 and answer.json()["detail"]["code"] == "invalid_related", answer.text
+    assert len(events_of(t["one"], "related_set")) == 2
+    with new_client(t["jule"]) as c:
+        for untouched in (t["seen"], t["private"]):
+            assert c.get(f"/api/v1/documents/{untouched}/related").json() == []
+            assert events_of(untouched, "related_set") == []
+
+
+def test_a_reader_links_nothing_together(town: dict[str, Any]) -> None:
+    t = town
+    with new_client(t["lea"]) as c:
+        done = bulk(c, [t["one"], t["two"]], "link")
+    assert done["changed"] == [] and done["reasons"] == {"forbidden": 2}
+    with new_client(t["jule"]) as c:
+        assert c.get(f"/api/v1/documents/{t['one']}/related").json() == []

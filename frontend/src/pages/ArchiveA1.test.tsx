@@ -250,7 +250,7 @@ describe('the sums under the table', () => {
   it('puts several currencies side by side, the euro first, and converts nothing', async () => {
     server.answers[SUM] = { total: 5, sums: [{ currency: 'CHF', cents: 20000 }, { currency: 'EUR', cents: 17345 }, { currency: 'USD', cents: 999 }], without: 0 }
     await show('/?all=1')
-    expect(line()).toMatch(/^5 Dokumente · zusammen 200,00\sCHF, 173,45\s€, 9,99\s\$$/)
+    expect(line()).toMatch(/^5 Dokumente · zusammen 173,45\s€, 200,00\sCHF, 9,99\s\$$/)
   })
 
   it('without any amount it is only the number', async () => {
@@ -273,5 +273,38 @@ describe('the sums under the table', () => {
     await show('/?all=1')
     expect(page.box.querySelector('[data-testid="sum"]')).toBeNull()
     expect(page.box.querySelectorAll('[data-testid="row"]')).toHaveLength(3)
+  })
+})
+describe('Miteinander verknüpfen', () => {
+  const bulkCalls = () => server.calls.filter((c) => c.method === 'POST' && c.url === '/api/v1/documents/bulk')
+
+  it('sets the selected documents to go with each other and says honestly what happened', async () => {
+    server.answers['POST /api/v1/documents/bulk'] = { changed: [1, 3], skipped: [{ id: 2, reason: 'forbidden' }], reasons: { forbidden: 1 } }
+    await show('/?all=1')
+    await page.click(page.button('Auswählen'))
+    await act(async () => page.box.querySelector<HTMLInputElement>('input[aria-label="Alle 3 geladenen auswählen"]')!.click())
+    await idle()
+    await page.click(page.button('Miteinander verknüpfen'))
+    expect(bulkCalls().map((c) => c.body)).toEqual([{ ids: [1, 2, 3], action: 'link' }])
+    expect(page.text).toContain('2 miteinander verknüpft, 1 nicht (nur Lesen).')
+  })
+
+  it('takes two documents at least', async () => {
+    await show('/?all=1')
+    await page.click(page.button('Auswählen'))
+    await act(async () => page.box.querySelector<HTMLInputElement>('[data-testid="row"] input[type="checkbox"]')!.click())
+    await idle()
+    const button = page.button('Miteinander verknüpfen')
+    expect(button?.disabled).toBe(true)
+    expect(button?.title).toBe('Wähle 2 bis 10 Dokumente aus.')
+    expect(bulkCalls()).toHaveLength(0)
+  })
+
+  it('marks a document something goes with in the table, and only that one', async () => {
+    server.answers[ALL] = result([hit(doc(1, 'Rechnung Strom', { has_related: true })), hit(doc(2, 'Brief'))])
+    await show('/?all=1')
+    const rows = [...page.box.querySelectorAll('[data-testid="row"]')]
+    expect(rows[0].querySelector('[data-testid="goes-with"]')?.getAttribute('aria-label')).toBe('gehört zu einem anderen Dokument')
+    expect(rows[1].querySelector('[data-testid="goes-with"]')).toBeNull()
   })
 })

@@ -947,7 +947,9 @@ none of it, a link to the outside never.
 - `POST /documents/bulk` `{"ids", "action", "tag" | "kind_id" | "vault_id"}` (at most 500 ids; duplicates count once):
   `add_tag` and `remove_tag` (a tag by its name, in whatever vault the document lies), `kind` (one of the server's for
   all, a vault's own only for the documents of that vault), `move` (`edit` in the target vault, else 404 or 403 for the
-  whole call; sender, kind and tags go along by their names), `trash`. Every document is changed by the function a
+  whole call; sender, kind and tags go along by their names), `trash`, `link` (2 to 10 documents, every pair among them goes
+  with each other as with `PUT /documents/{id}/related/{other}`; another number answers `422 invalid_related`; those
+  that took part are `changed` when at least one pair is new, `unchanged` when all were there). Every document is changed by the function a
   single change uses, with its own check of the right, a line in its history and a new change number. Answer:
   `{"changed": [ids], "skipped": [{"id", "reason"}], "reasons": {reason: n}}` with the reasons `forbidden` (no right to
   change it, or no such document: the two are not told apart), `in_trash`, `kind_elsewhere`, `unchanged`. A browser or

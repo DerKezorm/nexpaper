@@ -1,5 +1,5 @@
 """Many documents changed at once from the archive's table ("Auswählen", A1): a tag added or taken away, a kind, another
-vault, the trash.
+vault, the trash, or all of them set to go with each other ("Miteinander verknüpfen", ``related.link_all``).
 
 Every document goes through the very function a single change uses (``documents.change_fields``, ``move_changed``,
 ``trash_changed``), one after the other, each under the write lock with its own check of the caller's right, its own
@@ -24,13 +24,13 @@ from sqlalchemy.orm import Session
 
 from ..errors import error
 from ..models import Kind
-from . import catalog, documents, rights
+from . import catalog, documents, related, rights
 
 logger = logging.getLogger("nexpaper.bulk")
 
 #: The most documents one call takes.
 MAX_BULK = 500
-ACTIONS = ("add_tag", "remove_tag", "kind", "move", "trash")
+ACTIONS = ("add_tag", "remove_tag", "kind", "move", "trash", "link")
 
 FORBIDDEN = "forbidden"
 IN_TRASH = "in_trash"
@@ -75,6 +75,8 @@ def change(db: Session, uid: int, ids: list[int], action: str, *, tag: str | Non
         raise error("invalid_action", "No such action.", 422)
     if len(ids) > MAX_BULK:
         raise error("too_many", f"At most {MAX_BULK} documents at once.", 422, max=MAX_BULK)
+    if action == "link":
+        return _together(db, uid, list(dict.fromkeys(ids)))
     one: Callable[[int], bool]
     if action in ("add_tag", "remove_tag"):
         if tag is None:
@@ -109,6 +111,37 @@ def change(db: Session, uid: int, ids: list[int], action: str, *, tag: str | Non
             db.rollback()
             outcome.skipped.append((document_id, _reason(exc)))
     logger.info("Documents changed in bulk action=%s by=%s changed=%s skipped=%s", action, uid, len(outcome.changed),
+                len(outcome.skipped))
+    return outcome
+
+
+def _together(db: Session, uid: int, ids: list[int]) -> Outcome:
+    """"Miteinander verknüpfen": every pair among the documents goes with each other (``related.link_all``; 2 to
+    ``related.MAX_TOGETHER`` of them, else ``invalid_related`` for the whole call). A document the caller may not change
+    or not see is left out as ``forbidden`` (the two are not told apart here either), one in the trash as ``in_trash``;
+    the others are linked among themselves. They are ``changed`` when at least one pair is new, and ``unchanged`` when
+    every pair was there already."""
+    if not 2 <= len(ids) <= related.MAX_TOGETHER:
+        raise error("invalid_related", f"Link 2 to {related.MAX_TOGETHER} documents.", 422, max=related.MAX_TOGETHER)
+    known = [document_id for document_id in ids if 1 <= document_id < 2**31]
+    refused: dict[int, str] = {}
+    linked = 0
+    if len(known) >= 2:
+        done = related.link_all(db, uid, known)
+        refused = dict(done.refused)
+        linked = done.linked
+    outcome = Outcome()
+    for document_id in ids:
+        reason = refused.get(document_id)
+        if document_id not in known or reason in ("not_found", "forbidden"):
+            outcome.skipped.append((document_id, FORBIDDEN))
+        elif reason is not None:
+            outcome.skipped.append((document_id, reason))
+        elif linked:
+            outcome.changed.append(document_id)
+        else:
+            outcome.skipped.append((document_id, UNCHANGED))
+    logger.info("Documents changed in bulk action=link by=%s changed=%s skipped=%s", uid, len(outcome.changed),
                 len(outcome.skipped))
     return outcome
 

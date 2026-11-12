@@ -34,7 +34,8 @@ SAVED_ID = Annotated[int, Path(ge=1, le=2**31 - 1)]
 class BulkIn(BaseModel):
     model_config = ConfigDict(extra="forbid")
     ids: list[StrictInt] = Field(min_length=1, max_length=bulk.MAX_BULK)
-    action: Literal["add_tag", "remove_tag", "kind", "move", "trash"]
+    #: `link` sets every pair among 2 to 10 documents to go with each other (`/documents/{id}/related`).
+    action: Literal["add_tag", "remove_tag", "kind", "move", "trash", "link"]
     #: For `add_tag` and `remove_tag`: the tag's name (tags are the vault's own; the name finds them in every vault).
     tag: str | None = Field(default=None, max_length=200)
     #: For `kind`: one of the server's kinds (for every document), or a vault's (only for the documents of that vault).
@@ -59,7 +60,8 @@ class BulkOut(BaseModel):
 
 
 @router.post("/documents/bulk", response_model=BulkOut,
-             summary="Change many documents at once: a tag added or taken away, a kind, another vault, the trash")
+             summary="Change many documents at once: a tag added or taken away, a kind, another vault, the trash, or "
+                     "set them to go with each other")
 def change_many(payload: BulkIn, account: Caller, db: DbSession) -> BulkOut:
     """Every document is checked and changed on its own, as a single change would be, with a line in its history and a
     new change number. Duplicates count once."""

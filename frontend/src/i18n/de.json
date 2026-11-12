@@ -3044,6 +3044,7 @@
     "already": "Schon verknüpft",
     "searchExample": "verknüpft:ja",
     "searchHelp": "gehört zu einem anderen Dokument",
+    "inArchive": "gehört zu einem anderen Dokument",
     "events": {
       "set": "hat es mit {{title}} verknüpft",
       "setOther": "hat es mit einem anderen Dokument verknüpft",
@@ -3121,6 +3122,10 @@
       "unchanged": "war schon so",
       "other": "ging nicht"
     },
-    "whyCount": "{{n}} {{why}}"
+    "whyCount": "{{n}} {{why}}",
+    "link": "Miteinander verknüpfen",
+    "linkHint": "Wähle 2 bis {{most}} Dokumente aus.",
+    "linked": "{{n}} miteinander verknüpft.",
+    "linkedNot": "{{n}} miteinander verknüpft, {{not}} nicht ({{why}})."
   }
 }
