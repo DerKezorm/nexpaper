@@ -127,6 +127,12 @@ def test_on_the_text_of_a_mail_of_a_confirmed_sender_becomes_a_document(mailbox:
         row = db.get(Document, document.id)
         assert row is not None and row.status == "inbox" and row.process_error == "" and row.pages == 1
         assert str(row.date) == "2026-11-03", "the date of the mail, not one from its text"
+        # Proposals made anew (a rule, the AI) with another date in the text leave the mail's date.
+        from app.services import sorting
+
+        sorting.propose(db, row, "Rechnungsdatum: 28.10.2026")
+        db.commit()
+        assert str(row.date) == "2026-11-03"
         created = db.scalar(select(Event).where(Event.document_id == document.id, Event.action == "created"))
         assert created is not None and created.detail == {"mail_text": True, "source": "mail"}
     text = text_of(document.id)
