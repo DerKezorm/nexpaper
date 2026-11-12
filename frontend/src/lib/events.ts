@@ -166,6 +166,9 @@ export function eventWhat(event: DocumentEvent, t: TFunction, context: EventCont
       if (title === null) return t(`related.events.${set ? 'set' : 'unset'}${merged}Other`)
       return t(`related.events.${set ? 'set' : 'unset'}${merged}`, { title: iso(title) })
     }
+    // Protected PDFs (P1): opened with a password a person typed, or by itself with one the owner keeps (never which).
+    case 'pdf_opened':
+      return detail.by === 'kept' ? t('pdfPassword.events.openedKept') : t('pdfPassword.events.opened')
     default:
       return t('docs.events.something')
   }

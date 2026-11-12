@@ -966,3 +966,23 @@ none of it, a link to the outside never.
   `409 too_many_saved`. `PATCH /saved-searches/{id}` `{"name"}`, `POST /saved-searches/{id}/up` and `/down` (answer the
   whole list), `DELETE /saved-searches/{id}`. Another person's entry answers 404 like one that does not exist. They go
   with the account.
+
+## Protected PDFs and kept PDF passwords
+
+- A PDF that needs a password to be opened waits in the inbox with `process_error` `encrypted`. A PDF that only locks
+  printing or changing is read without asking. Every document has `original_protected` (also each version in
+  `GET /documents/{id}/versions`): `password` or `restricted` when the original of its current version is such a PDF,
+  else empty. Then `/versions/{n}/file` is the original as it came (encrypted) and `/versions/{n}/archive` the PDF opened,
+  without the encryption, which the pages, the search, the page tools, links and exports take.
+- `POST /documents/{id}/unlock` `{"password", "remember", "name"}` (password 1 to 512 characters; `name` 1 to 60, needed
+  with `remember`): opens the PDF with the password in the request, within the worker's time limit, and the document is
+  read again from the PDF opened (`status` `processing`). Answer `{"document", "kept"}`, `kept` being `kept`, `known`
+  (the caller keeps this password already) or empty. Needs `edit` on the document, a browser or a device (never an API
+  key). `409 not_protected` when it does not wait for a password, `422 wrong_pdf_password` when the password does not
+  open it (nothing changes), `409 too_many_pdf_passwords` with `remember` at 10 kept, `429 pdf_password_too_often` after
+  5 tries for one document or 20 of the caller within an hour. The history gets `pdf_opened` with `detail.by` `typed`
+  (with the person) or `kept` (opened by itself with a password the owner keeps, never which one).
+- `GET /pdf-passwords`: the caller's kept passwords, `[{"id", "name", "created_at", "last_matched_at", "readable"}]`,
+  never a password; `readable` false when the server's secret changed since (it is lost). `PATCH /pdf-passwords/{id}`
+  `{"name"}`, `DELETE /pdf-passwords/{id}`. Another person's entry answers 404 like one that does not exist, for the
+  operator too. A browser or a device; they go with the account.

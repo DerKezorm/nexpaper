@@ -225,8 +225,8 @@ A backup is one ZIP file with the **database, the settings and `secret.key`**, m
 backup function, never as a file copy). It holds **no documents**: they lie as plain files in `/data/dokumente` and belong
 in the backup your server makes anyway (Hyper Backup, restic, snapshots). It holds **no search index** either: that is
 the largest part of the database, and it is built anew from the recognised text after a restore (the search works while
-that goes on, with more and more hits). Together with `secret.key` it opens the mail and AI credentials and the addresses
-of open links, so keep backups protected.
+that goes on, with more and more hits). Together with `secret.key` it opens the mail and AI credentials, the addresses
+of open links and the kept PDF passwords, so keep backups protected.
 
 Settings, Backups: automatic daily or weekly with a number to keep, "Back up now", upload, download, check and restore.
 The **trial run** ("Check", and again in the dialog before a restore) starts the database of the archive the way the
@@ -405,6 +405,18 @@ itself: it all waits in an inbox.
   start takes only the unread mails. TLS or STARTTLS is required (without it only for a server on the same machine), a
   server in your own network must be allowed first, and switched off nothing connects. A stranger who knows the address
   can send files into an inbox: nexpaper limits how much per run and day, see [SECURITY.md](SECURITY.md).
+
+## Protected PDFs
+
+A PDF that needs a password waits in the inbox with a field for it. Type the password and "Open": the original stays as
+it came (protected, with its checksum), and nexpaper keeps an opened copy **without the password** beside it, as the
+searchable copy. The view, the search, the page tools, links and exports use that copy; "Download: original" gives the
+protected file and says so. A PDF that only locks printing or changes is opened without asking.
+
+Tick "Remember for future documents" and give it a name ("Payslip"): protected PDFs that come into your inbox later are
+opened with it by themselves. Up to 10 per person, stored encrypted with the server's secret and never shown again; My
+account, Upload lists them by name to rename or delete. Nobody else's are ever tried, and the operator sees none of
+them. A backup together with `secret.key` can open them, see [SECURITY.md](SECURITY.md).
 
 ## From Paperless, and for the tax adviser
 

@@ -22,6 +22,10 @@ Input: one JSON object on standard input. Output: one JSON object on the last li
 * ``{"op": "assemble", ...}``: new PDFs made of pages of others (the page tools: turn, delete, put in another order,
   join, split), with pikepdf; each new PDF gets its preview, its small pages and its fingerprint (``assemble``).
 * ``{"op": "blanks", ...}``: how much ink each page carries, to find the empty sheets put between letters (``blanks``).
+* ``{"op": "unlock", ...}``: a PDF protected by a password, opened with the password a person typed and written without
+  its encryption beside the original (``unlock``). ``process`` does the same for a PDF that only locks printing or
+  changing, and with the passwords a person keeps (``passwords``). Passwords come only on standard input, in the
+  request; the answer says only whether one opened the file and which (its number), never the password.
 """
 
 from __future__ import annotations
@@ -274,6 +278,103 @@ def _open_pdf(path: Path) -> Any:
         raise Refused("broken") from exc
 
 
+# --- Protected PDFs ---------------------------------------------------------------------------------------------------
+
+#: The most passwords one run tries (a person keeps at most 10, one is typed).
+MAX_PASSWORDS = 10
+#: The longest password looked at, in characters (the API takes no longer one).
+MAX_PASSWORD_CHARS = 512
+
+
+def _spellings(password: str) -> list[str | bytes]:
+    """The ways a password may stand in a PDF: as typed (UTF-8, what the newest encryption uses), in the PDF's own
+    encoding and in the encodings of older programs (the older encryption takes bytes, and programs wrote umlauts and
+    the euro sign differently), and cut to the 127 bytes the newest encryption reads at most. Each once."""
+    found: list[str | bytes] = [password]
+    for codec in ("pdfdoc", "cp1252", "latin-1"):
+        try:
+            found.append(password.encode(codec))
+        except (UnicodeEncodeError, LookupError):
+            continue
+    found.append(password.encode("utf-8")[:127])
+    unique: list[str | bytes] = []
+    for spelling in found:
+        if spelling not in unique:
+            unique.append(spelling)
+    return unique
+
+
+def _unlock(source: Path, passwords: list[str], out: Path) -> int | None:
+    """A PDF that is encrypted is written again without its encryption to ``out`` (pikepdf, the content as it is), so
+    that everything after (the pages, the text, the page tools) reads it like any PDF. Returns ``None`` for a PDF that
+    is not encrypted (nothing is written), ``0`` for one that opens without a password (only printing or changing it is
+    locked), else the number of the password that opened it (counted from 1). ``Refused("encrypted")`` when none does.
+    The passwords never leave this function: not in the answer, not on the error stream, not in a file name."""
+    import pikepdf
+
+    tried = [str(password)[:MAX_PASSWORD_CHARS] for password in passwords[:MAX_PASSWORDS]]
+    pdf = None
+    opened_by = 0
+    try:
+        pdf = pikepdf.open(str(source))
+    except pikepdf.PasswordError:
+        for number, password in enumerate(tried, start=1):
+            for spelling in _spellings(password):
+                try:
+                    pdf = pikepdf.open(str(source), password=spelling)
+                except MemoryError:
+                    raise
+                except Exception:  # noqa: BLE001, S112 - a wrong password, or a spelling the file cannot take
+                    continue
+                opened_by = number
+                break
+            if pdf is not None:
+                break
+        if pdf is None:
+            raise Refused("encrypted") from None
+    except MemoryError:
+        raise
+    except Exception:  # noqa: BLE001 - a file pikepdf cannot read is left to the reader, which says why
+        return None
+    finally:
+        tried.clear()
+    try:
+        if not pdf.is_encrypted:
+            return None
+        out.parent.mkdir(parents=True, exist_ok=True)
+        partial = _partial(out)
+        try:
+            pdf.save(str(partial), encryption=False)
+            os.replace(partial, out)
+        except BaseException:
+            with contextlib.suppress(OSError):
+                partial.unlink()
+            raise
+    except (Refused, MemoryError):
+        raise
+    except Exception as exc:
+        raise Refused("broken") from exc
+    finally:
+        pdf.close()
+    return opened_by
+
+
+def unlock(request: dict[str, Any]) -> dict[str, Any]:
+    """A protected PDF opened with the passwords given (a person typed one): written without its encryption to
+    ``out``. Answer: ``{"ok": true, "unlocked": n}`` (``n`` as ``_unlock`` says; left out when the PDF is not encrypted)
+    or ``{"ok": false, "error": "encrypted"}`` when no password opens it. The pages are not read here: the document is
+    read afterwards like any other, from the copy."""
+    passwords = request.pop("passwords", None) or []
+    try:
+        opened = _unlock(Path(request["source"]), list(passwords), Path(request["out"]))
+    finally:
+        passwords.clear()
+    answer: dict[str, Any] = {"ok": True}
+    if opened is not None:
+        answer["unlocked"] = opened
+    return answer
+
+
 def process(request: dict[str, Any]) -> dict[str, Any]:
     source = Path(request["source"])
     kind = request["kind"]
@@ -283,13 +384,27 @@ def process(request: dict[str, Any]) -> dict[str, Any]:
     derived = False
     pdf_path = source
     invoice: dict[str, Any] = {}
+    unlocked: int | None = None
     if kind == "xml":
         # An e-invoice that is XML only: its fields, and a readable copy set from them, read like a PDF from here on.
         invoice = _xml_invoice(source, Path(request["archive_out"]), str(request.get("language") or "de"))
         pdf_path = Path(request["archive_out"])
         derived = True
     elif kind == "pdf":
-        invoice = _embedded_invoice(source)
+        opened_out = request.get("opened_out")
+        if opened_out:
+            # An encrypted PDF is read from a copy without its encryption, beside the original (which stays as it came):
+            # one that only locks printing or changing at once, one that needs a password with the passwords the
+            # person keeps (given only when the first run said it needs one).
+            passwords = request.pop("passwords", None) or []
+            try:
+                unlocked = _unlock(source, list(passwords), Path(opened_out))
+            finally:
+                passwords.clear()
+            if unlocked is not None:
+                pdf_path = Path(opened_out)
+                derived = True
+        invoice = _embedded_invoice(pdf_path)
     if kind not in ("pdf", "xml"):
         archive_out = Path(request["archive_out"])
         try:
@@ -329,6 +444,8 @@ def process(request: dict[str, Any]) -> dict[str, Any]:
     answer: dict[str, Any] = {"ok": True, "pages": pages, "phash": phash, "derived": derived}
     if invoice:
         answer["einvoice"] = invoice
+    if unlocked is not None:
+        answer["unlocked"] = unlocked
     return answer
 
 
@@ -875,7 +992,7 @@ def main() -> int:
         _limit_memory(int(request.get("memory_mb") or 0))
         op = request.get("op")
         operations = {"process": process, "render": render, "render_pages": render_pages, "recognize": recognize,
-                      "assemble": assemble, "blanks": blanks}
+                      "assemble": assemble, "blanks": blanks, "unlock": unlock}
         result = operations[op](request) if op in operations else {"ok": False, "error": "failed"}
     except Refused as exc:
         result = {"ok": False, "error": exc.code, "retry": False}

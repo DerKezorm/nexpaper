@@ -44,6 +44,7 @@ import { NewKindButton, NewKindForm } from '../components/NewKind'
 import { PagePicture } from '../components/PagePicture'
 import { PdfView } from '../components/PdfView'
 import { RelatedHint } from '../components/Related'
+import { UnlockPdf } from '../components/UnlockPdf'
 import { useConfirm } from '../components/useConfirm'
 import { VaultFilter } from '../components/VaultFilter'
 import { VaultIcon } from '../components/VaultIcon'
@@ -887,7 +888,12 @@ function Detail({ document: d, next, slots, search, onChanged }: { document: Doc
               <p className={`flex items-center gap-2 font-semibold ${unreadable ? 'text-bad' : 'text-warn'}`}>
                 <AlertTriangle size={15} aria-hidden /> {t(`docs.inbox.error.${d.process_error}`, { defaultValue: t('docs.inbox.error.failed') })}
               </p>
-              <p className="mt-1 text-ink-2">{t(unreadable ? 'docs.inbox.errorUnreadable' : 'docs.inbox.errorText')}</p>
+              <p className="mt-1 text-ink-2">{t(d.process_error === 'encrypted' ? 'pdfPassword.waits' : unreadable ? 'docs.inbox.errorUnreadable' : 'docs.inbox.errorText')}</p>
+              {d.process_error === 'encrypted' && d.my_right !== 'read' && (
+                <div className="mt-3 rounded-xl bg-sheet p-3">
+                  <UnlockPdf documentId={d.id} onOpened={() => onChanged()} />
+                </div>
+              )}
               <div className="mt-3">
                 <Button size="sm" variant="line" onClick={() => void retry()} disabled={busy}>
                   <RotateCcw size={14} aria-hidden /> {t('docs.inbox.retry')}

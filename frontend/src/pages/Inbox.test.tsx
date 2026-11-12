@@ -251,6 +251,8 @@ describe('the inbox', () => {
     server.answers['POST /api/v1/documents/11/retry'] = { ...heating, status: 'processing' }
     await show('/eingang/11')
     expect(page.text).toContain('Das PDF ist mit einem Passwort geschützt')
+    // P1: the field for the password stands at the card, for who may change the document.
+    expect(page.box.querySelector('[data-testid="unlock-pdf"]')).toBeTruthy()
     await page.click(page.button('Erneut versuchen'))
     expect(server.called('POST', '/api/v1/documents/11/retry')).toBeTruthy()
   })

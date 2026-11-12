@@ -142,6 +142,10 @@ class DocumentOut(BaseModel):
     #: Something the caller can see goes with it (``GET /documents/{id}/related``); never counts what they cannot see,
     #: and false while it or the other one is in the trash.
     has_related: bool = False
+    #: The original of its current version is an encrypted PDF (P1): ``password`` (it needs one to be opened) or
+    #: ``restricted`` (it opens without one, only printing or changing it is locked); empty else. The view, links,
+    #: exports and the page tools take the PDF opened (``/archive``); ``/file`` is the original as it came.
+    original_protected: Literal["", "password", "restricted"] = ""
 
 
 def _suggest(value: object) -> dict[str, str]:
@@ -194,4 +198,5 @@ def document_out(row: Row) -> DocumentOut:
         einvoice=row.einvoice, files_state=document.files_state,  # type: ignore[arg-type]
         auto_trash_due=row.auto_trash_due, auto_trashed=row.auto_trashed,
         has_related=row.has_related,
+        original_protected=row.original_protected,  # type: ignore[arg-type]
     )

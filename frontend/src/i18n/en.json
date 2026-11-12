@@ -847,7 +847,15 @@
     "nothing_to_keep": "There is no search and no filter here to save.",
     "invalid_saved_search": "This search cannot be saved.",
     "invalid_action": "There is no such action.",
-    "too_many": "Too many at once."
+    "too_many": "Too many at once.",
+    "wrong_pdf_password": "This password does not open the PDF. The document stays as it was.",
+    "pdf_password_too_often": "Too many tries for this PDF. Try again in an hour.",
+    "too_many_pdf_passwords": "You already remember {{max}} passwords. Delete one under My account, Upload.",
+    "not_protected": "This document no longer waits for a password.",
+    "invalid_pdf_password": "The password may have 1 to {{max}} characters.",
+    "invalid_pdf_password_name": "The name may have 1 to {{max}} characters, without control characters.",
+    "pdf_broken": "The PDF cannot be read.",
+    "pdf_too_large": "The PDF is too large."
   },
   "ready": {
     "title": "Ready for the internet?",
@@ -3127,5 +3135,42 @@
     "linkHint": "Choose 2 to {{most}} documents.",
     "linked": "{{n}} connected with each other.",
     "linkedNot": "{{n}} connected with each other, {{not}} not ({{why}})."
+  },
+  "pdfPassword": {
+    "label": "Password",
+    "open": "Open",
+    "remember": "Remember for future documents",
+    "nameLabel": "Name for the remembered password",
+    "namePlaceholder": "for example Payslip",
+    "nameMissing": "Give the password a name, so you can find it again later.",
+    "rememberHint": "nexpaper tries it on protected PDFs that come into your inbox. It is stored encrypted and never shown again.",
+    "openedCopy": "To read it, nexpaper keeps an opened copy without the password on the server. The original stays as it came.",
+    "waits": "Enter the password, then nexpaper reads the document.",
+    "waitsReadOnly": "Whoever may edit the document can open it with the password.",
+    "opened": "Opened. nexpaper is reading the document now.",
+    "mark": "Original with password",
+    "markHint": "The original is protected by a password. The view, the search and the tools use the opened copy.",
+    "markRestricted": "Original locked",
+    "markRestrictedHint": "The original is locked against printing or changes. The view, the search and the tools use the opened copy.",
+    "originalHint": "protected by a password, as it came; opening it needs the password",
+    "originalRestrictedHint": "locked against printing or changes, as it came",
+    "listTitle": "Remembered PDF passwords",
+    "listText": "nexpaper tries them on protected PDFs that come into your inbox. Only you see this list.",
+    "listEmpty": "None yet. When you open a protected PDF, you can have its password remembered.",
+    "listNote": "A password is never shown again. It is stored encrypted with the server key; a backup together with secret.key opens it.",
+    "keptOn": "remembered on {{day}}",
+    "lastFitted": "last fitted on {{day}}",
+    "neverFitted": "has not fitted yet",
+    "lost": "No longer readable, because the server key changed. Delete it and remember it again with the next PDF.",
+    "renameNamed": "Rename {{name}}",
+    "saveName": "Save name",
+    "deleteNamed": "Delete {{name}}",
+    "deleteTitle": "Delete remembered password?",
+    "deleteText": "“{{name}}” is deleted and cannot be brought back. Documents already opened stay as they are.",
+    "deleteConfirm": "Delete",
+    "events": {
+      "opened": "opened the PDF with the password",
+      "openedKept": "opened the PDF with a remembered password"
+    }
   }
 }

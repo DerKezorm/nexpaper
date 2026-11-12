@@ -221,8 +221,50 @@ def read_file(db: Session, document: Document, version: Version, run: Run) -> Ou
         request["archive_out"] = str(run.work)
     if kind == filetypes.XML:
         request["language"] = _language_of(db, document)
+    if kind == filetypes.PDF:
+        opened = _opened_copy(version)
+        if opened is not None:
+            # A protected PDF a person opened with its password: read from the copy without its encryption, which is
+            # its searchable copy already (``services/pdf_passwords.py``); the steps after this one read it too.
+            request["source"] = str(opened)
+            run.source = opened
+        else:
+            # An encrypted PDF comes out as a copy without its encryption there (``derived``), when it opens.
+            request["opened_out"] = str(run.work)
+    owner_id = document.owner_id
     db.rollback()  # the worker may take long: no read transaction stays open meanwhile
-    return spawn(request, current.timeout_seconds)
+    outcome = spawn(request, current.timeout_seconds)
+    if outcome.ok or outcome.error != "encrypted" or "opened_out" not in request:
+        return outcome
+    # It needs a password: once more with the passwords the owner keeps, if there are any (never anybody else's).
+    from . import pdf_passwords
+
+    kept = pdf_passwords.for_owner(db, owner_id)
+    db.rollback()
+    if not kept:
+        return outcome
+    request["passwords"] = [password for _id, password in kept]
+    try:
+        outcome = spawn(request, current.timeout_seconds)
+    finally:
+        request["passwords"].clear()
+        request.pop("passwords", None)
+    number = outcome.data.get("unlocked") if outcome.ok else None
+    if isinstance(number, int) and 1 <= number <= len(kept):
+        outcome.data["kept_password"] = kept[number - 1][0]
+    kept.clear()
+    return outcome
+
+
+def _opened_copy(version: Version) -> Path | None:
+    """The copy without encryption of a protected original a person opened, when it is there."""
+    if version.original_protected != "password" or not version.archive_path:
+        return None
+    try:
+        path = storage.safe_path(version.archive_path)
+    except storage.StorageError:
+        return None
+    return path if path.is_file() else None
 
 
 _told_unavailable = False
@@ -387,6 +429,7 @@ def _finish(db: Session, document_id: int, version_n: int, work: Run) -> None:
         document.pages = count
         version.pages = count
         version.phash = str(data.get("phash") or "")
+        _note_protected(db, document, version, data)
         texts = data.get("texts")
         detail: dict[str, Any] = {"pages": count}
         if isinstance(texts, list):
@@ -426,6 +469,22 @@ def _finish(db: Session, document_id: int, version_n: int, work: Run) -> None:
         work.clean()
         raise
     work.clean()
+
+
+def _note_protected(db: Session, document: Document, version: Version, data: dict[str, Any]) -> None:
+    """In the caller's transaction: the worker read an encrypted PDF from a copy without its encryption (``unlocked``):
+    the version is marked, and when a password the owner keeps opened it, the history says so (never which one) and the
+    entry notes when it last fitted."""
+    unlocked = data.get("unlocked")
+    if not isinstance(unlocked, int) or isinstance(unlocked, bool):
+        return
+    from . import pdf_passwords
+
+    version.original_protected = pdf_passwords.PASSWORD if unlocked >= 1 else pdf_passwords.RESTRICTED
+    entry = data.get("kept_password")
+    if unlocked >= 1 and isinstance(entry, int):
+        pdf_passwords.matched(db, entry, document.owner_id)
+        changes.record(db, document.id, pdf_passwords.OPENED, detail={"by": "kept"})
 
 
 def _twin(db: Session, document_id: int, data: dict[str, Any]) -> int | None:
@@ -472,7 +531,9 @@ def read_text(db: Session, document_id: int, attempt: int) -> None:
         db.rollback()
         return
     try:
-        source = storage.safe_path(version.archive_path if kind != filetypes.PDF else version.original_path)
+        # A protected PDF is read from its copy without the encryption.
+        readable = kind != filetypes.PDF or (version.original_protected and version.archive_path)
+        source = storage.safe_path(version.archive_path if readable else version.original_path)
     except storage.StorageError:
         db.rollback()
         return

@@ -26,8 +26,9 @@ when the operator deletes an account, they choose where the documents of its per
 themselves or a vault they are in; the dialog says so, and the history of every document notes the takeover and who
 did it.
 
-A backup holds the server's secret (`secret.key`) together with the database: with both, the mail and AI credentials
-and the addresses of open links can be read. Keep backups as protected as the data folder.
+A backup holds the server's secret (`secret.key`) together with the database: with both, the mail and AI credentials,
+the addresses of open links and the PDF passwords people chose to keep can be read. Keep backups as protected as the
+data folder.
 
 ## Inputs: the intake folder and the mailbox
 
@@ -188,6 +189,32 @@ inside the server process.
 Whether a person already has a file is decided only from the documents they may see; nothing in an answer, its timing
 or an error tells them that somebody else keeps the same file in a vault they cannot look into.
 
+
+## Protected PDFs and kept PDF passwords
+
+A PDF that needs a password to be opened waits in the inbox. Whoever may change the document types the password at its
+card. It goes in the body of that one request to the worker process, on its standard input: never as an argument of the
+process, never in its environment, never in a file, never in the table of jobs (the run is made within the request and
+its time limit). The worker answers only whether it opened the PDF and with which of the passwords it was given, by
+number. A wrong password changes nothing; every try counts against a brake of 5 per document and 20 per person in an
+hour. No log line, answer, error message or history line names a password.
+
+**The PDF opened lies unencrypted on the disk.** That is the point: it is the searchable copy beside the original
+(`... (searchable).pdf`), which the view, the search, the page tools, links and exports take. The original stays as it
+came, password and checksum and all ("Download: original" says so). Protecting the disk is the operator's business, as
+for every other document; the interface says it in one sentence when a PDF is opened. A PDF that only locks printing or
+changing (it opens without a password) is read the same way without asking.
+
+**Keeping a password** happens only when the person ticks "Remember for future documents" and gives it a name. It is
+stored sealed with the server's secret (AES-256-GCM with a key from `secret.key`, bound to the person), at most 10 per
+person, and never shown again, not even to that person: the list under My account, Upload shows names and dates, and an
+entry can be renamed or deleted. When a protected PDF comes into somebody's inbox (browser, phone, intake folder,
+mailbox, import), the worker gets that owner's passwords for one more run, and never anybody else's; the operator sees,
+uses and counts nobody's entries. The history then says that a kept password opened it, never which one. Deleting an
+account deletes its entries. A new `secret.key` makes them unreadable (the list says so); **a backup together with
+`secret.key` opens them**, so keep backups protected. While the server runs, a kept password is unsealed in its memory
+for the run that needs it and passed to the worker on its standard input; Python gives no way to wipe a string, so it
+stays in the memory of the two processes until it is overwritten.
 
 ## Reminders of deadlines
 

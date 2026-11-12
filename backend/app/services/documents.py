@@ -125,6 +125,8 @@ class Row:
     auto_trashed: bool = False
     #: Something the caller can see goes with it (``services/related.py``).
     has_related: bool = False
+    #: The original of its current version is an encrypted PDF (``password`` or ``restricted``), else empty.
+    original_protected: str = ""
 
 
 def rows(db: Session, uid: int, documents: list[Document]) -> list[Row]:
@@ -188,6 +190,10 @@ def rows(db: Session, uid: int, documents: list[Document]) -> list[Row]:
     from . import related
 
     goes_with = related.having(db, uid, [d.id for d in documents if d.status != TRASH])
+    protected = dict(db.execute(
+        select(Version.document_id, Version.original_protected)
+        .join(Document, (Document.id == Version.document_id) & (Document.current_version == Version.n))
+        .where(Version.document_id.in_(ids), Version.original_protected != "")).all())
     out = []
     for document in documents:
         access = accesses[document.id]
@@ -207,6 +213,7 @@ def rows(db: Session, uid: int, documents: list[Document]) -> list[Row]:
             snoozes={r.id: snoozes[r.id] for r in date_rows[document.id] if r.id in snoozes},
             auto_trash_due=document.id in going, auto_trashed=document.id in put_away,
             has_related=document.id in goes_with,
+            original_protected=protected.get(document.id, ""),
         ))
     return out
 

@@ -272,6 +272,12 @@ TOKEN_ROUTES = {
     ("POST", "/api/v1/saved-searches/{saved_id}/up"),
     ("POST", "/api/v1/saved-searches/{saved_id}/down"),
     ("DELETE", "/api/v1/saved-searches/{saved_id}"),
+    # P1: opening a protected PDF with its password (edit on the document), and the own kept PDF passwords (never
+    # through a key: they are the person's alone).
+    ("POST", "/api/v1/documents/{document_id}/unlock"),
+    ("GET", "/api/v1/pdf-passwords"),
+    ("PATCH", "/api/v1/pdf-passwords/{entry_id}"),
+    ("DELETE", "/api/v1/pdf-passwords/{entry_id}"),
 }
 
 #: The routes that only read and that a program with an API key reaches too (as the browser and a device do). A route

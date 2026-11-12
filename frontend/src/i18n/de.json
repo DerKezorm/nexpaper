@@ -847,7 +847,15 @@
     "nothing_to_keep": "Hier gibt es keine Suche und keinen Filter zum Merken.",
     "invalid_saved_search": "Diese Suche lässt sich nicht merken.",
     "invalid_action": "Diese Aktion gibt es nicht.",
-    "too_many": "Zu viele auf einmal."
+    "too_many": "Zu viele auf einmal.",
+    "wrong_pdf_password": "Dieses Passwort öffnet das PDF nicht. Das Dokument bleibt, wie es war.",
+    "pdf_password_too_often": "Zu viele Versuche für dieses PDF. Versuch es in einer Stunde wieder.",
+    "too_many_pdf_passwords": "Du hast schon {{max}} Passwörter gemerkt. Lösch eines unter Mein Konto, Hochladen.",
+    "not_protected": "Dieses Dokument wartet auf kein Passwort mehr.",
+    "invalid_pdf_password": "Das Passwort darf 1 bis {{max}} Zeichen haben.",
+    "invalid_pdf_password_name": "Der Name darf 1 bis {{max}} Zeichen haben, ohne Steuerzeichen.",
+    "pdf_broken": "Das PDF lässt sich nicht lesen.",
+    "pdf_too_large": "Das PDF ist zu groß."
   },
   "ready": {
     "title": "Bereit fürs Internet?",
@@ -3127,5 +3135,42 @@
     "linkHint": "Wähle 2 bis {{most}} Dokumente aus.",
     "linked": "{{n}} miteinander verknüpft.",
     "linkedNot": "{{n}} miteinander verknüpft, {{not}} nicht ({{why}})."
+  },
+  "pdfPassword": {
+    "label": "Passwort",
+    "open": "Öffnen",
+    "remember": "Für künftige Dokumente merken",
+    "nameLabel": "Name für das gemerkte Passwort",
+    "namePlaceholder": "zum Beispiel Gehaltsabrechnung",
+    "nameMissing": "Gib dem Passwort einen Namen, damit du es später wiederfindest.",
+    "rememberHint": "nexpaper probiert es bei geschützten PDFs, die in deinen Eingang kommen. Es wird verschlüsselt gespeichert und nie wieder angezeigt.",
+    "openedCopy": "Zum Lesen legt nexpaper eine geöffnete Fassung ohne Passwort auf dem Server ab. Das Original bleibt, wie es kam.",
+    "waits": "Gib das Passwort ein, dann liest nexpaper das Dokument.",
+    "waitsReadOnly": "Wer das Dokument bearbeiten darf, kann es mit dem Passwort öffnen.",
+    "opened": "Geöffnet. nexpaper liest das Dokument jetzt.",
+    "mark": "Original mit Passwort",
+    "markHint": "Das Original ist mit einem Passwort geschützt. Ansicht, Suche und Werkzeuge nehmen die geöffnete Fassung.",
+    "markRestricted": "Original gesperrt",
+    "markRestrictedHint": "Das Original ist gegen Drucken oder Ändern gesperrt. Ansicht, Suche und Werkzeuge nehmen die geöffnete Fassung.",
+    "originalHint": "mit Passwort geschützt, so wie es kam; zum Öffnen braucht es das Passwort",
+    "originalRestrictedHint": "gegen Drucken oder Ändern gesperrt, so wie es kam",
+    "listTitle": "Gemerkte PDF-Passwörter",
+    "listText": "nexpaper probiert sie bei geschützten PDFs, die in deinen Eingang kommen. Nur du siehst diese Liste.",
+    "listEmpty": "Noch keine. Beim Öffnen eines geschützten PDFs kannst du das Passwort merken lassen.",
+    "listNote": "Ein Passwort wird nie wieder angezeigt. Es liegt verschlüsselt mit dem Server-Schlüssel; eine Sicherung samt secret.key öffnet es.",
+    "keptOn": "gemerkt am {{day}}",
+    "lastFitted": "zuletzt gepasst am {{day}}",
+    "neverFitted": "hat noch nicht gepasst",
+    "lost": "Nicht mehr lesbar, weil sich der Server-Schlüssel geändert hat. Lösche es und merke es dir beim nächsten PDF neu.",
+    "renameNamed": "{{name}} umbenennen",
+    "saveName": "Namen speichern",
+    "deleteNamed": "{{name}} löschen",
+    "deleteTitle": "Gemerktes Passwort löschen?",
+    "deleteText": "„{{name}}“ wird gelöscht und lässt sich nicht zurückholen. Schon geöffnete Dokumente bleiben, wie sie sind.",
+    "deleteConfirm": "Löschen",
+    "events": {
+      "opened": "hat das PDF mit dem Passwort geöffnet",
+      "openedKept": "hat das PDF mit einem gemerkten Passwort geöffnet"
+    }
   }
 }

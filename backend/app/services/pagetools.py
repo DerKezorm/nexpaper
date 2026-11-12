@@ -203,7 +203,10 @@ def check(db: Session, uid: int, document_id: int, base_version: int | None, *, 
 def _pdfs(version: Version) -> tuple[Path | None, Path | None]:
     """The original when it is a PDF, and the searchable copy (or the PDF made from a picture), when they are there."""
     found: list[Path | None] = []
-    for rel, must_be_pdf in ((version.original_path, True), (version.archive_path, False)):
+    # An encrypted original is not taken (it cannot be, or should not be, opened): its copy without the encryption is
+    # what the tools work on, and the new version's file is made of it (``services/pdf_passwords.py``).
+    original = "" if version.original_protected and version.archive_path else version.original_path
+    for rel, must_be_pdf in ((original, True), (version.archive_path, False)):
         path = None
         if rel and (not must_be_pdf or Path(rel).suffix.lower() == ".pdf"):
             try:
@@ -753,6 +756,8 @@ def _restore(db: Session, uid: int, document_id: int, number: int, base_version:
         document = check(db, uid, document_id, base_version).document
         new = _add_version(db, uid, document, made, RESTORED, number, {"pages": old.pages}, text, blanks,
                            dismissed)
+        # The very files of that version: a protected original stays one, with its copy without the encryption.
+        new.original_protected = old.original_protected
         changes.record(db, document.id, VERSION_RESTORED, user_id=uid, detail={"version": new.n, "from": number})
         _after(db, document, text is None)
         return new
@@ -924,6 +929,7 @@ def _finish_version_locked(db: Session, version_id: int, work: Any) -> None:
             version.archive_path = target
         version.pages = count
         version.phash = str(data.get("phash") or "")
+        processing._note_protected(db, document, version, data)
         texts = data.get("texts")
         if isinstance(texts, list):
             processing._keep_text(db, version, texts, int(data.get("ocr_pages") or 0), str(data.get("languages") or ""))
