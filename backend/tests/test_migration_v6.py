@@ -57,6 +57,8 @@ def test_documents_read_before_get_a_job_that_reads_their_text(scratch: Path) ->
     database.init_db()
     assert version_of(scratch) == database.SCHEMA_VERSION
     with closing(sqlite3.connect(scratch)) as connection:
-        jobs = connection.execute("SELECT kind, ref, state, attempts FROM jobs ORDER BY id").fetchall()
+        # The later steps queue jobs of their own (schema 15, the numbers): only those of this step are looked at.
+        jobs = connection.execute("SELECT kind, ref, state, attempts FROM jobs WHERE kind != 'numbers' ORDER BY id"
+                                  ).fetchall()
     assert jobs == [("index", 0, "queued", 0), ("text", 1, "queued", 0), ("text", 2, "queued", 0),
                     ("text", 5, "queued", 0), ("text", 6, "queued", 0), ("text", 7, "queued", 0)]

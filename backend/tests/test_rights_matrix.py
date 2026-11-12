@@ -201,7 +201,9 @@ class World:
 def fill(template: str, ids: dict[str, int]) -> str:
     out = template.replace("{x}", "1").replace("{g}", "1").replace("{w}", "due")
     for key in ("d", "v", "n", "l", "u", "s", "t", "k", "o"):
-        out = out.replace("{" + key + "}", str(ids[key]))
+        # ``o`` (the second document, N1) only where the caller has one (``test_rights_uploads.py`` has none).
+        if key in ids:
+            out = out.replace("{" + key + "}", str(ids[key]))
     return out
 
 

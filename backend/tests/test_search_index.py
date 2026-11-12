@@ -242,7 +242,8 @@ def test_a_database_without_the_index_gets_it_at_the_next_start(scratch: Path) -
     try:
         with Session(engine) as db:
             # The step queued the job of the index, and the reading of the text of the PDF (not of the XML).
-            queued = db.execute(select(Job.kind, Job.ref).where(Job.state == "queued").order_by(Job.id)).all()
+            queued = db.execute(select(Job.kind, Job.ref).where(Job.state == "queued", Job.kind != "numbers")
+                                 .order_by(Job.id)).all()
             assert [tuple(row) for row in queued] == [("index", 0), ("text", 1)]
             assert search_index.stale_ids(db, 10) == [1, 2]
             assert search_index.run_job(db) == 2
@@ -255,7 +256,8 @@ def test_a_database_without_the_index_gets_it_at_the_next_start(scratch: Path) -
             assert set(db.scalars(text("SELECT rowid FROM doc_fts WHERE doc_fts MATCH '{scope} : \"v1v\"'"))) == {1, 2}
             # A second start finds nothing to do.
             search_index.queue_if_stale(db)
-            assert db.scalars(select(Job.kind).where(Job.state == "queued")).all() == ["index", "text"]
+            assert db.scalars(select(Job.kind).where(Job.state == "queued", Job.kind != "numbers")).all() == ["index",
+                                                                                                    "text"]
     finally:
         engine.dispose()
 
