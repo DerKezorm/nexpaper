@@ -902,3 +902,38 @@ its time is over, unless a kind has the switch below.
   as `not_found`.
 - `GET /order/kinds` gives `keep_years` and `keep_new_only` with each kind; the CSV of an export has a column
   "Aufbewahren bis" / "Keep until".
+
+## Documents that go with each other
+
+"Gehört zu" in German, "Goes with" in English: two documents belong together (an invoice and its delivery note), both
+ways, without a kind, without chains (A with B and B with C does not show C at A). Under `related`, because
+`/documents/{id}/links` are the links to the outside. A program with a key of scope `read` reads, an `upload` key reaches
+none of it, a link to the outside never.
+
+- `GET /documents/{id}/related`: the documents that go with it, only those the caller may see themselves, none in the
+  trash (and nothing while the document itself is in the trash): `[{"id", "title", "kind", "sender", "date", "status",
+  "can_unlink", "linked_at"}]`. What the caller may not see leaves no trace, not even a number. `can_unlink`: the caller
+  may change both.
+- `PUT /documents/{id}/related/{other_id}`: they go with each other. Needs `edit` on both (through the vault or a share),
+  also across vaults; a document the caller may not see answers 404, one they may only read 403, `422 invalid_related`
+  for a document with itself, `409 in_trash` when one is in the trash. Setting a pair twice is no error. Both documents
+  get a line in their history (`related_set`, `detail.document` the other one's id) and a new `change_seq`. Answers
+  the list as `GET .../related`.
+- `DELETE /documents/{id}/related/{other_id}`: not any more (`related_unset`); the same rights; a pair that is not there is
+  no error. Nothing is deleted.
+- `GET /documents/{id}/related/suggestions`: proposals, at most 5, only for a caller who may change the document (an empty
+  list else): other documents the caller may change that carry the same invoice, order or delivery note number, read
+  from the text or the e-invoice, `[{"id", "title", "kind", "sender", "date", "status", "via"}]` with `via` `invoice`,
+  `order` or `delivery`. Never by the customer number or the IBAN; a number counts with at least 5 characters and a digit,
+  and not when more than 10 documents the caller sees carry it; two documents whose senders are both known and differ
+  are not proposed; a pair turned down or set is not proposed again.
+- `POST /documents/{id}/related/{other_id}/dismiss`: the proposal is turned down for good, for everybody (`edit` on
+  both); answers the proposals left. Changes nothing at the documents.
+- Every document in an answer (`GET /documents/{id}`, the lists, the search, the inbox) has `has_related`: something the
+  caller can see goes with it, neither of the two in the trash. `GET /inbox` has `related`: per document id of `items`
+  (as text) up to three proposals, only for documents that have one.
+- The search knows `verknüpft:ja` / `linked:yes` and `verknüpft:nein` / `linked:no`, counting only what the caller may
+  see.
+- In the history, the other document of `related_set` and `related_unset` is named only for a caller who may see it:
+  `detail.title`; for anybody else `detail.document` is `null`. Joining documents gives the one that stays the pairs of
+  the ones joined into it (`detail.by` = `merge`); splitting leaves them with the document split.

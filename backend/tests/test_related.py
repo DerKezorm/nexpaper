@@ -253,26 +253,30 @@ def test_what_the_caller_may_not_see_leaves_no_trace_anywhere(world: dict[str, A
     """jule sets a pair between a household document and her own; tom sees the household only. Everything tom asks
     about answers exactly as if the pair did not exist."""
     tom = world["tom"]
-    h1, private = world["h1"], world["private"]
+    h1, h2, private = world["h1"], world["h2"], world["private"]
+    # One hidden document older than the household's (the smaller number of the pair), one younger (the larger).
+    later = paper(own_vault(jule), jule, "Später privat")
 
     def what_tom_sees() -> dict[str, Any]:
         with new_client(tom) as browser:
-            document = browser.get(f"/api/v1/documents/{h1}").json()
             return {
-                "list": browser.get(f"/api/v1/documents/{h1}/related").json(),
-                "has": document["has_related"],
+                "lists": [browser.get(f"/api/v1/documents/{d}/related").json() for d in (h1, h2)],
+                "has": [browser.get(f"/api/v1/documents/{d}").json()["has_related"] for d in (h1, h2)],
                 "listing": [d["has_related"] for d in browser.get("/api/v1/documents").json()["items"]],
                 "search_yes": browser.get("/api/v1/search", params={"q": "verknüpft:ja"}).json()["total"],
                 "search_no": browser.get("/api/v1/search", params={"q": "linked:no"}).json()["total"],
-                "proposals": browser.get(f"/api/v1/documents/{h1}/related/suggestions").json(),
+                "proposals": [browser.get(f"/api/v1/documents/{d}/related/suggestions").json() for d in (h1, h2)],
             }
 
     before = what_tom_sees()
     with new_client(jule) as browser:
         assert browser.put(f"/api/v1/documents/{h1}/related/{private}").status_code == 200
+        assert browser.put(f"/api/v1/documents/{h2}/related/{later}").status_code == 200
         assert browser.get(f"/api/v1/documents/{h1}").json()["has_related"] is True
+        assert browser.get(f"/api/v1/documents/{h2}").json()["has_related"] is True
+    assert private < h1 and h2 < later
     assert what_tom_sees() == before
-    assert before["list"] == [] and before["has"] is False
+    assert before["lists"] == [[], []] and before["has"] == [False, False] and before["search_yes"] == 0
     # The history of the household document: a line tom may see, without the number or the title of the other.
     with new_client(tom) as browser:
         lines = [e for e in browser.get(f"/api/v1/documents/{h1}/events").json() if e["action"] == related.SET]

@@ -29,7 +29,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 
 from fastapi import HTTPException
-from sqlalchemy import ColumnElement, and_, delete, exists, func, not_, or_, select
+from sqlalchemy import ColumnElement, and_, delete, func, not_, or_, select
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 from sqlalchemy.orm import Session, aliased
 
@@ -122,24 +122,22 @@ def having(db: Session, uid: int, document_ids: list[int]) -> set[int]:
     the trash, the others neither): two queries for a whole page."""
     if not document_ids:
         return set()
-    other = aliased(Document)
-    seen = _visible(uid, other)
-    low = select(Related.low_id).join(other, other.id == Related.high_id).where(
-        Related.low_id.in_(document_ids), other.status != TRASH, seen)
-    high = select(Related.high_id).join(other, other.id == Related.low_id).where(
-        Related.high_id.in_(document_ids), other.status != TRASH, seen)
-    found = set(db.scalars(low)) | set(db.scalars(high))
-    if not found:
-        return found
-    trashed = set(db.scalars(select(Document.id).where(Document.id.in_(found), Document.status == TRASH)))
-    return found - trashed
+    # The pairs of the page first (by the indexes of the pairs), then which of the other sides the caller may see, by
+    # their ids: asking the rights of every document in a join made SQLite walk all of them (1.7 s at 200,000).
+    partners = {d: found for d, found in _others(db, document_ids).items() if found}
+    if not partners:
+        return set()
+    every = sorted(set().union(*partners.values()) | set(partners))
+    seen = set(db.scalars(select(Document.id).where(Document.id.in_(every), Document.status != TRASH,
+                                                    rights.visible_clause(uid))))
+    return {d for d, found in partners.items() if d in seen and found & seen}
 
 
 def _visible(uid: int, document: type[Document] | object) -> ColumnElement[bool]:
     """``rights.visible_clause`` for an alias of ``Document``."""
     table = document
     return or_(
-        table.vault_id.in_(rights.member_vault_ids(uid)),  # type: ignore[attr-defined]
+        (table.vault_id + 0).in_(rights.member_vault_ids(uid)),  # type: ignore[attr-defined]
         table.id.in_(select(Share.document_id).where(Share.user_id == uid)),  # type: ignore[attr-defined]
     )
 
@@ -149,9 +147,12 @@ def search_clause(uid: int, wanted: bool) -> ColumnElement[bool]:
     going with it that the caller can see, outside the trash (as ``having``)."""
     other = aliased(Document)
     seen = _visible(uid, other)
-    low = exists().where(Related.low_id == Document.id, other.id == Related.high_id, other.status != TRASH, seen)
-    high = exists().where(Related.high_id == Document.id, other.id == Related.low_id, other.status != TRASH, seen)
-    has = and_(Document.status != TRASH, or_(low, high))
+    # Two lists made once (not asked again for every document of the search), walking the pairs and finding the other
+    # side by its id: the vault is compared on the row (``+ 0``), so that SQLite does not walk the documents vault by
+    # vault (as ``search.visible`` does).
+    lows = select(Related.low_id).join(other, other.id == Related.high_id).where(other.status != TRASH, seen)
+    highs = select(Related.high_id).join(other, other.id == Related.low_id).where(other.status != TRASH, seen)
+    has = and_(Document.status != TRASH, or_(Document.id.in_(lows), Document.id.in_(highs)))
     return has if wanted else not_(has)
 
 
