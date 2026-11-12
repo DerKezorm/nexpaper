@@ -34,7 +34,8 @@ among the documents that go with it and that its maker may share by a link of th
 itself, and every document shown this way says so on its own page, where whoever may see its links can take it out.
 
 A link shows the document as it is now; whoever may change it sees that it is open and is asked before changing its
-pages (without learning to whom or until when, which only whoever may share it sees).
+pages (without learning to whom or until when, which only whoever may share it sees, in the document's history
+too).
 
 ## Inputs: the intake folder and the mailbox
 

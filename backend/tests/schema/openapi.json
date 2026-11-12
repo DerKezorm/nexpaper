@@ -1962,6 +1962,11 @@
           "id": {
             "title": "Id",
             "type": "integer"
+          },
+          "via_link": {
+            "default": false,
+            "title": "Via Link",
+            "type": "boolean"
           }
         },
         "required": [

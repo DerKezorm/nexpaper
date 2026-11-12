@@ -3269,6 +3269,11 @@
   "shownOutside": {
     "notice": "Über einen Link nach außen sichtbar. Wer teilen darf, sieht, an wen.",
     "title": "Nach außen sichtbar",
-    "text": "Dieses Dokument ist über einen Link nach außen sichtbar. Was du änderst, ist es dann auch."
+    "text": "Dieses Dokument ist über einen Link nach außen sichtbar. Was du änderst, ist es dann auch.",
+    "events": {
+      "somebody": "Jemand",
+      "opened": "hat es über einen Link geöffnet",
+      "created": "hat einen Link angelegt"
+    }
   }
 }
