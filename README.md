@@ -398,7 +398,11 @@ itself: it all waits in an inbox.
   `abgelehnt/` beside it with the reason. Files in the folder itself or in a subfolder nobody has go to the operator,
   marked unknown. Links are not followed, hidden and temporary files are left alone.
 - **Mailbox**: one IMAP mailbox for the whole server, fetched every 5 minutes. PDF, pictures and e-invoices as XML are
-  taken from the mails, also from forwarded ones; the mails themselves do not become documents. A mail belongs to the
+  taken from the mails, also from forwarded ones; the mails themselves do not become documents, unless you switch on
+  "Take mails without an attachment as a document" (off from the start): then a mail with nothing to take, from a
+  confirmed address of a person or sent to their `paper+<account>@`, becomes a PDF of its text (from, to, subject,
+  date, then the text; HTML is read as text only, nothing in it is loaded) in that person's inbox, titled with the
+  subject. Never for unknown senders, at most 200 KB of text. A mail belongs to the
   person whose confirmed address it comes from (My account, Upload) or who is named in `paper+<account>@`; everything
   else goes to the operator, marked unknown (or stays in the mailbox, if you choose so). Once every part was taken the
   mail is marked read, moved to `nexpaper` or deleted; a mail with parts over the limits stays and is flagged. The first

@@ -56,6 +56,20 @@ a file name over 1 KB). Such a mail is
 skipped for good, said in the log and in the settings, and left in the mailbox. Where fetching stands is written before a
 mail is taken apart, so a mail that brings the server down is tried three times at most, then flagged and left.
 
+**The text of a mail as a document** is off from the start (Settings, Inputs, Mailbox). Switched on, it is taken only
+from a mail that brought nothing nexpaper takes (a mail with a part taken stays as before) and that belongs to a person
+for sure: from a confirmed address of that person or to their `paper+<account>@`, and not marked unknown by the trusted
+server's `dmarc=fail`. A mail that would go to the operator as unknown never gives a document of its text. The plus
+address can be written by anybody who knows it, so a stranger can still put text into that person's inbox, within the
+same amounts per run and day as attachments. The text is read in the mail worker's process with the same limits; HTML is
+read from its markup with Python's `html.parser` only: nothing is rendered, no picture, font, style sheet or frame is
+fetched, `cid:` is never resolved, no script runs. Scripts, styles and the values of form fields are left out, a link
+becomes its text
+and its address in brackets (only `http`, `https` and `mailto`). At most 200 KB of text, control and direction
+characters are taken out; the head fields (from, to, subject, date) are cut to a few hundred characters and made one
+line before they go into the PDF and the title. The PDF is written by nexpaper itself with the two standard fonts, it
+carries no links, scripts or forms. Its text is kept as it was read, it is not recognised again.
+
 "Afterwards" (read, moved, deleted) happens only to a mail whose every part that can be a document was taken. A mail with
 a part over the limits (size, number of parts) stays where it is and is flagged; a part that failed is tried again. A
 mail is deleted only where the server can delete that one mail (UIDPLUS); elsewhere it is moved or marked read, so that
