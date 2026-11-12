@@ -53,7 +53,7 @@ PATTERN_MAX = 120
 TEXT_CHARS = 200_000
 AMOUNT_LIMIT = 10**12
 
-SOURCES = ("upload", "camera", "mail", "folder", "share", "paperless", "api")
+SOURCES = ("upload", "camera", "mail", "folder", "share", "paperless", "api", "request")
 CONDITIONS = {
     "sender": ("is", "contains"),
     "text": ("contains",),

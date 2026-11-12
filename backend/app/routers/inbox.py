@@ -21,7 +21,7 @@ from .schemas import DocumentOut, document_out
 router = APIRouter(prefix="/api/v1", tags=["inbox"])
 
 ID = Annotated[int, Query(ge=1, le=2**31 - 1)]
-Source = Literal["upload", "camera", "mail", "folder", "share", "paperless", "api"]
+Source = Literal["upload", "camera", "mail", "folder", "share", "paperless", "api", "request"]
 
 
 class InboxPage(BaseModel):

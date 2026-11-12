@@ -64,12 +64,14 @@ from .routers import paperless as paperless_router
 from .routers import pins as pins_router
 from .routers import related as related_router
 from .routers import reminders as reminders_router
+from .routers import request_page as request_page_router
 from .routers import search as search_router
 from .routers import settings as settings_router
 from .routers import sorting as sorting_router
 from .routers import storage as storage_router
 from .routers import totp as totp_router
 from .routers import transfer as transfer_router
+from .routers import upload_requests as upload_requests_router
 from .routers import v1 as v1_router
 from .security import HashingBusy, purge_sessions
 from .services import (
@@ -118,6 +120,9 @@ ROUTERS = [
     # K1: the transfer code and pinned documents.
     transfer_router,
     pins_router,
+    # U1: upload requests, the person's side and the stranger's.
+    upload_requests_router,
+    request_page_router,
 ]
 
 

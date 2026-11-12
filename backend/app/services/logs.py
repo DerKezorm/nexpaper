@@ -106,15 +106,16 @@ def _one_line(text: str) -> str:
 
 
 #: A device token or an API key that ended up in a line (pasted into an address by mistake): never in the log.
-_FEED_KEY = re.compile(r"(npd_|npk_|lnk_|lnx_)[A-Za-z0-9_-]+")
+_FEED_KEY = re.compile(r"(npd_|npk_|lnk_|lnx_|upr_)[A-Za-z0-9_-]+")
 #: Tokens that stand in an address without a prefix of their own: invitations, links to set a new password and links
 #: that confirm a mail address (the page ``/mail/<token>`` and the route ``/api/v1/email/confirm/<token>``), and the
 #: links to a document (the page ``/l/<token>`` and the route ``/api/v1/l/<token>``; the token itself starts with
 #: ``lnk_`` and is masked wherever it stands, ``_FEED_KEY``), and the links that confirm a sender address (the page
 #: ``/absender/<token>`` and the route ``/api/v1/mail-senders/confirm/<token>``), and the links to an export (the page
-#: ``/x/<token>`` and the route ``/api/v1/x/<token>``; the token starts with ``lnx_``).
+#: ``/x/<token>`` and the route ``/api/v1/x/<token>``; the token starts with ``lnx_``), and the upload requests (the
+#: page ``/u/<token>`` and the routes ``/api/v1/u/<token>``; the token starts with ``upr_``).
 _PATH_TOKEN = re.compile(
-    r"(/(?:api/(?:v1/)?)?(?:invite|reset|mail|email/confirm|l|absender|mail-senders/confirm|x)/)[A-Za-z0-9_-]{12,}")
+    r"(/(?:api/(?:v1/)?)?(?:invite|reset|mail|email/confirm|l|absender|mail-senders/confirm|x|u)/)[A-Za-z0-9_-]{12,}")
 _QUERY_TOKEN = re.compile(r"([?&](?:access_token|token|key|code|state|code_challenge|code_verifier)=)[^&\s\"']+")
 
 

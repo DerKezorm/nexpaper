@@ -87,6 +87,14 @@ def current(db: Session) -> Limits:
     )
 
 
+def single_limit() -> int:
+    """For the guard in front of an upload request's route (one file a request): the largest file and the envelope."""
+    from ..db import SessionLocal
+
+    with SessionLocal() as db:
+        return current(db).max_file + MB
+
+
 def request_limit() -> int:
     """For the guard in front of the routes: how large the body of the browser's upload may be right now."""
     from ..db import SessionLocal
