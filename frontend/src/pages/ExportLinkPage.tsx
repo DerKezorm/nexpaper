@@ -5,11 +5,12 @@
  */
 import { Clock, Download, FileArchive } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { Trans, useTranslation } from 'react-i18next'
+import { useTranslation } from 'react-i18next'
 import { useParams } from 'react-router-dom'
 
 import { ApiError, exportsApi, type PublicExport } from '../api/client'
 import { LogoMark } from '../components/Logo'
+import { NamedSentence } from '../components/NamedSentence'
 import { formatBytes } from '../lib/bytes'
 import { shortDate } from '../lib/dates'
 import { errorText } from '../lib/errors'
@@ -54,7 +55,7 @@ export function ExportLinkPage() {
         <div className="mx-auto flex max-w-4xl items-center gap-3 px-4 py-3">
           <LogoMark size={28} />
           <p className="flex-1 text-sm text-ink-2">
-            {found && (who ? <Trans i18nKey="exports.page.sharedBy" values={{ name: who }} components={{ name: <span className="font-semibold text-ink" /> }} /> : t('exports.page.sharedByUnknown'))}
+            {found && (who ? <NamedSentence i18nKey="exports.page.sharedBy" name={who} /> : t('exports.page.sharedByUnknown'))}
           </p>
           {found && (
             <span className="hidden items-center gap-1.5 text-xs text-muted sm:flex">

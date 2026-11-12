@@ -497,7 +497,7 @@ const Entry = memo(function Entry({ document: d, on, picked, selecting, search, 
               {vault && <VaultIcon icon={vault.icon} size={11} />}
               <span className="truncate">{shield}</span>
             </span>
-            <span className="truncate">{d.owner ? (d.owner.id === mineId ? t('docs.inbox.from_you') : t('docs.inbox.from_other', { name: personName(d.owner) })) : ''}</span>
+            <span className="truncate">{d.source === 'request' ? t('uploadRequest.fromRequest') : d.owner ? (d.owner.id === mineId ? t('docs.inbox.from_you') : t('docs.inbox.from_other', { name: personName(d.owner) })) : ''}</span>
           </p>
         </div>
         {splitHint && <Scissors size={15} className="shrink-0 text-accent" aria-label={t('pagetools.split.suggestedShort')} />}

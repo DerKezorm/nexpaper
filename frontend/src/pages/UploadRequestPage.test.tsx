@@ -120,4 +120,16 @@ describe('the page behind an upload request', () => {
     expect(page.text).toContain('Jule Beispiel asks you for documents')
     expect(page.text).toContain('2 more files possible.')
   })
+
+  it('shows names as text, never as markup (the review’s probe)', async () => {
+    const hostile = { ...shown, requested_by: '<strong>Jule</strong><img src=x onerror=alert(1)>', name: '<0>Kanzlei</0><name>Weber</name><a href="https://example.com">x</a>' }
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify(hostile), { status: 200, headers: { 'Content-Type': 'application/json' } })))
+    await open()
+    expect(page.box.querySelector('strong, img, a, name')).toBeNull()
+    expect(page.text).toContain('<strong>Jule</strong><img src=x onerror=alert(1)> bittet dich um Dokumente')
+    expect(page.text).toContain('Diese Bitte ist für <0>Kanzlei</0><name>Weber</name><a href="https://example.com">x</a>.')
+    // The stress is one span around the whole name, nothing inside it but text.
+    const stressed = [...page.box.querySelectorAll('span.font-semibold')]
+    expect(stressed.every((s) => s.children.length === 0)).toBe(true)
+  })
 })

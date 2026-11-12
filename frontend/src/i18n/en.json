@@ -3371,7 +3371,10 @@
       "not_found": "The address takes nothing any more.",
       "too_many_attempts": "Too many tries. Wait a while.",
       "full": "No more files go.",
-      "failed": "That did not work. Try again."
-    }
+      "failed": "That did not work. Try again.",
+      "too_slow": "The file came too slowly. Try again on a better connection."
+    },
+    "eventWho": "Somebody through the upload request “{{name}}”",
+    "fromRequest": "through an upload request"
   }
 }

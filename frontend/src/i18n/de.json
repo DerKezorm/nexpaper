@@ -3371,7 +3371,10 @@
       "not_found": "Die Adresse nimmt nichts mehr an.",
       "too_many_attempts": "Zu viele Versuche. Warte eine Weile.",
       "full": "Es gehen keine weiteren Dateien mehr.",
-      "failed": "Das hat nicht geklappt. Versuch es noch einmal."
-    }
+      "failed": "Das hat nicht geklappt. Versuch es noch einmal.",
+      "too_slow": "Die Datei kam zu langsam. Versuch es mit einer besseren Verbindung noch einmal."
+    },
+    "eventWho": "Jemand über die Upload-Bitte „{{name}}“",
+    "fromRequest": "über eine Upload-Bitte"
   }
 }

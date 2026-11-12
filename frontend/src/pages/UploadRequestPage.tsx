@@ -7,11 +7,12 @@
  */
 import { AlertTriangle, Check, Clock, FileText, Loader2, Upload } from 'lucide-react'
 import { useEffect, useRef, useState, type DragEvent } from 'react'
-import { Trans, useTranslation } from 'react-i18next'
+import { useTranslation } from 'react-i18next'
 import { useParams } from 'react-router-dom'
 
 import { ApiError, uploadRequestsApi, type PublicRequest } from '../api/client'
 import { LogoMark } from '../components/Logo'
+import { NamedSentence } from '../components/NamedSentence'
 import { shortDate } from '../lib/dates'
 import { ACCEPT } from '../lib/formats'
 import { iso } from '../lib/say'
@@ -19,7 +20,7 @@ import { iso } from '../lib/say'
 type Sent = { key: number; name: string; state: 'waiting' | 'sending' | 'arrived' | 'refused'; reason?: string; values?: Record<string, unknown> }
 
 /** The reasons the page has a sentence for; anything else says that it did not work. */
-const REASONS = ['unsupported_type', 'xml_not_invoice', 'xml_doctype', 'too_large', 'empty_file', 'request_busy', 'request_day_full', 'not_found', 'too_many_attempts']
+const REASONS = ['unsupported_type', 'xml_not_invoice', 'xml_doctype', 'too_large', 'empty_file', 'request_busy', 'request_day_full', 'too_slow', 'not_found', 'too_many_attempts']
 
 export function UploadRequestPage() {
   const { t, i18n } = useTranslation()
@@ -93,7 +94,7 @@ export function UploadRequestPage() {
         <div className="mx-auto flex max-w-3xl items-center gap-3 px-4 py-3">
           <LogoMark size={28} />
           <p className="flex-1 text-sm text-ink-2">
-            {request && (who ? <Trans i18nKey="uploadRequest.page.asks" values={{ name: iso(who) }} components={{ name: <span className="font-semibold text-ink" /> }} /> : t('uploadRequest.page.asksUnknown'))}
+            {request && (who ? <NamedSentence i18nKey="uploadRequest.page.asks" name={who} /> : t('uploadRequest.page.asksUnknown'))}
           </p>
           {request && (
             <span className="hidden items-center gap-1.5 text-xs text-muted sm:flex">
@@ -119,7 +120,7 @@ export function UploadRequestPage() {
           <>
             <h1 className="font-display text-2xl font-semibold break-words">{who ? t('uploadRequest.page.title', { name: iso(who) }) : t('uploadRequest.page.titleUnknown')}</h1>
             <p className="mt-1 text-sm text-ink-2">
-              <Trans i18nKey="uploadRequest.page.for" values={{ name: iso(request.name) }} components={{ name: <span className="font-semibold text-ink" /> }} />
+              <NamedSentence i18nKey="uploadRequest.page.for" name={request.name} />
             </p>
             <p className="mt-1 text-xs text-muted sm:hidden">{t('uploadRequest.page.until', { date: shortDate(request.until, i18n.language) })}</p>
             <section
