@@ -966,3 +966,39 @@ none of it, a link to the outside never.
   `409 too_many_saved`. `PATCH /saved-searches/{id}` `{"name"}`, `POST /saved-searches/{id}/up` and `/down` (answer the
   whole list), `DELETE /saved-searches/{id}`. Another person's entry answers 404 like one that does not exist. They go
   with the account.
+
+## Small helpers: the transfer code, the note on a sender, pins, the follow-up
+
+- `GET /documents/{id}/transfer` (reading the document is enough; a key of scope `read` too): what a bank transfer for
+  the document can take, `{"ready", "missing", "recipient", "recipient_origin", "ibans": [{"iban", "origin"}], "amount",
+  "amount_origin", "currency", "purpose", "purpose_origin", "purpose_max"}`. The recipient is the seller of the
+  e-invoice (`einvoice`) or the document's sender (`sender`); the IBANs are those read from the document, the
+  e-invoice's (`einvoice`) first, else those of the text with valid check digits (`text`: compare them with the
+  document); the amount what the e-invoice says is to be paid, else the document's (`document`), in cents; the purpose
+  the invoice number. `ready` with an IBAN, an amount above 0, the euro, a recipient and no credit note; `missing` names
+  what is not there (`iban`, `amount`, `currency`, `recipient`, `credit_note`).
+- `POST /documents/{id}/transfer/code` `{"iban", "amount", "purpose"}`: the EPC QR code (GiroCode) as `image/svg+xml`,
+  error correction M, lines of EPC069-12 version 002 in UTF-8. The IBAN must be one of `ibans` (`422 unknown_iban` for
+  any other); the amount 1 to 99,999,999,999 cents; the purpose at most 140 characters of letters, digits, blanks, the
+  umlauts and `/ - ? : ( ) . , ' +` (`422 invalid_purpose`, no line break). `409 transfer_not_possible` with `missing`
+  when the document gives no transfer. The body, not the address, carries the IBAN and the purpose; nothing is stored,
+  nothing logged. A browser or a device; never a key, never a link.
+- `PUT /senders/{id}/memo` `{"memo"}`: the vault's note on a sender, at most 500 characters with line breaks (`422
+  invalid_memo`), empty takes it away; `edit` in the sender's vault (404 for a vault the caller is not in, 403 with
+  `read`). A browser or a device. Every document of the vault carries it as `sender_memo` (empty without a note, `null`
+  for a caller who sees the document through a share alone, and without a sender); `GET /order/senders` has `memo` and
+  `can_edit_memo`. A sender with a note is not tidied away when its last document lets go of it; merging two senders
+  (also renaming onto a name the vault has) puts both notes one under the other, cut to 500. Not a change of the
+  documents: no change number, no history. Never on a link page, never to the AI.
+- `PUT /documents/{id}/pin` and `DELETE /documents/{id}/pin`: pinned for the caller alone; reading the document is
+  enough (a browser or a device, never a key). At most 20 the caller can see: the 21st answers `409 too_many_pins` with
+  `max`; a document in the trash `409 in_trash`. `GET /pins` (`limit` 1 to 20; a key of scope `read` too): the pinned
+  documents the caller may see now, the one pinned last first, `{"items": [document], "max"}`. A pin whose right went
+  is not shown and comes back with the right. Every document in an answer has `pinned`. Not a change of the document.
+  The search knows `angeheftet:ja` / `pinned:yes` and `angeheftet:nein` / `pinned:no`.
+- The follow-up: a fifth kind of date, `follow_up`, set like the others (`dates`, `set_dates`, `remove_dates`) with
+  `note`, a sentence of at most 200 characters (one line; only a follow-up has one, `422 invalid_terms` else). In
+  `dates` of a document it carries `note`; on `GET /deadlines` it is `what: follow_up` with `note` (`what=follow_up`
+  narrows to them), done and later as the others, in `frist:offen` and the menu's number. Reminded on its day at 8,
+  whatever the day itself is set to, never ahead; a reminder and the weekly mail name kind, day and title, never the
+  sentence. `GET /dashboard` names it `kind: follow_up`.
