@@ -272,6 +272,28 @@ def test_a_file_too_large_is_refused_by_its_length_before_its_body_is_read(jule:
     assert documents_of(jule) == []
 
 
+def test_a_file_larger_than_an_ordinary_request_is_taken_up_to_the_limit_of_a_file(jule: Account) -> None:
+    """The guard in front of the routes lets a body of one file and its envelope through (16 MB is the limit of every
+    other request): the operator's limit of a file holds here as for every upload."""
+    with new_client(jule) as browser:
+        token = token_of(make(browser))
+    big = files.make_pdf(["groß"], padding=17 * 1024 * 1024)
+    with stranger() as outside:
+        assert send(outside, token, "gross.pdf", big).status_code == 201
+    (document,) = documents_of(jule)
+    assert document.source == "request"
+
+
+def test_the_page_never_names_the_sign_in_name(client: TestClient, operator: Account) -> None:
+    switch()
+    tom = make_account("tom")
+    with new_client(tom) as browser:
+        token = token_of(make(browser))
+    with stranger() as outside:
+        page = outside.get(f"/api/v1/u/{token}").json()
+        assert page["requested_by"] == "" and "tom" not in json.dumps(page)
+
+
 def test_a_body_without_a_length_is_not_read(jule: Account) -> None:
     with new_client(jule) as browser:
         token = token_of(make(browser))
@@ -572,6 +594,9 @@ def test_the_token_never_stands_in_a_log_line(jule: Account) -> None:
     for line in (f"POST /api/v1/u/{token}/files -> 201", f"GET /u/{token}", f"pasted {token} here",
                  f"https://paper.example.com/u/{token}?x=1"):
         assert token not in logs.redact(line) and token[4:] not in logs.redact(line), line
+    # The path alone masks it too, should the prefix be cut off on the way.
+    assert token[4:] not in logs.redact(f"GET /api/v1/u/{token[4:]}/files -> 404")
+    assert token[4:] not in logs.redact(f"GET /u/{token[4:]}")
 
 
 # --- Rights ----------------------------------------------------------------------------------------------------------
