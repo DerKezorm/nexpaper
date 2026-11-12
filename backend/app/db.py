@@ -46,7 +46,7 @@ _settings.data_dir.mkdir(parents=True, exist_ok=True)
 BUSY_SECONDS = 15
 
 #: The version of the schema the models describe.
-SCHEMA_VERSION = 18
+SCHEMA_VERSION = 19
 
 
 def _step_v2(connection: Connection) -> None:
@@ -487,6 +487,22 @@ def _step_link_documents(connection: Connection) -> None:
         connection.exec_driver_sql(statement)
 
 
+def _step_pdf_passwords(connection: Connection) -> None:
+    """Protected PDFs (P1): the passwords a person keeps, sealed (one table), and the mark on a version whose original
+    is an encrypted PDF (one column with a default: every version there is was read from an original that was not).
+    Nothing else; written out as it stood when the step was made, so that the step moves to another number unchanged."""
+    for statement in (
+        (
+            "CREATE TABLE pdf_passwords ( id INTEGER NOT NULL, user_id INTEGER NOT NULL, name VARCHAR(60) NOT NULL, "
+            "sealed TEXT NOT NULL, created_at DATETIME NOT NULL, last_matched_at DATETIME, PRIMARY KEY (id), "
+            "FOREIGN KEY(user_id) REFERENCES users (id) ON DELETE CASCADE )"
+        ),
+        "CREATE INDEX ix_pdf_passwords_user_id ON pdf_passwords (user_id)",
+        "ALTER TABLE versions ADD COLUMN original_protected VARCHAR(10) DEFAULT '' NOT NULL",
+    ):
+        connection.exec_driver_sql(statement)
+
+
 #: ``MIGRATIONS[n]`` brings a database from version ``n - 1`` to ``n``. Version 1 is the first schema; it has no step.
 #: Later steps are written out as the tables stood then, not taken from the models, which move on.
 MIGRATIONS: dict[int, Callable[[Connection], None]] = {
@@ -512,6 +528,8 @@ MIGRATIONS: dict[int, Callable[[Connection], None]] = {
     17: _step_helpers,
     # N2, a link shows further documents.
     18: _step_link_documents,
+    # P1, protected PDFs: the kept passwords and the mark on a version.
+    19: _step_pdf_passwords,
 }
 
 def _has_column(connection: Connection, table: str, column: str) -> bool:

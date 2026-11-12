@@ -158,7 +158,9 @@ def _file(find: Callable[[Session], tuple[Link, Document] | None], request: Requ
         if version is None:
             raise error("not_found", "Not found.", 404)
         try:
-            path = storage.safe_path(version.original_path)
+            # A protected original (P1) is not what a link hands out: its copy without the password is.
+            protected = bool(version.original_protected and version.archive_path)
+            path = storage.safe_path(version.archive_path if protected else version.original_path)
         except storage.StorageError:
             logger.warning("A stored path was refused document_id=%s", document.id)
             raise error("not_found", "Not found.", 404) from None

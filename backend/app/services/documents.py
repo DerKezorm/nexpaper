@@ -130,6 +130,8 @@ class Row:
     #: For a caller who may change it: a link that works now shows it, as its own document or as a further one (N2b).
     #: Only yes or no, never to whom or how many; false for a reader.
     shown_outside: bool = False
+    #: The original of its current version is an encrypted PDF (``password`` or ``restricted``), else empty.
+    original_protected: str = ""
 
 
 def rows(db: Session, uid: int, documents: list[Document]) -> list[Row]:
@@ -197,6 +199,10 @@ def rows(db: Session, uid: int, documents: list[Document]) -> list[Row]:
     from . import pins
 
     pinned = pins.among(db, uid, ids)
+    protected = dict(db.execute(
+        select(Version.document_id, Version.original_protected)
+        .join(Document, (Document.id == Version.document_id) & (Document.current_version == Version.n))
+        .where(Version.document_id.in_(ids), Version.original_protected != "")).all())
     out = []
     for document in documents:
         access = accesses[document.id]
@@ -217,6 +223,7 @@ def rows(db: Session, uid: int, documents: list[Document]) -> list[Row]:
             auto_trash_due=document.id in going, auto_trashed=document.id in put_away,
             has_related=document.id in goes_with, pinned=document.id in pinned,
             shown_outside=access.can_edit and link_counts.get(document.id, 0) > 0,
+            original_protected=protected.get(document.id, ""),
         ))
     return out
 

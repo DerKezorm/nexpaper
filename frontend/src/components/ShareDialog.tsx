@@ -27,7 +27,7 @@ import { iso } from '../lib/say'
 const MAX_ALSO = 10
 
 type Props = {
-  document: Pick<DocumentInfo, 'id' | 'vault_id' | 'title'>
+  document: Pick<DocumentInfo, 'id' | 'vault_id' | 'title' | 'original_protected'>
   onClose: () => void
   /** What was done, in a sentence, for the page to show (a toast); the dialog itself shows problems. */
   say?: (text: string) => void
@@ -282,6 +282,9 @@ export function ShareDialog({ document, onClose, say }: Props) {
                   <input type="checkbox" checked={download} onChange={(e) => setDownload(e.target.checked)} className="h-4 w-4 accent-[var(--accent)]" />
                   {t('share.allowDownload')}
                 </label>
+                {document.original_protected && (
+                  <p className="text-xs text-muted" data-testid="share-protected">{t(document.original_protected === 'password' ? 'pdfPassword.shareNote' : 'pdfPassword.shareNoteRestricted')}</p>
+                )}
                 {related.length > 0 && (
                   <div data-testid="link-related">
                     <label className="flex items-center gap-2 text-sm">

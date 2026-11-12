@@ -26,8 +26,9 @@ when the operator deletes an account, they choose where the documents of its per
 themselves or a vault they are in; the dialog says so, and the history of every document notes the takeover and who
 did it.
 
-A backup holds the server's secret (`secret.key`) together with the database: with both, the mail and AI credentials
-and the addresses of open links can be read. Keep backups as protected as the data folder.
+A backup holds the server's secret (`secret.key`) together with the database: with both, the mail and AI credentials,
+the addresses of open links and the PDF passwords people chose to keep can be read. Keep backups as protected as the
+data folder.
 
 A link to the outside may show further documents beside its own, but only those chosen one by one when it was made,
 among the documents that go with it and that its maker may share by a link of their own; nothing comes in later by
@@ -197,6 +198,39 @@ inside the server process.
 Whether a person already has a file is decided only from the documents they may see; nothing in an answer, its timing
 or an error tells them that somebody else keeps the same file in a vault they cannot look into.
 
+
+## Protected PDFs and kept PDF passwords
+
+A PDF that needs a password to be opened waits in the inbox. Whoever may change the document types the password at its
+card. It goes in the body of that one request to the worker process, on its standard input: never as an argument of the
+process, never in its environment, never in a file, never in the table of jobs (the run is made within the request and
+its time limit). The worker answers only whether it opened the PDF and with which of the passwords it was given, by
+number. A wrong password changes nothing; every try counts against a brake of 5 per document and person and 20 per
+person in an hour (somebody else's tries never lock the owner out). The brake keeps the server from being used to guess;
+it does not make a weak password strong: whoever may read the document can download the protected original and guess
+at it elsewhere. A file that claims to be encrypted but opens with nothing is refused as damaged. No log line, answer,
+error message or history line names a password.
+
+**The PDF opened lies unencrypted on the disk.** That is the point: it is the searchable copy beside the original
+(`... (searchable).pdf`), which the view, the search, the page tools, links and exports take. The original stays as it
+came, password and checksum and all ("Download: original" says so). Protecting the disk is the operator's business, as
+for every other document; the interface says it in one sentence when a PDF is opened. A PDF that only locks printing or
+changing (it opens without a password) is read the same way without asking.
+
+**Keeping a password** happens only when the person ticks "Remember for future documents" and gives it a name. It is
+stored sealed with the server's secret (AES-256-GCM with a key from `secret.key`, bound to the person), at most 10 per
+person, and never shown again, not even to that person: the list under My account, Upload shows names and dates, and an
+entry can be renamed or deleted. **Whose kept passwords are tried** is decided in one place, by the file, never by
+the owner of the document: a file a person uploaded while signed in (browser, phone, a device or a key), as a document
+or as a new version, gets that person's passwords; a file from the intake folder or the mailbox (the plus address and
+unknown senders too) gets the passwords of the person it was given to, and only while it stands in that person's own
+vault, where nobody else sees the outcome; anything else (the Paperless import, a version made by the page tools) gets
+none. So nobody can find out by uploading a file which passwords somebody else keeps. The worker gets them for one more
+run, and only when the first run said the PDF needs a password; the operator sees, uses and counts nobody's entries. The history then says that a kept password opened it, never which one. Deleting an
+account deletes its entries. A new `secret.key` makes them unreadable (the list says so); **a backup together with
+`secret.key` opens them**, so keep backups protected. While the server runs, a kept password is unsealed in its memory
+for the run that needs it and passed to the worker on its standard input; Python gives no way to wipe a string, so it
+stays in the memory of the two processes until it is overwritten.
 
 ## Reminders of deadlines
 

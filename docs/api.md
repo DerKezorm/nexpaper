@@ -1049,3 +1049,26 @@ none of it, a link to the outside never.
   .../versions`, `.../versions/{n}/restore`) is seen through the link at once. The web app asks before each of these
   while `shown_outside` is true; the endpoints ask for nothing new, so an app that wants to ask reads the field. The
   history gets no line of its own for it. Title, kind, date and the other fields do not ask.
+
+## Protected PDFs and kept PDF passwords
+
+- A PDF that needs a password to be opened waits in the inbox with `process_error` `encrypted`. A PDF that only locks
+  printing or changing is read without asking. Every document has `original_protected` (also each version in
+  `GET /documents/{id}/versions`): `password` or `restricted` when the original of its current version is such a PDF,
+  else empty. Then `/versions/{n}/file` is the original as it came (encrypted) and `/versions/{n}/archive` the PDF opened,
+  without the encryption, which the pages, the search, the page tools, links and exports take.
+- `POST /documents/{id}/unlock` `{"password", "remember", "name"}` (password 1 to 512 characters; `name` 1 to 60, needed
+  with `remember`): opens the PDF with the password in the request, within the worker's time limit, and the document is
+  read again from the PDF opened (`status` `processing`). Answer `{"document", "kept"}`, `kept` being `kept`, `known`
+  (the caller keeps this password already) or empty. Needs `edit` on the document, a browser or a device (never an API
+  key). `409 not_protected` when it does not wait for a password, `422 wrong_pdf_password` when the password does not
+  open it (nothing changes), `422 pdf_broken` when the file claims to be encrypted but nothing opens (nothing changes),
+  `409 too_many_pdf_passwords` with `remember` at 10 kept (kept by the caller, never by the owner),
+  `429 pdf_password_too_often` after 5 tries of the caller for one document or 20 of the caller within an hour. The
+  history gets `pdf_opened` with `detail.by` `typed` (with the person) or `kept` (opened by itself, never which one).
+- Kept passwords are tried only on a file the person uploaded (as a document or a new version), or that came through the
+  intake folder or the mailbox into that person's personal vault; never because of who owns the document.
+- `GET /pdf-passwords`: the caller's kept passwords, `[{"id", "name", "created_at", "last_matched_at", "readable"}]`,
+  never a password; `readable` false when the server's secret changed since (it is lost). `PATCH /pdf-passwords/{id}`
+  `{"name"}`, `DELETE /pdf-passwords/{id}`. Another person's entry answers 404 like one that does not exist, for the
+  operator too. A browser or a device; they go with the account.

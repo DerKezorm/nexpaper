@@ -201,6 +201,9 @@ class Brief:
     #: Further documents (N2) a restore would put back on a link that is valid in the backup: on a link that comes back
     #: to life, or taken out of one (or the pair undone) since the backup was made.
     revived_link_documents: int = 0
+    #: Kept PDF passwords (P1) the backup holds and this server does not any more (deleted since, or gone with an
+    #: account): a restore brings them back. A number only, never a name.
+    revived_pdf_passwords: int = 0
 
     @property
     def usable(self) -> bool:
@@ -557,6 +560,7 @@ def check(name: str, *, hash_seconds: float = HASH_SECONDS) -> Brief:
         newer_documents=found.newer, rebuilds_index=found.documents > 0 and schema >= 6,
         revived_devices=revived.devices, revived_keys=revived.keys, revived_links=revived.links,
         revived_link_documents=revived.link_documents,
+        revived_pdf_passwords=revived.pdf_passwords,
     )
 
 
@@ -566,6 +570,7 @@ class _Revived:
     keys: int = 0
     links: int = 0
     link_documents: int = 0
+    pdf_passwords: int = 0
 
 
 #: What is alive: the token hash and when it ends (empty: it does not), by table. The same question to the backup and to
@@ -577,6 +582,9 @@ _ALIVE = (
     ("links", "SELECT token_hash, until FROM links WHERE revoked_at IS NULL"),
     ("link_documents", ("SELECT l.token_hash || ':' || d.document_id, l.until FROM link_documents d "
                         "JOIN links l ON l.id = d.link_id WHERE l.revoked_at IS NULL")),
+    # A kept PDF password is one by its sealed value (a fresh nonce each time): one deleted since does not come back
+    # under the number of a new one.
+    ("pdf_passwords", "SELECT sealed, NULL FROM pdf_passwords"),
 )
 
 
@@ -616,7 +624,7 @@ def _revived(connection_path: Path) -> _Revived:
     finally:
         connection.close()
     return _Revived(counts.get("devices", 0), counts.get("keys", 0), counts.get("links", 0),
-                    counts.get("link_documents", 0))
+                    counts.get("link_documents", 0), counts.get("pdf_passwords", 0))
 
 
 @dataclass

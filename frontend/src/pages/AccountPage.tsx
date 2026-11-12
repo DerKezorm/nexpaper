@@ -24,6 +24,7 @@ import { useAiState } from '../state/ai'
 import { useAuth } from '../state/auth'
 import { MyIntakeCards } from './settings/IntakeCards'
 import { LanguageCard, LooksCard, PhoneCard } from './settings/PersonalCards'
+import { PdfPasswordsCard } from './settings/PdfPasswordsCard'
 import { PushDevicesCard } from './settings/PushCards'
 import { RemindersPart } from './settings/RemindersCards'
 import { DevicesCard, PasskeysCard, SecondFactorCard } from './settings/SecurityCards'
@@ -76,6 +77,7 @@ export function AccountPage() {
             <UploadVaultCard />
             <PhoneCard />
             <MyIntakeCards />
+            <PdfPasswordsCard />
           </>
         )}
         {part === 'erinnerungen' && <RemindersPart me={me} />}

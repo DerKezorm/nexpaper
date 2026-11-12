@@ -1353,6 +1353,16 @@
             "title": "Notes",
             "type": "integer"
           },
+          "original_protected": {
+            "default": "",
+            "enum": [
+              "",
+              "password",
+              "restricted"
+            ],
+            "title": "Original Protected",
+            "type": "string"
+          },
           "owner": {
             "anyOf": [
               {
@@ -6243,6 +6253,63 @@
         "title": "PasswordChangeIn",
         "type": "object"
       },
+      "PdfPasswordOut": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "last_matched_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Matched At"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "readable": {
+            "title": "Readable",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "created_at",
+          "last_matched_at",
+          "readable"
+        ],
+        "title": "PdfPasswordOut",
+        "type": "object"
+      },
+      "PdfPasswordRename": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "maxLength": 240,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "PdfPasswordRename",
+        "type": "object"
+      },
       "PermissionsIn": {
         "additionalProperties": false,
         "properties": {
@@ -9160,6 +9227,60 @@
         "title": "Understood",
         "type": "object"
       },
+      "UnlockIn": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "maxLength": 240,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "password": {
+            "maxLength": 512,
+            "title": "Password",
+            "type": "string"
+          },
+          "remember": {
+            "default": false,
+            "title": "Remember",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "password"
+        ],
+        "title": "UnlockIn",
+        "type": "object"
+      },
+      "UnlockOut": {
+        "properties": {
+          "document": {
+            "$ref": "#/components/schemas/DocumentOut"
+          },
+          "kept": {
+            "enum": [
+              "",
+              "kept",
+              "known"
+            ],
+            "title": "Kept",
+            "type": "string"
+          }
+        },
+        "required": [
+          "document",
+          "kept"
+        ],
+        "title": "UnlockOut",
+        "type": "object"
+      },
       "UpdateSwitchIn": {
         "properties": {
           "update_check": {
@@ -9597,6 +9718,16 @@
           "origin": {
             "default": "",
             "title": "Origin",
+            "type": "string"
+          },
+          "original_protected": {
+            "default": "",
+            "enum": [
+              "",
+              "password",
+              "restricted"
+            ],
+            "title": "Original Protected",
             "type": "string"
           },
           "pages": {
@@ -15434,6 +15565,66 @@
         ]
       }
     },
+    "/api/v1/documents/{document_id}/unlock": {
+      "post": {
+        "description": "`409 not_protected` when the document does not wait for a password, `422 wrong_pdf_password` when the password\ndoes not open it (the document stays as it was), `429 pdf_password_too_often` after 5 tries for one document or 20\nof the caller in an hour.",
+        "operationId": "unlock_api_v1_documents__document_id__unlock_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "document_id",
+            "required": true,
+            "schema": {
+              "maximum": 2147483647,
+              "minimum": 1,
+              "title": "Document Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UnlockIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnlockOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Open the protected PDF of a document with its password; it is read again from the PDF opened",
+        "tags": [
+          "pdf passwords"
+        ]
+      }
+    },
     "/api/v1/documents/{document_id}/versions": {
       "get": {
         "operationId": "versions_api_v1_documents__document_id__versions_get",
@@ -20789,6 +20980,135 @@
         "summary": "The tags of the caller's vaults with the number of documents that carry each",
         "tags": [
           "catalog"
+        ]
+      }
+    },
+    "/api/v1/pdf-passwords": {
+      "get": {
+        "operationId": "list_kept_api_v1_pdf_passwords_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PdfPasswordOut"
+                  },
+                  "title": "Response List Kept Api V1 Pdf Passwords Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "The caller's kept PDF passwords: names and dates, never a password",
+        "tags": [
+          "pdf passwords"
+        ]
+      }
+    },
+    "/api/v1/pdf-passwords/{entry_id}": {
+      "delete": {
+        "operationId": "delete_kept_api_v1_pdf_passwords__entry_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "entry_id",
+            "required": true,
+            "schema": {
+              "maximum": 2147483647,
+              "minimum": 1,
+              "title": "Entry Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Delete a kept PDF password (for good)",
+        "tags": [
+          "pdf passwords"
+        ]
+      },
+      "patch": {
+        "operationId": "rename_kept_api_v1_pdf_passwords__entry_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "entry_id",
+            "required": true,
+            "schema": {
+              "maximum": 2147483647,
+              "minimum": 1,
+              "title": "Entry Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PdfPasswordRename"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PdfPasswordOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Rename a kept PDF password",
+        "tags": [
+          "pdf passwords"
         ]
       }
     },

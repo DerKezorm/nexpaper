@@ -52,7 +52,39 @@ def take(kind: str, account_id: int) -> None:
         seen.append(moment)
 
 
+#: Brakes per hour (``take_hourly``): what each costs a run of the worker and is never done often by hand.
+HOURLY_CODES = {
+    #: Opening a protected PDF with a password (P1), per document and person (somebody else's tries never lock the
+    #: owner out) and per person: a wrong guess is tried in the worker, and passwords are not to be guessed through the
+    #: server.
+    "pdf_password_document": ("pdf_password_too_often", "Too many tries for this PDF. Wait an hour."),
+    "pdf_password_person": ("pdf_password_too_often", "Too many tries for this PDF. Wait an hour."),
+}
+_hourly: dict[tuple[str, object], deque[float]] = {}
+
+
+def take_hourly(*brakes: tuple[str, object, int]) -> None:
+    """One more of each ``(kind, key, limit)`` within the last hour, all or none: ``429`` with ``Retry-After`` when one
+    of them is full (then none is taken). ``key`` is anything hashable (a person, or a document and a person)."""
+    moment = clock.monotonic()
+    with _lock:
+        seen = []
+        for kind, key, limit in brakes:
+            found = _hourly.setdefault((kind, key), deque())
+            while found and moment - found[0] > 3600:
+                found.popleft()
+            if len(found) >= limit:
+                code, text = HOURLY_CODES[kind]
+                exc = error(code, text, 429)
+                exc.headers = {"Retry-After": str(max(1, int(3600 - (moment - found[0])) + 1))}
+                raise exc
+            seen.append(found)
+        for found in seen:
+            found.append(moment)
+
+
 def forget() -> None:
     """For the tests."""
     with _lock:
         _seen.clear()
+        _hourly.clear()

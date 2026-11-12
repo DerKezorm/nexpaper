@@ -61,6 +61,7 @@ from .routers import logs as logs_router
 from .routers import ocr as ocr_router
 from .routers import pagetools as pagetools_router
 from .routers import paperless as paperless_router
+from .routers import pdfpasswords as pdfpasswords_router
 from .routers import pins as pins_router
 from .routers import related as related_router
 from .routers import reminders as reminders_router
@@ -118,6 +119,7 @@ ROUTERS = [
     # K1: the transfer code and pinned documents.
     transfer_router,
     pins_router,
+    pdfpasswords_router,
 ]
 
 

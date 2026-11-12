@@ -67,6 +67,9 @@ class VersionOut(BaseModel):
     #: Where the original lies in the storage, from its folder for documents on: vault, year, sender, file
     #: (``Haushalt/2026/Stadtwerke Lindenau/2026-10-01 Rechnung.pdf``). Nothing above it, never the data folder.
     path: str
+    #: The original is an encrypted PDF: ``password`` (it needs one to be opened) or ``restricted`` (only printing or
+    #: changing it is locked); empty else. ``/file`` serves it as it came, ``/archive`` the PDF opened.
+    original_protected: Literal["", "password", "restricted"] = ""
 
 
 def conditional(request: Request, etag: str) -> Response | None:
@@ -120,6 +123,7 @@ def _version_row(v: Version, current: int, author: Account | None, info: Version
         state=info.state if info is not None else "ready",  # type: ignore[arg-type]
         error=info.error if info is not None else "",
         path=shown_path(v.original_path, vault=vault),
+        original_protected=v.original_protected if v.original_protected in ("password", "restricted") else "",  # type: ignore[arg-type]
     )
 
 
@@ -199,7 +203,8 @@ def archive(document_id: DOCUMENT, number: VERSION, request: Request, account: R
         path = storage.safe_path(version.archive_path)
     except storage.StorageError:
         raise error("not_found", "Not found.", 404) from None
-    return _send(path, "application/pdf", request, etag_of("archive", document_id, version.n, version.sha256),
+    return _send(path, "application/pdf", request, etag_of("archive", document_id, version.n, version.sha256,
+                                                                  version.archive_sha256),
                  access.document.title, ".pdf", True)
 
 

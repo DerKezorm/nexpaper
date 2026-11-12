@@ -169,6 +169,9 @@ TABLE = [
     # number no link has: who may gets 404). ``test_link_also.py`` has the rest.
     Row("GET", "/api/v1/documents/{d}/shown-through", None, "manage", 404),
     Row("DELETE", "/api/v1/documents/{d}/shown-through/{i}", None, "manage", 404),
+    # P1: opening a protected PDF needs edit (this document waits for no password, so whoever may gets 409
+    # `not_protected`; ``test_pdf_passwords.py`` has the ones that do, the share, the device, the keys and the brake).
+    Row("POST", "/api/v1/documents/{d}/unlock", {"password": "x"}, "edit", 404),
 ]
 
 

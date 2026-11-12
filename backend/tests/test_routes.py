@@ -285,6 +285,12 @@ TOKEN_ROUTES = {
     ("DELETE", "/api/v1/documents/{document_id}/pin"),
     # N2: taking a document out of a link of another document (who may share it).
     ("DELETE", "/api/v1/documents/{document_id}/shown-through/{item_id}"),
+    # P1: opening a protected PDF with its password (edit on the document), and the own kept PDF passwords (never
+    # through a key: they are the person's alone).
+    ("POST", "/api/v1/documents/{document_id}/unlock"),
+    ("GET", "/api/v1/pdf-passwords"),
+    ("PATCH", "/api/v1/pdf-passwords/{entry_id}"),
+    ("DELETE", "/api/v1/pdf-passwords/{entry_id}"),
 }
 
 #: The routes that only read and that a program with an API key reaches too (as the browser and a device do). A route

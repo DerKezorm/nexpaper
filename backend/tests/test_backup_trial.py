@@ -54,7 +54,8 @@ def database_with(entries: dict[str, bytes], tmp_path: Path, *statements: str, v
 
 #: A database as it stood before step 11 (the deadlines): its table gone, ``document_dates`` as in schema 10
 #: (a column with a foreign key cannot be dropped in SQLite, so the table is made anew). Together with
-#: ``UNDO_KEEPING``, ``UNDO_REMINDERS``, ``UNDO_AUTO_TRASH`` and ``UNDO_LAST_STEP`` it takes a database back to schema 10.
+#: ``UNDO_KEEPING``, ``UNDO_REMINDERS``, ``UNDO_AUTO_TRASH``, ``UNDO_SAVED_SEARCHES`` and ``UNDO_LAST_STEP`` it takes a
+#: database back to schema 10.
 UNDO_DEADLINES = (
     "DROP TABLE deadline_snoozes",
     (
@@ -84,8 +85,14 @@ UNDO_REMINDERS = (
 #: What takes a database back from schema 14 to 13 (step 14, expired documents into the trash by themselves).
 UNDO_AUTO_TRASH = ("ALTER TABLE kinds DROP COLUMN auto_trash",)
 
-#: A database as it stood before the last step (18, further documents of a link): the table gone.
-UNDO_LAST_STEP = ("DROP TABLE link_documents",)
+#: What takes a database back from schema 16 to 15 (step 16, saved searches): the table gone.
+UNDO_SAVED_SEARCHES = ("DROP TABLE saved_searches",)
+
+#: What takes a database back from schema 18 to 17 (step 18, further documents of a link): the table gone.
+UNDO_LINK_DOCUMENTS = ("DROP TABLE link_documents",)
+
+#: A database as it stood before the last step (19, protected PDFs): the table and the column gone.
+UNDO_LAST_STEP = ("DROP TABLE pdf_passwords", "ALTER TABLE versions DROP COLUMN original_protected")
 
 
 def update_copies() -> list[backups.Entry]:

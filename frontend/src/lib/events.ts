@@ -184,6 +184,9 @@ export function eventWhat(event: DocumentEvent, t: TFunction, context: EventCont
       const key = group === 'left' && reason === 'purged' ? 'taken_out' : group === 'gone' && reason === 'revoked' ? 'taken_out' : reason
       return title === null ? t(`linkRelated.events.${group}Other.${key}`) : t(`linkRelated.events.${group}.${key}`, { title: iso(title) })
     }
+    // Protected PDFs (P1): opened with a password a person typed, or by itself with one the owner keeps (never which).
+    case 'pdf_opened':
+      return detail.by === 'kept' ? t('pdfPassword.events.openedKept') : t('pdfPassword.events.opened')
     default:
       return t('docs.events.something')
   }

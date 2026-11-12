@@ -214,6 +214,14 @@ describe('the trial run before a restore', () => {
     expect(lines).toContain('Zurückspielen zeigt 2 Dokumente wieder über einen Link, die seit der Sicherung herausgenommen wurden oder deren Link zurückgezogen wurde.')
   })
 
+  it('says how many kept PDF passwords a restore brings back, without a name (P1)', async () => {
+    server.answers[`POST /api/v1/backups/${entry.name}/check`] = { ...brief, revived_pdf_passwords: 2 }
+    await page.show(<BackupsCard server={{ settings, busy: false } as never} />)
+    await page.click(page.button('Prüfen'))
+    const lines = document.querySelector('[data-testid="restore-preview"]')?.textContent ?? ''
+    expect(lines).toContain('Zurückspielen bringt 2 gemerkte PDF-Passwörter zurück, die seit der Sicherung gelöscht wurden.')
+  })
+
   it('says nothing of the kind when nothing was ended since the backup', async () => {
     server.answers[`POST /api/v1/backups/${entry.name}/check`] = { ...brief, revived_devices: 0, revived_keys: 0, revived_links: 0 }
     await page.show(<BackupsCard server={{ settings, busy: false } as never} />)

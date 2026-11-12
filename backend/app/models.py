@@ -591,6 +591,11 @@ class Version(Base):
     #: The checksum of the searchable copy as it was put in place (empty: none made, or not noted yet; the check of the
     #: files notes it the first time it sees the file).
     archive_sha256: Mapped[str] = mapped_column(String(64), default="", server_default=text("''"))
+    #: The original is an encrypted PDF (P1): ``password`` (it needs one to be opened) or ``restricted`` (it opens
+    #: without one, only printing or changing it is locked); empty for every other file. The searchable copy
+    #: (``archive_path``) is then the PDF opened, without its encryption: the view, links, exports and the page tools
+    #: take it; the original stays as it came.
+    original_protected: Mapped[str] = mapped_column(String(10), default="", server_default=text("''"))
 
 
 class Upload(Base):
@@ -1337,3 +1342,24 @@ class LinkDocument(Base):
 
 
 __all__ += ["LinkDocument"]
+
+
+class PdfPassword(Base):
+    """A password for protected PDFs a person keeps (P1, "Gemerkte PDF-Passwörter"): a name of their own and the
+    password sealed with the server's secret (``security.encrypt_secret``, bound to the person). Never shown again, only
+    renamed and deleted; tried on the protected PDFs that come into the person's inbox. At most ``MAX`` per person;
+    gone with them."""
+
+    __tablename__ = "pdf_passwords"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    name: Mapped[str] = mapped_column(String(60))
+    #: AES-256-GCM with a key from ``secret.key``, as hex; empty never (the row goes instead).
+    sealed: Mapped[str] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utcnow)
+    #: When it last opened a PDF; empty until it did.
+    last_matched_at: Mapped[datetime | None] = mapped_column(UtcDateTime, nullable=True)
+
+
+__all__ += ["PdfPassword"]

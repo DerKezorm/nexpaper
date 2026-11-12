@@ -682,6 +682,8 @@ type Brief = {
   revived_links?: number
   /** Further documents (N2) a restore puts back on a link: on one that comes back, or taken out of one since. */
   revived_link_documents?: number
+  /** Kept PDF passwords the backup holds that are deleted here now: a restore brings them back (a number only). */
+  revived_pdf_passwords?: number
   created: string
 }
 
@@ -702,6 +704,7 @@ function PreviewLines({ brief }: { brief: Brief }) {
   if (brief.revived_keys) lines.push(t('server.restorePreview.revivedKeys', { count: brief.revived_keys }))
   if (brief.revived_links) lines.push(t('server.restorePreview.revivedLinks', { count: brief.revived_links }))
   if (brief.revived_link_documents) lines.push(t('linkRelated.revived', { count: brief.revived_link_documents }))
+  if (brief.revived_pdf_passwords) lines.push(t('server.restorePreview.revivedPdfPasswords', { count: brief.revived_pdf_passwords }))
   if (brief.rebuilds_index) lines.push(t('server.restorePreview.index'))
   return (
     <ul className="mt-2 space-y-1 text-xs" data-testid="restore-preview">

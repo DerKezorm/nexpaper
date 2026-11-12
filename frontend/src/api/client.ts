@@ -534,6 +534,9 @@ export type DocumentInfo = {
   /** For who may change it (N2b): a link to the outside that works shows it, as its own document or as a further one.
    * Only yes or no; false for who may only read. The page tools ask before they change it. */
   shown_outside?: boolean
+  /** The original of the current version is an encrypted PDF: `password` (it needs one to be opened) or `restricted`
+   * (only printing or changing it is locked); empty else. The view and the tools take the PDF opened. */
+  original_protected?: ProtectedOriginal
 }
 export type DocumentShare = { user: Person; right: 'read' | 'edit'; created_at: string }
 export type DocumentLink = {
@@ -1137,6 +1140,8 @@ export type DocumentVersion = {
   /** `processing` while an uploaded version is read, `failed` (`error` says why) when it could not be. */
   state?: 'ready' | 'processing' | 'failed'
   error?: string
+  /** The original of this version is an encrypted PDF (see `DocumentInfo.original_protected`). */
+  original_protected?: ProtectedOriginal
 }
 /** A sender or a tag: one name, and its rows in the vaults the person reaches. */
 export type NameGroup = { name: string; items: { id: number; vault_id: number }[] }
@@ -1437,4 +1442,28 @@ export const keepingApi = {
   mergeEffect: (kindId: number, into: number) => api<MergeEffect>(`/api/v1/kinds/${kindId}/merge/preview`, { method: 'POST', body: { into } }),
   /** Many documents into the trash, each checked on its own. */
   trashMany: (ids: number[]) => api<TrashResult>('/api/v1/documents/trash', { method: 'POST', body: { ids } }),
+}
+
+// ---- Protected PDFs (P1): opening one with its password, and the own kept passwords --------------------------------
+
+export type ProtectedOriginal = '' | 'password' | 'restricted'
+/** A kept PDF password: never the password itself, only its name and when. */
+export type PdfPassword = {
+  id: number
+  name: string
+  created_at: string
+  /** When it last opened a PDF; null until it did. */
+  last_matched_at: string | null
+  /** False when the server's secret changed since: it cannot be used any more. */
+  readable: boolean
+}
+export type Unlocked = { document: DocumentInfo; kept: '' | 'kept' | 'known' }
+
+export const pdfPasswordApi = {
+  /** Opens the protected PDF of a document with its password; with `remember` (and a name) the password is kept. */
+  unlock: (documentId: number, password: string, remember = false, name?: string) =>
+    api<Unlocked>(`/api/v1/documents/${documentId}/unlock`, { method: 'POST', body: remember ? { password, remember, name } : { password } }),
+  list: () => api<PdfPassword[]>('/api/v1/pdf-passwords'),
+  rename: (id: number, name: string) => api<PdfPassword>(`/api/v1/pdf-passwords/${id}`, { method: 'PATCH', body: { name } }),
+  remove: (id: number) => api<void>(`/api/v1/pdf-passwords/${id}`, { method: 'DELETE' }),
 }

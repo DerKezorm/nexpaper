@@ -13,6 +13,7 @@ import {
   FileCode2,
   FileStack,
   FolderInput,
+  KeyRound,
   Lock,
   MessageSquare,
   MoreHorizontal,
@@ -73,6 +74,7 @@ import { ShareDialog } from '../components/ShareDialog'
 import { RelatedSection } from '../components/Related'
 import { ShownOutsideNotice } from '../components/ShownOutside'
 import { ShownThroughNotice } from '../components/ShownThrough'
+import { UnlockPdf } from '../components/UnlockPdf'
 import { VaultIcon } from '../components/VaultIcon'
 import { formatBytes } from '../lib/bytes'
 import { copyText } from '../lib/copy'
@@ -310,6 +312,11 @@ function Doc({ document: d, setDocument, reload, slots }: { document: DocumentIn
                 <Avatar person={asAvatarPerson(d.owner)} size={20} /> {t('docs.document.belongsTo', { name: iso(personName(d.owner)) })}
               </span>
             )}
+            {d.original_protected && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-sheet-2 px-2 py-0.5 text-xs font-semibold" data-testid="original-protected" title={t(d.original_protected === 'password' ? 'pdfPassword.markHint' : 'pdfPassword.markRestrictedHint')}>
+                <KeyRound size={12} aria-hidden /> {t(d.original_protected === 'password' ? 'pdfPassword.mark' : 'pdfPassword.markRestricted')}
+              </span>
+            )}
             {!canEdit && (
               <span className="inline-flex items-center gap-1 rounded-full bg-sheet-2 px-2 py-0.5 text-xs font-semibold" data-testid="read-only">
                 <Lock size={12} aria-hidden /> {t('docs.document.readOnly')}
@@ -325,7 +332,7 @@ function Doc({ document: d, setDocument, reload, slots }: { document: DocumentIn
             {menu === 'download' && (
               <Menu onClose={() => setMenu(null)} label={t('docs.document.download')}>
                 {current?.has_archive && <MenuItem icon={Download} text={t('docs.document.searchablePdf')} hint={t('docs.document.searchableHint')} href={fileUrls.archive(d.id, d.current_version)} download />}
-                <MenuItem icon={FileStack} text={t('docs.document.original')} hint={sourceHint} href={fileUrls.file(d.id, d.current_version)} download />
+                <MenuItem icon={FileStack} text={t('docs.document.original')} hint={d.original_protected === 'password' ? t('pdfPassword.originalHint') : d.original_protected === 'restricted' ? t('pdfPassword.originalRestrictedHint') : sourceHint} href={fileUrls.file(d.id, d.current_version)} download />
                 {invoice && <MenuItem icon={FileCode2} text={t('sorting.einvoice.download')} hint={invoice.format} href={einvoiceApi.xmlUrl(d.id, invoice.version)} download />}
               </Menu>
             )}
@@ -371,6 +378,26 @@ function Doc({ document: d, setDocument, reload, slots }: { document: DocumentIn
       )}
 
       <FileNotice state={d.files_state} documentId={d.id} onChecked={() => void reload()} />
+
+      {d.process_error === 'encrypted' && d.status === 'inbox' && (
+        <section role="alert" className="rounded-2xl border border-bad/40 bg-bad/10 p-4 text-sm" data-testid="protected-pdf">
+          <p className="flex items-center gap-2 font-semibold text-bad">
+            <KeyRound size={15} aria-hidden /> {t('docs.inbox.error.encrypted')}
+          </p>
+          <p className="mt-1 text-ink-2">{t(canEdit ? 'pdfPassword.waits' : 'pdfPassword.waitsReadOnly')}</p>
+          {canEdit && (
+            <div className="mt-3 max-w-lg rounded-xl bg-sheet p-3">
+              <UnlockPdf
+                documentId={d.id}
+                onOpened={() => {
+                  say(t('pdfPassword.opened'))
+                  void reload()
+                }}
+              />
+            </div>
+          )}
+        </section>
+      )}
 
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_26rem]">
         <section className="card p-4 sm:p-5" aria-label={t('docs.pagesLabel')}>
