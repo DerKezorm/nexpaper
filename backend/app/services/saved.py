@@ -37,6 +37,10 @@ NAME_MAX = 60
 QUERY_MAX = 1200
 #: How long the number of hits of an entry is kept (seconds).
 CACHE_SECONDS = 20.0
+#: How long counting all the entries of one list may take together (seconds). One brake of the search pays for the
+#: whole list, so the list is bounded like one search: what is not counted by then shows no number this time and is
+#: counted with the next list (what was counted is kept meanwhile).
+BUDGET_SECONDS = search.MAX_SECONDS
 
 ORDERS = ("-date", "date", "-title", "title", "-sender", "sender", "-amount", "amount")
 SIZES = ("25", "50", "100")
@@ -262,9 +266,11 @@ def _key(account: Account, query: str, state: tuple[object, ...]) -> tuple[objec
 
 
 def counts(db: Session, account: Account, rows: list[SavedSearch]) -> dict[int, Counted]:
-    """The number of hits of every entry, from the cache where it is fresh, else counted by the search."""
+    """The number of hits of every entry, from the cache where it is fresh, else counted by the search, as long as the
+    time for the whole list lasts (``BUDGET_SECONDS``); an entry it did not reach is ``failed`` this time."""
     state = _state_of(db, account.id)
     out: dict[int, Counted] = {}
+    began = monotonic()
     for row in rows:
         ask = asked(db, account, row.query)
         if ask.no_access:
@@ -276,6 +282,9 @@ def counts(db: Session, account: Account, rows: list[SavedSearch]) -> dict[int, 
             kept = _cache.get(key)
         if kept is not None and now - kept[0] <= CACHE_SECONDS:
             out[row.id] = Counted(count=kept[1], state="ok", deadlines_off=ask.deadlines_off)
+            continue
+        if now - began > BUDGET_SECONDS:
+            out[row.id] = Counted(count=None, state="failed", deadlines_off=ask.deadlines_off)
             continue
         try:
             number = search.counted(db, account.id, ask.q, ask.filters)

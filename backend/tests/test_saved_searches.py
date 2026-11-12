@@ -275,6 +275,34 @@ def test_the_numbers_take_the_brake_of_the_search_once_and_are_kept_a_moment(
         assert answer.status_code == 429 and answer.json()["detail"]["code"] == "search_too_often"
 
 
+def test_a_whole_list_takes_no_longer_than_one_search_may(
+    town: dict[str, Any], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """One brake pays for the whole list, so thirty slow searches must not run for it: what the time does not reach
+    shows no number this time and is counted with the next list."""
+    moment = [0.0]
+    counted: list[str] = []
+
+    def slow(_db: Any, _uid: int, raw: str, _filters: Any) -> int:
+        counted.append(raw)
+        moment[0] += 6.0
+        return 1
+
+    monkeypatch.setattr(saved, "monotonic", lambda: moment[0])
+    monkeypatch.setattr(saved.search, "counted", slow)
+    with new_client(town["jule"]) as c:
+        for n in range(5):
+            keep(c, f"q=w{n}", name=f"Suche {n}")
+        first = listed(c)
+        # Two searches of six seconds each fill the ten seconds; the other three wait.
+        assert [(e["state"], e["count"]) for e in first] == [("ok", 1), ("ok", 1)] + [("failed", None)] * 3
+        assert counted == ["w0", "w1"]
+        second = listed(c)
+        # What was counted is kept; the next two are counted now.
+        assert [e["state"] for e in second] == ["ok", "ok", "ok", "ok", "failed"]
+        assert counted == ["w0", "w1", "w2", "w3"]
+
+
 def test_the_entries_go_with_the_account(client: TestClient, town: dict[str, Any]) -> None:
     with new_client(town["tom"]) as c:
         keep(c, "q=a")
