@@ -187,8 +187,9 @@ def _after(request_id: int, read: int, taken: bool) -> int:
 @router.post("/u/{token}/files", response_model=Arrived, status_code=201, openapi_extra=_BODY,
              summary="Send one file through an upload request (no sign-in; the token is the key)")
 async def send(token: str, request: Request) -> Arrived:
-    """The route is ``async`` because it reads the body as it arrives; every step with the database runs in the thread
-    pool (``run_in_threadpool``), so that a busy database never stops the event loop for everybody else."""
+    # The route is ``async`` because it reads the body as it arrives; every step with the database runs in the thread
+    # pool (``run_in_threadpool``), so that a busy database never stops the event loop for everybody else. (A comment,
+    # not a docstring: the description of the interface stays the same.)
     request_guard(request)
     declared = request.headers.get("content-length", "")
     if not declared.isdigit():
