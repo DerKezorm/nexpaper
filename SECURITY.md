@@ -196,8 +196,11 @@ A PDF that needs a password to be opened waits in the inbox. Whoever may change 
 card. It goes in the body of that one request to the worker process, on its standard input: never as an argument of the
 process, never in its environment, never in a file, never in the table of jobs (the run is made within the request and
 its time limit). The worker answers only whether it opened the PDF and with which of the passwords it was given, by
-number. A wrong password changes nothing; every try counts against a brake of 5 per document and 20 per person in an
-hour. No log line, answer, error message or history line names a password.
+number. A wrong password changes nothing; every try counts against a brake of 5 per document and person and 20 per
+person in an hour (somebody else's tries never lock the owner out). The brake keeps the server from being used to guess;
+it does not make a weak password strong: whoever may read the document can download the protected original and guess
+at it elsewhere. A file that claims to be encrypted but opens with nothing is refused as damaged. No log line, answer,
+error message or history line names a password.
 
 **The PDF opened lies unencrypted on the disk.** That is the point: it is the searchable copy beside the original
 (`... (searchable).pdf`), which the view, the search, the page tools, links and exports take. The original stays as it
@@ -208,9 +211,13 @@ changing (it opens without a password) is read the same way without asking.
 **Keeping a password** happens only when the person ticks "Remember for future documents" and gives it a name. It is
 stored sealed with the server's secret (AES-256-GCM with a key from `secret.key`, bound to the person), at most 10 per
 person, and never shown again, not even to that person: the list under My account, Upload shows names and dates, and an
-entry can be renamed or deleted. When a protected PDF comes into somebody's inbox (browser, phone, intake folder,
-mailbox, import), the worker gets that owner's passwords for one more run, and never anybody else's; the operator sees,
-uses and counts nobody's entries. The history then says that a kept password opened it, never which one. Deleting an
+entry can be renamed or deleted. **Whose kept passwords are tried** is decided in one place, by the file, never by
+the owner of the document: a file a person uploaded while signed in (browser, phone, a device or a key), as a document
+or as a new version, gets that person's passwords; a file from the intake folder or the mailbox (the plus address and
+unknown senders too) gets the passwords of the person it was given to, and only while it stands in that person's own
+vault, where nobody else sees the outcome; anything else (the Paperless import, a version made by the page tools) gets
+none. So nobody can find out by uploading a file which passwords somebody else keeps. The worker gets them for one more
+run, and only when the first run said the PDF needs a password; the operator sees, uses and counts nobody's entries. The history then says that a kept password opened it, never which one. Deleting an
 account deletes its entries. A new `secret.key` makes them unreadable (the list says so); **a backup together with
 `secret.key` opens them**, so keep backups protected. While the server runs, a kept password is unsealed in its memory
 for the run that needs it and passed to the worker on its standard input; Python gives no way to wipe a string, so it

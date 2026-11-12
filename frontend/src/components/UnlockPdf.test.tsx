@@ -92,6 +92,24 @@ describe('the field at the card', () => {
   })
 })
 
+describe('the field itself', () => {
+  it('is no sign-in field: password managers are asked not to save or fill it', async () => {
+    await page.show(<UnlockPdf documentId={5} onOpened={() => undefined} />)
+    const input = field()!
+    expect(input.getAttribute('autocomplete')).toBe('one-time-code')
+    expect(input.getAttribute('name')).toBe('pdf-password')
+    expect(input.hasAttribute('data-1p-ignore')).toBe(true)
+    expect(input.getAttribute('data-lpignore')).toBe('true')
+    expect(input.getAttribute('spellcheck')).toBe('false')
+  })
+
+  it('says whose PDFs a remembered password is tried on', async () => {
+    await page.show(<UnlockPdf documentId={5} onOpened={() => undefined} />)
+    await page.check(remember())
+    expect(page.text).toContain('die du selbst hochlädst oder die über Eingangsordner oder Postfach in deinen eigenen Tresor kommen')
+  })
+})
+
 describe('the list under My account', () => {
   it('shows names and dates, never a password, and says when one is lost', async () => {
     await page.show(<PdfPasswordsCard />)

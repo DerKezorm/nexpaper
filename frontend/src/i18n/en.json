@@ -623,6 +623,8 @@
       "revivedKeys_other": "Restoring makes {{count}} keys valid again that were blocked since the backup.",
       "revivedLinks_one": "Restoring makes {{count}} link valid again that was withdrawn since the backup.",
       "revivedLinks_other": "Restoring makes {{count}} links valid again that were withdrawn since the backup.",
+      "revivedPdfPasswords_one": "Restoring brings back {{count}} remembered PDF password that was deleted since the backup.",
+      "revivedPdfPasswords_other": "Restoring brings back {{count}} remembered PDF passwords that were deleted since the backup.",
       "working": "Running the trial …"
     },
     "sizeNote": "The backup is made while nexpaper runs, through SQLite's own backup function, nothing stalls. The search index is not in it and is built anew after a restore. Download, delete and restore ask for your password.",
@@ -3143,7 +3145,7 @@
     "nameLabel": "Name for the remembered password",
     "namePlaceholder": "for example Payslip",
     "nameMissing": "Give the password a name, so you can find it again later.",
-    "rememberHint": "nexpaper tries it on protected PDFs that come into your inbox. It is stored encrypted and never shown again.",
+    "rememberHint": "nexpaper tries it on protected PDFs you upload yourself, or that come into your own vault through the intake folder or the mailbox. It is stored encrypted and never shown again.",
     "openedCopy": "To read it, nexpaper keeps an opened copy without the password on the server. The original stays as it came.",
     "waits": "Enter the password, then nexpaper reads the document.",
     "waitsReadOnly": "Whoever may edit the document can open it with the password.",
@@ -3155,7 +3157,7 @@
     "originalHint": "protected by a password, as it came; opening it needs the password",
     "originalRestrictedHint": "locked against printing or changes, as it came",
     "listTitle": "Remembered PDF passwords",
-    "listText": "nexpaper tries them on protected PDFs that come into your inbox. Only you see this list.",
+    "listText": "nexpaper tries them on protected PDFs you upload yourself, or that come into your own vault through the intake folder or the mailbox. Only you see this list.",
     "listEmpty": "None yet. When you open a protected PDF, you can have its password remembered.",
     "listNote": "A password is never shown again. It is stored encrypted with the server key; a backup together with secret.key opens it.",
     "keptOn": "remembered on {{day}}",
@@ -3171,6 +3173,8 @@
     "events": {
       "opened": "opened the PDF with the password",
       "openedKept": "opened the PDF with a remembered password"
-    }
+    },
+    "shareNote": "The original is protected by a password. Whoever opens the link gets the opened copy, without the password.",
+    "shareNoteRestricted": "The original is locked against printing or changes. Whoever opens the link gets the opened copy, without that lock."
   }
 }

@@ -413,10 +413,11 @@ it came (protected, with its checksum), and nexpaper keeps an opened copy **with
 searchable copy. The view, the search, the page tools, links and exports use that copy; "Download: original" gives the
 protected file and says so. A PDF that only locks printing or changes is opened without asking.
 
-Tick "Remember for future documents" and give it a name ("Payslip"): protected PDFs that come into your inbox later are
-opened with it by themselves. Up to 10 per person, stored encrypted with the server's secret and never shown again; My
-account, Upload lists them by name to rename or delete. Nobody else's are ever tried, and the operator sees none of
-them. A backup together with `secret.key` can open them, see [SECURITY.md](SECURITY.md).
+Tick "Remember for future documents" and give it a name ("Payslip"): protected PDFs you upload yourself later, or that
+come into your own vault through the intake folder or the mailbox, are opened with it by themselves. Up to 10 per
+person, stored encrypted with the server's secret and never shown again; My account, Upload lists them by name to
+rename or delete. Nobody else's are ever tried, also not on a file somebody else uploads to your document, and the
+operator sees none of them. A backup together with `secret.key` can open them, see [SECURITY.md](SECURITY.md).
 
 ## From Paperless, and for the tax adviser
 

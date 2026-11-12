@@ -623,6 +623,8 @@
       "revivedKeys_other": "Zurückspielen macht {{count}} Schlüssel wieder gültig, die seit der Sicherung gesperrt wurden.",
       "revivedLinks_one": "Zurückspielen macht {{count}} Link wieder gültig, der seit der Sicherung zurückgezogen wurde.",
       "revivedLinks_other": "Zurückspielen macht {{count}} Links wieder gültig, die seit der Sicherung zurückgezogen wurden.",
+      "revivedPdfPasswords_one": "Zurückspielen bringt {{count}} gemerktes PDF-Passwort zurück, das seit der Sicherung gelöscht wurde.",
+      "revivedPdfPasswords_other": "Zurückspielen bringt {{count}} gemerkte PDF-Passwörter zurück, die seit der Sicherung gelöscht wurden.",
       "working": "Probelauf läuft …"
     },
     "sizeNote": "Gesichert wird im laufenden Betrieb über die Sicherungsfunktion von SQLite, nichts hakt. Der Suchindex ist nicht dabei und wird nach dem Wiederherstellen neu gebaut. Herunterladen, Löschen und Wiederherstellen fragen nach deinem Passwort.",
@@ -3143,7 +3145,7 @@
     "nameLabel": "Name für das gemerkte Passwort",
     "namePlaceholder": "zum Beispiel Gehaltsabrechnung",
     "nameMissing": "Gib dem Passwort einen Namen, damit du es später wiederfindest.",
-    "rememberHint": "nexpaper probiert es bei geschützten PDFs, die in deinen Eingang kommen. Es wird verschlüsselt gespeichert und nie wieder angezeigt.",
+    "rememberHint": "nexpaper probiert es bei geschützten PDFs, die du selbst hochlädst oder die über Eingangsordner oder Postfach in deinen eigenen Tresor kommen. Es wird verschlüsselt gespeichert und nie wieder angezeigt.",
     "openedCopy": "Zum Lesen legt nexpaper eine geöffnete Fassung ohne Passwort auf dem Server ab. Das Original bleibt, wie es kam.",
     "waits": "Gib das Passwort ein, dann liest nexpaper das Dokument.",
     "waitsReadOnly": "Wer das Dokument bearbeiten darf, kann es mit dem Passwort öffnen.",
@@ -3155,7 +3157,7 @@
     "originalHint": "mit Passwort geschützt, so wie es kam; zum Öffnen braucht es das Passwort",
     "originalRestrictedHint": "gegen Drucken oder Ändern gesperrt, so wie es kam",
     "listTitle": "Gemerkte PDF-Passwörter",
-    "listText": "nexpaper probiert sie bei geschützten PDFs, die in deinen Eingang kommen. Nur du siehst diese Liste.",
+    "listText": "nexpaper probiert sie bei geschützten PDFs, die du selbst hochlädst oder die über Eingangsordner oder Postfach in deinen eigenen Tresor kommen. Nur du siehst diese Liste.",
     "listEmpty": "Noch keine. Beim Öffnen eines geschützten PDFs kannst du das Passwort merken lassen.",
     "listNote": "Ein Passwort wird nie wieder angezeigt. Es liegt verschlüsselt mit dem Server-Schlüssel; eine Sicherung samt secret.key öffnet es.",
     "keptOn": "gemerkt am {{day}}",
@@ -3171,6 +3173,8 @@
     "events": {
       "opened": "hat das PDF mit dem Passwort geöffnet",
       "openedKept": "hat das PDF mit einem gemerkten Passwort geöffnet"
-    }
+    },
+    "shareNote": "Das Original ist mit einem Passwort geschützt. Wer den Link öffnet, bekommt die geöffnete Fassung ohne Passwort.",
+    "shareNoteRestricted": "Das Original ist gegen Drucken oder Ändern gesperrt. Wer den Link öffnet, bekommt die geöffnete Fassung ohne diese Sperre."
   }
 }

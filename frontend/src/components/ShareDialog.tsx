@@ -23,7 +23,7 @@ import { useConfirm } from './useConfirm'
 import { iso } from '../lib/say'
 
 type Props = {
-  document: Pick<DocumentInfo, 'id' | 'vault_id' | 'title'>
+  document: Pick<DocumentInfo, 'id' | 'vault_id' | 'title' | 'original_protected'>
   onClose: () => void
   /** What was done, in a sentence, for the page to show (a toast); the dialog itself shows problems. */
   say?: (text: string) => void
@@ -268,6 +268,9 @@ export function ShareDialog({ document, onClose, say }: Props) {
                   <input type="checkbox" checked={download} onChange={(e) => setDownload(e.target.checked)} className="h-4 w-4 accent-[var(--accent)]" />
                   {t('share.allowDownload')}
                 </label>
+                {document.original_protected && (
+                  <p className="text-xs text-muted" data-testid="share-protected">{t(document.original_protected === 'password' ? 'pdfPassword.shareNote' : 'pdfPassword.shareNoteRestricted')}</p>
+                )}
                 <Button size="sm" variant="soft" onClick={() => void makeLink()} disabled={!to.trim() || !until}>
                   <Link2 size={14} aria-hidden /> {t('share.makeLink')}
                 </Button>

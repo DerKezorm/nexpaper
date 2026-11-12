@@ -56,9 +56,20 @@ export function UnlockPdf({ documentId, onOpened, compact = false }: { documentI
         <input
           id={`${id}-password`}
           type="password"
+          name="pdf-password"
           value={password}
           onChange={(event) => setPassword(event.target.value)}
-          autoComplete="off"
+          // Not the sign-in of this site: "one-time-code" keeps the password managers of Chromium and Safari from
+          // offering to save it or filling in the sign-in password ("off" is ignored for password fields); the data
+          // attributes ask the same of 1Password, LastPass, Bitwarden and Dashlane.
+          autoComplete="one-time-code"
+          autoCapitalize="off"
+          autoCorrect="off"
+          spellCheck={false}
+          data-1p-ignore=""
+          data-lpignore="true"
+          data-bwignore=""
+          data-form-type="other"
           maxLength={512}
           className="input min-w-0 flex-1"
           aria-invalid={problem ? true : undefined}

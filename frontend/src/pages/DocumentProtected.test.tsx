@@ -83,3 +83,25 @@ it('offers the password field where the reading error stands, to who may change 
   expect(read?.textContent).toContain('Wer das Dokument bearbeiten darf')
   expect(read?.querySelector('[data-testid="unlock-pdf"]')).toBeNull()
 })
+
+it('says in the share dialog that a link hands out the opened copy, without the password', async () => {
+  server.answers['GET /api/v1/documents/7/shares'] = []
+  server.answers['GET /api/v1/documents/7/links'] = []
+  server.answers['GET /api/v1/people'] = []
+  server.answers['GET /api/v1/sharing'] = { links_allowed: true, link_max_days: 30 }
+  await show()
+  await page.click(page.button('Teilen'))
+  expect(document.querySelector('[data-testid="share-protected"]')?.textContent).toBe(
+    'Das Original ist mit einem Passwort geschützt. Wer den Link öffnet, bekommt die geöffnete Fassung ohne Passwort.')
+})
+
+it('says nothing of the kind in the share dialog for any other document', async () => {
+  server.answers['GET /api/v1/documents/7'] = { ...base, original_protected: '' }
+  server.answers['GET /api/v1/documents/7/shares'] = []
+  server.answers['GET /api/v1/documents/7/links'] = []
+  server.answers['GET /api/v1/people'] = []
+  server.answers['GET /api/v1/sharing'] = { links_allowed: true, link_max_days: 30 }
+  await show()
+  await page.click(page.button('Teilen'))
+  expect(document.querySelector('[data-testid="share-protected"]')).toBeNull()
+})

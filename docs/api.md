@@ -979,9 +979,12 @@ none of it, a link to the outside never.
   read again from the PDF opened (`status` `processing`). Answer `{"document", "kept"}`, `kept` being `kept`, `known`
   (the caller keeps this password already) or empty. Needs `edit` on the document, a browser or a device (never an API
   key). `409 not_protected` when it does not wait for a password, `422 wrong_pdf_password` when the password does not
-  open it (nothing changes), `409 too_many_pdf_passwords` with `remember` at 10 kept, `429 pdf_password_too_often` after
-  5 tries for one document or 20 of the caller within an hour. The history gets `pdf_opened` with `detail.by` `typed`
-  (with the person) or `kept` (opened by itself with a password the owner keeps, never which one).
+  open it (nothing changes), `422 pdf_broken` when the file claims to be encrypted but nothing opens (nothing changes),
+  `409 too_many_pdf_passwords` with `remember` at 10 kept (kept by the caller, never by the owner),
+  `429 pdf_password_too_often` after 5 tries of the caller for one document or 20 of the caller within an hour. The
+  history gets `pdf_opened` with `detail.by` `typed` (with the person) or `kept` (opened by itself, never which one).
+- Kept passwords are tried only on a file the person uploaded (as a document or a new version), or that came through the
+  intake folder or the mailbox into that person's personal vault; never because of who owns the document.
 - `GET /pdf-passwords`: the caller's kept passwords, `[{"id", "name", "created_at", "last_matched_at", "readable"}]`,
   never a password; `readable` false when the server's secret changed since (it is lost). `PATCH /pdf-passwords/{id}`
   `{"name"}`, `DELETE /pdf-passwords/{id}`. Another person's entry answers 404 like one that does not exist, for the
