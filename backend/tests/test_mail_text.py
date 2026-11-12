@@ -754,6 +754,8 @@ def test_the_title_is_the_subject_without_what_forwarding_puts_in_front(subject:
 
     assert mail_text.title_of(subject, "de", date(2026, 11, 3)) == title
     assert mail_text.title_of("", "en", date(2026, 11, 3)) == "Mail of 2026-11-03"
+    for nothing in (RLO, ZWSP * 2, chr(0x2060) * 3, "WG: " + chr(0xAD), " " + RLO + PDF_MARK + " "):
+        assert mail_text.title_of(nothing, "de", date(2026, 11, 3)) == "Mail vom 03.11.2026", repr(nothing)
 
 
 def test_the_date_of_the_mail_has_its_years() -> None:
