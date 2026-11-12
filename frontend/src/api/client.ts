@@ -1435,3 +1435,33 @@ export const keepingApi = {
   /** Many documents into the trash, each checked on its own. */
   trashMany: (ids: number[]) => api<TrashResult>('/api/v1/documents/trash', { method: 'POST', body: { ids } }),
 }
+
+
+// ---- Upload requests (U1): files from somebody without an account into the own inbox ----------------------------------
+
+export type RequestRules = { allowed: boolean; public_url_set: boolean; max_days: number; max_files: number; default_files: number; max_open: number }
+export type UploadRequestStatus = 'active' | 'expired' | 'used' | 'off' | 'ended'
+export type UploadRequestInfo = { id: number; name: string; until: string; max_files: number; received: number; last_used_at: string | null; created_at: string; status: UploadRequestStatus }
+export type UploadRequestMade = UploadRequestInfo & { url: string }
+export type RequestsOverview = { open_requests: number; people: number }
+/** What the page behind a request shows to somebody without an account. */
+export type PublicRequest = { requested_by: string; name: string; until: string; remaining: number; max_mb: number }
+
+export const uploadRequestsApi = {
+  rules: () => api<RequestRules>('/api/v1/upload-requests/rules'),
+  mine: () => api<UploadRequestInfo[]>('/api/v1/upload-requests'),
+  make: (name: string, days: number, max_files: number) => api<UploadRequestMade>('/api/v1/upload-requests', { method: 'POST', body: { name, days, max_files } }),
+  /** The address again, to copy (the person who made it, while it works). */
+  address: (id: number) => api<{ url: string }>(`/api/v1/upload-requests/${id}/address`, { method: 'POST' }),
+  revoke: (id: number) => api<void>(`/api/v1/upload-requests/${id}`, { method: 'DELETE' }),
+  /** For the operator: how many take files and of how many people. */
+  overview: () => api<RequestsOverview>('/api/v1/upload-requests/overview'),
+  /** The page behind the address; no sign-in. */
+  open: (token: string) => api<PublicRequest>(`/api/v1/u/${encodeURIComponent(token)}`),
+  /** One file through the address; no sign-in. */
+  send: (token: string, file: File) => {
+    const form = new FormData()
+    form.append('file', file, file.name)
+    return api<{ status: string; remaining: number }>(`/api/v1/u/${encodeURIComponent(token)}/files`, { method: 'POST', form })
+  },
+}

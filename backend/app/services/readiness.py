@@ -164,7 +164,7 @@ def _upload_requests(db: Session) -> Point:
 
     if not settings_service.get(db, "upload_requests_allowed"):
         return Point("upload_requests", OK, {"on": False})
-    return Point("upload_requests", WARN, {"on": True, "open": upload_requests.overview(db).open_requests})
+    return Point("upload_requests", WARN, {"on": True, "count": upload_requests.overview(db).open_requests})
 
 
 def check(db: Session, request: Request, operator: Account, unknown_proxy: bool) -> dict[str, Any]:

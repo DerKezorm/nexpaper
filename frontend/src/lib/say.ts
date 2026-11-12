@@ -43,7 +43,8 @@ export function moment(value: string, language: string, now: number = Date.now()
 /** Where a document came from, in words: the inbox's own texts for the folder and the mailbox. */
 export function useSourceText() {
   const { t } = useTranslation()
-  return (source: string) => (source === 'folder' || source === 'mail' ? t(`intake.origin.${source}`) : t(`docs.source.${source}`, { defaultValue: t('docs.source.upload') }))
+  return (source: string) =>
+    source === 'request' ? t('uploadRequest.source') : source === 'folder' || source === 'mail' ? t(`intake.origin.${source}`) : t(`docs.source.${source}`, { defaultValue: t('docs.source.upload') })
 }
 
 /** An answer that should be a list, as a list: a page never breaks on a server that answers something else. */

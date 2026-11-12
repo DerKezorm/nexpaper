@@ -18,6 +18,7 @@ import { OrderPage } from './pages/OrderPage'
 import { QuickPage } from './pages/QuickPage'
 import { SettingsPage } from './pages/SettingsPage'
 import { TrashPage } from './pages/TrashPage'
+import { UploadRequestPage } from './pages/UploadRequestPage'
 import { VaultsPage } from './pages/VaultsPage'
 import { useAuth } from './state/auth'
 import { UploadProvider } from './state/uploads'
@@ -127,6 +128,7 @@ export default function App() {
       <Route path="absender/:token" element={<SenderConfirmPage />} />
       <Route path="l/:token" element={<LinkPage />} />
       <Route path="x/:token" element={<ExportLinkPage />} />
+      <Route path="u/:token" element={<UploadRequestPage />} />
       <Route element={<SignedInPart />}>
         <Route path="schnell" element={<QuickPage />} />
         <Route path="teilen" element={<QuickPage shared />} />

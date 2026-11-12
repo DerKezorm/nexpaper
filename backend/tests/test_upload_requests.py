@@ -109,7 +109,7 @@ def test_a_request_needs_the_public_address(client: TestClient, operator: Accoun
     assert client.put("/api/v1/settings", json={"upload_requests_allowed": True, "public_url": ADDRESS}).status_code \
         == 200
     point = next(p for p in client.get("/api/v1/settings/readiness").json()["points"] if p["key"] == "upload_requests")
-    assert point["state"] == "warn" and point["values"] == {"on": True, "open": 0}
+    assert point["state"] == "warn" and point["values"] == {"on": True, "count": 0}
 
 
 # --- Making, listing, copying, revoking ----------------------------------------------------------------------------

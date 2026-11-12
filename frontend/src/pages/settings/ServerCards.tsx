@@ -42,6 +42,8 @@ export type ServerSettings = {
   process_timeout_seconds: number
   process_memory_mb: number
   cache_max_mb: number
+  /** U1: upload requests, off from the start. */
+  upload_requests_allowed?: boolean
 }
 
 type Change = Partial<ServerSettings> & { smtp_password?: string; current_password?: string; confirm_address?: boolean }
@@ -682,6 +684,8 @@ type Brief = {
   revived_links?: number
   /** Further documents (N2) a restore puts back on a link: on one that comes back, or taken out of one since. */
   revived_link_documents?: number
+  /** Upload requests (U1) a restore would open again. */
+  revived_upload_requests?: number
   created: string
 }
 
@@ -702,6 +706,7 @@ function PreviewLines({ brief }: { brief: Brief }) {
   if (brief.revived_keys) lines.push(t('server.restorePreview.revivedKeys', { count: brief.revived_keys }))
   if (brief.revived_links) lines.push(t('server.restorePreview.revivedLinks', { count: brief.revived_links }))
   if (brief.revived_link_documents) lines.push(t('linkRelated.revived', { count: brief.revived_link_documents }))
+  if (brief.revived_upload_requests) lines.push(t('uploadRequest.revived', { count: brief.revived_upload_requests }))
   if (brief.rebuilds_index) lines.push(t('server.restorePreview.index'))
   return (
     <ul className="mt-2 space-y-1 text-xs" data-testid="restore-preview">

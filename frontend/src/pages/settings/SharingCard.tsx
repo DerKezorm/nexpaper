@@ -1,9 +1,10 @@
-/** Settings, Sharing: the operator's switch for links to the outside and the longest they may last. */
+/** Settings, Sharing: the operator's switch for links to the outside and the longest they may last; below, the switch
+ * for upload requests (U1, off from the start) and how many take files now (never an address or a name). */
 import { Link2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import { sharingApi, type SharingOverview } from '../../api/client'
+import { sharingApi, uploadRequestsApi, type RequestsOverview, type SharingOverview } from '../../api/client'
 import { shortDate } from '../../lib/dates'
 import { Card, Feedback, Select, SubHead, Toggle } from './ui'
 import { useServerSettings } from './ServerCards'
@@ -17,9 +18,14 @@ export function SharingCard() {
   const settings = server.settings
   const allowed = settings?.links_allowed ?? false
   const longest = String(settings?.link_max_days ?? 30)
+  const [requests, setRequests] = useState<RequestsOverview | null>(null)
+  const requestsOn = settings?.upload_requests_allowed ?? false
   useEffect(() => {
     sharingApi.overview().then(setOverview, () => undefined)
   }, [allowed, longest])
+  useEffect(() => {
+    uploadRequestsApi.overview().then(setRequests, () => undefined)
+  }, [requestsOn])
   return (
     <Card icon={Link2} title={t('sharingSettings.title')} text={t('sharingSettings.text')}>
       {settings && (
@@ -50,6 +56,26 @@ export function SharingCard() {
         </p>
       ) : (
         <p className="text-sm text-ink-2">{t('sharingSettings.none')}</p>
+      )}
+      {settings && (
+        <>
+          <SubHead title={t('uploadRequest.settings.title')} />
+          <Toggle
+            label={t('uploadRequest.settings.allow')}
+            hint={t('uploadRequest.settings.allowHint')}
+            checked={settings.upload_requests_allowed ?? false}
+            onChange={(upload_requests_allowed) => void server.save({ upload_requests_allowed })}
+          />
+          {settings.upload_requests_allowed && !settings.public_url && <p className="text-sm text-warn">{t('uploadRequest.settings.noAddress')}</p>}
+          <p className="text-sm text-ink-2" data-testid="request-overview">
+            {requests && requests.open_requests > 0
+              ? t('uploadRequest.settings.overview', {
+                  requests: t('uploadRequest.settings.requestCount', { count: requests.open_requests }),
+                  people: t('sharingSettings.personCount', { count: requests.people }),
+                })
+              : t('uploadRequest.settings.none')}
+          </p>
+        </>
       )}
       <Feedback problem={server.problem} values={server.values} />
     </Card>
