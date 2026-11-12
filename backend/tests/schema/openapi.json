@@ -2090,6 +2090,11 @@
             "title": "Q",
             "type": "string"
           },
+          "related": {
+            "default": false,
+            "title": "Related",
+            "type": "boolean"
+          },
           "sender": {
             "anyOf": [
               {
@@ -2417,6 +2422,11 @@
             "title": "Links",
             "type": "array"
           },
+          "related": {
+            "default": false,
+            "title": "Related",
+            "type": "boolean"
+          },
           "size": {
             "title": "Size",
             "type": "integer"
@@ -2531,6 +2541,11 @@
             },
             "title": "Links",
             "type": "array"
+          },
+          "related": {
+            "default": false,
+            "title": "Related",
+            "type": "boolean"
           },
           "size": {
             "title": "Size",
@@ -3956,6 +3971,11 @@
             "title": "Allow Download",
             "type": "boolean"
           },
+          "also_count": {
+            "default": 0,
+            "title": "Also Count",
+            "type": "integer"
+          },
           "can_copy": {
             "title": "Can Copy",
             "type": "boolean"
@@ -4066,6 +4086,14 @@
             "title": "Allow Download",
             "type": "boolean"
           },
+          "also": {
+            "items": {
+              "type": "integer"
+            },
+            "maxItems": 10,
+            "title": "Also",
+            "type": "array"
+          },
           "days": {
             "maximum": 365.0,
             "minimum": 1.0,
@@ -4090,6 +4118,11 @@
           "allow_download": {
             "title": "Allow Download",
             "type": "boolean"
+          },
+          "also_count": {
+            "default": 0,
+            "title": "Also Count",
+            "type": "integer"
           },
           "can_copy": {
             "title": "Can Copy",
@@ -4833,6 +4866,11 @@
           "allow_download": {
             "title": "Allow Download",
             "type": "boolean"
+          },
+          "also_count": {
+            "default": 0,
+            "title": "Also Count",
+            "type": "integer"
           },
           "can_copy": {
             "title": "Can Copy",
@@ -6267,6 +6305,70 @@
         "title": "ProviderIn",
         "type": "object"
       },
+      "PublicAlso": {
+        "description": "A further document of a link: what the page lists under the document (N2). Never its sender or anything else.",
+        "properties": {
+          "date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Date"
+          },
+          "has_file": {
+            "title": "Has File",
+            "type": "boolean"
+          },
+          "has_pages": {
+            "title": "Has Pages",
+            "type": "boolean"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind"
+          },
+          "pages": {
+            "title": "Pages",
+            "type": "integer"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "viewable": {
+            "title": "Viewable",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "kind",
+          "date",
+          "pages",
+          "has_file",
+          "viewable",
+          "has_pages"
+        ],
+        "title": "PublicAlso",
+        "type": "object"
+      },
       "PublicExport": {
         "properties": {
           "date_from": {
@@ -6341,6 +6443,14 @@
           "allow_download": {
             "title": "Allow Download",
             "type": "boolean"
+          },
+          "also": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/PublicAlso"
+            },
+            "title": "Also",
+            "type": "array"
           },
           "date": {
             "anyOf": [
@@ -6569,6 +6679,11 @@
       "RelatedOut": {
         "description": "A document that goes with the one asked about, as far as the caller may see it.",
         "properties": {
+          "can_share": {
+            "default": false,
+            "title": "Can Share",
+            "type": "boolean"
+          },
           "can_unlink": {
             "title": "Can Unlink",
             "type": "boolean"
@@ -8146,6 +8261,66 @@
           "upload_url"
         ],
         "title": "ShortcutOut",
+        "type": "object"
+      },
+      "ShownThrough": {
+        "description": "A link of another document that shows this one as a further document.",
+        "properties": {
+          "created_by": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PersonRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "document_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Document Id"
+          },
+          "document_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Document Title"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "recipient": {
+            "title": "Recipient",
+            "type": "string"
+          },
+          "until": {
+            "format": "date-time",
+            "title": "Until",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "recipient",
+          "until",
+          "created_by",
+          "document_id",
+          "document_title"
+        ],
+        "title": "ShownThrough",
         "type": "object"
       },
       "Skipped": {
@@ -14496,6 +14671,108 @@
         ]
       }
     },
+    "/api/v1/documents/{document_id}/shown-through": {
+      "get": {
+        "description": "Only links that work now. The other document is named only for a caller who may see it.",
+        "operationId": "shown_through_api_v1_documents__document_id__shown_through_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "document_id",
+            "required": true,
+            "schema": {
+              "title": "Document Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ShownThrough"
+                  },
+                  "title": "Response Shown Through Api V1 Documents  Document Id  Shown Through Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "The links of other documents that show this one too (who may share it: managers, its owner)",
+        "tags": [
+          "sharing"
+        ]
+      }
+    },
+    "/api/v1/documents/{document_id}/shown-through/{item_id}": {
+      "delete": {
+        "description": "For who may share the document. It can only be shown again by a new link.",
+        "operationId": "take_out_api_v1_documents__document_id__shown_through__item_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "document_id",
+            "required": true,
+            "schema": {
+              "title": "Document Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "item_id",
+            "required": true,
+            "schema": {
+              "title": "Item Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Take this document out of a link of another document (the link stays)",
+        "tags": [
+          "sharing"
+        ]
+      }
+    },
     "/api/v1/documents/{document_id}/split": {
       "post": {
         "operationId": "split_api_v1_documents__document_id__split_post",
@@ -15553,6 +15830,16 @@
             "schema": {
               "default": true,
               "title": "Xml",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "related",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Related",
               "type": "boolean"
             }
           }
@@ -17099,6 +17386,239 @@
         "summary": "What a link shows (no sign-in; the token is the key)",
         "tags": [
           "links"
+        ]
+      }
+    },
+    "/api/v1/l/{token}/also/{item}/file": {
+      "get": {
+        "description": "A document that does not belong to the link answers like a wrong token.",
+        "operationId": "also_file_api_v1_l__token__also__item__file_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "item",
+            "required": true,
+            "schema": {
+              "maximum": 2147483647,
+              "minimum": 1,
+              "title": "Item",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "The file of a further document behind a link that allows downloading",
+        "tags": [
+          "links"
+        ]
+      }
+    },
+    "/api/v1/l/{token}/also/{item}/pages/{page}": {
+      "get": {
+        "operationId": "also_page_api_v1_l__token__also__item__pages__page__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "item",
+            "required": true,
+            "schema": {
+              "maximum": 2147483647,
+              "minimum": 1,
+              "title": "Item",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "page",
+            "required": true,
+            "schema": {
+              "maximum": 2147483647,
+              "minimum": 1,
+              "title": "Page",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "size",
+            "required": false,
+            "schema": {
+              "default": "small",
+              "enum": [
+                "small",
+                "large"
+              ],
+              "title": "Size",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "One page of a further document behind a link as a WebP picture",
+        "tags": [
+          "links"
+        ]
+      }
+    },
+    "/api/v1/l/{token}/also/{item}/preview": {
+      "get": {
+        "operationId": "also_preview_api_v1_l__token__also__item__preview_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "item",
+            "required": true,
+            "schema": {
+              "maximum": 2147483647,
+              "minimum": 1,
+              "title": "Item",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "The first page of a further document behind a link, small, as a WebP picture",
+        "tags": [
+          "links"
+        ]
+      }
+    },
+    "/api/v1/l/{token}/also/{item}/text": {
+      "get": {
+        "description": "A document that does not belong to the link answers like a wrong token.",
+        "operationId": "link_also_text_api_v1_l__token__also__item__text_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "item",
+            "required": true,
+            "schema": {
+              "maximum": 2147483647,
+              "minimum": 1,
+              "title": "Item",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TextOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "The text of a further document behind a link that allows downloading",
+        "tags": [
+          "search"
         ]
       }
     },

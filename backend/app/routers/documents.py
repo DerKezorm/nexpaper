@@ -246,8 +246,12 @@ def events(document_id: int, account: Reader, db: DbSession) -> list[EventOut]:
     people = {a.id: a for a in db.scalars(select(Account).where(Account.id.in_(authors)))}
     # Goes with (``services/related.py``): the other document is named only for a caller who may see it.
     from ..services import related as related_service
+    from ..services import sharing as sharing_service
 
-    partners = {e.detail.get("document") for e in history if e.action in (related_service.SET, related_service.UNSET)
+    # The further documents of a link (N2) name the other document the same way.
+    naming = (related_service.SET, related_service.UNSET, sharing_service.ALSO_SHOWN, sharing_service.ALSO_LEFT,
+              sharing_service.ALSO_GONE)
+    partners = {e.detail.get("document") for e in history if e.action in naming
                 and isinstance(e.detail, dict) and isinstance(e.detail.get("document"), int)}
     seen_titles: dict[int, str] = {int(i): t for i, t in db.execute(select(Document.id, Document.title).where(
         Document.id.in_(partners), rights.visible_clause(account.id))).all()} if partners else {}
@@ -260,7 +264,7 @@ def events(document_id: int, account: Reader, db: DbSession) -> list[EventOut]:
                 moved = event.action in (changes.MOVED, changes.TAKEN_OVER)
                 if moved and key in detail and detail[key] not in visible:
                     detail[key] = None
-            if event.action in (related_service.SET, related_service.UNSET):
+            if event.action in naming:
                 # A document the caller may not see is "another document": neither its number nor its title.
                 partner = detail.get("document")
                 if partner in seen_titles:

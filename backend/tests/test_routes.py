@@ -72,6 +72,11 @@ OPEN = {
     # A link to an export for the tax adviser: the token is the key (tests/test_exports.py).
     ("GET", "/api/v1/x/{token}"),
     ("GET", "/api/v1/x/{token}/file"),
+    # N2: the further documents of a link, each checked against the token and the link (tests/test_link_also.py).
+    ("GET", "/api/v1/l/{token}/also/{item}/file"),
+    ("GET", "/api/v1/l/{token}/also/{item}/preview"),
+    ("GET", "/api/v1/l/{token}/also/{item}/pages/{page}"),
+    ("GET", "/api/v1/l/{token}/also/{item}/text"),
 }
 
 
@@ -272,6 +277,8 @@ TOKEN_ROUTES = {
     ("POST", "/api/v1/saved-searches/{saved_id}/up"),
     ("POST", "/api/v1/saved-searches/{saved_id}/down"),
     ("DELETE", "/api/v1/saved-searches/{saved_id}"),
+    # N2: taking a document out of a link of another document (who may share it).
+    ("DELETE", "/api/v1/documents/{document_id}/shown-through/{item_id}"),
 }
 
 #: The routes that only read and that a program with an API key reaches too (as the browser and a device do). A route
@@ -326,6 +333,8 @@ READ_ROUTES = {
     # The own saved searches with their numbers of hits, and the sums of a search (A1).
     ("GET", "/api/v1/saved-searches"),
     ("GET", "/api/v1/search/sum"),
+    # N2: the links of other documents that show this one too, like the links of the document.
+    ("GET", "/api/v1/documents/{document_id}/shown-through"),
 }
 
 

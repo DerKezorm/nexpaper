@@ -1291,3 +1291,21 @@ class SavedSearch(Base):
 
 
 __all__ += ["SavedSearch"]
+
+
+class LinkDocument(Base):
+    """A further document a link shows beside its own (N2): chosen one by one when the link was made, among the
+    documents that go with it, and never added later. Gone with the link or with the document; taken out when the pair
+    of documents is undone or somebody who may share it takes it out (``services/sharing.py``)."""
+
+    __tablename__ = "link_documents"
+    __table_args__ = (UniqueConstraint("link_id", "document_id", name="uq_link_document"),
+                      Index("ix_link_documents_document", "document_id"))
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    link_id: Mapped[int] = mapped_column(ForeignKey("links.id", ondelete="CASCADE"))
+    document_id: Mapped[int] = mapped_column(ForeignKey("documents.id", ondelete="CASCADE"))
+    created_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utcnow)
+
+
+__all__ += ["LinkDocument"]

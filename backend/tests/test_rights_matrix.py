@@ -156,6 +156,10 @@ TABLE = [
     Row("PUT", "/api/v1/documents/{d}/related/{o}", None, "edit", 404),
     Row("DELETE", "/api/v1/documents/{d}/related/{o}", None, "edit", 404),
     Row("POST", "/api/v1/documents/{d}/related/{o}/dismiss", None, "edit", 404),
+    # N2: the links of other documents that show this one, and taking it out of one, for who may see its links ({i} is a
+    # number no link has: who may gets 404). ``test_link_also.py`` has the rest.
+    Row("GET", "/api/v1/documents/{d}/shown-through", None, "manage", 404),
+    Row("DELETE", "/api/v1/documents/{d}/shown-through/{i}", None, "manage", 404),
 ]
 
 
@@ -166,7 +170,7 @@ def test_every_route_of_vaults_and_documents_is_in_the_table() -> None:
     # Normalise the parameter names of the table to those of the routes.
     names = {"{d}": "{document_id}", "{v}": "{vault_id}", "{n}": "{note_id}", "{l}": "{link_id}", "{u}": "{user_id}",
              "{s}": "{sender_id}", "{t}": "{tag_id}", "{k}": "{kind_id}", "{x}": "{number}", "{g}": "{page}",
-             "{w}": "{kind}", "{o}": "{other_id}"}
+             "{w}": "{kind}", "{o}": "{other_id}", "{i}": "{item_id}"}
     table = set()
     for row in TABLE:
         template = row.template
@@ -200,12 +204,12 @@ class World:
         tag = client.get("/api/v1/tags").json()[0]["items"][0]["id"]
         kind = client.get("/api/v1/kinds").json()[0]["id"]
         return {"d": self.document, "v": self.vault, "n": note, "l": link, "u": self.target.id, "s": sender, "t": tag,
-                "k": kind, "other": self.other, "title": shown["title"], "o": self.second}
+                "k": kind, "other": self.other, "title": shown["title"], "o": self.second, "i": 2**31 - 1}
 
 
 def fill(template: str, ids: dict[str, int]) -> str:
     out = template.replace("{x}", "1").replace("{g}", "1").replace("{w}", "due")
-    for key in ("d", "v", "n", "l", "u", "s", "t", "k", "o"):
+    for key in ("d", "v", "n", "l", "u", "s", "t", "k", "o", "i"):
         # ``o`` (the second document, N1) only where the caller has one (``test_rights_uploads.py`` has none).
         if key in ids:
             out = out.replace("{" + key + "}", str(ids[key]))
@@ -263,7 +267,8 @@ def test_the_editor_may_not_do_what_needs_manage(world: tuple[World, dict[str, i
         status = call(editor, row, ids)
     # The editor owns the document, so sharing and links stay theirs; only the vault's own affairs are refused. The
     # address of a link the manager made is not theirs to copy: it answers as if there were no such link.
-    owner_may = row.template.startswith("/api/v1/documents/{d}/") and ("shares" in row.template or "links" in row.template)
+    owner_may = row.template.startswith("/api/v1/documents/{d}/") and ("shares" in row.template or "links" in row.template
+                                                                  or "shown-through" in row.template)
     if row.need == "copy":
         assert status == 404, (row, status)
     elif owner_may:

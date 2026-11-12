@@ -56,6 +56,10 @@ class ExportIn(BaseModel):
     tag: str | None = Field(default=None, min_length=1, max_length=40)
     status: Literal["inbox", "filed"] | None = None
     content: ExportContentIn = Field(default_factory=ExportContentIn)
+    #: With every document, the documents that go with it (N2): directly, only those the caller sees in a vault of
+    #: theirs, out of the trash, each once, also outside the period and the filters. The list gets a column with their
+    #: file names.
+    related: StrictBool = False
     #: A link for somebody without an account, made at once (it works as soon as the ZIP is packed).
     link: ExportLinkIn | None = None
 
@@ -95,6 +99,8 @@ class ExportOut(BaseModel):
     date_to: Date | None
     vault_ids: list[int]
     content: ExportContentIn
+    #: The documents that go with them were taken along.
+    related: bool = False
     created_at: datetime
     finished_at: datetime | None
     #: When the ZIP is removed (later while a link to it lasts).
@@ -144,7 +150,7 @@ def _params(payload: ExportIn) -> exports.Params:
     return exports.Params(
         date_from=payload.date_from, date_to=payload.date_to, vault_ids=list(dict.fromkeys(payload.vault_ids)),
         q=payload.q, kind_id=payload.kind_id, owner_id=payload.owner_id, sender=payload.sender, tag=payload.tag,
-        status=payload.status, content=exports.Content(**payload.content.model_dump()),
+        status=payload.status, content=exports.Content(**payload.content.model_dump()), related=payload.related,
     )
 
 
@@ -164,7 +170,8 @@ def _out(db: DbSession, export: Export) -> ExportOut:
     return ExportOut(
         id=export.id, state=export.state, documents=export.documents, size=export.size,  # type: ignore[arg-type]
         total=export.total, error=export.error, date_from=params.date_from, date_to=params.date_to,
-        vault_ids=params.vault_ids, content=ExportContentIn(**vars(params.content)), created_at=export.created_at,
+        vault_ids=params.vault_ids, content=ExportContentIn(**vars(params.content)), related=params.related,
+        created_at=export.created_at,
         finished_at=export.finished_at, expires_at=export.expires_at, links=links,
     )
 
@@ -184,14 +191,15 @@ def preview(
     sender: str | None = Query(default=None, min_length=1, max_length=160),
     tag: str | None = Query(default=None, min_length=1, max_length=40),
     status: Literal["inbox", "filed"] | None = None,
-    pdf: bool = True, original: bool = False, csv: bool = True, xml: bool = True,
+    pdf: bool = True, original: bool = False, csv: bool = True, xml: bool = True, related: bool = False,
 ) -> ExportPreviewOut:
     if q.strip():
         # A search in it counts like one of the search itself.
         brakes.take("search", account.id)
     params = exports.Params(date_from=date_from, date_to=date_to, vault_ids=list(dict.fromkeys(vault_ids)), q=q,
                             kind_id=kind_id, owner_id=owner_id, sender=sender, tag=tag, status=status,
-                            content=exports.Content(pdf=pdf, original=original, csv=csv, xml=xml))
+                            content=exports.Content(pdf=pdf, original=original, csv=csv, xml=xml),
+                            related=related)
     row = db.get(Account, account.id)
     found = exports.preview(db, account.id, params, _language(request, row))
     return ExportPreviewOut(documents=found.documents, total=found.total, totals=found.totals, size=found.size,

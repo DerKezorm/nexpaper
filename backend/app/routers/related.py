@@ -37,6 +37,8 @@ class RelatedOut(BaseModel):
     #: The caller may remove the pair (`edit` on both documents).
     can_unlink: bool
     linked_at: datetime | None
+    #: The caller may share it by a link of its own, so it may also be shown with a link of the document asked about.
+    can_share: bool = False
 
 
 class SuggestionOut(BaseModel):
@@ -58,7 +60,7 @@ def related_out(entry: related.Entry) -> RelatedOut:
     return RelatedOut(id=document.id, title=document.title, kind=kind_out(entry.kind),
                       sender=NameRef(id=entry.sender.id, name=entry.sender.name) if entry.sender else None,
                       date=document.date, status=document.status,  # type: ignore[arg-type]
-                      can_unlink=entry.can_unlink, linked_at=entry.linked_at)
+                      can_unlink=entry.can_unlink, linked_at=entry.linked_at, can_share=entry.can_share)
 
 
 def suggestion_out(found: related.Suggestion) -> SuggestionOut:

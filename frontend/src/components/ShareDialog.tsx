@@ -11,7 +11,7 @@ import { Link2, Users, X } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import { ApiError, sharingApi, vaultsApi, type DocumentInfo, type DocumentLink, type DocumentShare, type Person, type SharingRules, type Vault } from '../api/client'
+import { ApiError, relatedApi, sharingApi, vaultsApi, type DocumentInfo, type DocumentLink, type DocumentShare, type Person, type RelatedDocument, type SharingRules, type Vault } from '../api/client'
 import { copyText } from '../lib/copy'
 import { dayInDays, daysUntil, shortDate } from '../lib/dates'
 import { asAvatarPerson, personName } from '../lib/people'
@@ -20,7 +20,11 @@ import { Avatar } from './Avatar'
 import { Button } from './Button'
 import { Dialog } from './Dialog'
 import { useConfirm } from './useConfirm'
+import { ShownThroughNotice } from './ShownThrough'
 import { iso } from '../lib/say'
+
+/** The most further documents one link shows (the server's `sharing.MAX_ALSO`). */
+const MAX_ALSO = 10
 
 type Props = {
   document: Pick<DocumentInfo, 'id' | 'vault_id' | 'title'>
@@ -46,6 +50,10 @@ export function ShareDialog({ document, onClose, say }: Props) {
   const [to, setTo] = useState('')
   const [until, setUntil] = useState('')
   const [download, setDownload] = useState(true)
+  /** N2: what goes with the document and may be shared by the person, the switch (off from the start) and the choice. */
+  const [related, setRelated] = useState<RelatedDocument[]>([])
+  const [withRelated, setWithRelated] = useState(false)
+  const [chosen, setChosen] = useState<Set<number>>(new Set())
   const { ask, dialog } = useConfirm()
 
   const fail = useCallback((error: unknown) => {
@@ -79,6 +87,9 @@ export function ShareDialog({ document, onClose, say }: Props) {
         if (ruleSet.links_allowed) {
           const found = await sharingApi.links(document.id)
           if (alive) setLinks(found)
+          // What could come along with a new link: only what the person may share by a link of its own.
+          const goesWith = await relatedApi.list(document.id).catch(() => [] as RelatedDocument[])
+          if (alive) setRelated((Array.isArray(goesWith) ? goesWith : []).filter((r) => r.can_share && r.status !== 'trash'))
         }
       } catch (error) {
         if (alive) fail(error)
@@ -120,8 +131,10 @@ export function ShareDialog({ document, onClose, say }: Props) {
   const makeLink = () =>
     run(async () => {
       if (!to.trim()) return
-      const link = await sharingApi.makeLink(document.id, to.trim(), Math.max(1, days), download)
+      const also = withRelated ? related.filter((r) => chosen.has(r.id)).map((r) => r.id) : []
+      const link = await sharingApi.makeLink(document.id, to.trim(), Math.max(1, days), download, also)
       setTo('')
+      setWithRelated(false)
       await loadLinks()
       const copied = await copyText(link.url)
       setShown(copied ? null : { id: link.id, url: link.url })
@@ -238,6 +251,7 @@ export function ShareDialog({ document, onClose, say }: Props) {
                         {l.status === 'expired' && ` · ${t('share.expired')}`}
                         {l.status === 'off' && ` · ${t('share.off')}`}
                         {l.status === 'ended' && ` · ${t('share.ended')}`}
+                        {(l.also_count ?? 0) > 0 && ` · ${t('linkRelated.alsoCount', { count: l.also_count })}`}
                         {l.can_copy && live && (
                           <>
                             {' · '}
@@ -268,11 +282,67 @@ export function ShareDialog({ document, onClose, say }: Props) {
                   <input type="checkbox" checked={download} onChange={(e) => setDownload(e.target.checked)} className="h-4 w-4 accent-[var(--accent)]" />
                   {t('share.allowDownload')}
                 </label>
+                {related.length > 0 && (
+                  <div data-testid="link-related">
+                    <label className="flex items-center gap-2 text-sm">
+                      <input
+                        type="checkbox"
+                        checked={withRelated}
+                        onChange={(e) => {
+                          setWithRelated(e.target.checked)
+                          // Every one of them chosen at first (the first ones, up to the most a link takes); each can be left out.
+                          if (e.target.checked) setChosen(new Set(related.slice(0, MAX_ALSO).map((r) => r.id)))
+                        }}
+                        className="h-4 w-4 accent-[var(--accent)]"
+                      />
+                      {t('linkRelated.show', { count: related.length })}
+                    </label>
+                    {withRelated && (
+                      <>
+                        <ul className="mt-1 space-y-1 pl-6" aria-label={t('linkRelated.listLabel')}>
+                          {related.map((r) => {
+                            const on = chosen.has(r.id)
+                            const full = !on && chosen.size >= MAX_ALSO
+                            return (
+                              <li key={r.id}>
+                                <label className={`flex min-w-0 items-center gap-2 text-sm ${full ? 'text-muted' : ''}`}>
+                                  <input
+                                    type="checkbox"
+                                    checked={on}
+                                    disabled={full}
+                                    onChange={(e) =>
+                                      setChosen((had) => {
+                                        const next = new Set(had)
+                                        if (e.target.checked) next.add(r.id)
+                                        else next.delete(r.id)
+                                        return next
+                                      })
+                                    }
+                                    className="h-4 w-4 shrink-0 accent-[var(--accent)]"
+                                  />
+                                  <span className="min-w-0 flex-1 truncate">
+                                    <bdi>{r.title}</bdi>
+                                  </span>
+                                  {r.date && <span className="shrink-0 text-xs text-muted">{shortDate(r.date, i18n.language)}</span>}
+                                </label>
+                              </li>
+                            )
+                          })}
+                        </ul>
+                        <p className="mt-1 pl-6 text-xs text-muted">
+                          {t('linkRelated.showHint')}
+                          {related.length > MAX_ALSO && ` ${t('linkRelated.most', { count: MAX_ALSO })}`}
+                        </p>
+                      </>
+                    )}
+                  </div>
+                )}
                 <Button size="sm" variant="soft" onClick={() => void makeLink()} disabled={!to.trim() || !until}>
                   <Link2 size={14} aria-hidden /> {t('share.makeLink')}
                 </Button>
                 {rules && <p className="text-xs text-muted">{t('share.maxDays', { days: rules.link_max_days })}</p>}
               </div>
+              <ShownThroughNotice document={{ id: document.id, title: document.title, can_share: true }} say={say} bare />
             </>
           )}
         </div>

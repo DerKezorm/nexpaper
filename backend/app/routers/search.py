@@ -331,9 +331,24 @@ def version_text(document_id: DOCUMENT, number: VERSION, account: Reader, db: Db
 @router.get("/l/{token}/text", response_model=TextOut,
             summary="The text of the document behind a link that allows downloading")
 def link_text(token: str, request: Request) -> TextOut:
+    return _link_text(token, None, request)
+
+
+@router.get("/l/{token}/also/{item}/text", response_model=TextOut,
+            summary="The text of a further document behind a link that allows downloading")
+def link_also_text(token: str, item: Annotated[int, PathParam(ge=1, le=2**31 - 1)], request: Request) -> TextOut:
+    """A document that does not belong to the link answers like a wrong token."""
+    return _link_text(token, item, request)
+
+
+def _link_text(token: str, item: int | None, request: Request) -> TextOut:
     link_guard(request)
     with SessionLocal() as db:
-        found = sharing.check_link(db, token)
+        if item is None:
+            found = sharing.check_link(db, token)
+        else:
+            also = sharing.check_also(db, token, item)
+            found = None if also is None else (also[0], also[2])
         if found is None:
             raise _not_found(request)
         link, document = found

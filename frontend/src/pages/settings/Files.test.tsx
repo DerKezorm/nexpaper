@@ -206,6 +206,14 @@ describe('the trial run before a restore', () => {
     expect(lines).toContain('Zurückspielen macht 3 Links wieder gültig, die seit der Sicherung zurückgezogen wurden.')
   })
 
+  it('says how many further documents a restore shows through a link again (N2)', async () => {
+    server.answers[`POST /api/v1/backups/${entry.name}/check`] = { ...brief, revived_links: 1, revived_link_documents: 2 }
+    await page.show(<BackupsCard server={{ settings, busy: false } as never} />)
+    await page.click(page.button('Prüfen'))
+    const lines = document.querySelector('[data-testid="restore-preview"]')?.textContent ?? ''
+    expect(lines).toContain('Zurückspielen zeigt 2 Dokumente wieder über einen Link, die seit der Sicherung herausgenommen wurden oder deren Link zurückgezogen wurde.')
+  })
+
   it('says nothing of the kind when nothing was ended since the backup', async () => {
     server.answers[`POST /api/v1/backups/${entry.name}/check`] = { ...brief, revived_devices: 0, revived_keys: 0, revived_links: 0 }
     await page.show(<BackupsCard server={{ settings, busy: false } as never} />)

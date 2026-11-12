@@ -166,6 +166,18 @@ export function eventWhat(event: DocumentEvent, t: TFunction, context: EventCont
       if (title === null) return t(`related.events.${set ? 'set' : 'unset'}${merged}Other`)
       return t(`related.events.${set ? 'set' : 'unset'}${merged}`, { title: iso(title) })
     }
+    // A link of another document shows it too (N2), and no longer: the other document by its title, only when the person
+    // may see it (the server leaves it out else).
+    case 'link_also_shown':
+    case 'link_also_left':
+    case 'link_also_gone': {
+      const title = typeof detail.title === 'string' && typeof detail.document === 'number' ? detail.title : null
+      if (event.action === 'link_also_shown') return title === null ? t('linkRelated.events.shownOther') : t('linkRelated.events.shown', { title: iso(title) })
+      const group = event.action === 'link_also_left' ? 'left' : 'gone'
+      const reason = ['unlinked', 'taken_out', 'revoked', 'purged'].includes(String(detail.reason)) ? String(detail.reason) : 'taken_out'
+      const key = group === 'left' && reason === 'purged' ? 'taken_out' : group === 'gone' && reason === 'revoked' ? 'taken_out' : reason
+      return title === null ? t(`linkRelated.events.${group}Other.${key}`) : t(`linkRelated.events.${group}.${key}`, { title: iso(title) })
+    }
     default:
       return t('docs.events.something')
   }

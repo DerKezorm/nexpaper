@@ -421,7 +421,19 @@ itself: it all waits in an inbox.
   in folders as on the disk. It is made and fetched in the browser, packed in the background, and a notice says when it
   is ready. Instead of downloading
   it, the ZIP can go to the tax adviser as a link without an account, valid as long as links are (Settings, Sharing);
-  it shows when it was opened and can be revoked.
+  it shows when it was opened and can be revoked. With "Take the documents that go with them" the delivery note comes
+  along with its invoice even outside the period (only what you see in your vaults), and the list names them in a
+  column of its own.
+
+## Links to the outside
+
+A document can go to somebody without an account as a link (Share, By link to the outside): it ends at its date, at
+most after the days the operator allows, and can be withdrawn at any time; whoever made it sees how often it was
+opened, and the operator can switch all links off at once. When the document has others that go with it, the link can
+show them too, but only those you tick when you make it, and only those you may share by a link yourself. Nothing that
+comes to go with it later is added. The page behind the link lists them under "Goes with it". Every document shown this
+way says so on its own page (and counts in the archive's sign for a link to the outside), and whoever may see its
+links can take it out of the link there.
 
 ## For programs
 

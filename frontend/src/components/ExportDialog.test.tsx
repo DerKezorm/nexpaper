@@ -213,6 +213,33 @@ describe('the export dialog', () => {
   })
 })
 
+describe('the documents that go with them (N2)', () => {
+  it('are off from the start, and once chosen the count and the ZIP take them', async () => {
+    server.answers[`GET ${PREVIEW_URL}&related=true`] = { ...PREVIEW, documents: 345 }
+    await open()
+    await settle()
+    const box = document.querySelector<HTMLInputElement>('[data-testid="export-related"]')!
+    expect(box.checked).toBe(false)
+    expect(page.text).toContain('Verknüpfte Dokumente mitnehmen')
+    expect(page.text).toContain('Auch außerhalb von Zeitraum und Filter, nur was du in deinen Tresoren siehst')
+    expect(server.calls.some((c) => c.url.includes('related'))).toBe(false)
+    await page.click(box)
+    await settle()
+    expect(server.called('GET', `${PREVIEW_URL}&related=true`)).toBeTruthy()
+    expect(plain()).toContain('345 Dokumente')
+    await page.click(page.button('ZIP erstellen'))
+    expect(server.called('POST', '/api/v1/exports')!.body).toEqual({
+      date_from: '2026-01-01', date_to: '2026-12-31', vault_ids: [7], content: { pdf: true, original: false, csv: true, xml: true }, related: true,
+    })
+  })
+
+  it('speak English too', async () => {
+    await changeLanguage('en', false)
+    await open()
+    expect(page.text).toContain('Take the documents that go with them')
+  })
+})
+
 describe('the tree of the ZIP', () => {
   it('names every folder once', () => {
     expect(treeOf(['a/2026/x/1.pdf', 'a/2026/x/2.pdf', 'a/2026/y/3.pdf', 'b/2025/z/4.pdf', 'liste.csv'])).toBe(

@@ -37,6 +37,7 @@ from .. import clock
 from ..errors import error
 from ..models import (
     EDIT,
+    MANAGE,
     TRASH,
     Document,
     DocumentNumber,
@@ -45,6 +46,7 @@ from ..models import (
     RelatedDismissed,
     Sender,
     Share,
+    VaultMember,
 )
 from . import changes, numbers, rights
 
@@ -91,6 +93,8 @@ class Entry:
     #: The caller may remove the pair (``edit`` on both).
     can_unlink: bool
     linked_at: datetime | None
+    #: The caller may share it by a link of its own (N2: it may then be shown with a link of the other document).
+    can_share: bool = False
 
 
 def listing(db: Session, uid: int, document_id: int) -> list[Entry]:
@@ -112,9 +116,13 @@ def listing(db: Session, uid: int, document_id: int) -> list[Entry]:
     senders = {s.id: s for s in db.scalars(select(Sender).where(
         Sender.id.in_({d.sender_id for d in shown if d.sender_id})))}
     kinds = {k.id: k for k in db.scalars(select(Kind).where(Kind.id.in_({d.kind_id for d in shown if d.kind_id})))}
+    managed = set(db.scalars(select(VaultMember.vault_id).where(
+        VaultMember.user_id == uid, VaultMember.right == MANAGE)))
     return [Entry(document=d, sender=senders.get(d.sender_id) if d.sender_id else None,
                   kind=kinds.get(d.kind_id) if d.kind_id else None, can_unlink=d.id in editable,
-                  linked_at=when.get(d.id)) for d in shown]
+                  linked_at=when.get(d.id),
+                  # As ``rights.Access.can_share``: a manager of its vault, or the person it belongs to (who sees it).
+                  can_share=d.vault_id in managed or d.owner_id == uid) for d in shown]
 
 
 def having(db: Session, uid: int, document_ids: list[int]) -> set[int]:
@@ -204,6 +212,10 @@ def unlink(db: Session, uid: int, a: int, b: int) -> bool:
     gone = bool(getattr(result, "rowcount", 0))
     if gone:
         _record(db, uid, UNSET, one, other)
+        # N2: each of the two leaves the links of the other, in the same transaction.
+        from . import sharing
+
+        sharing.pair_undone(db, uid, a, b)
     db.commit()
     return gone
 
