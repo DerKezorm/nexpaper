@@ -61,18 +61,22 @@ def account_named(db: Session, name: str) -> Account | None:
 
 def take(
     db: Session, *, uid: int, path: Path, filename: str, kind: str, sha256: str, size: int, source: str,
-    item: dict[str, Any], title: str | None = None,
+    item: dict[str, Any], title: str | None = None, detail: dict[str, Any] | None = None,
+    more: Callable[[Session, Document], None] | None = None,
 ) -> Document:
     """A complete file on the disk (``path``, moved away) becomes a document of ``uid`` in the vault they chose for
-    their uploads, and ``item`` (the columns of an ``IntakeItem``) is written in the same transaction."""
+    their uploads, and ``item`` (the columns of an ``IntakeItem``) is written in the same transaction. ``detail``: more
+    for the history entry of the creation; ``more``: further rows of the caller for the same transaction."""
     vault_id = receiving.resolve_vault(db, uid, None)
 
     def note(session: Session, document: Document) -> None:
         session.add(IntakeItem(document_id=document.id, source=source, at=clock.now(), **item))
+        if more is not None:
+            more(session, document)
 
     document, _twin = receiving.accept(
         db, uid=uid, vault_id=vault_id, filename=filename, path=path, kind=kind, sha256=sha256, size=size,
-        source=source, title=title, also=note,
+        source=source, title=title, also=note, detail=detail,
     )
     return document
 

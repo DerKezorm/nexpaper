@@ -3324,5 +3324,14 @@
     },
     "shareNote": "Das Original ist mit einem Passwort geschützt. Wer den Link öffnet, bekommt die geöffnete Fassung ohne Passwort.",
     "shareNoteRestricted": "Das Original ist gegen Drucken oder Ändern gesperrt. Wer den Link öffnet, bekommt die geöffnete Fassung ohne diese Sperre."
+  },
+  "mailText": {
+    "toggle": "Mails ohne Anhang als Dokument nehmen",
+    "hint": "Eine Mail ganz ohne Anhang wird zu einem PDF mit ihrem Text, etwa eine weitergeleitete Bestellbestätigung. Nur wenn sie von einer bestätigten Adresse einer Person kommt und der Mailserver die Echtheit bestätigt hat (dmarc=pass), dann in deren Eingang. Nie für unbekannte Absender, nie allein über die Adresse mit +name, höchstens 50 am Tag je Person.",
+    "judge": "Es zählt das Urteil von {{server}}. Schreibt dieser Server kein dmarc=pass in die Mail, wird kein Text genommen.",
+    "noJudge": "Ohne Adresse des Postfachs oder vertrauten Server gibt es kein Urteil über die Echtheit, also wird kein Text genommen.",
+    "created": "hat es angelegt: aus dem Text einer Mail",
+    "lastTexts_one": "Davon {{count}} aus dem Text einer Mail.",
+    "lastTexts_other": "Davon {{count}} aus dem Text von Mails."
   }
 }

@@ -3324,5 +3324,14 @@
     },
     "shareNote": "The original is protected by a password. Whoever opens the link gets the opened copy, without the password.",
     "shareNoteRestricted": "The original is locked against printing or changes. Whoever opens the link gets the opened copy, without that lock."
+  },
+  "mailText": {
+    "toggle": "Take mails without an attachment as a document",
+    "hint": "A mail without any attachment becomes a PDF of its text, such as a forwarded order confirmation. Only when it comes from a confirmed address of a person and the mail server confirmed it is genuine (dmarc=pass), then into that person's inbox. Never for unknown senders, never through the address with +name alone, at most 50 a day per person.",
+    "judge": "The verdict of {{server}} counts. When that server writes no dmarc=pass into the mail, no text is taken.",
+    "noJudge": "Without the address of the mailbox or a trusted server there is no verdict on whether a mail is genuine, so no text is taken.",
+    "created": "created it: from the text of a mail",
+    "lastTexts_one": "{{count}} of them from the text of a mail.",
+    "lastTexts_other": "{{count}} of them from the text of mails."
   }
 }

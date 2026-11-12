@@ -68,6 +68,7 @@ export function eventWhat(event: DocumentEvent, t: TFunction, context: EventCont
         return t('docs.events.createdFromArchive', { what })
       }
       if (detail.original_missing === true) return t('docs.events.createdOriginalMissing')
+      if (detail.mail_text === true) return t('mailText.created')
       const source = context.sourceText(String(detail.source ?? 'upload'))
       return t('docs.events.created', { source: source.charAt(0).toLocaleLowerCase() + source.slice(1) })
     }

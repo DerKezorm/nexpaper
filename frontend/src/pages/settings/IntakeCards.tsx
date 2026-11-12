@@ -203,7 +203,8 @@ function MailboxCard({ intake, settings }: { intake: Intake; settings: IntakeSet
     setDone(null)
     try {
       const got = await intakeApi.fetchMail()
-      setDone(t(got.more ? 'intake.mail.fetchedMore' : 'intake.mail.fetched', { mails: got.mails, files: got.files }))
+      const texts = got.texts ? ' ' + t('mailText.lastTexts', { count: got.texts }) : ''
+      setDone(t(got.more ? 'intake.mail.fetchedMore' : 'intake.mail.fetched', { mails: got.mails, files: got.files }) + texts)
       intake.setSettings(await intakeApi.settings())
     } catch (error) {
       setProblem(codeOf(error))
@@ -213,6 +214,8 @@ function MailboxCard({ intake, settings }: { intake: Intake; settings: IntakeSet
   }
 
   const last = mail.last
+  /** The server whose verdict counts for the text of a mail: the trusted one, else the domain of the mailbox. */
+  const judge = mail.auth_server || mail.address.split('@')[1] || ''
   return (
     <Card icon={Mail} title={t('intake.mail.title')} text={t('intake.mail.text', { local })}>
       <Toggle label={t('intake.mail.fetch')} hint={t('intake.mail.fetchHint')} checked={mail.on} onChange={(mail_on) => void flip({ mail_on })} />
@@ -259,6 +262,14 @@ function MailboxCard({ intake, settings }: { intake: Intake; settings: IntakeSet
           <div className="sm:col-span-2">
             <Toggle label={t('intake.mail.dropUnknown')} hint={t('intake.mail.dropUnknownHint')} checked={mail.drop_unknown} onChange={(mail_drop_unknown) => void flip({ mail_drop_unknown })} />
           </div>
+          <div className="sm:col-span-2">
+            <Toggle label={t('mailText.toggle')} hint={t('mailText.hint')} checked={mail.text === true} onChange={(mail_text) => void flip({ mail_text })} />
+            {mail.text === true && (
+              <p className="mt-2 text-xs text-muted" data-testid="mail-text-judge">
+                {judge ? t('mailText.judge', { server: judge }) : t('mailText.noJudge')}
+              </p>
+            )}
+          </div>
           <p className="text-xs text-muted sm:col-span-2">{t('intake.mail.taken')}</p>
           <p className="text-xs text-muted sm:col-span-2">{t('intake.mail.whole')}</p>
           <div className="flex flex-wrap gap-2 sm:col-span-2">
@@ -277,6 +288,7 @@ function MailboxCard({ intake, settings }: { intake: Intake; settings: IntakeSet
               {(last.skipped ?? 0) > 0 && ' ' + t('intake.mail.lastSkipped', { count: last.skipped })}
               {(last.flagged ?? 0) > 0 && ' ' + t('intake.mail.lastFlagged', { count: last.flagged })}
               {(last.deferred ?? 0) > 0 && ' ' + t('intake.mail.lastDeferred', { count: last.deferred })}
+              {last.ok && (last.texts ?? 0) > 0 && ' ' + t('mailText.lastTexts', { count: last.texts })}
             </p>
           )}
         </form>

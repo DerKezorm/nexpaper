@@ -290,6 +290,13 @@ def recognize_text(db: Session, document: Document, version: Version, run: Run) 
         given = paperless.given_text(db, document, version, run)
         if given is not None:
             return given
+    if version.note == "mail":
+        # The text of a mail made a document: its text is the mail's, kept when it was made; nothing is read again.
+        from . import mail_text
+
+        kept = mail_text.given_outcome(db, document, version)
+        if kept is not None:
+            return kept
     try:
         pdf = run.source or (run.work if run.data.get("derived") else storage.safe_path(version.original_path))
     except storage.StorageError:
