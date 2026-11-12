@@ -684,7 +684,7 @@ export const accountsApi = {
 
 // --- Inputs: the intake folder and the mailbox ---------------------------------------------------------------
 
-export type MailLast = { at: string | null; ok: boolean; code: string; mails: number; files: number; unknown: number; skipped?: number; flagged?: number; deferred?: number }
+export type MailLast = { at: string | null; ok: boolean; code: string; mails: number; files: number; unknown: number; skipped?: number; flagged?: number; deferred?: number; texts?: number }
 export type IntakeSettings = {
   folder: { on: boolean; path: string; used: string; problem: string; people: { name: string; display_name: string; path: string; problem?: string }[]; operator: string }
   mail: {
@@ -701,6 +701,8 @@ export type IntakeSettings = {
     drop_unknown: boolean
     auth_server: string
     last: MailLast
+    /** Mails with nothing to take become a document of their text (confirmed senders and plus addresses only). */
+    text?: boolean
   }
 }
 export type IntakeChange = Partial<{
@@ -718,8 +720,9 @@ export type IntakeChange = Partial<{
   mail_private: boolean
   mail_drop_unknown: boolean
   mail_auth_server: string
+  mail_text: boolean
 }>
-export type MailFetched = { mails: number; files: number; unknown: number; passed: number; more: boolean; skipped: number; flagged: number; deferred: number; dropped: number; after: string }
+export type MailFetched = { mails: number; files: number; unknown: number; passed: number; more: boolean; skipped: number; flagged: number; deferred: number; dropped: number; after: string; texts?: number }
 export type MailSenderRow = { id: number; address: string; confirmed: boolean; until: string | null }
 export type MyIntake = {
   mail_on: boolean

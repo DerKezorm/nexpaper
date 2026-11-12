@@ -2669,6 +2669,11 @@
             "title": "Skipped",
             "type": "integer"
           },
+          "texts": {
+            "default": 0,
+            "title": "Texts",
+            "type": "integer"
+          },
           "unknown": {
             "title": "Unknown",
             "type": "integer"
@@ -3263,6 +3268,17 @@
               }
             ],
             "title": "Mail Security"
+          },
+          "mail_text": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mail Text"
           },
           "mail_user": {
             "anyOf": [
@@ -4430,6 +4446,11 @@
             "title": "Skipped",
             "type": "integer"
           },
+          "texts": {
+            "default": 0,
+            "title": "Texts",
+            "type": "integer"
+          },
           "unknown": {
             "default": 0,
             "title": "Unknown",
@@ -4497,6 +4518,11 @@
             ],
             "title": "Security",
             "type": "string"
+          },
+          "text": {
+            "default": false,
+            "title": "Text",
+            "type": "boolean"
           },
           "user": {
             "title": "User",

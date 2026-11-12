@@ -12,7 +12,8 @@
   marked unknown. A sender's address can be forged, so nothing is filed by itself: it all waits in an inbox.
 * **What is taken.** PDF, pictures and e-invoices as XML, also inside forwarded mails (``message/rfc822``); the kind is
   read from the content. A mail larger than ``MAIL_MAX`` is left alone, at most ``MAX_ATTACHMENTS`` parts of a mail
-  are taken, broken parts are passed over. The mail itself never becomes a document.
+  are taken, broken parts are passed over. The mail itself becomes a document only when the operator switched that on,
+  it brought nothing to take and it belongs to a person for sure (``services/mail_text.py``); never for unknown.
 * **Exactly once.** Every part taken is noted (UIDVALIDITY, UID, number of the part) in the transaction of its document,
   and the last UID fetched is kept per mailbox. When the server gives the mailbox new UIDs, a part already taken from
   a mail of the same Message-ID is known again by its checksum. Afterwards the mail is marked read, moved to
@@ -47,7 +48,7 @@ from .. import clock
 from ..db import SessionLocal
 from ..models import IntakeItem
 from ..security import decrypt_secret
-from . import filetypes, intake, limits, mail_senders, outbound, settings_service, storage
+from . import filetypes, intake, limits, mail_senders, mail_text, outbound, settings_service, storage
 
 logger = logging.getLogger("nexpaper.intake")
 
@@ -259,6 +260,8 @@ class Config:
     address: str
     drop_unknown: bool
     auth_server: str = ""
+    #: The text of a mail without anything to take becomes a document (``services/mail_text.py``).
+    text_on: bool = False
 
     @property
     def box(self) -> str:
@@ -283,7 +286,7 @@ def config(db: Any) -> Config:
                   password=password, folder=check_folder(str(values["mail_folder"] or "INBOX")), after=after,
                   private=bool(values["mail_private"]), address=str(values["mail_address"] or ""),
                   drop_unknown=bool(values["mail_drop_unknown"]),
-                  auth_server=str(values["mail_auth_server"] or ""))
+                  auth_server=str(values["mail_auth_server"] or ""), text_on=values["mail_text"] is True)
 
 
 def _failure(exc: BaseException, late: threading.Event) -> MailFailure:
@@ -569,11 +572,29 @@ def take_apart(raw: bytes, folder: Path, max_file: int) -> Parsed:
     ``folder``."""
     if too_elaborate(raw):
         return Parsed(False, error="too_elaborate")
+    answer = _work(raw, folder, {"max_parts": MAX_ATTACHMENTS, "max_bytes": max_file,
+                                 "inline_min": INLINE_PICTURE_MIN, "nesting": MAX_NESTING, "parts_limit": MAX_PARTS})
+    if answer is None:
+        return Parsed(False, error="too_elaborate")
+    if not answer.get("ok"):
+        return Parsed(False, error=str(answer.get("error") or "unreadable"))
+    return Parsed(
+        True, sender=str(answer.get("sender") or "")[:320],
+        recipients=[str(one)[:320] for one in list(answer.get("recipients") or [])[:MAX_ADDRESSES]],
+        subject=str(answer.get("subject") or "")[:200], message_id=str(answer.get("message_id") or "")[:1000],
+        auth=[str(one)[:2000] for one in list(answer.get("auth") or [])[:5]],
+        parts=[one for one in list(answer.get("parts") or []) if isinstance(one, dict)][:MAX_ATTACHMENTS],
+        over=int(answer.get("over") or 0),
+    )
+
+
+def _work(raw: bytes, folder: Path, request: dict[str, Any]) -> dict[str, Any] | None:
+    """One run of the mail worker on ``raw`` (written to ``folder`` for it, removed afterwards), at most
+    ``WORKER_SECONDS`` and ``WORKER_MEMORY_MB``; its answer, or None when it had to be killed or ended without one."""
     source = folder / "mail.eml"
     source.write_bytes(raw)
-    request = {"source": str(source), "out": str(folder), "max_parts": MAX_ATTACHMENTS, "max_bytes": max_file,
-               "inline_min": INLINE_PICTURE_MIN, "nesting": MAX_NESTING, "parts_limit": MAX_PARTS,
-               "memory_mb": WORKER_MEMORY_MB, "cpu_seconds": max(1, int(WORKER_SECONDS))}
+    request = {**request, "source": str(source), "out": str(folder), "memory_mb": WORKER_MEMORY_MB,
+               "cpu_seconds": max(1, int(WORKER_SECONDS))}
     from . import processing
 
     environment = {key: os.environ[key] for key in processing.KEEP_ENVIRONMENT if key in os.environ}
@@ -587,7 +608,7 @@ def take_apart(raw: bytes, folder: Path, max_file: int) -> Parsed:
     except subprocess.TimeoutExpired:
         processing._kill(process)
         processing._reap(process)
-        return Parsed(False, error="too_elaborate")
+        return None
     except BaseException:
         processing._kill(process)
         raise
@@ -600,17 +621,8 @@ def take_apart(raw: bytes, folder: Path, max_file: int) -> Parsed:
         answer = None
     if process.returncode != 0 or not isinstance(answer, dict):
         # Killed by the memory limit, or ended without a word: as costly as a mail may be.
-        return Parsed(False, error="too_elaborate")
-    if not answer.get("ok"):
-        return Parsed(False, error=str(answer.get("error") or "unreadable"))
-    return Parsed(
-        True, sender=str(answer.get("sender") or "")[:320],
-        recipients=[str(one)[:320] for one in list(answer.get("recipients") or [])[:MAX_ADDRESSES]],
-        subject=str(answer.get("subject") or "")[:200], message_id=str(answer.get("message_id") or "")[:1000],
-        auth=[str(one)[:2000] for one in list(answer.get("auth") or [])[:5]],
-        parts=[one for one in list(answer.get("parts") or []) if isinstance(one, dict)][:MAX_ATTACHMENTS],
-        over=int(answer.get("over") or 0),
-    )
+        return None
+    return answer
 
 
 # --- Whose a mail is -------------------------------------------------------------------------------------------------
@@ -685,6 +697,8 @@ class Taken:
     error: str = ""
     dropped: bool = False
     deferred: bool = False
+    #: The document made (or known from before) is the text of the mail.
+    text: bool = False
 
     @property
     def whole(self) -> bool:
@@ -693,9 +707,10 @@ class Taken:
 
 
 def take_mail(raw: bytes, *, box: str, uidvalidity: int, uid: int, mailbox: str, drop_unknown: bool = False,
-              budget: Callable[[int, int], bool] | None = None, auth_server: str = "") -> Taken:
+              budget: Callable[[int, int], bool] | None = None, auth_server: str = "", text_on: bool = False) -> Taken:
     """The parts of one mail that are documents become documents of whoever the mail is for. ``budget(owner, bytes)``
-    says whether the person may still receive that much today."""
+    says whether the person may still receive that much today. ``text_on``: a mail with nothing to take becomes a
+    document of its text, when it belongs to a person for sure (``services/mail_text.py``)."""
     taken = Taken()
     with SessionLocal() as db:
         max_file = limits.current(db).max_file
@@ -730,6 +745,10 @@ def take_mail(raw: bytes, *, box: str, uidvalidity: int, uid: int, mailbox: str,
         taken.takeable = len(candidates) + parsed.over
         if unknown and drop_unknown:
             taken.dropped = True
+            return taken
+        if mail_text.wanted(text_on, takeable=taken.takeable, unknown=unknown):
+            mail_text.take(taken, raw, Path(folder), key=f"{box}:{uidvalidity}:{uid}:{mail_text.PART}", owner=owner,
+                           marker=marker, sender=parsed.sender, subject=parsed.subject, budget=budget)
             return taken
         fresh = sum(size for *_rest, size in candidates)
         if budget is not None and candidates and not budget(owner, fresh):
@@ -801,6 +820,8 @@ class Result:
     dropped: int = 0
     more: bool = False
     after: str = ""
+    #: Of ``files``: documents made of the text of a mail.
+    texts: int = 0
 
 
 _lock = threading.Lock()
@@ -837,7 +858,7 @@ def _remember(ok: bool, code: str, result: Result) -> None:
         settings_service.save(db, {"mail_last": {
             "at": clock.now().isoformat(), "ok": ok, "code": code, "mails": result.mails, "files": result.files,
             "unknown": result.unknown, "skipped": result.skipped, "flagged": result.flagged,
-            "deferred": result.deferred}})
+            "deferred": result.deferred, "texts": result.texts}})
 
 
 class Budget:
@@ -927,8 +948,8 @@ def _fetch() -> Result:
     _remember(True, "", result)
     if result.mails or result.passed or result.skipped or result.flagged or result.deferred or result.dropped:
         logger.info("Mailbox: %s mail(s), %s attachment(s) taken unknown=%s passed=%s skipped=%s flagged=%s "
-                    "deferred=%s dropped=%s", result.mails, result.files, result.unknown, result.passed, result.skipped,
-                    result.flagged, result.deferred, result.dropped)
+                    "deferred=%s dropped=%s texts=%s", result.mails, result.files, result.unknown, result.passed,
+                    result.skipped, result.flagged, result.deferred, result.dropped, result.texts)
     return result
 
 
@@ -958,7 +979,7 @@ def _one(box: Box, cfg: Config, state: dict[str, Any], uid: int, size: int, toda
         return
     taken = take_mail(_body(box, uid), box=cfg.box, uidvalidity=box.uidvalidity, uid=uid, mailbox=cfg.address,
                       drop_unknown=cfg.drop_unknown, budget=lambda owner, wanted: budget.person_left(owner, wanted),
-                      auth_server=cfg.auth_server)
+                      auth_server=cfg.auth_server, text_on=cfg.text_on)
     if taken.error == "too_elaborate":
         state["retry"].pop(key, None)
         result.skipped += 1
@@ -980,6 +1001,7 @@ def _one(box: Box, cfg: Config, state: dict[str, Any], uid: int, size: int, toda
         return
     budget.spend(taken.owner, taken.bytes)
     result.files += taken.files
+    result.texts += taken.files if taken.text else 0
     result.passed += taken.over
     if taken.files or taken.known:
         result.mails += 1

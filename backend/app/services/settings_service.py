@@ -129,6 +129,9 @@ DEFAULTS: dict[str, Any] = {
     "mail_drop_unknown": False,
     #: The server whose ``Authentication-Results`` count (``dmarc=fail``: unknown); empty: the mailbox's domain.
     "mail_auth_server": "",
+    #: A mail with nothing nexpaper takes becomes a document of its text, when it belongs to a person for sure (a
+    #: confirmed sender address or the plus address, ``services/mail_text.py``). Off from the start.
+    "mail_text": False,
     #: The bytes taken from the mailbox today, on the whole server and per person (``intake_mail.Budget``).
     "mail_budget": {},
     #: Where fetching stands (UIDVALIDITY and the last UID taken, per mailbox) and how the last run went.

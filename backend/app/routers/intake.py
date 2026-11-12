@@ -63,6 +63,8 @@ class MailLast(BaseModel):
     skipped: int = 0
     flagged: int = 0
     deferred: int = 0
+    #: Of ``files``: documents made of the text of a mail.
+    texts: int = 0
 
 
 class MailOut(BaseModel):
@@ -83,6 +85,9 @@ class MailOut(BaseModel):
     #: The server whose ``Authentication-Results`` count; empty: the domain of the mailbox's address.
     auth_server: str
     last: MailLast
+    #: A mail with nothing to take becomes a document of its text, when it belongs to a person for sure (a confirmed
+    #: sender address or the plus address; never for unknown senders).
+    text: bool = False
 
 
 class IntakeOut(BaseModel):
@@ -106,6 +111,7 @@ class IntakeIn(BaseModel):
     mail_private: StrictBool | None = None
     mail_drop_unknown: StrictBool | None = None
     mail_auth_server: str | None = Field(default=None, max_length=255)
+    mail_text: StrictBool | None = None
 
 
 def _view(db: DbSession) -> IntakeOut:
@@ -134,6 +140,7 @@ def _view(db: DbSession) -> IntakeOut:
             private=bool(values["mail_private"]), drop_unknown=bool(values["mail_drop_unknown"]),
             auth_server=str(values["mail_auth_server"] or ""),
             last=MailLast(**{key: value for key, value in last.items() if key in MailLast.model_fields}),
+            text=values["mail_text"] is True,
         ),
     )
 
@@ -247,6 +254,8 @@ class FetchOut(BaseModel):
     deferred: int
     dropped: int
     after: str
+    #: Of ``files``: documents made of the text of a mail.
+    texts: int = 0
 
 
 @router.post("/settings/intake/mail/fetch", response_model=FetchOut, summary="Fetch the mailbox now")
@@ -257,7 +266,7 @@ def fetch_mail(_operator: OperatorAccount) -> FetchOut:
         raise _mail_problem(exc) from exc
     return FetchOut(mails=done.mails, files=done.files, unknown=done.unknown, passed=done.passed, more=done.more,
                     skipped=done.skipped, flagged=done.flagged, deferred=done.deferred, dropped=done.dropped,
-                    after=done.after)
+                    after=done.after, texts=done.texts)
 
 
 # --- My account: where to send documents, and the addresses forwarded from --------------------------------------------

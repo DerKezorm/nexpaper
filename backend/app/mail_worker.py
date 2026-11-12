@@ -9,17 +9,28 @@ parts and the limits. Nothing from ``app`` is imported: this file stands alone (
 Input: one JSON object on standard input. Output: one JSON object on the last line of standard output:
 ``{"ok": true, "sender", "recipients", "subject", "message_id", "auth", "parts": [{"name", "path", "size"}], "over"}``
 or ``{"ok": false, "error": code}``.
+
+With ``"op": "text"`` (asked only for a mail that brought nothing to take, belongs to a person for sure and when the
+operator switched it on) it reads the text of the mail instead and sets it as a PDF (``mail_sheet.py``):
+``{"ok": true, "empty": false, "pdf", "texts", "pages", "cut", "html", "subject", "date"}`` (the text of the pages is
+written to the file ``texts`` names). Plain text is taken as it is; HTML is made text here with ``html.parser``, which
+only reads the markup: nothing is drawn, nothing is fetched (no picture, font or style sheet, no ``cid:``), no script
+runs.
 """
 
 from __future__ import annotations
 
+import codecs
 import contextlib
 import email
 import email.header
 import email.policy
 import email.utils
+import html.parser
+import importlib.util
 import json
 import os
+import re
 import sys
 import threading
 import time
@@ -217,6 +228,335 @@ def take_apart(request: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+# --- The text of a mail ----------------------------------------------------------------------------------------------
+
+#: The text a document is made of, at most (UTF-8 bytes); more is cut and the document says so.
+TEXT_MAX = 200 * 1024
+#: The bytes of one text part that are read at most (HTML may be many times the text it carries).
+SOURCE_MAX = 4 * 1024 * 1024
+#: Less than this many letters, digits and signs is no text worth a document (pictures only, a short signature).
+TEXT_MIN = 20
+#: How long a link's address may be to be written after it.
+LINK_MAX = 500
+#: The head fields as they are shown.
+FROM_MAX, TO_MAX, SUBJECT_MAX = 300, 400, 200
+_CHARSET = re.compile(r"^[A-Za-z0-9_.:+-]{1,40}$")
+#: Characters that change the direction of text or hide themselves: a subject could show another text than it holds.
+INVISIBLE = dict.fromkeys(map(ord, "\u200b\u200c\u200d\u200e\u200f\u202a\u202b\u202c\u202d\u202e\u2066\u2067\u2068"
+                                   "\u2069\u061c\ufeff"), None)
+
+
+def _control(char: str) -> bool:
+    code = ord(char)
+    return code < 32 or 127 <= code < 160
+
+
+def plain(value: str, limit: int) -> str:
+    """A head field as it may be shown: on one line, no control or direction characters, at most ``limit``."""
+    text = "".join(" " if _control(char) else char for char in value.translate(INVISIBLE))
+    return " ".join(text.split())[:limit]
+
+
+def tidy(text: str) -> str:
+    """The text of a mail made plain: lines ended by ``\\n``, tabs as spaces, no control or direction characters, at
+    most one empty line between paragraphs, no empty lines at the start or the end."""
+    text = text.replace("\r\n", "\n").replace("\r", "\n").replace("\t", "    ").replace("\f", "\n").replace("\v", "\n")
+    text = "".join(char for char in text.translate(INVISIBLE) if char == "\n" or not _control(char))
+    lines: list[str] = []
+    for line in text.split("\n"):
+        line = line.rstrip()
+        if not line and (not lines or not lines[-1]):
+            continue
+        lines.append(line)
+    while lines and not lines[-1]:
+        lines.pop()
+    return "\n".join(lines)
+
+
+def decoded(part: Message) -> str:
+    """The text of a part in its own character set; one that is unknown, wrong or not one for text gives way to UTF-8,
+    then to Latin-1 (which reads every byte). Never more than ``SOURCE_MAX`` bytes."""
+    try:
+        data = part.get_payload(decode=True)
+    except Exception:  # noqa: BLE001 - a part that cannot be decoded has no text
+        return ""
+    if not isinstance(data, bytes):
+        return ""
+    data = data[:SOURCE_MAX]
+    try:
+        declared = part.get_content_charset() or "us-ascii"
+    except Exception:  # noqa: BLE001
+        declared = "us-ascii"
+    names: list[str] = []
+    for name in (declared, "utf-8", "cp1252"):
+        if not _CHARSET.match(name):
+            continue
+        try:
+            info = codecs.lookup(name)
+        except LookupError:
+            continue
+        if getattr(info, "_is_text_encoding", True) and info.name not in names:
+            names.append(info.name)
+    for name in names:
+        try:
+            return data.decode(name)
+        except Exception:  # noqa: BLE001, S112 - the next one is tried
+            continue
+    return data.decode(names[0], "replace") if names else data.decode("latin-1")
+
+
+class _Enough(Exception):
+    """As much text as a document may hold was found: the rest of the HTML is not read."""
+
+
+class HtmlText(html.parser.HTMLParser):
+    """The text of an HTML mail, read from its markup only: blocks and line breaks become new lines, a link becomes its
+    text and, when that is not its address already, the address in brackets. Script, style, title and the like are
+    left out, and so is every picture (its address, also ``cid:``, is never looked at). Nothing is loaded, nothing
+    runs: ``html.parser`` only cuts the text into tags and words."""
+
+    SKIP = frozenset({"script", "style", "title", "template", "svg", "math", "noscript", "object", "select"})
+    BLOCK = frozenset({"p", "div", "tr", "ul", "ol", "dl", "dt", "dd", "table", "blockquote", "pre", "section",
+                       "article", "header", "footer", "address", "form", "fieldset", "center", "h1", "h2", "h3", "h4",
+                       "h5", "h6", "hr", "body", "main", "nav", "aside", "figure", "figcaption", "caption"})
+    VOID = frozenset({"br", "hr", "img", "input", "meta", "link", "area", "base", "col", "embed", "source", "track",
+                      "wbr", "param"})
+
+    def __init__(self, limit: int) -> None:
+        super().__init__(convert_charrefs=True)
+        self.limit = limit
+        self.size = 0
+        self.out: list[str] = []
+        self.skip = 0
+        self.pre = 0
+        self.link: tuple[str, int] | None = None
+
+    def put(self, text: str) -> None:
+        self.out.append(text)
+        self.size += len(text)
+        if self.size > self.limit:
+            raise _Enough
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        if tag in self.SKIP:
+            self.skip += 1
+            return
+        if tag == "body":
+            # A "title" or "noscript" left open in the head must not swallow the mail.
+            self.skip = 0
+        if self.skip:
+            return
+        if tag == "br":
+            self.put("\n")
+        elif tag == "li":
+            self.put("\n- ")
+        elif tag in ("td", "th"):
+            self.put("  ")
+        elif tag == "pre":
+            self.pre += 1
+            self.put("\n")
+        elif tag in self.BLOCK:
+            self.put("\n")
+        elif tag == "a":
+            href = next((value or "" for name, value in attrs if name == "href"), "")
+            href = plain(href, LINK_MAX + 1)
+            wanted = href.lower().startswith(("http://", "https://", "mailto:")) and len(href) <= LINK_MAX
+            self.link = (href, len(self.out)) if wanted else None
+
+    def handle_startendtag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        if tag in self.VOID or tag not in self.SKIP:
+            self.handle_starttag(tag, attrs)
+            if tag not in self.VOID:
+                self.handle_endtag(tag)
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag in self.SKIP:
+            self.skip = max(0, self.skip - 1)
+            return
+        if self.skip:
+            return
+        if tag == "pre":
+            self.pre = max(0, self.pre - 1)
+            self.put("\n")
+        elif tag in self.BLOCK:
+            self.put("\n")
+        elif tag == "a" and self.link is not None:
+            href, start = self.link
+            self.link = None
+            shown = "".join(self.out[start:])
+            address = href[7:] if href.lower().startswith("mailto:") else href
+            if address and address not in shown:
+                self.put(f" ({address})")
+
+    def handle_data(self, data: str) -> None:
+        if self.skip or not data:
+            return
+        if self.pre:
+            self.put(data)
+            return
+        words = " ".join(data.split())
+        lead = " " if data[:1].isspace() else ""
+        tail = " " if data[-1:].isspace() and words else ""
+        self.put(lead + words + tail)
+
+    def text(self) -> str:
+        lines = "".join(self.out).replace(" ", " ").split("\n")
+        return "\n".join(" ".join(line.split()) for line in lines)
+
+
+def html_text(source: str, limit: int) -> str:
+    reader = HtmlText(limit)
+    try:
+        reader.feed(source)
+        reader.close()
+    except _Enough:
+        pass
+    return reader.text()
+
+
+def _disposition(part: Message) -> str | None:
+    try:
+        return part.get_content_disposition()
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def _inner(part: Message) -> Message | None:
+    """The mail inside a ``message/rfc822`` part: parsed already (the usual case), else from its bytes."""
+    payload = part.get_payload()
+    if isinstance(payload, list):
+        return payload[0] if payload and isinstance(payload[0], Message) else None
+    data = part.get_payload(decode=True)
+    if isinstance(data, bytes) and data:
+        return email.message_from_bytes(data, policy=email.policy.default)
+    return None
+
+
+def body_text(message: Message, nesting: int, parts_limit: int, limit: int, words: dict[str, str]) -> tuple[str, bool]:
+    """The text of a mail as people read it: of each ``multipart/alternative`` the plain text, else the HTML; the text
+    parts that are not attachments in the order they stand; a forwarded mail (``message/rfc822``) with a short head of
+    its own, its text after it (forwarding is how documents come, its text is the content). Whether HTML was read."""
+    pieces: list[str] = []
+    budget = [parts_limit]
+    size = [0]
+    from_html = [False]
+
+    def add(text: str) -> None:
+        if size[0] <= limit:
+            pieces.append(text)
+            size[0] += len(text)
+
+    def visit(part: Message, depth: int) -> None:
+        if budget[0] <= 0 or depth > nesting or size[0] > limit:
+            return
+        budget[0] -= 1
+        try:
+            ctype = part.get_content_type()
+        except Exception:  # noqa: BLE001
+            return
+        if ctype == "message/rfc822":
+            with contextlib.suppress(Exception):
+                forwarded = _inner(part)
+                if forwarded is not None:
+                    head = [f"{words['forwarded']}:"]
+                    for key, name in (("from", "From"), ("to", "To"), ("subject", "Subject"), ("date", "Date")):
+                        value = plain(header(forwarded, name), SUBJECT_MAX)
+                        if value:
+                            head.append(f"{words[key]}: {value}")
+                    add("\n\n" + "\n".join(head) + "\n\n")
+                    visit(forwarded, depth + 1)
+            return
+        if part.is_multipart():
+            try:
+                children = [child for child in (part.get_payload() or []) if isinstance(child, Message)]
+            except Exception:  # noqa: BLE001
+                return
+            if ctype == "multipart/alternative":
+                texts = [c for c in children
+                         if c.get_content_type() == "text/plain" and _disposition(c) != "attachment"]
+                others = [c for c in children if c.get_content_type() != "text/plain"]
+                chosen = texts[:1] or [c for c in others if c.get_content_type() == "text/html"][:1] or others[:1]
+                children = chosen
+            for child in children:
+                visit(child, depth + 1)
+            return
+        if _disposition(part) == "attachment":
+            return
+        if ctype == "text/plain":
+            add("\n" + decoded(part) + "\n")
+        elif ctype == "text/html":
+            from_html[0] = True
+            add("\n" + html_text(decoded(part), limit + 1) + "\n")
+
+    try:
+        visit(message, 0)
+    except RecursionError:
+        pass
+    return "".join(pieces), from_html[0]
+
+
+def cut_to(text: str, limit: int) -> tuple[str, bool]:
+    """At most ``limit`` bytes of UTF-8, cut at a whole character (and at the end of a line, when one is near)."""
+    data = text.encode("utf-8")
+    if len(data) <= limit:
+        return text, False
+    shorter = data[:limit].decode("utf-8", "ignore")
+    line_end = shorter.rfind("\n")
+    if line_end > len(shorter) - 2000:
+        shorter = shorter[:line_end]
+    return shorter.rstrip(), True
+
+
+def _sibling(name: str) -> Any:
+    """A module beside this file, loaded by its path (``-I`` puts no folder of the app on the path)."""
+    spec = importlib.util.spec_from_file_location(f"nexpaper_{name}", Path(__file__).resolve().parent / f"{name}.py")
+    if spec is None or spec.loader is None:
+        raise RuntimeError(name)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def mail_date(message: Message) -> tuple[str, str]:
+    """The date of the mail: as a day (``YYYY-MM-DD``, empty when there is none that makes sense) and as shown."""
+    raw = header(message, "Date")
+    try:
+        when = email.utils.parsedate_to_datetime(raw) if raw else None
+    except Exception:  # noqa: BLE001 - a date that cannot be read is no date
+        when = None
+    if when is None or not 1970 <= when.year <= 2100:
+        return "", ""
+    offset = when.strftime("%z")
+    shown = when.strftime("%Y-%m-%d %H:%M") + (f" {offset[:3]}:{offset[3:]}" if offset else "")
+    return when.date().isoformat(), shown
+
+
+def read_text(request: dict[str, Any]) -> dict[str, Any]:
+    raw = Path(request["source"]).read_bytes()
+    out = Path(request["out"])
+    message = email.message_from_bytes(raw, policy=email.policy.default)
+    del raw
+    language = "en" if str(request.get("language") or "") == "en" else "de"
+    mail_sheet = _sibling("mail_sheet")
+    words = mail_sheet.words_of(language)
+    limit = int(request.get("text_max") or TEXT_MAX)
+    body, from_html = body_text(message, int(request["nesting"]), int(request["parts_limit"]), limit * 2, words)
+    body = tidy(body)
+    if sum(1 for char in body if not char.isspace()) < TEXT_MIN:
+        return {"ok": True, "empty": True}
+    body, cut = cut_to(body, limit)
+    day, shown = mail_date(message)
+    subject = plain(header(message, "Subject"), SUBJECT_MAX)
+    head = {"from": plain(header(message, "From"), FROM_MAX), "to": plain(header(message, "To"), TO_MAX),
+            "subject": subject, "date": shown}
+    pdf = out / "mail.pdf"
+    made = mail_sheet.write(head, body, pdf, language, cut)
+    texts = out / "texts.json"
+    texts.write_text(json.dumps(made["texts"], ensure_ascii=False), encoding="utf-8")
+    return {"ok": True, "empty": False, "pdf": str(pdf), "texts": str(texts), "pages": made["pages"],
+            "cut": made["cut"], "html": from_html, "subject": subject, "day": day}
+
+
 def main() -> int:
     real_out = sys.stdout
     sys.stdout = sys.stderr
@@ -225,7 +565,7 @@ def main() -> int:
         _stop_with_the_parent()
         _limit_memory(int(request.get("memory_mb") or 0))
         _be_modest(int(request.get("cpu_seconds") or 0))
-        result = take_apart(request)
+        result = read_text(request) if request.get("op") == "text" else take_apart(request)
     except MemoryError:
         result = {"ok": False, "error": "too_elaborate"}
     except Exception as exc:  # noqa: BLE001 - never a traceback with paths in the answer

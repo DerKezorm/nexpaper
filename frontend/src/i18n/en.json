@@ -3127,5 +3127,12 @@
     "linkHint": "Choose 2 to {{most}} documents.",
     "linked": "{{n}} connected with each other.",
     "linkedNot": "{{n}} connected with each other, {{not}} not ({{why}})."
+  },
+  "mailText": {
+    "toggle": "Take mails without an attachment as a document",
+    "hint": "A mail without a PDF, picture or e-invoice becomes a PDF of its text, such as a forwarded order confirmation. Only for mails from a confirmed address of a person or to their address with +name, never for unknown senders.",
+    "created": "created it: from the text of a mail",
+    "lastTexts_one": "{{count}} of them from the text of a mail.",
+    "lastTexts_other": "{{count}} of them from the text of mails."
   }
 }

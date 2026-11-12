@@ -3127,5 +3127,12 @@
     "linkHint": "Wähle 2 bis {{most}} Dokumente aus.",
     "linked": "{{n}} miteinander verknüpft.",
     "linkedNot": "{{n}} miteinander verknüpft, {{not}} nicht ({{why}})."
+  },
+  "mailText": {
+    "toggle": "Mails ohne Anhang als Dokument nehmen",
+    "hint": "Eine Mail ohne PDF, Bild oder E-Rechnung wird zu einem PDF mit ihrem Text, etwa eine weitergeleitete Bestellbestätigung. Nur für Mails von einer bestätigten Adresse einer Person oder an ihre Adresse mit +name, nie für unbekannte Absender.",
+    "created": "hat es angelegt: aus dem Text einer Mail",
+    "lastTexts_one": "Davon {{count}} aus dem Text einer Mail.",
+    "lastTexts_other": "Davon {{count}} aus dem Text von Mails."
   }
 }
