@@ -53,6 +53,7 @@
       "Before the update: make a backup. nexpaper makes one itself before it changes the database, but after that no older version opens this database any more; the way back is only through the backup.",
       "After the update nexpaper reads the numbers of the documents that are already there once, in the background. Proposals for older documents appear as it gets through them.",
       "New search words: `linked:yes` and `pinned:yes`, and a filter “Follow up” on the Deadlines page.",
+      "The iPhone app shows follow-ups from its version 1.0.1. It is in review at Apple right now and comes through the App Store as soon as it is approved.",
       "Remembered PDF passwords are stored encrypted with the server key. A backup together with `secret.key` can open them, so keep backups protected.",
       "“Ready for the internet?” has a point for upload requests, and the trial run of a restore names the links, upload requests and remembered PDF passwords that a restore would bring back.",
       "For programs: `GET /api/v1/search/sum`, `POST /api/v1/documents/bulk`, `/api/v1/saved-searches`, `/api/v1/documents/{id}/related`, `/api/v1/documents/{id}/transfer`, `/api/v1/pins`, `/api/v1/pdf-passwords` and `/api/v1/upload-requests`. A document has the new fields `has_related`, `pinned`, `sender_memo` and `shown_outside`."

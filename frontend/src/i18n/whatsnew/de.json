@@ -53,6 +53,7 @@
       "Vor dem Update: eine Sicherung machen. nexpaper legt selbst eine an, bevor es die Datenbank ändert, aber danach öffnet keine ältere Version diese Datenbank mehr; zurück geht es nur über die Sicherung.",
       "Nach dem Update liest nexpaper einmal im Hintergrund die Nummern der Dokumente, die schon da sind. Vorschläge für ältere Dokumente erscheinen, während es durchgeht.",
       "Neue Suchwörter: `verknüpft:ja` und `angeheftet:ja`, dazu ein Filter „Wiedervorlage“ auf der Seite Fristen.",
+      "Die iPhone-App zeigt Wiedervorlagen ab ihrer Version 1.0.1. Sie ist gerade bei Apple in der Prüfung und kommt über den App Store, sobald sie freigegeben ist.",
       "Gemerkte PDF-Passwörter liegen verschlüsselt mit dem Server-Schlüssel. Eine Sicherung samt `secret.key` kann sie öffnen, also Sicherungen geschützt aufbewahren.",
       "„Bereit fürs Internet?“ hat einen Punkt für Upload-Bitten, und der Probelauf einer Wiederherstellung nennt die Links, Upload-Bitten und gemerkten PDF-Passwörter, die eine Wiederherstellung zurückbrächte.",
       "Für Programme: `GET /api/v1/search/sum`, `POST /api/v1/documents/bulk`, `/api/v1/saved-searches`, `/api/v1/documents/{id}/related`, `/api/v1/documents/{id}/transfer`, `/api/v1/pins`, `/api/v1/pdf-passwords` und `/api/v1/upload-requests`. Ein Dokument hat die neuen Felder `has_related`, `pinned`, `sender_memo` und `shown_outside`."
