@@ -404,6 +404,24 @@
         "title": "AnyKeyOut",
         "type": "object"
       },
+      "Arrived": {
+        "properties": {
+          "remaining": {
+            "title": "Remaining",
+            "type": "integer"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "remaining"
+        ],
+        "title": "Arrived",
+        "type": "object"
+      },
       "AskedOut": {
         "properties": {
           "client_id": {
@@ -6777,6 +6795,40 @@
         "title": "PublicLink",
         "type": "object"
       },
+      "PublicRequest": {
+        "properties": {
+          "max_mb": {
+            "title": "Max Mb",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "remaining": {
+            "title": "Remaining",
+            "type": "integer"
+          },
+          "requested_by": {
+            "title": "Requested By",
+            "type": "string"
+          },
+          "until": {
+            "format": "date-time",
+            "title": "Until",
+            "type": "string"
+          }
+        },
+        "required": [
+          "requested_by",
+          "name",
+          "until",
+          "remaining",
+          "max_mb"
+        ],
+        "title": "PublicRequest",
+        "type": "object"
+      },
       "PushCount": {
         "properties": {
           "failed": {
@@ -7376,6 +7428,238 @@
           "trashed"
         ],
         "title": "RemindersOut",
+        "type": "object"
+      },
+      "RequestAddress": {
+        "properties": {
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "url"
+        ],
+        "title": "RequestAddress",
+        "type": "object"
+      },
+      "RequestCreated": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "last_used_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Used At"
+          },
+          "max_files": {
+            "title": "Max Files",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "received": {
+            "title": "Received",
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "active",
+              "expired",
+              "used",
+              "off",
+              "ended"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "until": {
+            "format": "date-time",
+            "title": "Until",
+            "type": "string"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "until",
+          "max_files",
+          "received",
+          "last_used_at",
+          "created_at",
+          "status",
+          "url"
+        ],
+        "title": "RequestCreated",
+        "type": "object"
+      },
+      "RequestIn": {
+        "properties": {
+          "days": {
+            "maximum": 365.0,
+            "minimum": 1.0,
+            "title": "Days",
+            "type": "integer"
+          },
+          "max_files": {
+            "default": 10,
+            "maximum": 50.0,
+            "minimum": 1.0,
+            "title": "Max Files",
+            "type": "integer"
+          },
+          "name": {
+            "maxLength": 200,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "days"
+        ],
+        "title": "RequestIn",
+        "type": "object"
+      },
+      "RequestOut": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "last_used_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Used At"
+          },
+          "max_files": {
+            "title": "Max Files",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "received": {
+            "title": "Received",
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "active",
+              "expired",
+              "used",
+              "off",
+              "ended"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "until": {
+            "format": "date-time",
+            "title": "Until",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "until",
+          "max_files",
+          "received",
+          "last_used_at",
+          "created_at",
+          "status"
+        ],
+        "title": "RequestOut",
+        "type": "object"
+      },
+      "RequestRules": {
+        "properties": {
+          "allowed": {
+            "title": "Allowed",
+            "type": "boolean"
+          },
+          "default_files": {
+            "title": "Default Files",
+            "type": "integer"
+          },
+          "max_days": {
+            "title": "Max Days",
+            "type": "integer"
+          },
+          "max_files": {
+            "title": "Max Files",
+            "type": "integer"
+          },
+          "max_open": {
+            "title": "Max Open",
+            "type": "integer"
+          },
+          "public_url_set": {
+            "title": "Public Url Set",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "allowed",
+          "public_url_set",
+          "max_days",
+          "max_files",
+          "default_files",
+          "max_open"
+        ],
+        "title": "RequestRules",
+        "type": "object"
+      },
+      "RequestsOverview": {
+        "properties": {
+          "open_requests": {
+            "title": "Open Requests",
+            "type": "integer"
+          },
+          "people": {
+            "title": "People",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "open_requests",
+          "people"
+        ],
+        "title": "RequestsOverview",
         "type": "object"
       },
       "RestoreIn": {
@@ -8297,6 +8581,17 @@
               }
             ],
             "title": "Upload Open Mb"
+          },
+          "upload_requests_allowed": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Upload Requests Allowed"
           }
         },
         "title": "SettingsIn",
@@ -8399,6 +8694,11 @@
           "upload_open_mb": {
             "title": "Upload Open Mb",
             "type": "integer"
+          },
+          "upload_requests_allowed": {
+            "default": false,
+            "title": "Upload Requests Allowed",
+            "type": "boolean"
           }
         },
         "required": [
@@ -17155,7 +17455,8 @@
                     "folder",
                     "share",
                     "paperless",
-                    "api"
+                    "api",
+                    "request"
                   ],
                   "type": "string"
                 },
@@ -24626,6 +24927,327 @@
         "summary": "Move all documents of a tag to another tag of the same vault, and delete it (manage)",
         "tags": [
           "catalog"
+        ]
+      }
+    },
+    "/api/v1/u/{token}": {
+      "get": {
+        "operationId": "show_api_v1_u__token__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicRequest"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "What an upload request shows (no sign-in; the token is the key)",
+        "tags": [
+          "upload requests"
+        ]
+      }
+    },
+    "/api/v1/u/{token}/files": {
+      "post": {
+        "operationId": "send_api_v1_u__token__files_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "properties": {
+                  "file": {
+                    "description": "One file: PDF, JPEG, PNG, TIFF, HEIC, WebP, AVIF, or an e-invoice as XML",
+                    "format": "binary",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "file"
+                ],
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Arrived"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Send one file through an upload request (no sign-in; the token is the key)",
+        "tags": [
+          "upload requests"
+        ]
+      }
+    },
+    "/api/v1/upload-requests": {
+      "get": {
+        "operationId": "mine_api_v1_upload_requests_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/RequestOut"
+                  },
+                  "title": "Response Mine Api V1 Upload Requests Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "The caller's own upload requests",
+        "tags": [
+          "upload requests"
+        ]
+      },
+      "post": {
+        "operationId": "create_api_v1_upload_requests_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequestIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequestCreated"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Ask somebody without an account for files: an address that puts them into the own inbox",
+        "tags": [
+          "upload requests"
+        ]
+      }
+    },
+    "/api/v1/upload-requests/overview": {
+      "get": {
+        "operationId": "overview_api_v1_upload_requests_overview_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequestsOverview"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "For the operator: how many upload requests take files, and of how many people",
+        "tags": [
+          "upload requests"
+        ]
+      }
+    },
+    "/api/v1/upload-requests/rules": {
+      "get": {
+        "operationId": "rules_api_v1_upload_requests_rules_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequestRules"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Whether upload requests are on, and what one may be",
+        "tags": [
+          "upload requests"
+        ]
+      }
+    },
+    "/api/v1/upload-requests/{request_id}": {
+      "delete": {
+        "operationId": "revoke_api_v1_upload_requests__request_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "request_id",
+            "required": true,
+            "schema": {
+              "maximum": 2147483647,
+              "minimum": 1,
+              "title": "Request Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Revoke an own upload request: it takes nothing from now on",
+        "tags": [
+          "upload requests"
+        ]
+      }
+    },
+    "/api/v1/upload-requests/{request_id}/address": {
+      "post": {
+        "operationId": "address_api_v1_upload_requests__request_id__address_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "request_id",
+            "required": true,
+            "schema": {
+              "maximum": 2147483647,
+              "minimum": 1,
+              "title": "Request Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequestAddress"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "The address of an own upload request again, to copy",
+        "tags": [
+          "upload requests"
         ]
       }
     },

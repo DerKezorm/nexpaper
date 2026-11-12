@@ -46,6 +46,7 @@ import { PdfView } from '../components/PdfView'
 import { RelatedHint } from '../components/Related'
 import { UnlockPdf } from '../components/UnlockPdf'
 import { useConfirm } from '../components/useConfirm'
+import { UploadRequestButton } from '../components/UploadRequests'
 import { VaultFilter } from '../components/VaultFilter'
 import { VaultIcon } from '../components/VaultIcon'
 import { problemOf, refusedOf, refusedValue, shownAtField } from '../lib/dateInput'
@@ -61,7 +62,7 @@ import { vaultLabel } from '../lib/vaultLabel'
 import { useAuth } from '../state/auth'
 import { slots as appSlots, type Slots } from '../slots'
 
-const SOURCE_ICON: Record<string, typeof Mail> = { upload: Upload, camera: Smartphone, mail: Mail, folder: FolderInput, share: Share2, paperless: Inbox, api: Smartphone }
+const SOURCE_ICON: Record<string, typeof Mail> = { upload: Upload, camera: Smartphone, mail: Mail, folder: FolderInput, share: Share2, paperless: Inbox, api: Smartphone, request: Share2 }
 /** While something is still being read, the list is asked for again this often. */
 const POLL_MS = 4000
 /** What the worker could not read at all; the rest of the codes (`ocr_*`) leave the pages and only the text is missing. */
@@ -79,7 +80,7 @@ function wide(): boolean {
 
 /** The value of the vault filter for what comes through a share of the document alone (it has no vault of its own). */
 const SHARED = 'shared'
-const SOURCES = ['upload', 'camera', 'mail', 'folder', 'share', 'paperless', 'api']
+const SOURCES = ['upload', 'camera', 'mail', 'folder', 'share', 'paperless', 'api', 'request']
 /** How many documents the list shows at first, and with every "Mehr laden". */
 const PAGE = 50
 /** The most the server files in one call. */
@@ -265,6 +266,7 @@ export function InboxPage({ slots = appSlots }: { slots?: Slots }) {
         <h1 className="font-display text-3xl font-semibold tracking-tight">{t('docs.inbox.title')}</h1>
         <p className="text-sm text-muted">{empty ? t('home.sub') : t('docs.inbox.sub')}</p>
         {!empty && <p className="mt-1 max-w-3xl text-sm text-muted">{t('docs.inbox.explain')}</p>}
+        <div className="mt-3"><UploadRequestButton /></div>
       </div>
 
       {problem && (
@@ -496,7 +498,7 @@ const Entry = memo(function Entry({ document: d, on, picked, selecting, search, 
               {vault && <VaultIcon icon={vault.icon} size={11} />}
               <span className="truncate">{shield}</span>
             </span>
-            <span className="truncate">{d.owner ? (d.owner.id === mineId ? t('docs.inbox.from_you') : t('docs.inbox.from_other', { name: personName(d.owner) })) : ''}</span>
+            <span className="truncate">{d.source === 'request' ? t('uploadRequest.fromRequest') : d.owner ? (d.owner.id === mineId ? t('docs.inbox.from_you') : t('docs.inbox.from_other', { name: personName(d.owner) })) : ''}</span>
           </p>
         </div>
         {splitHint && <Scissors size={15} className="shrink-0 text-accent" aria-label={t('pagetools.split.suggestedShort')} />}

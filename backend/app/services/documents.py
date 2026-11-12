@@ -57,7 +57,7 @@ TITLE_MAX = 200
 NOTE_MAX = 5000
 AMOUNT_LIMIT = 10**12
 DATE_MIN, DATE_MAX = Date(1900, 1, 1), Date(2200, 12, 31)
-SOURCES = ("upload", "camera", "mail", "folder", "share", "paperless", "api")
+SOURCES = ("upload", "camera", "mail", "folder", "share", "paperless", "api", "request")
 #: The statuses a person may set by hand: filing a document or putting it back in the inbox.
 SETTABLE = (INBOX, FILED)
 

@@ -57,6 +57,8 @@ class SettingsOut(BaseModel):
     cache_max_mb: int
     #: Pages of a long document drawn in the background after it was read (0: only the short ones, while reading).
     prerender_max_pages: int
+    #: Upload requests (U1): off from the start; off, nobody makes one and none takes files.
+    upload_requests_allowed: bool = False
 
 
 class SettingsIn(BaseModel):
@@ -94,6 +96,8 @@ class SettingsIn(BaseModel):
                                                 description="0: no limit; else at least 256")
     cache_max_mb: StrictInt | None = Field(default=None, ge=64, le=1048576)
     prerender_max_pages: StrictInt | None = Field(default=None, ge=0, le=20000)
+    #: Upload requests: files from people without an account into a person's inbox. Off ends every one at once.
+    upload_requests_allowed: bool | None = None
 
 
 class TestMailIn(BaseModel):
@@ -119,6 +123,7 @@ def _view(db: DbSession) -> SettingsOut:
         links_allowed=bool(values["links_allowed"]),
         link_max_days=int(values["link_max_days"]),
         **{key: int(values[key]) for key in limits.RANGES},
+        upload_requests_allowed=bool(values["upload_requests_allowed"]),
     )
 
 

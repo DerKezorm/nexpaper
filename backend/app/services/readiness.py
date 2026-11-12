@@ -157,6 +157,16 @@ def _backups(db: Session) -> Point:
     return Point("backups", OK if every != "off" else WARN, {"schedule": every})
 
 
+def _upload_requests(db: Session) -> Point:
+    """Upload requests (U1) let somebody without an account put files into a person's inbox: off is the quiet state,
+    on is said as a warning to look at, with how many take files now."""
+    from . import upload_requests
+
+    if not settings_service.get(db, "upload_requests_allowed"):
+        return Point("upload_requests", OK, {"on": False})
+    return Point("upload_requests", WARN, {"on": True, "count": upload_requests.overview(db).open_requests})
+
+
 def check(db: Session, request: Request, operator: Account, unknown_proxy: bool) -> dict[str, Any]:
     points = [
         _https(db, request),
@@ -167,5 +177,6 @@ def check(db: Session, request: Request, operator: Account, unknown_proxy: bool)
         _cookies(request),
         _proxy(request, unknown_proxy),
         _backups(db),
+        _upload_requests(db),
     ]
     return {"points": [point.as_dict() for point in points], "open": sum(point.state != OK for point in points)}

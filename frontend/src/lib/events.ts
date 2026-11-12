@@ -40,6 +40,8 @@ export function standsAlone(event: DocumentEvent): boolean {
 /** Who did it: the person, somebody through the link made for whom, or nexpaper (reading, a deleted account). */
 export function eventWho(event: DocumentEvent, t: TFunction): string {
   if (event.by) return iso(personName(event.by))
+  // U1: a file somebody without an account sent through an upload request; `by_link` is the request's name.
+  if (event.by_link && event.detail?.source === 'request') return t('uploadRequest.eventWho', { name: iso(event.by_link) })
   if (event.by_link) return t('docs.events.byLink', { recipient: iso(event.by_link) })
   // Who may not share the document is not told for whom the link was made (N2b).
   if (event.via_link) return t('shownOutside.events.somebody')

@@ -12,11 +12,12 @@
  */
 import { ArrowLeft, Clock, Download, ExternalLink, Eye, FileText, Paperclip } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { Trans, useTranslation } from 'react-i18next'
+import { useTranslation } from 'react-i18next'
 import { useParams } from 'react-router-dom'
 
 import { ApiError, sharingApi, type PublicAlso, type PublicLink } from '../api/client'
 import { LogoMark } from '../components/Logo'
+import { NamedSentence } from '../components/NamedSentence'
 import { PagePicture } from '../components/PagePicture'
 import { shortDate } from '../lib/dates'
 import { errorText } from '../lib/errors'
@@ -74,12 +75,12 @@ export function LinkPage() {
             {link &&
               (also.length > 0 ? (
                 who ? (
-                  <Trans i18nKey="linkRelated.sharedBy" count={also.length + 1} values={{ name: iso(who), count: also.length + 1 }} components={{ name: <span className="font-semibold text-ink" /> }} />
+                  <NamedSentence i18nKey="linkRelated.sharedBy" name={who} values={{ count: also.length + 1 }} />
                 ) : (
                   t('linkRelated.sharedByUnknown', { count: also.length + 1 })
                 )
               ) : who ? (
-                <Trans i18nKey="link.sharedBy" values={{ name: iso(who) }} components={{ name: <span className="font-semibold text-ink" /> }} />
+                <NamedSentence i18nKey="link.sharedBy" name={who} />
               ) : (
                 t('link.sharedByUnknown')
               ))}

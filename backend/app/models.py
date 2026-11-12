@@ -1363,3 +1363,33 @@ class PdfPassword(Base):
 
 
 __all__ += ["PdfPassword"]
+
+
+class UploadRequest(Base):
+    """An upload request (U1): an address ``/u/<token>`` a person gives to somebody without an account, who may put up
+    to ``max_files`` files into the person's inbox through it, until ``until``. Like a link the token is found by its
+    hash and kept sealed with the server's secret (``token_enc``) so that the person can copy the address again.
+    ``address`` is the public address of the server when the request was made: a request works only while it is still
+    the one. ``received`` counts the files taken (a slot is held while a file arrives, ``services/upload_requests``),
+    ``told_at`` is the last notice to the person. Gone with the person (``ON DELETE CASCADE``)."""
+
+    __tablename__ = "upload_requests"
+    __table_args__ = (Index("ix_upload_requests_user", "user_id"), {"sqlite_autoincrement": True})
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    #: Whom the files are expected from (1 to 100 characters): stands at every document that came through it.
+    name: Mapped[str] = mapped_column(String(100))
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True)
+    token_enc: Mapped[str] = mapped_column(String(400), default="")
+    address: Mapped[str] = mapped_column(String(255), default="")
+    until: Mapped[datetime] = mapped_column(UtcDateTime)
+    max_files: Mapped[int] = mapped_column(Integer, default=10)
+    received: Mapped[int] = mapped_column(Integer, default=0)
+    last_used_at: Mapped[datetime | None] = mapped_column(UtcDateTime, nullable=True)
+    told_at: Mapped[datetime | None] = mapped_column(UtcDateTime, nullable=True)
+    revoked_at: Mapped[datetime | None] = mapped_column(UtcDateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utcnow)
+
+
+__all__ += ["UploadRequest"]

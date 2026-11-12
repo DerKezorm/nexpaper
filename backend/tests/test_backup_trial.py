@@ -91,8 +91,11 @@ UNDO_SAVED_SEARCHES = ("DROP TABLE saved_searches",)
 #: What takes a database back from schema 18 to 17 (step 18, further documents of a link): the table gone.
 UNDO_LINK_DOCUMENTS = ("DROP TABLE link_documents",)
 
-#: A database as it stood before the last step (19, protected PDFs): the table and the column gone.
-UNDO_LAST_STEP = ("DROP TABLE pdf_passwords", "ALTER TABLE versions DROP COLUMN original_protected")
+#: What takes a database back from schema 19 to 18 (step 19, protected PDFs): the table and the column gone.
+UNDO_PDF_PASSWORDS = ("DROP TABLE pdf_passwords", "ALTER TABLE versions DROP COLUMN original_protected")
+
+#: A database as it stood before the last step (20, upload requests): the table gone.
+UNDO_LAST_STEP = ("DROP TABLE upload_requests",)
 
 
 def update_copies() -> list[backups.Entry]:

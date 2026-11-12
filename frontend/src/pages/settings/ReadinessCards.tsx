@@ -18,7 +18,12 @@ function sentence(point: Point): string {
   if (key === 'secrets' && state === 'ok') return values.source ? 'ready.secrets.env' : 'ready.secrets.ok'
   if (key === 'proxy' && state === 'ok') return values.forwarded ? 'ready.proxy.ok' : 'ready.proxy.direct'
   if (key === 'brake' && state === 'bad') return values.broken ? 'ready.brake.broken' : 'ready.brake.bad'
-  return `ready.${key}.${state}`
+  return `${base(key)}.${state}`
+}
+
+/** Where the texts of a point stand: the upload requests (U1) keep theirs in their own namespace. */
+function base(key: string): string {
+  return key === 'upload_requests' ? 'uploadRequest.ready' : `ready.${key}`
 }
 
 export function ReadinessCard() {
@@ -47,7 +52,7 @@ export function ReadinessCard() {
                 {point.state === 'ok' ? <Check size={12} strokeWidth={3} /> : point.state === 'warn' ? <AlertTriangle size={11} strokeWidth={3} /> : <X size={12} strokeWidth={3} />}
               </span>
               <span className="min-w-0">
-                <span className="font-semibold">{t(`ready.${point.key}.title`)}</span>
+                <span className="font-semibold">{t(`${base(point.key)}.title`)}</span>
                 <span className="block text-xs break-words text-muted">{t(sentence(point), { ...point.values, when, ...(typeof point.values.days === 'number' ? { count: point.values.days } : {}) })}</span>
               </span>
             </li>

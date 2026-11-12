@@ -46,6 +46,13 @@ describe('the page behind a link', () => {
     expect(page.box.querySelector('a[target="_blank"]')!.getAttribute('href')).toBe('/api/v1/l/lnk_abc123456789/file')
   })
 
+  it('shows the name of who shared it as text, never as markup', async () => {
+    server.answers['GET /api/v1/l/lnk_abc123456789'] = { ...shown, shared_by: '<strong>Jule</strong><name>x</name>' }
+    await open()
+    expect(page.box.querySelector('header strong, header name')).toBeNull()
+    expect(page.text).toContain('<strong>Jule</strong><name>x</name> hat dir ein Dokument freigegeben')
+  })
+
   it('asks the server for the link and for nothing else', async () => {
     await open()
     expect(server.calls.map((c) => `${c.method} ${c.url}`)).toEqual(['GET /api/v1/l/lnk_abc123456789'])

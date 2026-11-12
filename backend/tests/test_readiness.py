@@ -165,7 +165,8 @@ def test_everything_green_at_once(client: TestClient, operator: Account, monkeyp
     browser = https_client(operator)
     answer = browser.get("/api/v1/settings/readiness").json()
     assert answer["open"] == 0, answer
-    assert all(point["state"] == "ok" for point in answer["points"]) and len(answer["points"]) == 8
+    # Nine points since the upload requests (U1): off from the start, which is "ok".
+    assert all(point["state"] == "ok" for point in answer["points"]) and len(answer["points"]) == 9
 
 
 # --- The switches that make signing in weaker ----------------------------------------------------------------------

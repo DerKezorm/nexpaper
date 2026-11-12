@@ -204,6 +204,8 @@ class Brief:
     #: Kept PDF passwords (P1) the backup holds and this server does not any more (deleted since, or gone with an
     #: account): a restore brings them back. A number only, never a name.
     revived_pdf_passwords: int = 0
+    #: Upload requests (U1) valid in the backup and revoked or gone here now: a restore would open them again.
+    revived_upload_requests: int = 0
 
     @property
     def usable(self) -> bool:
@@ -561,6 +563,7 @@ def check(name: str, *, hash_seconds: float = HASH_SECONDS) -> Brief:
         revived_devices=revived.devices, revived_keys=revived.keys, revived_links=revived.links,
         revived_link_documents=revived.link_documents,
         revived_pdf_passwords=revived.pdf_passwords,
+        revived_upload_requests=revived.upload_requests,
     )
 
 
@@ -571,6 +574,7 @@ class _Revived:
     links: int = 0
     link_documents: int = 0
     pdf_passwords: int = 0
+    upload_requests: int = 0
 
 
 #: What is alive: the token hash and when it ends (empty: it does not), by table. The same question to the backup and to
@@ -585,6 +589,10 @@ _ALIVE = (
     # A kept PDF password is one by its sealed value (a fresh nonce each time): one deleted since does not come back
     # under the number of a new one.
     ("pdf_passwords", "SELECT sealed, NULL FROM pdf_passwords"),
+    # An upload request takes files while it is not revoked, before its end, and not all its files are there: one that
+    # is used up, revoked or gone here and open in the backup takes files again after a restore.
+    ("upload_requests", ("SELECT token_hash, until FROM upload_requests WHERE revoked_at IS NULL "
+                         "AND received < max_files")),
 )
 
 
@@ -624,7 +632,8 @@ def _revived(connection_path: Path) -> _Revived:
     finally:
         connection.close()
     return _Revived(counts.get("devices", 0), counts.get("keys", 0), counts.get("links", 0),
-                    counts.get("link_documents", 0), counts.get("pdf_passwords", 0))
+                    counts.get("link_documents", 0), counts.get("pdf_passwords", 0),
+                    counts.get("upload_requests", 0))
 
 
 @dataclass

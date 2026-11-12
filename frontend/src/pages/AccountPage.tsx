@@ -22,6 +22,7 @@ import { ShortcutCard, UploadVaultCard } from '../components/PhoneCards'
 import { providerName } from '../lib/aiProviders'
 import { useAiState } from '../state/ai'
 import { useAuth } from '../state/auth'
+import { UploadRequestsCard } from '../components/UploadRequests'
 import { MyIntakeCards } from './settings/IntakeCards'
 import { LanguageCard, LooksCard, PhoneCard } from './settings/PersonalCards'
 import { PdfPasswordsCard } from './settings/PdfPasswordsCard'
@@ -78,6 +79,7 @@ export function AccountPage() {
             <PhoneCard />
             <MyIntakeCards />
             <PdfPasswordsCard />
+            <UploadRequestsCard />
           </>
         )}
         {part === 'erinnerungen' && <RemindersPart me={me} />}

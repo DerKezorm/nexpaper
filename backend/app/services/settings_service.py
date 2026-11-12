@@ -158,6 +158,11 @@ DEFAULTS: dict[str, Any] = {
     "paperless_run": {},
     #: Checking the files (``services/filecheck.py``): whether a check runs, where it stands, what the last one found.
     "files_check": {},
+    #: Upload requests (``services/upload_requests.py``): the operator's switch, off from the start. Off: nobody makes
+    #: one, and every one there is takes nothing any more. ``upload_request_budget`` counts the day's files and bytes
+    #: of the whole server.
+    "upload_requests_allowed": False,
+    "upload_request_budget": {},
 }
 
 

@@ -121,8 +121,10 @@ with care and at least this:
 6. **Backups somewhere else**, as carefully as the data folder. A backup holds every account and the server's secrets
    (`secret.key`) but **not the documents**: those are plain files in `/data/dokumente` and belong in the backup your
    server makes anyway. Try a restore with "Check" now and then.
-7. **Leave the switches closed that you do not need**: API keys and the AI are off until the operator opens them. Pin a
-   version instead of `latest`, update on purpose, back up before.
+7. **Leave the switches closed that you do not need**: API keys, upload requests and the AI are off until the operator
+   opens them. Pin a version instead of `latest`, update on purpose, back up before. An upload request is the one way
+   in for somebody without an account that takes files: whoever holds its address can put up to its number of files
+   into one person's inbox, nothing else (see Inputs, and [SECURITY.md](SECURITY.md)).
 8. Nobody, the operator included, sets a password for somebody else. Whoever forgot theirs gets a link to set a new
    one: the operator sends it (Settings, Accounts), or, where a mail server and the public address are set, the
    person asks for it on the sign-in page. The link works once and for 24 hours. An operator without a mail server
@@ -411,6 +413,14 @@ itself: it all waits in an inbox.
   start takes only the unread mails. TLS or STARTTLS is required (without it only for a server on the same machine), a
   server in your own network must be allowed first, and switched off nothing connects. A stranger who knows the address
   can send files into an inbox: nexpaper limits how much per run and day, see [SECURITY.md](SECURITY.md).
+- **Upload requests** (Inbox, Ask for a document): an address `/u/<token>` you give to somebody without an account, the
+  tax office or the property manager, who drops files there. They land in your inbox in your own vault, from the name
+  you gave the request and marked unknown; nothing is filed by itself, and a rule may propose fields but never moves
+  such a document to another vault. A request lasts at most as long as a link, takes 10 files unless you say otherwise
+  (50 at most), and you withdraw it whenever you like (My account, Upload, or the dialog). **Off from the start**: the
+  operator switches them on under Settings, Sharing, and they need the public address of the server. The page behind
+  the address shows who asks, for whom, and how many files still go; never what arrived already. You get a notice (at
+  most one per request and hour) with the name of the request and the number of files, never a file name.
 
 ## Protected PDFs
 

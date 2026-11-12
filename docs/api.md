@@ -1077,3 +1077,30 @@ none of it, a link to the outside never.
   never a password; `readable` false when the server's secret changed since (it is lost). `PATCH /pdf-passwords/{id}`
   `{"name"}`, `DELETE /pdf-passwords/{id}`. Another person's entry answers 404 like one that does not exist, for the
   operator too. A browser or a device; they go with the account.
+- The trial run of a restore names `revived_pdf_passwords`: kept PDF passwords the backup holds and this server does
+  not any more (deleted since, or gone with an account); a restore brings them back. A number only, never a name.
+
+## Upload requests
+
+A person asks somebody without an account for files (U1). Off from the start: the operator's `upload_requests_allowed`
+(`PUT /settings`, Settings, Sharing). A request needs the public address of the server.
+
+- `GET /upload-requests/rules`: `{"allowed", "public_url_set", "max_days", "max_files", "default_files", "max_open"}`.
+- `POST /upload-requests` `{"name", "days", "max_files"}` (name 1 to 100 characters, days up to the longest a link may
+  last, 1 to 50 files, 10 from the start): 201 with the request and `url` (`<public address>/u/<token>`, the token
+  `upr_...`). `409 requests_off`, `public_url_missing`, `too_many_requests` (20 open per person). A browser or a
+  device, for the own inbox only; an API key is refused.
+- `GET /upload-requests`: the own requests that are not withdrawn, newest first (ended ones 30 days after their end):
+  `[{"id", "name", "until", "max_files", "received", "last_used_at", "created_at", "status"}]`, `status` `active`,
+  `expired`, `used`, `off` or `ended` (the public address changed).
+- `POST /upload-requests/{id}/address`: `{"url"}` again, for the person who made it, while it works (`409
+  request_ended`). `DELETE /upload-requests/{id}` withdraws it (204). Anybody else's request answers 404.
+- `GET /upload-requests/overview` (the operator): `{"open_requests", "people"}`, never an address or a name.
+- Without a sign-in: `GET /u/{token}`: `{"requested_by", "name", "until", "remaining", "max_mb"}`; `POST
+  /u/{token}/files` (multipart, one file in `file`, with its length; the one path without `X-Nexpaper-Client`): 201
+  `{"status": "arrived", "remaining"}`, or the reason (`415 unsupported_type`, `413 too_large`, `422 empty_file`, `411
+  length_required`, `408 too_slow` (the body paused 20 s or came slower than 32 KB/s), `429 request_busy` (the hour, or
+  two files of the request on their way), `429 request_day_full` (256 MB per request and day, or the server's day)). Everything that does not work answers `404 not_found`
+  alike and counts on a brake of its own. The document is `source` `request`, in the person's personal vault, and its
+  `GET /documents/{id}/origin` says `unknown` with the request's name as `sender`.
+- The trial run of a restore names `revived_upload_requests`; "Ready for the internet?" has the point `upload_requests`.

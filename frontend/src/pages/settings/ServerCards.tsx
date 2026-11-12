@@ -42,6 +42,8 @@ export type ServerSettings = {
   process_timeout_seconds: number
   process_memory_mb: number
   cache_max_mb: number
+  /** U1: upload requests, off from the start. */
+  upload_requests_allowed?: boolean
 }
 
 type Change = Partial<ServerSettings> & { smtp_password?: string; current_password?: string; confirm_address?: boolean }
@@ -684,6 +686,8 @@ type Brief = {
   revived_link_documents?: number
   /** Kept PDF passwords the backup holds that are deleted here now: a restore brings them back (a number only). */
   revived_pdf_passwords?: number
+  /** Upload requests (U1) a restore would open again. */
+  revived_upload_requests?: number
   created: string
 }
 
@@ -705,6 +709,7 @@ function PreviewLines({ brief }: { brief: Brief }) {
   if (brief.revived_links) lines.push(t('server.restorePreview.revivedLinks', { count: brief.revived_links }))
   if (brief.revived_link_documents) lines.push(t('linkRelated.revived', { count: brief.revived_link_documents }))
   if (brief.revived_pdf_passwords) lines.push(t('server.restorePreview.revivedPdfPasswords', { count: brief.revived_pdf_passwords }))
+  if (brief.revived_upload_requests) lines.push(t('uploadRequest.revived', { count: brief.revived_upload_requests }))
   if (brief.rebuilds_index) lines.push(t('server.restorePreview.index'))
   return (
     <ul className="mt-2 space-y-1 text-xs" data-testid="restore-preview">

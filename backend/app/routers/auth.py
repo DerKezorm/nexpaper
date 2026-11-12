@@ -73,6 +73,7 @@ from ..services import (
     settings_service,
     timezones,
     totp,
+    upload_requests,
 )
 from ..services import vaults as vaults_service
 from ..services.accounts import AccountError
@@ -775,6 +776,7 @@ def block_account(
         raise error("cannot_block_self", "You cannot block yourself.", 409)
     row = _row(db, account_id)
     row.blocked_at = utcnow()
+    upload_requests.end_for(db, row.id)
     db.commit()
     end_all_sessions(db, row.id)
     logger.warning("Account blocked name=%s by=%s", row.name, operator.name)

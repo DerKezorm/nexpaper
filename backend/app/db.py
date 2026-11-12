@@ -46,7 +46,7 @@ _settings.data_dir.mkdir(parents=True, exist_ok=True)
 BUSY_SECONDS = 15
 
 #: The version of the schema the models describe.
-SCHEMA_VERSION = 19
+SCHEMA_VERSION = 20
 
 
 def _step_v2(connection: Connection) -> None:
@@ -503,6 +503,24 @@ def _step_pdf_passwords(connection: Connection) -> None:
         connection.exec_driver_sql(statement)
 
 
+def _step_upload_requests(connection: Connection) -> None:
+    """Upload requests (U1): one table, a row per address a person gave out for files from somebody without an account.
+    Nothing else; written out as it stood when the step was made, so that the step moves to another number unchanged.
+    No request exists before it, so nothing comes to life."""
+    for statement in (
+        (
+            "CREATE TABLE upload_requests ( id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL, "
+            "name VARCHAR(100) NOT NULL, token_hash VARCHAR(64) NOT NULL, token_enc VARCHAR(400) NOT NULL, "
+            "address VARCHAR(255) NOT NULL, until DATETIME NOT NULL, max_files INTEGER NOT NULL, "
+            "received INTEGER NOT NULL, last_used_at DATETIME, told_at DATETIME, revoked_at DATETIME, "
+            "created_at DATETIME NOT NULL, FOREIGN KEY(user_id) REFERENCES users (id) ON DELETE CASCADE, "
+            "UNIQUE (token_hash) )"
+        ),
+        "CREATE INDEX ix_upload_requests_user ON upload_requests (user_id)",
+    ):
+        connection.exec_driver_sql(statement)
+
+
 #: ``MIGRATIONS[n]`` brings a database from version ``n - 1`` to ``n``. Version 1 is the first schema; it has no step.
 #: Later steps are written out as the tables stood then, not taken from the models, which move on.
 MIGRATIONS: dict[int, Callable[[Connection], None]] = {
@@ -530,6 +548,8 @@ MIGRATIONS: dict[int, Callable[[Connection], None]] = {
     18: _step_link_documents,
     # P1, protected PDFs: the kept passwords and the mark on a version.
     19: _step_pdf_passwords,
+    # U1, upload requests: files from somebody without an account into a person's inbox.
+    20: _step_upload_requests,
 }
 
 def _has_column(connection: Connection, table: str, column: str) -> bool:

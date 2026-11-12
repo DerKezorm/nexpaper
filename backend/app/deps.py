@@ -464,6 +464,24 @@ def link_failed(request: Request) -> None:
         brake.failed(key, free)
 
 
+#: Wrong tokens of upload requests (and requests that ended, which answer alike) count on a brake of their own, with
+#: the room of the links: a stranger guessing there must neither shut the household's sign-in nor its links out.
+def _request_keys(request: Request) -> list[tuple[str, int]]:
+    return [("upreq|" + key, free * LINK_ROOM) for key, free in address_keys(request)]
+
+
+def request_guard(request: Request) -> None:
+    """429 while the sender rests after too many wrong upload request tokens."""
+    wait = max((brake.wait_seconds(key, free) for key, free in _request_keys(request)), default=0)
+    if wait:
+        raise too_many(wait)
+
+
+def request_failed(request: Request) -> None:
+    for key, free in _request_keys(request):
+        brake.failed(key, free)
+
+
 def confirm_operator(
     request: Request, db: Session, operator: AccountRow, password: str, *, settle: bool = True
 ) -> None:

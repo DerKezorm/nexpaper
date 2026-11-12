@@ -170,6 +170,9 @@ LARGE_BODIES = {
 #: The upload of documents: the browser's multipart request (a few files, each at most the operator's limit, read anew
 #: for every request) and one piece of a piece-by-piece upload (``PUT /api/v1/uploads/<id>``).
 UPLOAD_PIECE = re.compile(r"^/api/v1/uploads/[0-9a-f]{32}$")
+#: The one route a stranger sends files to: an upload request (``routers/request_page.py``), one file a request.
+#: A token of any length: one too long is no token, but answers like every wrong one (404, on the brake), not 400.
+REQUEST_FILES = re.compile(r"^/api/v1/u/[^/]+/files$")
 
 
 def body_limit(method: str, path: str) -> int:
@@ -177,6 +180,8 @@ def body_limit(method: str, path: str) -> int:
         return LARGE_BODIES[path]
     if method == "POST" and path == "/api/v1/documents":
         return limits.request_limit()
+    if method == "POST" and REQUEST_FILES.match(path):
+        return limits.single_limit()
     if method == "PUT" and UPLOAD_PIECE.match(path):
         return limits.MAX_PIECE + limits.MB
     return MAX_BODY
@@ -209,6 +214,14 @@ TOKEN_STARTS = (b"npd_", b"npk_")
 #: code of OAuth for its token. Neither reads a cookie, so a page on another site gains nothing by sending a browser
 #: there; they need no tab header (a native app has no tab).
 PROGRAM_PATHS = frozenset({"/api/v1/devices/pair", "/api/v1/oauth/token"})
+
+
+def _stranger_upload(method: str, path: str) -> bool:
+    """The upload of a stranger to an upload request (``POST /api/v1/u/<token>/files``), and nothing else under
+    ``/api/v1/u/``: the sender has no account and no tab of ours, so no tab header. The route reads no cookie and sets
+    none, and speaks for the token alone: a page on another site that makes a browser send there gains nothing it
+    could not do itself with the token, and without it gets the answer of an unknown token."""
+    return method == "POST" and REQUEST_FILES.match(path) is not None
 
 
 def _carries_token(value: bytes) -> bool:
@@ -245,7 +258,7 @@ class GuardMiddleware:
         # stand in for the tab header, and neither does a token next to a cookie: a made-up one would take the wall
         # away from a request the cookie answers (log out, sign-in steps, accepting an invitation).
         exempt = (_carries_token(headers.get(b"authorization", b"")) and not _is_browser(headers.get(b"cookie", b""))
-                  ) or scope["path"] in PROGRAM_PATHS
+                  ) or scope["path"] in PROGRAM_PATHS or _stranger_upload(scope.get("method", ""), scope["path"])
         if scope.get("method") in CHANGING and not exempt and not CLIENT_PATTERN.match(headers.get(CLIENT_HEADER, b"")):
             for message in _refuse(400, "client_required", "Changes need the header X-Nexpaper-Client."):
                 await send(message)

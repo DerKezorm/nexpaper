@@ -77,6 +77,9 @@ OPEN = {
     ("GET", "/api/v1/l/{token}/also/{item}/preview"),
     ("GET", "/api/v1/l/{token}/also/{item}/pages/{page}"),
     ("GET", "/api/v1/l/{token}/also/{item}/text"),
+    # U1: an upload request, what it shows and the one file a stranger sends through it (tests/test_upload_requests.py).
+    ("GET", "/api/v1/u/{token}"),
+    ("POST", "/api/v1/u/{token}/files"),
 }
 
 
@@ -291,6 +294,12 @@ TOKEN_ROUTES = {
     ("GET", "/api/v1/pdf-passwords"),
     ("PATCH", "/api/v1/pdf-passwords/{entry_id}"),
     ("DELETE", "/api/v1/pdf-passwords/{entry_id}"),
+    # U1: the own upload requests, from a browser or a device (never a key).
+    ("GET", "/api/v1/upload-requests/rules"),
+    ("GET", "/api/v1/upload-requests"),
+    ("POST", "/api/v1/upload-requests"),
+    ("POST", "/api/v1/upload-requests/{request_id}/address"),
+    ("DELETE", "/api/v1/upload-requests/{request_id}"),
 }
 
 #: The routes that only read and that a program with an API key reaches too (as the browser and a device do). A route

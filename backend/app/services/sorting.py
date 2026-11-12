@@ -294,7 +294,8 @@ def propose(db: Session, document: Document, text: str, *, invoice: EInvoice | N
     subject = rules.Subject(sender=str(best("sender") or ""), text=text, kind_id=best("kind"),
                             source=document.source, amount=best("amount"))
     outcome = rules.evaluate(db, rules.applying(db, arrival), subject, document.owner_id, arrival)
-    proposal.offer("vault", RULE, outcome.vault_id)
+    # A document from an upload request stays in the inbox of the person who asked (U1): a rule never moves it.
+    proposal.offer("vault", RULE, None if document.source == "request" else outcome.vault_id)
     proposal.offer("sender", RULE, outcome.sender)
     offer_kind(RULE, outcome.kind_id)
     rule_title = outcome.title
