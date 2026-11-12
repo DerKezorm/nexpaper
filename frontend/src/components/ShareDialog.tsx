@@ -229,7 +229,7 @@ export function ShareDialog({ document, onClose, say }: Props) {
             <p className="mt-2 text-sm text-muted">{t('share.linksOff')}</p>
           ) : (
             <>
-              <p className="mt-1 text-xs text-muted">{t('share.linkText')}</p>
+              <p className="mt-1 text-xs text-muted">{related.length > 0 ? t('linkRelated.linkText') : t('share.linkText')}</p>
               <ul className="mt-3 space-y-2">
                 {shownLinks.map((l) => {
                   const live = l.status === 'active'

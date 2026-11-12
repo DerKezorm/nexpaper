@@ -148,4 +148,22 @@ def test_zip_names_of_the_list_are_safe_for_a_spreadsheet(world: World) -> None:
     assert "ohne Datum =SUMME(A1)" in rows["Strom März"][-1]
 
 
+def test_a_document_still_being_read_does_not_come_along(world: World) -> None:
+    reading = add_document(world.mine, world.jule, "Wird gelesen", date=date(2024, 4, 4))
+    with SessionLocal() as db:
+        from app.models import PROCESSING, Document
+
+        row = db.get(Document, reading)
+        assert row is not None
+        row.status = PROCESSING
+        db.commit()
+    pair(world.strom, reading)
+    with new_client(world.jule) as jule:
+        assert preview(jule, world, related="true")["documents"] == 3
+        made = jule.post("/api/v1/exports", json=body(world, related=True), headers=DE).json()
+        pack()
+        archive = zip_of(jule, made["id"])
+        assert not any("Wird gelesen" in name for name in archive.namelist())
+        assert "Wird gelesen" not in archive.read("liste.csv").decode("utf-8-sig")
+
 __all__ = ["zipfile"]

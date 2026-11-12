@@ -67,12 +67,16 @@ def test_a_row_is_once_and_goes_with_its_link_or_its_document(scratch: Path,  # 
                 "INSERT INTO links (id, document_id, recipient, token_hash, token_enc, until, allow_download, "
                 "opened_count, created_at) VALUES (?, 1, 'r', ?, '', '2026-12-01 00:00:00', 1, 0, "
                 "'2026-11-12 08:00:00')", (link_id, f"h{link_id}"))
-        add = "INSERT INTO link_documents (link_id, document_id, created_at) VALUES (?, ?, '2026-11-12 08:00:00')"
-        connection.execute(add, (1, 2))
+        add = ("INSERT INTO link_documents (link_id, document_id, number, created_at) "
+               "VALUES (?, ?, ?, '2026-11-12 08:00:00')")
+        connection.execute(add, (1, 2, 1))
         with pytest.raises(sqlite3.IntegrityError):
-            connection.execute(add, (1, 2))
-        connection.execute(add, (1, 3))
-        connection.execute(add, (2, 2))
+            connection.execute(add, (1, 2, 2))
+        # The number within a link is once per link, and every link starts at 1.
+        with pytest.raises(sqlite3.IntegrityError):
+            connection.execute(add, (1, 3, 1))
+        connection.execute(add, (1, 3, 2))
+        connection.execute(add, (2, 2, 1))
         connection.execute("DELETE FROM documents WHERE id = 3")
         assert connection.execute("SELECT link_id, document_id FROM link_documents ORDER BY id").fetchall() == [
             (1, 2), (2, 2)]
@@ -93,9 +97,9 @@ def test_the_trial_run_counts_the_further_documents_a_restore_puts_back(client: 
                        until=now + timedelta(days=7))
         db.add_all([kept, revoked])
         db.flush()
-        db.add_all([LinkDocument(link_id=kept.id, document_id=one, created_at=now),
-                    LinkDocument(link_id=kept.id, document_id=two, created_at=now),
-                    LinkDocument(link_id=revoked.id, document_id=three, created_at=now)])
+        db.add_all([LinkDocument(link_id=kept.id, document_id=one, number=1, created_at=now),
+                    LinkDocument(link_id=kept.id, document_id=two, number=2, created_at=now),
+                    LinkDocument(link_id=revoked.id, document_id=three, number=1, created_at=now)])
         db.commit()
         ids = (kept.id, revoked.id)
     name = backups.create(kind=backups.MANUAL).name

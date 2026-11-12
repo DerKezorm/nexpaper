@@ -68,9 +68,10 @@ class LinkIn(BaseModel):
     recipient: str = Field(max_length=sharing.RECIPIENT_MAX * 2)
     days: StrictInt = Field(ge=1, le=365)
     allow_download: StrictBool = True
-    #: Further documents the link shows (at most 10): each goes with the document, and the caller may share it by a
-    #: link of its own. One that does not pass refuses the whole call (``422 invalid_also``, the same for every reason).
-    also: list[StrictInt] = Field(default_factory=list, max_length=sharing.MAX_ALSO)
+    #: Further documents the link shows (at most 10 different ones; a number given twice counts once): each goes with
+    #: the document, and the caller may share it by a link of its own. One that does not pass refuses the whole call
+    #: (``422 invalid_also``, the same for every reason).
+    also: list[StrictInt] = Field(default_factory=list, max_length=100)
 
 
 class ShownThrough(BaseModel):

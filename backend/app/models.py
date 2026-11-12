@@ -1300,11 +1300,15 @@ class LinkDocument(Base):
 
     __tablename__ = "link_documents"
     __table_args__ = (UniqueConstraint("link_id", "document_id", name="uq_link_document"),
+                      UniqueConstraint("link_id", "number", name="uq_link_document_number"),
                       Index("ix_link_documents_document", "document_id"))
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     link_id: Mapped[int] = mapped_column(ForeignKey("links.id", ondelete="CASCADE"))
     document_id: Mapped[int] = mapped_column(ForeignKey("documents.id", ondelete="CASCADE"))
+    #: The document's number within its link (1 to 10, in the order chosen, never given again while the link lives):
+    #: what the page and the paths behind the link name, so that they tell nothing about the server.
+    number: Mapped[int] = mapped_column(Integer)
     created_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utcnow)
 
 

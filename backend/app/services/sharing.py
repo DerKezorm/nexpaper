@@ -257,8 +257,9 @@ def create_link(
     if others:
         detail["also"] = len(others)
     changes.record(db, document_id, changes.LINK_CREATED, user_id=uid, detail=detail)
-    for other in others:
-        db.add(LinkDocument(link_id=link.id, document_id=other.id, created_at=now))
+    # Numbered within the link, in the order chosen: what the page and the paths name (never the server's own numbers).
+    for number, other in enumerate(others, 1):
+        db.add(LinkDocument(link_id=link.id, document_id=other.id, number=number, created_at=now))
         other.change_seq = changes.next_seq(db)
         changes.record(db, other.id, ALSO_SHOWN, user_id=uid, detail={"document": document_id, "days": days})
     db.commit()
@@ -447,7 +448,7 @@ def shown_also(db: Session, link: Link) -> list[Also]:
     rows = db.execute(
         select(LinkDocument, other).join(other, other.id == LinkDocument.document_id)
         .join(Link, Link.id == LinkDocument.link_id)
-        .where(LinkDocument.link_id == link.id, also_live(other)).order_by(LinkDocument.id)
+        .where(LinkDocument.link_id == link.id, also_live(other)).order_by(LinkDocument.number)
     ).all()
     return [Also(item, document) for item, document in rows]
 
@@ -463,10 +464,10 @@ def also_counts(db: Session, link_ids: list[int]) -> dict[int, int]:
         .where(LinkDocument.link_id.in_(link_ids), also_live(other)).group_by(LinkDocument.link_id)).all()}
 
 
-def check_also(db: Session, token: str, item_id: int) -> tuple[Link, Document, Document] | None:
+def check_also(db: Session, token: str, number: int) -> tuple[Link, Document, Document] | None:
     """For every path of a further document behind a link: the link, its own document and the further one, for a token
-    that works right now **and** a further document that belongs to it and is shown now, in one query. Anything else
-    is None, and the route answers it as a wrong token."""
+    that works right now **and** a further document that belongs to it (by its ``number`` within the link) and is shown
+    now, in one query. Anything else is None, and the route answers it as a wrong token."""
     if not token.startswith(LINK_PREFIX) or len(token) > 100:
         return None
     current = rules(db)
@@ -476,7 +477,7 @@ def check_also(db: Session, token: str, item_id: int) -> tuple[Link, Document, D
     row = db.execute(
         select(Link, Document, other).join(Document, Document.id == Link.document_id)
         .join(LinkDocument, LinkDocument.link_id == Link.id).join(other, other.id == LinkDocument.document_id)
-        .where(Link.token_hash == digest(token), live(clock.now(), current.max_days), LinkDocument.id == item_id,
+        .where(Link.token_hash == digest(token), live(clock.now(), current.max_days), LinkDocument.number == number,
                also_live(other))
     ).first()
     return None if row is None else (row[0], row[1], row[2])
@@ -534,7 +535,11 @@ def shown_through(db: Session, uid: int, document_id: int) -> list[Through]:
 def take_out(db: Session, uid: int, document_id: int, item_id: int) -> None:
     """Takes this document out of a link of another document (it can only be shown again by a new link). For whoever
     may see the links of this document; the link stays and shows the rest. Both documents get a line in their history.
-    A row that is not there (taken out already, or of another document) is 404."""
+    A row that is not there (taken out already, or of another document) is 404.
+
+    ``item_id`` is the row's own number (``ShownThrough.id``), not the number within the link: it is only ever shown
+    to a signed-in person who may see the links of this document, and the row names one link of one document at once,
+    which the number within a link alone would not (every link starts at 1). Nobody without an account meets it."""
     changes.write_lock(db)
     access = rights.require_document(db, uid, document_id)
     if not access.can_share:

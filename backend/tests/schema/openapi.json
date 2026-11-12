@@ -4090,7 +4090,7 @@
             "items": {
               "type": "integer"
             },
-            "maxItems": 10,
+            "maxItems": 100,
             "title": "Also",
             "type": "array"
           },

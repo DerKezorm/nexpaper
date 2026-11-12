@@ -71,7 +71,18 @@ export function LinkPage() {
         <div className="mx-auto flex max-w-4xl items-center gap-3 px-4 py-3">
           <LogoMark size={28} />
           <p className="flex-1 text-sm text-ink-2">
-            {link && (who ? <Trans i18nKey="link.sharedBy" values={{ name: iso(who) }} components={{ name: <span className="font-semibold text-ink" /> }} /> : t('link.sharedByUnknown'))}
+            {link &&
+              (also.length > 0 ? (
+                who ? (
+                  <Trans i18nKey="linkRelated.sharedBy" count={also.length + 1} values={{ name: iso(who), count: also.length + 1 }} components={{ name: <span className="font-semibold text-ink" /> }} />
+                ) : (
+                  t('linkRelated.sharedByUnknown', { count: also.length + 1 })
+                )
+              ) : who ? (
+                <Trans i18nKey="link.sharedBy" values={{ name: iso(who) }} components={{ name: <span className="font-semibold text-ink" /> }} />
+              ) : (
+                t('link.sharedByUnknown')
+              ))}
           </p>
           {link && (
             <span className="hidden items-center gap-1.5 text-xs text-muted sm:flex">

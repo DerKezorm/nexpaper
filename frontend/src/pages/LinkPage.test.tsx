@@ -8,7 +8,7 @@ import { Route, Routes } from 'react-router-dom'
 
 import { changeLanguage } from '../i18n'
 import { forgetPictures } from '../lib/pictures'
-import { Page, Server } from '../test/harness'
+import { Page, Server, plain } from '../test/harness'
 import { idle, until } from '../test/wait'
 import { LinkPage } from './LinkPage'
 
@@ -185,6 +185,14 @@ describe('what goes with it (N2)', () => {
     expect(page.text).toContain('Lieferschein · 02.10.2026 · 1 Seite')
     expect(page.text).toContain('Auftragsbestätigung')
     expect(page.text).toContain('Nur diese 3 Dokumente sind freigegeben. Jule sieht, wann der Link geöffnet wurde')
+    // The head says how many, as the foot does.
+    expect(plain(page.box.querySelector('header')!.textContent)).toBe('Jule hat dir 3 Dokumente freigegeben gilt bis 31.10.2026')
+  })
+
+  it('counts in the head also without a name', async () => {
+    server.answers['GET /api/v1/l/lnk_abc123456789'] = { ...shown, shared_by: '', also: also.slice(0, 1) }
+    await open()
+    expect(page.text).toContain('Dir wurden 2 Dokumente freigegeben')
   })
 
   it('opens one in the same page under the link’s own paths, and goes back to the first', async () => {
@@ -226,5 +234,6 @@ describe('what goes with it (N2)', () => {
     await open()
     expect(page.text).toContain('Goes with it')
     expect(page.text).toContain('Only these 3 documents are shared.')
+    expect(page.text).toContain('Jule has shared 3 documents with you')
   })
 })

@@ -3129,6 +3129,12 @@
     "linkedNot": "{{n}} miteinander verknüpft, {{not}} nicht ({{why}})."
   },
   "linkRelated": {
+    "linkText": "Für Leute ohne Konto, etwa Steuerberater, Versicherung oder Vermieter. Der Link zeigt nur dieses Dokument und, wenn du es unten wählst, die damit verknüpften. Er läuft von selbst ab.",
+    "sharedBy_one": "<name>{{name}}</name> hat dir ein Dokument freigegeben",
+    "sharedBy_other": "<name>{{name}}</name> hat dir {{count}} Dokumente freigegeben",
+    "sharedByUnknown_one": "Dir wurde ein Dokument freigegeben",
+    "sharedByUnknown_other": "Dir wurden {{count}} Dokumente freigegeben",
+    "purged": "Ein mitgezeigtes Dokument wurde endgültig gelöscht und wird über den Link nicht mehr gezeigt.",
     "show_one": "Auch das verknüpfte Dokument zeigen",
     "show_other": "Auch die {{count}} verknüpften Dokumente zeigen",
     "showHint": "Nur was du selbst per Link teilen darfst. Später Verknüpftes kommt nicht von selbst dazu.",

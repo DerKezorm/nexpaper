@@ -52,7 +52,8 @@ DOWNLOAD_ONLY = {".heic": "image/heic", ".webp": "image/webp", ".avif": "image/a
 class PublicAlso(BaseModel):
     """A further document of a link: what the page lists under the document (N2). Never its sender or anything else."""
 
-    #: The number of the document within the link (not the document's own number).
+    #: The number of the document within the link, 1 to 10 in the order chosen (never a number of the server's: not
+    #: the document's, not a row's).
     id: int
     title: str
     kind: str | None
@@ -121,9 +122,9 @@ def open_link(token: str, request: Request) -> PublicLink:
             other = shown.document
             other_kind = db.get(Kind, other.kind_id) if other.kind_id else None
             other_file, other_viewable, other_pages = _what_of(db, other, link.allow_download)
-            also.append(PublicAlso(id=shown.item.id, title=other.title, kind=other_kind.name if other_kind else None,
-                                   date=other.date, pages=other.pages, has_file=other_file, viewable=other_viewable,
-                                   has_pages=other_pages))
+            also.append(PublicAlso(id=shown.item.number, title=other.title,
+                                   kind=other_kind.name if other_kind else None, date=other.date, pages=other.pages,
+                                   has_file=other_file, viewable=other_viewable, has_pages=other_pages))
         return PublicLink(
             shared_by=maker.display_name if maker else "", recipient=link.recipient, title=document.title,
             sender=sender.name if sender else None, kind=kind.name if kind else None, date=document.date,

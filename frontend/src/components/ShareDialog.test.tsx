@@ -216,6 +216,7 @@ describe('a link that shows what goes with the document (N2)', () => {
   it('offers the documents the person may share, off from the start, and sends none unless chosen', async () => {
     await open()
     expect(page.text).toContain('Auch die 2 verknüpften Dokumente zeigen')
+    expect(page.text).toContain('Der Link zeigt nur dieses Dokument und, wenn du es unten wählst, die damit verknüpften. Er läuft von selbst ab.')
     expect(page.text).not.toContain('Lieferschein')
     expect(page.text).not.toContain('Fremd')
     await page.type(document.querySelector<HTMLInputElement>('input[aria-label="Für wen, z. B. Steuerbüro"]'), 'Vermieter')
@@ -242,6 +243,7 @@ describe('a link that shows what goes with the document (N2)', () => {
     server.answers['GET /api/v1/documents/5/related'] = [goesWith(10, 'Fremd', { can_share: false })]
     await open()
     expect(document.querySelector('[data-testid="link-related"]')).toBeNull()
+    expect(page.text).toContain('Der Link zeigt nur dieses Dokument und läuft von selbst ab.')
   })
 
   it('says in the list of links how many more a link shows', async () => {

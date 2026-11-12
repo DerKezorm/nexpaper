@@ -457,8 +457,9 @@ def _step_link_documents(connection: Connection) -> None:
     for statement in (
         (
             "CREATE TABLE link_documents ( id INTEGER NOT NULL, link_id INTEGER NOT NULL, "
-            "document_id INTEGER NOT NULL, created_at DATETIME NOT NULL, PRIMARY KEY (id), "
+            "document_id INTEGER NOT NULL, number INTEGER NOT NULL, created_at DATETIME NOT NULL, PRIMARY KEY (id), "
             "CONSTRAINT uq_link_document UNIQUE (link_id, document_id), "
+            "CONSTRAINT uq_link_document_number UNIQUE (link_id, number), "
             "FOREIGN KEY(link_id) REFERENCES links (id) ON DELETE CASCADE, "
             "FOREIGN KEY(document_id) REFERENCES documents (id) ON DELETE CASCADE )"
         ),
