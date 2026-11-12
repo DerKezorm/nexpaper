@@ -16,9 +16,10 @@ import { Button } from './Button'
 import { Dialog } from './Dialog'
 import { PageThumb } from './PageThumb'
 import { codeOf } from '../lib/toolErrors'
+import { useOutsideAsk } from './useOutsideAsk'
 import { ToolProblem } from './ToolProblem'
 
-type Item = Pick<DocumentInfo, 'id' | 'title' | 'vault_id' | 'current_version' | 'pages'> & Partial<Pick<DocumentInfo, 'sender' | 'date'>>
+type Item = Pick<DocumentInfo, 'id' | 'title' | 'vault_id' | 'current_version' | 'pages'> & Partial<Pick<DocumentInfo, 'sender' | 'date' | 'shown_outside'>>
 
 export type MergeDialogProps = {
   /** The document the dialog was opened on: first in the order until it is moved. */
@@ -41,6 +42,8 @@ export function MergeDialog({ document, onClose, onMerged, say }: MergeDialogPro
   const [problem, setProblem] = useState<string | null>(null)
   /** A request on its way: a second click does nothing. */
   const running = useRef(false)
+  /** The first one (it keeps the pages of all) open to the outside: asked before joining (N2b). */
+  const { guard, dialog } = useOutsideAsk()
 
   useEffect(() => {
     const control = new AbortController()
@@ -67,7 +70,12 @@ export function MergeDialog({ document, onClose, onMerged, say }: MergeDialogPro
   }
   const pages = order.reduce((sum, item) => sum + item.pages, 0)
 
-  const join = async () => {
+  const join = () => {
+    if (running.current || busy || order.length < 2) return
+    guard(order[0].shown_outside, t('pagetools.merge.go'), joinNow)
+  }
+
+  const joinNow = async () => {
     if (running.current || busy || order.length < 2) return
     running.current = true
     setBusy(true)
@@ -147,6 +155,7 @@ export function MergeDialog({ document, onClose, onMerged, say }: MergeDialogPro
         </div>
       )}
       <ToolProblem code={problem} />
+      {dialog}
       <div className="mt-5 flex flex-wrap items-center gap-2">
         <Button variant="primary" size="sm" disabled={busy || order.length < 2} onClick={join}>
           <FileStack size={15} /> {t('pagetools.merge.go')}

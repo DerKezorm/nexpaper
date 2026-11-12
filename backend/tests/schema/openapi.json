@@ -1408,6 +1408,11 @@
             ],
             "title": "Share Count"
           },
+          "shown_outside": {
+            "default": false,
+            "title": "Shown Outside",
+            "type": "boolean"
+          },
           "source": {
             "title": "Source",
             "type": "string"

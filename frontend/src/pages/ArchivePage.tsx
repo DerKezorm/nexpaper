@@ -1102,7 +1102,7 @@ function Row({ hit, vault, vaultName, searching, keep, select }: { hit: SearchHi
               {d.einvoice && <FileCode2 size={14} aria-label={t('sorting.einvoice.icon')} />}
               {d.notes > 0 && <MessageSquare size={14} aria-label={t('docs.archive.withNote')} />}
               {(d.share_count ?? 0) > 0 && <Users size={14} aria-label={t('docs.archive.sharedOut')} />}
-              {(d.link_count ?? 0) > 0 && <Link2 size={14} aria-label={t('docs.archive.linkOut')} />}
+              {((d.link_count ?? 0) > 0 || d.shown_outside) && <Link2 size={14} aria-label={t('docs.archive.linkOut')} data-testid="link-out" />}
               {d.has_related && <Paperclip size={14} aria-label={t('related.inArchive')} data-testid="goes-with" />}
               {d.pinned && <Pin size={14} className="fill-current text-accent" aria-label={t('pins.inArchive')} data-testid="pinned" />}
             </span>

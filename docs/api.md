@@ -1035,3 +1035,17 @@ none of it, a link to the outside never.
   documents in the ZIP that go with each.
 - The trial run of a restore names `revived_link_documents`: further documents a restore would show through a link
   again.
+
+## Documents open to the outside
+
+- Every document in an answer (`GET /documents/{id}`, the lists, the search, the inbox, the pinned ones, the changes)
+  has `shown_outside`: for a caller who may change it (`edit` or `manage` in its vault, or a share with `edit`), true
+  while a link that works shows it, as the link's own document or as a further one (not revoked, before its end and the
+  operator's limit, links switched on, the link's own document out of the trash, its maker still allowed to share, and
+  for a further document still out of the trash and still going with it). Only yes or no: to whom, until when and how
+  many tell `link_count`, `GET .../links` and `GET .../shown-through`, to who may share it. Always false for a caller
+  who may only read.
+- A link shows a document as it is now: a change of its pages (`POST .../pages`, `.../merge`, `.../split`, `POST
+  .../versions`, `.../versions/{n}/restore`) is seen through the link at once. The web app asks before each of these
+  while `shown_outside` is true; the endpoints ask for nothing new, so an app that wants to ask reads the field. The
+  history gets no line of its own for it. Title, kind, date and the other fields do not ask.

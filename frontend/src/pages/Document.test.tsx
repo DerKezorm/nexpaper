@@ -345,6 +345,24 @@ describe('where the file lies', () => {
   })
 })
 
+describe('a document open to the outside (N2b)', () => {
+  it('tells an editor who may not share it, without asking for the links', async () => {
+    server.answers['GET /api/v1/documents/7'] = { ...base, my_right: 'edit', can_share: false, share_count: null, link_count: null, shown_outside: true }
+    await show()
+    await idle()
+    expect(plain(page.box.querySelector('[data-testid="shown-outside"]')!.textContent)).toBe('Über einen Link nach außen sichtbar. Wer teilen darf, sieht, an wen.')
+    expect(server.called('GET', '/api/v1/documents/7/links')).toBeUndefined()
+    expect(server.called('GET', '/api/v1/documents/7/shown-through')).toBeUndefined()
+  })
+
+  it('shows who may share it what it showed before, not this notice', async () => {
+    server.answers['GET /api/v1/documents/7'] = { ...base, shown_outside: true }
+    await show()
+    await idle()
+    expect(page.box.querySelector('[data-testid="shown-outside"]')).toBeNull()
+  })
+})
+
 describe('a document for a reader', () => {
   beforeEach(() => {
     server.answers['GET /api/v1/documents/7'] = { ...base, my_right: 'read', can_share: false }

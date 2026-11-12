@@ -435,6 +435,10 @@ comes to go with it later is added. The page behind the link lists them under "G
 way says so on its own page (and counts in the archive's sign for a link to the outside), and whoever may see its
 links can take it out of the link there.
 
+A link shows the document as it is now. Whoever may change it sees that it is open to the outside (the sign in the
+archive and a notice at the document, without to whom; that stays with who may share it), and is asked before
+changing its pages: the page tools, joining, splitting, a new version or an old one back.
+
 ## For programs
 
 Everything the web app does goes through `/api/v1`; the web app uses nothing else. A phone or a later app pairs with a

@@ -531,6 +531,9 @@ export type DocumentInfo = {
   /** The vault's note on the sender (K1, "Merkzettel"): empty when there is none, `null` for somebody who sees the
    * document through a share alone, and without a sender. */
   sender_memo?: string | null
+  /** For who may change it (N2b): a link to the outside that works shows it, as its own document or as a further one.
+   * Only yes or no; false for who may only read. The page tools ask before they change it. */
+  shown_outside?: boolean
 }
 export type DocumentShare = { user: Person; right: 'read' | 'edit'; created_at: string }
 export type DocumentLink = {

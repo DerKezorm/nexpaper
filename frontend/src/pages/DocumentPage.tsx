@@ -71,6 +71,7 @@ import { PdfView } from '../components/PdfView'
 import { useConfirm } from '../components/useConfirm'
 import { ShareDialog } from '../components/ShareDialog'
 import { RelatedSection } from '../components/Related'
+import { ShownOutsideNotice } from '../components/ShownOutside'
 import { ShownThroughNotice } from '../components/ShownThrough'
 import { VaultIcon } from '../components/VaultIcon'
 import { formatBytes } from '../lib/bytes'
@@ -694,6 +695,7 @@ function Details({ document: d, canEdit, vaults, path, change, problem, onShare,
 
       <EInvoiceBox invoice={invoice} />
       <ShownThroughNotice document={d} />
+      <ShownOutsideNotice document={d} />
 
       {(shares.length > 0 || links.length > 0) && (
         <button type="button" onClick={onShare} disabled={!d.can_share} className="mt-2 w-full rounded-2xl border border-line p-4 text-left text-sm hover:border-accent/50 disabled:pointer-events-none" data-testid="shared-box">

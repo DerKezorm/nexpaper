@@ -3265,5 +3265,10 @@
     "take": "Verknüpfte Dokumente mitnehmen",
     "hint": "Auch außerhalb von Zeitraum und Filter, nur was du in deinen Tresoren siehst, jedes einmal. Die Liste nennt sie in einer eigenen Spalte.",
     "taken": "mit verknüpften"
+  },
+  "shownOutside": {
+    "notice": "Über einen Link nach außen sichtbar. Wer teilen darf, sieht, an wen.",
+    "title": "Nach außen sichtbar",
+    "text": "Dieses Dokument ist über einen Link nach außen sichtbar. Was du änderst, ist es dann auch."
   }
 }

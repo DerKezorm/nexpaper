@@ -529,6 +529,17 @@ describe('the table of the archive', () => {
     expect(plain(rows()[2].textContent)).toContain('mit mir geteilt')
   })
 
+  it('marks a document open to the outside for who may change it but not share it (N2b)', async () => {
+    server.answers[ALL] = result([
+      hit(doc(1, 'Lieferschein', '2026-10-01', { can_share: false, share_count: null, link_count: null, my_right: 'edit', shown_outside: true })),
+      hit(doc(2, 'Mahnung', '2026-10-01', { can_share: false, share_count: null, link_count: null, my_right: 'edit', shown_outside: false })),
+    ])
+    await show('/?all=1')
+    const marks = (row: Element) => [...row.querySelectorAll('[aria-label]')].map((m) => m.getAttribute('aria-label'))
+    expect(marks(rows()[0])).toEqual(['Link nach außen'])
+    expect(marks(rows()[1])).toEqual([])
+  })
+
   it('keeps a title that turns its text around apart from the sentence around it', async () => {
     const turned = `strom ${String.fromCharCode(0x202e)}txt.exe${String.fromCharCode(0x202c)} Rechnung`
     server.answers[ALL] = result([hit(doc(1, turned, '2026-10-01'))])

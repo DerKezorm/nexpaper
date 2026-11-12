@@ -16,10 +16,11 @@ import { partsOf } from '../lib/splitParts'
 import { Button } from './Button'
 import { PageThumb } from './PageThumb'
 import { codeOf } from '../lib/toolErrors'
+import { useOutsideAsk } from './useOutsideAsk'
 import { ToolProblem } from './ToolProblem'
 
 export type SplitPanelProps = {
-  document: Pick<DocumentInfo, 'id' | 'title' | 'pages' | 'current_version' | 'source'>
+  document: Pick<DocumentInfo, 'id' | 'title' | 'pages' | 'current_version' | 'source' | 'shown_outside'>
   /** Split: the new documents, in order (the first one is where the inbox goes on). */
   onSplit: (parts: DocumentInfo[]) => void
   /** "Als ein Dokument behalten": the proposal is put away. */
@@ -38,6 +39,8 @@ export function SplitPanel({ document, onSplit, onKeep, back, say }: SplitPanelP
   const [problem, setProblem] = useState<string | null>(null)
   /** A request on its way: a second click does nothing. */
   const running = useRef(false)
+  /** Open to the outside: asked before splitting (N2b); keeping it as one changes nothing. */
+  const { guard, dialog } = useOutsideAsk()
 
   useEffect(() => {
     let live = true
@@ -66,7 +69,12 @@ export function SplitPanel({ document, onSplit, onKeep, back, say }: SplitPanelP
   const separators = [...dropped].length
   const source = t(`pagetools.split.from.${document.source}`, { defaultValue: '' })
 
-  const split = async () => {
+  const split = () => {
+    if (running.current || busy || parts.length < 2) return
+    guard(document.shown_outside, t('pagetools.split.go', { count: parts.length }), splitNow)
+  }
+
+  const splitNow = async () => {
     if (running.current || busy || parts.length < 2) return
     running.current = true
     setBusy(true)
@@ -154,6 +162,7 @@ export function SplitPanel({ document, onSplit, onKeep, back, say }: SplitPanelP
         ))}
       </ol>
       <ToolProblem code={problem} />
+      {dialog}
       <div className="mt-5 flex flex-wrap gap-2">
         <Button variant="primary" disabled={busy || parts.length < 2} onClick={split}>
           <Scissors size={16} /> {t('pagetools.split.go', { count: parts.length })}

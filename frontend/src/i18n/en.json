@@ -3265,5 +3265,10 @@
     "take": "Take the documents that go with them",
     "hint": "Also outside the period and the filters, only what you see in your vaults, each once. The list names them in a column of its own.",
     "taken": "with what goes with them"
+  },
+  "shownOutside": {
+    "notice": "Visible to the outside through a link. Whoever may share sees to whom.",
+    "title": "Visible to the outside",
+    "text": "This document is visible to the outside through a link. What you change will be too."
   }
 }

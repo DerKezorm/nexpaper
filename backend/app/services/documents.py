@@ -127,6 +127,9 @@ class Row:
     has_related: bool = False
     #: The caller pinned it (``services/pins.py``).
     pinned: bool = False
+    #: For a caller who may change it: a link that works now shows it, as its own document or as a further one (N2b).
+    #: Only yes or no, never to whom or how many; false for a reader.
+    shown_outside: bool = False
 
 
 def rows(db: Session, uid: int, documents: list[Document]) -> list[Row]:
@@ -176,7 +179,8 @@ def rows(db: Session, uid: int, documents: list[Document]) -> list[Row]:
     split = separators.suggested(db, documents)
     accesses = {d.id: rights.Access(document=d, vault=members.get(d.vault_id), share=shares.get(d.id), uid=uid)
                 for d in documents}
-    shared_counts, link_counts = _sharing_counts(db, [i for i, a in accesses.items() if a.can_share])
+    shared_counts, link_counts = _sharing_counts(db, [i for i, a in accesses.items() if a.can_share],
+                                                 [i for i, a in accesses.items() if a.can_edit])
     from . import einvoices
 
     invoices = einvoices.formats(db, ids)
@@ -212,21 +216,27 @@ def rows(db: Session, uid: int, documents: list[Document]) -> list[Row]:
             snoozes={r.id: snoozes[r.id] for r in date_rows[document.id] if r.id in snoozes},
             auto_trash_due=document.id in going, auto_trashed=document.id in put_away,
             has_related=document.id in goes_with, pinned=document.id in pinned,
+            shown_outside=access.can_edit and link_counts.get(document.id, 0) > 0,
         ))
     return out
 
 
-def _sharing_counts(db: Session, ids: list[int]) -> tuple[dict[int, int], dict[int, int]]:
+def _sharing_counts(
+    db: Session, ids: list[int], editable: list[int] | None = None,
+) -> tuple[dict[int, int], dict[int, int]]:
     """For the documents the caller may share (the same right as ``/shares`` and ``/links``): how many people each is
-    shared with, and how many of its links work right now. Two grouped counts for a whole page."""
-    if not ids:
+    shared with, and how many of its links work right now. Two grouped counts for a whole page. The links are counted
+    for the documents the caller may change too (``editable``): the caller learns from it only ``shown_outside``, yes or
+    no, never the number (that is ``link_count``, for who may share)."""
+    if not ids and not editable:
         return {}, {}
     from . import sharing
 
     people = dict(db.execute(select(Share.document_id, func.count()).where(Share.document_id.in_(ids))
-                             .group_by(Share.document_id)).all())
+                             .group_by(Share.document_id)).all()) if ids else {}
     current = sharing.rules(db)
     links: dict[int, int] = {}
+    ids = sorted(set(ids) | set(editable or ()))
     if current.allowed:
         links = dict(db.execute(
             select(Link.document_id, func.count()).join(Document, Document.id == Link.document_id)

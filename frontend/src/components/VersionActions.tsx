@@ -15,11 +15,12 @@ import { ACCEPT } from '../lib/formats'
 import { codeOf, toolText } from '../lib/toolErrors'
 import { Button } from './Button'
 import { Dialog } from './Dialog'
+import { useOutsideAsk } from './useOutsideAsk'
 import { useConfirm } from './useConfirm'
 import { ToolProblem } from './ToolProblem'
 
 export type VersionRowActionsProps = {
-  document: Pick<DocumentInfo, 'id' | 'current_version'>
+  document: Pick<DocumentInfo, 'id' | 'current_version' | 'shown_outside'>
   version: Pick<DocumentVersion, 'n' | 'current' | 'state'>
   /** The caller may change the document (`edit`). */
   canEdit: boolean
@@ -34,6 +35,8 @@ export function VersionRowActions({ document, version: v, canEdit, onDone, say }
   const [busy, setBusy] = useState(false)
   const running = useRef(false)
   const { ask, dialog } = useConfirm()
+  /** Open to the outside: asked before an old version comes back (N2b). */
+  const outside = useOutsideAsk()
   const state = v.state ?? 'ready'
 
   const run = async (work: () => Promise<void>) => {
@@ -50,11 +53,13 @@ export function VersionRowActions({ document, version: v, canEdit, onDone, say }
     }
   }
   const restore = () =>
-    run(async () => {
-      const now = await pageToolsApi.restore(document.id, v.n, document.current_version)
-      say?.(t('pagetools.versions.restored', { n: v.n, m: now.current_version }))
-      onDone(now)
-    })
+    outside.guard(document.shown_outside, t('pagetools.versions.restore'), () =>
+      run(async () => {
+        const now = await pageToolsApi.restore(document.id, v.n, document.current_version)
+        say?.(t('pagetools.versions.restored', { n: v.n, m: now.current_version }))
+        onDone(now)
+      }),
+    )
   /** Puts a version away that could not be read, after asking: its file goes with it. */
   const discard = () =>
     ask({
@@ -72,9 +77,12 @@ export function VersionRowActions({ document, version: v, canEdit, onDone, say }
   if (!canEdit || v.current) return null
   if (state === 'ready')
     return (
-      <Button size="sm" variant="ghost" className="shrink-0 px-2.5 sm:px-3.5" disabled={busy} onClick={restore} aria-label={t('pagetools.versions.restoreLabel', { n: v.n })} title={t('pagetools.versions.restoreLabel', { n: v.n })}>
-        <RotateCcw size={14} /> <span className="hidden sm:inline">{t('pagetools.versions.restore')}</span>
-      </Button>
+      <>
+        <Button size="sm" variant="ghost" className="shrink-0 px-2.5 sm:px-3.5" disabled={busy} onClick={restore} aria-label={t('pagetools.versions.restoreLabel', { n: v.n })} title={t('pagetools.versions.restoreLabel', { n: v.n })}>
+          <RotateCcw size={14} /> <span className="hidden sm:inline">{t('pagetools.versions.restore')}</span>
+        </Button>
+        {outside.dialog}
+      </>
     )
   if (state === 'failed')
     return (
@@ -89,7 +97,7 @@ export function VersionRowActions({ document, version: v, canEdit, onDone, say }
 }
 
 export type UploadVersionDialogProps = {
-  document: Pick<DocumentInfo, 'id' | 'title'>
+  document: Pick<DocumentInfo, 'id' | 'title' | 'shown_outside'>
   onClose: () => void
   /** The new version is on the server and is being read (`state: processing`). */
   onUploaded: (version: VersionInfo) => void
@@ -104,8 +112,15 @@ export function UploadVersionDialog({ document, onClose, onUploaded, say }: Uplo
   const [busy, setBusy] = useState(false)
   const [problem, setProblem] = useState<string | null>(null)
   const running = useRef(false)
+  /** Open to the outside: asked before the new version goes up (N2b). */
+  const { guard, dialog } = useOutsideAsk()
 
-  const send = async () => {
+  const send = () => {
+    if (running.current || !file) return
+    guard(document.shown_outside, t('pagetools.versions.upload'), sendNow)
+  }
+
+  const sendNow = async () => {
     if (running.current || !file) return
     running.current = true
     setBusy(true)
@@ -132,6 +147,7 @@ export function UploadVersionDialog({ document, onClose, onUploaded, say }: Uplo
       </Button>
       <input value={note} onChange={(e) => setNote(e.target.value)} maxLength={200} placeholder={t('pagetools.versions.uploadNote')} aria-label={t('pagetools.versions.uploadNote')} className="input mt-3" />
       <ToolProblem code={problem} />
+      {dialog}
       <div className="mt-5 flex gap-2">
         <Button variant="primary" size="sm" disabled={busy || !file} onClick={send}>
           <Upload size={15} /> {t('pagetools.versions.upload')}

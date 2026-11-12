@@ -16,10 +16,11 @@ import { pageToolsApi, turnOf } from '../api/pagetools'
 import { Button } from './Button'
 import { PageThumb } from './PageThumb'
 import { codeOf } from '../lib/toolErrors'
+import { useOutsideAsk } from './useOutsideAsk'
 import { ToolProblem } from './ToolProblem'
 
 export type PageEditorProps = {
-  document: Pick<DocumentInfo, 'id' | 'pages' | 'current_version'>
+  document: Pick<DocumentInfo, 'id' | 'pages' | 'current_version' | 'shown_outside'>
   /** Saved (the document as it is now) or cancelled (`null`). */
   onDone: (document: DocumentInfo | null) => void
   /** "Ab hier eigenes Dokument" made two new documents in the inbox; the document went to the trash. */
@@ -31,7 +32,7 @@ export type PageEditorProps = {
 }
 
 type Sheet = { i: number; rot: number }
-type Shown = Pick<DocumentInfo, 'id' | 'pages' | 'current_version'>
+type Shown = Pick<DocumentInfo, 'id' | 'pages' | 'current_version' | 'shown_outside'>
 
 const fresh = (count: number): Sheet[] => Array.from({ length: count }, (_, i) => ({ i, rot: 0 }))
 
@@ -45,6 +46,8 @@ export function PageEditor({ document: given, onDone, onSplit, say, onReloaded }
   const [asking, setAsking] = useState(false)
   /** A request on its way: a second click does nothing (the state of `busy` comes a moment later). */
   const running = useRef(false)
+  /** Open to the outside: asked before saving or splitting (N2b). */
+  const { guard, dialog } = useOutsideAsk()
 
   const run = async (work: () => Promise<void>) => {
     if (running.current) return
@@ -82,29 +85,34 @@ export function PageEditor({ document: given, onDone, onSplit, say, onReloaded }
   const turn = (by: number) => setPages(pages.map((p, k) => (k === sel ? { ...p, rot: p.rot + by } : p)))
   const specs = (list: Sheet[]) => list.map((p) => ({ page: p.i + 1, turn: turnOf(p.rot) }))
 
-  const save = () =>
-    run(async () => {
-      const unchanged = pages.every((p, k) => p.i === k && turnOf(p.rot) === 0) && pages.length === document.pages
-      if (unchanged) {
-        say?.(t('pagetools.editor.unchanged'))
-        onDone(null)
-        return
-      }
-      const saved = await pageToolsApi.editPages(document.id, document.current_version, specs(pages))
-      say?.(t('pagetools.editor.saved'))
-      onDone(saved)
-    })
+  const save = () => {
+    const unchanged = pages.every((p, k) => p.i === k && turnOf(p.rot) === 0) && pages.length === document.pages
+    if (unchanged) {
+      say?.(t('pagetools.editor.unchanged'))
+      onDone(null)
+      return
+    }
+    guard(document.shown_outside, t('pagetools.editor.save'), () =>
+      run(async () => {
+        const saved = await pageToolsApi.editPages(document.id, document.current_version, specs(pages))
+        say?.(t('pagetools.editor.saved'))
+        onDone(saved)
+      }),
+    )
+  }
 
   const splitHere = () =>
-    run(async () => {
-      try {
-        const made = await pageToolsApi.split(document.id, document.current_version, [{ pages: specs(pages.slice(0, sel)) }, { pages: specs(pages.slice(sel)) }])
-        say?.(t('pagetools.editor.splitDone'))
-        onSplit?.(made.items)
-      } finally {
-        setAsking(false)
-      }
-    })
+    guard(document.shown_outside, t('pagetools.editor.fromHereGo'), () =>
+      run(async () => {
+        try {
+          const made = await pageToolsApi.split(document.id, document.current_version, [{ pages: specs(pages.slice(0, sel)) }, { pages: specs(pages.slice(sel)) }])
+          say?.(t('pagetools.editor.splitDone'))
+          onSplit?.(made.items)
+        } finally {
+          setAsking(false)
+        }
+      }),
+    )
 
   const tool = 'inline-flex items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-sm font-semibold text-ink-2 hover:bg-sheet-2 disabled:opacity-40'
   return (
@@ -173,6 +181,7 @@ export function PageEditor({ document: given, onDone, onSplit, say, onReloaded }
           <RefreshCw size={14} /> {t('pagetools.editor.reload')}
         </Button>
       )}
+      {dialog}
       <div className="mt-5 flex gap-2 border-t border-line pt-4">
         <Button variant="primary" size="sm" disabled={busy} onClick={save}>
           <Check size={15} /> {t('pagetools.editor.save')}

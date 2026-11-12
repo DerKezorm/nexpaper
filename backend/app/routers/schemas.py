@@ -152,6 +152,12 @@ class DocumentOut(BaseModel):
     #: The vault's note on the document's sender (K1, `PUT /senders/{id}/memo`), empty when there is none. Only for a
     #: member of the document's vault; `null` for a caller who sees it through a share alone, and without a sender.
     sender_memo: str | None = None
+    #: For a caller who may change it (`edit` in the vault or by a share, or `manage`): a link to the outside that works
+    #: now shows it, as the link's own document or as a further one. A change of its pages (page tools, joining,
+    #: splitting, a new version, an old version back) is seen through that link at once, so an app should ask first.
+    #: Only yes or no: to whom and how many tell `link_count` and `GET .../links` to who may share. Always false for a
+    #: caller who may only read it.
+    shown_outside: bool = False
 
 
 def _suggest(value: object) -> dict[str, str]:
@@ -204,6 +210,6 @@ def document_out(row: Row) -> DocumentOut:
         suggest=_suggest(document.suggest), share_count=row.share_count, link_count=row.link_count,
         einvoice=row.einvoice, files_state=document.files_state,  # type: ignore[arg-type]
         auto_trash_due=row.auto_trash_due, auto_trashed=row.auto_trashed,
-        has_related=row.has_related, pinned=row.pinned,
+        has_related=row.has_related, pinned=row.pinned, shown_outside=row.shown_outside,
         sender_memo=(row.sender.memo or "") if row.sender is not None and not row.via_share else None,
     )
