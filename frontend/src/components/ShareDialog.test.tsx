@@ -252,6 +252,40 @@ describe('a link that shows what goes with the document (N2)', () => {
     expect(page.text).toContain('bis 31.10.2026 · 2× geöffnet · zeigt auch 2 weitere')
   })
 
+  it('says that a chosen document with a protected original goes out opened, and not while it is left out (P1)', async () => {
+    server.answers['GET /api/v1/documents/8'] = { id: 8, title: 'Lieferschein', original_protected: '' }
+    server.answers['GET /api/v1/documents/9'] = { id: 9, title: 'Mahnung', original_protected: 'password' }
+    await open()
+    expect(document.querySelector('[data-testid="share-protected-also"]')).toBeNull()
+    const box = document.querySelector('[data-testid="link-related"]')!
+    await page.check(box.querySelector<HTMLInputElement>('input[type="checkbox"]'))
+    expect(document.querySelector('[data-testid="share-protected-also"]')?.textContent).toBe(
+      'Ein gewähltes Dokument hat ein geschütztes Original. Wer den Link öffnet, bekommt davon die geöffnete Fassung ohne Passwort oder Sperre.',
+    )
+    const items = [...box.querySelectorAll<HTMLInputElement>('ul input[type="checkbox"]')]
+    await page.check(items[1])
+    expect(document.querySelector('[data-testid="share-protected-also"]')).toBeNull()
+    await page.check(items[1])
+    expect(document.querySelector('[data-testid="share-protected-also"]')).not.toBeNull()
+    expect(server.calls.filter((c) => c.method === 'GET' && c.url === '/api/v1/documents/9')).toHaveLength(1)
+  })
+
+  it('says it in English too, and not once the protected one is left out', async () => {
+    server.answers['GET /api/v1/documents/8'] = { id: 8, title: 'Lieferschein', original_protected: '' }
+    server.answers['GET /api/v1/documents/9'] = { id: 9, title: 'Mahnung', original_protected: 'restricted' }
+    await changeLanguage('en', false)
+    await open()
+    const box = document.querySelector('[data-testid="link-related"]')!
+    await page.check(box.querySelector<HTMLInputElement>('input[type="checkbox"]'))
+    expect(document.querySelector('[data-testid="share-protected-also"]')?.textContent).toBe(
+      'A chosen document has a protected original. Whoever opens the link gets its opened copy, without the password or lock.',
+    )
+    const items = [...box.querySelectorAll<HTMLInputElement>('ul input[type="checkbox"]')]
+    await page.check(items[1])
+    expect(page.text).toContain('Mahnung')
+    expect(document.querySelector('[data-testid="share-protected-also"]')).toBeNull()
+  })
+
   it('takes no more than ten', async () => {
     server.answers['GET /api/v1/documents/5/related'] = Array.from({ length: 12 }, (_, n) => goesWith(20 + n, `Beleg ${n}`))
     await open()

@@ -3323,7 +3323,8 @@
       "openedKept": "hat das PDF mit einem gemerkten Passwort geöffnet"
     },
     "shareNote": "Das Original ist mit einem Passwort geschützt. Wer den Link öffnet, bekommt die geöffnete Fassung ohne Passwort.",
-    "shareNoteRestricted": "Das Original ist gegen Drucken oder Ändern gesperrt. Wer den Link öffnet, bekommt die geöffnete Fassung ohne diese Sperre."
+    "shareNoteRestricted": "Das Original ist gegen Drucken oder Ändern gesperrt. Wer den Link öffnet, bekommt die geöffnete Fassung ohne diese Sperre.",
+    "shareNoteAlso": "Ein gewähltes Dokument hat ein geschütztes Original. Wer den Link öffnet, bekommt davon die geöffnete Fassung ohne Passwort oder Sperre."
   },
   "mailText": {
     "toggle": "Mails ohne Anhang als Dokument nehmen",

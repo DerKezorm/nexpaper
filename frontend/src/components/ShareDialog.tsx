@@ -8,10 +8,10 @@
  * Where the clipboard refuses, the address stands in a field to copy by hand.
  */
 import { Link2, Users, X } from 'lucide-react'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import { ApiError, relatedApi, sharingApi, vaultsApi, type DocumentInfo, type DocumentLink, type DocumentShare, type Person, type RelatedDocument, type SharingRules, type Vault } from '../api/client'
+import { ApiError, documentsApi, relatedApi, sharingApi, vaultsApi, type DocumentInfo, type DocumentLink, type DocumentShare, type Person, type ProtectedOriginal, type RelatedDocument, type SharingRules, type Vault } from '../api/client'
 import { copyText } from '../lib/copy'
 import { dayInDays, daysUntil, shortDate } from '../lib/dates'
 import { asAvatarPerson, personName } from '../lib/people'
@@ -54,6 +54,9 @@ export function ShareDialog({ document, onClose, say }: Props) {
   const [related, setRelated] = useState<RelatedDocument[]>([])
   const [withRelated, setWithRelated] = useState(false)
   const [chosen, setChosen] = useState<Set<number>>(new Set())
+  /** P1: whether the original of a chosen further document is protected, read from the document itself once chosen. */
+  const [protectedAlso, setProtectedAlso] = useState<Record<number, ProtectedOriginal>>({})
+  const asked = useRef(new Set<number>())
   const { ask, dialog } = useConfirm()
 
   const fail = useCallback((error: unknown) => {
@@ -100,6 +103,19 @@ export function ShareDialog({ document, onClose, say }: Props) {
       alive = false
     }
   }, [document.id, document.vault_id, fail])
+
+  useEffect(() => {
+    if (!withRelated) return
+    for (const id of chosen) {
+      if (asked.current.has(id)) continue
+      asked.current.add(id)
+      documentsApi.read(id).then(
+        (found) => setProtectedAlso((had) => ({ ...had, [id]: found.original_protected ?? '' })),
+        () => undefined,
+      )
+    }
+  }, [withRelated, chosen])
+  const alsoProtected = withRelated && related.some((r) => chosen.has(r.id) && Boolean(protectedAlso[r.id]))
 
   const inVault = new Set(vault?.members.map((m) => m.user_id) ?? [])
   const others = people.filter((p) => !inVault.has(p.id) && !shares.some((s) => s.user.id === p.id))
@@ -336,6 +352,9 @@ export function ShareDialog({ document, onClose, say }: Props) {
                           {t('linkRelated.showHint')}
                           {related.length > MAX_ALSO && ` ${t('linkRelated.most', { count: MAX_ALSO })}`}
                         </p>
+                        {alsoProtected && (
+                          <p className="mt-1 pl-6 text-xs text-muted" data-testid="share-protected-also">{t('pdfPassword.shareNoteAlso')}</p>
+                        )}
                       </>
                     )}
                   </div>

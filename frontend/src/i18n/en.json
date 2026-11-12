@@ -3323,7 +3323,8 @@
       "openedKept": "opened the PDF with a remembered password"
     },
     "shareNote": "The original is protected by a password. Whoever opens the link gets the opened copy, without the password.",
-    "shareNoteRestricted": "The original is locked against printing or changes. Whoever opens the link gets the opened copy, without that lock."
+    "shareNoteRestricted": "The original is locked against printing or changes. Whoever opens the link gets the opened copy, without that lock.",
+    "shareNoteAlso": "A chosen document has a protected original. Whoever opens the link gets its opened copy, without the password or lock."
   },
   "mailText": {
     "toggle": "Take mails without an attachment as a document",
