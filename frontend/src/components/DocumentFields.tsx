@@ -22,10 +22,14 @@ import { TagPicker } from './TagPicker'
 // A year typed with all four digits is settled as soon as it stands; a shorter one waits for the field to be left.
 const SETTLED_YEAR = 1000
 
-const DATE_KINDS: DateKind[] = ['due', 'contract_end', 'warranty_end', 'keep_until']
+const DATE_KINDS: DateKind[] = ['due', 'contract_end', 'warranty_end', 'follow_up', 'keep_until']
 /** A date of a document; a contract may carry its notice period and how many months it renews by. `manual` only for
- * `keep_until`: set by hand (`false`: worked out from the kind). */
-export type DateEntry = { kind: DateKind; date: string; notice?: Notice | null; renew_months?: number | null; manual?: boolean }
+ * `keep_until`: set by hand (`false`: worked out from the kind). `note` only for `follow_up`: what to do that day. */
+export type DateEntry = { kind: DateKind; date: string; notice?: Notice | null; renew_months?: number | null; manual?: boolean; note?: string }
+/** The longest sentence of a follow-up (the server's ``deadlines.NOTE_MAX``). */
+export const FOLLOW_UP_NOTE_MAX = 200
+/** A new follow-up starts this many days from today. */
+const FOLLOW_UP_DAYS = 14
 /**
  * What `keep_until` is worked out from: the kind's name and keeping time, the year the time counts
  * from, and whether the document is as it was saved (`fresh`: its stored date stands; otherwise a kind or a date was
@@ -249,6 +253,7 @@ export function Dates({ dates, onChange, onDraft, start, why, refused, done, onD
               </div>
               {onDone && entry.kind !== KEEP && <DoneLine kind={entry.kind} done={done?.[entry.kind] ?? null} onDone={(on) => onDone(entry.kind, on)} />}
               {entry.kind === 'contract_end' && <ContractTerms entry={entry} today={today} change={(patch) => change('contract_end', patch)} />}
+              {entry.kind === 'follow_up' && <FollowUpNote note={entry.note ?? ''} change={(note) => change('follow_up', { note })} />}
               {entry.kind === KEEP && keep?.years && keep.kindName && (
                 <p className="mt-1 pl-34 text-xs text-muted">
                   {t('keeping.byHandNote')}{' '}
@@ -290,7 +295,18 @@ export function Dates({ dates, onChange, onDraft, start, why, refused, done, onD
                 key={kind}
                 onClick={() => {
                   const day = start ?? today
-                  onChange(kind === KEEP ? [...withoutKeep, byHand(day)] : [...dates, kind === 'contract_end' ? { kind, date: day, notice: { n: 3, unit: 'months' }, renew_months: 12 } : { kind, date: day }])
+                  onChange(
+                    kind === KEEP
+                      ? [...withoutKeep, byHand(day)]
+                      : [
+                          ...dates,
+                          kind === 'contract_end'
+                            ? { kind, date: day, notice: { n: 3, unit: 'months' }, renew_months: 12 }
+                            : kind === 'follow_up'
+                              ? { kind, date: dayInDays(FOLLOW_UP_DAYS), note: '' }
+                              : { kind, date: day },
+                        ],
+                  )
                   setAdding(false)
                 }}
               >
@@ -313,6 +329,38 @@ export function Dates({ dates, onChange, onDraft, start, why, refused, done, onD
   )
 }
 
+
+/** The sentence of a follow-up ("Wiedervorlage"): what to do on that day. Taken when the field is left or Enter is
+ * pressed; one line, at most 200 characters. It never goes into a reminder. */
+function FollowUpNote({ note, change }: { note: string; change: (note: string) => void }) {
+  const { t } = useTranslation()
+  const [typed, setTyped] = useState(note)
+  const [was, setWas] = useState(note)
+  if (was !== note) {
+    setWas(note)
+    setTyped(note)
+  }
+  const commit = () => {
+    const clean = typed.replace(/\s+/g, ' ').trim()
+    setTyped(clean)
+    if (clean !== note) change(clean)
+  }
+  return (
+    <div className="mt-1.5 space-y-1 rounded-xl bg-sheet-2/70 px-3 py-2.5" data-testid="follow-up-note">
+      <input
+        value={typed}
+        maxLength={FOLLOW_UP_NOTE_MAX}
+        onChange={(event) => setTyped(event.target.value)}
+        onBlur={commit}
+        onKeyDown={(event) => event.key === 'Enter' && commit()}
+        placeholder={t('followUp.placeholder')}
+        aria-label={t('followUp.noteLabel')}
+        className="input h-9"
+      />
+      <p className="text-xs text-muted">{t('followUp.hint')}</p>
+    </div>
+  )
+}
 
 const RENEW_CHOICES = [0, 1, 3, 6, 12, 24]
 

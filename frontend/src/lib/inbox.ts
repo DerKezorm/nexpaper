@@ -42,6 +42,8 @@ export function dateEntry(x: DocumentInfo['dates'][number]): DateEntry {
     ...(kind === 'contract_end' && x.renew_months ? { renew_months: x.renew_months } : {}),
     // A keeping time says whether a person set it (else it is worked out from the kind).
     ...(kind === 'keep_until' ? { manual: !!x.manual } : {}),
+    // A follow-up's sentence (K1).
+    ...(kind === 'follow_up' ? { note: x.note ?? '' } : {}),
   }
 }
 
@@ -110,6 +112,7 @@ export function datesChanged(was: DateEntry[], now: DateEntry[]): Pick<DocumentP
     if ((entry.renew_months ?? null) !== (before.renew_months ?? null)) changed.renew_months = entry.renew_months ?? null
     // A keeping time that a person took over from the kind (or gave back to it) says so, with or without a new day.
     if (entry.kind === 'keep_until' && entry.manual !== undefined && entry.manual !== before.manual) changed.manual = entry.manual
+    if (entry.kind === 'follow_up' && (entry.note ?? '') !== (before.note ?? '')) changed.note = entry.note ?? ''
     if (Object.keys(changed).length > 1) setDates.push(changed)
   }
   const removeDates = was.filter((d) => !now.some((x) => x.kind === d.kind)).map((d) => d.kind)

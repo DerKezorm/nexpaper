@@ -4,7 +4,7 @@
  * "Gekündigt" or "Erledigt" ends the reminders for everybody; "Später" only pauses them for oneself. Everything comes
  * from `GET /api/v1/deadlines`, the rights are the server's.
  */
-import { BellOff, CalendarClock, Check, ChevronDown, Clock, Receipt, RotateCcw, ScrollText, ShieldCheck, Users, type LucideIcon } from 'lucide-react'
+import { BellOff, CalendarClock, Check, ChevronDown, Clock, Receipt, Repeat, RotateCcw, ScrollText, ShieldCheck, Users, type LucideIcon } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Trans, useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
@@ -23,10 +23,10 @@ import { useMayGo } from '../lib/mayGo'
 import { inboxChanged, iso, listOf, useSay } from '../lib/say'
 import { useAuth } from '../state/auth'
 
-const ICON: Record<DeadlineWhat, LucideIcon> = { pay: Receipt, cancel: ScrollText, ends: CalendarClock, warranty: ShieldCheck }
+const ICON: Record<DeadlineWhat, LucideIcon> = { pay: Receipt, cancel: ScrollText, ends: CalendarClock, warranty: ShieldCheck, follow_up: Repeat }
 /** `go`: "Darf weg", the documents whose keeping time is over (`components/MayGo.tsx`). */
-type Filter = 'all' | 'pay' | 'cancel' | 'warranty' | 'go'
-const FILTERS: Exclude<Filter, 'go'>[] = ['all', 'pay', 'cancel', 'warranty']
+type Filter = 'all' | 'pay' | 'cancel' | 'warranty' | 'follow_up' | 'go'
+const FILTERS: Exclude<Filter, 'go'>[] = ['all', 'pay', 'cancel', 'warranty', 'follow_up']
 
 /** "12.10.": a day without its year. */
 function dayMonth(day: string, language: string): string {
@@ -297,6 +297,11 @@ function Row({ x, vault, muted, onChanged }: { x: Deadline; vault: Vault | undef
           <p className="mt-1.5 text-sm text-ink-2">
             {t('deadlines.contractLine', { end: date(x.end), notice: t(`deadlines.notice.${x.notice.unit}`, { count: x.notice.n }) })}{' '}
             {x.renews_to ? t('deadlines.renewsTo', { date: date(x.renews_to) }) : t('deadlines.endsItself')}
+          </p>
+        )}
+        {x.what === 'follow_up' && x.note && (
+          <p className="mt-1.5 text-sm text-ink-2" data-testid="follow-up-sentence">
+            <bdi>{x.note}</bdi>
           </p>
         )}
         {x.what === 'ends' && x.missed && !x.done && (

@@ -6,14 +6,15 @@
  *
  * The lists come from `GET /api/v1/order/...`, which looks at the vaults the person is in and nothing else.
  */
-import { Archive, GitMerge, Info, Pencil, Plus, Tags, Trash2, Users } from 'lucide-react'
+import { Archive, GitMerge, Info, NotebookPen, Pencil, Plus, Tags, Trash2, Users } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useSearchParams } from 'react-router-dom'
 
-import { ApiError, catalogApi, keepingApi, kindsApi, orderApi, vaultsApi, type KeepPreview, type OrderEntry, type OrderWhat, type Vault } from '../api/client'
+import { ApiError, catalogApi, keepingApi, kindsApi, MEMO_MAX, orderApi, vaultsApi, type KeepPreview, type OrderEntry, type OrderWhat, type Vault } from '../api/client'
 import { Button } from '../components/Button'
 import { Dialog } from '../components/Dialog'
+import { MemoDialog } from '../components/SenderMemo'
 import { useConfirm } from '../components/useConfirm'
 import { KindPill } from '../components/docs'
 import { VaultFilter } from '../components/VaultFilter'
@@ -162,9 +163,11 @@ export function OrderPage() {
     const name = iso(entry.name)
     const base = what === 'senders' ? 'sender' : what === 'tags' ? 'tag' : 'kind'
     const key = what === 'kinds' && entry.vault_id === null ? 'kindServer' : count > 0 ? `${base}Used` : base
+    // A sender's note goes with it (K1): the question says so.
+    const memo = what === 'senders' && entry.memo ? ` ${t('senderMemo.deleteNote')}` : ''
     ask({
       title: t(`confirm.${key}.title`),
-      text: t(`confirm.${key}.text`, { count, name }),
+      text: `${t(`confirm.${key}.text`, { count, name })}${memo}`,
       confirm: t(`confirm.${key}.confirm`),
       run: async () => {
         if (what === 'senders') await catalogApi.deleteSender(entry.id)
@@ -193,6 +196,11 @@ export function OrderPage() {
           refresh(t('order.done.merged'))
         },
       })
+    if (what === 'senders') {
+      // Both notes go one under the other, cut to 500 characters (K1).
+      open(entry.memo || into.memo ? <> {t('senderMemo.mergeNote', { max: MEMO_MAX })}</> : null)
+      return
+    }
     if (what !== 'kinds' || !into.auto_trash || count === 0) {
       open(null)
       return
@@ -279,15 +287,23 @@ export function OrderPage() {
                   {entry.in_trash > 0 && <> · {t('order.inTrash', { count: entry.in_trash })}</>}
                   {what === 'kinds' && entry.keep_years && entry.keep_new_only ? <> · {t('keeping.newOnly')}</> : null}
                 </p>
+                {what === 'senders' && <SenderMemoLine entry={entry} onSaved={() => refresh(t('senderMemo.saved'))} />}
               </div>
               {what === 'kinds' && <KeepSelect entry={entry} onPick={(years) => keepFor(entry, years)} />}
               {what === 'kinds' && entry.keep_years ? <AutoTrashSwitch entry={entry} onChange={(on) => autoFor(entry, on)} /> : null}
-              {entry.can_change && (
+              {entry.can_change ? (
                 <div className="flex shrink-0 items-center gap-1">
                   <IconButton icon={Pencil} text={t('order.rename')} name={entry.name} onClick={() => setRenaming(entry)} />
                   <IconButton icon={GitMerge} text={t('order.merge')} name={entry.name} onClick={() => setMerging(entry)} />
                   <IconButton icon={Trash2} text={t('order.delete')} name={entry.name} onClick={() => remove(entry)} />
                 </div>
+              ) : (
+                // A sender kept only for its note (no documents): whoever may change the note may delete it too.
+                what === 'senders' && entry.can_edit_memo && entry.documents + entry.in_trash === 0 && (
+                  <div className="flex shrink-0 items-center gap-1">
+                    <IconButton icon={Trash2} text={t('order.delete')} name={entry.name} onClick={() => remove(entry)} />
+                  </div>
+                )
               )}
             </li>
           ))}
@@ -499,6 +515,49 @@ function KeepDialog({ entry, years, onClose, onDone }: { entry: OrderEntry; year
         </div>
       </div>
     </Dialog>
+  )
+}
+
+/** The note of a sender in its row (K1), the pencil for whoever may change things in its vault, and why a sender
+ * without documents stays. */
+function SenderMemoLine({ entry, onSaved }: { entry: OrderEntry; onSaved: () => void }) {
+  const { t } = useTranslation()
+  const [editing, setEditing] = useState(false)
+  const memo = entry.memo ?? ''
+  const kept = !!memo && entry.documents + entry.in_trash === 0
+  if (!memo && !entry.can_edit_memo) return null
+  return (
+    <div className="mt-1.5 space-y-1" data-testid="order-memo">
+      {memo ? (
+        <div className="flex items-start gap-2 rounded-xl bg-sheet-2/70 px-3 py-2 text-sm">
+          <NotebookPen size={14} className="mt-0.5 shrink-0 text-muted" aria-hidden />
+          <p className="min-w-0 flex-1 whitespace-pre-line text-ink-2">
+            <bdi>{memo}</bdi>
+          </p>
+          {entry.can_edit_memo && (
+            <button type="button" onClick={() => setEditing(true)} className="shrink-0 rounded-full p-1 text-muted hover:bg-sheet hover:text-ink" aria-label={t('senderMemo.editFor', { name: entry.name })} title={t('senderMemo.edit')}>
+              <Pencil size={13} aria-hidden />
+            </button>
+          )}
+        </div>
+      ) : (
+        <button type="button" onClick={() => setEditing(true)} className="inline-flex items-center gap-1 text-xs font-semibold text-accent hover:underline">
+          <NotebookPen size={12} aria-hidden /> {t('senderMemo.add')}
+        </button>
+      )}
+      {kept && <p className="text-xs text-muted">{t('senderMemo.kept')}</p>}
+      {editing && entry.vault_id !== null && (
+        <MemoDialog
+          sender={{ id: entry.id, name: entry.name }}
+          memo={memo}
+          onClose={() => setEditing(false)}
+          onSaved={() => {
+            setEditing(false)
+            onSaved()
+          }}
+        />
+      )}
+    </div>
   )
 }
 

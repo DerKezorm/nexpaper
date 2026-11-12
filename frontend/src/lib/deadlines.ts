@@ -62,7 +62,7 @@ export function weekday(day: string): number {
 
 /** What a done deadline of a date is called: paid, cancelled, done. */
 export function whatOfKind(kind: DeadlineKind | string): DeadlineWhat {
-  return kind === 'due' ? 'pay' : kind === 'contract_end' ? 'cancel' : 'warranty'
+  return kind === 'due' ? 'pay' : kind === 'contract_end' ? 'cancel' : kind === 'follow_up' ? 'follow_up' : 'warranty'
 }
 
 /** The words of "in 4 Tagen", "seit gestern": a key under `deadlines.relative` and its count. */

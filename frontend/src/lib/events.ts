@@ -152,7 +152,7 @@ export function eventWhat(event: DocumentEvent, t: TFunction, context: EventCont
       return t('pagetools.events.versionDiscarded', { version: number('version') ?? '' })
     // Deadlines (F1): done for everybody, open again, and a contract that renewed by itself.
     case 'deadline_done':
-      return t(`deadlines.events.done.${['due', 'contract_end', 'warranty_end'].includes(String(detail.kind)) ? String(detail.kind) : 'due'}`)
+      return t(`deadlines.events.done.${['due', 'contract_end', 'warranty_end', 'follow_up'].includes(String(detail.kind)) ? String(detail.kind) : 'due'}`)
     case 'deadline_reopened':
       return t('deadlines.events.reopened')
     case 'renewed':

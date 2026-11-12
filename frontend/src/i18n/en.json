@@ -774,7 +774,7 @@
     "last_manager": "A vault needs at least one person who manages it.",
     "personal_vault_not_empty": "The own vault still holds {{documents}} documents. Choose where they go.",
     "invalid_right": "There is no such right.",
-    "invalid_recipient": "Say whom the link is for (up to 100 characters).",
+    "invalid_recipient": "The recipient has 1 to 70 characters.",
     "links_off": "The operator has switched links to the outside off.",
     "too_many_links": "Too many links are open on this document already.",
     "already_in_vault": "This person is in the vault already.",
@@ -847,7 +847,14 @@
     "nothing_to_keep": "There is no search and no filter here to save.",
     "invalid_saved_search": "This search cannot be saved.",
     "invalid_action": "There is no such action.",
-    "too_many": "Too many at once."
+    "too_many": "Too many at once.",
+    "invalid_terms": "This does not go with this kind of date.",
+    "invalid_purpose": "A reference holds letters, digits, blanks and / - ? : ( ) . , ' +, at most 140 characters.",
+    "unknown_iban": "This IBAN is not in the document.",
+    "transfer_not_possible": "This document gives no transfer.",
+    "transfer_too_long": "The recipient and the reference are too long together for a code.",
+    "too_many_pins": "You have pinned {{max}} documents already. Unpin one first, then this one fits.",
+    "invalid_memo": "A note has at most {{max}} characters."
   },
   "ready": {
     "title": "Ready for the internet?",
@@ -1540,7 +1547,8 @@
       "due": "Due on",
       "contract_end": "Contract until",
       "warranty_end": "Warranty until",
-      "keep_until": "Keep until"
+      "keep_until": "Keep until",
+      "follow_up": "Follow up"
     },
     "fields": {
       "title": "Title",
@@ -2758,7 +2766,8 @@
       "all": "All",
       "pay": "Pay",
       "cancel": "Cancel",
-      "warranty": "Warranty"
+      "warranty": "Warranty",
+      "follow_up": "Follow up"
     },
     "allVaults": "All vaults",
     "myVault": "My vault",
@@ -2766,7 +2775,7 @@
     "showDone": "Show done",
     "showDoneCount": "Show done ({{count}})",
     "nothing": "Nothing open",
-    "nothingHint": "Deadlines come from the dates of the documents: due, contract until, warranty until.",
+    "nothingHint": "Deadlines come from the dates of the documents: due, contract until, warranty until, follow up.",
     "overdue": "Overdue",
     "soon": "Next {{days}} days",
     "soonEmpty": "Nothing comes up in the next two weeks.",
@@ -2795,6 +2804,11 @@
       },
       "warranty": {
         "name": "Warranty until",
+        "done": "Done",
+        "doneShort": "done"
+      },
+      "follow_up": {
+        "name": "Follow up on",
         "done": "Done",
         "doneShort": "done"
       }
@@ -2888,7 +2902,8 @@
       "done": {
         "due": "marked the bill as paid",
         "contract_end": "marked the contract as cancelled",
-        "warranty_end": "marked the warranty as done"
+        "warranty_end": "marked the warranty as done",
+        "follow_up": "marked the follow-up done"
       },
       "reopened": "opened the deadline again",
       "renewed": "renewed the contract by itself until {{date}}"
@@ -2972,7 +2987,8 @@
       "days": "{{count}} days to go.",
       "tomorrow": "Tomorrow.",
       "today": "Today.",
-      "renews": "After that the contract renews until {{date}}."
+      "renews": "After that the contract renews until {{date}}.",
+      "follow_up": "Follow up {{day}}"
     },
     "week": {
       "subject_one": "This week: {{count}} deadline",
@@ -2991,7 +3007,8 @@
         "pay": "Pay",
         "cancel": "Cancel",
         "ends": "Cancel",
-        "warranty": "Warranty"
+        "warranty": "Warranty",
+        "follow_up": "Follow up"
       },
       "trashedHead": "Trash",
       "trashed_one": "nexpaper put one document in the trash, its keeping time was over. It can be restored there for 30 days.",
@@ -3127,5 +3144,62 @@
     "linkHint": "Choose 2 to {{most}} documents.",
     "linked": "{{n}} connected with each other.",
     "linkedNot": "{{n}} connected with each other, {{not}} not ({{why}})."
+  },
+  "transfer": {
+    "button": "Transfer",
+    "title": "Bank transfer",
+    "howTo": "Open your banking app and scan the code; it fills in the fields.",
+    "codeAlt": "Transfer code (GiroCode)",
+    "drawing": "The code is being drawn.",
+    "fixFirst": "Correct the amount and the reference first.",
+    "recipient": "Recipient",
+    "iban": "IBAN",
+    "amount": "Amount",
+    "purpose": "Reference",
+    "chooseIban": "The document holds more than one IBAN. Which one?",
+    "from": {
+      "einvoice": "from the e-invoice",
+      "text": "read from the text, please compare it with the document",
+      "sender": "the document's sender",
+      "document": "the document's amount",
+      "typed": "changed by you"
+    },
+    "noPurpose": "No invoice number found.",
+    "count": "{{count}} of {{max}} characters",
+    "amountWrong": "An amount from €0.01 to €999,999,999.99.",
+    "purposeWrong": "A reference holds letters, digits, blanks and / - ? : ( ) . , ' + only.",
+    "nothingKept": "Nothing of this is stored.",
+    "markPaid": "Mark as paid",
+    "paid": "Marked as paid"
+  },
+  "senderMemo": {
+    "label": "Note",
+    "title": "Note on {{name}}",
+    "text": "Shows on every document of this sender in the vault. Everybody in the vault sees it, nobody through a single share.",
+    "placeholder": "Customer number, contract number, phone",
+    "count": "{{count}} of {{max}} characters",
+    "add": "Add a note",
+    "edit": "Edit the note",
+    "editFor": "Edit the note on {{name}}",
+    "saved": "Note saved.",
+    "kept": "Stays because of its note, even without documents.",
+    "mergeNote": "The notes of both senders go one under the other, cut to {{max}} characters.",
+    "deleteNote": "Its note goes too."
+  },
+  "pins": {
+    "pin": "Pin",
+    "pinned": "Pinned",
+    "unpin": "Unpin",
+    "section": "Pinned",
+    "inArchive": "pinned",
+    "saidOn": "Pinned. You find it at the top of the archive.",
+    "saidOff": "Unpinned.",
+    "searchExample": "pinned:yes",
+    "searchHelp": "pinned by you"
+  },
+  "followUp": {
+    "noteLabel": "What then?",
+    "placeholder": "e.g. ask whether it was refunded",
+    "hint": "Reminds you on the day itself at 8. The sentence stays here and on the deadlines page, never in the reminder."
   }
 }

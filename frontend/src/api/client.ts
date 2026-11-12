@@ -526,6 +526,11 @@ export type DocumentInfo = {
   auto_trashed?: boolean
   /** Something the person can see goes with it ("Gehört zu"); never counts what they cannot see. */
   has_related?: boolean
+  /** The person pinned it (K1, "Angeheftet"); only for them. */
+  pinned?: boolean
+  /** The vault's note on the sender (K1, "Merkzettel"): empty when there is none, `null` for somebody who sees the
+   * document through a share alone, and without a sender. */
+  sender_memo?: string | null
 }
 export type DocumentShare = { user: Person; right: 'read' | 'edit'; created_at: string }
 export type DocumentLink = {
@@ -1003,7 +1008,7 @@ export const exportsApi = {
 
 // ---- One document: fields, notes, history, versions; the catalog --------------------------------------------
 
-export type DateKind = 'due' | 'contract_end' | 'warranty_end' | 'keep_until'
+export type DateKind = 'due' | 'contract_end' | 'warranty_end' | 'keep_until' | 'follow_up'
 /** What `PATCH /documents/{id}` takes: only the fields sent change. `sender` is a name (made when new; empty takes it
  * away), `amount` in cents, `tags` and `dates` replace the whole list. */
 export type DocumentPatch = Partial<{
@@ -1022,10 +1027,10 @@ export type DocumentPatch = Partial<{
 /** A notice period of a contract. */
 export type Notice = { n: number; unit: 'weeks' | 'months' }
 /** A date as `PATCH` takes it: a contract may carry its notice period and renewal (left out: they stay, `null`: gone). */
-export type DateIn = { kind: DateKind; date: string; notice?: Notice | null; renew_months?: number | null; manual?: boolean }
+export type DateIn = { kind: DateKind; date: string; notice?: Notice | null; renew_months?: number | null; manual?: boolean; note?: string | null }
 /** One term of `set_dates`: the kind and what changes of it. For `keep_until`, `manual: false` works it out from the kind
- * again, `manual: true` without a `date` sets the day it has by hand. */
-export type DateSet = { kind: DateKind; date?: string; notice?: Notice | null; renew_months?: number | null; manual?: boolean }
+ * again, `manual: true` without a `date` sets the day it has by hand. `note` only for `follow_up` (its sentence). */
+export type DateSet = { kind: DateKind; date?: string; notice?: Notice | null; renew_months?: number | null; manual?: boolean; note?: string | null }
 /** A date of a document as the server has it: with a contract's terms, the last day to cancel worked out from them,
  * who marked it done and when, and the person's own "later". */
 export type DocumentDate = {
@@ -1039,12 +1044,14 @@ export type DocumentDate = {
   done?: { at: string; by: Person | null } | null
   renewed_from?: string | null
   snoozed_until?: string | null
+  /** Only on `follow_up`: the sentence of what to do (empty when there is none). */
+  note?: string
 }
 
 // ---- Deadlines (F1) ---------------------------------------------------------------------------------------------------
 
-export type DeadlineKind = 'due' | 'contract_end' | 'warranty_end'
-export type DeadlineWhat = 'pay' | 'cancel' | 'ends' | 'warranty'
+export type DeadlineKind = 'due' | 'contract_end' | 'warranty_end' | 'follow_up'
+export type DeadlineWhat = 'pay' | 'cancel' | 'ends' | 'warranty' | 'follow_up'
 export type Deadline = {
   document_id: number
   title: string
@@ -1066,6 +1073,8 @@ export type Deadline = {
   missed: string | null
   done: { at: string; by: Person | null } | null
   snoozed_until: string | null
+  /** Only for a follow-up: its sentence (empty when there is none). */
+  note?: string | null
 }
 export type DeadlineSection = { total: number; items: Deadline[] }
 export type Deadlines = {
@@ -1078,7 +1087,7 @@ export type Deadlines = {
   counts: Record<string, number>
   shared: number
 }
-export type DeadlineQuery = { vault_id?: number; shared?: boolean; what?: 'pay' | 'cancel' | 'warranty'; done?: boolean; limit?: number }
+export type DeadlineQuery = { vault_id?: number; shared?: boolean; what?: 'pay' | 'cancel' | 'warranty' | 'follow_up'; done?: boolean; limit?: number }
 
 export const deadlinesApi = {
   list: (query: DeadlineQuery = {}) => api<Deadlines>('/api/v1/deadlines', { query: query as Record<string, string | number | boolean | undefined> }),
@@ -1186,6 +1195,48 @@ export const catalogApi = {
   renameTag: (id: number, name: string) => api<{ id: number; name: string }>(`/api/v1/tags/${id}`, { method: 'PATCH', body: { name } }),
   deleteTag: (id: number) => api<void>(`/api/v1/tags/${id}`, { method: 'DELETE' }),
   renameKind: (id: number, name: string) => api<DocumentKind>(`/api/v1/kinds/${id}`, { method: 'PATCH', body: { name } }),
+  /** The vault's note on a sender (K1): at most 500 characters, line breaks allowed; empty takes it away. `edit` there. */
+  setMemo: (id: number, memo: string) => api<{ id: number; name: string; vault_id: number; memo: string }>(`/api/v1/senders/${id}/memo`, { method: 'PUT', body: { memo } }),
+}
+
+// ---- Small helpers (K1): the transfer code, pinned documents -------------------------------------------------------
+
+/** What a transfer for a document can take, each part with where it comes from. */
+export type TransferInfo = {
+  /** At least one IBAN, an amount above 0, the euro, a recipient, no credit note. */
+  ready: boolean
+  missing: string[]
+  recipient: string
+  recipient_origin: 'einvoice' | 'sender' | null
+  ibans: { iban: string; origin: 'einvoice' | 'text' }[]
+  /** In cents. */
+  amount: number | null
+  amount_origin: 'einvoice' | 'document' | null
+  currency: string
+  purpose: string
+  purpose_origin: 'einvoice' | 'text' | null
+  purpose_max: number
+}
+/** The most a note on a sender holds (the server's ``catalog.MEMO_MAX``). */
+export const MEMO_MAX = 500
+/** The most documents a person pins (the server's ``pins.MAX``). */
+export const PINS_MAX = 20
+
+export const transferApi = {
+  info: (id: number) => api<TransferInfo>(`${doc(id)}/transfer`),
+  /** The EPC QR code as SVG text. The IBAN must be one of `info().ibans`; nothing is stored. */
+  code: async (id: number, iban: string, amount: number, purpose: string, signal?: AbortSignal) => {
+    const svg = await api<Blob>(`${doc(id)}/transfer/code`, { method: 'POST', body: { iban, amount, purpose }, blob: true, signal })
+    return svg.text()
+  },
+}
+
+export const pinsApi = {
+  /** The person's pinned documents they may see now, the one pinned last first. */
+  list: (limit?: number) => api<{ items: DocumentInfo[]; max: number }>('/api/v1/pins', { query: { limit } }),
+  /** Reading is enough; a 21st answers `409 too_many_pins`. */
+  pin: (id: number) => api<{ pinned: boolean; count: number; max: number }>(`${doc(id)}/pin`, { method: 'PUT' }),
+  unpin: (id: number) => api<void>(`${doc(id)}/pin`, { method: 'DELETE' }),
 }
 
 // ---- Order: what the senders, tags and kinds are used for ------------------------------------------------------------
@@ -1212,6 +1263,9 @@ export type OrderEntry = {
   keep_new_only?: boolean
   /** Only kinds: expired documents go to the trash by themselves, once a day. */
   auto_trash?: boolean
+  /** Only senders (K1): the vault's note, and whether the person may change it (`edit` in the vault). */
+  memo?: string
+  can_edit_memo?: boolean
 }
 export type OrderPage = { items: OrderEntry[]; total: number }
 export type OrderQuery = { vault_id?: number; q?: string; order?: 'name' | 'documents'; limit?: number; offset?: number }

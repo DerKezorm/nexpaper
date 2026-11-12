@@ -17,6 +17,7 @@ import {
   MessageSquare,
   MoreHorizontal,
   Pencil,
+  Pin,
   RotateCw,
   Share2,
   Trash2,
@@ -36,8 +37,10 @@ import {
   documentsApi,
   einvoiceApi,
   fileUrls,
+  pinsApi,
   searchApi,
   sharingApi,
+  transferApi,
   vaultsApi,
   type DocumentEvent,
   type DocumentInfo,
@@ -48,9 +51,12 @@ import {
   type DocumentShare,
   type DocumentVersion,
   type Person,
+  type TransferInfo,
   type Vault,
   type VersionText,
 } from '../api/client'
+import { MemoLine } from '../components/SenderMemo'
+import { TransferButton, TransferDialog } from '../components/TransferDialog'
 import { Avatar } from '../components/Avatar'
 import { Button } from '../components/Button'
 import { Dialog } from '../components/Dialog'
@@ -150,6 +156,39 @@ function Doc({ document: d, setDocument, reload, slots }: { document: DocumentIn
   const [title, setTitle] = useState(d.title)
   const { ask, dialog } = useConfirm()
   useEffect(() => setTitle(d.title), [d.title])
+  // The transfer code (K1): what the document gives, asked again whenever the document changed.
+  const [transfer, setTransfer] = useState<TransferInfo | null>(null)
+  const [paying, setPaying] = useState(false)
+  useEffect(() => {
+    if (d.status === 'trash' || d.status === 'processing') {
+      setTransfer(null)
+      return
+    }
+    let alive = true
+    transferApi.info(d.id).then((found) => alive && setTransfer(found), () => alive && setTransfer(null))
+    return () => {
+      alive = false
+    }
+  }, [d.id, d.change_seq, d.status])
+  const due = d.dates.find((x) => x.kind === 'due')
+  const canMarkPaid = canEdit && !!due && !due.done && usesDeadlines(me)
+  // Pinned (K1): for the person alone; reading is enough.
+  const [pinning, setPinning] = useState(false)
+  const togglePin = async () => {
+    if (pinning) return
+    setPinning(true)
+    setProblem(null)
+    try {
+      if (d.pinned) await pinsApi.unpin(d.id)
+      else await pinsApi.pin(d.id)
+      setDocument({ ...d, pinned: !d.pinned })
+      say(d.pinned ? t('pins.saidOff') : t('pins.saidOn'))
+    } catch (error) {
+      setProblem(error instanceof ApiError ? { code: error.code, values: error.values } : { code: 'internal_error' })
+    } finally {
+      setPinning(false)
+    }
+  }
 
   useEffect(() => {
     void vaultsApi.list().then((list) => setVaults(listOf(list)), () => undefined)
@@ -289,6 +328,12 @@ function Doc({ document: d, setDocument, reload, slots }: { document: DocumentIn
               </Menu>
             )}
           </div>
+          <TransferButton info={transfer} onClick={() => setPaying(true)} />
+          {d.status !== 'trash' && (
+            <Button variant="line" size="sm" onClick={() => void togglePin()} disabled={pinning} aria-pressed={!!d.pinned} title={d.pinned ? t('pins.unpin') : t('pins.pin')} data-testid="pin-button">
+              <Pin size={15} className={d.pinned ? 'fill-current text-accent' : ''} aria-hidden /> {d.pinned ? t('pins.pinned') : t('pins.pin')}
+            </Button>
+          )}
           {d.can_share && (
             <Button variant="line" size="sm" onClick={() => setSharing(true)}>
               <Share2 size={15} aria-hidden /> {t('docs.document.share')}
@@ -410,6 +455,15 @@ function Doc({ document: d, setDocument, reload, slots }: { document: DocumentIn
       </div>
 
       {sharing && <ShareDialog document={d} onClose={() => setSharing(false)} say={(text) => say(text)} />}
+      {paying && transfer && (
+        <TransferDialog
+          document={d}
+          info={transfer}
+          canMarkPaid={canMarkPaid}
+          onPaid={async () => setDocument(await deadlinesApi.done(d.id, 'due'))}
+          onClose={() => setPaying(false)}
+        />
+      )}
       {moving && (
         <MoveDialog
           document={d}
@@ -488,6 +542,8 @@ function Details({ document: d, canEdit, vaults, path, change, problem, onShare,
   }, [d.id, d.vault_id, d.can_share, canEdit])
 
   const writable = vaults.filter((v) => v.my_right === 'edit' || v.my_right === 'manage')
+  // The note is the vault's: `edit` in the vault itself, never through a share.
+  const memoEditable = !d.via_share && writable.some((v) => v.id === d.vault_id)
   const vaultLabel = (v: Vault) => (v.personal_of !== null ? t('docs.inbox.personalVault', { name: me && v.personal_of === me.id ? t('vaults.mine') : v.name }) : v.name)
   const move = async (target: number) => {
     onProblem(null)
@@ -529,6 +585,12 @@ function Details({ document: d, canEdit, vaults, path, change, problem, onShare,
           d.sender ? <bdi>{d.sender.name}</bdi> : <span className="text-muted">{t('docs.fields.none')}</span>
         )}
       </Row>
+      {/* The vault's note on the sender (K1): only for the vault's members; the pencil for who may change things there. */}
+      {d.sender && typeof d.sender_memo === 'string' && (d.sender_memo || memoEditable) && (
+        <div className="pl-[calc(7rem+0.75rem)]">
+          <MemoLine sender={d.sender} memo={d.sender_memo} canEdit={memoEditable} onSaved={(memo) => onMoved({ ...d, sender_memo: memo })} />
+        </div>
+      )}
       <Row label={t('docs.fields.kind')}>
         {canEdit ? (
           <div className="min-w-0 flex-1">

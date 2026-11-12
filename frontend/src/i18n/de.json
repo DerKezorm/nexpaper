@@ -774,7 +774,7 @@
     "last_manager": "Ein Tresor braucht mindestens einen, der ihn verwaltet.",
     "personal_vault_not_empty": "Im eigenen Tresor liegen noch {{documents}} Dokumente. Wähle, wohin sie gehen.",
     "invalid_right": "Dieses Recht gibt es nicht.",
-    "invalid_recipient": "Sag, für wen der Link ist (bis zu 100 Zeichen).",
+    "invalid_recipient": "Der Empfänger hat 1 bis 70 Zeichen.",
     "links_off": "Der Betreiber hat Links nach außen abgeschaltet.",
     "too_many_links": "Auf einem Dokument sind schon zu viele Links offen.",
     "already_in_vault": "Diese Person ist schon im Tresor.",
@@ -847,7 +847,14 @@
     "nothing_to_keep": "Hier gibt es keine Suche und keinen Filter zum Merken.",
     "invalid_saved_search": "Diese Suche lässt sich nicht merken.",
     "invalid_action": "Diese Aktion gibt es nicht.",
-    "too_many": "Zu viele auf einmal."
+    "too_many": "Zu viele auf einmal.",
+    "invalid_terms": "Diese Angabe passt nicht zu diesem Termin.",
+    "invalid_purpose": "Im Verwendungszweck gehen Buchstaben, Ziffern, Leerzeichen und / - ? : ( ) . , ' +, höchstens 140 Zeichen.",
+    "unknown_iban": "Diese IBAN steht nicht im Dokument.",
+    "transfer_not_possible": "Für dieses Dokument geht keine Überweisung.",
+    "transfer_too_long": "Empfänger und Verwendungszweck sind zusammen zu lang für einen Code.",
+    "too_many_pins": "Du hast schon {{max}} Dokumente angeheftet. Löse erst eines, dann passt dieses dazu.",
+    "invalid_memo": "Ein Merkzettel hat höchstens {{max}} Zeichen."
   },
   "ready": {
     "title": "Bereit fürs Internet?",
@@ -1540,7 +1547,8 @@
       "due": "Fällig am",
       "contract_end": "Vertrag bis",
       "warranty_end": "Garantie bis",
-      "keep_until": "Aufbewahren bis"
+      "keep_until": "Aufbewahren bis",
+      "follow_up": "Wiedervorlage"
     },
     "fields": {
       "title": "Titel",
@@ -2758,7 +2766,8 @@
       "all": "Alle",
       "pay": "Zahlen",
       "cancel": "Kündigen",
-      "warranty": "Garantie"
+      "warranty": "Garantie",
+      "follow_up": "Wiedervorlage"
     },
     "allVaults": "Alle Tresore",
     "myVault": "Mein Tresor",
@@ -2766,7 +2775,7 @@
     "showDone": "Erledigte zeigen",
     "showDoneCount": "Erledigte zeigen ({{count}})",
     "nothing": "Nichts offen",
-    "nothingHint": "Fristen entstehen aus den Terminen der Dokumente: fällig am, Vertrag bis, Garantie bis.",
+    "nothingHint": "Fristen entstehen aus den Terminen der Dokumente: fällig am, Vertrag bis, Garantie bis, Wiedervorlage.",
     "overdue": "Überfällig",
     "soon": "Nächste {{days}} Tage",
     "soonEmpty": "In den nächsten zwei Wochen steht nichts an.",
@@ -2795,6 +2804,11 @@
       },
       "warranty": {
         "name": "Garantie bis",
+        "done": "Erledigt",
+        "doneShort": "erledigt"
+      },
+      "follow_up": {
+        "name": "Wiedervorlage am",
         "done": "Erledigt",
         "doneShort": "erledigt"
       }
@@ -2888,7 +2902,8 @@
       "done": {
         "due": "hat die Rechnung als bezahlt markiert",
         "contract_end": "hat den Vertrag als gekündigt markiert",
-        "warranty_end": "hat die Garantie als erledigt markiert"
+        "warranty_end": "hat die Garantie als erledigt markiert",
+        "follow_up": "hat die Wiedervorlage als erledigt markiert"
       },
       "reopened": "hat die Frist wieder geöffnet",
       "renewed": "hat den Vertrag von selbst verlängert bis {{date}}"
@@ -2972,7 +2987,8 @@
       "days": "Noch {{count}} Tage.",
       "tomorrow": "Morgen.",
       "today": "Heute.",
-      "renews": "Danach verlängert sich der Vertrag bis {{date}}."
+      "renews": "Danach verlängert sich der Vertrag bis {{date}}.",
+      "follow_up": "Wiedervorlage {{day}}"
     },
     "week": {
       "subject_one": "Diese Woche: {{count}} Frist",
@@ -2991,7 +3007,8 @@
         "pay": "Zahlen",
         "cancel": "Kündigen",
         "ends": "Kündigen",
-        "warranty": "Garantie"
+        "warranty": "Garantie",
+        "follow_up": "Wiedervorlage"
       },
       "trashedHead": "Papierkorb",
       "trashed_one": "Ein Dokument hat nexpaper in den Papierkorb gelegt, seine Aufbewahrungszeit war um. Dort lässt es sich 30 Tage zurückholen.",
@@ -3127,5 +3144,62 @@
     "linkHint": "Wähle 2 bis {{most}} Dokumente aus.",
     "linked": "{{n}} miteinander verknüpft.",
     "linkedNot": "{{n}} miteinander verknüpft, {{not}} nicht ({{why}})."
+  },
+  "transfer": {
+    "button": "Überweisen",
+    "title": "Überweisen",
+    "howTo": "Öffne deine Banking-App und scanne den Code, die Felder füllen sich von selbst.",
+    "codeAlt": "Überweisungscode (GiroCode)",
+    "drawing": "Der Code wird gezeichnet.",
+    "fixFirst": "Erst Betrag und Verwendungszweck berichtigen.",
+    "recipient": "Empfänger",
+    "iban": "IBAN",
+    "amount": "Betrag",
+    "purpose": "Verwendungszweck",
+    "chooseIban": "Im Dokument stehen mehrere IBANs. Welche?",
+    "from": {
+      "einvoice": "aus der E-Rechnung",
+      "text": "aus dem Text gelesen, bitte mit dem Dokument vergleichen",
+      "sender": "Absender des Dokuments",
+      "document": "Betrag des Dokuments",
+      "typed": "von dir geändert"
+    },
+    "noPurpose": "Keine Rechnungsnummer gefunden.",
+    "count": "{{count}} von {{max}} Zeichen",
+    "amountWrong": "Ein Betrag von 0,01 bis 999.999.999,99 €.",
+    "purposeWrong": "Im Verwendungszweck gehen Buchstaben, Ziffern, Leerzeichen und / - ? : ( ) . , ' +.",
+    "nothingKept": "Nichts davon wird gespeichert.",
+    "markPaid": "Als bezahlt merken",
+    "paid": "Als bezahlt gemerkt"
+  },
+  "senderMemo": {
+    "label": "Merkzettel",
+    "title": "Merkzettel zu {{name}}",
+    "text": "Steht an jedem Dokument dieses Absenders im Tresor. Alle im Tresor sehen ihn, über eine Einzelfreigabe niemand.",
+    "placeholder": "Kundennummer, Vertragsnummer, Telefon",
+    "count": "{{count}} von {{max}} Zeichen",
+    "add": "Merkzettel anlegen",
+    "edit": "Merkzettel bearbeiten",
+    "editFor": "Merkzettel zu {{name}} bearbeiten",
+    "saved": "Merkzettel gespeichert.",
+    "kept": "Bleibt wegen des Merkzettels stehen, auch ohne Dokument.",
+    "mergeNote": "Die Merkzettel beider Absender kommen untereinander, gekürzt auf {{max}} Zeichen.",
+    "deleteNote": "Der Merkzettel geht mit."
+  },
+  "pins": {
+    "pin": "Anheften",
+    "pinned": "Angeheftet",
+    "unpin": "Nicht mehr anheften",
+    "section": "Angeheftet",
+    "inArchive": "angeheftet",
+    "saidOn": "Angeheftet. Du findest es oben im Archiv.",
+    "saidOff": "Nicht mehr angeheftet.",
+    "searchExample": "angeheftet:ja",
+    "searchHelp": "von dir angeheftet"
+  },
+  "followUp": {
+    "noteLabel": "Was dann?",
+    "placeholder": "z. B. nachfragen, ob erstattet",
+    "hint": "Erinnert am Tag selbst um 8 Uhr. Der Satz steht nur hier und auf der Seite Fristen, nie in der Erinnerung."
   }
 }

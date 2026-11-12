@@ -4,12 +4,12 @@
  * may add to); choosing here keeps it with the account. `/teilen` is the same page with what another app shared on top
  * (Android's share menu): it goes up only when the person says so (`lib/shared.ts`).
  */
-import { ArrowRight, Camera, ChevronDown, FileUp, Images, Inbox, Loader2, Share2, X } from 'lucide-react'
+import { ArrowRight, Camera, ChevronDown, FileUp, Images, Inbox, Loader2, Pin, Share2, X } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 
-import { authApi, phoneApi, type DocumentInfo, type Quick } from '../api/client'
+import { authApi, phoneApi, pinsApi, type DocumentInfo, type Quick } from '../api/client'
 import { LogoMark } from '../components/Logo'
 import { UploadNotice } from '../components/UploadPanel'
 import { ago } from '../lib/ago'
@@ -24,6 +24,8 @@ import { useUploads } from '../state/uploads'
 const ACTIVE: Entry['phase'][] = ['waiting', 'hashing', 'sending', 'finishing', 'paused', 'failed']
 /** While something is being read, the page asks again this often. */
 const POLL_MS = 4000
+/** How many pinned documents the card shows. */
+export const QUICK_PINS = 6
 
 export function QuickPage({ shared = false }: { shared?: boolean }) {
   const { t, i18n } = useTranslation()
@@ -55,6 +57,15 @@ export function QuickPage({ shared = false }: { shared?: boolean }) {
   useEffect(() => {
     void load()
   }, [load])
+  // The first pinned documents (K1), a tap away.
+  const [pinned, setPinned] = useState<DocumentInfo[]>([])
+  useEffect(() => {
+    let alive = true
+    pinsApi.list(QUICK_PINS).then((found) => alive && setPinned(Array.isArray(found?.items) ? found.items.slice(0, QUICK_PINS) : []), () => undefined)
+    return () => {
+      alive = false
+    }
+  }, [])
 
   // What another app shared: read from the cache of the service worker, shown, and uploaded only on a tap. Leaving the
   // page without that throws the files away (also when the tab closes).
@@ -226,6 +237,26 @@ export function QuickPage({ shared = false }: { shared?: boolean }) {
           </div>
         )}
       </div>
+
+      {pinned.length > 0 && (
+        <section className="card mt-6 p-2" aria-label={t('pins.section')} data-testid="quick-pinned">
+          <h2 className="flex items-center gap-1.5 px-2 pt-1.5 pb-1 text-xs font-bold tracking-wide text-muted uppercase">
+            <Pin size={13} aria-hidden /> {t('pins.section')}
+          </h2>
+          <ul>
+            {pinned.map((doc) => (
+              <li key={doc.id}>
+                <Link to={doc.status === 'filed' ? `/dokument/${doc.id}` : `/eingang/${doc.id}`} className="flex items-center gap-2 rounded-xl px-2 py-2.5 text-sm active:bg-sheet-2">
+                  <span className="min-w-0 flex-1 truncate font-semibold">
+                    <bdi>{doc.title}</bdi>
+                  </span>
+                  {doc.sender && <span className="max-w-[40%] shrink-0 truncate text-xs text-muted">{doc.sender.name}</span>}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <section className="mt-6">
         <h2 className="mb-2 px-1 text-xs font-bold tracking-wide text-muted uppercase">{t('phone.quick.recent')}</h2>

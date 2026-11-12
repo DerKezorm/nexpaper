@@ -7,7 +7,7 @@
  * braked by the server (120 a minute) and every answer takes 25 to 50 ms on purpose: the field waits until the typing
  * pauses, a request that is no longer wanted is stopped, and a brake is waited out.
  */
-import { Archive, ArrowDown, ArrowUp, Bookmark, BookmarkPlus, Check, CheckSquare, ChevronLeft, ChevronRight, Download, FileCode2, LayoutGrid, Link2, List, ListTree, MessageSquare, Paperclip, Search, SlidersHorizontal, Trash2, Users, X } from 'lucide-react'
+import { Archive, ArrowDown, ArrowUp, Bookmark, BookmarkPlus, Check, CheckSquare, ChevronLeft, ChevronRight, Download, FileCode2, LayoutGrid, Link2, List, ListTree, MessageSquare, Paperclip, Pin, Search, SlidersHorizontal, Trash2, Users, X } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useSearchParams } from 'react-router-dom'
@@ -18,6 +18,7 @@ import {
   catalogApi,
   savedApi,
   documentsApi,
+  pinsApi,
   searchApi,
   vaultsApi,
   type BulkAction,
@@ -83,6 +84,11 @@ function overviewOf(found: Partial<SearchOverview> | null | undefined): SearchOv
   }
 }
 
+/** A document as a row of the table, without places to mark (the pinned ones of the overview). */
+function asHit(document: DocumentInfo): SearchHit {
+  return { document, title_marks: [], sender_marks: [], excerpt: null }
+}
+
 /** The month a document belongs to in the table: its date, else the day it came in. */
 function monthKey(hit: SearchHit): string {
   return (hit.document.date ?? hit.document.added_at).slice(0, 7)
@@ -125,6 +131,8 @@ export function ArchivePage({ slots = appSlots }: { slots?: Slots }) {
   const [whole, setWhole] = useState<SearchOverview | null>(null)
   const [ofVault, setOfVault] = useState<SearchOverview | null>(null)
   const [newest, setNewest] = useState<SearchHit[] | null>(null)
+  /** The person's pinned documents (K1), for the section on top of the overview. */
+  const [pinned, setPinned] = useState<DocumentInfo[]>([])
 
   const [hits, setHits] = useState<SearchHit[] | null>(null)
   const [total, setTotal] = useState(0)
@@ -157,6 +165,8 @@ export function ArchivePage({ slots = appSlots }: { slots?: Slots }) {
     [t('keeping.searchExample'), t('keeping.searchHelp')],
     // Goes with (N1): the documents something goes with.
     [t('related.searchExample'), t('related.searchHelp')],
+    // Pinned (K1): the person's own pins.
+    [t('pins.searchExample'), t('pins.searchHelp')],
   ]
 
   // What the filters offer.
@@ -256,6 +266,16 @@ export function ArchivePage({ slots = appSlots }: { slots?: Slots }) {
     // `vaultFilters` is the same as `vaultKey`; the key keeps an equal object from asking again.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [listing, vaultKey, again])
+
+  // The pinned documents (K1): only for the overview, and only what the person may see now (the server's list).
+  useEffect(() => {
+    if (listing) return
+    let alive = true
+    pinsApi.list().then((found) => alive && setPinned(listOf<DocumentInfo>(found?.items)), () => alive && setPinned([]))
+    return () => {
+      alive = false
+    }
+  }, [listing, again])
 
   // One page of the table; the request before it is stopped.
   useEffect(() => {
@@ -364,6 +384,8 @@ export function ArchivePage({ slots = appSlots }: { slots?: Slots }) {
     [q && t('saved.quoted', { q }), ...pills.map(([key, label, value]) => (key === 'kind' || key === 'sender' || key === 'year' ? value : `${label} ${value}`)), chosenVault].filter(Boolean).join(' · ') ||
     t('saved.everything')
   const deadlineIgnored = !deadlinesOn && Boolean(params.get('deadline'))
+  // The pinned documents of the vault the overview shows (all of them without one).
+  const pinnedHere = pinned.filter((d) => (chosen.vault === 'shared' ? d.via_share : chosen.vault ? String(d.vault_id) === chosen.vault && !d.via_share : true))
 
   /** Ticks every document of the filter on this page, or lets go of them. */
   const onPage = hits ?? []
@@ -602,6 +624,7 @@ export function ArchivePage({ slots = appSlots }: { slots?: Slots }) {
             away={mayGo.away}
             onMayGo={() => go({ keep: 'expired' })}
             table={<Table hits={newest} vaultById={vaultById} vaultName={vaultName} searching={false} order="-date" bare />}
+            pinned={pinnedHere.length > 0 ? <Table hits={pinnedHere.map(asHit)} vaultById={vaultById} vaultName={vaultName} searching={false} order="-date" bare /> : null}
           />
         )
       ) : (
@@ -843,14 +866,24 @@ type OverviewProps = {
    * only above 0, whatever the person's switch for deadlines says. */
   away: number
   onMayGo: () => void
+  /** The table of the person's pinned documents (K1); the section shows only with some. */
+  pinned?: ReactNode
 }
 
-function Overview({ data, newest, table, onAll, onPick, onAllSenders, mayGo, away, onMayGo }: OverviewProps) {
+function Overview({ data, newest, table, onAll, onPick, onAllSenders, mayGo, away, onMayGo, pinned }: OverviewProps) {
   const { t, i18n } = useTranslation()
   const n = (value: number) => value.toLocaleString(i18n.language)
   const most = data.years.reduce((all, y) => Math.max(all, y.count), 1)
   return (
     <div className="space-y-6" data-testid="overview">
+      {pinned && (
+        <section aria-label={t('pins.section')} data-testid="pinned-section">
+          <h2 className="mb-2 flex items-center gap-1.5 px-1 text-xs font-bold tracking-wide text-muted uppercase">
+            <Pin size={13} aria-hidden /> {t('pins.section')}
+          </h2>
+          {pinned}
+        </section>
+      )}
       {away > 0 && (
         <Link to="/papierkorb" data-testid="auto-trashed-hint" className="card flex w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-sheet-2/60">
           <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-accent">
@@ -1071,6 +1104,7 @@ function Row({ hit, vault, vaultName, searching, keep, select }: { hit: SearchHi
               {(d.share_count ?? 0) > 0 && <Users size={14} aria-label={t('docs.archive.sharedOut')} />}
               {(d.link_count ?? 0) > 0 && <Link2 size={14} aria-label={t('docs.archive.linkOut')} />}
               {d.has_related && <Paperclip size={14} aria-label={t('related.inArchive')} data-testid="goes-with" />}
+              {d.pinned && <Pin size={14} className="fill-current text-accent" aria-label={t('pins.inArchive')} data-testid="pinned" />}
             </span>
           </div>
           <div className="truncate text-sm text-ink-2 md:hidden">

@@ -156,7 +156,7 @@ describe('the deadlines page', () => {
     server.answers['GET /api/v1/deadlines?done=true'] = { ...LIST, overdue: { total: 0, items: [] }, soon: { total: 0, items: [] }, later: { total: 0, items: [] }, done: { total: 0, items: [] } }
     await page.show(<DeadlinesPage />, '/fristen')
     expect(page.text).toContain('Nichts offen')
-    expect(page.text).toContain('Fristen entstehen aus den Terminen der Dokumente: fällig am, Vertrag bis, Garantie bis.')
+    expect(page.text).toContain('Fristen entstehen aus den Terminen der Dokumente: fällig am, Vertrag bis, Garantie bis, Wiedervorlage.')
   })
 
   it('speaks English too', async () => {

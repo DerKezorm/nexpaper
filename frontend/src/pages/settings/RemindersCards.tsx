@@ -247,7 +247,8 @@ function Preview({ me, r }: { me: Me; r: Reminders }) {
   const week = all.filter((x) => x.days >= 0 && x.days <= 6)
   const overdue = all.filter((x) => x.days < 0)
   const longDate = (day: string) => new Intl.DateTimeFormat(i18n.language, { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC' }).format(new Date(`${day}T00:00:00Z`))
-  const lead = shown ? (shown.what === 'pay' ? r.lead.due : shown.what === 'warranty' ? r.lead.warranty : r.lead.cancel) : 0
+  // A follow-up has no lead: it comes on its day.
+  const lead = shown ? (shown.what === 'follow_up' ? 0 : shown.what === 'pay' ? r.lead.due : shown.what === 'warranty' ? r.lead.warranty : r.lead.cancel) : 0
   // As the reminder says it on its day: as many days ahead as the person chose.
   const days = lead
   const line = (x: Deadline) => `${shortDay(x.date)} · ${t(`reminders.week.short.${x.what}`)}: ${x.title}`
