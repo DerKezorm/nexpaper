@@ -82,6 +82,42 @@ writes the same name again keeps its new file. A folder or a person's subfolder 
 taken from at all (a file it could not remove would come in again); the settings say so. When the container fixes the owners of `/data` at its
 start, a folder mounted below it keeps the owners of its files.
 
+## Upload requests
+
+**Off from the start.** An upload request is an address `/u/<token>` a person gives to somebody without an account,
+who sends files through it into that person's inbox. The operator switches requests on (Settings, Sharing); off,
+nobody makes one and every one there is takes nothing at once. "Ready for the internet?" names the switch. A request
+needs the public address of the server, and works only while the server keeps the address it was made under: an
+address given up ends every request made under it.
+
+**What a stranger with the address can do**: see the display name of the person who asks (never the name they sign
+in with), whom the request is for, until when it works and how many files it still takes; and send files, one per
+call. **What they cannot do**: read anything. The page and its routes show nothing that arrived, no name of a file, no
+document, nothing of the server. Every file goes into the inbox of the person who asked, in their personal vault: the
+call names no vault and no person, nothing is filed by itself, a rule may propose fields but never moves such a
+document to another vault, and the document is marked unknown like a mail nobody could be told from. A file the person
+has already is taken like any other, as a document of its own (the inbox says it looks like one they have): the answer
+and the count of files are the same either way, so the address is no way to learn what a person keeps. "How many still
+go" tells only how much of this one address was used.
+
+**Limits**: the files of a request (10 from the start, 50 at most; a slot is taken in one statement before a file is
+read, so two uploads at once never pass it), the size of a file as for every upload, 20 tries per request and 30 per
+sender's address and hour (a refused file counts as a try), 500 files and 2 GB on the whole server per day. A request
+lasts at most as long as a link, and each person has at most 20 open. What is refused costs little: the brake, the
+declared length (a body larger than one file is refused before it is read; one without a length is refused), the
+token, the hour and the day come before the body is read, and a file of the wrong kind is dropped after its first
+bytes. A file is read in the worker with its limits like every upload; there is no upload in pieces from outside.
+
+**The token** (`upr_` and 43 random characters) is found by its SHA-256 and kept sealed with the server's secret, so
+its maker can copy the address again; the database alone tells nobody a token, and the log masks it wherever it stands
+(also in the paths `/u/<token>` and `/api/v1/u/<token>`). An unknown token and one that ran out, was withdrawn, has all
+its files, whose person is blocked, or that the switch turned off answer the same, and count against the sender on a
+brake of their own. Blocking an account ends its requests for good; deleting it deletes them. The route that takes
+files is the only path without the tab header (a stranger has no tab of ours); it neither reads nor sets a session,
+so a page elsewhere that makes a browser send there gains nothing it could not do with the token itself. The operator
+sees how many requests are open and of how many people, never an address or a name. A restore names the requests it
+would open again (withdrawn or ended since the backup) in its trial run.
+
 ## Paperless import and exports
 
 The token of Paperless is sealed with the server's secret, never shown again, and forgotten when the address changes

@@ -290,7 +290,7 @@ def take_file(db: Session, row: UploadRequest, *, filename: str, path: Path, kin
     def note(session: Session, document: Document) -> None:
         session.add(IntakeItem(document_id=document.id, source=SOURCE, key=f"{row.id}:{secrets.token_hex(8)}",
                                state="done", sha256=sha256, size=size, unknown=True,
-                               detail={"from": row.name, "file": cleaned}, at=clock.now()))
+                               detail={"from": row.name}, at=clock.now()))
 
     document, _twin = receiving.accept(
         db, uid=row.user_id, vault_id=vault_id, filename=cleaned or "document", path=path, kind=kind, sha256=sha256,
