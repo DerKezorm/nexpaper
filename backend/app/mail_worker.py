@@ -315,7 +315,8 @@ class HtmlText(html.parser.HTMLParser):
     left out, and so is every picture (its address, also ``cid:``, is never looked at). Nothing is loaded, nothing
     runs: ``html.parser`` only cuts the text into tags and words."""
 
-    SKIP = frozenset({"script", "style", "title", "template", "svg", "math", "noscript", "object", "select", "textarea"})
+    SKIP = frozenset({"script", "style", "title", "template", "svg", "math", "noscript", "object", "select",
+                      "textarea"})
     BLOCK = frozenset({"p", "div", "tr", "ul", "ol", "dl", "dt", "dd", "table", "blockquote", "pre", "section",
                        "article", "header", "footer", "address", "form", "fieldset", "center", "h1", "h2", "h3", "h4",
                        "h5", "h6", "hr", "body", "main", "nav", "aside", "figure", "figcaption", "caption"})

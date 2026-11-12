@@ -43,7 +43,7 @@ from .test_intake_mail import (  # noqa: F401 - fixtures
 )
 
 SEEN = "\\Seen"
-BODY = ("Hallo Tom,\n\nvielen Dank für Ihre Bestellung 4711-2026 bei Gartenbedarf Lindenau.\n"
+BODY = ("Hallo Tom,\n\nvielen Dank für Ihre Bestellung 4711-2026 vom 28.10.2026 bei Gartenbedarf Lindenau.\n"
         "Lieferung: Mittwoch, 04.11.2026\nSumme: 129,90 EUR\n\nViele Grüße\nIhr Team")
 
 
@@ -130,7 +130,7 @@ def test_on_the_text_of_a_mail_of_a_confirmed_sender_becomes_a_document(mailbox:
         created = db.scalar(select(Event).where(Event.document_id == document.id, Event.action == "created"))
         assert created is not None and created.detail == {"mail_text": True, "source": "mail"}
     text = text_of(document.id)
-    assert "Bestellung 4711-2026 bei Gartenbedarf Lindenau." in text and "Viele Grüße\nIhr Team" in text
+    assert "Bestellung 4711-2026 vom 28.10.2026 bei Gartenbedarf Lindenau." in text and "Viele Grüße\nIhr Team" in text
     assert text.startswith("Von: tom.privat@example.com\nAn: paper@example.com\nBetreff: WG: Bestellung\nDatum: 2026-11-03")
     found = client.get("/api/v1/search", params={"q": "Gartenbedarf"})
     assert found.status_code == 200 and found.json()["items"] == [], "the operator does not see Tom's document"
@@ -429,7 +429,8 @@ def test_a_long_head_is_cut(mailbox: imap_server.Store, tom: Account) -> None:
     [document] = docs()
     assert len(document.title) <= 200
     head = text_of(document.id).split("\n\n", 1)[0]
-    assert all(len(line) <= mail_worker.TO_MAX + 10 for line in head.split("\n"))
+    assert all(len(line) <= 410 for line in head.split("\n")), "a head field is cut at a few hundred characters"
+    assert head.split("\n")[1].startswith("An: empf0@example.com, ")
 
 
 def test_the_same_mail_twice_is_one_document(mailbox: imap_server.Store, tom: Account) -> None:
