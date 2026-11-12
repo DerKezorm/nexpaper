@@ -48,11 +48,30 @@ describe('Mails without an attachment as a document', () => {
     const toggled = toggle('Mails ohne Anhang als Dokument nehmen')
     expect(toggled.getAttribute('aria-checked')).toBe('false')
     expect(page.text).toContain(
-      'Eine Mail ohne PDF, Bild oder E-Rechnung wird zu einem PDF mit ihrem Text, etwa eine weitergeleitete Bestellbestätigung. Nur für Mails von einer bestätigten Adresse einer Person oder an ihre Adresse mit +name, nie für unbekannte Absender.',
+      'Eine Mail ganz ohne Anhang wird zu einem PDF mit ihrem Text, etwa eine weitergeleitete Bestellbestätigung. Nur wenn sie von einer bestätigten Adresse einer Person kommt und der Mailserver die Echtheit bestätigt hat (dmarc=pass), dann in deren Eingang. Nie für unbekannte Absender, nie allein über die Adresse mit +name, höchstens 50 am Tag je Person.',
     )
+    expect(document.querySelector('[data-testid="mail-text-judge"]')).toBeNull()
     await page.click(toggled)
     expect(server.calls.filter((c) => c.method === 'PUT').map((c) => c.body)).toEqual([{ mail_text: true }])
     expect(toggle('Mails ohne Anhang als Dokument nehmen').getAttribute('aria-checked')).toBe('true')
+  })
+
+  it('names the server whose verdict counts, and says when there is none', async () => {
+    server.answers['GET /api/v1/settings/intake'] = settings({ text: true })
+    await page.show(<IntakeCards />)
+    expect(document.querySelector('[data-testid="mail-text-judge"]')!.textContent).toBe(
+      'Es zählt das Urteil von example.com. Schreibt dieser Server kein dmarc=pass in die Mail, wird kein Text genommen.',
+    )
+    page.close()
+    server.answers['GET /api/v1/settings/intake'] = settings({ text: true, auth_server: 'mx.example.net' })
+    await page.show(<IntakeCards />)
+    expect(document.querySelector('[data-testid="mail-text-judge"]')!.textContent).toContain('Urteil von mx.example.net.')
+    page.close()
+    server.answers['GET /api/v1/settings/intake'] = settings({ text: true, address: '', auth_server: '' })
+    await page.show(<IntakeCards />)
+    expect(document.querySelector('[data-testid="mail-text-judge"]')!.textContent).toBe(
+      'Ohne Adresse des Postfachs oder vertrauten Server gibt es kein Urteil über die Echtheit, also wird kein Text genommen.',
+    )
   })
 
   it('turns it off again', async () => {
@@ -82,7 +101,7 @@ describe('Mails without an attachment as a document', () => {
     await changeLanguage('en', false)
     await page.show(<IntakeCards />)
     expect(toggle('Take mails without an attachment as a document')).toBeTruthy()
-    expect(page.text).toContain('Only for mails from a confirmed address of a person or to their address with +name, never for unknown senders.')
+    expect(page.text).toContain('Never for unknown senders, never through the address with +name alone, at most 50 a day per person.')
   })
 })
 

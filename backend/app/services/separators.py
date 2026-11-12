@@ -105,6 +105,12 @@ def find_blanks(db: Session, document: Document, version: Version, run: Any) -> 
     kind = filetypes.KIND_OF_EXTENSION.get(Path(version.original_path).suffix.lower())
     if count < 2 or kind in (None, filetypes.XML):
         return processing.Outcome(True)
+    if version.note == "mail":
+        # A page of a mail's text set as a PDF is never an empty sheet between letters.
+        from . import mail_text
+
+        if mail_text.given(db, document, version) is not None:
+            return processing.Outcome(True)
     try:
         pdf = run.source or (run.work if run.data.get("derived") else storage.safe_path(version.original_path))
     except storage.StorageError:

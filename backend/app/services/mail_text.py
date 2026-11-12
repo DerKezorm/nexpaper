@@ -1,16 +1,21 @@
-"""The text of a mail as a document: for mails that bring nothing nexpaper takes (an order confirmation forwarded, a
-booking, a note to oneself), when the operator switched it on (Settings, Inputs, Mailbox; off from the start).
+"""The text of a mail as a document: for mails without any attachment (an order confirmation forwarded, a booking, a
+note to oneself), when the operator switched it on (Settings, Inputs, Mailbox; off from the start).
 
-* **Whose.** Only a mail that belongs to a person for sure: it comes from an address the person confirmed, or it is
-  sent to their plus address (``intake_mail.assign``), and the mailbox's own server did not say that DMARC failed
-  (``intake_mail.failed_check``). A mail that goes to the operator as unknown never gives a document of its text, and
-  a mail with a part that is taken stays as it was (its text is not taken).
+* **Whose.** Only a mail the person sent themselves, as far as nexpaper can tell (``sure_owner``): exactly one
+  address in ``From``, and it is a confirmed address of exactly one person; the trusted server says in so many words
+  that the mail passed DMARC for that domain (``intake_mail.passed_check``); and the mail goes to that very person
+  (``intake_mail.assign``: a plus address of somebody else, or two plus addresses, and there is no document). The plus
+  address alone is never enough: anybody who knows it can write to it. A mail that goes to the operator as unknown
+  never gives a document of its text. At most ``PERSON_DAY_TEXTS`` of them per person and day.
+* **Without any attachment.** A mail with an attachment, taken or not (a Word file too), stays exactly as it would
+  with the switch off; a small picture of a signature is no attachment (``mail_worker.attachments``).
 * **What.** The plain text of the mail; from HTML only the text, read from its markup by the mail worker in its own
   process with its limits (``app/mail_worker.py``, ``op: text``): nothing is drawn or fetched. At most 200 KB of it,
   set as a plain PDF with a head (``app/mail_sheet.py``). Less than 20 signs is no document.
 * **The document.** Comes into the person's inbox like any other piece of the mailbox: source ``mail``, its title the
   subject (without "Fwd:", "WG:" and the like), its date the mail's. Its text is the mail's text, kept when it is made:
-  the reading of the document takes it instead of recognising the PDF again (``install``).
+  the reading of the document takes it instead of recognising the PDF again (``processing.recognize_text`` asks
+  ``given``).
 * **Once.** Noted like a part of the mail (``<box>:<uidvalidity>:<uid>:text``), and known again by the Message-ID and
   the checksum of the PDF when the same mail comes a second time.
 """
@@ -47,17 +52,50 @@ TEXTS_MAX = TEXT_MAX * 6 + 64 * 1024
 _PREFIX = re.compile(r"^\s*(?:(?:fwd?|wg|aw|re|antw|tr|wtr)\s*(?:\[\d{1,3}\])?\s*:\s*)+", re.IGNORECASE)
 
 
-def wanted(text_on: bool, *, takeable: int, unknown: bool) -> bool:
-    """Whether the text of a mail becomes a document: switched on, nothing in the mail is taken (also nothing that was
-    over a limit), and it belongs to a person for sure."""
-    return text_on and takeable == 0 and not unknown
+#: Documents made of the text of a mail, per person and day, at most: a person who forwards everything still does not
+#: flood their inbox (the bytes of the day count as well, ``intake_mail.Budget``). More waits for the next day.
+PERSON_DAY_TEXTS = 50
 
 
-def title_of(subject: str, language: str) -> str:
+def sure_owner(db: Session, parsed: Any, mailbox: str, auth_server: str) -> int | None:
+    """The person a mail comes from for sure, as far as nexpaper can tell, else None: exactly one address in ``From``,
+    a confirmed address of exactly one person (not blocked), and the trusted server's ``dmarc=pass`` for its domain."""
+    from . import intake_mail, mail_senders
+
+    if parsed.from_count != 1 or not parsed.sender:
+        return None
+    owners = mail_senders.owners(db, parsed.sender)
+    if len(owners) != 1:
+        return None
+    if not intake_mail.passed_check(parsed.auth, mailbox, parsed.sender, auth_server):
+        return None
+    return next(iter(owners))
+
+
+def wanted(text_on: bool, *, takeable: int, attached: int, unknown: bool, owner: int | None,
+           sure: int | None) -> bool:
+    """Whether the text of a mail becomes a document: switched on; no attachment at all (nothing taken, nothing over a
+    limit, nothing nexpaper does not take); not unknown; and the person it goes to is the one it surely comes from."""
+    return (text_on and takeable == 0 and attached == 0 and not unknown and sure is not None
+            and owner is not None and sure == owner)
+
+
+def title_of(subject: str, language: str, day: Date | None = None) -> str:
+    """The subject without "Fwd:", "WG:" and their kin; when nothing is left (or nothing that can be seen), "Mail vom
+    <date>" in the person's language, of the mail's date or else today."""
     from ..mail_sheet import words_of
+    from .documents import BIDI_CONTROLS
 
-    title = _PREFIX.sub("", subject).strip()
-    return title[:200] or words_of(language)["no_subject"]
+    title = " ".join(_PREFIX.sub("", subject).translate(BIDI_CONTROLS).translate(_HIDDEN).split())[:200]
+    if title and any(not char.isspace() for char in title):
+        return title
+    when = day or clock.now().date()
+    shown = f"{when.day:02d}.{when.month:02d}.{when.year}" if language == "de" else when.isoformat()
+    return words_of(language)["untitled"].format(day=shown)
+
+
+#: Characters that take no room: a subject of only these is no subject.
+_HIDDEN = dict.fromkeys(map(ord, "\u200b\u200c\u200d\u2060\ufeff\u00ad"), None)
 
 
 def language_of(db: Session, uid: int) -> str:
@@ -115,8 +153,9 @@ def read(raw: bytes, folder: Path, language: str) -> Made:
 
 
 def take(taken: Any, raw: bytes, folder: Path, *, key: str, owner: int, marker: str, sender: str, subject: str,
-         budget: Callable[[int, int], bool] | None) -> None:
-    """The text of the mail becomes a document of ``owner`` (``taken`` is the mailbox's ``Taken`` of this mail)."""
+         budget: Callable[[int, int], bool] | None, texts_left: Callable[[int], bool] | None = None) -> None:
+    """The text of the mail becomes a document of ``owner`` (``taken`` is the mailbox's ``Taken`` of this mail).
+    ``budget(owner, bytes)`` and ``texts_left(owner)``: the amounts of the day; over them the mail waits."""
     from . import intake_mail
 
     with SessionLocal() as db:
@@ -131,7 +170,7 @@ def take(taken: Any, raw: bytes, folder: Path, *, key: str, owner: int, marker: 
     taken.takeable = 1
     taken.text = True
     size = made.pdf.stat().st_size
-    if budget is not None and not budget(owner, size):
+    if (budget is not None and not budget(owner, size)) or (texts_left is not None and not texts_left(owner)):
         taken.deferred = True
         return
     sha256 = intake_mail._sha256(made.pdf)
@@ -143,7 +182,8 @@ def take(taken: Any, raw: bytes, folder: Path, *, key: str, owner: int, marker: 
         if known is not None:
             taken.known += 1
             return
-        title = title_of(made.subject or subject, language)
+        # Only the subject the worker made plain; the one of the first look is never taken instead.
+        title = title_of(made.subject, language, made.day)
         body = "\f".join(made.texts)
 
         def keep(session: Session, document: Document) -> None:
@@ -199,48 +239,12 @@ def given(db: Session, document: Document, version: Version) -> list[str] | None
     return row.text.split("\f") if row.text else [""]
 
 
-def install() -> None:
-    """The reading of a document (``processing.STEPS``) takes the kept text of a mail's text instead of recognising its
-    PDF, and does not look for blank separator pages in it (a page of a mail is never one). The steps are wrapped once,
-    found by their names; any other document is read as before."""
-    from . import processing, separators
+def given_outcome(db: Session, document: Document, version: Version) -> Any:
+    """For ``processing.recognize_text``: the kept text of a document made of a mail's text instead of a new reading
+    of its PDF (as Paperless's text is taken), else None (the document is read as any other)."""
+    from .processing import Outcome
 
-    def recognize_or_given(step: Callable[..., Any]) -> Callable[..., Any]:
-        def run(db: Session, document: Document, version: Version, work: Any) -> Any:
-            texts = given(db, document, version)
-            if texts is None:
-                return step(db, document, version, work)
-            db.rollback()
-            return processing.Outcome(True, data={"texts": texts, "ocr_pages": 0, "languages": "",
-                                                  "searchable": False})
-
-        run.mail_text = True  # type: ignore[attr-defined]
-        run.__name__ = step.__name__
-        return run
-
-    def blanks_or_none(step: Callable[..., Any]) -> Callable[..., Any]:
-        def run(db: Session, document: Document, version: Version, work: Any) -> Any:
-            if given(db, document, version) is not None:
-                db.rollback()
-                return processing.Outcome(True)
-            return step(db, document, version, work)
-
-        run.mail_text = True  # type: ignore[attr-defined]
-        run.__name__ = step.__name__
-        return run
-
-    wrappers = {processing.recognize_text: recognize_or_given, separators.find_blanks: blanks_or_none}
-    for index, step in enumerate(processing.STEPS):
-        if getattr(step, "mail_text", False):
-            continue
-        if step in wrappers:
-            processing.STEPS[index] = wrappers[step](step)
-
-
-def installed() -> bool:
-    from . import processing
-
-    return sum(1 for step in processing.STEPS if getattr(step, "mail_text", False)) == 2
-
-
-install()
+    texts = given(db, document, version)
+    if texts is None:
+        return None
+    return Outcome(True, data={"texts": texts, "ocr_pages": 0, "languages": "", "searchable": False})

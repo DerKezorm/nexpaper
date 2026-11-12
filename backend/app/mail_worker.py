@@ -202,6 +202,62 @@ def leaves(message: Message, nesting: int, parts_limit: int, inline_min: int) ->
     return found
 
 
+def attachments(message: Message, nesting: int, parts_limit: int, inline_min: int) -> int:
+    """How many attachments a mail carries, whether nexpaper takes them or not: every part marked as an attachment
+    (also an empty one, a Word file, a text file), and every other part that may be a document (``wanted``). The text
+    of the mail and a small picture of a signature (``Content-ID``, under ``inline_min``) are none. A forwarded mail
+    (``message/rfc822``) is content, not an attachment; what it carries counts."""
+    count = [0]
+    budget = [parts_limit]
+
+    def visit(part: Message, depth: int) -> None:
+        if budget[0] <= 0 or depth > nesting:
+            return
+        budget[0] -= 1
+        try:
+            ctype = part.get_content_type()
+        except Exception:  # noqa: BLE001
+            return
+        if part.is_multipart():
+            try:
+                children = part.get_payload()
+            except Exception:  # noqa: BLE001
+                return
+            if isinstance(children, list):
+                for child in children:
+                    if isinstance(child, Message):
+                        visit(child, depth + 1)
+            return
+        if ctype == "message/rfc822":
+            with contextlib.suppress(Exception):
+                inner = part.get_payload(decode=True)
+                if isinstance(inner, bytes) and inner:
+                    visit(email.message_from_bytes(inner, policy=email.policy.default), depth + 1)
+            return
+        try:
+            disposition = part.get_content_disposition()
+        except Exception:  # noqa: BLE001
+            disposition = None
+        if disposition == "attachment":
+            count[0] += 1
+            return
+        least = wanted(part, ctype, inline_min)
+        if least is None:
+            return
+        try:
+            data = part.get_payload(decode=True)
+        except Exception:  # noqa: BLE001
+            data = None
+        if isinstance(data, bytes) and data and len(data) >= least:
+            count[0] += 1
+
+    try:
+        visit(message, 0)
+    except RecursionError:
+        count[0] += 1
+    return count[0]
+
+
 def take_apart(request: dict[str, Any]) -> dict[str, Any]:
     raw = Path(request["source"]).read_bytes()
     out = Path(request["out"])
@@ -225,6 +281,10 @@ def take_apart(request: dict[str, Any]) -> dict[str, Any]:
         "ok": True, "sender": froms[0] if froms else "", "recipients": addresses(message, RECIPIENT_HEADERS),
         "subject": clean(header(message, "Subject"), 200), "message_id": header(message, "Message-ID").strip()[:1000],
         "auth": auth, "parts": taken, "over": over,
+        # For the text of a mail: how many addresses stand in From, and how many attachments it has.
+        "from_count": len(froms),
+        "attached": attachments(message, int(request["nesting"]), int(request["parts_limit"]),
+                                int(request["inline_min"])),
     }
 
 
@@ -273,9 +333,32 @@ def tidy(text: str) -> str:
     return "\n".join(lines)
 
 
+#: The character sets a mail's text is read in: the ones mail programs write. Anything else (punycode, idna, utf-7,
+#: rot13, a codec that is no character set at all) is read as UTF-8 with replacement characters: some codecs cost far
+#: more than the bytes they read.
+CHARSETS = (
+    "utf-8", "us-ascii", *(f"iso-8859-{n}" for n in (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 13, 14, 15, 16)),
+    *(f"windows-{n}" for n in range(1250, 1259)), "utf-16", "koi8-r", "koi8-u", "gb2312", "gbk", "gb18030", "big5",
+    "shift_jis", "euc-jp", "iso-2022-jp", "euc-kr", "cp949",
+)
+_KNOWN = frozenset(codecs.lookup(name).name for name in CHARSETS)
+
+
+def charset_of(name: str) -> str | None:
+    """The codec of a declared character set when it is one of ``CHARSETS``, else None."""
+    if not _CHARSET.match(name or ""):
+        return None
+    try:
+        found = codecs.lookup(name).name
+    except LookupError:
+        return None
+    return found if found in _KNOWN else None
+
+
 def decoded(part: Message) -> str:
-    """The text of a part in its own character set; one that is unknown, wrong or not one for text gives way to UTF-8,
-    then to Latin-1 (which reads every byte). Never more than ``SOURCE_MAX`` bytes."""
+    """The text of a part in its own character set when it is one of ``CHARSETS``; a wrong one gives way to UTF-8, then
+    to Windows-1252, and what still does not fit is read as UTF-8 with replacement characters. Never more than
+    ``SOURCE_MAX`` bytes."""
     try:
         data = part.get_payload(decode=True)
     except Exception:  # noqa: BLE001 - a part that cannot be decoded has no text
@@ -288,21 +371,15 @@ def decoded(part: Message) -> str:
     except Exception:  # noqa: BLE001
         declared = "us-ascii"
     names: list[str] = []
-    for name in (declared, "utf-8", "cp1252"):
-        if not _CHARSET.match(name):
-            continue
-        try:
-            info = codecs.lookup(name)
-        except LookupError:
-            continue
-        if getattr(info, "_is_text_encoding", True) and info.name not in names:
-            names.append(info.name)
+    for name in (charset_of(declared), "utf-8", "cp1252"):
+        if name and name not in names:
+            names.append(name)
     for name in names:
         try:
             return data.decode(name)
         except Exception:  # noqa: BLE001, S112 - the next one is tried
             continue
-    return data.decode(names[0], "replace") if names else data.decode("latin-1")
+    return data.decode("utf-8", "replace")
 
 
 class _Enough(Exception):
@@ -313,7 +390,9 @@ class HtmlText(html.parser.HTMLParser):
     """The text of an HTML mail, read from its markup only: blocks and line breaks become new lines, a link becomes its
     text and, when that is not its address already, the address in brackets. Script, style, title and the like are
     left out, and so is every picture (its address, also ``cid:``, is never looked at). Nothing is loaded, nothing
-    runs: ``html.parser`` only cuts the text into tags and words."""
+    runs: ``html.parser`` only cuts the text into tags and words. Text a mail program would hide by its style
+    (``display:none``, a font size of 0) is taken like any other: styles are not read, and the text only comes from
+    the person's own confirmed address, so the PDF shows plainly what the search finds."""
 
     SKIP = frozenset({"script", "style", "title", "template", "svg", "math", "noscript", "object", "select",
                       "textarea"})

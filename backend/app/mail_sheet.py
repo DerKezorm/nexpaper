@@ -44,12 +44,14 @@ HEAD_ROWS = 4
 LABELS = {
     "de": {
         "from": "Von", "to": "An", "subject": "Betreff", "date": "Datum", "no_subject": "Mail ohne Betreff",
+        "untitled": "Mail vom {day}",
         "forwarded": "Weitergeleitete Mail",
         "cut": "Der Text der Mail war länger und ist hier gekürzt.",
         "footer": "Text einer Mail, von nexpaper als PDF gesetzt.", "page": "Seite {n} von {of}",
     },
     "en": {
         "from": "From", "to": "To", "subject": "Subject", "date": "Date", "no_subject": "Mail without a subject",
+        "untitled": "Mail of {day}",
         "forwarded": "Forwarded mail",
         "cut": "The text of the mail was longer and is cut here.",
         "footer": "The text of a mail, set as a PDF by nexpaper.", "page": "Page {n} of {of}",

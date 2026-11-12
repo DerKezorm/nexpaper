@@ -13,7 +13,8 @@
 * **What is taken.** PDF, pictures and e-invoices as XML, also inside forwarded mails (``message/rfc822``); the kind is
   read from the content. A mail larger than ``MAIL_MAX`` is left alone, at most ``MAX_ATTACHMENTS`` parts of a mail
   are taken, broken parts are passed over. The mail itself becomes a document only when the operator switched that on,
-  it brought nothing to take and it belongs to a person for sure (``services/mail_text.py``); never for unknown.
+  it has no attachment at all, it comes from a confirmed address of its person and the trusted server says it passed
+  DMARC (``services/mail_text.py``); never for unknown senders, never through the plus address alone.
 * **Exactly once.** Every part taken is noted (UIDVALIDITY, UID, number of the part) in the transaction of its document,
   and the last UID fetched is kept per mailbox. When the server gives the mailbox new UIDs, a part already taken from
   a mail of the same Message-ID is known again by its checksum. Afterwards the mail is marked read, moved to
@@ -564,6 +565,9 @@ class Parsed:
     auth: list[str] = field(default_factory=list)
     parts: list[dict[str, Any]] = field(default_factory=list)
     over: int = 0
+    #: How many addresses stand in From, and how many attachments the mail has (taken or not): for its text.
+    from_count: int = 0
+    attached: int = 0
 
 
 def take_apart(raw: bytes, folder: Path, max_file: int) -> Parsed:
@@ -585,7 +589,13 @@ def take_apart(raw: bytes, folder: Path, max_file: int) -> Parsed:
         auth=[str(one)[:2000] for one in list(answer.get("auth") or [])[:5]],
         parts=[one for one in list(answer.get("parts") or []) if isinstance(one, dict)][:MAX_ATTACHMENTS],
         over=int(answer.get("over") or 0),
+        # Unknown counts as many: a mail the worker did not describe never gives a document of its text.
+        from_count=_count(answer.get("from_count")), attached=_count(answer.get("attached")),
     )
+
+
+def _count(value: Any) -> int:
+    return value if type(value) is int and value >= 0 else 1_000
 
 
 def _work(raw: bytes, folder: Path, request: dict[str, Any]) -> dict[str, Any] | None:
@@ -652,6 +662,35 @@ def failed_check(auth: list[str], mailbox: str, trusted: str = "") -> bool:
     return False
 
 
+_DMARC = re.compile(r"\bdmarc\s*=\s*([a-z]+)([^;]*)")
+_HEADER_FROM = re.compile(r"\bheader\.from\s*=\s*([^\s;()]+)")
+
+
+def passed_check(auth: list[str], mailbox: str, sender: str, trusted: str = "") -> bool:
+    """Whether the trusted server (as in ``failed_check``) says in so many words that the mail passed DMARC for the
+    domain of its ``From``: at least one of its headers says ``dmarc=pass`` with ``header.from`` naming that domain,
+    and none of its headers says anything else about DMARC (a sender may write a header with the trusted name too; a
+    ``pass`` of its own beside the real verdict does not help it). No verdict, ``none``, ``temperror``, ``permerror``,
+    ``fail`` or a ``pass`` for another domain is no pass."""
+    name = (trusted or mailbox.rpartition("@")[2]).strip().lower().rstrip(".")
+    domain = sender.rpartition("@")[2].strip().casefold().rstrip(".")
+    if not name or not domain or "@" not in sender:
+        return False
+    passed = False
+    for value in auth:
+        server, rest = _authserv(value)
+        if server != name and not server.endswith("." + name):
+            continue
+        for verdict, detail in _DMARC.findall(rest):
+            if verdict != "pass":
+                return False
+            named = _HEADER_FROM.search(detail)
+            if named is None or named.group(1).casefold().rstrip(".") != domain:
+                return False
+            passed = True
+    return passed
+
+
 def assign(db: Any, sender: str, recipients: list[str], mailbox: str) -> tuple[int | None, bool]:
     """Whose a mail is: ``name+<account>@`` of the mailbox's address (its domain; the name is what stands up to the
     next ``+``; all such recipients must name the same account), else a confirmed sender address of exactly one person;
@@ -707,10 +746,12 @@ class Taken:
 
 
 def take_mail(raw: bytes, *, box: str, uidvalidity: int, uid: int, mailbox: str, drop_unknown: bool = False,
-              budget: Callable[[int, int], bool] | None = None, auth_server: str = "", text_on: bool = False) -> Taken:
+              budget: Callable[[int, int], bool] | None = None, auth_server: str = "", text_on: bool = False,
+              texts_left: Callable[[int], bool] | None = None) -> Taken:
     """The parts of one mail that are documents become documents of whoever the mail is for. ``budget(owner, bytes)``
-    says whether the person may still receive that much today. ``text_on``: a mail with nothing to take becomes a
-    document of its text, when it belongs to a person for sure (``services/mail_text.py``)."""
+    says whether the person may still receive that much today. ``text_on``: a mail without any attachment becomes a
+    document of its text, when it comes from a confirmed address of its person and the trusted server says it passed
+    DMARC (``services/mail_text.py``); ``texts_left(owner)`` says whether the person may still get one today."""
     taken = Taken()
     with SessionLocal() as db:
         max_file = limits.current(db).max_file
@@ -725,6 +766,7 @@ def take_mail(raw: bytes, *, box: str, uidvalidity: int, uid: int, mailbox: str,
                 owner, unknown = intake.operator_id(db), True
             else:
                 owner, unknown = assign(db, parsed.sender, parsed.recipients, mailbox)
+            sure = mail_text.sure_owner(db, parsed, mailbox, auth_server) if text_on else None
         taken.unknown, taken.owner, taken.over = unknown, owner, parsed.over
         if owner is None:
             taken.error = "unreadable"
@@ -746,9 +788,11 @@ def take_mail(raw: bytes, *, box: str, uidvalidity: int, uid: int, mailbox: str,
         if unknown and drop_unknown:
             taken.dropped = True
             return taken
-        if mail_text.wanted(text_on, takeable=taken.takeable, unknown=unknown):
+        if mail_text.wanted(text_on, takeable=taken.takeable, attached=parsed.attached, unknown=unknown, owner=owner,
+                            sure=sure):
             mail_text.take(taken, raw, Path(folder), key=f"{box}:{uidvalidity}:{uid}:{mail_text.PART}", owner=owner,
-                           marker=marker, sender=parsed.sender, subject=parsed.subject, budget=budget)
+                           marker=marker, sender=parsed.sender, subject=parsed.subject, budget=budget,
+                           texts_left=texts_left)
             return taken
         fresh = sum(size for *_rest, size in candidates)
         if budget is not None and candidates and not budget(owner, fresh):
@@ -871,6 +915,8 @@ class Budget:
         self.today = today
         self.total = int(stored.get("bytes") or 0)
         self.people = {str(k): int(v) for k, v in dict(stored.get("people") or {}).items()}
+        #: Documents made of the text of a mail today, per person (``mail_text.PERSON_DAY_TEXTS``).
+        self.texts = {str(k): int(v) for k, v in dict(stored.get("texts") or {}).items()}
 
     def day_left(self, size: int) -> bool:
         return self.total + size <= DAY_BYTES
@@ -878,12 +924,18 @@ class Budget:
     def person_left(self, owner: int, size: int) -> bool:
         return self.people.get(str(owner), 0) + size <= PERSON_DAY_BYTES
 
-    def spend(self, owner: int | None, size: int) -> None:
+    def texts_left(self, owner: int) -> bool:
+        return self.texts.get(str(owner), 0) < mail_text.PERSON_DAY_TEXTS
+
+    def spend(self, owner: int | None, size: int, text: bool = False) -> None:
         self.total += size
         if owner is not None:
             self.people[str(owner)] = self.people.get(str(owner), 0) + size
+            if text:
+                self.texts[str(owner)] = self.texts.get(str(owner), 0) + 1
         with SessionLocal() as db:
-            settings_service.save(db, {"mail_budget": {"day": self.today, "bytes": self.total, "people": self.people}})
+            settings_service.save(db, {"mail_budget": {"day": self.today, "bytes": self.total, "people": self.people,
+                                                       "texts": self.texts}})
 
 
 def fetch() -> Result:
@@ -979,7 +1031,7 @@ def _one(box: Box, cfg: Config, state: dict[str, Any], uid: int, size: int, toda
         return
     taken = take_mail(_body(box, uid), box=cfg.box, uidvalidity=box.uidvalidity, uid=uid, mailbox=cfg.address,
                       drop_unknown=cfg.drop_unknown, budget=lambda owner, wanted: budget.person_left(owner, wanted),
-                      auth_server=cfg.auth_server, text_on=cfg.text_on)
+                      auth_server=cfg.auth_server, text_on=cfg.text_on, texts_left=budget.texts_left)
     if taken.error == "too_elaborate":
         state["retry"].pop(key, None)
         result.skipped += 1
@@ -999,7 +1051,7 @@ def _one(box: Box, cfg: Config, state: dict[str, Any], uid: int, size: int, toda
         state["retry"].pop(key, None)
         result.dropped += 1
         return
-    budget.spend(taken.owner, taken.bytes)
+    budget.spend(taken.owner, taken.bytes, text=taken.text and taken.files > 0)
     result.files += taken.files
     result.texts += taken.files if taken.text else 0
     result.passed += taken.over

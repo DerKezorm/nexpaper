@@ -214,6 +214,8 @@ function MailboxCard({ intake, settings }: { intake: Intake; settings: IntakeSet
   }
 
   const last = mail.last
+  /** The server whose verdict counts for the text of a mail: the trusted one, else the domain of the mailbox. */
+  const judge = mail.auth_server || mail.address.split('@')[1] || ''
   return (
     <Card icon={Mail} title={t('intake.mail.title')} text={t('intake.mail.text', { local })}>
       <Toggle label={t('intake.mail.fetch')} hint={t('intake.mail.fetchHint')} checked={mail.on} onChange={(mail_on) => void flip({ mail_on })} />
@@ -262,6 +264,11 @@ function MailboxCard({ intake, settings }: { intake: Intake; settings: IntakeSet
           </div>
           <div className="sm:col-span-2">
             <Toggle label={t('mailText.toggle')} hint={t('mailText.hint')} checked={mail.text === true} onChange={(mail_text) => void flip({ mail_text })} />
+            {mail.text === true && (
+              <p className="mt-2 text-xs text-muted" data-testid="mail-text-judge">
+                {judge ? t('mailText.judge', { server: judge }) : t('mailText.noJudge')}
+              </p>
+            )}
           </div>
           <p className="text-xs text-muted sm:col-span-2">{t('intake.mail.taken')}</p>
           <p className="text-xs text-muted sm:col-span-2">{t('intake.mail.whole')}</p>

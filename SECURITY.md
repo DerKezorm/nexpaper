@@ -57,15 +57,19 @@ skipped for good, said in the log and in the settings, and left in the mailbox. 
 mail is taken apart, so a mail that brings the server down is tried three times at most, then flagged and left.
 
 **The text of a mail as a document** is off from the start (Settings, Inputs, Mailbox). Switched on, it is taken only
-from a mail that brought nothing nexpaper takes (a mail with a part taken stays as before) and that belongs to a person
-for sure: from a confirmed address of that person or to their `paper+<account>@`, and not marked unknown by the trusted
-server's `dmarc=fail`. A mail that would go to the operator as unknown never gives a document of its text. The plus
-address can be written by anybody who knows it, so a stranger can still put text into that person's inbox, within the
-same amounts per run and day as attachments. The text is read in the mail worker's process with the same limits; HTML is
-read from its markup with Python's `html.parser` only: nothing is rendered, no picture, font, style sheet or frame is
-fetched, `cid:` is never resolved, no script runs. Scripts, styles and the values of form fields are left out, a link
-becomes its text
-and its address in brackets (only `http`, `https` and `mailto`). At most 200 KB of text, control and direction
+from a mail without any attachment (a mail with an attachment, taken or not, stays exactly as with the switch off) that
+the person sent themselves, as far as nexpaper can tell: exactly one address in `From`, a confirmed address of exactly
+one person, and the trusted server (as above) writes `dmarc=pass` with `header.from` naming the domain of that address;
+every DMARC verdict of the trusted server in the mail must say so. No verdict, `none`, `temperror`, `permerror` or
+`fail` gives no document, and so does a mail that names the plus address of somebody else. The plus address alone is
+never enough, since anybody who knows it can write to it. A mail that would go to the operator as unknown never gives a
+document of its text. Somebody who controls a confirmed address of a person (or their mail account) can still put text
+into that person's inbox: at most 50 such documents per person and day, within the same amounts of bytes as
+attachments. Where the trusted server writes no `Authentication-Results`, no text is taken at all. The text is read in
+the mail worker's process with the same limits; HTML is read from its markup with Python's `html.parser` only: nothing
+is rendered, no picture, font, style sheet or frame is fetched, `cid:` is never resolved, no script runs. Text is read
+only in common mail character sets; any other is read as UTF-8. Scripts, styles and the values of form fields are left
+out, a link becomes its text and its address in brackets (only `http`, `https` and `mailto`). At most 200 KB of text, control and direction
 characters are taken out; the head fields (from, to, subject, date) are cut to a few hundred characters and made one
 line before they go into the PDF and the title. The PDF is written by nexpaper itself with the two standard fonts, it
 carries no links, scripts or forms. Its text is kept as it was read, it is not recognised again.
