@@ -84,6 +84,31 @@ class OrderPage(BaseModel):
     total: int
 
 
+class SenderEntry(OrderEntry):
+    #: The vault's note on the sender (K1), empty when there is none. A sender with a note stays when its last document
+    #: lets go of it (then `documents` is 0).
+    memo: str = ""
+    #: The caller may change the note: `edit` or `manage` in the sender's vault.
+    can_edit_memo: bool = False
+
+
+class SenderOrderPage(BaseModel):
+    items: list[SenderEntry]
+    total: int
+
+
+class MemoIn(BaseModel):
+    #: At most 500 characters, line breaks allowed; empty takes the note away.
+    memo: str = Field(max_length=catalog.MEMO_MAX * 2)
+
+
+class MemoOut(BaseModel):
+    id: int
+    name: str
+    vault_id: int
+    memo: str
+
+
 class KindOrderPage(BaseModel):
     items: list[KindEntry]
     total: int
@@ -210,15 +235,25 @@ def _page(account: AccountRow, db: DbSession, what: str, vault_id: int | None, q
     return items, total
 
 
-@router.get("/order/senders", response_model=OrderPage,
-            summary="The senders of the caller's vaults with the number of documents that use each")
+@router.get("/order/senders", response_model=SenderOrderPage,
+            summary="The senders of the caller's vaults with the number of documents that use each, and their notes")
 def order_senders(account: Reader, db: DbSession, vault_id: int | None = VaultFilter,
                   q: str = Query(default="", max_length=200, description="Part of the name"), order: str = Order,
                   limit: int = Query(default=200, ge=1, le=catalog.ORDER_MAX),
-                  offset: int = Query(default=0, ge=0, le=10**7)) -> OrderPage:
+                  offset: int = Query(default=0, ge=0, le=10**7)) -> SenderOrderPage:
     """Only the vaults the caller is in are looked at; a `vault_id` they are not in answers like an empty one."""
     items, total = _page(account, db, "senders", vault_id, q, order, limit, offset)
-    return OrderPage.model_validate({"items": items, "total": total})
+    return SenderOrderPage.model_validate({"items": items, "total": total})
+
+
+@router.put("/senders/{sender_id}/memo", response_model=MemoOut,
+            summary="Change the vault's note on a sender (edit in its vault; members of the vault see it)")
+def set_memo(sender_id: int, payload: MemoIn, account: Caller, db: DbSession) -> MemoOut:
+    """At most 500 characters with line breaks; empty takes it away. A sender with a note is not tidied away when its
+    last document lets go of it. Not a change of the documents: no number, no history. The note never reaches a link
+    page or the AI; somebody who sees a document through a share alone does not see it."""
+    sender = catalog.set_memo(db, account.id, sender_id, payload.memo)
+    return MemoOut(id=sender.id, name=sender.name, vault_id=sender.vault_id, memo=sender.memo)
 
 
 @router.get("/order/tags", response_model=OrderPage,

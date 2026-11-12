@@ -53,11 +53,15 @@ from . import changes, rights, timezones
 
 logger = logging.getLogger("nexpaper.deadlines")
 
-#: The kinds of date that are a deadline.
-DEADLINE_KINDS = ("due", "contract_end", "warranty_end")
+#: The kinds of date that are a deadline. A follow-up (``follow_up``, K1) is one too: a day to look at the document
+#: again, with a sentence of what to do then (``DocumentDate.note``); it has no lead and is reminded on the day.
+DEADLINE_KINDS = ("due", "contract_end", "warranty_end", "follow_up")
+FOLLOW_UP = "follow_up"
 #: What a deadline asks for, by the kind of its date; a contract whose last day to cancel passed only ``ends``.
-WHAT = {"due": "pay", "contract_end": "cancel", "warranty_end": "warranty"}
-WHATS = ("pay", "cancel", "ends", "warranty")
+WHAT = {"due": "pay", "contract_end": "cancel", "warranty_end": "warranty", FOLLOW_UP: "follow_up"}
+WHATS = ("pay", "cancel", "ends", "warranty", "follow_up")
+#: The sentence of a follow-up, at most.
+NOTE_MAX = 200
 #: How far ahead the page and the menu count as "soon" (today and the 14 days after it).
 SOON_DAYS = 14
 #: Units of a notice period, and its most; how many months a contract renews by at most.
@@ -125,6 +129,24 @@ def check_terms(kind: str, notice: dict[str, Any] | None, renew: int | None, fie
         raise error("invalid_terms", f"A notice period is 1 to {NOTICE_MAX} weeks or months.", 422, field=field)
     if renew is not None and not 1 <= renew <= RENEW_MAX:
         raise error("invalid_terms", f"A contract renews by 1 to {RENEW_MAX} months.", 422, field=field)
+
+
+def clean_note(value: Any, kind: str, field: str) -> str:
+    """The sentence of a follow-up: one line (line breaks and runs of blanks become one blank), no control characters,
+    at most ``NOTE_MAX`` characters. Only a follow-up has one (``invalid_terms`` naming the ``field``)."""
+    if value is None:
+        return ""
+    if kind != FOLLOW_UP:
+        raise error("invalid_terms", "Only a follow-up has a sentence.", 422, field=field)
+    if not isinstance(value, str):
+        raise error("invalid_terms", "The sentence is text.", 422, field=field)
+    from . import filetypes
+
+    value = value.translate(filetypes.BIDI_CONTROLS)
+    text = " ".join("".join(" " if ord(char) < 32 or ord(char) == 127 else char for char in value).split())
+    if len(text) > NOTE_MAX:
+        raise error("invalid_terms", f"A follow-up's sentence has at most {NOTE_MAX} characters.", 422, field=field)
+    return text
 
 
 def store_terms(row: DocumentDate) -> None:
@@ -243,7 +265,7 @@ def _mine(uid: int, narrow: Narrow | None = None) -> list[ColumnElement[bool]]:
     if narrow.shared:
         clauses.append(Document.vault_id.not_in(rights.member_vault_ids(uid)))
     if narrow.what is not None:
-        kind = {"pay": "due", "cancel": "contract_end", "warranty": "warranty_end"}[narrow.what]
+        kind = {"pay": "due", "cancel": "contract_end", "warranty": "warranty_end", "follow_up": FOLLOW_UP}[narrow.what]
         clauses.append(DocumentDate.kind == kind)
     return clauses
 

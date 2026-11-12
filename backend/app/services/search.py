@@ -293,6 +293,11 @@ def where(uid: int, query: searchtext.Query, filters: Filters, scope: list[str])
         from . import related
 
         clauses.append(related.search_clause(uid, linked == "yes") if linked in ("yes", "no") else false())
+    for pinned in query.pinned:
+        # Pinned (K1): only the caller's own pins.
+        from . import pins
+
+        clauses.append(pins.search_clause(uid, pinned == "yes") if pinned in ("yes", "no") else false())  # type: ignore[arg-type]
     return clauses + filter_clauses(query, today) + text_clauses(query, scope)
 
 

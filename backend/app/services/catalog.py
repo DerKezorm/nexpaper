@@ -321,12 +321,14 @@ def tags_named(db: Session, vault_id: int, uid: int | None, names: list[str]) ->
 
 
 def prune(db: Session, sender_ids: Iterable[int | None] = (), tag_ids: Iterable[int | None] = ()) -> None:
-    """Of the senders and tags named, the ones no document uses any more go."""
+    """Of the senders and tags named, the ones no document uses any more go. A sender with a note (``memo``, K1)
+    stays: it is listed under Ordnung with no documents, and a person deletes it there."""
     senders = {i for i in sender_ids if i}
     tags = {i for i in tag_ids if i}
     db.flush()
     if senders:
-        db.execute(delete(Sender).where(Sender.id.in_(senders), ~exists().where(Document.sender_id == Sender.id))
+        db.execute(delete(Sender).where(Sender.id.in_(senders), Sender.memo == "",
+                                        ~exists().where(Document.sender_id == Sender.id))
                    .execution_options(synchronize_session=False))
     if tags:
         db.execute(delete(Tag).where(Tag.id.in_(tags), ~exists().where(DocumentTag.tag_id == Tag.id))
@@ -451,6 +453,7 @@ def rename_sender(db: Session, uid: int, sender_id: int, name: str) -> Sender:
     if other is not None:
         # Renaming onto a name the vault has is a merge, and a merge is the manager's (as ``merge_sender``).
         _merge_needs_manage(db, uid, sender.vault_id, "A sender of this name exists.")
+        other.memo = joined_memo(other.memo, sender.memo)
         db.execute(update(Document).where(Document.sender_id == sender.id).values(sender_id=other.id))
         _reached(db, uid, ids, "sender", rename=True)
         db.delete(sender)
@@ -485,6 +488,57 @@ def delete_sender(db: Session, uid: int, sender_id: int, force: bool = False) ->
     _reached(db, uid, ids, "sender", rename=True)
     db.delete(sender)
     db.commit()
+
+
+# --- The note on a sender (K1) ----------------------------------------------------------------------------------------
+#
+# A vault's note on one of its senders: customer number, contract number, telephone. It belongs to the vault like the
+# sender: its members see it (at the document, under Ordnung), ``edit`` there changes it; somebody who sees a document
+# through a share alone does not. It goes to no link page, no AI and no log (only its length is logged). Merging two
+# senders puts both notes one under the other; moving a document to another vault does not take the note along (the
+# sender there is another row, and the note might tell strangers something).
+
+MEMO_MAX = 500
+
+
+def clean_memo(value: str) -> str:
+    """The note as it is kept: line breaks kept (``\\r\\n`` as ``\\n``), tabs as blanks, no other control characters and
+    no characters that turn the direction of text around, no blanks at the end of a line or of the note, at most
+    ``MEMO_MAX`` characters (``invalid_memo`` beyond)."""
+    from . import filetypes
+
+    text = value.replace("\r\n", "\n").replace("\r", "\n").replace("\t", " ").translate(filetypes.BIDI_CONTROLS)
+    text = "".join(char for char in text if char == "\n" or not (ord(char) < 32 or ord(char) == 127))
+    text = "\n".join(line.rstrip() for line in text.split("\n")).strip()
+    if len(text) > MEMO_MAX:
+        raise error("invalid_memo", f"A note on a sender has at most {MEMO_MAX} characters.", 422, max=MEMO_MAX)
+    return text
+
+
+def joined_memo(first: str | None, second: str | None) -> str:
+    """Two notes one under the other (the first one first), cut to ``MEMO_MAX``; one alone as it is."""
+    parts = [part for part in ((first or "").strip(), (second or "").strip()) if part]
+    if len(parts) == 2 and parts[0] == parts[1]:
+        parts = parts[:1]
+    return "\n".join(parts)[:MEMO_MAX].rstrip()
+
+
+def set_memo(db: Session, uid: int, sender_id: int, memo: str) -> Sender:
+    """Changes the note of a sender: ``edit`` in its vault (404 for a vault the caller is not in, 403 with ``read``).
+    Not a change of the documents: no number, no history. An empty note leaves a sender without documents to be tidied
+    away as before, the next time a document lets go of it; it is not deleted here."""
+    text = clean_memo(memo)
+    changes.write_lock(db)
+    sender = db.get(Sender, sender_id)
+    _in_vault(db, uid, sender)
+    assert sender is not None
+    if text == sender.memo:
+        db.rollback()
+        return sender
+    sender.memo = text
+    db.commit()
+    logger.info("Note on a sender changed sender=%s length=%s", sender.id, len(text))
+    return sender
 
 
 def rename_tag(db: Session, uid: int, tag_id: int, name: str) -> Tag:
@@ -602,6 +656,10 @@ def entries(db: Session, uid: int, what: str, *, vault_id: int | None = None, q:
         if what == "kinds":
             item.update(key=row.key, hue=row.hue, position=row.position, keep_years=row.keep_years,
                         keep_new_only=row.keep_new_only, auto_trash=bool(row.auto_trash))
+        elif what == "senders":
+            # The vault's note (K1): the list holds the caller's vaults only, so every member sees it.
+            item["memo"] = row.memo or ""
+            item["can_edit_memo"] = right in (EDIT, MANAGE)
         out.append(item)
     return out, total
 
@@ -634,6 +692,8 @@ def merge_sender(db: Session, uid: int, sender_id: int, into_id: int) -> Sender:
     assert source is not None
     target = _target(db, uid, Sender, source, into_id)
     ids = list(db.scalars(select(Document.id).where(Document.sender_id == source.id)))
+    # Both notes, the one of the sender that stays first (K1), cut to ``MEMO_MAX``.
+    target.memo = joined_memo(target.memo, source.memo)  # type: ignore[union-attr]
     db.execute(update(Document).where(Document.sender_id == source.id).values(sender_id=target.id))
     _reached(db, uid, ids, "sender", rename=True)
     db.delete(source)

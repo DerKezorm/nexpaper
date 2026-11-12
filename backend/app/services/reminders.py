@@ -17,6 +17,9 @@ see its deadline on their page and may mark it paid; the same right reminds them
   ``CATCH_UP_DAYS`` days later, older not.
 * ``later``: the day a person's "later" ends. Missed, up to ``CATCH_UP_DAYS`` days later as well.
 
+A follow-up (``follow_up``, K1) has no lead: only ``day``, at ``HOUR`` on its day whatever ``same_day`` says (and caught
+up like the others), and ``later``. Its sentence never goes into a message.
+
 What is done never reminds (``open_for`` leaves it out); while a "later" lasts, the person hears nothing of that
 deadline. A contract whose last day to cancel passed is not reminded again (it was, before that day), only "later".
 
@@ -288,8 +291,9 @@ MONTHS = {"en": ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", 
 WORDS: dict[str, dict[str, str]] = {
     "de": {
         "pay": "Zahlen bis {day}", "cancel": "Kündigen bis {day}", "ends": "Vertrag endet {day}",
-        "warranty": "Garantie bis {day}",
+        "warranty": "Garantie bis {day}", "follow_up": "Wiedervorlage {day}",
         "short_pay": "Zahlen", "short_cancel": "Kündigen", "short_ends": "Kündigen", "short_warranty": "Garantie",
+        "short_follow_up": "Wiedervorlage",
         "days": "Noch {n} Tage.", "tomorrow": "Morgen.", "today": "Heute.", "yesterday": "Seit gestern.",
         "since": "Seit {n} Tagen.",
         "renews": " Danach verlängert sich der Vertrag bis {date}.",
@@ -318,8 +322,9 @@ WORDS: dict[str, dict[str, str]] = {
     },
     "en": {
         "pay": "Pay by {day}", "cancel": "Cancel by {day}", "ends": "Contract ends {day}",
-        "warranty": "Warranty until {day}",
+        "warranty": "Warranty until {day}", "follow_up": "Follow up {day}",
         "short_pay": "Pay", "short_cancel": "Cancel", "short_ends": "Cancel", "short_warranty": "Warranty",
+        "short_follow_up": "Follow up",
         "days": "{n} days to go.", "tomorrow": "Tomorrow.", "today": "Today.", "yesterday": "Since yesterday.",
         "since": "For {n} days now.",
         "renews": " After that the contract renews until {date}.",
@@ -499,7 +504,12 @@ def due_singles(db: Session, uid: int, prefs: Preferences, today: Date) -> list[
         keys: list[tuple[str, Date]] = []
         if until is not None and catch_up <= until <= today:
             keys.append((LATER, until))
-        if not (worked.what == "ends" and worked.missed is not None):
+        if worked.what == deadlines.FOLLOW_UP:
+            # A follow-up has no lead: it is reminded on its day, whatever ``same_day`` says, and caught up like the
+            # day of the others.
+            if worked.date <= today <= worked.date + timedelta(days=CATCH_UP_DAYS):
+                keys.append((DAY, worked.date))
+        elif not (worked.what == "ends" and worked.missed is not None):
             day = worked.date
             if day - timedelta(days=prefs.lead[LEAD_OF[worked.what]]) <= today < day:
                 keys.append((LEAD, day))

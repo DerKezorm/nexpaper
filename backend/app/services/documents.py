@@ -125,6 +125,8 @@ class Row:
     auto_trashed: bool = False
     #: Something the caller can see goes with it (``services/related.py``).
     has_related: bool = False
+    #: The caller pinned it (``services/pins.py``).
+    pinned: bool = False
 
 
 def rows(db: Session, uid: int, documents: list[Document]) -> list[Row]:
@@ -188,6 +190,9 @@ def rows(db: Session, uid: int, documents: list[Document]) -> list[Row]:
     from . import related
 
     goes_with = related.having(db, uid, [d.id for d in documents if d.status != TRASH])
+    from . import pins
+
+    pinned = pins.among(db, uid, ids)
     out = []
     for document in documents:
         access = accesses[document.id]
@@ -206,7 +211,7 @@ def rows(db: Session, uid: int, documents: list[Document]) -> list[Row]:
             done_by={r.done_by: done_by[r.done_by] for r in date_rows[document.id] if r.done_by in done_by},
             snoozes={r.id: snoozes[r.id] for r in date_rows[document.id] if r.id in snoozes},
             auto_trash_due=document.id in going, auto_trashed=document.id in put_away,
-            has_related=document.id in goes_with,
+            has_related=document.id in goes_with, pinned=document.id in pinned,
         ))
     return out
 
@@ -390,6 +395,9 @@ def _set_dates(db: Session, document: Document, dates: list[tuple[Any, ...]], *,
         if kind not in DATE_KINDS:
             raise error("invalid_date_kind", "No such kind of date.", 422, field=place)
         deadlines.check_terms(kind, terms.get("notice"), terms.get("renew_months"), place)
+        if "note" in terms:
+            # A follow-up's sentence (K1); ``None`` takes it away like an empty one.
+            terms["note"] = deadlines.clean_note(terms["note"], kind, place)
         if day is None and not only_these:
             raise error("invalid_date", "This date is out of range.", 422, field=place)
         wanted[kind] = (check_date(day, place), terms)
@@ -429,8 +437,10 @@ def _set_dates(db: Session, document: Document, dates: list[tuple[Any, ...]], *,
             row = DocumentDate(document_id=document.id, kind=kind, date=day)
             db.add(row)
             changed = True
-        before = (row.date, row.notice_n, row.notice_unit, row.renew_months)
-        stale = (kind == "contract_end" and day is not None and row.renewed_from is not None
+        before = (row.date, row.notice_n, row.notice_unit, row.renew_months, row.note or "")
+        if "note" in terms:
+            row.note = terms["note"]
+        stale =(kind == "contract_end" and day is not None and row.renewed_from is not None
                  and day == row.renewed_from and row.date is not None and row.date != row.renewed_from)
         if day is not None and not stale and day != row.date:
             row.date = day
@@ -448,7 +458,7 @@ def _set_dates(db: Session, document: Document, dates: list[tuple[Any, ...]], *,
         if kind == "contract_end" and row.renew_anchor is None:
             row.renew_anchor = row.date
         deadlines.store_terms(row)
-        if before != (row.date, row.notice_n, row.notice_unit, row.renew_months):
+        if before != (row.date, row.notice_n, row.notice_unit, row.renew_months, row.note or ""):
             changed = True
     return changed
 
@@ -557,7 +567,7 @@ def change_fields(db: Session, uid: int, document_id: int, patch: dict[str, Any]
                 db.add(DocumentTag(document_id=document.id, tag_id=tag_id))
             changed.append("tags")
     if "dates" in patch and _set_dates(db, document, [
-        (d["kind"], d["date"], {k: d[k] for k in ("notice", "renew_months", "manual") if k in d})
+        (d["kind"], d["date"], {k: d[k] for k in ("notice", "renew_months", "manual", "note") if k in d})
         for d in patch["dates"]
     ]):
         changed.append("dates")
@@ -565,7 +575,7 @@ def change_fields(db: Session, uid: int, document_id: int, patch: dict[str, Any]
     some = False
     if patch.get("set_dates"):
         some = _set_dates(db, document, [
-            (d["kind"], d.get("date"), {k: d[k] for k in ("notice", "renew_months", "manual") if k in d})
+            (d["kind"], d.get("date"), {k: d[k] for k in ("notice", "renew_months", "manual", "note") if k in d})
             for d in patch["set_dates"]
         ], only_these=True, field="set_dates")
     if patch.get("remove_dates"):

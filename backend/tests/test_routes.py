@@ -272,6 +272,12 @@ TOKEN_ROUTES = {
     ("POST", "/api/v1/saved-searches/{saved_id}/up"),
     ("POST", "/api/v1/saved-searches/{saved_id}/down"),
     ("DELETE", "/api/v1/saved-searches/{saved_id}"),
+    # K1: the note on a sender (edit in its vault), the transfer code (with a body: the IBAN and the purpose never in an
+    # address), pinning for oneself.
+    ("PUT", "/api/v1/senders/{sender_id}/memo"),
+    ("POST", "/api/v1/documents/{document_id}/transfer/code"),
+    ("PUT", "/api/v1/documents/{document_id}/pin"),
+    ("DELETE", "/api/v1/documents/{document_id}/pin"),
 }
 
 #: The routes that only read and that a program with an API key reaches too (as the browser and a device do). A route
@@ -326,6 +332,9 @@ READ_ROUTES = {
     # The own saved searches with their numbers of hits, and the sums of a search (A1).
     ("GET", "/api/v1/saved-searches"),
     ("GET", "/api/v1/search/sum"),
+    # K1: what a transfer for a document can take, and the own pinned documents.
+    ("GET", "/api/v1/documents/{document_id}/transfer"),
+    ("GET", "/api/v1/pins"),
 }
 
 

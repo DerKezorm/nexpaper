@@ -22,7 +22,7 @@ from .schemas import DocumentOut, DoneOut, NoticeOut, document_out, person
 
 router = APIRouter(prefix="/api/v1", tags=["deadlines"])
 
-DeadlineKind = Literal["due", "contract_end", "warranty_end"]
+DeadlineKind = Literal["due", "contract_end", "warranty_end", "follow_up"]
 
 
 class DeadlineOut(BaseModel):
@@ -37,11 +37,13 @@ class DeadlineOut(BaseModel):
     #: In cents.
     amount: int | None
     currency: str
-    #: The kind of the date: ``due``, ``contract_end`` or ``warranty_end``.
+    #: The kind of the date: ``due``, ``contract_end``, ``warranty_end`` or ``follow_up``.
     kind: DeadlineKind
     #: What is to be done: ``pay``, ``cancel`` (by the last day to cancel), ``ends`` (a contract ends; its last day to
-    #: cancel passed, or it has none) or ``warranty``.
-    what: Literal["pay", "cancel", "ends", "warranty"]
+    #: cancel passed, or it has none), ``warranty`` or ``follow_up`` (look at the document again).
+    what: Literal["pay", "cancel", "ends", "warranty", "follow_up"]
+    #: Only for a follow-up: the sentence of what to do (empty when there is none); `null` for the other kinds.
+    note: str | None = None
     #: The day to act by, and how many days from today (in the caller's time zone) it is; below 0: overdue.
     date: Date
     days: int
@@ -90,6 +92,7 @@ def _out(d: deadlines.Deadline) -> DeadlineOut:
         renew_months=row.renew_months, renews_to=worked.renews_to, missed=worked.missed,
         done=DoneOut(at=row.done_at, by=person(d.done_by)) if row.done_at else None,
         snoozed_until=d.snoozed_until,
+        note=(row.note or "") if row.kind == deadlines.FOLLOW_UP else None,
     )
 
 
@@ -103,8 +106,9 @@ def listing(
     account: Reader, db: DbSession,
     vault_id: int | None = Query(default=None, ge=1, le=2**31 - 1),
     shared: bool = Query(default=False, description="Only documents the caller reaches through a share alone"),
-    what: Literal["pay", "cancel", "warranty"] | None = Query(
-        default=None, description="`pay`: due dates; `cancel`: contracts; `warranty`: warranties"),
+    what: Literal["pay", "cancel", "warranty", "follow_up"] | None = Query(
+        default=None, description="`pay`: due dates; `cancel`: contracts; `warranty`: warranties; `follow_up`: "
+                                  "follow-ups"),
     done: bool = Query(default=False, description="Also what is done (paid, cancelled, claimed)"),
     limit: int = Query(default=200, ge=1, le=500, description="At most this many in each section"),
 ) -> DeadlinesOut:

@@ -21,7 +21,7 @@ PREFIXES = ("/api/v1/vaults", "/api/v1/documents", "/api/v1/links", "/api/v1/sen
             "/api/v1/people", "/api/v1/changes", "/api/v1/sharing", "/api/v1/order",
             "/api/v1/inbox", "/api/v1/counts",
             "/api/v1/search", "/api/v1/deadlines",
-            "/api/v1/keeping")
+            "/api/v1/keeping", "/api/v1/pins")
 
 
 class Row(NamedTuple):
@@ -156,6 +156,15 @@ TABLE = [
     Row("PUT", "/api/v1/documents/{d}/related/{o}", None, "edit", 404),
     Row("DELETE", "/api/v1/documents/{d}/related/{o}", None, "edit", 404),
     Row("POST", "/api/v1/documents/{d}/related/{o}/dismiss", None, "edit", 404),
+    # K1: the note on a sender is the vault's (edit there; ``test_helpers_memo.py`` has the share and the link). The
+    # transfer needs reading only; this document has no IBAN, so whoever may gets `409 transfer_not_possible`
+    # (``test_helpers_transfer.py`` has one that does). Pinning is reading too, for oneself, never with a key.
+    Row("PUT", "/api/v1/senders/{s}/memo", {"memo": "Kundennummer 4711"}, "edit-all", 404),
+    Row("GET", "/api/v1/documents/{d}/transfer", None, "read", 404),
+    Row("POST", "/api/v1/documents/{d}/transfer/code", {"iban": "DE00", "amount": 100, "purpose": ""}, "read", 404),
+    Row("PUT", "/api/v1/documents/{d}/pin", None, "read", 404),
+    Row("DELETE", "/api/v1/documents/{d}/pin", None, "read", 404),
+    Row("GET", "/api/v1/pins", None, "any", 200),
 ]
 
 

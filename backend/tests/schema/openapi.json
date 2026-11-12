@@ -702,31 +702,6 @@
         "title": "ChangesOut",
         "type": "object"
       },
-      "CodeIn": {
-        "properties": {
-          "code": {
-            "maxLength": 32,
-            "title": "Code",
-            "type": "string"
-          },
-          "remember": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Remember"
-          }
-        },
-        "required": [
-          "code"
-        ],
-        "title": "CodeIn",
-        "type": "object"
-      },
       "ConditionIn": {
         "additionalProperties": false,
         "properties": {
@@ -898,7 +873,8 @@
               "due",
               "contract_end",
               "warranty_end",
-              "keep_until"
+              "keep_until",
+              "follow_up"
             ],
             "title": "Kind",
             "type": "string"
@@ -913,6 +889,18 @@
               }
             ],
             "title": "Manual"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "maxLength": 400,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
           },
           "notice": {
             "anyOf": [
@@ -989,6 +977,17 @@
             ],
             "title": "Manual"
           },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
           "notice": {
             "anyOf": [
               {
@@ -1063,7 +1062,8 @@
               "due",
               "contract_end",
               "warranty_end",
-              "keep_until"
+              "keep_until",
+              "follow_up"
             ],
             "title": "Kind",
             "type": "string"
@@ -1078,6 +1078,18 @@
               }
             ],
             "title": "Manual"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "maxLength": 400,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
           },
           "notice": {
             "anyOf": [
@@ -1355,6 +1367,11 @@
             "title": "Pages",
             "type": "integer"
           },
+          "pinned": {
+            "default": false,
+            "title": "Pinned",
+            "type": "boolean"
+          },
           "process_error": {
             "title": "Process Error",
             "type": "string"
@@ -1368,6 +1385,17 @@
                 "type": "null"
               }
             ]
+          },
+          "sender_memo": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sender Memo"
           },
           "share_count": {
             "anyOf": [
@@ -1572,11 +1600,12 @@
                     "due",
                     "contract_end",
                     "warranty_end",
-                    "keep_until"
+                    "keep_until",
+                    "follow_up"
                   ],
                   "type": "string"
                 },
-                "maxItems": 4,
+                "maxItems": 5,
                 "type": "array"
               },
               {
@@ -1603,7 +1632,7 @@
                 "items": {
                   "$ref": "#/components/schemas/DateSet"
                 },
-                "maxItems": 4,
+                "maxItems": 5,
                 "type": "array"
               },
               {
@@ -2949,6 +2978,28 @@
           }
         },
         "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "IbanOut": {
+        "properties": {
+          "iban": {
+            "title": "Iban",
+            "type": "string"
+          },
+          "origin": {
+            "enum": [
+              "einvoice",
+              "text"
+            ],
+            "title": "Origin",
+            "type": "string"
+          }
+        },
+        "required": [
+          "iban",
+          "origin"
+        ],
+        "title": "IbanOut",
         "type": "object"
       },
       "ImportOwnerIn": {
@@ -4641,6 +4692,48 @@
         "title": "MembersIn",
         "type": "object"
       },
+      "MemoIn": {
+        "properties": {
+          "memo": {
+            "maxLength": 1000,
+            "title": "Memo",
+            "type": "string"
+          }
+        },
+        "required": [
+          "memo"
+        ],
+        "title": "MemoIn",
+        "type": "object"
+      },
+      "MemoOut": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "memo": {
+            "title": "Memo",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "vault_id": {
+            "title": "Vault Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "vault_id",
+          "memo"
+        ],
+        "title": "MemoOut",
+        "type": "object"
+      },
       "MenuCounts": {
         "properties": {
           "deadlines": {
@@ -6148,6 +6241,50 @@
         "title": "PersonRef",
         "type": "object"
       },
+      "PinOut": {
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "max": {
+            "title": "Max",
+            "type": "integer"
+          },
+          "pinned": {
+            "title": "Pinned",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "pinned",
+          "count",
+          "max"
+        ],
+        "title": "PinOut",
+        "type": "object"
+      },
+      "PinsOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/DocumentOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "max": {
+            "title": "Max",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "max"
+        ],
+        "title": "PinsOut",
+        "type": "object"
+      },
       "PreviewIn": {
         "additionalProperties": false,
         "properties": {
@@ -7427,6 +7564,78 @@
         "title": "SectionOut",
         "type": "object"
       },
+      "SenderEntry": {
+        "properties": {
+          "can_change": {
+            "title": "Can Change",
+            "type": "boolean"
+          },
+          "can_edit_memo": {
+            "default": false,
+            "title": "Can Edit Memo",
+            "type": "boolean"
+          },
+          "documents": {
+            "title": "Documents",
+            "type": "integer"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "in_trash": {
+            "title": "In Trash",
+            "type": "integer"
+          },
+          "memo": {
+            "default": "",
+            "title": "Memo",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "right": {
+            "anyOf": [
+              {
+                "enum": [
+                  "read",
+                  "edit",
+                  "manage"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Right"
+          },
+          "vault_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vault Id"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "vault_id",
+          "right",
+          "documents",
+          "in_trash",
+          "can_change"
+        ],
+        "title": "SenderEntry",
+        "type": "object"
+      },
       "SenderIn": {
         "properties": {
           "address": {
@@ -7439,6 +7648,27 @@
           "address"
         ],
         "title": "SenderIn",
+        "type": "object"
+      },
+      "SenderOrderPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/SenderEntry"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total"
+        ],
+        "title": "SenderOrderPage",
         "type": "object"
       },
       "SenderOut": {
@@ -8526,6 +8756,115 @@
         "title": "TextOut",
         "type": "object"
       },
+      "TransferOut": {
+        "properties": {
+          "amount": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Amount"
+          },
+          "amount_origin": {
+            "anyOf": [
+              {
+                "enum": [
+                  "einvoice",
+                  "document"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Amount Origin"
+          },
+          "currency": {
+            "title": "Currency",
+            "type": "string"
+          },
+          "ibans": {
+            "items": {
+              "$ref": "#/components/schemas/IbanOut"
+            },
+            "title": "Ibans",
+            "type": "array"
+          },
+          "missing": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Missing",
+            "type": "array"
+          },
+          "purpose": {
+            "title": "Purpose",
+            "type": "string"
+          },
+          "purpose_max": {
+            "default": 140,
+            "title": "Purpose Max",
+            "type": "integer"
+          },
+          "purpose_origin": {
+            "anyOf": [
+              {
+                "enum": [
+                  "einvoice",
+                  "text"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Purpose Origin"
+          },
+          "ready": {
+            "title": "Ready",
+            "type": "boolean"
+          },
+          "recipient": {
+            "title": "Recipient",
+            "type": "string"
+          },
+          "recipient_origin": {
+            "anyOf": [
+              {
+                "enum": [
+                  "einvoice",
+                  "sender"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recipient Origin"
+          }
+        },
+        "required": [
+          "ready",
+          "missing",
+          "recipient",
+          "recipient_origin",
+          "ibans",
+          "amount",
+          "amount_origin",
+          "currency",
+          "purpose",
+          "purpose_origin"
+        ],
+        "title": "TransferOut",
+        "type": "object"
+      },
       "TrashIn": {
         "additionalProperties": false,
         "properties": {
@@ -9291,7 +9630,8 @@
             "enum": [
               "due",
               "contract_end",
-              "warranty_end"
+              "warranty_end",
+              "follow_up"
             ],
             "title": "Kind",
             "type": "string"
@@ -9307,6 +9647,17 @@
               }
             ],
             "title": "Missed"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
           },
           "notice": {
             "anyOf": [
@@ -9389,7 +9740,8 @@
               "pay",
               "cancel",
               "ends",
-              "warranty"
+              "warranty",
+              "follow_up"
             ],
             "title": "What",
             "type": "string"
@@ -9633,6 +9985,31 @@
         "title": "NameIn",
         "type": "object"
       },
+      "app__routers__totp__CodeIn": {
+        "properties": {
+          "code": {
+            "maxLength": 32,
+            "title": "Code",
+            "type": "string"
+          },
+          "remember": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Remember"
+          }
+        },
+        "required": [
+          "code"
+        ],
+        "title": "CodeIn",
+        "type": "object"
+      },
       "app__routers__totp__ConfirmIn": {
         "properties": {
           "code": {
@@ -9663,6 +10040,33 @@
           }
         },
         "title": "PasswordIn",
+        "type": "object"
+      },
+      "app__routers__transfer__CodeIn": {
+        "properties": {
+          "amount": {
+            "maximum": 99999999999.0,
+            "minimum": 1.0,
+            "title": "Amount",
+            "type": "integer"
+          },
+          "iban": {
+            "maxLength": 64,
+            "title": "Iban",
+            "type": "string"
+          },
+          "purpose": {
+            "default": "",
+            "maxLength": 280,
+            "title": "Purpose",
+            "type": "string"
+          }
+        },
+        "required": [
+          "iban",
+          "amount"
+        ],
+        "title": "CodeIn",
         "type": "object"
       },
       "app__routers__v1__DeadlineOut": {
@@ -10712,7 +11116,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CodeIn"
+                "$ref": "#/components/schemas/app__routers__totp__CodeIn"
               }
             }
           },
@@ -11893,7 +12297,7 @@
     },
     "/api/v1/dashboard": {
       "get": {
-        "description": "Counts and a few titles of what the key's account may read, nothing of the contents (no text, sender, amount or\ntag). A key of scope ``upload`` reads nothing here (``403 key_scope``).\n\n``inbox`` is the inbox of the account as the menu shows it (the vaults where it may change things), ``filed``,\n``total`` (everything not in the trash), ``added_week`` (the last seven days) and ``processing`` (text being read)\nare counted among all it may read. ``inbox_oldest`` names the five oldest of the inbox, the oldest first.\n``deadlines`` are the dates of kind ``due``, ``contract_end`` and ``warranty_end`` from today to 14 days ahead, and\nthe last day to cancel a contract as ``notice``, by day, at most 20; what is marked done is left out. ``url`` is\nthe page of the document: the public address when the operator set one, else the address this request came to.",
+        "description": "Counts and a few titles of what the key's account may read, nothing of the contents (no text, sender, amount or\ntag). A key of scope ``upload`` reads nothing here (``403 key_scope``).\n\n``inbox`` is the inbox of the account as the menu shows it (the vaults where it may change things), ``filed``,\n``total`` (everything not in the trash), ``added_week`` (the last seven days) and ``processing`` (text being read)\nare counted among all it may read. ``inbox_oldest`` names the five oldest of the inbox, the oldest first.\n``deadlines`` are the dates of kind ``due``, ``contract_end``, ``warranty_end`` and ``follow_up`` from today to 14\ndays ahead, and\nthe last day to cancel a contract as ``notice``, by day, at most 20; what is marked done is left out. ``url`` is\nthe page of the document: the public address when the operator set one, else the address this request came to.",
         "operationId": "dashboard_card_api_v1_dashboard_get",
         "responses": {
           "200": {
@@ -11954,7 +12358,7 @@
             }
           },
           {
-            "description": "`pay`: due dates; `cancel`: contracts; `warranty`: warranties",
+            "description": "`pay`: due dates; `cancel`: contracts; `warranty`: warranties; `follow_up`: follow-ups",
             "in": "query",
             "name": "what",
             "required": false,
@@ -11964,7 +12368,8 @@
                   "enum": [
                     "pay",
                     "cancel",
-                    "warranty"
+                    "warranty",
+                    "follow_up"
                   ],
                   "type": "string"
                 },
@@ -11972,7 +12377,7 @@
                   "type": "null"
                 }
               ],
-              "description": "`pay`: due dates; `cancel`: contracts; `warranty`: warranties",
+              "description": "`pay`: due dates; `cancel`: contracts; `warranty`: warranties; `follow_up`: follow-ups",
               "title": "What"
             }
           },
@@ -12781,7 +13186,8 @@
               "enum": [
                 "due",
                 "contract_end",
-                "warranty_end"
+                "warranty_end",
+                "follow_up"
               ],
               "title": "Kind",
               "type": "string"
@@ -12841,7 +13247,8 @@
               "enum": [
                 "due",
                 "contract_end",
-                "warranty_end"
+                "warranty_end",
+                "follow_up"
               ],
               "title": "Kind",
               "type": "string"
@@ -12902,7 +13309,8 @@
               "enum": [
                 "due",
                 "contract_end",
-                "warranty_end"
+                "warranty_end",
+                "follow_up"
               ],
               "title": "Kind",
               "type": "string"
@@ -12955,7 +13363,8 @@
               "enum": [
                 "due",
                 "contract_end",
-                "warranty_end"
+                "warranty_end",
+                "follow_up"
               ],
               "title": "Kind",
               "type": "string"
@@ -13758,6 +14167,93 @@
         ]
       }
     },
+    "/api/v1/documents/{document_id}/pin": {
+      "delete": {
+        "description": "Taking off a pin that is not there is no error.",
+        "operationId": "unpin_api_v1_documents__document_id__pin_delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "document_id",
+            "required": true,
+            "schema": {
+              "title": "Document Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Take one's pin off a document",
+        "tags": [
+          "pins"
+        ]
+      },
+      "put": {
+        "description": "Pinning one that is pinned already is no error. A document in the trash answers `409 in_trash`; a 21st answers\n`409 too_many_pins` with `max`.",
+        "operationId": "pin_api_v1_documents__document_id__pin_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "document_id",
+            "required": true,
+            "schema": {
+              "title": "Document Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PinOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Pin a document for oneself (reading it is enough; at most 20)",
+        "tags": [
+          "pins"
+        ]
+      }
+    },
     "/api/v1/documents/{document_id}/purge": {
       "post": {
         "description": "It cannot be undone: only from a signed-in browser, like the operator's routes (a lost phone deletes\nnothing).",
@@ -14552,6 +15048,107 @@
         "summary": "Split a document into new ones in the inbox; it goes to the trash",
         "tags": [
           "page tools"
+        ]
+      }
+    },
+    "/api/v1/documents/{document_id}/transfer": {
+      "get": {
+        "operationId": "info_api_v1_documents__document_id__transfer_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "document_id",
+            "required": true,
+            "schema": {
+              "title": "Document Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransferOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "What a bank transfer for a document can take, each with where it comes from",
+        "tags": [
+          "transfer"
+        ]
+      }
+    },
+    "/api/v1/documents/{document_id}/transfer/code": {
+      "post": {
+        "description": "`409 transfer_not_possible` (with `missing`) when the document gives no transfer: another currency, no\nrecipient, a credit note, no IBAN. Nothing is stored; the answer is not kept by a cache.",
+        "operationId": "code_api_v1_documents__document_id__transfer_code_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "document_id",
+            "required": true,
+            "schema": {
+              "title": "Document Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/app__routers__transfer__CodeIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "image/svg+xml": {}
+            },
+            "description": "The EPC QR code as SVG"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "The EPC QR code (GiroCode) for one of the document's IBANs, an amount and a purpose, as SVG",
+        "tags": [
+          "transfer"
         ]
       }
     },
@@ -19536,7 +20133,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/OrderPage"
+                  "$ref": "#/components/schemas/SenderOrderPage"
                 }
               }
             },
@@ -19558,7 +20155,7 @@
             "HTTPBearer": []
           }
         ],
-        "summary": "The senders of the caller's vaults with the number of documents that use each",
+        "summary": "The senders of the caller's vaults with the number of documents that use each, and their notes",
         "tags": [
           "catalog"
         ]
@@ -19698,6 +20295,58 @@
         "summary": "The people of this server, to share with",
         "tags": [
           "vaults"
+        ]
+      }
+    },
+    "/api/v1/pins": {
+      "get": {
+        "operationId": "listing_api_v1_pins_get",
+        "parameters": [
+          {
+            "description": "At most this many (the start of the phone shows six)",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "description": "At most this many (the start of the phone shows six)",
+              "maximum": 20,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PinsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "The caller's pinned documents (only what they may see now)",
+        "tags": [
+          "pins"
         ]
       }
     },
@@ -21425,6 +22074,64 @@
           }
         ],
         "summary": "Rename a sender in its vault (onto a name the vault has merges them: manage, else 409); edit",
+        "tags": [
+          "catalog"
+        ]
+      }
+    },
+    "/api/v1/senders/{sender_id}/memo": {
+      "put": {
+        "description": "At most 500 characters with line breaks; empty takes it away. A sender with a note is not tidied away when its\nlast document lets go of it. Not a change of the documents: no number, no history. The note never reaches a link\npage or the AI; somebody who sees a document through a share alone does not see it.",
+        "operationId": "set_memo_api_v1_senders__sender_id__memo_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "sender_id",
+            "required": true,
+            "schema": {
+              "title": "Sender Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MemoIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemoOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Change the vault's note on a sender (edit in its vault; members of the vault see it)",
         "tags": [
           "catalog"
         ]

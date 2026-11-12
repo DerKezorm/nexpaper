@@ -59,8 +59,8 @@ def _keys_own(db: DbSession, request: Request, upload_id: str) -> None:
 
 def _plain(out: DocumentOut) -> DocumentOut:
     """What a key for uploading hears of its document: no hint at another document of the account (a key reads
-    nothing)."""
-    return out.model_copy(update={"duplicate": None})
+    nothing), and no note of the vault on a sender."""
+    return out.model_copy(update={"duplicate": None, "sender_memo": None})
 
 
 def _hour_full() -> Exception:

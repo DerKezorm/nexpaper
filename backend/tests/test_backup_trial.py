@@ -84,8 +84,10 @@ UNDO_REMINDERS = (
 #: What takes a database back from schema 14 to 13 (step 14, expired documents into the trash by themselves).
 UNDO_AUTO_TRASH = ("ALTER TABLE kinds DROP COLUMN auto_trash",)
 
-#: A database as it stood before the last step (16, saved searches): the table gone.
-UNDO_LAST_STEP = ("DROP TABLE saved_searches",)
+#: A database as it stood before the last step (17, the small helpers of K1): the table of pins and the two columns
+#: gone.
+UNDO_LAST_STEP = ("DROP TABLE pins", "ALTER TABLE senders DROP COLUMN memo",
+                  "ALTER TABLE document_dates DROP COLUMN note")
 
 
 def update_copies() -> list[backups.Entry]:

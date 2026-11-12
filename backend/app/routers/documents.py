@@ -25,6 +25,8 @@ from .schemas import DocumentOut, PersonRef, document_out, person
 router = APIRouter(prefix="/api/v1", tags=["documents"])
 
 ID = Annotated[int, Query(ge=1, le=2**31 - 1)]
+#: The kinds of date a document may carry; `follow_up` (a day to look at it again, with a sentence) since K1.
+DateKind = Literal["due", "contract_end", "warranty_end", "keep_until", "follow_up"]
 
 
 class NoticeIn(BaseModel):
@@ -38,7 +40,7 @@ class DateIn(BaseModel):
     by; left out, they stay as they were, ``null`` takes them away."""
 
     model_config = ConfigDict(extra="forbid")
-    kind: Literal["due", "contract_end", "warranty_end", "keep_until"]
+    kind: DateKind
     date: Date
     #: Only for `keep_until`: `true` set by hand (it stays when the kind, the date or the vault changes), `false` worked
     #: out from the kind's keeping time (the date sent is not used). Left out: the date it has now stays as it was
@@ -46,6 +48,9 @@ class DateIn(BaseModel):
     manual: bool | None = None
     notice: NoticeIn | None = None
     renew_months: StrictInt | None = Field(default=None, ge=1, le=120)
+    #: Only for `follow_up`: what to do on that day, one line of at most 200 characters (line breaks become blanks).
+    #: Left out it stays as it was; `null` or empty takes it away. Never in a reminder.
+    note: str | None = Field(default=None, max_length=400)
 
 
 class DateSet(BaseModel):
@@ -53,10 +58,12 @@ class DateSet(BaseModel):
     (a new term needs one); ``notice`` and ``renew_months`` as in ``dates``."""
 
     model_config = ConfigDict(extra="forbid")
-    kind: Literal["due", "contract_end", "warranty_end", "keep_until"]
+    kind: DateKind
     date: Date | None = None
     notice: NoticeIn | None = None
     renew_months: StrictInt | None = Field(default=None, ge=1, le=120)
+    #: Only for `follow_up`, as in `dates`.
+    note: str | None = Field(default=None, max_length=400)
     #: Only for `keep_until`, as in `dates`: `true` set by hand, `false` worked out from the kind's keeping time again
     #: (the term is dropped and worked out right away). With no day, `true` keeps the day it has as set by hand.
     manual: bool | None = None
@@ -77,9 +84,9 @@ class DocumentPatch(BaseModel):
     status: Literal["inbox", "filed"] | None = None
     tags: list[str] | None = Field(default=None, max_length=60)
     dates: list[DateIn] | None = Field(default=None, max_length=12)
-    set_dates: list[DateSet] | None = Field(default=None, max_length=4)
-    remove_dates: list[Literal["due", "contract_end", "warranty_end", "keep_until"]] | None = Field(
-        default=None, max_length=4)
+    set_dates: list[DateSet] | None = Field(default=None, max_length=5)
+    remove_dates: list[DateKind] | None = Field(
+        default=None, max_length=5)
 
 
 class MoveIn(BaseModel):

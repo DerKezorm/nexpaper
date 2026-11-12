@@ -370,7 +370,7 @@ TRASH = "trash"
 STATUSES = (PROCESSING, INBOX, FILED, TRASH)
 
 #: What a date on a document stands for. Reminders will read only this table.
-DATE_KINDS = ("due", "contract_end", "warranty_end", "keep_until")
+DATE_KINDS = ("due", "contract_end", "warranty_end", "keep_until", "follow_up")
 
 
 class Counter(Base):
@@ -429,6 +429,9 @@ class Sender(Base):
     name: Mapped[str] = mapped_column(String(160))
     key: Mapped[str] = mapped_column(String(400))
     created_by: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    #: The vault's note on this sender (K1, ``services/catalog.py``: customer number, phone ...), at most 500
+    #: characters with line breaks. Seen by the vault's members only; a sender with a note is not tidied away.
+    memo: Mapped[str] = mapped_column(String(500), default="", server_default=text("''"))
 
 
 class Kind(Base):
@@ -548,6 +551,9 @@ class DocumentDate(Base):
     #: Set by a person, not worked out from the kind (only ``keep_until`` is ever worked out): a change of the kind, the
     #: date or the vault leaves it as it is (``services/keeping.py``).
     manual: Mapped[bool] = mapped_column(Boolean, default=False, server_default=text("0"))
+    #: Only for a follow-up (``follow_up``, K1): the sentence of what to do then ("nachfragen, ob erstattet"), at most
+    #: 200 characters. Never in a reminder or the weekly mail.
+    note: Mapped[str] = mapped_column(String(200), default="", server_default=text("''"))
 
 
 class DocumentTag(Base):
@@ -1291,3 +1297,21 @@ class SavedSearch(Base):
 
 
 __all__ += ["SavedSearch"]
+
+
+class Pin(Base):
+    """A document a person pinned (K1, "Angeheftet"): only for them, at most ``services/pins.MAX`` they can see. A
+    pin of a document they can no longer see (a right gone, the trash) is kept and not shown; it shows again with the
+    right. Gone with the person or the document. Not a change of the document: no number, no history."""
+
+    __tablename__ = "pins"
+    __table_args__ = (UniqueConstraint("user_id", "document_id", name="uq_pins_user_document"),
+                      Index("ix_pins_document", "document_id"))
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    document_id: Mapped[int] = mapped_column(ForeignKey("documents.id", ondelete="CASCADE"))
+    created_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utcnow)
+
+
+__all__ += ["Pin"]

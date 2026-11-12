@@ -66,6 +66,9 @@ class DateOut(BaseModel):
     #: Only on `keep_until` (left out for the other kinds): `true` set by a person; `false` worked out from the kind's
     #: keeping time, and worked out again when the kind, the date or the vault changes.
     manual: bool | None = None
+    #: Only on `follow_up` (left out for the other kinds): the sentence of what to do on that day, empty when there is
+    #: none.
+    note: str | None = None
 
     # No return annotation: pydantic would take it for the schema of the answer.
     @model_serializer(mode="wrap")
@@ -73,6 +76,8 @@ class DateOut(BaseModel):
         data = handler(self)
         if self.manual is None:
             data.pop("manual", None)
+        if self.note is None:
+            data.pop("note", None)
         return data
 
 
@@ -142,6 +147,11 @@ class DocumentOut(BaseModel):
     #: Something the caller can see goes with it (``GET /documents/{id}/related``); never counts what they cannot see,
     #: and false while it or the other one is in the trash.
     has_related: bool = False
+    #: The caller pinned it (K1, `PUT /documents/{id}/pin`); only for the caller.
+    pinned: bool = False
+    #: The vault's note on the document's sender (K1, `PUT /senders/{id}/memo`), empty when there is none. Only for a
+    #: member of the document's vault; `null` for a caller who sees it through a share alone, and without a sender.
+    sender_memo: str | None = None
 
 
 def _suggest(value: object) -> dict[str, str]:
@@ -172,6 +182,7 @@ def dates_out(row: Row) -> list[DateOut]:
         renew_months=r.renew_months, last_to_cancel=r.notice_date,
         done=DoneOut(at=r.done_at, by=person(row.done_by.get(r.done_by)) if r.done_by else None) if r.done_at else None,
         renewed_from=r.renewed_from, snoozed_until=row.snoozes.get(r.id),
+        note=(r.note or "") if r.kind == "follow_up" else None,
     ) for r in row.date_rows]
 
 
@@ -193,5 +204,6 @@ def document_out(row: Row) -> DocumentOut:
         suggest=_suggest(document.suggest), share_count=row.share_count, link_count=row.link_count,
         einvoice=row.einvoice, files_state=document.files_state,  # type: ignore[arg-type]
         auto_trash_due=row.auto_trash_due, auto_trashed=row.auto_trashed,
-        has_related=row.has_related,
+        has_related=row.has_related, pinned=row.pinned,
+        sender_memo=(row.sender.memo or "") if row.sender is not None and not row.via_share else None,
     )

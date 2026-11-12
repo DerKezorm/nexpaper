@@ -9,7 +9,8 @@ account's own inbox as the menu shows it: the documents in the vaults where the 
 
 - ``due``: a bill to pay, a payment that falls due,
 - ``contract_end``: a contract that ends or renews, the day to cancel it,
-- ``warranty_end``: the last day to claim under a warranty.
+- ``warranty_end``: the last day to claim under a warranty,
+- ``follow_up``: a day to look at the document again (K1); its sentence never leaves.
 
 ``keep_until`` (keep the paper until) is not one: nothing is to be done by that day, so it is left out. A contract with
 a notice period comes once more as ``notice``, on its last day to cancel (``services/deadlines.py``). A deadline marked
@@ -32,7 +33,7 @@ from ..models import FILED, INBOX, PROCESSING, TRASH, Account, Document, Documen
 from . import inbox, rights, timezones
 
 #: The kinds of date that are a deadline (see the top).
-DEADLINE_KINDS = ("due", "contract_end", "warranty_end")
+DEADLINE_KINDS = ("due", "contract_end", "warranty_end", "follow_up")
 #: The kind a contract's last day to cancel is named by.
 NOTICE = "notice"
 #: How many of the oldest documents of the inbox are named.

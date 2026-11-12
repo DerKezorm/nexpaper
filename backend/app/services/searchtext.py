@@ -16,6 +16,8 @@
   it is not over yet); another word finds nothing.
 * ``verknüpft:ja`` / ``linked:yes``: something the person can see goes with the document (``verknüpft:nein`` /
   ``linked:no``: nothing does; ``services/related.py``); another word finds nothing.
+* ``angeheftet:ja`` / ``pinned:yes``: the person pinned the document (``angeheftet:nein`` / ``pinned:no``: they did
+  not; ``services/pins.py``); another word finds nothing.
 
 Nothing a person types reaches SQL or FTS5 as syntax: every word is cut into the tokens FTS5 itself would make and
 handed over inside double quotes, so ``NEAR``, ``*``, ``-``, ``(``, ``^`` and quotes are just characters. Filters are
@@ -62,6 +64,9 @@ DEADLINE_DAYS_MAX = 3660
 #: Any other word finds nothing (``none``).
 LINKED_KEYS = ("verknüpft", "verknuepft", "verknupft", "linked")
 LINKED_WORDS = {"ja": "yes", "yes": "yes", "nein": "no", "no": "no"}
+#: ``angeheftet:ja`` / ``pinned:yes``: the person pinned the document (K1); ``nein`` / ``no``: they did not. Any other
+#: word finds nothing (``none``).
+PINNED_KEYS = ("angeheftet", "pinned")
 
 # A piece of the search: key:"two words", key:value, "a phrase" (an unclosed one runs to the end), or anything up to a
 # blank.
@@ -126,6 +131,8 @@ class Query:
     deadlines: list[str | int] = field(default_factory=list)
     #: ``yes``, ``no`` or ``none`` (``verknüpft:`` with a word the search does not know).
     linked: list[str] = field(default_factory=list)
+    #: ``yes``, ``no`` or ``none`` (``angeheftet:`` with a word the search does not know).
+    pinned: list[str] = field(default_factory=list)
 
     @property
     def has_text(self) -> bool:
@@ -134,7 +141,7 @@ class Query:
     @property
     def empty(self) -> bool:
         return not (self.has_text or self.kinds or self.senders or self.tags or self.amounts or self.deadlines
-                    or self.keeps or self.linked)
+                    or self.keeps or self.linked or self.pinned)
 
     def patterns(self) -> list[str]:
         """Regular expressions for the places a hit is marked at, as the index finds them: a word of
@@ -234,6 +241,10 @@ def parse(raw: str) -> Query:
             if name in LINKED_KEYS:
                 if clean:
                     query.linked.append(LINKED_WORDS.get(fold(clean), "none"))
+                continue
+            if name in PINNED_KEYS:
+                if clean:
+                    query.pinned.append(LINKED_WORDS.get(fold(clean), "none"))
                 continue
             if name in KIND_KEYS + SENDER_KEYS + TAG_KEYS:
                 if clean:

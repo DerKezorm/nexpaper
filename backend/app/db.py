@@ -46,7 +46,7 @@ _settings.data_dir.mkdir(parents=True, exist_ok=True)
 BUSY_SECONDS = 15
 
 #: The version of the schema the models describe.
-SCHEMA_VERSION = 16
+SCHEMA_VERSION = 17
 
 
 def _step_v2(connection: Connection) -> None:
@@ -450,6 +450,25 @@ def _step_saved_searches(connection: Connection) -> None:
         connection.exec_driver_sql(statement)
 
 
+def _step_helpers(connection: Connection) -> None:
+    """Small helpers (K1): the note of a vault on a sender, the sentence of a follow-up, and the documents each person
+    pinned. Two added columns with a default and one table, nothing else; written out as they stood when the step was
+    made, so that the step moves to another number unchanged."""
+    for statement in (
+        "ALTER TABLE senders ADD COLUMN memo VARCHAR(500) DEFAULT '' NOT NULL",
+        "ALTER TABLE document_dates ADD COLUMN note VARCHAR(200) DEFAULT '' NOT NULL",
+        (
+            "CREATE TABLE pins ( id INTEGER NOT NULL, user_id INTEGER NOT NULL, document_id INTEGER NOT NULL, "
+            "created_at DATETIME NOT NULL, PRIMARY KEY (id), "
+            "CONSTRAINT uq_pins_user_document UNIQUE (user_id, document_id), "
+            "FOREIGN KEY(user_id) REFERENCES users (id) ON DELETE CASCADE, "
+            "FOREIGN KEY(document_id) REFERENCES documents (id) ON DELETE CASCADE )"
+        ),
+        "CREATE INDEX ix_pins_document ON pins (document_id)",
+    ):
+        connection.exec_driver_sql(statement)
+
+
 #: ``MIGRATIONS[n]`` brings a database from version ``n - 1`` to ``n``. Version 1 is the first schema; it has no step.
 #: Later steps are written out as the tables stood then, not taken from the models, which move on.
 MIGRATIONS: dict[int, Callable[[Connection], None]] = {
@@ -471,6 +490,8 @@ MIGRATIONS: dict[int, Callable[[Connection], None]] = {
     15: _step_related,
     # A1, saved searches.
     16: _step_saved_searches,
+    # K1, small helpers: the note on a sender, the follow-up's sentence, pinned documents.
+    17: _step_helpers,
 }
 
 def _has_column(connection: Connection, table: str, column: str) -> bool:
