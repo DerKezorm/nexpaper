@@ -107,15 +107,26 @@ class NoteOut(BaseModel):
     mine: bool
 
 
+#: The lines of the history about a link to the outside (``services/sharing.py``), and what of their detail only who may
+#: share the document sees: how long a link lasts, how many further documents it shows, which link it was.
+LINK_ACTIONS = ("link_created", "link_opened", "link_revoked", "link_copied", "link_also_shown", "link_also_left",
+                "link_also_gone")
+LINK_DETAILS = ("days", "until", "also", "link")
+
+
 class EventOut(BaseModel):
     id: int
     at: datetime
     action: str
     #: Who did it; empty for somebody who used a link (then ``by_link`` says for whom the link was made).
     by: PersonRef | None
+    #: For whom the link was made, only for a caller who may share the document (``can_share``); empty for everybody
+    #: else, who reads ``via_link`` instead.
     by_link: str
     #: Field names and numbers, never contents. A vault the caller cannot see is left out.
     detail: dict[str, Any] | None
+    #: Done by somebody through a link (also when ``by_link`` is left empty for the caller).
+    via_link: bool = False
 
 
 class DocumentPage(BaseModel):
@@ -246,7 +257,7 @@ def delete_note(document_id: int, note_id: int, account: Caller, db: DbSession) 
 @router.get("/documents/{document_id}/events", response_model=list[EventOut],
             summary="Who did what to a document and when (for everybody who sees it)")
 def events(document_id: int, account: Reader, db: DbSession) -> list[EventOut]:
-    rights.require_document(db, account.id, document_id)
+    access = rights.require_document(db, account.id, document_id)
     visible = set(db.scalars(select(Vault.id).where(Vault.id.in_(rights.member_vault_ids(account.id)))))
     history = changes.history(db, document_id)
     authors = {e.user_id for e in history if e.user_id}
@@ -258,6 +269,9 @@ def events(document_id: int, account: Reader, db: DbSession) -> list[EventOut]:
     # The further documents of a link (N2) name the other document the same way.
     naming = (related_service.SET, related_service.UNSET, sharing_service.ALSO_SHOWN, sharing_service.ALSO_LEFT,
               sharing_service.ALSO_GONE)
+    # N2b: whoever may not share the document learns that a link was made, opened or ended, never for whom, for how
+    # long, or how many documents it shows (the stored lines stay as they are; only the answer leaves it out).
+    outside_only = not access.can_share
     partners = {e.detail.get("document") for e in history if e.action in naming
                 and isinstance(e.detail, dict) and isinstance(e.detail.get("document"), int)}
     seen_titles: dict[int, str] = {int(i): t for i, t in db.execute(select(Document.id, Document.title).where(
@@ -278,7 +292,11 @@ def events(document_id: int, account: Reader, db: DbSession) -> list[EventOut]:
                     detail["title"] = seen_titles[partner]
                 else:
                     detail["document"] = None
+            if outside_only and event.action in LINK_ACTIONS:
+                for key in LINK_DETAILS:
+                    detail.pop(key, None)
         out.append(EventOut(id=event.id, at=event.at, action=event.action,
-                            by=person(people.get(event.user_id)) if event.user_id else None, by_link=event.by_link,
-                            detail=detail))
+                            by=person(people.get(event.user_id)) if event.user_id else None,
+                            by_link="" if outside_only else event.by_link, detail=detail,
+                            via_link=bool(event.by_link)))
     return out

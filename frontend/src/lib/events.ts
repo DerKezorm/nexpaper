@@ -41,6 +41,8 @@ export function standsAlone(event: DocumentEvent): boolean {
 export function eventWho(event: DocumentEvent, t: TFunction): string {
   if (event.by) return iso(personName(event.by))
   if (event.by_link) return t('docs.events.byLink', { recipient: iso(event.by_link) })
+  // Who may not share the document is not told for whom the link was made (N2b).
+  if (event.via_link) return t('shownOutside.events.somebody')
   return 'nexpaper'
 }
 
@@ -90,9 +92,10 @@ export function eventWhat(event: DocumentEvent, t: TFunction, context: EventCont
     case 'unshared':
       return t('docs.events.unshared', { person: someone('to') })
     case 'link_created':
-      return t('docs.events.linkCreated', { count: number('days') ?? 0 })
+      // Without the number of days for who may not share the document (N2b).
+      return number('days') === null ? t('shownOutside.events.created') : t('docs.events.linkCreated', { count: number('days') ?? 0 })
     case 'link_opened':
-      return t('docs.events.linkOpened')
+      return event.via_link && !event.by_link ? t('shownOutside.events.opened') : t('docs.events.linkOpened')
     case 'link_revoked':
       return detail.reason === 'account_deleted' ? t('docs.events.linkEnded') : t('docs.events.linkRevoked')
     case 'link_copied':

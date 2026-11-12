@@ -171,8 +171,11 @@ def test_the_lists_say_it_too(house: dict) -> None:
 
 def test_no_recipient_no_date_no_number_for_who_may_not_share(house: dict) -> None:
     """Lea learns that it is open, never to whom, until when, how many links or through which document: not at the
-    document, not in the lists, not in the history, and the routes of the links stay closed to her."""
+    document, not in the lists, not in the history (after the link was opened too), and the routes of the links stay
+    closed to her."""
     until = house["link"]["until"][:10]
+    with public() as outside:
+        assert outside.get(f"/api/v1/l/{house['link']['token']}").status_code == 200
     with new_client(house["lea"]) as browser:
         answers = [
             browser.get(f"/api/v1/documents/{house['main']}"),
@@ -301,3 +304,94 @@ def test_a_document_of_ones_own_vault_shown_through_a_link_of_another(client: Te
         assert seen.json()["shown_outside"] is True
         assert "Privat" not in seen.text
         assert browser.get(f"/api/v1/documents/{main}").status_code == 404
+
+
+# --- The history (N2b, second part) -----------------------------------------------------------------------------------
+
+LINK_LINES = ("link_created", "link_opened", "link_revoked", "link_copied", "link_also_shown", "link_also_left",
+              "link_also_gone")
+
+
+def _lines(answer: Any) -> list[dict[str, Any]]:
+    assert answer.status_code == 200, answer.text
+    return [e for e in answer.json() if e["action"].startswith("link_")]
+
+
+def _open_and_revoke(house: dict, client: TestClient) -> None:
+    """The link is copied, opened from outside, and revoked: every kind of line about it is in the history."""
+    assert client.post(f"/api/v1/documents/{house['main']}/links/{house['link']['id']}/address").status_code == 200
+    with public() as outside:
+        assert outside.get(f"/api/v1/l/{house['link']['token']}").status_code == 200
+    assert client.delete(f"/api/v1/documents/{house['main']}/links/{house['link']['id']}").status_code == 204
+
+
+def _hidden(lines: list[dict[str, Any]]) -> None:
+    assert lines, "no lines about the link"
+    for line in lines:
+        assert line["by_link"] == "", line
+        assert not set(line["detail"] or {}) & {"days", "until", "also", "link"}, line
+        assert RECIPIENT not in str(line)
+    opened = [line for line in lines if line["action"] == "link_opened"]
+    assert opened and all(line["via_link"] is True and line["by"] is None for line in opened)
+
+
+def test_every_kind_of_link_line_is_known_to_the_history() -> None:
+    """A new kind of line about links must be added to what the history hides (``routers/documents.LINK_ACTIONS``)."""
+    from app.routers import documents as documents_router
+    from app.services import changes, sharing
+
+    kinds = {value for module in (changes, sharing) for value in vars(module).values()
+             if isinstance(value, str) and value.startswith("link_")}
+    assert kinds == set(LINK_LINES) == set(documents_router.LINK_ACTIONS)
+
+
+def test_the_history_shows_who_may_share_everything(house: dict, client: TestClient) -> None:
+    _open_and_revoke(house, client)
+    main = _lines(client.get(f"/api/v1/documents/{house['main']}/events"))
+    opened = next(line for line in main if line["action"] == "link_opened")
+    assert opened["by_link"] == RECIPIENT and opened["via_link"] is True
+    made = next(line for line in main if line["action"] == "link_created")
+    assert made["detail"] == {"days": 7, "also": 1}
+    assert next(line for line in main if line["action"] == "link_copied")["detail"]["link"] == house["link"]["id"]
+    shown = _lines(client.get(f"/api/v1/documents/{house['shown']}/events"))
+    assert next(line for line in shown if line["action"] == "link_also_shown")["detail"]["days"] == 7
+
+
+@pytest.mark.parametrize("who", ["reader", "editor", "share-read", "share-edit", "device", "read-key"])
+def test_the_history_names_nobody_and_no_time_for_who_may_not_share(house: dict, client: TestClient, who: str) -> None:
+    """After making, copying, opening and revoking: who may not share sees that it happened, nothing more."""
+    _open_and_revoke(house, client)
+    account = {"reader": house["tom"], "editor": house["lea"], "device": house["lea"], "read-key": house["lea"]}.get(who)
+    if who.startswith("share-"):
+        account = make_account("max")
+        for document in (house["main"], house["shown"]):
+            assert client.put(f"/api/v1/documents/{document}/shares/{account.id}",
+                              json={"right": who.removeprefix("share-")}).status_code == 200
+    assert account is not None
+    headers: dict[str, str] = {}
+    with new_client(account) as browser:
+        if who == "device":
+            headers = {"Authorization": f"Bearer {device_token(browser)}"}
+        elif who == "read-key":
+            with SessionLocal() as db:
+                settings_service.save(db, {"api_keys_allowed": True})
+            secret = browser.post("/api/v1/api-keys", json={"name": "k", "scope": "read"}).json()["secret"]
+            headers = {"Authorization": f"Bearer {secret}"}
+        else:
+            _hidden(_lines(browser.get(f"/api/v1/documents/{house['main']}/events")))
+            shown = _lines(browser.get(f"/api/v1/documents/{house['shown']}/events"))
+            assert shown
+            for line in shown:
+                _check_shown(line)
+            return
+    with TestClient(app, base_url="http://testserver") as program:
+        _hidden(_lines(program.get(f"/api/v1/documents/{house['main']}/events", headers=headers)))
+        shown = _lines(program.get(f"/api/v1/documents/{house['shown']}/events", headers=headers))
+        assert shown
+        for line in shown:
+            _check_shown(line)
+
+
+def _check_shown(line: dict[str, Any]) -> None:
+    assert line["by_link"] == "" and RECIPIENT not in str(line)
+    assert not set(line["detail"] or {}) & {"days", "until", "also", "link"}, line

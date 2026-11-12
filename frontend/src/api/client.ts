@@ -1118,7 +1118,8 @@ export const deadlinesApi = {
   unsnooze: (id: number, kind: DeadlineKind) => api<void>(`/api/v1/documents/${id}/dates/${kind}/snooze`, { method: 'DELETE' }),
 }
 export type DocumentNote = { id: number; author: Person | null; text: string; created_at: string; updated_at: string | null; mine: boolean }
-export type DocumentEvent = { id: number; at: string; action: string; by: Person | null; by_link: string; detail: Record<string, unknown> | null }
+/** `by_link` is empty for who may not share the document; `via_link` still says it was done through a link (N2b). */
+export type DocumentEvent = { id: number; at: string; action: string; by: Person | null; by_link: string; detail: Record<string, unknown> | null; via_link?: boolean }
 export type DocumentVersion = {
   n: number
   current: boolean

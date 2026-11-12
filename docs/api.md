@@ -1049,6 +1049,11 @@ none of it, a link to the outside never.
   .../versions`, `.../versions/{n}/restore`) is seen through the link at once. The web app asks before each of these
   while `shown_outside` is true; the endpoints ask for nothing new, so an app that wants to ask reads the field. The
   history gets no line of its own for it. Title, kind, date and the other fields do not ask.
+- The history (`GET /documents/{id}/events`) tells for whom a link was made and how long it lasts only to who may share
+  the document (`can_share`). For everybody else the lines about a link (`link_created`, `link_opened`,
+  `link_revoked`, `link_copied`, `link_also_shown`, `link_also_left`, `link_also_gone`) stay, but `by_link` is empty and
+  `detail` has no `days`, `until`, `also` or `link`. Every line has `via_link`: true when it was done through a link
+  (opened), also when `by_link` is left empty. The stored lines do not change.
 
 ## Protected PDFs and kept PDF passwords
 
