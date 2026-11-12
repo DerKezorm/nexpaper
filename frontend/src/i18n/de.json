@@ -779,6 +779,7 @@
     "too_many_links": "Auf einem Dokument sind schon zu viele Links offen.",
     "already_in_vault": "Diese Person ist schon im Tresor.",
     "in_trash": "Das Dokument liegt im Papierkorb. Hol es zuerst zurück.",
+    "invalid_related": "Ein Dokument kann nicht zu sich selbst gehören.",
     "download_not_allowed": "Dieser Link erlaubt kein Herunterladen.",
     "in_use": "Es gibt noch Dokumente damit.",
     "in_use_elsewhere": "Dokumente, die du nicht ändern darfst, benutzen das noch.",
@@ -3009,6 +3010,42 @@
       "askConfirm": "Ausschalten",
       "saidOn": "Fristen sind wieder an.",
       "saidOff": "Fristen sind aus."
+    }
+  },
+  "related": {
+    "title": "Gehört zu",
+    "empty": "Noch nichts verknüpft. Gehört etwas dazu, etwa der Lieferschein zur Rechnung, verknüpfe es hier.",
+    "emptyRead": "Noch nichts verknüpft.",
+    "link": "Verknüpfen",
+    "linkFor": "Mit „{{title}}“ verknüpfen",
+    "unlink": "Lösen",
+    "unlinkFor": "Verknüpfung mit „{{title}}“ lösen",
+    "dismiss": "Passt nicht",
+    "dismissFor": "„{{title}}“ passt nicht",
+    "proposals": "Vorschläge",
+    "via": {
+      "invoice": "Gleiche Rechnungsnummer",
+      "order": "Gleiche Bestellnummer",
+      "delivery": "Gleiche Lieferscheinnummer"
+    },
+    "fits": "Passt zu: {{what}}",
+    "dialogTitle": "Verknüpfen",
+    "dialogText": "Was gehört zu {{title}}? Hier stehen nur Dokumente, die du bearbeiten darfst.",
+    "searchPlaceholder": "Dokument suchen",
+    "clear": "Suche leeren",
+    "typeToSearch": "Tippe einen Titel, einen Absender oder ein Wort aus dem Dokument.",
+    "noHits": "Nichts gefunden, das du verknüpfen darfst.",
+    "results": "Treffer",
+    "already": "Schon verknüpft",
+    "searchExample": "verknüpft:ja",
+    "searchHelp": "gehört zu einem anderen Dokument",
+    "events": {
+      "set": "hat es mit {{title}} verknüpft",
+      "setOther": "hat es mit einem anderen Dokument verknüpft",
+      "setMerge": "hat es beim Zusammenfügen mit {{title}} verknüpft",
+      "setMergeOther": "hat es beim Zusammenfügen mit einem anderen Dokument verknüpft",
+      "unset": "hat die Verknüpfung mit {{title}} gelöst",
+      "unsetOther": "hat die Verknüpfung mit einem anderen Dokument gelöst"
     }
   }
 }

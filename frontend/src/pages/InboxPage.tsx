@@ -31,6 +31,7 @@ import {
   type InboxPage as InboxView,
   type InboxQuery,
   type Person,
+  type RelatedSuggestion,
   type Vault,
   type VersionText,
 } from '../api/client'
@@ -42,6 +43,7 @@ import { EInvoiceNotice, useEInvoice } from '../components/EInvoice'
 import { NewKindButton, NewKindForm } from '../components/NewKind'
 import { PagePicture } from '../components/PagePicture'
 import { PdfView } from '../components/PdfView'
+import { RelatedHint } from '../components/Related'
 import { useConfirm } from '../components/useConfirm'
 import { VaultFilter } from '../components/VaultFilter'
 import { VaultIcon } from '../components/VaultIcon'
@@ -191,7 +193,7 @@ export function InboxPage({ slots = appSlots }: { slots?: Slots }) {
       const answer = await inboxApi.list({ vault_id: asNumber(vault), shared: vault === SHARED || undefined, q: q || undefined, sender: sender || undefined, kind_id: asNumber(kind), source: source || undefined, owner_id: asNumber(owner), sort, limit: PAGE, offset: view.items.length })
       const found = tidy(answer)
       loaded.current = { key, length: view.items.length + found.items.length }
-      setView({ ...found, items: [...view.items, ...found.items] })
+      setView({ ...found, items: [...view.items, ...found.items], related: { ...view.related, ...found.related } })
     } catch (error) {
       setProblem(error instanceof ApiError ? error.code : 'internal_error')
     }
@@ -419,6 +421,7 @@ export function InboxPage({ slots = appSlots }: { slots?: Slots }) {
                         mineId={me.id}
                         splitHint={!!d.split_suggested && !!slots.SplitPanel}
                         onPick={pick}
+                        proposals={view.related?.[String(d.id)]}
                       />
                     ))}
                   </ul>
@@ -454,7 +457,7 @@ export function InboxPage({ slots = appSlots }: { slots?: Slots }) {
 }
 
 /** One document in the list: a box to select it, its picture and fields, in which vault it waits and who brought it. */
-const Entry = memo(function Entry({ document: d, on, picked, selecting, search, vault, mineId, splitHint, onPick }: { document: DocumentInfo; on: boolean; picked: boolean; selecting: boolean; search: string; vault: Vault | undefined; mineId: number; splitHint: boolean; onPick: (id: number, on: boolean) => void }) {
+const Entry = memo(function Entry({ document: d, on, picked, selecting, search, vault, mineId, splitHint, onPick, proposals }: { document: DocumentInfo; on: boolean; picked: boolean; selecting: boolean; search: string; vault: Vault | undefined; mineId: number; splitHint: boolean; onPick: (id: number, on: boolean) => void; proposals?: RelatedSuggestion[] }) {
   const { t, i18n } = useTranslation()
   const sourceText = useSourceText()
   const Icon = SOURCE_ICON[d.source] ?? Upload
@@ -472,6 +475,7 @@ const Entry = memo(function Entry({ document: d, on, picked, selecting, search, 
           className="mt-5 h-4 w-4 shrink-0 accent-[var(--accent)]"
         />
       )}
+      <div className="min-w-0 flex-1">
       <Link
         to={`/eingang/${d.id}${search}`}
         aria-current={on ? 'true' : undefined}
@@ -500,6 +504,9 @@ const Entry = memo(function Entry({ document: d, on, picked, selecting, search, 
         <FileSign state={d.files_state} size={15} />
         {d.einvoice && <FileCode2 size={15} className="shrink-0 text-accent" aria-label={t('sorting.einvoice.icon')} />}
       </Link>
+      {/* Goes with (N1): the first proposal, as one line under the card. */}
+      {proposals && proposals.length > 0 && !processing && <RelatedHint documentId={d.id} proposals={proposals} onDone={inboxChanged} />}
+      </div>
     </li>
   )
 })

@@ -80,6 +80,19 @@ afterEach(() => {
 })
 
 describe('the inbox', () => {
+  it('shows a proposal of what goes with a document as one line under its card, nothing else changes', async () => {
+    const delivery = { id: 40, title: 'Lieferschein', kind: { id: 3, key: '', name: 'Lieferschein', hue: 200, position: 2 }, sender: { id: 5, name: 'Elektro Brandt GmbH' }, date: '2026-11-03', status: 'filed', via: 'delivery' }
+    server.answers[INBOX] = { ...inboxOf([reading, heating, teeth]), related: { 11: [delivery] } }
+    server.answers['PUT /api/v1/documents/11/related/40'] = []
+    await show('/eingang')
+    const hints = [...page.box.querySelectorAll('[data-testid="related-hint"]')]
+    expect(hints).toHaveLength(1)
+    expect(plain(hints[0].closest('li')!.textContent)).toContain('Rechnung Heizungswartung')
+    expect(plain(hints[0].textContent)).toBe('Passt zu: Lieferschein, Elektro Brandt GmbH, 03.11.2026VerknüpfenPasst nicht')
+    await page.click(page.button('Mit „Lieferschein“ verknüpfen', hints[0]))
+    expect(server.changes()).toEqual(['PUT /api/v1/documents/11/related/40'])
+  })
+
   it('lists what is being read first, then the newest, as the server sorted them', async () => {
     await show('/eingang')
     expect(plain(page.box.querySelector('h1')!.textContent)).toBe('Eingang')

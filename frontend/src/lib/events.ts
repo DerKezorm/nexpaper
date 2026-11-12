@@ -157,6 +157,15 @@ export function eventWhat(event: DocumentEvent, t: TFunction, context: EventCont
       return t('deadlines.events.reopened')
     case 'renewed':
       return typeof detail.to === 'string' ? t('deadlines.events.renewed', { date: shortDate(detail.to, i18n.language) }) : t('docs.events.something')
+    // Goes with (N1): the other document by its title, only when the person may see it (the server leaves it out else).
+    case 'related_set':
+    case 'related_unset': {
+      const set = event.action === 'related_set'
+      const title = typeof detail.title === 'string' && typeof detail.document === 'number' ? detail.title : null
+      const merged = set && detail.by === 'merge' ? 'Merge' : ''
+      if (title === null) return t(`related.events.${set ? 'set' : 'unset'}${merged}Other`)
+      return t(`related.events.${set ? 'set' : 'unset'}${merged}`, { title: iso(title) })
+    }
     default:
       return t('docs.events.something')
   }

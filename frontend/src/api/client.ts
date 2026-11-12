@@ -524,6 +524,8 @@ export type DocumentInfo = {
   auto_trash_due?: boolean
   /** It is in the trash because the task put it there, not a person. */
   auto_trashed?: boolean
+  /** Something the person can see goes with it ("Gehört zu"); never counts what they cannot see. */
+  has_related?: boolean
 }
 export type DocumentShare = { user: Person; right: 'read' | 'edit'; created_at: string }
 export type DocumentLink = {
@@ -602,6 +604,8 @@ export type InboxPage = {
   shared?: number
   all: number
   reading: number
+  /** Per document id of `items`: what is proposed to go with it, at most three; only documents with a proposal. */
+  related?: Record<string, RelatedSuggestion[]>
 }
 export type MenuCounts = { inbox: number; reading: number; trash: number; deadlines?: number; deadlines_overdue?: number }
 export type FiledMany = { filed: number[]; failed: { id: number; code: string }[] }
@@ -1091,6 +1095,33 @@ export const documentApi = {
   deleteNote: (id: number, note: number) => api<void>(`${doc(id)}/notes/${note}`, { method: 'DELETE' }),
   events: (id: number) => api<DocumentEvent[]>(`${doc(id)}/events`),
   versions: (id: number) => api<DocumentVersion[]>(`${doc(id)}/versions`),
+}
+
+// ---- Goes with ("Gehört zu"): documents that go with each other, and what is proposed ---------------------------------
+
+/** A document that goes with another one, as far as the person may see it. */
+export type RelatedDocument = {
+  id: number
+  title: string
+  kind: DocumentKind | null
+  sender: { id: number; name: string } | null
+  date: string | null
+  status: DocumentInfo['status']
+  /** The person may remove the pair (edit on both). */
+  can_unlink: boolean
+  linked_at: string | null
+}
+/** A document proposed to go with another: both carry the same number of the kind `via`. */
+export type RelatedSuggestion = Omit<RelatedDocument, 'can_unlink' | 'linked_at'> & { via: 'invoice' | 'order' | 'delivery' }
+
+export const relatedApi = {
+  list: (id: number) => api<RelatedDocument[]>(`${doc(id)}/related`),
+  /** Edit on both; setting a pair twice is no error. Answers what goes with `id` now. */
+  link: (id: number, other: number) => api<RelatedDocument[]>(`${doc(id)}/related/${other}`, { method: 'PUT' }),
+  unlink: (id: number, other: number) => api<RelatedDocument[]>(`${doc(id)}/related/${other}`, { method: 'DELETE' }),
+  suggestions: (id: number) => api<RelatedSuggestion[]>(`${doc(id)}/related/suggestions`),
+  /** "Passt nicht": the pair is not proposed again. Answers the proposals left. */
+  dismiss: (id: number, other: number) => api<RelatedSuggestion[]>(`${doc(id)}/related/${other}/dismiss`, { method: 'POST' }),
 }
 
 /** Addresses of the files and pictures of a version (each version has its own: a cache never shows an old one). */

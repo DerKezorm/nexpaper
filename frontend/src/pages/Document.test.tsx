@@ -371,6 +371,28 @@ describe('a document for a reader', () => {
     await page.click(page.box.querySelector<HTMLButtonElement>('[role="tab"]:nth-child(3)'))
     expect(input('Notiz schreiben')).toBeTruthy()
   })
+
+  it('shows what goes with it, without the button and without proposals', async () => {
+    server.answers['GET /api/v1/documents/7/related'] = []
+    await show()
+    await idle()
+    const section = page.box.querySelector('[data-testid="related"]')!
+    expect(plain(section.textContent)).toBe('Gehört zuNoch nichts verknüpft.')
+    expect(server.called('GET', '/api/v1/documents/7/related/suggestions')).toBeUndefined()
+  })
+})
+
+describe('what goes with a document', () => {
+  it('stands under the notes, with the button for somebody who may change it', async () => {
+    server.answers['GET /api/v1/documents/7/related'] = []
+    server.answers['GET /api/v1/documents/7/related/suggestions'] = []
+    await show()
+    await idle()
+    const section = page.box.querySelector('[data-testid="related"]')!
+    const tabs = page.box.querySelector('[role="tablist"]')!.closest('section')!
+    expect(tabs.compareDocumentPosition(section) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(page.button('Verknüpfen', section)).toBeTruthy()
+  })
 })
 
 describe('the tabs', () => {

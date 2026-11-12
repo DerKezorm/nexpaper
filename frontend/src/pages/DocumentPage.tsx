@@ -64,6 +64,7 @@ import { NewKindForm } from '../components/NewKind'
 import { PdfView } from '../components/PdfView'
 import { useConfirm } from '../components/useConfirm'
 import { ShareDialog } from '../components/ShareDialog'
+import { RelatedSection } from '../components/Related'
 import { VaultIcon } from '../components/VaultIcon'
 import { formatBytes } from '../lib/bytes'
 import { copyText } from '../lib/copy'
@@ -378,6 +379,7 @@ function Doc({ document: d, setDocument, reload, slots }: { document: DocumentIn
           )}
         </section>
 
+        <div className="min-w-0 space-y-5">
         <section className="card overflow-hidden p-0">
           <div role="tablist" aria-label={t('docs.document.tabs')} className="scroll-x flex gap-1 overflow-x-auto border-b border-line px-3 pt-3">
             {(
@@ -402,6 +404,9 @@ function Doc({ document: d, setDocument, reload, slots }: { document: DocumentIn
             {tab === 'history' && <History document={d} vaults={vaults} vaultName={vaultName} />}
           </div>
         </section>
+        {/* Goes with (N1): under the notes, what belongs to this document. */}
+        <RelatedSection document={d} canEdit={canEdit} onChange={() => void reload()} />
+        </div>
       </div>
 
       {sharing && <ShareDialog document={d} onClose={() => setSharing(false)} say={(text) => say(text)} />}

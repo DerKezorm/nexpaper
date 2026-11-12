@@ -779,6 +779,7 @@
     "too_many_links": "Too many links are open on this document already.",
     "already_in_vault": "This person is in the vault already.",
     "in_trash": "The document is in the trash. Restore it first.",
+    "invalid_related": "A document cannot go with itself.",
     "download_not_allowed": "This link does not allow downloading.",
     "in_use": "Documents still use it.",
     "in_use_elsewhere": "Documents you may not change still use it.",
@@ -3009,6 +3010,42 @@
       "askConfirm": "Switch off",
       "saidOn": "Deadlines are on again.",
       "saidOff": "Deadlines are off."
+    }
+  },
+  "related": {
+    "title": "Goes with",
+    "empty": "Nothing goes with it yet. When something belongs to it, say the delivery note of an invoice, connect it here.",
+    "emptyRead": "Nothing goes with it yet.",
+    "link": "Connect",
+    "linkFor": "Connect with “{{title}}”",
+    "unlink": "Disconnect",
+    "unlinkFor": "Disconnect from “{{title}}”",
+    "dismiss": "Doesn't fit",
+    "dismissFor": "“{{title}}” doesn't fit",
+    "proposals": "Proposals",
+    "via": {
+      "invoice": "Same invoice number",
+      "order": "Same order number",
+      "delivery": "Same delivery note number"
+    },
+    "fits": "Goes with: {{what}}",
+    "dialogTitle": "Connect",
+    "dialogText": "What goes with {{title}}? Only documents you may change are shown here.",
+    "searchPlaceholder": "Find a document",
+    "clear": "Clear the search",
+    "typeToSearch": "Type a title, a sender or a word from the document.",
+    "noHits": "Nothing found that you may connect.",
+    "results": "Hits",
+    "already": "Connected already",
+    "searchExample": "linked:yes",
+    "searchHelp": "goes with another document",
+    "events": {
+      "set": "connected it with {{title}}",
+      "setOther": "connected it with another document",
+      "setMerge": "connected it with {{title}} when joining documents",
+      "setMergeOther": "connected it with another document when joining documents",
+      "unset": "disconnected it from {{title}}",
+      "unsetOther": "disconnected it from another document"
     }
   }
 }
