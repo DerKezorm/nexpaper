@@ -13,6 +13,12 @@ over what you already have in Paperless-ngx.
   checksum. The search understands parts of words and filters (`kind:invoice amount:>100`).
 - **Tools for pages.** Turn, delete and order pages, join documents, split a stack at blank separator sheets. Every
   change is a new version; nothing is overwritten.
+- **What goes together.** nexpaper reads the invoice, order and delivery note numbers of a paper and proposes the
+  delivery note that goes with an invoice. Connected documents show each other, and a link to the outside or the
+  export can take them along.
+- **Small helpers.** The archive adds up the amounts of what it shows and changes several documents at once, a
+  search can be saved to the side bar, a transfer code fills in the banking app, a note on a sender keeps the
+  customer number at hand, and a PDF with a password is opened once and read like any other.
 - **Deadlines and reminders.** What has to be paid, cancelled or claimed under a warranty stands on one page, with the
   last day to cancel worked out from the notice period. nexpaper reminds the people who may edit the vault, by push, by
   mail or in a weekly overview, each reminder once.
@@ -267,6 +273,11 @@ update (Settings, Backups; nexpaper also makes one itself before it changes the 
 restore that backup with the older version, and what was entered after the update is lost with it. The first start after
 the update sends no wave of reminders for deadlines that were entered before.
 
+**1.5.0 changes the database again** (schema 14 to 20: what goes together, saved searches, pins and notes, links with
+more than one document, remembered PDF passwords, upload requests), so the same holds: back up first, and the way back
+is only that backup with the older version. After the update nexpaper reads the numbers of the documents that are
+already there once, in the background; nothing needs doing by hand.
+
 ## Environment
 
 | Variable | Default | Meaning |
@@ -322,6 +333,48 @@ XRechnung) are read from their data, with limits on the size and the shape of th
 Everything that deletes or locks out asks first, and says whether it can be undone (a document in the trash stays 30
 days and can be brought back; one deleted for good, a key, a link or a device that is locked out cannot).
 
+## What goes together
+
+A delivery note belongs to its invoice, a reminder to both. Under the notes of a document the section **Goes with**
+lists what you connected: "Connect" finds the other document by its title, its sender or a word from it, and from then
+on both show each other. You need to be able to edit both; "Disconnect" takes a connection back and deletes nothing.
+
+nexpaper also reads the numbers a paper carries, from its text and from the data of an e-invoice: invoice, order and
+delivery note number, customer and contract number, and IBANs with a valid check digit. Two documents with the same
+invoice, order or delivery note number are **proposed** to each other, with the reason, at the document and as a line
+in the inbox; "Doesn't fit" puts a proposal away for good, for everybody. Nothing is connected by itself, and two
+documents whose senders are both known and different are never proposed. After an update the numbers of the documents
+that are already there are read once, in the background.
+
+In the archive, "Select" and "Connect with each other" connects 2 to 10 documents at once, and joining documents takes
+their connections along. Search words: `linked:yes`, `linked:no`.
+
+## The archive: sums, several at once, saved searches, pins
+
+- **Sums.** Under the table the archive says what the amounts of the documents it found add up to, euros first, other
+  currencies beside them, and how many have no amount. Only what you may see is counted.
+- **Several at once.** "Select" beside the number of hits gives every row a box; the bar then adds or removes a tag,
+  sets the kind, moves to another vault, connects with each other or moves to the trash, for up to 500 documents. What
+  you may not change is left out, and a line says how many and why. Moving and the trash ask first.
+- **Saved searches.** "Save" keeps a search as it stands, with its words and filters, under a name in the side bar
+  under "Saved", with the number of hits beside it. Up to 30 per person, each only its owner's, to rename, reorder and
+  delete.
+- **Pins.** A pin on a document puts it under "Pinned" at the top of the archive's overview and on the quick upload,
+  up to 20 per person and yours alone. Search words: `pinned:yes`, `pinned:no`.
+
+## The transfer code and the note on a sender
+
+When a document names a recipient, an IBAN and an amount, "Transfer" shows a code (EPC, known as GiroCode) that a
+banking app scans to fill in a transfer. Every field says where it comes from: the data of an e-invoice, or read from
+the text, which you then compare with the paper. With more than one IBAN in the document you choose one, and only
+IBANs that stand in the document are used; the amount and the reference can be changed before you scan. There is no
+code for a credit note. nexpaper transfers nothing itself and stores nothing of it; "Mark as paid" ticks off the due
+date, if the document has one.
+
+A sender can carry a **note** of up to 500 characters, say the customer number, the contract number or a phone number.
+It shows on every document of that sender in the vault; everybody in the vault sees it, nobody through a share of a
+single document. A sender with a note stays under Organise, Senders even without documents.
+
 ## Deadlines, reminders and keeping times
 
 Dates on a document come with a kind: due, contract until, warranty until, keep until. The **Deadlines** page (between
@@ -359,6 +412,9 @@ start.
   first and says how many documents would go at once; a document filed later whose time is already over goes the next
   night, and the document page and the inbox say so.
   Nothing is deleted for good by it; the trash empties itself after 30 days as always.
+- A **follow-up** is a date of its own with a sentence of what to do then ("ask whether it was refunded"). It stands
+  on the Deadlines page with a filter of its own and reminds on the day itself at 8, without a lead; the sentence
+  never goes into a reminder or the weekly overview.
 - Search words: `deadline:open`, `deadline:overdue`, `deadline:<30`, `keep:expired`. The same data is open to programs
   (`docs/api.md`).
 

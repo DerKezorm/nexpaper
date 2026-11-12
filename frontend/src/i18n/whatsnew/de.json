@@ -1,4 +1,63 @@
 {
+  "1.5.0": {
+    "lead": "Dokumente, die zusammengehören, ein Archiv, das zusammenzählt und mehrere auf einmal ändert, ein Überweisungscode für die Banking-App, PDFs mit Passwort und eine Adresse, über die dir jemand ohne Konto Dateien schickt.",
+    "sections": [
+      {
+        "title": "Was zusammengehört",
+        "where": "Dokument, Eingang, Archiv",
+        "body": "Ein Lieferschein gehört zu seiner Rechnung. Unter den Notizen eines Dokuments gibt es jetzt den Abschnitt „Gehört zu“: „Verknüpfen“ sucht das andere Dokument, und von da an zeigen beide aufeinander. nexpaper liest außerdem die Nummern eines Papiers (Rechnungs-, Bestell- und Lieferscheinnummer) aus dem Text und aus den Daten einer E-Rechnung und schlägt Dokumente mit derselben Nummer füreinander vor, mit dem Grund, am Dokument und als Zeile im Eingang. „Passt nicht“ räumt einen Vorschlag für immer weg. Verknüpft wird nichts von selbst, und zwei Dokumente, deren Absender beide bekannt und verschieden sind, werden nie vorgeschlagen. Du musst beide Dokumente bearbeiten dürfen; „Lösen“ nimmt eine Verknüpfung zurück und löscht nichts."
+      },
+      {
+        "title": "Das Archiv zählt zusammen und ändert mehrere auf einmal",
+        "where": "Archiv",
+        "body": "Unter der Tabelle steht jetzt, was die Beträge der gefundenen Dokumente zusammen ergeben, Euro zuerst, andere Währungen daneben, und wie viele keinen Betrag haben. Mit „Auswählen“ bekommt jede Zeile ein Kästchen, und die Leiste setzt einen Tag dazu oder nimmt ihn weg, setzt die Art, verschiebt in einen anderen Tresor, verknüpft miteinander oder legt in den Papierkorb, für bis zu 500 Dokumente auf einmal. Was du nicht ändern darfst, bleibt aus, und eine Zeile sagt, wie viele und warum. Verschieben und Papierkorb fragen vorher."
+      },
+      {
+        "title": "Gemerkte Suchen und Anheften",
+        "where": "Archiv, Seitenleiste",
+        "body": "„Merken“ hält eine Suche fest, wie sie gerade steht, mit Wörtern und Filtern, unter einem Namen in der Seitenleiste unter „Gemerkt“, mit der Trefferzahl daneben. Bis zu 30, nur für dich, zum Umbenennen, Umsortieren und Löschen. Eine Nadel an einem Dokument legt es unter „Angeheftet“ oben in die Übersicht des Archivs und in den Schnell-Upload, bis zu 20, ebenfalls nur für dich."
+      },
+      {
+        "title": "Überweisungscode für die Banking-App",
+        "where": "Dokument",
+        "body": "Nennt ein Dokument Empfänger, IBAN und Betrag, gibt es jetzt „Überweisen“: einen Code (bekannt als GiroCode), den deine Banking-App scannt, und die Felder der Überweisung füllen sich von selbst. An jedem Feld steht, woher es kommt: aus den Daten einer E-Rechnung oder aus dem Text gelesen, dann vergleichst du es mit dem Papier. Stehen mehrere IBANs im Dokument, wählst du eine; Betrag und Verwendungszweck lassen sich vor dem Scannen ändern. nexpaper überweist selbst nichts und speichert nichts davon. „Als bezahlt merken“ hakt die Fälligkeit ab, wenn das Dokument eine hat."
+      },
+      {
+        "title": "Merkzettel am Absender und Wiedervorlage",
+        "where": "Dokument, Ordnung, Fristen",
+        "body": "Ein Absender kann einen Merkzettel mit bis zu 500 Zeichen tragen, etwa Kundennummer, Vertragsnummer oder Telefon. Er steht an jedem Dokument dieses Absenders im Tresor; alle im Tresor sehen ihn, über eine Einzelfreigabe niemand. Und ein Dokument kann einen Termin „Wiedervorlage“ bekommen, mit einem Satz, was dann zu tun ist. Er steht auf der Seite Fristen und erinnert am Tag selbst um 8 Uhr; der Satz steht nie in der Erinnerung."
+      },
+      {
+        "title": "PDFs mit Passwort",
+        "where": "Eingang, Mein Konto, Hochladen",
+        "body": "Ein PDF, das ein Passwort braucht, wartet jetzt im Eingang mit einem Feld dafür. Nach „Öffnen“ liest nexpaper es wie jedes andere Dokument. Das Original bleibt, wie es kam, geschützt; daneben legt nexpaper eine geöffnete Fassung ohne Passwort auf dem Server ab, die Ansicht, Suche, Seitenwerkzeuge, Links und Exporte nehmen. Mit „Für künftige Dokumente merken“ bekommt das Passwort einen Namen, und geschützte PDFs, die du später selbst hochlädst oder die über Eingangsordner oder Postfach in deinen eigenen Tresor kommen, öffnen sich von selbst. Bis zu 10 je Person, nie wieder angezeigt, und die von anderen werden nie probiert."
+      },
+      {
+        "title": "Links nehmen mit, was zu einem Dokument gehört",
+        "where": "Dokument, Teilen",
+        "body": "Ein Link nach außen kann jetzt auch die verknüpften Dokumente zeigen, aber nur die, die du beim Anlegen ankreuzt und selbst teilen darfst; was später dazukommt, wird nicht ergänzt. Der Export für den Steuerberater kann mitnehmen, was zu seinen Dokumenten gehört („Verknüpfte Dokumente mitnehmen“). Und wer ein Dokument ändern darf, sieht jetzt, dass es über einen Link nach außen sichtbar ist, ohne an wen, und wird gefragt, bevor sich seine Seiten ändern, denn der Link zeigt das Dokument, wie es gerade ist."
+      },
+      {
+        "title": "Um ein Dokument bitten",
+        "where": "Eingang; Einstellungen, Teilen",
+        "body": "Mit „Um ein Dokument bitten“ bekommst du eine Adresse, die du jemandem ohne Konto gibst, dem Steuerbüro oder der Hausverwaltung, und dort legt er Dateien ab. Sie landen in deinem Eingang in deinem eigenen Tresor, mit dem Namen, den du der Bitte gegeben hast; abgelegt wird nichts von selbst. Eine Bitte gilt höchstens so lange wie ein Link, nimmt 10 Dateien, wenn du nichts anderes sagst, und lässt sich jederzeit zurückziehen. Die Seite hinter der Adresse zeigt, wer bittet und wie viele Dateien noch gehen, nie, was schon angekommen ist. Ab Werk aus: Der Betreiber schaltet Upload-Bitten unter Einstellungen, Teilen ein, und sie brauchen die öffentliche Adresse des Servers."
+      },
+      {
+        "title": "Der Text einer Mail als Dokument",
+        "where": "Einstellungen, Eingänge, Postfach",
+        "body": "Eine Mail ohne Anhang, etwa eine weitergeleitete Bestellbestätigung, kann jetzt zum Dokument werden: ein PDF mit ihrem Text im Eingang der Person, die sie geschickt hat, mit dem Betreff als Titel. Ab Werk aus. Nur für Mails von einer bestätigten Adresse einer Person, und nur, wenn dein Mailserver sagt, dass die Mail DMARC bestanden hat; nie für unbekannte Absender, und höchstens 50 am Tag je Person."
+      }
+    ],
+    "smallTitle": "Außerdem",
+    "small": [
+      "Vor dem Update: eine Sicherung machen. nexpaper legt selbst eine an, bevor es die Datenbank ändert, aber danach öffnet keine ältere Version diese Datenbank mehr; zurück geht es nur über die Sicherung.",
+      "Nach dem Update liest nexpaper einmal im Hintergrund die Nummern der Dokumente, die schon da sind. Vorschläge für ältere Dokumente erscheinen, während es durchgeht.",
+      "Neue Suchwörter: `verknüpft:ja` und `angeheftet:ja`, dazu ein Filter „Wiedervorlage“ auf der Seite Fristen.",
+      "Gemerkte PDF-Passwörter liegen verschlüsselt mit dem Server-Schlüssel. Eine Sicherung samt `secret.key` kann sie öffnen, also Sicherungen geschützt aufbewahren.",
+      "„Bereit fürs Internet?“ hat einen Punkt für Upload-Bitten, und der Probelauf einer Wiederherstellung nennt die Links, Upload-Bitten und gemerkten PDF-Passwörter, die eine Wiederherstellung zurückbrächte.",
+      "Für Programme: `GET /api/v1/search/sum`, `POST /api/v1/documents/bulk`, `/api/v1/saved-searches`, `/api/v1/documents/{id}/related`, `/api/v1/documents/{id}/transfer`, `/api/v1/pins`, `/api/v1/pdf-passwords` und `/api/v1/upload-requests`. Ein Dokument hat die neuen Felder `has_related`, `pinned`, `sender_memo` und `shown_outside`."
+    ]
+  },
   "1.4.3": {
     "lead": "Diesmal keine neue Funktion, sondern eine Nachricht: nexpaper gibt es jetzt als App für iPhone und iPad.",
     "sections": [

@@ -1,4 +1,63 @@
 {
+  "1.5.0": {
+    "lead": "Documents that belong together, an archive that adds up and takes several at once, a transfer code for the banking app, PDFs with a password, and an address through which somebody without an account sends you files.",
+    "sections": [
+      {
+        "title": "What goes together",
+        "where": "Document, Inbox, Archive",
+        "body": "A delivery note belongs to its invoice. Under the notes of a document there is now the section “Goes with”: “Connect” finds the other document, and from then on both show each other. nexpaper also reads the numbers on a paper (invoice, order and delivery note number) from the text and from the data of an e-invoice, and proposes documents with the same number to each other, with the reason, at the document and as a line in the inbox. “Doesn't fit” puts a proposal away for good. Nothing is connected by itself, and two documents whose senders are both known and different are never proposed. You need to be able to edit both documents; “Disconnect” takes a connection back and deletes nothing."
+      },
+      {
+        "title": "The archive adds up and takes several at once",
+        "where": "Archive",
+        "body": "Under the table the archive now says what the amounts of the documents it found add up to, euros first, other currencies beside them, and how many have no amount. With “Select” every row gets a box, and the bar adds or removes a tag, sets the kind, moves to another vault, connects with each other or moves to the trash, for up to 500 documents at once. What you may not change is left out, and a line says how many and why. Moving and the trash ask first."
+      },
+      {
+        "title": "Saved searches and pins",
+        "where": "Archive, side bar",
+        "body": "“Save” keeps a search as it stands, with its words and filters, under a name in the side bar under “Saved”, with the number of hits beside it. Up to 30, yours alone, to rename, reorder and delete. A pin on a document puts it under “Pinned” at the top of the archive's overview and on the quick upload, up to 20, also yours alone."
+      },
+      {
+        "title": "Transfer code for the banking app",
+        "where": "Document",
+        "body": "When a document names a recipient, an IBAN and an amount, there is now “Transfer”: a code (known as GiroCode) that your banking app scans, and the fields of the transfer fill themselves in. Every field says where it comes from: from the data of an e-invoice, or read from the text, which you then compare with the paper. With more than one IBAN in the document you choose one; the amount and the reference can be changed before you scan. nexpaper transfers nothing itself and stores nothing of it. “Mark as paid” ticks off the due date, if the document has one."
+      },
+      {
+        "title": "A note on a sender, and the follow-up",
+        "where": "Document, Organise, Deadlines",
+        "body": "A sender can carry a note of up to 500 characters, say the customer number, the contract number or a phone number. It shows on every document of that sender in the vault; everybody in the vault sees it, nobody through a share of a single document. And a document can get a date “Follow up” with a sentence of what to do then. It stands on the Deadlines page and reminds you on the day itself at 8; the sentence is never part of the reminder."
+      },
+      {
+        "title": "PDFs with a password",
+        "where": "Inbox, My account, Upload",
+        "body": "A PDF that needs a password now waits in the inbox with a field for it. After “Open” nexpaper reads it like any other document. The original stays as it came, protected; beside it nexpaper keeps an opened copy without the password on the server, which the view, the search, the page tools, links and exports use. With “Remember for future documents” the password gets a name, and protected PDFs that you upload yourself later, or that come into your own vault through the intake folder or the mailbox, open by themselves. Up to 10 per person, never shown again, and nobody else's are ever tried."
+      },
+      {
+        "title": "Links take along what goes with a document",
+        "where": "Document, Share",
+        "body": "A link to the outside can now also show the documents that go with the one you share, but only those you tick when you make it and may share yourself; what comes to go with it later is not added. The export for the tax adviser can take along what goes with its documents (“Take the documents that go with them”). And whoever may change a document now sees that it is visible to the outside through a link, without to whom, and is asked before changing its pages, because the link shows the document as it is now."
+      },
+      {
+        "title": "Ask for a document",
+        "where": "Inbox; Settings, Sharing",
+        "body": "With “Ask for a document” you get an address that you give to somebody without an account, the tax office or the property manager, who drops files there. The files land in your inbox in your own vault, marked with the name you gave the request; nothing is filed by itself. A request lasts at most as long as a link, takes 10 files unless you say otherwise, and can be withdrawn at any time. The page behind the address shows who asks and how many files still go, never what has arrived. Off from the start: the operator switches upload requests on under Settings, Sharing, and they need the public address of the server."
+      },
+      {
+        "title": "A mail's text as a document",
+        "where": "Settings, Inputs, Mailbox",
+        "body": "A mail without an attachment, such as a forwarded order confirmation, can now become a document: a PDF of its text in the inbox of the person who sent it, titled with the subject. Off from the start. Only for mails from a confirmed address of a person, and only when your mail server says the mail passed DMARC; never for unknown senders, and at most 50 a day per person."
+      }
+    ],
+    "smallTitle": "Also",
+    "small": [
+      "Before the update: make a backup. nexpaper makes one itself before it changes the database, but after that no older version opens this database any more; the way back is only through the backup.",
+      "After the update nexpaper reads the numbers of the documents that are already there once, in the background. Proposals for older documents appear as it gets through them.",
+      "New search words: `linked:yes` and `pinned:yes`, and a filter “Follow up” on the Deadlines page.",
+      "Remembered PDF passwords are stored encrypted with the server key. A backup together with `secret.key` can open them, so keep backups protected.",
+      "“Ready for the internet?” has a point for upload requests, and the trial run of a restore names the links, upload requests and remembered PDF passwords that a restore would bring back.",
+      "For programs: `GET /api/v1/search/sum`, `POST /api/v1/documents/bulk`, `/api/v1/saved-searches`, `/api/v1/documents/{id}/related`, `/api/v1/documents/{id}/transfer`, `/api/v1/pins`, `/api/v1/pdf-passwords` and `/api/v1/upload-requests`. A document has the new fields `has_related`, `pinned`, `sender_memo` and `shown_outside`."
+    ]
+  },
   "1.4.3": {
     "lead": "No new feature this time, but news: nexpaper is now available as an app for iPhone and iPad.",
     "sections": [
