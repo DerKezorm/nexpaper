@@ -330,8 +330,9 @@ function Doc({ document: d, setDocument, reload, slots }: { document: DocumentIn
           </div>
           <TransferButton info={transfer} onClick={() => setPaying(true)} />
           {d.status !== 'trash' && (
-            <Button variant="line" size="sm" onClick={() => void togglePin()} disabled={pinning} aria-pressed={!!d.pinned} title={d.pinned ? t('pins.unpin') : t('pins.pin')} data-testid="pin-button">
-              <Pin size={15} className={d.pinned ? 'fill-current text-accent' : ''} aria-hidden /> {d.pinned ? t('pins.pinned') : t('pins.pin')}
+            <Button variant="line" size="sm" onClick={() => void togglePin()} disabled={pinning} aria-pressed={!!d.pinned} aria-label={d.pinned ? t('pins.pinned') : t('pins.pin')} title={d.pinned ? t('pins.unpin') : t('pins.pin')} data-testid="pin-button">
+              {/* Beside the title on a laptop only the pin; the word from wide screens on and on a phone (own line). */}
+              <Pin size={15} className={d.pinned ? 'fill-current text-accent' : ''} aria-hidden /> <span className="lg:hidden 2xl:inline">{d.pinned ? t('pins.pinned') : t('pins.pin')}</span>
             </Button>
           )}
           {d.can_share && (
@@ -587,7 +588,7 @@ function Details({ document: d, canEdit, vaults, path, change, problem, onShare,
       </Row>
       {/* The vault's note on the sender (K1): only for the vault's members; the pencil for who may change things there. */}
       {d.sender && typeof d.sender_memo === 'string' && (d.sender_memo || memoEditable) && (
-        <div className="pl-[calc(7rem+0.75rem)]">
+        <div className="sm:pl-[calc(7rem+0.75rem)]">
           <MemoLine sender={d.sender} memo={d.sender_memo} canEdit={memoEditable} onSaved={(memo) => onMoved({ ...d, sender_memo: memo })} />
         </div>
       )}

@@ -84,6 +84,9 @@ def test_nexpapers_own_lines_are_version_2_in_utf_8_with_a_point_and_two_places(
                      "R-2026-00017 Müller"]
     assert transfer.payload(name="A", iban=FIRST, cents=5).decode().split("\n")[-1] == "EUR0.05", "no empty end"
     assert transfer.amount_text(99_999_999_999) == "EUR999999999.99"
+    # Always two places, the point as the sign, no separator of thousands.
+    assert [transfer.amount_text(c) for c in (1, 10, 1230, 100000, 123456789)] == [
+        "EUR0.01", "EUR0.10", "EUR12.30", "EUR1000.00", "EUR1234567.89"]
     for wrong in (0, -1, 100_000_000_000):
         with pytest.raises(Exception) as caught:
             transfer.payload(name="A", iban=FIRST, cents=wrong)

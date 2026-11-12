@@ -91,11 +91,25 @@ def test_twenty_and_the_twenty_first_is_told_kindly(house: dict[str, Any]) -> No
         assert pin(tom, ids[20]).status_code == 200
 
 
-def test_two_pins_at_the_same_moment_never_make_twenty_one(house: dict[str, Any]) -> None:
+def test_two_pins_at_the_same_moment_never_make_twenty_one(house: dict[str, Any],
+                                                          monkeypatch: pytest.MonkeyPatch) -> None:
     ids = [add_document(house["vault"], house["jule"], f"Dok {n}") for n in range(21)]
     with SessionLocal() as db:
         for document_id in ids[:19]:
             pins.pin(db, house["tom"].id, document_id)
+    # Both have counted before either writes, if nothing keeps them apart: the counting waits for the other one a moment.
+    counted = threading.Barrier(2)
+    real_count = pins.count
+
+    def slow_count(db: Any, uid: int) -> int:
+        found = real_count(db, uid)
+        try:
+            counted.wait(1.5)
+        except threading.BrokenBarrierError:
+            pass
+        return found
+
+    monkeypatch.setattr(pins, "count", slow_count)
     start = threading.Barrier(2)
     results: list[Any] = []
 
