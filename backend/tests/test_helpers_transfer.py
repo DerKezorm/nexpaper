@@ -309,3 +309,32 @@ def test_never_through_a_link(client: TestClient, jule: Account, ready: int) -> 
     # No route of a link speaks of a transfer.
     assert not [route for route in browser.app.routes if "/l/" in getattr(route, "path", "")
                 and "transfer" in getattr(route, "path", "")]
+
+
+@pytest.mark.parametrize("breaker", ["\n", "\r", "\r\n", "\x0b", "\x0c", "\x1e", "\x85", "\u2028", "\u2029"])
+def test_a_name_from_an_e_invoice_never_parts_the_lines_of_the_code(client: TestClient, jule: Account,
+                                                                      breaker: str) -> None:
+    """The seller's name comes out of a file somebody sent. A line break in it must not start a new line of the code:
+    what follows would be read as the next field (another IBAN). It becomes one line with a blank."""
+    doc = add_document(own_vault(jule), jule, "Strom", sender="Stadtwerke Lindenau", amount=12345)
+    with_invoice(doc, seller=f"Stadtwerke{breaker}{STRANGER}{breaker}Lindenau")
+    with new_client(jule) as browser:
+        found = browser.get(path(doc)).json()
+        assert found["recipient"] == f"Stadtwerke {STRANGER} Lindenau" and found["ready"] is True
+        answer = code(browser, doc)
+        assert answer.status_code == 200, answer.text
+    lines = b"BCD\n002\n1\nSCT\n\nStadtwerke " + STRANGER.encode() + b" Lindenau\n" + FIRST.encode() \
+        + b"\nEUR123.45\n\n\nR-2026-17"
+    assert answer.text == transfer.svg_of(lines)
+    assert lines.count(b"\n") == 10
+
+
+@pytest.mark.parametrize("breaker", ["\n", "\r", "\x85", "\u2028", "\x00"])
+def test_the_lines_refuse_what_could_part_them(breaker: str) -> None:
+    """The last guard, whatever cleaned the parts before: no part of a code holds a character that ends a line."""
+    for parts in ({"name": f"A{breaker}B", "iban": FIRST, "cents": 100},
+                  {"name": "A", "iban": FIRST, "cents": 100, "text": f"R{breaker}1"},
+                  {"name": "A", "iban": f"{FIRST}{breaker}", "cents": 100}):
+        with pytest.raises(Exception) as caught:
+            transfer.payload(**parts)  # type: ignore[arg-type]
+        assert caught.value.status_code == 422  # type: ignore[attr-defined]

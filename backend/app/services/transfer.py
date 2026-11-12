@@ -165,8 +165,10 @@ def payload(*, name: str, iban: str, cents: int, text: str = "", bic: str = "", 
     """The data of an EPC QR code (EPC069-12), in UTF-8 (character set 1), lines parted by a line feed; what is empty at
     the end is left out. ``bic``, ``purpose_code``, ``reference`` and ``info`` are not used by nexpaper (they are here
     for the example of the standard)."""
-    if not 1 <= len(name) <= NAME_MAX or "\n" in name:
+    if not 1 <= len(name) <= NAME_MAX or any(_parts_lines(char) for char in name):
         raise error("invalid_recipient", "The recipient's name has 1 to 70 characters.", 422)
+    if any(_parts_lines(char) for part in (iban, text, bic, purpose_code, reference, info) for char in part):
+        raise error("invalid_purpose", "A code holds no line breaks.", 422)
     if not AMOUNT_MIN <= cents <= AMOUNT_MAX:
         raise error("invalid_amount", "An amount from 0.01 to 999,999,999.99 euros.", 422)
     amount = amount_text(cents) if version == "002" or cents % 100 else f"{EURO}{cents // 100}"
@@ -177,6 +179,13 @@ def payload(*, name: str, iban: str, cents: int, text: str = "", bic: str = "", 
     if len(data) > PAYLOAD_MAX:
         raise error("transfer_too_long", "The name and the purpose are too long together for a code.", 422)
     return data
+
+
+def _parts_lines(char: str) -> bool:
+    """A character a reader of the code may take for the end of a line (a line feed, a carriage return, any other
+    control character, the line and paragraph separators): it must never reach a line of the code, or what follows it
+    would be read as the next field (another IBAN, another amount)."""
+    return ord(char) < 32 or char in "\x7f\x85\u2028\u2029"
 
 
 def svg_of(data: bytes) -> str:
