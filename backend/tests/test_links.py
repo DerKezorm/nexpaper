@@ -147,7 +147,7 @@ def test_a_link_shows_one_document_to_somebody_without_an_account(client: TestCl
             # The operator has no display name: the page says nothing rather than the name they sign in with.
             "shared_by": "", "recipient": "Tax office", "title": "Contract", "sender": "Hansa", "kind": None,
             "date": "2026-03-14", "pages": 1, "until": "2026-10-15T12:00:00Z", "allow_download": True, "has_file": True,
-            "viewable": True, "has_pages": True,
+            "viewable": True, "has_pages": True, "also": [],
         }
         file = outside.get(f"/api/v1/l/{token}/file")
         assert file.status_code == 200 and file.content == PDF and file.headers["content-type"] == "application/pdf"

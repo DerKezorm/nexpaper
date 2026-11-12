@@ -3201,5 +3201,69 @@
     "noteLabel": "Was dann?",
     "placeholder": "z. B. nachfragen, ob erstattet",
     "hint": "Erinnert am Tag selbst um 8 Uhr. Der Satz steht nur hier und auf der Seite Fristen, nie in der Erinnerung."
+  },
+  "linkRelated": {
+    "linkText": "Für Leute ohne Konto, etwa Steuerberater, Versicherung oder Vermieter. Der Link zeigt nur dieses Dokument und, wenn du es unten wählst, die damit verknüpften. Er läuft von selbst ab.",
+    "sharedBy_one": "<name>{{name}}</name> hat dir ein Dokument freigegeben",
+    "sharedBy_other": "<name>{{name}}</name> hat dir {{count}} Dokumente freigegeben",
+    "sharedByUnknown_one": "Dir wurde ein Dokument freigegeben",
+    "sharedByUnknown_other": "Dir wurden {{count}} Dokumente freigegeben",
+    "purged": "Ein mitgezeigtes Dokument wurde endgültig gelöscht und wird über den Link nicht mehr gezeigt.",
+    "show_one": "Auch das verknüpfte Dokument zeigen",
+    "show_other": "Auch die {{count}} verknüpften Dokumente zeigen",
+    "showHint": "Nur was du selbst per Link teilen darfst. Später Verknüpftes kommt nicht von selbst dazu.",
+    "most": "Höchstens {{count}} Dokumente je Link.",
+    "listLabel": "Verknüpfte Dokumente für den Link",
+    "alsoCount_one": "zeigt auch {{count}} weiteres",
+    "alsoCount_other": "zeigt auch {{count}} weitere",
+    "title": "Gehört dazu",
+    "first": "Das geteilte Dokument",
+    "back": "Zurück zu „{{title}}“",
+    "pages_one": "{{count}} Seite",
+    "pages_other": "{{count}} Seiten",
+    "footer": "Nur diese {{count}} Dokumente sind freigegeben. {{name}} sieht, wann der Link geöffnet wurde, und kann ihn jederzeit zurückziehen.",
+    "footerUnknown": "Nur diese {{count}} Dokumente sind freigegeben. Wer den Link gemacht hat, sieht, wann er geöffnet wurde, und kann ihn jederzeit zurückziehen.",
+    "through": "Auch über einen anderen Link sichtbar",
+    "throughLine": "Für {{to}} über den Link an „{{title}}“, bis {{until}}",
+    "throughLineOther": "Für {{to}} über den Link an einem anderen Dokument, bis {{until}}",
+    "takeOut": "Herausnehmen",
+    "takeOutFor": "Aus dem Link für {{to}} herausnehmen",
+    "takenOut": "Aus dem Link genommen.",
+    "confirm": {
+      "title": "Aus dem Link nehmen?",
+      "text": "Wer den Link für {{to}} hat, sieht „{{title}}“ danach nicht mehr. Wieder zeigen lässt es sich nur über einen neuen Link.",
+      "confirm": "Herausnehmen"
+    },
+    "revived_one": "Zurückspielen zeigt {{count}} Dokument wieder über einen Link, das seit der Sicherung herausgenommen wurde oder dessen Link zurückgezogen wurde.",
+    "revived_other": "Zurückspielen zeigt {{count}} Dokumente wieder über einen Link, die seit der Sicherung herausgenommen wurden oder deren Link zurückgezogen wurde.",
+    "events": {
+      "shown": "hat es über einen Link an {{title}} mitgezeigt",
+      "shownOther": "hat es über den Link eines anderen Dokuments mitgezeigt",
+      "left": {
+        "unlinked": "hat die Verknüpfung gelöst, der Link an {{title}} zeigt es nicht mehr",
+        "taken_out": "hat es aus dem Link an {{title}} genommen",
+        "revoked": "hat den Link an {{title}} zurückgezogen, der es mitzeigte"
+      },
+      "leftOther": {
+        "unlinked": "hat die Verknüpfung gelöst, der Link eines anderen Dokuments zeigt es nicht mehr",
+        "taken_out": "hat es aus dem Link eines anderen Dokuments genommen",
+        "revoked": "hat den Link eines anderen Dokuments zurückgezogen, der es mitzeigte"
+      },
+      "gone": {
+        "unlinked": "hat die Verknüpfung gelöst, ein Link zeigt {{title}} nicht mehr mit",
+        "taken_out": "hat {{title}} aus einem Link genommen",
+        "purged": "hat ein mitgezeigtes Dokument aus einem Link genommen, es wurde endgültig gelöscht"
+      },
+      "goneOther": {
+        "unlinked": "hat die Verknüpfung gelöst, ein Link zeigt ein anderes Dokument nicht mehr mit",
+        "taken_out": "hat ein anderes Dokument aus einem Link genommen",
+        "purged": "hat ein mitgezeigtes Dokument aus einem Link genommen, es wurde endgültig gelöscht"
+      }
+    }
+  },
+  "exportRelated": {
+    "take": "Verknüpfte Dokumente mitnehmen",
+    "hint": "Auch außerhalb von Zeitraum und Filter, nur was du in deinen Tresoren siehst, jedes einmal. Die Liste nennt sie in einer eigenen Spalte.",
+    "taken": "mit verknüpften"
   }
 }

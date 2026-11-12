@@ -29,7 +29,12 @@ function list(t: TFunction, names: string[]): string {
 
 /** A line that is a sentence of its own, without a name in front (what happened to the document by itself). */
 export function standsAlone(event: DocumentEvent): boolean {
-  return event.action === 'taken_over' || (event.action === 'link_revoked' && event.detail?.reason === 'account_deleted')
+  return (
+    event.action === 'taken_over' ||
+    (event.action === 'link_revoked' && event.detail?.reason === 'account_deleted') ||
+    // N2: a further document deleted for good left the link by itself (the server names nobody).
+    (event.action === 'link_also_gone' && event.detail?.reason === 'purged')
+  )
 }
 
 /** Who did it: the person, somebody through the link made for whom, or nexpaper (reading, a deleted account). */
@@ -165,6 +170,19 @@ export function eventWhat(event: DocumentEvent, t: TFunction, context: EventCont
       const merged = set && detail.by === 'merge' ? 'Merge' : ''
       if (title === null) return t(`related.events.${set ? 'set' : 'unset'}${merged}Other`)
       return t(`related.events.${set ? 'set' : 'unset'}${merged}`, { title: iso(title) })
+    }
+    // A link of another document shows it too (N2), and no longer: the other document by its title, only when the person
+    // may see it (the server leaves it out else).
+    case 'link_also_shown':
+    case 'link_also_left':
+    case 'link_also_gone': {
+      const title = typeof detail.title === 'string' && typeof detail.document === 'number' ? detail.title : null
+      if (event.action === 'link_also_shown') return title === null ? t('linkRelated.events.shownOther') : t('linkRelated.events.shown', { title: iso(title) })
+      const group = event.action === 'link_also_left' ? 'left' : 'gone'
+      if (group === 'gone' && detail.reason === 'purged') return t('linkRelated.purged')
+      const reason = ['unlinked', 'taken_out', 'revoked', 'purged'].includes(String(detail.reason)) ? String(detail.reason) : 'taken_out'
+      const key = group === 'left' && reason === 'purged' ? 'taken_out' : group === 'gone' && reason === 'revoked' ? 'taken_out' : reason
+      return title === null ? t(`linkRelated.events.${group}Other.${key}`) : t(`linkRelated.events.${group}.${key}`, { title: iso(title) })
     }
     default:
       return t('docs.events.something')

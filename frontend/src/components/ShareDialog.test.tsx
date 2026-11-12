@@ -200,3 +200,66 @@ describe('links to the outside', () => {
     expect(page.text).toContain('opened 2×')
   })
 })
+
+describe('a link that shows what goes with the document (N2)', () => {
+  const goesWith = (id: number, title: string, over: Record<string, unknown> = {}) => ({
+    id, title, kind: null, sender: null, date: '2026-10-01', status: 'filed', can_unlink: true, linked_at: null, can_share: true, ...over,
+  })
+  const made = { ...link({ id: 12, recipient: 'Vermieter' }), token: 'lnk_secret', url: 'https://paper.example.com/l/lnk_secret' }
+
+  beforeEach(() => {
+    vi.stubGlobal('isSecureContext', false)
+    server.answers['GET /api/v1/documents/5/related'] = [goesWith(8, 'Lieferschein'), goesWith(9, 'Mahnung'), goesWith(10, 'Fremd', { can_share: false })]
+    server.answers['POST /api/v1/documents/5/links'] = made
+  })
+
+  it('offers the documents the person may share, off from the start, and sends none unless chosen', async () => {
+    await open()
+    expect(page.text).toContain('Auch die 2 verknüpften Dokumente zeigen')
+    expect(page.text).toContain('Der Link zeigt nur dieses Dokument und, wenn du es unten wählst, die damit verknüpften. Er läuft von selbst ab.')
+    expect(page.text).not.toContain('Lieferschein')
+    expect(page.text).not.toContain('Fremd')
+    await page.type(document.querySelector<HTMLInputElement>('input[aria-label="Für wen, z. B. Steuerbüro"]'), 'Vermieter')
+    await page.click(page.button('Link anlegen'))
+    expect(server.called('POST', '/api/v1/documents/5/links')!.body).not.toHaveProperty('also')
+  })
+
+  it('with the switch on lists them to leave some out, and sends the ones still chosen', async () => {
+    await open()
+    const box = document.querySelector('[data-testid="link-related"]')!
+    await page.check(box.querySelector<HTMLInputElement>('input[type="checkbox"]'))
+    expect(page.text).toContain('Lieferschein')
+    expect(page.text).toContain('Mahnung')
+    expect(page.text).not.toContain('Fremd')
+    const items = [...box.querySelectorAll<HTMLInputElement>('ul input[type="checkbox"]')]
+    expect(items.map((i) => i.checked)).toEqual([true, true])
+    await page.check(items[1])
+    await page.type(document.querySelector<HTMLInputElement>('input[aria-label="Für wen, z. B. Steuerbüro"]'), 'Vermieter')
+    await page.click(page.button('Link anlegen'))
+    expect(server.called('POST', '/api/v1/documents/5/links')!.body).toEqual({ recipient: 'Vermieter', days: 7, allow_download: true, also: [8] })
+  })
+
+  it('offers nothing when nothing that goes with it may be shared', async () => {
+    server.answers['GET /api/v1/documents/5/related'] = [goesWith(10, 'Fremd', { can_share: false })]
+    await open()
+    expect(document.querySelector('[data-testid="link-related"]')).toBeNull()
+    expect(page.text).toContain('Der Link zeigt nur dieses Dokument und läuft von selbst ab.')
+  })
+
+  it('says in the list of links how many more a link shows', async () => {
+    server.answers['GET /api/v1/documents/5/links'] = [link({ also_count: 2 })]
+    await open()
+    expect(page.text).toContain('bis 31.10.2026 · 2× geöffnet · zeigt auch 2 weitere')
+  })
+
+  it('takes no more than ten', async () => {
+    server.answers['GET /api/v1/documents/5/related'] = Array.from({ length: 12 }, (_, n) => goesWith(20 + n, `Beleg ${n}`))
+    await open()
+    const box = document.querySelector('[data-testid="link-related"]')!
+    await page.check(box.querySelector<HTMLInputElement>('input[type="checkbox"]'))
+    const items = [...box.querySelectorAll<HTMLInputElement>('ul input[type="checkbox"]')]
+    expect(items.filter((i) => i.checked)).toHaveLength(10)
+    expect(items.filter((i) => i.disabled)).toHaveLength(2)
+    expect(page.text).toContain('Höchstens 10 Dokumente je Link.')
+  })
+})

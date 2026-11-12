@@ -4,7 +4,10 @@
 or more of the person's vaults, and the filters of the archive (the search, kind, sender, tag, owner). The rights are in
 the query that finds them (``search.where`` with the person's scope and rights), at the moment the ZIP is packed, never
 filtered afterwards. Documents in the trash and documents still being read are left out. Per document, as chosen: the
-searchable PDF, the original as it came, the e-invoice as XML; and a list of all of them as CSV.
+searchable PDF, the original as it came, the e-invoice as XML; and a list of all of them as CSV. On request the
+documents that go with them come along (N2, ``with_related``): directly, outside the period and the filters, only those
+the person sees in a vault of theirs, never from the trash, each once; the list then names in a last column the files
+of the documents in the ZIP that go with each. The limits hold for the whole.
 
 **How it looks inside.** Folders as on the disk: vault, year, sender; the file named by date and title
 (``2026-10-06 Rechnung Heizungswartung.pdf``). Every part of a name goes through ``names.clean_segment``: no ``..``, no
@@ -40,7 +43,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
 
-from sqlalchemy import ColumnElement, and_, case, delete, func, select, update
+from sqlalchemy import ColumnElement, and_, case, delete, func, or_, select, update
 from sqlalchemy.orm import Session
 
 from .. import clock, private
@@ -55,6 +58,7 @@ from ..models import (
     Export,
     ExportLink,
     Kind,
+    Related,
     Sender,
     Vault,
     VaultMember,
@@ -88,6 +92,8 @@ CSV_HEADINGS = {
     "en": ("Date", "Title", "Sender", "Kind", "Amount", "Currency", "Invoice number", "Vault", "File",
            "Due", "Contract until", "Cancel by", "Warranty until", "Done", "Keep until"),
 }
+#: The last column when the documents that go with them came along (N2): the files of those in the ZIP.
+RELATED_HEADING = {"de": "Gehört zu", "en": "Goes with"}
 #: The deadlines in the list (F1): the columns of the dates, and the word for a deadline that is done.
 DEADLINE_COLUMNS = ("due", "contract_end", "notice", "warranty_end")
 DONE_WORD = {"de": {"due": "bezahlt", "contract_end": "gekündigt", "warranty_end": "erledigt"},
@@ -131,6 +137,8 @@ class Params:
     tag: str | None = None
     status: str | None = None
     content: Content = field(default_factory=Content)
+    #: The documents that go with them come along (N2, ``with_related``).
+    related: bool = False
 
     def stored(self) -> dict[str, Any]:
         return {
@@ -140,6 +148,7 @@ class Params:
             "sender": self.sender, "tag": self.tag, "status": self.status,
             "content": {"pdf": self.content.pdf, "original": self.content.original, "csv": self.content.csv,
                         "xml": self.content.xml},
+            "related": self.related,
         }
 
     @classmethod
@@ -165,6 +174,7 @@ class Params:
             status=data.get("status") if data.get("status") in ("inbox", "filed") else None,
             content=Content(pdf=content.get("pdf") is not False, original=content.get("original") is True,
                             csv=content.get("csv") is not False, xml=content.get("xml") is not False),
+            related=data.get("related") is True,
         )
 
 
@@ -319,6 +329,61 @@ def matching(db: Session, uid: int, params: Params, limit: int) -> Iterator[Foun
         after = rows[-1][0].id
 
 
+def with_related(db: Session, uid: int, ids: set[int]) -> list[int]:
+    """The documents that go with these ones (N2, ``services/related.py``), directly: no chains. Only those the person
+    sees in a vault they are a member of (as the export itself takes its documents; one seen through a share alone stays
+    out), none in the trash or still being read, none that is among ``ids`` already, each once; also outside the period
+    and the filters of the export."""
+    if not ids:
+        return []
+    ordered = sorted(ids)
+    partners: set[int] = set()
+    for start in range(0, len(ordered), 500):
+        part = ordered[start:start + 500]
+        for low, high in db.execute(select(Related.low_id, Related.high_id).where(
+                or_(Related.low_id.in_(part), Related.high_id.in_(part)))):
+            for one, other in ((low, high), (high, low)):
+                if one in ids and other not in ids:
+                    partners.add(other)
+    found: list[int] = []
+    wanted = sorted(partners)
+    for start in range(0, len(wanted), 500):
+        found.extend(db.scalars(select(Document.id).where(
+            Document.id.in_(wanted[start:start + 500]),
+            Document.vault_id.in_(select(VaultMember.vault_id).where(VaultMember.user_id == uid)),
+            Document.status.not_in((PROCESSING, TRASH)))))
+    return sorted(found)
+
+
+def pairs_among(db: Session, ids: set[int]) -> dict[int, set[int]]:
+    """Per document of the export, the others in the export that go with it (for the column of the list)."""
+    out: dict[int, set[int]] = {}
+    ordered = sorted(ids)
+    for start in range(0, len(ordered), 500):
+        part = ordered[start:start + 500]
+        for low, high in db.execute(select(Related.low_id, Related.high_id).where(Related.low_id.in_(part))):
+            if high in ids:
+                out.setdefault(low, set()).add(high)
+                out.setdefault(high, set()).add(low)
+    return out
+
+
+def _found_of(db: Session, ids: list[int]) -> list[Found]:
+    """``Found`` for documents by their number (the ones that came along with ``with_related``)."""
+    out: list[Found] = []
+    for start in range(0, len(ids), 500):
+        for document, version, vault, sender, kind in db.execute(
+            select(Document, Version, Vault, Sender, Kind)
+            .outerjoin(Version, (Version.document_id == Document.id) & (Version.n == Document.current_version))
+            .outerjoin(Vault, Vault.id == Document.vault_id)
+            .outerjoin(Sender, Sender.id == Document.sender_id)
+            .outerjoin(Kind, Kind.id == Document.kind_id)
+            .where(Document.id.in_(ids[start:start + 500])).order_by(Document.id)
+        ).all():
+            out.append(Found(document, version, vault, sender, kind))
+    return out
+
+
 @dataclass
 class Preview:
     documents: int
@@ -344,18 +409,31 @@ def preview(db: Session, uid: int, params: Params, language: str) -> Preview:
             .group_by(Document.currency).order_by(Document.currency)).all()}
         size = 0
         sample: list[str] = []
+        # As ``files_of`` takes them: a searchable copy beside the original counts as large as the original; a PDF
+        # that is its own searchable copy is in the ZIP once, an e-invoice as XML once.
+        content = params.content
+        xml_file = func.lower(Version.original_path).like("%.xml")
+        factor = case(
+            (xml_file, int(content.xml or content.original)),
+            (Version.archive_path != "", int(content.pdf) + int(content.original)),
+            else_=int(content.pdf or content.original),
+        )
+        if params.related and count <= MAX_DOCUMENTS:
+            # The documents that go with them count with the rest: in the number, the sum, the size and the limits.
+            extra = with_related(db, uid, set(db.scalars(select(Document.id).where(and_(*clauses)))))
+            count += len(extra)
+            for start in range(0, len(extra), 500):
+                part = Document.id.in_(extra[start:start + 500])
+                for currency, amount in db.execute(
+                        select(Document.currency, func.sum(Document.amount)).where(part, Document.amount.is_not(None))
+                        .group_by(Document.currency)).all():
+                    totals[str(currency)] = totals.get(str(currency), 0) + int(amount or 0)
+                size += int(db.scalar(select(func.coalesce(func.sum(Version.size * factor), 0)).select_from(Document)
+                                      .join(Version, current).where(part)) or 0)
+            totals = dict(sorted(totals.items()))
         if count <= MAX_DOCUMENTS:
-            # As ``files_of`` takes them: a searchable copy beside the original counts as large as the original; a PDF
-            # that is its own searchable copy is in the ZIP once, an e-invoice as XML once.
-            content = params.content
-            xml_file = func.lower(Version.original_path).like("%.xml")
-            factor = case(
-                (xml_file, int(content.xml or content.original)),
-                (Version.archive_path != "", int(content.pdf) + int(content.original)),
-                else_=int(content.pdf or content.original),
-            )
-            size = int(db.scalar(select(func.coalesce(func.sum(Version.size * factor), 0)).select_from(Document)
-                                 .join(Version, current).where(and_(*clauses))) or 0)
+            size += int(db.scalar(select(func.coalesce(func.sum(Version.size * factor), 0)).select_from(Document)
+                                  .join(Version, current).where(and_(*clauses))) or 0)
             names = Names()
             first = db.execute(
                 select(Document, Version, Vault, Sender, Kind).outerjoin(Version, current)
@@ -470,7 +548,11 @@ def _pack(db: Session, export_id: int) -> None:
     if not params.vault_ids:
         raise PackError("nothing_found")
     with changes.snapshot(db):
-        found = sorted(matching(db, uid, params, MAX_DOCUMENTS + 1), key=_order)
+        found = list(matching(db, uid, params, MAX_DOCUMENTS + 1))
+        if params.related and len(found) <= MAX_DOCUMENTS:
+            # The documents that go with them (N2), in the same moment, and under the same limits as the rest.
+            found += _found_of(db, with_related(db, uid, {item.document.id for item in found}))
+        found.sort(key=_order)
     if len(found) > MAX_DOCUMENTS:
         raise PackError("too_many_documents")
     if not found:
@@ -485,6 +567,8 @@ def _pack(db: Session, export_id: int) -> None:
     vaults: set[int] = set()
     size = 0
     total = 0
+    #: The first file of each document in the ZIP, for the column of the documents that go with it.
+    first_names: dict[int, str] = {}
     for item in found:
         document, version = item.document, item.version
         vaults.add(document.vault_id)
@@ -516,6 +600,12 @@ def _pack(db: Session, export_id: int) -> None:
             *terms.get(document.id, ("",) * (len(DEADLINE_COLUMNS) + 1)),
             keep_until[document.id].isoformat() if document.id in keep_until else "",
         ))
+        first_names[document.id] = first
+    if params.related:
+        # One more column: the files of the documents in the ZIP that go with each (only those in it).
+        together = pairs_among(db, set(first_names))
+        rows = [(*row, ", ".join(sorted(n for n in (first_names[o] for o in together.get(item.document.id, ())) if n)))
+                for row, item in zip(rows, found, strict=True)]
     if size > MAX_BYTES:
         raise PackError("too_large")
     try:
@@ -540,7 +630,8 @@ def _pack(db: Session, export_id: int) -> None:
                 archive.write(entry.source, entry.name,
                               compress_type=zipfile.ZIP_STORED if entry.stored else zipfile.ZIP_DEFLATED)
             if params.content.csv:
-                archive.writestr(CSV_NAME[language], _csv(rows, language), compress_type=zipfile.ZIP_DEFLATED)
+                archive.writestr(CSV_NAME[language], _csv(rows, language, params.related),
+                                 compress_type=zipfile.ZIP_DEFLATED)
         private.tighten(partial)
         partial.replace(target)
     except BaseException:
@@ -584,10 +675,10 @@ def _terms(db: Session, ids: list[int], language: str) -> dict[int, tuple[str, .
     return {i: (*(c.get(k, "") for k in DEADLINE_COLUMNS), ", ".join(done.get(i, []))) for i, c in cells.items()}
 
 
-def _csv(rows: list[tuple[str, ...]], language: str) -> bytes:
+def _csv(rows: list[tuple[str, ...]], language: str, related: bool = False) -> bytes:
     out = io.StringIO()
     writer = csv.writer(out, delimiter=";", lineterminator="\r\n", quoting=csv.QUOTE_MINIMAL)
-    writer.writerow(CSV_HEADINGS[language])
+    writer.writerow((*CSV_HEADINGS[language], RELATED_HEADING[language]) if related else CSV_HEADINGS[language])
     for row in rows:
         # The amount (made here, a number) stays as it is; every text that came from a person is made safe.
         writer.writerow([cell if index in MADE_HERE else safe_cell(cell) for index, cell in enumerate(row)])

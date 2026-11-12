@@ -232,6 +232,9 @@ def _sharing_counts(db: Session, ids: list[int]) -> tuple[dict[int, int], dict[i
             select(Link.document_id, func.count()).join(Document, Document.id == Link.document_id)
             .where(Link.document_id.in_(ids), sharing.live(clock.now(), current.max_days))
             .group_by(Link.document_id)).all())
+        # N2: a link of another document that shows this one counts as one of its links.
+        for document_id, count in sharing.also_link_counts(db, ids).items():
+            links[document_id] = int(links.get(document_id, 0)) + count
     return {k: int(v) for k, v in people.items()}, {k: int(v) for k, v in links.items()}
 
 
@@ -733,6 +736,10 @@ def delete_for_good(db: Session, document: Document) -> None:
     jobs.enqueue(db, jobs.DELETE_FILES, document.id, {"paths": paths, "cache_of": document.id})
     sender_id = document.sender_id
     tag_ids = list(db.scalars(select(DocumentTag.tag_id).where(DocumentTag.document_id == document.id)))
+    from . import sharing
+
+    # It leaves every link that showed it as a further document (N2), with a line at the links' own documents.
+    sharing.document_purged(db, document.id)
     db.delete(document)
     catalog.prune(db, [sender_id], tag_ids)
 

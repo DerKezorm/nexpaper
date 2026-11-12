@@ -3201,5 +3201,69 @@
     "noteLabel": "What then?",
     "placeholder": "e.g. ask whether it was refunded",
     "hint": "Reminds you on the day itself at 8. The sentence stays here and on the deadlines page, never in the reminder."
+  },
+  "linkRelated": {
+    "linkText": "For people without an account, such as a tax advisor, an insurer or a landlord. The link shows this document only and, if you choose them below, the documents that go with it. It expires on its own.",
+    "sharedBy_one": "<name>{{name}}</name> has shared a document with you",
+    "sharedBy_other": "<name>{{name}}</name> has shared {{count}} documents with you",
+    "sharedByUnknown_one": "A document was shared with you",
+    "sharedByUnknown_other": "{{count}} documents were shared with you",
+    "purged": "A document shown through a link was deleted for good and is no longer shown through it.",
+    "show_one": "Also show the document that goes with it",
+    "show_other": "Also show the {{count}} documents that go with it",
+    "showHint": "Only what you may share by a link yourself. What goes with it later is never added by itself.",
+    "most": "At most {{count}} documents per link.",
+    "listLabel": "Documents that go with it, for the link",
+    "alsoCount_one": "shows {{count}} more",
+    "alsoCount_other": "shows {{count}} more",
+    "title": "Goes with it",
+    "first": "The shared document",
+    "back": "Back to “{{title}}”",
+    "pages_one": "{{count}} page",
+    "pages_other": "{{count}} pages",
+    "footer": "Only these {{count}} documents are shared. {{name}} sees when the link was opened and can withdraw it at any time.",
+    "footerUnknown": "Only these {{count}} documents are shared. Whoever made the link sees when it was opened and can withdraw it at any time.",
+    "through": "Also visible through another link",
+    "throughLine": "For {{to}} through the link of “{{title}}”, until {{until}}",
+    "throughLineOther": "For {{to}} through the link of another document, until {{until}}",
+    "takeOut": "Take out",
+    "takeOutFor": "Take out of the link for {{to}}",
+    "takenOut": "Taken out of the link.",
+    "confirm": {
+      "title": "Take it out of the link?",
+      "text": "Whoever has the link for {{to}} no longer sees “{{title}}”. Only a new link can show it again.",
+      "confirm": "Take out"
+    },
+    "revived_one": "Restoring shows {{count}} document again through a link that was taken out of it, or whose link was withdrawn, since the backup.",
+    "revived_other": "Restoring shows {{count}} documents again through a link that were taken out of it, or whose link was withdrawn, since the backup.",
+    "events": {
+      "shown": "showed it with a link of {{title}}",
+      "shownOther": "showed it with the link of another document",
+      "left": {
+        "unlinked": "undid the pair, the link of {{title}} no longer shows it",
+        "taken_out": "took it out of the link of {{title}}",
+        "revoked": "withdrew the link of {{title}} that showed it too"
+      },
+      "leftOther": {
+        "unlinked": "undid the pair, the link of another document no longer shows it",
+        "taken_out": "took it out of the link of another document",
+        "revoked": "withdrew the link of another document that showed it too"
+      },
+      "gone": {
+        "unlinked": "undid the pair, a link no longer shows {{title}} too",
+        "taken_out": "took {{title}} out of a link",
+        "purged": "took a document out of a link because it was deleted for good"
+      },
+      "goneOther": {
+        "unlinked": "undid the pair, a link no longer shows another document too",
+        "taken_out": "took another document out of a link",
+        "purged": "took a document out of a link because it was deleted for good"
+      }
+    }
+  },
+  "exportRelated": {
+    "take": "Take the documents that go with them",
+    "hint": "Also outside the period and the filters, only what you see in your vaults, each once. The list names them in a column of its own.",
+    "taken": "with what goes with them"
   }
 }

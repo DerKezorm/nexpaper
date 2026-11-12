@@ -78,6 +78,8 @@ export function ExportDialog({ onClose, filters: given = {}, q, count, sum, say,
   const [vaults, setVaults] = useState<Vault[]>([])
   const [chosen, setChosen] = useState<number[]>(filters.vault_id ? [filters.vault_id] : [])
   const [what, setWhat] = useState({ pdf: true, original: false, csv: true, xml: true })
+  /** The documents that go with them come along (N2); off from the start. */
+  const [related, setRelated] = useState(false)
   const [asLink, setAsLink] = useState(false)
   const [recipient, setRecipient] = useState(() => t('exports.recipientDefault'))
   const [rules, setRules] = useState<SharingRules | null>(null)
@@ -110,8 +112,8 @@ export function ExportDialog({ onClose, filters: given = {}, q, count, sum, say,
   const filterKey = JSON.stringify(filters)
   const request = useMemo(() => {
     const archive = JSON.parse(filterKey) as ExportFilters
-    return { ...archive, vault_id: undefined, date_from: from || undefined, date_to: to || undefined, vault_ids: chosen, content: what }
-  }, [filterKey, from, to, chosen, what])
+    return { ...archive, vault_id: undefined, date_from: from || undefined, date_to: to || undefined, vault_ids: chosen, content: what, ...(related ? { related: true } : {}) }
+  }, [filterKey, from, to, chosen, what, related])
 
   useEffect(() => {
     if (!chosen.length) {
@@ -220,6 +222,14 @@ export function ExportDialog({ onClose, filters: given = {}, q, count, sum, say,
                 </span>
               </label>
             ))}
+            {/* N2: the documents that go with them come along, also outside the period (only what the person sees). */}
+            <label className="flex items-start gap-3">
+              <input type="checkbox" checked={related} onChange={(e) => setRelated(e.target.checked)} className="mt-0.5 h-5 w-5 accent-[var(--accent)]" data-testid="export-related" />
+              <span>
+                <span className="font-semibold">{t('exportRelated.take')}</span>
+                <span className="block text-xs text-muted">{t('exportRelated.hint')}</span>
+              </span>
+            </label>
           </div>
         </div>
         <div className="space-y-4">

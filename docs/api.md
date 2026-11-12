@@ -1002,3 +1002,36 @@ none of it, a link to the outside never.
   narrows to them), done and later as the others, in `frist:offen` and the menu's number. Reminded on its day at 8,
   whatever the day itself is set to, never ahead; a reminder and the weekly mail name kind, day and title, never the
   sentence. `GET /dashboard` names it `kind: follow_up`.
+
+## Links that show what goes with a document
+
+- `POST /documents/{id}/links` takes `"also": [ids]` (at most 10 different ones; a number given twice counts once): further documents the link shows beside its own. Each
+  must go with the document (`GET /documents/{id}/related`, there `can_share`), be seen by the caller, be out of the
+  trash, and the caller must be allowed to share it by a link of its own. One that fails any of these refuses the whole
+  call with `422 invalid_also`, the same answer for every reason (no link is made). Each further document gets a line
+  in its history (`link_also_shown`, `detail.document` the link's own document) and a new change number. Nothing that
+  comes to go with the document later is added to an open link.
+- `GET /documents/{id}/links` and `GET /links` name `also_count`: how many further documents a link shows now.
+- `GET /l/{token}` has `"also": [{"id", "title", "kind", "date", "pages", "has_file", "viewable", "has_pages"}]`; `id`
+  is the number within the link (1 to 10 in the order chosen, every link starting at 1, a number taken out never given
+  again), never a number of the server's. Each has the paths of the document under
+  `/l/{token}/also/{id}/`: `file`, `preview`, `pages/{n}`, `text`. Every one checks the token and that the document
+  belongs to the link in one query; anything else answers 404 like a wrong token and counts on the same brake.
+  "Downloading allowed" holds for all; opening the link counts once.
+- A further document leaves the link (the link stays): when the pair is undone (both ways), when it is deleted for good,
+  or when somebody takes it out. While it is in the trash, or its maker may no longer share it, it is not shown. The
+  history says so: `link_also_left` at the further document, `link_also_gone` at the link's own, with
+  `detail.reason` `unlinked`, `taken_out`, `purged` or `revoked`.
+- `GET /documents/{id}/shown-through` (who may see the links of the document: managers of its vault, its owner):
+  `[{"id", "recipient", "until", "created_by", "document_id", "document_title"}]`, the links of other documents that
+  show it now (`id` is the row's own number, met only by a person signed in who may see the links); the other
+  document only when the caller may see it, else both `null`. `DELETE
+  /documents/{id}/shown-through/{item}` takes it out (204; another number 404). A browser or a device; an API key
+  `read` only lists.
+- `link_count` of a document counts the links of other documents that show it too.
+- `GET /exports/preview` and `POST /exports` take `related` (true): the documents that go with them come along,
+  directly, outside the period and the filters, only those the person sees in a vault of theirs, never from the trash,
+  each once; the limits hold for the whole. The CSV gets a last column (`Gehört zu`, `Goes with`) with the files of the
+  documents in the ZIP that go with each.
+- The trial run of a restore names `revived_link_documents`: further documents a restore would show through a link
+  again.

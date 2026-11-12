@@ -29,6 +29,10 @@ did it.
 A backup holds the server's secret (`secret.key`) together with the database: with both, the mail and AI credentials
 and the addresses of open links can be read. Keep backups as protected as the data folder.
 
+A link to the outside may show further documents beside its own, but only those chosen one by one when it was made,
+among the documents that go with it and that its maker may share by a link of their own; nothing comes in later by
+itself, and every document shown this way says so on its own page, where whoever may see its links can take it out.
+
 ## Inputs: the intake folder and the mailbox
 
 **The mailbox is open to anybody who knows its address.** Whoever sends a mail can write any address into `From`, and
@@ -89,7 +93,8 @@ same check of its kind and size as an upload. The searchable copy Paperless made
 first to its last bytes; like every file it is opened only in the worker process, with its limits.
 
 An export holds only documents the person may see at the moment it is packed (the rights are in the query), and its
-names cannot leave the ZIP. A text in its list that a spreadsheet would take for a formula is defused. A link to an
+names cannot leave the ZIP. The documents that go with them come along only on request, and only those the person sees
+in a vault of theirs. A text in its list that a spreadsheet would take for a formula is defused. A link to an
 export ends when revoked, at its date, with the operator's switch for links, with the export, when its maker is blocked,
 and as soon as its maker no longer sees every vault the documents in it came from. A ZIP is removed seven days after it
 was packed, or when the last link to it ends, whichever comes later.
@@ -155,7 +160,8 @@ of the state before it first.
 
 **What a restore brings back.** It ends every session, but a backup does not know what was ended after it was made:
 devices, API keys and links that were revoked, blocked or removed since are valid again after it. The trial run counts
-them from the live database (`revived_devices`, `revived_keys`, `revived_links`) and says so in the dialog; after a
+them from the live database (`revived_devices`, `revived_keys`, `revived_links`, and `revived_link_documents` for
+further documents a link would show again) and says so in the dialog; after a
 restore, check the lists of devices and keys and withdraw what should stay gone. A password changed since is the old one
 again, too.
 

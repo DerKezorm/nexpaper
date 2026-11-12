@@ -198,6 +198,9 @@ class Brief:
     revived_devices: int = 0
     revived_keys: int = 0
     revived_links: int = 0
+    #: Further documents (N2) a restore would put back on a link that is valid in the backup: on a link that comes back
+    #: to life, or taken out of one (or the pair undone) since the backup was made.
+    revived_link_documents: int = 0
 
     @property
     def usable(self) -> bool:
@@ -553,6 +556,7 @@ def check(name: str, *, hash_seconds: float = HASH_SECONDS) -> Brief:
         missing_documents=found.missing, changed_documents=found.changed, not_compared=found.not_compared,
         newer_documents=found.newer, rebuilds_index=found.documents > 0 and schema >= 6,
         revived_devices=revived.devices, revived_keys=revived.keys, revived_links=revived.links,
+        revived_link_documents=revived.link_documents,
     )
 
 
@@ -561,14 +565,18 @@ class _Revived:
     devices: int = 0
     keys: int = 0
     links: int = 0
+    link_documents: int = 0
 
 
 #: What is alive: the token hash and when it ends (empty: it does not), by table. The same question to the backup and to
-#: this server.
+#: this server. A further document of a link (N2) is its link's hash and the document's number: one that a link valid in
+#: the backup shows, and no living link shows here now, comes back with the restore.
 _ALIVE = (
     ("devices", "SELECT token_hash, NULL FROM devices WHERE revoked_at IS NULL"),
     ("keys", "SELECT token_hash, expires_at FROM api_keys WHERE blocked_at IS NULL"),
     ("links", "SELECT token_hash, until FROM links WHERE revoked_at IS NULL"),
+    ("link_documents", ("SELECT l.token_hash || ':' || d.document_id, l.until FROM link_documents d "
+                        "JOIN links l ON l.id = d.link_id WHERE l.revoked_at IS NULL")),
 )
 
 
@@ -607,7 +615,8 @@ def _revived(connection_path: Path) -> _Revived:
                 counts[key] = len(then - now)
     finally:
         connection.close()
-    return _Revived(counts.get("devices", 0), counts.get("keys", 0), counts.get("links", 0))
+    return _Revived(counts.get("devices", 0), counts.get("keys", 0), counts.get("links", 0),
+                    counts.get("link_documents", 0))
 
 
 @dataclass

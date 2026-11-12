@@ -48,6 +48,9 @@ class LinkOut(BaseModel):
     status: Literal["active", "expired", "revoked", "off", "ended"]
     #: The caller may copy the address again (the person who made it, the managers of the vault).
     can_copy: bool
+    #: How many further documents the link shows beside its own (chosen when it was made; those that left it since,
+    #: or are in the trash, or its maker may no longer share, are not counted).
+    also_count: int = 0
 
 
 class LinkCreated(LinkOut):
@@ -65,6 +68,23 @@ class LinkIn(BaseModel):
     recipient: str = Field(max_length=sharing.RECIPIENT_MAX * 2)
     days: StrictInt = Field(ge=1, le=365)
     allow_download: StrictBool = True
+    #: Further documents the link shows (at most 10 different ones; a number given twice counts once): each goes with
+    #: the document, and the caller may share it by a link of its own. One that does not pass refuses the whole call
+    #: (``422 invalid_also``, the same for every reason).
+    also: list[StrictInt] = Field(default_factory=list, max_length=100)
+
+
+class ShownThrough(BaseModel):
+    """A link of another document that shows this one as a further document."""
+
+    #: The number to take it out with (``DELETE .../shown-through/{id}``).
+    id: int
+    recipient: str
+    until: datetime
+    created_by: PersonRef | None
+    #: The link's own document, when the caller may see it; else None ("through another document").
+    document_id: int | None
+    document_title: str | None
 
 
 class MyLink(LinkOut):
@@ -90,7 +110,7 @@ def _link(link: Link, db: DbSession, *, maker_ok: bool, can_copy: bool) -> LinkO
         allow_download=link.allow_download, opened_count=link.opened_count, last_opened_at=link.last_opened_at,
         created_at=link.created_at, created_by=person(author), revoked_at=link.revoked_at,
         status=sharing.status_of(link, current, maker_ok),  # type: ignore[arg-type]
-        can_copy=can_copy,
+        can_copy=can_copy, also_count=sharing.also_counts(db, [link.id]).get(link.id, 0),
     )
 
 
@@ -152,7 +172,7 @@ def links(document_id: int, account: Reader, db: DbSession) -> list[LinkOut]:
              summary="Make a link for somebody without an account")
 def create_link(document_id: int, payload: LinkIn, request: Request, account: Caller, db: DbSession) -> LinkCreated:
     link, token = sharing.create_link(db, account.id, document_id, payload.recipient, payload.days,
-                                      payload.allow_download)
+                                      payload.allow_download, payload.also)
     return LinkCreated(**_link(link, db, maker_ok=True, can_copy=True).model_dump(), token=token,
                        url=_address(request, db, token))
 
@@ -168,6 +188,26 @@ def link_address(document_id: int, link_id: int, request: Request, account: Call
 @router.delete("/documents/{document_id}/links/{link_id}", status_code=204, summary="Revoke a link: it stops at once")
 def revoke_link(document_id: int, link_id: int, account: Caller, db: DbSession) -> None:
     sharing.revoke_link(db, account.id, document_id, link_id)
+
+
+@router.get("/documents/{document_id}/shown-through", response_model=list[ShownThrough],
+            summary="The links of other documents that show this one too (who may share it: managers, its owner)")
+def shown_through(document_id: int, account: Reader, db: DbSession) -> list[ShownThrough]:
+    """Only links that work now. The other document is named only for a caller who may see it."""
+    out = []
+    for found in sharing.shown_through(db, account.id, document_id):
+        author = db.get(Account, found.link.created_by) if found.link.created_by else None
+        out.append(ShownThrough(
+            id=found.item.id, recipient=found.link.recipient, until=found.until, created_by=person(author),
+            document_id=found.own.id if found.own else None, document_title=found.own.title if found.own else None))
+    return out
+
+
+@router.delete("/documents/{document_id}/shown-through/{item_id}", status_code=204,
+               summary="Take this document out of a link of another document (the link stays)")
+def take_out(document_id: int, item_id: int, account: Caller, db: DbSession) -> None:
+    """For who may share the document. It can only be shown again by a new link."""
+    sharing.take_out(db, account.id, document_id, item_id)
 
 
 __all__ = ["Document"]

@@ -548,8 +548,14 @@ export type DocumentLink = {
   status: 'active' | 'expired' | 'revoked' | 'off' | 'ended'
   /** The caller may copy the address again (the person who made it, the managers of the vault). */
   can_copy: boolean
+  /** How many further documents the link shows beside its own (N2). */
+  also_count?: number
 }
 export type LinkMade = DocumentLink & { token: string; url: string }
+/** A link of another document that shows this one too (N2); the other document only when the person may see it. */
+export type ShownThrough = { id: number; recipient: string; until: string; created_by: Person | null; document_id: number | null; document_title: string | null }
+/** A further document behind a link, as the page without an account sees it. */
+export type PublicAlso = { id: number; title: string; kind: string | null; date: string | null; pages: number; has_file: boolean; viewable: boolean; has_pages: boolean }
 export type MyLink = DocumentLink & { document_title: string }
 export type SharingRules = { links_allowed: boolean; link_max_days: number }
 export type SharingOverview = { open_links: number; people: number; next_end: string | null }
@@ -568,6 +574,8 @@ export type PublicLink = {
   viewable: boolean
   /** The pages can be had as pictures. */
   has_pages: boolean
+  /** Further documents the link shows ("Gehört dazu"), each under `/l/<token>/also/<id>/`. */
+  also?: PublicAlso[]
 }
 export type AccountLeaving = {
   documents: number
@@ -671,8 +679,12 @@ export const sharingApi = {
   share: (document: number, user: number, right: 'read' | 'edit') => api<DocumentShare>(`/api/v1/documents/${document}/shares/${user}`, { method: 'PUT', body: { right } }),
   unshare: (document: number, user: number) => api<void>(`/api/v1/documents/${document}/shares/${user}`, { method: 'DELETE' }),
   links: (document: number) => api<DocumentLink[]>(`/api/v1/documents/${document}/links`),
-  makeLink: (document: number, recipient: string, days: number, allow_download: boolean) =>
-    api<LinkMade>(`/api/v1/documents/${document}/links`, { method: 'POST', body: { recipient, days, allow_download } }),
+  makeLink: (document: number, recipient: string, days: number, allow_download: boolean, also: number[] = []) =>
+    api<LinkMade>(`/api/v1/documents/${document}/links`, { method: 'POST', body: { recipient, days, allow_download, ...(also.length ? { also } : {}) } }),
+  /** The links of other documents that show this one too (who may see the links of this document). */
+  shownThrough: (document: number) => api<ShownThrough[]>(`/api/v1/documents/${document}/shown-through`),
+  /** Takes this document out of a link of another document; it can only be shown again by a new link. */
+  takeOut: (document: number, item: number) => api<void>(`/api/v1/documents/${document}/shown-through/${item}`, { method: 'DELETE' }),
   revokeLink: (document: number, link: number) => api<void>(`/api/v1/documents/${document}/links/${link}`, { method: 'DELETE' }),
   /** The address of a link again, to copy (the history notes it). */
   address: (document: number, link: number) => api<{ url: string }>(`/api/v1/documents/${document}/links/${link}/address`, { method: 'POST' }),
@@ -970,7 +982,7 @@ export type ExportInfo = {
 }
 export type ExportMade = ExportInfo & { link: (ExportLinkInfo & { token: string; url: string }) | null }
 export type ExportPreview = { documents: number; total: number; totals: Record<string, number>; size: number; sample: string[]; too_many: boolean; max_documents: number; max_bytes: number }
-export type ExportRequest = Omit<ExportFilters, 'vault_id'> & { vault_ids: number[]; content: ExportContent; link?: { recipient: string; days: number } }
+export type ExportRequest = Omit<ExportFilters, 'vault_id'> & { vault_ids: number[]; content: ExportContent; link?: { recipient: string; days: number }; related?: boolean }
 export type PublicExport = { shared_by: string; recipient: string; state: 'packing' | 'ready'; documents: number; size: number; until: string; date_from: string | null; date_to: string | null }
 
 export const exportsApi = {
@@ -990,6 +1002,7 @@ export const exportsApi = {
         original: request.content.original,
         csv: request.content.csv,
         xml: request.content.xml,
+        related: request.related || undefined,
       },
       signal,
     }),
@@ -1158,6 +1171,8 @@ export type RelatedDocument = {
   /** The person may remove the pair (edit on both). */
   can_unlink: boolean
   linked_at: string | null
+  /** The person may share it by a link of its own (N2: it may come along with a link of the other document). */
+  can_share?: boolean
 }
 /** A document proposed to go with another: both carry the same number of the kind `via`. */
 export type RelatedSuggestion = Omit<RelatedDocument, 'can_unlink' | 'linked_at'> & { via: 'invoice' | 'order' | 'delivery' }
