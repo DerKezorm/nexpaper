@@ -196,6 +196,15 @@ describe('what goes with it (N2)', () => {
     expect(plain(page.box.querySelector('header')!.textContent)).toBe('Jule hat dir 3 Dokumente freigegeben gilt bis 31.10.2026')
   })
 
+  it('shows the name as text, never as markup, also in the head and the foot that count the documents', async () => {
+    const hostile = '<strong>Jule</strong><name>x</name><img src=x onerror=alert(1)>'
+    server.answers['GET /api/v1/l/lnk_abc123456789'] = { ...shown, shared_by: hostile, also }
+    await open()
+    expect(page.box.querySelector('strong, name, img[src="x"]')).toBeNull()
+    expect(page.text).toContain(`${hostile} hat dir 3 Dokumente freigegeben`)
+    expect(page.text).toContain(`Nur diese 3 Dokumente sind freigegeben. ${hostile} sieht, wann der Link geöffnet wurde`)
+  })
+
   it('counts in the head also without a name', async () => {
     server.answers['GET /api/v1/l/lnk_abc123456789'] = { ...shown, shared_by: '', also: also.slice(0, 1) }
     await open()

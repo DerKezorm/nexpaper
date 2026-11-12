@@ -222,6 +222,16 @@ describe('the trial run before a restore', () => {
     expect(lines).toContain('Zurückspielen bringt 2 gemerkte PDF-Passwörter zurück, die seit der Sicherung gelöscht wurden.')
   })
 
+  it('says all three together: further documents of links, kept PDF passwords and upload requests (N2, P1, U1)', async () => {
+    server.answers[`POST /api/v1/backups/${entry.name}/check`] = { ...brief, revived_link_documents: 2, revived_pdf_passwords: 1, revived_upload_requests: 3 }
+    await page.show(<BackupsCard server={{ settings, busy: false } as never} />)
+    await page.click(page.button('Prüfen'))
+    const lines = [...document.querySelectorAll('[data-testid="restore-preview"] li')].map((li) => li.textContent)
+    expect(lines).toContain('Zurückspielen zeigt 2 Dokumente wieder über einen Link, die seit der Sicherung herausgenommen wurden oder deren Link zurückgezogen wurde.')
+    expect(lines).toContain('Zurückspielen bringt 1 gemerktes PDF-Passwort zurück, das seit der Sicherung gelöscht wurde.')
+    expect(lines).toContain('Zurückspielen öffnet 3 Upload-Bitten wieder, die seit der Sicherung zurückgezogen oder beendet wurden.')
+  })
+
   it('says nothing of the kind when nothing was ended since the backup', async () => {
     server.answers[`POST /api/v1/backups/${entry.name}/check`] = { ...brief, revived_devices: 0, revived_keys: 0, revived_links: 0 }
     await page.show(<BackupsCard server={{ settings, busy: false } as never} />)
