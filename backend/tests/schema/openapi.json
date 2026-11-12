@@ -1178,6 +1178,11 @@
             "title": "Files State",
             "type": "string"
           },
+          "has_related": {
+            "default": false,
+            "title": "Has Related",
+            "type": "boolean"
+          },
           "id": {
             "title": "Id",
             "type": "integer"
@@ -2944,6 +2949,17 @@
           "reading": {
             "title": "Reading",
             "type": "integer"
+          },
+          "related": {
+            "additionalProperties": {
+              "items": {
+                "$ref": "#/components/schemas/SuggestionOut"
+              },
+              "type": "array"
+            },
+            "default": {},
+            "title": "Related",
+            "type": "object"
           },
           "shared": {
             "title": "Shared",
@@ -6430,6 +6446,89 @@
         "title": "Refused",
         "type": "object"
       },
+      "RelatedOut": {
+        "description": "A document that goes with the one asked about, as far as the caller may see it.",
+        "properties": {
+          "can_unlink": {
+            "title": "Can Unlink",
+            "type": "boolean"
+          },
+          "date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Date"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "kind": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/KindOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "linked_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Linked At"
+          },
+          "sender": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NameRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "enum": [
+              "processing",
+              "inbox",
+              "filed",
+              "trash"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "kind",
+          "sender",
+          "date",
+          "status",
+          "can_unlink",
+          "linked_at"
+        ],
+        "title": "RelatedOut",
+        "type": "object"
+      },
       "RememberIn": {
         "additionalProperties": false,
         "description": "What the person chose for the document; the rule says: when the sender is this one, then these.",
@@ -8020,6 +8119,81 @@
           "document"
         ],
         "title": "StartOut",
+        "type": "object"
+      },
+      "SuggestionOut": {
+        "description": "A document proposed to go with the one asked about: it carries the same number of the kind `via`.",
+        "properties": {
+          "date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Date"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "kind": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/KindOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "sender": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NameRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "enum": [
+              "processing",
+              "inbox",
+              "filed",
+              "trash"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "via": {
+            "enum": [
+              "invoice",
+              "order",
+              "delivery"
+            ],
+            "title": "Via",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "kind",
+          "sender",
+          "date",
+          "status",
+          "via"
+        ],
+        "title": "SuggestionOut",
         "type": "object"
       },
       "TakeAddressIn": {
@@ -13320,6 +13494,296 @@
         "summary": "Delete a document in the trash for good (managers of the vault, or its owner with edit; browser only)",
         "tags": [
           "documents"
+        ]
+      }
+    },
+    "/api/v1/documents/{document_id}/related": {
+      "get": {
+        "description": "Nothing in the trash is shown, and a document in the trash shows nothing; what the caller may not see is left\nout without a trace (no number of hidden ones).",
+        "operationId": "listing_api_v1_documents__document_id__related_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "document_id",
+            "required": true,
+            "schema": {
+              "title": "Document Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/RelatedOut"
+                  },
+                  "title": "Response Listing Api V1 Documents  Document Id  Related Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "The documents that go with a document (only those the caller may see)",
+        "tags": [
+          "related"
+        ]
+      }
+    },
+    "/api/v1/documents/{document_id}/related/suggestions": {
+      "get": {
+        "description": "Other documents with the same invoice, order or delivery note number, at most five, the ones that share the\nmost numbers first. Empty for a caller who may only read the document; proposals turned down or already set are\nnot repeated.",
+        "operationId": "suggestions_api_v1_documents__document_id__related_suggestions_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "document_id",
+            "required": true,
+            "schema": {
+              "title": "Document Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SuggestionOut"
+                  },
+                  "title": "Response Suggestions Api V1 Documents  Document Id  Related Suggestions Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Documents proposed to go with a document (only for a caller who may change both)",
+        "tags": [
+          "related"
+        ]
+      }
+    },
+    "/api/v1/documents/{document_id}/related/{other_id}": {
+      "delete": {
+        "description": "Nothing is deleted: the pair can be set again. A pair that is not there is no error.",
+        "operationId": "unlink_api_v1_documents__document_id__related__other_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "document_id",
+            "required": true,
+            "schema": {
+              "title": "Document Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "other_id",
+            "required": true,
+            "schema": {
+              "maximum": 2147483647,
+              "minimum": 1,
+              "title": "Other Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/RelatedOut"
+                  },
+                  "title": "Response Unlink Api V1 Documents  Document Id  Related  Other Id  Delete",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Remove that two documents go with each other (edit on both)",
+        "tags": [
+          "related"
+        ]
+      },
+      "put": {
+        "description": "Setting a pair that is there already is no error. Both documents get a line in their history and a new change\nnumber. Answers what goes with `document_id` now.",
+        "operationId": "link_api_v1_documents__document_id__related__other_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "document_id",
+            "required": true,
+            "schema": {
+              "title": "Document Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "other_id",
+            "required": true,
+            "schema": {
+              "maximum": 2147483647,
+              "minimum": 1,
+              "title": "Other Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/RelatedOut"
+                  },
+                  "title": "Response Link Api V1 Documents  Document Id  Related  Other Id  Put",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Set that two documents go with each other (edit on both)",
+        "tags": [
+          "related"
+        ]
+      }
+    },
+    "/api/v1/documents/{document_id}/related/{other_id}/dismiss": {
+      "post": {
+        "operationId": "dismiss_api_v1_documents__document_id__related__other_id__dismiss_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "document_id",
+            "required": true,
+            "schema": {
+              "title": "Document Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "other_id",
+            "required": true,
+            "schema": {
+              "maximum": 2147483647,
+              "minimum": 1,
+              "title": "Other Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SuggestionOut"
+                  },
+                  "title": "Response Dismiss Api V1 Documents  Document Id  Related  Other Id  Dismiss Post",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Turn a proposal down: the pair is not proposed again (edit on both)",
+        "tags": [
+          "related"
         ]
       }
     },

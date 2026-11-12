@@ -48,6 +48,7 @@ from . import (
     jobs,
     keeping,
     limits,
+    numbers,  # noqa: F401 - its numbers follow the text of a document right before a commit
     ocr,
     pages,
     rights,

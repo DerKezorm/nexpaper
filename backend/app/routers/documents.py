@@ -18,7 +18,7 @@ from sqlalchemy import select
 from ..deps import Account as Caller
 from ..deps import BrowserAccount, DbSession, Reader
 from ..errors import error
-from ..models import Account, Vault
+from ..models import Account, Document, Vault
 from ..services import changes, documents, processing, rights
 from .schemas import DocumentOut, PersonRef, document_out, person
 
@@ -244,6 +244,13 @@ def events(document_id: int, account: Reader, db: DbSession) -> list[EventOut]:
     history = changes.history(db, document_id)
     authors = {e.user_id for e in history if e.user_id}
     people = {a.id: a for a in db.scalars(select(Account).where(Account.id.in_(authors)))}
+    # Goes with (``services/related.py``): the other document is named only for a caller who may see it.
+    from ..services import related as related_service
+
+    partners = {e.detail.get("document") for e in history if e.action in (related_service.SET, related_service.UNSET)
+                and isinstance(e.detail, dict) and isinstance(e.detail.get("document"), int)}
+    seen_titles: dict[int, str] = {int(i): t for i, t in db.execute(select(Document.id, Document.title).where(
+        Document.id.in_(partners), rights.visible_clause(account.id))).all()} if partners else {}
     out = []
     for event in history:
         detail = dict(event.detail) if isinstance(event.detail, dict) else None
@@ -253,6 +260,13 @@ def events(document_id: int, account: Reader, db: DbSession) -> list[EventOut]:
                 moved = event.action in (changes.MOVED, changes.TAKEN_OVER)
                 if moved and key in detail and detail[key] not in visible:
                     detail[key] = None
+            if event.action in (related_service.SET, related_service.UNSET):
+                # A document the caller may not see is "another document": neither its number nor its title.
+                partner = detail.get("document")
+                if partner in seen_titles:
+                    detail["title"] = seen_titles[partner]
+                else:
+                    detail["document"] = None
         out.append(EventOut(id=event.id, at=event.at, action=event.action,
                             by=person(people.get(event.user_id)) if event.user_id else None, by_link=event.by_link,
                             detail=detail))

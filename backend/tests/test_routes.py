@@ -261,6 +261,10 @@ TOKEN_ROUTES = {
     ("GET", "/api/v1/me/reminders"),
     ("PUT", "/api/v1/me/reminders"),
     ("POST", "/api/v1/me/reminders/test"),
+    # Goes with (N1): setting, removing, turning a proposal down (edit on both documents).
+    ("PUT", "/api/v1/documents/{document_id}/related/{other_id}"),
+    ("DELETE", "/api/v1/documents/{document_id}/related/{other_id}"),
+    ("POST", "/api/v1/documents/{document_id}/related/{other_id}/dismiss"),
 }
 
 #: The routes that only read and that a program with an API key reaches too (as the browser and a device do). A route
@@ -309,6 +313,9 @@ READ_ROUTES = {
     ("GET", "/api/v1/keeping"),
     # The deadlines (F1).
     ("GET", "/api/v1/deadlines"),
+    # Goes with (N1): what goes with a document and the proposals.
+    ("GET", "/api/v1/documents/{document_id}/related"),
+    ("GET", "/api/v1/documents/{document_id}/related/suggestions"),
 }
 
 

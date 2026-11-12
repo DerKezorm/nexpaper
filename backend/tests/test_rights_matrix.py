@@ -144,6 +144,13 @@ TABLE = [
     Row("DELETE", "/api/v1/documents/{d}/dates/{w}/done", None, "edit", 404),
     Row("PUT", "/api/v1/documents/{d}/dates/{w}/snooze", {"days": 1}, "edit", 404),
     Row("DELETE", "/api/v1/documents/{d}/dates/{w}/snooze", None, "edit", 404),
+    # Goes with (N1): {o} is a second document of the same vault; setting, removing and turning down need edit on
+    # both (``test_related.py`` has one of the two only read, across vaults, and the share).
+    Row("GET", "/api/v1/documents/{d}/related", None, "read", 404),
+    Row("GET", "/api/v1/documents/{d}/related/suggestions", None, "read", 404),
+    Row("PUT", "/api/v1/documents/{d}/related/{o}", None, "edit", 404),
+    Row("DELETE", "/api/v1/documents/{d}/related/{o}", None, "edit", 404),
+    Row("POST", "/api/v1/documents/{d}/related/{o}/dismiss", None, "edit", 404),
 ]
 
 
@@ -154,7 +161,7 @@ def test_every_route_of_vaults_and_documents_is_in_the_table() -> None:
     # Normalise the parameter names of the table to those of the routes.
     names = {"{d}": "{document_id}", "{v}": "{vault_id}", "{n}": "{note_id}", "{l}": "{link_id}", "{u}": "{user_id}",
              "{s}": "{sender_id}", "{t}": "{tag_id}", "{k}": "{kind_id}", "{x}": "{number}", "{g}": "{page}",
-             "{w}": "{kind}"}
+             "{w}": "{kind}", "{o}": "{other_id}"}
     table = set()
     for row in TABLE:
         template = row.template
@@ -178,6 +185,7 @@ class World:
                                   (operator, "manage"))
         self.other = shared_vault("Second", self.manager, (self.editor, "edit"), (operator, "edit"))
         self.document = add_document(self.vault, self.editor, "Matrix", sender="Matrix Sender", tags=["matrix"])
+        self.second = add_document(self.vault, self.editor, "Matrix two")
 
     def ids(self, client: TestClient) -> dict[str, int]:
         note = client.post(f"/api/v1/documents/{self.document}/notes", json={"text": "mine"}).json()["id"]
@@ -187,12 +195,12 @@ class World:
         tag = client.get("/api/v1/tags").json()[0]["items"][0]["id"]
         kind = client.get("/api/v1/kinds").json()[0]["id"]
         return {"d": self.document, "v": self.vault, "n": note, "l": link, "u": self.target.id, "s": sender, "t": tag,
-                "k": kind, "other": self.other, "title": shown["title"]}
+                "k": kind, "other": self.other, "title": shown["title"], "o": self.second}
 
 
 def fill(template: str, ids: dict[str, int]) -> str:
     out = template.replace("{x}", "1").replace("{g}", "1").replace("{w}", "due")
-    for key in ("d", "v", "n", "l", "u", "s", "t", "k"):
+    for key in ("d", "v", "n", "l", "u", "s", "t", "k", "o"):
         out = out.replace("{" + key + "}", str(ids[key]))
     return out
 

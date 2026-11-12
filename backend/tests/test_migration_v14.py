@@ -7,12 +7,16 @@ import sqlite3
 from contextlib import closing
 from pathlib import Path
 
+import pytest
+
 from app import db as database
 
 from .test_schema import RECORDS, schema_of, scratch, version_of  # noqa: F401 - the fixture is used by name
 
 
-def test_every_kind_there_was_gets_the_switch_off(scratch: Path) -> None:  # noqa: F811
+def test_every_kind_there_was_gets_the_switch_off(scratch: Path, monkeypatch: pytest.MonkeyPatch) -> None:  # noqa: F811
+    # Up to this step only: the steps after it add tables of their own (``test_migration_v15.py`` and later).
+    monkeypatch.setattr(database, "SCHEMA_VERSION", 14)
     with closing(sqlite3.connect(scratch)) as connection:
         connection.executescript((RECORDS / "v13.sql").read_text(encoding="utf-8"))
         connection.execute("INSERT INTO kinds (id, \"key\", name, name_key, hue, position, keep_years, keep_new_only) "

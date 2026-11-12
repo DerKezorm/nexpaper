@@ -578,6 +578,10 @@ def _merge(db: Session, uid: int, items: list[tuple[int, int]]) -> Document:
                 db.add(DocumentTag(document_id=first.id, tag_id=tag.id))
                 have.add(tag.id)
         changes.record(db, first.id, MERGED_FROM, user_id=uid, detail={"version": new.n, **detail})
+        from . import related
+
+        # What went with the joined documents goes with the one that stays (never with itself).
+        related.inherit(db, uid, first, others)
         _after(db, first, text is None)
         return new
 

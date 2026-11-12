@@ -46,7 +46,7 @@ _settings.data_dir.mkdir(parents=True, exist_ok=True)
 BUSY_SECONDS = 15
 
 #: The version of the schema the models describe.
-SCHEMA_VERSION = 14
+SCHEMA_VERSION = 15
 
 
 def _step_v2(connection: Connection) -> None:
@@ -387,6 +387,55 @@ def _step_auto_trash(connection: Connection) -> None:
     connection.exec_driver_sql("ALTER TABLE kinds ADD COLUMN auto_trash BOOLEAN DEFAULT 0 NOT NULL")
 
 
+def _step_related(connection: Connection) -> None:
+    """Goes with (N1): the numbers read from documents, what they were read from, the pairs of documents that go with
+    each other and the proposals that were turned down. Four tables of its own, nothing else; written out as they stood
+    when the step was made, so that the step moves to another number unchanged. The documents there are read once by a
+    job ``numbers`` after the start (``services/numbers.py``), in small portions; nothing is proposed by itself."""
+    from datetime import UTC, datetime
+
+    for statement in (
+        (
+            "CREATE TABLE document_numbers ( id INTEGER NOT NULL, document_id INTEGER NOT NULL, "
+            "kind VARCHAR(10) NOT NULL, value VARCHAR(64) NOT NULL, compare VARCHAR(64) NOT NULL, "
+            "origin VARCHAR(8) NOT NULL, PRIMARY KEY (id), "
+            "FOREIGN KEY(document_id) REFERENCES documents (id) ON DELETE CASCADE )"
+        ),
+        "CREATE INDEX ix_document_numbers_compare ON document_numbers (kind, compare)",
+        "CREATE INDEX ix_document_numbers_document ON document_numbers (document_id)",
+        (
+            "CREATE TABLE numbers_read ( document_id INTEGER NOT NULL, digest VARCHAR(40) NOT NULL, "
+            "PRIMARY KEY (document_id), FOREIGN KEY(document_id) REFERENCES documents (id) ON DELETE CASCADE )"
+        ),
+        (
+            "CREATE TABLE related ( id INTEGER NOT NULL, low_id INTEGER NOT NULL, high_id INTEGER NOT NULL, "
+            "created_by INTEGER, created_at DATETIME NOT NULL, PRIMARY KEY (id), "
+            "CONSTRAINT uq_related_pair UNIQUE (low_id, high_id), "
+            "FOREIGN KEY(low_id) REFERENCES documents (id) ON DELETE CASCADE, "
+            "FOREIGN KEY(high_id) REFERENCES documents (id) ON DELETE CASCADE, "
+            "FOREIGN KEY(created_by) REFERENCES users (id) ON DELETE SET NULL )"
+        ),
+        "CREATE INDEX ix_related_high ON related (high_id)",
+        (
+            "CREATE TABLE related_dismissed ( id INTEGER NOT NULL, low_id INTEGER NOT NULL, high_id INTEGER NOT NULL, "
+            "created_by INTEGER, created_at DATETIME NOT NULL, PRIMARY KEY (id), "
+            "CONSTRAINT uq_related_dismissed_pair UNIQUE (low_id, high_id), "
+            "FOREIGN KEY(low_id) REFERENCES documents (id) ON DELETE CASCADE, "
+            "FOREIGN KEY(high_id) REFERENCES documents (id) ON DELETE CASCADE, "
+            "FOREIGN KEY(created_by) REFERENCES users (id) ON DELETE SET NULL )"
+        ),
+        "CREATE INDEX ix_related_dismissed_high ON related_dismissed (high_id)",
+    ):
+        connection.exec_driver_sql(statement)
+    now = datetime.now(UTC).replace(tzinfo=None).strftime("%Y-%m-%d %H:%M:%S.%f")
+    # One job reads the numbers of every document there is, once, from the text it has (``numbers.run_job``).
+    connection.execute(
+        text("INSERT INTO jobs (kind, ref, payload, state, attempts, created_at, error) "
+             "VALUES ('numbers', 0, '{\"after\": 0}', 'queued', 0, :now, '')"),
+        {"now": now},
+    )
+
+
 #: ``MIGRATIONS[n]`` brings a database from version ``n - 1`` to ``n``. Version 1 is the first schema; it has no step.
 #: Later steps are written out as the tables stood then, not taken from the models, which move on.
 MIGRATIONS: dict[int, Callable[[Connection], None]] = {
@@ -404,6 +453,8 @@ MIGRATIONS: dict[int, Callable[[Connection], None]] = {
     13: _step_reminders,
     # D4, expired documents into the trash by themselves.
     14: _step_auto_trash,
+    # N1, goes with: numbers read from documents, pairs, proposals turned down.
+    15: _step_related,
 }
 
 def _has_column(connection: Connection, table: str, column: str) -> bool:

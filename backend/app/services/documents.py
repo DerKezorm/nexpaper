@@ -123,6 +123,8 @@ class Row:
     auto_trash_due: bool = False
     #: It is in the trash because the task put it there.
     auto_trashed: bool = False
+    #: Something the caller can see goes with it (``services/related.py``).
+    has_related: bool = False
 
 
 def rows(db: Session, uid: int, documents: list[Document]) -> list[Row]:
@@ -183,6 +185,9 @@ def rows(db: Session, uid: int, documents: list[Document]) -> list[Row]:
         db, [d.id for d in documents if d.status in (FILED, INBOX)],
         keeping.today_of(caller) if caller is not None else deadlines.server_today())
     put_away = autotrash.put_by_itself(db, [d.id for d in documents if d.status == TRASH])
+    from . import related
+
+    goes_with = related.having(db, uid, [d.id for d in documents if d.status != TRASH])
     out = []
     for document in documents:
         access = accesses[document.id]
@@ -201,6 +206,7 @@ def rows(db: Session, uid: int, documents: list[Document]) -> list[Row]:
             done_by={r.done_by: done_by[r.done_by] for r in date_rows[document.id] if r.done_by in done_by},
             snoozes={r.id: snoozes[r.id] for r in date_rows[document.id] if r.id in snoozes},
             auto_trash_due=document.id in going, auto_trashed=document.id in put_away,
+            has_related=document.id in goes_with,
         ))
     return out
 

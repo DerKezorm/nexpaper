@@ -60,6 +60,7 @@ from .routers import logs as logs_router
 from .routers import ocr as ocr_router
 from .routers import pagetools as pagetools_router
 from .routers import paperless as paperless_router
+from .routers import related as related_router
 from .routers import reminders as reminders_router
 from .routers import search as search_router
 from .routers import settings as settings_router
@@ -109,6 +110,7 @@ ROUTERS = [
     deadlines_router,
     keeping_router,
     reminders_router,
+    related_router,
 ]
 
 

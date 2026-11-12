@@ -1210,3 +1210,65 @@ class ReminderSent(Base):
 
 
 __all__ += ["ReminderMute", "ReminderSent", "ReminderSettings"]
+
+
+class DocumentNumber(Base):
+    """A number read from a document (``services/numbers.py``): an invoice, order, delivery note, customer or contract
+    number by the words in front of it, or an IBAN with valid check digits. Only for proposals ("goes with") and the
+    transfer code; never a field of the document. ``compare`` is the form numbers are compared in (no blanks, dashes,
+    points or slashes, capitals, the letters OCR mixes up with digits as digits)."""
+
+    __tablename__ = "document_numbers"
+    __table_args__ = (Index("ix_document_numbers_compare", "kind", "compare"),
+                      Index("ix_document_numbers_document", "document_id"))
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    document_id: Mapped[int] = mapped_column(ForeignKey("documents.id", ondelete="CASCADE"))
+    #: ``invoice``, ``order``, ``delivery``, ``customer``, ``contract`` or ``iban``.
+    kind: Mapped[str] = mapped_column(String(10))
+    value: Mapped[str] = mapped_column(String(64))
+    compare: Mapped[str] = mapped_column(String(64))
+    #: ``text`` (read from the text) or ``einvoice`` (from the data of the e-invoice).
+    origin: Mapped[str] = mapped_column(String(8))
+
+
+class NumbersRead(Base):
+    """What the numbers of a document were read from (a digest of the text of its current version and of its e-invoice):
+    they are read again only when that changes."""
+
+    __tablename__ = "numbers_read"
+
+    document_id: Mapped[int] = mapped_column(ForeignKey("documents.id", ondelete="CASCADE"), primary_key=True)
+    digest: Mapped[str] = mapped_column(String(40))
+
+
+class Related(Base):
+    """Two documents that go with each other ("Gehört zu"): one row per pair, the smaller id first. No kind, both ways,
+    no chains. Gone with either document; the person who made it may go first."""
+
+    __tablename__ = "related"
+    __table_args__ = (UniqueConstraint("low_id", "high_id", name="uq_related_pair"),
+                      Index("ix_related_high", "high_id"))
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    low_id: Mapped[int] = mapped_column(ForeignKey("documents.id", ondelete="CASCADE"))
+    high_id: Mapped[int] = mapped_column(ForeignKey("documents.id", ondelete="CASCADE"))
+    created_by: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utcnow)
+
+
+class RelatedDismissed(Base):
+    """A proposal somebody turned down ("Passt nicht"): the pair is never proposed again, to anybody."""
+
+    __tablename__ = "related_dismissed"
+    __table_args__ = (UniqueConstraint("low_id", "high_id", name="uq_related_dismissed_pair"),
+                      Index("ix_related_dismissed_high", "high_id"))
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    low_id: Mapped[int] = mapped_column(ForeignKey("documents.id", ondelete="CASCADE"))
+    high_id: Mapped[int] = mapped_column(ForeignKey("documents.id", ondelete="CASCADE"))
+    created_by: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utcnow)
+
+
+__all__ += ["DocumentNumber", "NumbersRead", "Related", "RelatedDismissed"]

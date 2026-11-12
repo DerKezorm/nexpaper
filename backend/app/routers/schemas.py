@@ -139,6 +139,9 @@ class DocumentOut(BaseModel):
     auto_trash_due: bool = False
     #: It is in the trash because the task put it there, not a person.
     auto_trashed: bool = False
+    #: Something the caller can see goes with it (``GET /documents/{id}/related``); never counts what they cannot see,
+    #: and false while it or the other one is in the trash.
+    has_related: bool = False
 
 
 def _suggest(value: object) -> dict[str, str]:
@@ -190,4 +193,5 @@ def document_out(row: Row) -> DocumentOut:
         suggest=_suggest(document.suggest), share_count=row.share_count, link_count=row.link_count,
         einvoice=row.einvoice, files_state=document.files_state,  # type: ignore[arg-type]
         auto_trash_due=row.auto_trash_due, auto_trashed=row.auto_trashed,
+        has_related=row.has_related,
     )

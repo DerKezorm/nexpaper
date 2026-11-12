@@ -275,6 +275,11 @@ def where(uid: int, query: searchtext.Query, filters: Filters, scope: list[str])
         clauses.append(deadline_clause(wanted, today))
     if filters.keep == "expired":
         clauses += keeping.expired_clauses(uid, today)
+    for linked in query.linked:
+        # Goes with (N1): only what the caller may see counts.
+        from . import related
+
+        clauses.append(related.search_clause(uid, linked == "yes") if linked in ("yes", "no") else false())
     return clauses + filter_clauses(query, today) + text_clauses(query, scope)
 
 

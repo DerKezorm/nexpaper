@@ -14,7 +14,8 @@ from pydantic import BaseModel, ConfigDict, Field, StrictInt
 
 from ..deps import Account as Caller
 from ..deps import DbSession, Reader
-from ..services import deadlines, documents, inbox
+from ..services import deadlines, documents, inbox, related
+from .related import SuggestionOut, suggestion_out
 from .schemas import DocumentOut, document_out
 
 router = APIRouter(prefix="/api/v1", tags=["inbox"])
@@ -36,6 +37,9 @@ class InboxPage(BaseModel):
     all: int
     #: How many of the `total` are still being read.
     reading: int
+    #: Per document of `items` (its id as text) the documents proposed to go with it, at most three; only documents
+    #: with a proposal are named (`GET /documents/{id}/related/suggestions` has up to five).
+    related: dict[str, list[SuggestionOut]] = {}
 
 
 @router.get("/inbox", response_model=InboxPage,
@@ -57,9 +61,11 @@ def listing(
     page = inbox.listing(db, account.id, inbox.Filters(q=q, sender=sender, kind_id=kind_id, source=source,
                                                       owner_id=owner_id, vault_id=vault_id, shared=shared),
                          sort=sort, limit=limit, offset=offset)
+    proposals = related.suggestions(db, account.id, [d.id for d in page.documents], related.INBOX_SUGGESTIONS)
     return InboxPage(items=[document_out(r) for r in documents.rows(db, account.id, page.documents)],
                      total=page.total, counts={str(v): n for v, n in page.counts.items()},
-                     shared=page.shared, all=sum(page.counts.values()) + page.shared, reading=page.reading)
+                     shared=page.shared, all=sum(page.counts.values()) + page.shared, reading=page.reading,
+                     related={str(k): [suggestion_out(s) for s in found] for k, found in proposals.items()})
 
 
 class MenuCounts(BaseModel):

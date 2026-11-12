@@ -47,7 +47,9 @@ INDEX = "index"
 FILES = "files"
 #: The keeping time of a kind worked out again for its many documents (``services/keeping.py``); ``ref`` is the kind.
 KEEP = "keep"
-QUICK = (RENAME, DELETE_FILES, INDEX, FILES, KEEP)
+#: The numbers of the documents there were before they were read (``services/numbers.py``), a portion per run.
+NUMBERS = "numbers"
+QUICK = (RENAME, DELETE_FILES, INDEX, FILES, KEEP, NUMBERS)
 #: The text of a document read before there was text (``processing.read_text``): a worker run like ``process``.
 TEXT = "text"
 #: The small pictures of the pages of a long document, drawn after it was read (``pages.draw_in_background``). It runs
@@ -236,6 +238,10 @@ def _run(db: Session, job: Job) -> None:
         from . import keeping
 
         keeping.run_job(db, job.ref, job.payload)
+    elif job.kind == NUMBERS:
+        from . import numbers
+
+        numbers.run_job(db, job.payload)
     else:
         raise storage.StorageError("unknown job")
 
