@@ -580,7 +580,10 @@ _ALIVE = (
     ("links", "SELECT token_hash, until FROM links WHERE revoked_at IS NULL"),
     ("link_documents", ("SELECT l.token_hash || ':' || d.document_id, l.until FROM link_documents d "
                         "JOIN links l ON l.id = d.link_id WHERE l.revoked_at IS NULL")),
-    ("upload_requests", "SELECT token_hash, until FROM upload_requests WHERE revoked_at IS NULL"),
+    # An upload request takes files while it is not revoked, before its end, and not all its files are there: one that
+    # is used up, revoked or gone here and open in the backup takes files again after a restore.
+    ("upload_requests", ("SELECT token_hash, until FROM upload_requests WHERE revoked_at IS NULL "
+                         "AND received < max_files")),
 )
 
 

@@ -19,11 +19,13 @@ nothing. Source ``request``, marked unknown like a mail nobody could be told fro
 rule may propose fields, never another vault (``sorting.propose``). The same file twice is taken twice (see
 ``take_file``): the answer never says whether the person has a file.
 
-**Limits.** The files of a request (a slot is held atomically before the file is read: two uploads at once never pass
-``max_files``), the size of a file as for every upload, files per request and per sender's address and hour (in
-memory), files and bytes of the whole server per day (in the settings, like the mailbox's). What is refused costs
-little: the token, the brakes and the slot come before a byte of the body is read, and a body larger than one file may
-be is turned away by its declared length (``middleware.body_limit``).
+**Limits.** The files of a request (a place is held in memory before the file is read and counted in the database only
+when the file became a document: two uploads at once never pass ``max_files``, and a restart leaves nothing held),
+two uploads of a request at once, its bytes per day (``REQUEST_DAY_BYTES``), the size of a file as for every upload,
+files per request and per sender's address and hour (in memory), files and bytes of the whole server per day (in the
+settings, like the mailbox's; counted by what was read and taken, never by what was announced). The body must keep
+coming (``BODY_*``). What is refused costs little: the token, the brakes and the place come before a byte of the body
+is read, and a body larger than one file may be is turned away by its declared length (``middleware.body_limit``).
 """
 
 from __future__ import annotations
@@ -43,7 +45,7 @@ from sqlalchemy.orm import Session, aliased
 
 from .. import clock
 from ..errors import error
-from ..models import Account, Document, IntakeItem, UploadRequest
+from ..models import Account, Document, Event, IntakeItem, UploadRequest
 from ..security import decrypt_secret, encrypt_secret
 from . import changes, filetypes, receiving, settings_service, sharing
 
@@ -61,9 +63,24 @@ MAX_OPEN = 20
 #: Files per request and hour, per sender's address and hour (every try counts, taken or not).
 PER_REQUEST_HOUR = 20
 PER_ADDRESS_HOUR = 30
-#: Files and bytes of the whole server per day (UTC).
+#: Files and bytes of the whole server per day (UTC): the last line, counted by what was read and taken, never by what
+#: a caller announces.
 DAY_FILES = 500
 DAY_BYTES = 2048 * 1024 * 1024
+#: Bytes one request may take per day (UTC), read bytes counted, refused files too. An eighth of the server's day: one
+#: address given out (and passed on) can take at most this much, so the rest of the day stays for the others, and a
+#: file of the operator's usual limit (200 MB) still fits. A larger file is refused by its announced length before it
+#: is read.
+REQUEST_DAY_BYTES = 256 * 1024 * 1024
+#: Uploads of one request under way at once: a sender with many connections holds two places of their own request,
+#: nothing of anybody else's.
+MAX_PARALLEL = 2
+#: The body of a file must keep coming: no pause longer than ``BODY_IDLE_SECONDS``, and all of it within
+#: ``BODY_BASE_SECONDS`` plus its announced length at ``BODY_MIN_RATE`` bytes a second (32 KB/s, a slow mobile line).
+#: Slower, the upload is broken off and holds nothing.
+BODY_IDLE_SECONDS = 20.0
+BODY_BASE_SECONDS = 30.0
+BODY_MIN_RATE = 32 * 1024
 #: A request that ended stays in the person's list this long after its end (then it is only gone from sight).
 LIST_DAYS = 30
 #: At most one notice per request in this time.
@@ -243,59 +260,120 @@ def check(db: Session, token: str) -> tuple[UploadRequest, Account] | None:
     return None if row is None else (row[0], row[1])
 
 
-def hold(db: Session, request_id: int) -> bool:
-    """A slot for one file, in one statement: of many uploads at once, only as many as files are left pass. False when
-    the request no longer takes files."""
+
+# --- Holding a place while a file arrives (in memory: a restart leaves nothing held) ----------------------------------
+
+_lock = threading.Lock()
+#: Per request: the uploads under way now, and the bytes they announced (only what a request may still take today is
+#: let in; the announcement holds the request's own day, never another's).
+_active: dict[int, int] = {}
+_announced: dict[int, int] = {}
+_seen: dict[tuple[str, str], deque[float]] = {}
+
+
+@dataclass(frozen=True)
+class Hold:
+    """A place for one file of a request, while it arrives. ``refused`` says why there is none: ``gone`` (answers like
+    an unknown token), ``busy`` (two uploads of this request under way), ``request_day`` (the request's bytes of the
+    day), ``day`` (the whole server's day)."""
+
+    request_id: int
+    announced: int
+    refused: str = ""
+
+
+def hold(db: Session, request_id: int, announced: int) -> Hold:
+    """A place for one file, if there is room: the request still works and its taken files and the uploads under way
+    stay below ``max_files``, at most ``MAX_PARALLEL`` uploads of it at once, its bytes of the day (read ones and the
+    announced ones under way) stay below ``REQUEST_DAY_BYTES``, and the whole server's day still has room (read bytes
+    and taken files only: nothing announced holds the day of others). Checked and taken under one lock, so two uploads
+    at once never pass the number of files. Nothing of it is written: a restart in between leaves nothing held."""
     current = rules(db)
-    if not current.allowed:
-        return False
-    now = clock.now()
-    taken = db.execute(update(UploadRequest).where(UploadRequest.id == request_id, live(now, current))
-                       .values(received=UploadRequest.received + 1, last_used_at=now)).rowcount
-    db.commit()
-    return taken == 1
+    with _lock:
+        row = db.scalar(select(UploadRequest).where(UploadRequest.id == request_id, live(clock.now(), current))) \
+            if current.allowed else None
+        active = _active.get(request_id, 0)
+        if row is None or row.received + active >= row.max_files:
+            return Hold(request_id, 0, "gone")
+        if active >= MAX_PARALLEL:
+            return Hold(request_id, 0, "busy")
+        budget = _budget(db)
+        used = int(budget["requests"].get(str(request_id), 0))
+        if used + _announced.get(request_id, 0) + announced > REQUEST_DAY_BYTES:
+            return Hold(request_id, 0, "request_day")
+        if budget["files"] >= DAY_FILES or budget["bytes"] >= DAY_BYTES:
+            return Hold(request_id, 0, "day")
+        _active[request_id] = active + 1
+        _announced[request_id] = _announced.get(request_id, 0) + announced
+        return Hold(request_id, announced)
 
 
-def give_back(db: Session, request_id: int) -> None:
-    """The slot of a file that was not taken."""
-    db.execute(update(UploadRequest).where(UploadRequest.id == request_id, UploadRequest.received > 0)
-               .values(received=UploadRequest.received - 1))
-    db.commit()
+def release(held: Hold) -> None:
+    """The place goes again (the file was taken, refused, or never came)."""
+    if held.refused:
+        return
+    with _lock:
+        _active[held.request_id] = max(0, _active.get(held.request_id, 0) - 1)
+        _announced[held.request_id] = max(0, _announced.get(held.request_id, 0) - held.announced)
+        if not _active[held.request_id]:
+            _active.pop(held.request_id, None)
+            _announced.pop(held.request_id, None)
+
+
+def charge(db: Session, request_id: int, read: int, *, taken: bool) -> None:
+    """What a file cost, after it was read: the bytes read count on the request's day and the server's, taken or not
+    (reading them was the cost); the file counts on the server's day only when it became a document."""
+    with _lock:
+        budget = _budget(db)
+        budget["bytes"] += read
+        budget["files"] += 1 if taken else 0
+        key = str(request_id)
+        budget["requests"][key] = int(budget["requests"].get(key, 0)) + read
+        settings_service.save(db, {"upload_request_budget": budget})
 
 
 def still_open(db: Session, request_id: int) -> UploadRequest | None:
-    """After the file arrived: the request (holding the slot) still works (not revoked meanwhile, the switch still on).
-    The slot itself counts, so the test is the one of ``live`` without the number of files."""
+    """After the file arrived: the request still works (not revoked meanwhile, the switch still on, its time not over)
+    and has room for it (``received`` counts the files taken; the file under way is held in memory only)."""
     current = rules(db)
     if not current.allowed:
         return None
-    now = clock.now()
-    return db.scalar(select(UploadRequest).where(
-        UploadRequest.id == request_id, UploadRequest.revoked_at.is_(None), UploadRequest.until > now,
-        UploadRequest.created_at > now - timedelta(days=current.max_days), UploadRequest.address == current.address,
-        exists().where(_owner.id == UploadRequest.user_id, _owner.blocked_at.is_(None))))
+    return db.scalar(select(UploadRequest).where(UploadRequest.id == request_id, live(clock.now(), current)))
 
 
 def take_file(db: Session, row: UploadRequest, *, filename: str, path: Path, kind: str, sha256: str,
               size: int) -> Document:
-    """A file that arrived becomes a document of the person, in the inbox of their personal vault, never anywhere else.
+    """A file that arrived becomes a document of the person, in the inbox of their personal vault, never anywhere else,
+    and counts on the request (in the same transaction, only while it has room).
 
     The same file again is taken again, as a document of its own: the person sees in the inbox that it looks like one
     they have and deletes it. Passing over it would answer the same, but the request would then count differently or
     the answer would wait differently, and either tells the sender whether the person has the file. A duplicate costs a
-    slot of the request like any file."""
+    slot of the request like any file.
+
+    The history of the document names the request, not the person: nobody of the server put it there
+    (``by_link`` is the request's name, ``detail.source`` is ``request``)."""
     vault_id = receiving.personal_vault(db, row.user_id)
     cleaned = filetypes.file_name(filename) if filename else ""
+    request_id, name = row.id, row.name
 
     def note(session: Session, document: Document) -> None:
-        session.add(IntakeItem(document_id=document.id, source=SOURCE, key=f"{row.id}:{secrets.token_hex(8)}",
+        session.add(IntakeItem(document_id=document.id, source=SOURCE, key=f"{request_id}:{secrets.token_hex(8)}",
                                state="done", sha256=sha256, size=size, unknown=True,
-                               detail={"from": row.name}, at=clock.now()))
+                               detail={"from": name}, at=clock.now()))
+        session.flush()
+        session.execute(update(Event).where(Event.document_id == document.id, Event.action == changes.CREATED)
+                        .values(user_id=None, by_link=name))
+        counted = session.execute(update(UploadRequest).where(
+            UploadRequest.id == request_id, UploadRequest.received < UploadRequest.max_files)
+            .values(received=UploadRequest.received + 1, last_used_at=clock.now())).rowcount
+        if counted != 1:
+            raise error("not_found", "Not found.", 404)
 
     document, _twin = receiving.accept(
         db, uid=row.user_id, vault_id=vault_id, filename=cleaned or "document", path=path, kind=kind, sha256=sha256,
-        size=size, source=SOURCE, also=note, detail={"from": row.name})
-    logger.info("Upload request took a file request_id=%s document_id=%s bytes=%s", row.id, document.id, size)
+        size=size, source=SOURCE, also=note, detail={"from": name})
+    logger.info("Upload request took a file request_id=%s document_id=%s bytes=%s", request_id, document.id, size)
     return document
 
 
@@ -331,9 +409,6 @@ def tell_if_due(db: Session, request_id: int) -> None:
 
 # --- Limits per hour (in memory) and per day (in the settings) --------------------------------------------------------
 
-_lock = threading.Lock()
-_seen: dict[tuple[str, str], deque[float]] = {}
-
 
 def hour_room(request_id: int, address: str) -> bool:
     """One more try for this request and this sender in the hour, or False (then neither counts). Counted before the
@@ -353,37 +428,25 @@ def hour_room(request_id: int, address: str) -> bool:
 
 
 def _budget(db: Session) -> dict[str, Any]:
+    """The day (UTC) so far: files taken and bytes read on the whole server, and bytes read per request."""
     stored = settings_service.get(db, "upload_request_budget")
     today = clock.now().date().isoformat()
     if not isinstance(stored, dict) or stored.get("day") != today:
-        return {"day": today, "files": 0, "bytes": 0}
-    return {"day": today, "files": int(stored.get("files") or 0), "bytes": int(stored.get("bytes") or 0)}
+        return {"day": today, "files": 0, "bytes": 0, "requests": {}}
+    per = stored.get("requests")
+    return {"day": today, "files": int(stored.get("files") or 0), "bytes": int(stored.get("bytes") or 0),
+            "requests": {str(k): int(v) for k, v in per.items()} if isinstance(per, dict) else {}}
 
 
-def day_reserve(db: Session, size: int) -> bool:
-    """Room in the day of the whole server for one more file of at most ``size`` bytes (the declared length of the
-    request): reserved now, settled with ``day_settle`` once the true size is known."""
+def request_day_left(db: Session, request_id: int) -> int:
+    """The bytes a request may still take today (read ones counted, the ones under way not)."""
     with _lock:
-        budget = _budget(db)
-        if budget["files"] + 1 > DAY_FILES or budget["bytes"] + size > DAY_BYTES:
-            return False
-        budget["files"] += 1
-        budget["bytes"] += size
-        settings_service.save(db, {"upload_request_budget": budget})
-        return True
-
-
-def day_settle(db: Session, reserved: int, used: int, *, taken: bool) -> None:
-    """What was reserved and not used goes back; a file that was not taken gives its file back too."""
-    with _lock:
-        budget = _budget(db)
-        budget["bytes"] = max(0, budget["bytes"] - max(0, reserved - used))
-        if not taken:
-            budget["files"] = max(0, budget["files"] - 1)
-        settings_service.save(db, {"upload_request_budget": budget})
+        return max(0, REQUEST_DAY_BYTES - int(_budget(db)["requests"].get(str(request_id), 0)))
 
 
 def forget() -> None:
-    """For the tests."""
+    """For the tests, and what a restart does: nothing held in memory stays."""
     with _lock:
         _seen.clear()
+        _active.clear()
+        _announced.clear()

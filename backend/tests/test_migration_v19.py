@@ -96,3 +96,27 @@ def test_the_trial_run_counts_the_requests_a_restore_opens_again(client: TestCli
         db.commit()
     brief = client.post(f"/api/v1/backups/{name}/check").json()
     assert brief["usable"] is True and brief["revived_upload_requests"] == 2
+
+
+def test_the_trial_run_names_a_request_used_up_since_the_backup(client: TestClient, operator: object) -> None:
+    """A request that took all its files after the backup takes files again once the backup is restored."""
+    jule = make_account("jule")
+    now = clock.now()
+    with SessionLocal() as db:
+        row = UploadRequest(user_id=jule.id, name="voll", token_hash=secrets.token_hex(32), token_enc="",
+                            address="https://paper.example.com", until=now + timedelta(days=7), max_files=2,
+                            received=1, created_at=now)
+        done = UploadRequest(user_id=jule.id, name="war voll", token_hash=secrets.token_hex(32), token_enc="",
+                             address="https://paper.example.com", until=now + timedelta(days=7), max_files=2,
+                             received=2, created_at=now)
+        db.add_all([row, done])
+        db.commit()
+        row_id = row.id
+    name = backups.create(kind=backups.MANUAL).name
+    assert backups.check(name).revived_upload_requests == 0
+    with SessionLocal() as db:
+        db.get(UploadRequest, row_id).received = 2  # type: ignore[union-attr]
+        db.commit()
+    brief = client.post(f"/api/v1/backups/{name}/check").json()
+    # The one used up since counts; the one used up already in the backup does not.
+    assert brief["revived_upload_requests"] == 1

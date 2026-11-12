@@ -90,9 +90,10 @@ def current(db: Session) -> Limits:
 def single_limit() -> int:
     """For the guard in front of an upload request's route (one file a request): the largest file and the envelope."""
     from ..db import SessionLocal
+    from . import upload_requests
 
     with SessionLocal() as db:
-        return current(db).max_file + MB
+        return min(current(db).max_file, upload_requests.REQUEST_DAY_BYTES) + MB
 
 
 def request_limit() -> int:

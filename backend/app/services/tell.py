@@ -74,7 +74,13 @@ def _send(account_id: int, notice: Notice) -> None:
     message = EmailMessage()
     message["To"] = mail_to
     message["Subject"] = notice.mail_subject
-    message.set_content(notice.mail_body.format(where=f"{base}{notice.url}" if base else "nexpaper"))
+    # ``{where}`` is put in as text, never by ``str.format``, and only its last place (every body ends with it): a body
+    # holds names people chose (an upload request "Firma {GmbH}", a provider's label, a display name), and braces there
+    # must neither break the mail nor be read as a format (``{where:>99999999}`` would make a mail of 100 MB), nor a
+    # name "{where}" become an address.
+    head, mark, tail = notice.mail_body.rpartition("{where}")
+    where = f"{base}{notice.url}" if base else "nexpaper"
+    message.set_content(head + where + tail if mark else notice.mail_body)
     with SessionLocal() as db:
         try:
             mailer.send_message(db, message)

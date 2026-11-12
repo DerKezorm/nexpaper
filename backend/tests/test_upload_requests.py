@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import secrets
 import threading
 from collections.abc import Iterator
 from datetime import UTC, datetime, timedelta
@@ -416,15 +417,20 @@ def test_files_of_the_whole_server_per_day(jule: Account, monkeypatch: pytest.Mo
 def test_bytes_of_the_whole_server_per_day_count_what_arrived(jule: Account, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(clock, "now", lambda: START)
     big = files.make_pdf(["groß"], padding=200_000)
-    monkeypatch.setattr(upload_requests, "DAY_BYTES", len(big) * 2 + 1000)
+    monkeypatch.setattr(upload_requests, "DAY_BYTES", len(big) * 2)
     with new_client(jule) as browser:
         token = token_of(make(browser))
     with stranger() as outside:
         assert send(outside, token, "a.pdf", big).status_code == 201
+        # A refused file costs what was read of it (a few hundred bytes here), not what it announced.
         assert send(outside, token, "x.exe", files.EXE).status_code == 415
-        # A refused file gave its bytes back; the second large one still fits, the third not.
         assert send(outside, token, "b.pdf", files.make_pdf(["zwei"], padding=200_000)).status_code == 201
-        assert send(outside, token, "c.pdf", files.make_pdf(["drei"], padding=200_000)).status_code == 429
+        # Read so far: two large files and the refused one, past the day.
+        full = send(outside, token, "c.pdf", files.make_pdf(["drei"], padding=200_000))
+        assert (full.status_code, full.json()["detail"]["code"]) == (429, "request_day_full")
+    with SessionLocal() as db:
+        budget = settings_service.get(db, "upload_request_budget")
+        assert budget["files"] == 2 and len(big) * 2 < budget["bytes"] < len(big) * 2 + 2000
 
 
 # --- The same answer for everything that does not work --------------------------------------------------------------
@@ -664,3 +670,287 @@ def test_the_page_routes_are_found_open_and_named(client: TestClient) -> None:
     from .test_routes import OPEN
 
     assert ("GET", "/api/v1/u/{token}") in OPEN and ("POST", "/api/v1/u/{token}/files") in OPEN
+
+
+# --- After the review: what one address can hold, restarts, the trial run, braces, long tokens --------------------------
+
+
+def _multipart(name: str, data: bytes) -> tuple[bytes, str]:
+    boundary = "x" + secrets.token_hex(8)
+    body = (f"--{boundary}\r\nContent-Disposition: form-data; name=\"file\"; filename=\"{name}\"\r\n"
+            "Content-Type: application/pdf\r\n\r\n").encode() + data + f"\r\n--{boundary}--\r\n".encode()
+    return body, f"multipart/form-data; boundary={boundary}"
+
+
+def _slow_upload(token: str, body: bytes, kind: str, *, pause: float, piece: int = 64, announced: int | None = None,
+                 address: str = "127.0.0.9") -> int:
+    """An upload whose body comes ``piece`` bytes at a time with ``pause`` seconds between, straight through the app
+    (the guard in front included); returns the status of the answer."""
+    sent: list[dict] = []
+    offset = [0]
+
+    async def receive() -> dict:
+        if offset[0]:
+            await asyncio.sleep(pause)
+        chunk = body[offset[0]:offset[0] + piece]
+        offset[0] += piece
+        return {"type": "http.request", "body": chunk, "more_body": offset[0] < len(body)}
+
+    async def remember(message: dict) -> None:
+        sent.append(message)
+
+    length = str(announced if announced is not None else len(body)).encode()
+    scope = {"type": "http", "method": "POST", "path": f"/api/v1/u/{token}/files", "headers": [
+        (b"content-length", length), (b"content-type", kind.encode())],
+        "query_string": b"", "client": (address, 1), "server": ("testserver", 80), "scheme": "http",
+        "root_path": "", "app": app}
+    asyncio.run(GuardMiddleware(app.middleware_stack)(scope, receive, remember))  # type: ignore[arg-type]
+    return int(next(m["status"] for m in sent if m["type"] == "http.response.start"))
+
+
+def test_announced_lengths_hold_nothing_of_anybody_else(jule: Account, monkeypatch: pytest.MonkeyPatch) -> None:
+    """The review's probe: slow uploads that announce large bodies hold the day of nobody else. Two places of their own
+    request at most; another person's request takes files all along."""
+    monkeypatch.setattr(clock, "now", lambda: START)
+    monkeypatch.setattr(upload_requests, "DAY_BYTES", 1024 * 1024)
+    tom = make_account("tom")
+    with new_client(tom) as browser:
+        slow = token_of(make(browser, "Langsam", max_files=50))
+    with new_client(jule) as browser:
+        other = token_of(make(browser))
+    with SessionLocal() as db:
+        slow_id = db.scalar(select(UploadRequest.id).where(UploadRequest.name == "Langsam"))
+        assert slow_id is not None
+        first = upload_requests.hold(db, slow_id, 100 * 1024 * 1024)
+        second = upload_requests.hold(db, slow_id, 100 * 1024 * 1024)
+        assert (first.refused, second.refused) == ("", "")
+        assert upload_requests.hold(db, slow_id, 1000).refused == "busy"
+    with stranger() as outside:
+        third = send(outside, slow)
+        assert (third.status_code, third.json()["detail"]["code"]) == (429, "request_busy")
+        for n in range(3):
+            assert send(outside, other, f"o{n}.pdf", files.make_pdf([f"o{n}"])).status_code == 201
+    upload_requests.release(first)
+    upload_requests.release(second)
+    with stranger() as outside:
+        assert send(outside, slow).status_code == 201
+
+
+def test_one_request_takes_at_most_its_bytes_of_the_day(jule: Account, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(clock, "now", lambda: START)
+    big = files.make_pdf(["groß"], padding=150_000)
+    monkeypatch.setattr(upload_requests, "REQUEST_DAY_BYTES", len(big) * 2 + 2000)
+    with new_client(jule) as browser:
+        token, other = token_of(make(browser)), token_of(make(browser, "Hausverwaltung"))
+    with stranger() as outside:
+        assert send(outside, token, "a.pdf", big).status_code == 201
+        assert send(outside, token, "b.pdf", files.make_pdf(["b"], padding=150_000)).status_code == 201
+        full = send(outside, token, "c.pdf", files.make_pdf(["c"], padding=150_000))
+        assert (full.status_code, full.json()["detail"]["code"]) == (429, "request_day_full")
+        # The other request of the same person has its own day.
+        assert send(outside, other, "d.pdf", files.make_pdf(["d"], padding=150_000)).status_code == 201
+        # The next day the first takes files again.
+        monkeypatch.setattr(clock, "now", lambda: START + timedelta(days=1))
+        assert send(outside, token, "c.pdf", files.make_pdf(["c"], padding=150_000)).status_code == 201
+
+
+def test_a_file_larger_than_a_request_may_take_in_a_day_is_refused_by_its_length(
+    jule: Account, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(upload_requests, "REQUEST_DAY_BYTES", 2 * 1024 * 1024)
+    with new_client(jule) as browser:
+        token = token_of(make(browser))
+    with stranger() as outside:
+        page = outside.get(f"/api/v1/u/{token}").json()
+        assert page["max_mb"] == 2
+        big = send(outside, token, "big.pdf", files.make_pdf(["x"], padding=3_200_000))
+        assert (big.status_code, big.json()["detail"]["code"]) == (413, "too_large")
+    assert documents_of(jule) == []
+
+
+def test_a_body_that_stops_coming_is_broken_off_and_holds_nothing(
+    jule: Account, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(clock, "now", lambda: START)
+    monkeypatch.setattr(upload_requests, "BODY_IDLE_SECONDS", 0.2)
+    with new_client(jule) as browser:
+        token = token_of(make(browser, max_files=1))
+    body, kind = _multipart("a.pdf", files.make_pdf(["langsam"]))
+    assert _slow_upload(token, body, kind, pause=0.5) == 408
+    with SessionLocal() as db:
+        assert db.scalar(select(UploadRequest.received)) == 0
+        budget = settings_service.get(db, "upload_request_budget")
+        assert budget["files"] == 0 and budget["bytes"] < 200
+    assert upload_requests._active == {} and upload_requests._announced == {}
+    with stranger() as outside:
+        assert outside.get(f"/api/v1/u/{token}").json()["remaining"] == 1
+        assert send(outside, token).status_code == 201
+    assert len(documents_of(jule)) == 1
+
+
+def test_a_body_slower_than_its_time_is_broken_off(jule: Account, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Never a pause long enough to be idle, but slower than the least rate all along."""
+    monkeypatch.setattr(upload_requests, "BODY_BASE_SECONDS", 0.3)
+    monkeypatch.setattr(upload_requests, "BODY_MIN_RATE", 10 ** 9)
+    with new_client(jule) as browser:
+        token = token_of(make(browser))
+    body, kind = _multipart("a.pdf", files.make_pdf(["tröpfelnd"]))
+    assert _slow_upload(token, body, kind, pause=0.05, piece=32) == 408
+    assert documents_of(jule) == []
+
+
+def test_a_hard_stop_while_files_arrive_leaves_nothing_held(jule: Account, monkeypatch: pytest.MonkeyPatch) -> None:
+    """What a hard restart leaves: the places held in memory are gone with the process, nothing of them was written."""
+    monkeypatch.setattr(clock, "now", lambda: START)
+    with new_client(jule) as browser:
+        token = token_of(make(browser, max_files=3))
+    with SessionLocal() as db:
+        request_id = int(db.scalar(select(UploadRequest.id)) or 0)
+        held = [upload_requests.hold(db, request_id, 50 * 1024 * 1024) for _ in range(2)]
+        assert [h.refused for h in held] == ["", ""]
+    upload_requests.forget()  # the process ends; a new one starts with nothing in memory
+    with SessionLocal() as db:
+        assert db.scalar(select(UploadRequest.received)) == 0
+        assert settings_service.get(db, "upload_request_budget") in (None, {})
+    with stranger() as outside:
+        assert outside.get(f"/api/v1/u/{token}").json()["remaining"] == 3
+        for n in range(3):
+            assert send(outside, token, f"{n}.pdf", files.make_pdf([str(n)])).status_code == 201
+
+
+def test_a_sender_on_the_brake_uploads_nothing_with_a_good_token(jule: Account) -> None:
+    with new_client(jule) as browser:
+        token = token_of(make(browser))
+    with stranger() as outside:
+        for _ in range(60):
+            if outside.get("/api/v1/u/upr_" + secrets.token_urlsafe(32)).status_code == 429:
+                break
+        refused = send(outside, token)
+        assert (refused.status_code, refused.json()["detail"]["code"]) == (429, "too_many_attempts")
+    assert documents_of(jule) == []
+    brake.forget()
+
+
+def test_a_lowered_longest_time_of_links_ends_requests_past_it(jule: Account, monkeypatch: pytest.MonkeyPatch) -> None:
+    moment = [START]
+    monkeypatch.setattr(clock, "now", lambda: moment[0])
+    with new_client(jule) as browser:
+        made = make(browser, days=30)
+    moment[0] = START + timedelta(days=10)
+    with stranger() as outside:
+        assert outside.get(f"/api/v1/u/{token_of(made)}").status_code == 200
+    with SessionLocal() as db:
+        settings_service.save(db, {"link_max_days": 7})
+    with stranger() as outside:
+        assert outside.get(f"/api/v1/u/{token_of(made)}").status_code == 404
+        assert send(outside, token_of(made)).status_code == 404
+    with new_client(jule) as browser:
+        assert browser.get("/api/v1/upload-requests").json()[0]["status"] == "expired"
+
+
+def test_the_address_of_a_request_that_takes_nothing_is_not_handed_out(
+    jule: Account, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    moment = [START]
+    monkeypatch.setattr(clock, "now", lambda: moment[0])
+    with new_client(jule) as browser:
+        used, expired = make(browser, "voll", max_files=1), make(browser, "alt", days=1)
+    with stranger() as outside:
+        assert send(outside, token_of(used)).status_code == 201
+    moment[0] = START + timedelta(days=2)
+    with new_client(jule) as browser:
+        for made in (used, expired):
+            answer = browser.post(f"/api/v1/upload-requests/{made['id']}/address")
+            assert (answer.status_code, answer.json()["detail"]["code"]) == (409, "request_ended")
+
+
+def test_a_refused_file_does_not_count_on_the_files_of_the_day(jule: Account, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(clock, "now", lambda: START)
+    monkeypatch.setattr(upload_requests, "DAY_FILES", 1)
+    with new_client(jule) as browser:
+        token = token_of(make(browser))
+    with stranger() as outside:
+        assert send(outside, token, "x.exe", files.EXE).status_code == 415
+        assert send(outside, token, "x.html", files.HTML).status_code == 415
+        assert send(outside, token).status_code == 201
+        assert send(outside, token, "b.pdf", files.make_pdf(["b"])).status_code == 429
+
+
+def test_the_switch_turned_off_while_a_file_arrives_keeps_nothing(
+    jule: Account, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    with new_client(jule) as browser:
+        token = token_of(make(browser))
+    real = upload_requests.still_open
+
+    def off_meanwhile(db, request_id):  # type: ignore[no-untyped-def]
+        switch(False)
+        return real(db, request_id)
+
+    monkeypatch.setattr(upload_requests, "still_open", off_meanwhile)
+    with stranger() as outside:
+        assert send(outside, token).status_code == 404
+    assert documents_of(jule) == []
+
+
+def test_the_operator_counts_no_open_request_while_the_switch_is_off(client: TestClient, operator: Account) -> None:
+    switch()
+    with new_client(make_account("tom")) as browser:
+        make(browser)
+    assert client.get("/api/v1/upload-requests/overview").json() == {"open_requests": 1, "people": 1}
+    switch(False)
+    assert client.get("/api/v1/upload-requests/overview").json() == {"open_requests": 0, "people": 0}
+
+
+def test_a_token_too_long_answers_like_any_wrong_one_and_counts_on_the_brake(jule: Account) -> None:
+    long = "upr_" + "a" * 300
+    with stranger() as outside:
+        unknown = send(outside, "upr_" + secrets.token_urlsafe(32))
+        for answer in (send(outside, long), outside.get(f"/api/v1/u/{long}")):
+            assert (answer.status_code, answer.json()) == (404, unknown.json())
+        status = 0
+        for _ in range(60):
+            status = send(outside, long).status_code
+            if status == 429:
+                break
+        assert status == 429
+    brake.forget()
+
+
+@pytest.mark.parametrize("name", ["Firma {GmbH}", "{where:>99999999}", "{0}{1} }{", "{where}"])
+def test_braces_in_the_name_never_break_the_notice(jule: Account, monkeypatch: pytest.MonkeyPatch, name: str) -> None:
+    """The notice goes all the way to the mail: braces in the name stay text and are never read as a format."""
+    from app.services import mailer, push
+
+    told: list[tell.Notice] = []
+    monkeypatch.setattr(tell, "person", lambda account_id, notice: told.append(notice))
+    with SessionLocal() as db:
+        row = db.get(Account, jule.id)
+        assert row is not None
+        row.email, row.email_confirmed_at = "jule@example.com", clock.now()
+        db.commit()
+    with new_client(jule) as browser:
+        token = token_of(make(browser, name))
+    with stranger() as outside:
+        assert send(outside, token).status_code == 201
+    (notice,) = told
+    mails: list[str] = []
+    monkeypatch.setattr(mailer, "configured", lambda db: True)
+    monkeypatch.setattr(mailer, "send_message", lambda db, message: mails.append(message.get_content()))
+    monkeypatch.setattr(push, "send_to_person", lambda account_id, make_message: None)
+    tell._send(jule.id, notice)
+    (mail,) = mails
+    assert name in mail and len(mail) < 2000
+
+
+def test_the_history_names_the_request_and_the_inbox_says_where_it_came_from(jule: Account) -> None:
+    with new_client(jule) as browser:
+        token = token_of(make(browser))
+    with stranger() as outside:
+        assert send(outside, token).status_code == 201
+    (document,) = documents_of(jule)
+    with new_client(jule) as browser:
+        (created,) = [e for e in browser.get(f"/api/v1/documents/{document.id}/events").json()
+                      if e["action"] == "created"]
+        assert created["by"] is None and created["by_link"] == "Kanzlei Weber"
+        assert created["detail"]["source"] == "request"

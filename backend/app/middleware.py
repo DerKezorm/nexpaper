@@ -171,7 +171,8 @@ LARGE_BODIES = {
 #: for every request) and one piece of a piece-by-piece upload (``PUT /api/v1/uploads/<id>``).
 UPLOAD_PIECE = re.compile(r"^/api/v1/uploads/[0-9a-f]{32}$")
 #: The one route a stranger sends files to: an upload request (``routers/request_page.py``), one file a request.
-REQUEST_FILES = re.compile(r"^/api/v1/u/[^/]{1,100}/files$")
+#: A token of any length: one too long is no token, but answers like every wrong one (404, on the brake), not 400.
+REQUEST_FILES = re.compile(r"^/api/v1/u/[^/]+/files$")
 
 
 def body_limit(method: str, path: str) -> int:
