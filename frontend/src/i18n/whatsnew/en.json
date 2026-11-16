@@ -1,4 +1,23 @@
 {
+  "1.6.0": {
+    "lead": "On large screens a document now stands beside the archive list, and the pages of a document grow with the window.",
+    "sections": [
+      {
+        "title": "A document beside the list",
+        "where": "Archive, from a window width of 1600 pixels",
+        "body": "A click in the table opens the document on the right beside it instead of on a page of its own. The list stays as it is: search, filters, sort and page. j and k go to the next and the previous document, over the end of a page too; Esc or the cross closes it, and so does Back in the browser. What you change in the document shows in the list at once. A click with Ctrl still opens a new tab, the sign at the top right the document's own page."
+      },
+      {
+        "title": "More room on large screens",
+        "where": "Archive, inbox, document, vaults",
+        "body": "The page of a document is as tall as the window instead of stopping at a fixed width, in the inbox as well. The archive table, the inbox and the vaults use the width (three vaults in a row). Pages with forms and short lists stay narrow, they read better that way. Below 1600 pixels, on a laptop for example, everything stays as it was."
+      }
+    ],
+    "smallTitle": "Also",
+    "small": [
+      "The width counts in the browser's pixels: a screen of 2560 pixels at 150 % scaling has 1707, one of 1920 at 125 % only 1536. Who wants the side by side view on a smaller screen makes the page smaller in the browser (Ctrl and minus)."
+    ]
+  },
   "1.5.1": {
     "lead": "Text recognition also where the container runs under an id without a user entry, and proposals also from local models that think first.",
     "sections": [

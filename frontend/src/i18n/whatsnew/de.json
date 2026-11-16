@@ -1,4 +1,23 @@
 {
+  "1.6.0": {
+    "lead": "Auf großen Bildschirmen steht ein Dokument jetzt neben der Archivliste, und die Seiten eines Dokuments wachsen mit dem Fenster.",
+    "sections": [
+      {
+        "title": "Dokument neben der Liste",
+        "where": "Archiv, ab einer Fensterbreite von 1600 Pixeln",
+        "body": "Ein Klick in der Tabelle öffnet das Dokument rechts daneben, statt auf einer eigenen Seite. Die Liste bleibt, wie sie ist: Suche, Filter, Sortierung und Seite. Mit j und k geht es zum nächsten und vorigen Dokument, auch über das Ende einer Seite hinaus; Esc oder das Kreuz schließt es, Zurück im Browser auch. Was du am Dokument änderst, steht gleich in der Liste. Ein Klick mit Strg öffnet wie bisher einen neuen Tab, das Zeichen oben rechts die eigene Seite."
+      },
+      {
+        "title": "Mehr Platz auf großen Bildschirmen",
+        "where": "Archiv, Eingang, Dokument, Tresore",
+        "body": "Die Seite eines Dokuments ist so hoch wie das Fenster, statt bei einer festen Breite stehen zu bleiben, im Eingang ebenso. Die Archivtabelle, der Eingang und die Tresore nutzen die Breite (drei Tresore nebeneinander). Seiten mit Formularen und kurzen Listen bleiben schmal, sie lesen sich so besser. Unter 1600 Pixeln, etwa auf einem Laptop, bleibt alles wie bisher."
+      }
+    ],
+    "smallTitle": "Außerdem",
+    "small": [
+      "Gezählt wird in Pixeln des Browsers: ein Bildschirm mit 2560 Pixeln bei 150 % Skalierung hat 1707, einer mit 1920 bei 125 % nur 1536. Wer die geteilte Ansicht auf einem kleineren Bildschirm möchte, verkleinert die Seite im Browser (Strg und Minus)."
+    ]
+  },
   "1.5.1": {
     "lead": "Texterkennung auch dort, wo der Container unter einer Nummer ohne Benutzereintrag läuft, und Vorschläge auch von lokalen Modellen, die erst nachdenken.",
     "sections": [
