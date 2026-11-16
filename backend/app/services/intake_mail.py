@@ -607,7 +607,7 @@ def _work(raw: bytes, folder: Path, request: dict[str, Any]) -> dict[str, Any] |
                "cpu_seconds": max(1, int(WORKER_SECONDS))}
     from . import processing
 
-    environment = {key: os.environ[key] for key in processing.KEEP_ENVIRONMENT if key in os.environ}
+    environment = processing.worker_environment(str(folder))
     options: dict[str, Any] = {"start_new_session": True} if os.name != "nt" else {}
     process = subprocess.Popen(
         [sys.executable, "-I", str(WORKER)], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,

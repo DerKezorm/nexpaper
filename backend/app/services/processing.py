@@ -120,8 +120,19 @@ def spawn(request: dict[str, Any], timeout: int) -> Outcome:
         return _spawn(request, timeout, folder)
 
 
-def _spawn(request: dict[str, Any], timeout: int, cwd: str) -> Outcome:
+def worker_environment(folder: str) -> dict[str, str]:
+    """The environment of a worker in ``folder``: what it needs to start, and its own folder as its home. A library that
+    asks for the home directory gets an answer even when the container runs under an id without an entry in
+    ``/etc/passwd`` (``user: 568:568`` on TrueNAS); the server's own home is never handed on."""
     environment = {key: os.environ[key] for key in KEEP_ENVIRONMENT if key in os.environ}
+    environment["HOME"] = folder
+    if os.name == "nt":
+        environment["USERPROFILE"] = folder
+    return environment
+
+
+def _spawn(request: dict[str, Any], timeout: int, cwd: str) -> Outcome:
+    environment = worker_environment(cwd)
     options: dict[str, Any] = {"start_new_session": True} if os.name != "nt" else {}
     process = subprocess.Popen(
         [sys.executable, "-I", str(WORKER)], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
@@ -164,6 +175,10 @@ def _spawn(request: dict[str, Any], timeout: int, cwd: str) -> Outcome:
     if answer.get("ok"):
         return Outcome(True, data=answer)
     code = str(answer.get("error") or "failed")
+    if code == "failed":
+        # The worker names the kind of error on its error stream (never a path): without it the log says nothing.
+        tail = err.decode("utf-8", "replace").strip().splitlines()[-1:] or [""]
+        logger.warning("The worker failed note=%s", tail[0][:120])
     return Outcome(False, error=code, retry=bool(answer.get("retry")) and code not in PERMANENT)
 
 
