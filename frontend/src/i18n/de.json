@@ -725,6 +725,7 @@
     "ai_service_failed": "Der KI-Dienst hat mit einem Fehler geantwortet ({{answered}}). {{said}}",
     "ai_unreadable": "Die Antwort des KI-Dienstes ließ sich nicht lesen.",
     "ai_empty": "Der KI-Dienst hat nichts geschrieben.",
+    "ai_used_up": "Das Modell hat seinen Platz für die Antwort aufgebraucht, bevor es eine geschrieben hat. Bei einem Modell, das erst nachdenkt, muss das Nachdenken aus sein.",
     "ai_no_list": "Dieser Dienst nennt keine Modelle. Trag den Namen des Modells selbst ein.",
     "ai_no_models": "Dieser Dienst bietet keine Modelle an.",
     "ai_too_often": "Zu viele Anfragen an die KI. Warte einen Moment.",

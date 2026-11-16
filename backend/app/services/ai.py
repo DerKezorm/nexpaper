@@ -105,6 +105,8 @@ AI_MESSAGES = {
     "ai_service_failed": "The AI service answered with an error.",
     "ai_unreadable": "The answer of the AI service could not be read.",
     "ai_empty": "The AI service gave back nothing.",
+    "ai_used_up": "The model used up its room for an answer before it wrote one. A thinking model needs its thinking "
+                  "switched off.",
     "ai_no_list": "This service lists no models; type the name of the model.",
     "ai_no_models": "This service offers no models.",
     "ai_too_often": "Too many requests to the AI. Wait a little.",
@@ -387,20 +389,32 @@ def _log(found: Service, what: str, status: str, started: float) -> None:
                 ticks() - started)
 
 
+#: What a request may carry that a service may turn down, and the word its refusal names it by: asked once more without.
+OPTIONAL_FIELDS = (("temperature", "temperature"), ("reasoning_effort", "reasoning"))
+
+
 def _exchange(found: Service, method: str, path: str, what: str, seconds: float,
-              body: Callable[[bool], dict[str, Any]] | None = None) -> httpx.Response:
-    """One request with its deadline, judged; a model that turns down the temperature is asked once more without it.
-    Every way it ends is logged without content."""
+              body: Callable[[frozenset[str]], dict[str, Any]] | None = None) -> httpx.Response:
+    """One request with its deadline, judged. ``body`` makes the request without the fields it is given: a service that
+    turns one of ``OPTIONAL_FIELDS`` down is asked once more without it. Every way it ends is logged without content."""
     place = checked_target(urljoin(found.url, path), found.provider)
     started = ticks()
     deadline = started + seconds
     try:
         with _client() as client:
-            sent = {"json": body(True)} if body else {}
+            left_out: frozenset[str] = frozenset()
+            sent = {"json": body(left_out)} if body else {}
             answer = _send(client, method, place, _headers(found), deadline, seconds, **sent)
-            # Newer models choose it themselves and turn down a request that sets it: once more without.
-            if body and answer.status_code == 400 and "temperature" in _said(answer).lower():
-                answer = _send(client, method, place, _headers(found), deadline, seconds, json=body(False))
+            # Newer models choose the temperature themselves and turn down a request that sets it; a local server that
+            # does not know ``reasoning_effort`` may turn that down: once more without, each at most once.
+            while body and answer.status_code == 400:
+                said = _said(answer).lower()
+                carried = body(left_out)
+                field = next((name for name, word in OPTIONAL_FIELDS if name in carried and word in said), None)
+                if field is None:
+                    break
+                left_out = left_out | {field}
+                answer = _send(client, method, place, _headers(found), deadline, seconds, json=body(left_out))
     except httpx.TimeoutException as exc:
         _log(found, what, "timeout", started)
         raise _late(seconds) from exc
@@ -456,10 +470,15 @@ def list_models(db: Session, operator_id: int, *, provider: str | None, url: str
 # --- What the model is asked ----------------------------------------------------------------------------------------
 
 
-def _body(found: Service, system: str, user: str, temperature: bool, max_out: int = MAX_OUT) -> dict[str, Any]:
+def _body(found: Service, system: str, user: str, left_out: frozenset[str] = frozenset(),
+          max_out: int = MAX_OUT) -> dict[str, Any]:
     body: dict[str, Any] = {"model": found.model, "max_tokens": max_out}
-    if temperature:
+    if "temperature" not in left_out:
         body["temperature"] = 0.3
+    if found.provider == "local" and "reasoning_effort" not in left_out:
+        # A thinking model (Qwen3, DeepSeek-R1 through Ollama) would spend the few tokens of an answer on its thoughts
+        # and give back nothing; Ollama's OpenAI door does not take ``think: false``, but it takes this.
+        body["reasoning_effort"] = "none"
     if found.provider == "messages":
         body["system"] = system
         body["messages"] = [{"role": "user", "content": user}]
@@ -467,6 +486,17 @@ def _body(found: Service, system: str, user: str, temperature: bool, max_out: in
         body["messages"] = [{"role": "system", "content": system}, {"role": "user", "content": user}]
         body["stream"] = False
     return body
+
+
+def _ran_out(found: Service, data: Any) -> bool:
+    """Whether the service stopped because the room for the answer was used up (a thinking model spends it on its
+    thoughts)."""
+    try:
+        if found.provider == "messages":
+            return data.get("stop_reason") == "max_tokens"
+        return data["choices"][0].get("finish_reason") == "length"
+    except (AttributeError, KeyError, IndexError, TypeError):
+        return False
 
 
 def _content_of(found: Service, data: Any) -> str:
@@ -552,13 +582,14 @@ def _ask(found: Service, system: str, user: str, what: str, max_out: int = MAX_O
     """One request with the rules and the material; the text the model wrote."""
     path = "messages" if found.provider == "messages" else "chat/completions"
     answer = _exchange(found, "POST", path, what, TEXT_SECONDS,
-                       body=lambda temperature: _body(found, system, user, temperature, max_out))
+                       body=lambda left_out: _body(found, system, user, left_out, max_out))
     try:
-        content = _content_of(found, answer.json())
+        data = answer.json()
+        content = _content_of(found, data)
     except (ValueError, KeyError, IndexError, TypeError) as exc:
         raise fail("ai_unreadable", 502) from exc
     if not content.strip():
-        raise fail("ai_empty", 502)
+        raise fail("ai_used_up" if _ran_out(found, data) else "ai_empty", 502)
     return content
 
 

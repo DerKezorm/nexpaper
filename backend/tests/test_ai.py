@@ -193,6 +193,50 @@ def test_a_model_that_turns_down_the_temperature_is_asked_once_more_without(clie
     assert len(model.requests) == 2 and "temperature" not in model.body()
 
 
+
+@pytest.mark.parametrize("provider", ["openai", "messages", "local"])
+def test_only_a_local_model_is_asked_not_to_think(client: TestClient, account: Account, model: Model,
+                                                  provider: str) -> None:
+    # Issue #6: a thinking model through Ollama spent the room of the answer on its thoughts and gave back nothing.
+    set_up(client, provider, LOCAL if provider == "local" else CLOUD)
+    assert probe(client).status_code == 200
+    assert model.body().get("reasoning_effort") == ("none" if provider == "local" else None)
+
+
+def test_a_local_server_that_does_not_know_reasoning_effort_is_asked_once_more_without(
+        client: TestClient, account: Account, model: Model) -> None:
+    set_up(client, "local", LOCAL)
+
+    def strict(request: httpx.Request) -> httpx.Response:
+        body = json.loads(request.content)
+        if "reasoning_effort" in body:
+            return httpx.Response(400, json={"error": {"message": "Unrecognized request argument: reasoning_effort"}})
+        if "temperature" in body:
+            return httpx.Response(400, json={"error": {"message": "`temperature` is not supported"}})
+        return model.write(request)
+
+    model.answer = strict
+    assert probe(client).status_code == 200
+    assert len(model.requests) == 3
+    assert "reasoning_effort" not in model.body() and "temperature" not in model.body()
+
+
+def test_a_refusal_for_another_reason_is_not_asked_again(client: TestClient, account: Account, model: Model) -> None:
+    set_up(client, "local", LOCAL)
+    model.answer = lambda request: httpx.Response(400, json={"error": {"message": "model not found"}})
+    assert probe(client).status_code != 200
+    assert len(model.requests) == 1
+
+
+@pytest.mark.parametrize(("finish", "code"), [("length", "ai_used_up"), ("stop", "ai_empty")])
+def test_an_answer_used_up_by_thinking_says_so(client: TestClient, account: Account, model: Model, finish: str,
+                                               code: str) -> None:
+    set_up(client, "local", LOCAL)
+    model.answer = lambda request: httpx.Response(
+        200, json={"choices": [{"message": {"content": "", "reasoning": "Let me think"}, "finish_reason": finish}]})
+    assert probe(client).json()["detail"]["code"] == code
+
+
 # --- The person's side: what they may know, and the switches ---------------------------------------------------------
 
 

@@ -725,6 +725,7 @@
     "ai_service_failed": "The AI service answered with an error ({{answered}}). {{said}}",
     "ai_unreadable": "The answer of the AI service could not be read.",
     "ai_empty": "The AI service wrote nothing.",
+    "ai_used_up": "The model used up its room for an answer before it wrote one. A thinking model needs its thinking switched off.",
     "ai_no_list": "This service names no models. Type the name of the model yourself.",
     "ai_no_models": "This service offers no models.",
     "ai_too_often": "Too many requests to the AI. Wait a moment.",

@@ -310,6 +310,9 @@ that speaks the Messages API. Every person can switch it off for their account. 
 amount for a new document where nothing surer (an e-invoice, a rule, the same sender as last time, the text itself)
 knew them; a proposal is only a proposal, and the inbox says where each field came from.
 
+- A local model is asked not to think (`reasoning_effort: "none"`): a thinking model such as Qwen3 or DeepSeek-R1
+  would otherwise spend the short answer on its thoughts and give back nothing. A local server that does not know the
+  field is asked once more without it.
 - A local service must lie in your own network and a service on the internet must be reached over https: an address
   that points elsewhere is refused, when it is saved and at every request. The API key is sealed and never shown again.
 - What goes out is the text of the first two pages and the list of kinds the document can have, nothing else. Documents
