@@ -960,7 +960,10 @@ none of it, a link to the outside never.
   finds now, counted with its rights and its brake (one brake for the whole list, the numbers kept for 20 seconds while
   nothing changes); `state` `no_access` for a vault the caller does not see (whether it still exists or not, no
   number), `failed` when the search could not answer. `deadlines_off`: the entry filters by deadline and the caller
-  switched deadlines off; it is counted without that filter, as the archive shows it.
+  switched deadlines off; it is counted without that filter, as the archive shows it. The parts of `query` are named
+  as in the archive's address, not as the parameters of `GET /search`: `vault` is `vault_id` there (or `via_share`
+  for `shared`), `kind` is `kind_id`, `owner` is `owner_id`, and `year` becomes `date_from` and `date_to`. `/search`
+  passes over parameters it does not know without a word, so a part sent under its archive name finds everything.
 - `POST /saved-searches` `{"name", "query"}` (name 1 to 60 characters): parts the archive does not know, or values it
   does not know, are dropped and never run; nothing left answers `422 nothing_to_keep`; the 31st answers
   `409 too_many_saved`. `PATCH /saved-searches/{id}` `{"name"}`, `POST /saved-searches/{id}/up` and `/down` (answer the

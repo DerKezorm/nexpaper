@@ -1,4 +1,23 @@
 {
+  "1.5.1": {
+    "lead": "Text recognition also where the container runs under an id without a user entry, and proposals also from local models that think first.",
+    "sections": [
+      {
+        "title": "Text recognition on TrueNAS",
+        "where": "Inbox, when new documents are read",
+        "body": "When the container runs under an id it does not know (568 on TrueNAS, for example), the text recognition of many documents failed with nothing but “failed”. It now has a folder of its own as its home and runs there as everywhere else. Should it fail all the same, the log names the kind of error."
+      },
+      {
+        "title": "Local models that think first",
+        "where": "Settings, AI",
+        "body": "A model such as Qwen3 through Ollama spent the short room for the answer on thinking and gave back nothing. nexpaper now asks a local model not to think. A local server that does not know the request is asked once more without it, and when a model used up its room all the same, the message says so."
+      }
+    ],
+    "smallTitle": "Also",
+    "small": [
+      "The iPhone app 1.1.0 is in the App Store: with Goes with, protected PDFs, pinned documents, saved searches and upload requests."
+    ]
+  },
   "1.5.0": {
     "lead": "Documents that belong together, an archive that adds up and takes several at once, a transfer code for the banking app, PDFs with a password, and an address through which somebody without an account sends you files.",
     "sections": [
@@ -53,7 +72,7 @@
       "Before the update: make a backup. nexpaper makes one itself before it changes the database, but after that no older version opens this database any more; the way back is only through the backup.",
       "After the update nexpaper reads the numbers of the documents that are already there once, in the background. Proposals for older documents appear as it gets through them.",
       "New search words: `linked:yes` and `pinned:yes`, and a filter “Follow up” on the Deadlines page.",
-      "The iPhone app shows follow-ups from its version 1.0.1. It is in review at Apple right now and comes through the App Store as soon as it is approved.",
+      "The iPhone app shows follow-ups from its version 1.1.0, which is in the App Store.",
       "Remembered PDF passwords are stored encrypted with the server key. A backup together with `secret.key` can open them, so keep backups protected.",
       "“Ready for the internet?” has a point for upload requests, and the trial run of a restore names the links, upload requests and remembered PDF passwords that a restore would bring back.",
       "For programs: `GET /api/v1/search/sum`, `POST /api/v1/documents/bulk`, `/api/v1/saved-searches`, `/api/v1/documents/{id}/related`, `/api/v1/documents/{id}/transfer`, `/api/v1/pins`, `/api/v1/pdf-passwords` and `/api/v1/upload-requests`. A document has the new fields `has_related`, `pinned`, `sender_memo` and `shown_outside`."
