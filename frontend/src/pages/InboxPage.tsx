@@ -261,7 +261,7 @@ export function InboxPage({ slots = appSlots }: { slots?: Slots }) {
   const rest = view ? view.total - items.length : 0
 
   return (
-    <div className="page pt-6 pb-28 lg:pt-8 lg:pb-12">
+    <div className="page page-wide pt-6 pb-28 lg:pt-8 lg:pb-12">
       <div className={`mb-5 ${chosen !== null ? 'hidden lg:block' : ''}`}>
         <h1 className="font-display text-3xl font-semibold tracking-tight">{t('docs.inbox.title')}</h1>
         <p className="text-sm text-muted">{empty ? t('home.sub') : t('docs.inbox.sub')}</p>
@@ -823,7 +823,8 @@ function Detail({ document: d, next, slots, search, onChanged }: { document: Doc
             />
           ) : (
             <>
-          <div className="mx-auto max-w-md">
+          {/* Wide screens: the page grows with the window; the inbox has its heading, chips and search above it. */}
+          <div className="sheet-tall mx-auto max-w-md [--sheet-around:30rem] [--sheet-least:28rem]">
             {d.pages > 0 ? (
               <button type="button" onClick={() => setLarge(page)} className="block w-full cursor-zoom-in" aria-label={t('docs.inbox.large')}>
                 <PagePicture

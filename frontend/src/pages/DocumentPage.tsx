@@ -15,6 +15,7 @@ import {
   FolderInput,
   KeyRound,
   Lock,
+  Maximize2,
   MessageSquare,
   MoreHorizontal,
   Pencil,
@@ -90,15 +91,43 @@ import { eventWhat, eventWho, standsAlone } from '../lib/events'
 import { money } from '../lib/money'
 import { readablePath } from '../lib/paths'
 import { asAvatarPerson, personName } from '../lib/people'
-import { inboxChanged, iso, listOf, moment, useSay, useSourceText } from '../lib/say'
+import { inboxChanged, iso, listOf, moment, useSay, useSourceText, type NoticeLink } from '../lib/say'
 import { useAuth } from '../state/auth'
 import { slots as appSlots, type Slots } from '../slots'
 
 type Tab = 'details' | 'text' | 'notes' | 'versions' | 'history'
 
+/** Beside the list: a page as wide as an A4 page of the window's height (less the bar, the title and the footer). */
+const PANE_PAGE_WIDTH = 'calc((100dvh - 20rem) * 210 / 297)'
+
+/**
+ * The document beside the archive list (wide screens, issue #7): the same page, but it closes instead of going back,
+ * leaves the trash to the list, tells the list when something changed, and lets the pages grow with the height of the
+ * window instead of stopping at a fixed width.
+ */
+export type Pane = {
+  /** The cross (and Esc in the list). */
+  onClose: () => void
+  /** The document left the list (into the trash): the list closes it and says the sentence. */
+  onGone: (notice: string, link?: NoticeLink) => void
+  /** Something of the document changed (title, sender, a tag …): the list asks for its page again. */
+  onChanged: () => void
+  /** Above the document: going up and down the list. */
+  bar: React.ReactNode
+}
+
 export function DocumentPage({ slots = appSlots }: { slots?: Slots }) {
-  const { t } = useTranslation()
   const { id = '' } = useParams()
+  return <Loaded id={id} slots={slots} />
+}
+
+/** One document in the right part of the archive. */
+export function DocumentPane({ id, pane, slots = appSlots }: { id: number; pane: Pane; slots?: Slots }) {
+  return <Loaded key={id} id={String(id)} slots={slots} pane={pane} />
+}
+
+function Loaded({ id, slots, pane }: { id: string; slots: Slots; pane?: Pane }) {
+  const { t } = useTranslation()
   const [document, setDocument] = useState<DocumentInfo | null>(null)
   const [gone, setGone] = useState(false)
   const [problem, setProblem] = useState<string | null>(null)
@@ -117,28 +146,52 @@ export function DocumentPage({ slots = appSlots }: { slots?: Slots }) {
     void load()
   }, [load])
 
+  // Beside the list a change is told to the list too, so its row shows the new title or sender.
+  const onChanged = pane?.onChanged
+  const changed = useCallback(
+    (next: DocumentInfo) => {
+      setDocument(next)
+      onChanged?.()
+    },
+    [onChanged],
+  )
+  const reloadAndTell = useCallback(async () => {
+    await load()
+    onChanged?.()
+  }, [load, onChanged])
+
+  const frame = pane ? 'pt-2' : 'page pt-10'
+  const close = pane && (
+    <button type="button" onClick={pane.onClose} className="mt-3 text-sm font-semibold text-accent hover:underline">
+      {t('docs.document.close')}
+    </button>
+  )
   if (gone)
     return (
-      <div className="page pt-10">
+      <div className={frame}>
         <p>{t('docs.document.gone')}</p>
-        <Link to="/" className="text-accent">
-          {t('docs.document.toArchive')}
-        </Link>
+        {close ?? (
+          <Link to="/" className="text-accent">
+            {t('docs.document.toArchive')}
+          </Link>
+        )}
       </div>
     )
   if (problem)
     return (
-      <div className="page pt-10">
+      <div className={frame}>
         <p role="alert" className="rounded-xl border border-bad/40 bg-bad/10 px-3 py-2 text-sm text-bad">
           {errorText(problem)}
         </p>
+        {close}
       </div>
     )
-  if (!document) return <div className="page pt-10 text-sm text-muted">{t('docs.loading')}</div>
+  if (!document) return <div className={`${frame} text-sm text-muted`}>{t('docs.loading')}</div>
+  if (pane) return <Doc key={document.id} document={document} setDocument={changed} reload={reloadAndTell} slots={slots} pane={pane} />
   return <Doc key={document.id} document={document} setDocument={setDocument} reload={load} slots={slots} />
 }
 
-function Doc({ document: d, setDocument, reload, slots }: { document: DocumentInfo; setDocument: (d: DocumentInfo) => void; reload: () => Promise<void>; slots: Slots }) {
+function Doc({ document: d, setDocument, reload, slots, pane }: { document: DocumentInfo; setDocument: (d: DocumentInfo) => void; reload: () => Promise<void>; slots: Slots; pane?: Pane }) {
   const { t, i18n } = useTranslation()
   const { me } = useAuth()
   const navigate = useNavigate()
@@ -241,7 +294,9 @@ function Doc({ document: d, setDocument, reload, slots }: { document: DocumentIn
       run: async () => {
         await documentApi.trash(d.id)
         inboxChanged()
-        say(t('docs.document.trashed'), '/', { to: '/papierkorb', label: t('docs.inbox.trashLink') })
+        const link = { to: '/papierkorb', label: t('docs.inbox.trashLink') }
+        if (pane) pane.onGone(t('docs.document.trashed'), link)
+        else say(t('docs.document.trashed'), '/', link)
       },
     })
   const copyAll = async () => {
@@ -265,11 +320,26 @@ function Doc({ document: d, setDocument, reload, slots }: { document: DocumentIn
   const NewVersion = slots.NewVersion
 
   return (
-    <div className="page space-y-5 pt-6 pb-28 lg:pt-8 lg:pb-12">
+    <div className={pane ? '@container space-y-4' : 'page page-wide space-y-5 pt-6 pb-28 lg:pt-8 lg:pb-12'} data-testid={pane ? 'document-pane' : undefined}>
+      {pane && (
+        <div className="flex items-center justify-between gap-3 border-b border-line pb-3">
+          {pane.bar}
+          <div className="flex items-center gap-1">
+            <Link to={`/dokument/${d.id}`} className="rounded-full p-2 text-ink-2 hover:bg-sheet-2" aria-label={t('docs.document.openAlone')} title={t('docs.document.openAlone')}>
+              <Maximize2 size={17} aria-hidden />
+            </Link>
+            <button type="button" onClick={pane.onClose} className="rounded-full p-2 text-ink-2 hover:bg-sheet-2" aria-label={t('docs.document.close')} title={t('docs.document.closeHint')}>
+              <X size={19} aria-hidden />
+            </button>
+          </div>
+        </div>
+      )}
       <div className="flex flex-wrap items-start gap-3">
-        <button type="button" onClick={() => (window.history.length > 1 ? navigate(-1) : navigate('/'))} className="mt-1 rounded-full p-2 text-ink-2 hover:bg-sheet-2" aria-label={t('docs.document.back')}>
-          <ArrowLeft size={19} aria-hidden />
-        </button>
+        {!pane && (
+          <button type="button" onClick={() => (window.history.length > 1 ? navigate(-1) : navigate('/'))} className="mt-1 rounded-full p-2 text-ink-2 hover:bg-sheet-2" aria-label={t('docs.document.back')}>
+            <ArrowLeft size={19} aria-hidden />
+          </button>
+        )}
         <div className="min-w-0 flex-1">
           {canEdit ? (
             <input
@@ -399,7 +469,9 @@ function Doc({ document: d, setDocument, reload, slots }: { document: DocumentIn
         </section>
       )}
 
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_26rem]">
+      {/* Beside the list the fields stand next to the pages only where the right part is wide enough (its own width,
+          not the window's); otherwise under them. */}
+      <div className={`grid gap-5 ${pane ? '@4xl:grid-cols-[minmax(0,1fr)_24rem]' : 'lg:grid-cols-[minmax(0,1fr)_26rem]'}`}>
         <section className="card p-4 sm:p-5" aria-label={t('docs.pagesLabel')}>
           {editingPages && PageEditor ? (
             <PageEditor
@@ -415,7 +487,8 @@ function Doc({ document: d, setDocument, reload, slots }: { document: DocumentIn
             />
           ) : (
             <>
-              <div className="relative mx-auto aspect-[210/297] w-full max-w-xl">
+              {/* Beside the list the page is as tall as the window allows: its width follows the height. */}
+              <div className={`relative mx-auto aspect-[210/297] w-full ${pane ? '' : 'sheet-tall max-w-xl [--sheet-least:36rem]'}`} style={pane ? { width: `min(100%, ${PANE_PAGE_WIDTH})` } : undefined} data-testid="page-frame">
                 {pages > 0 ? (
                   <>
                     {/* The picture of the page from the server stands until pdf.js has the PDF (and where it cannot). */}

@@ -48,6 +48,8 @@
 }
 
 @theme inline {
+  /* Wide screens (issue #7): `3xl:` is SPLIT_FROM in lib/wide.ts (1600 px). */
+  --breakpoint-3xl: 100rem;
   --color-paper: var(--paper);
   --color-sheet: var(--sheet);
   --color-sheet-2: var(--sheet-2);
@@ -188,4 +190,20 @@ mark {
   background: linear-gradient(90deg, var(--sheet-2) 25%, var(--accent-soft) 50%, var(--sheet-2) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.4s linear infinite;
+}
+
+/* Wide screens (issue #7; the width is SPLIT_FROM in lib/wide.ts): the pages that put a document next to a list or to
+   its fields take more room, and a page of a document grows with the height of the window instead of stopping at a
+   fixed width. Pages of forms and of one-line lists keep 72rem: wider lines only read worse. Outside the layers on
+   purpose, so it wins over the width utilities (`max-w-md`) the elements carry for smaller screens. */
+@media (min-width: 1600px) {
+  .page.page-wide {
+    max-width: 112rem;
+  }
+  /* An A4 page as tall as the window less what stands above and below it on that page (`--sheet-around`), never
+     narrower than before (`--sheet-least`) and never wider than its column. */
+  .sheet-tall {
+    max-width: none;
+    width: min(100%, max(var(--sheet-least, 28rem), calc((100dvh - var(--sheet-around, 20rem)) * 210 / 297)));
+  }
 }

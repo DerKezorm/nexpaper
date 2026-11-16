@@ -1634,6 +1634,11 @@
       "withNote": "mit Notiz",
       "shared": "mit mir geteilt",
       "sharedLower": "mit mir geteilt",
+      "paneLabel": "Geöffnetes Dokument",
+      "previousDoc": "Voriges Dokument (k)",
+      "nextDoc": "Nächstes Dokument (j)",
+      "position": "{{at}} von {{total}}",
+      "keysHint": "j und k blättern, Esc schließt",
       "inNote": "in einer Notiz",
       "example": [
         "stadtwerke 2026",
@@ -1753,6 +1758,9 @@
     "document": {
       "gone": "Dieses Dokument gibt es nicht oder nicht mehr.",
       "toArchive": "Zum Archiv",
+      "close": "Schließen",
+      "closeHint": "Schließen (Esc)",
+      "openAlone": "Als eigene Seite öffnen",
       "back": "Zurück",
       "belongsTo": "gehört {{name}}",
       "readOnly": "nur lesen",

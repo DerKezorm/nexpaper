@@ -1634,6 +1634,11 @@
       "withNote": "with a note",
       "shared": "shared with me",
       "sharedLower": "shared with me",
+      "paneLabel": "Open document",
+      "previousDoc": "Previous document (k)",
+      "nextDoc": "Next document (j)",
+      "position": "{{at}} of {{total}}",
+      "keysHint": "j and k to move, Esc to close",
       "inNote": "in a note",
       "example": [
         "stadtwerke 2026",
@@ -1753,6 +1758,9 @@
     "document": {
       "gone": "This document does not exist, or no longer.",
       "toArchive": "To the archive",
+      "close": "Close",
+      "closeHint": "Close (Esc)",
+      "openAlone": "Open as its own page",
       "back": "Back",
       "belongsTo": "belongs to {{name}}",
       "readOnly": "read only",

@@ -7,10 +7,10 @@
  * braked by the server (120 a minute) and every answer takes 25 to 50 ms on purpose: the field waits until the typing
  * pauses, a request that is no longer wanted is stopped, and a brake is waited out.
  */
-import { Archive, ArrowDown, ArrowUp, Bookmark, BookmarkPlus, Check, CheckSquare, ChevronLeft, ChevronRight, Download, FileCode2, LayoutGrid, Link2, List, ListTree, MessageSquare, Paperclip, Pin, Search, SlidersHorizontal, Trash2, Users, X } from 'lucide-react'
+import { Archive, ArrowDown, ArrowUp, Bookmark, BookmarkPlus, Check, CheckSquare, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Download, FileCode2, LayoutGrid, Link2, List, ListTree, MessageSquare, Paperclip, Pin, Search, SlidersHorizontal, Trash2, Users, X } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 
 import {
   ApiError,
@@ -57,6 +57,8 @@ import { isSearch, keptOf as keptSearch, SAVED_MAX, SAVED_NAME_MAX, savedHint, u
 import { inboxChanged, iso, listOf } from '../lib/say'
 import { useAuth } from '../state/auth'
 import { slots as appSlots, type Slots } from '../slots'
+import { useWide } from '../lib/wide'
+import { DocumentPane } from './DocumentPage'
 
 /** How long the field waits after the last key before it searches. */
 export const TYPING_PAUSE_MS = 300
@@ -340,6 +342,57 @@ export function ArchivePage({ slots = appSlots }: { slots?: Slots }) {
     [setParams],
   )
 
+  // Wide screens (issue #7): a click in the table opens the document beside it (`?open=<id>`, Back closes it); the
+  // list stays as it is, narrow. Below the width a click opens the document's own page as before.
+  const wide = useWide()
+  const navigate = useNavigate()
+  const open = Number(params.get('open')) || 0
+  const split = wide && listing && open > 0
+  const at = hits ? hits.findIndex((hit) => hit.document.id === open) : -1
+  /** Going past the end of the page: the next page is asked for, and its first (or last) document opens once it is
+   * there (not on the hits of the page before, which still stand while the next one is on its way). */
+  const landing = useRef<{ at: 'first' | 'last'; from: SearchHit[] } | null>(null)
+  const show = useCallback((id: number, replace = false) => go({ open: id ? String(id) : '' }, { keepPage: true, replace }), [go])
+  const step = (by: number) => {
+    if (!hits || at < 0) return
+    const next = hits[at + by]
+    if (next) return show(next.document.id, true)
+    if (by > 0 && page < Math.ceil(total / size)) {
+      landing.current = { at: 'first', from: hits }
+      go({ page: String(page + 1) }, { keepPage: true, replace: true })
+    } else if (by < 0 && page > 1) {
+      landing.current = { at: 'last', from: hits }
+      go({ page: page > 2 ? String(page - 1) : '' }, { keepPage: true, replace: true })
+    }
+  }
+  useEffect(() => {
+    if (!landing.current || !hits || hits.length === 0 || hits === landing.current.from) return
+    const target = landing.current.at === 'first' ? hits[0] : hits[hits.length - 1]
+    landing.current = null
+    show(target.document.id, true)
+  }, [hits, show])
+  // j and k go down and up the list, Esc closes; not while typing, and not while a dialog or a menu is open.
+  useEffect(() => {
+    if (!split) return
+    const onKey = (event: KeyboardEvent) => {
+      if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey) return
+      const target = event.target as HTMLElement | null
+      if (target?.closest?.('input, textarea, select, [contenteditable="true"]')) return
+      if (window.document.querySelector('[role="dialog"], [role="menu"]')) return
+      if (event.key === 'j') step(1)
+      else if (event.key === 'k') step(-1)
+      else if (event.key === 'Escape') show(0)
+      else return
+      event.preventDefault()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  })
+  // The open row stays in sight while going up and down.
+  useEffect(() => {
+    if (split) window.document.querySelector(`[data-doc="${open}"]`)?.scrollIntoView?.({ block: 'nearest' })
+  }, [split, open, hits])
+
   if (!me) return null
   const view = me.profile.view === 'grid' ? 'grid' : 'list'
   const setView = (value: 'list' | 'grid') => {
@@ -465,8 +518,11 @@ export function ArchivePage({ slots = appSlots }: { slots?: Slots }) {
     setPicked(new Set(ids.slice(0, wanted)))
   }
 
-  return (
-    <div ref={top} className="page space-y-5 pt-6 pb-28 lg:pt-8 lg:pb-12">
+  /** In the overview a click switches to the list of all, with the document open beside it. */
+  const openFromOverview = wide ? (id: number) => go({ all: '1', open: String(id) }) : undefined
+  const openFromTable = wide ? (id: number) => show(id, open > 0) : undefined
+  const content = (
+    <>
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="font-display text-3xl font-semibold tracking-tight">{t('docs.archive.title')}</h1>
@@ -479,7 +535,7 @@ export function ArchivePage({ slots = appSlots }: { slots?: Slots }) {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {listing && !keepMode && (
+          {listing && !keepMode && !split && (
             <div role="radiogroup" aria-label={t('docs.archive.view')} className="inline-flex rounded-full border border-line bg-sheet p-0.5">
               {([['list', List, t('docs.archive.list')], ['grid', LayoutGrid, t('docs.archive.tiles')]] as const).map(([value, Icon, label]) => (
                 <button
@@ -579,7 +635,7 @@ export function ArchivePage({ slots = appSlots }: { slots?: Slots }) {
         </Chip>
       </div>
 
-      {more && <Filters chosen={chosen} choose={choose} kinds={kinds} senders={senders} tags={tags} people={people} years={(overview ?? whole)?.years ?? []} active={narrowing} deadlines={deadlinesOn} />}
+      {more && <Filters chosen={chosen} choose={choose} kinds={kinds} senders={senders} tags={tags} people={people} years={(overview ?? whole)?.years ?? []} active={narrowing} deadlines={deadlinesOn} narrow={split} />}
 
       {problem && (
         <p role="alert" className="rounded-xl border border-bad/40 bg-bad/10 px-3 py-2 text-sm text-bad">
@@ -623,8 +679,8 @@ export function ArchivePage({ slots = appSlots }: { slots?: Slots }) {
             mayGo={mayGo.total}
             away={mayGo.away}
             onMayGo={() => go({ keep: 'expired' })}
-            table={<Table hits={newest} vaultById={vaultById} vaultName={vaultName} searching={false} order="-date" bare />}
-            pinned={pinnedHere.length > 0 ? <Table hits={pinnedHere.map(asHit)} vaultById={vaultById} vaultName={vaultName} searching={false} order="-date" bare /> : null}
+            table={<Table hits={newest} vaultById={vaultById} vaultName={vaultName} searching={false} order="-date" bare onOpen={openFromOverview} />}
+            pinned={pinnedHere.length > 0 ? <Table hits={pinnedHere.map(asHit)} vaultById={vaultById} vaultName={vaultName} searching={false} order="-date" bare onOpen={openFromOverview} /> : null}
           />
         )
       ) : (
@@ -723,7 +779,7 @@ export function ArchivePage({ slots = appSlots }: { slots?: Slots }) {
           )}
 
           {hits && hits.length > 0 &&
-            (view === 'list' || keepMode ? (
+            (view === 'list' || keepMode || split ? (
               <Table
                 hits={hits}
                 vaultById={vaultById}
@@ -734,6 +790,9 @@ export function ArchivePage({ slots = appSlots }: { slots?: Slots }) {
                 keep={keepMode ? { picked, toggle: toggleOne, all: allOnPage, toggleAll: togglePage } : undefined}
                 select={choosing ? { picked: new Set(selected.keys()), toggle: chooseOne, all: allChosen, toggleAll: () => chooseAll(!allChosen) } : undefined}
                 footer={sumLine}
+                onOpen={openFromTable}
+                openId={split ? open : undefined}
+                narrow={split}
               />
             ) : (
               <>
@@ -791,6 +850,55 @@ export function ArchivePage({ slots = appSlots }: { slots?: Slots }) {
           onClose={() => setExporting(false)}
         />
       )}
+    </>
+  )
+
+  if (!split)
+    return (
+      <div ref={top} className="page page-wide space-y-5 pt-6 pb-28 lg:pt-8 lg:pb-12">
+        {content}
+      </div>
+    )
+  // A document open beside the list: the list on the left, narrow; the document fills the rest and scrolls by itself.
+  const bar = (
+    <div className="flex items-center gap-1 text-sm text-ink-2" data-testid="pane-bar">
+      <button type="button" onClick={() => step(-1)} disabled={at < 0 || (at === 0 && page === 1)} className="rounded-full p-2 hover:bg-sheet-2 disabled:opacity-30" aria-label={t('docs.archive.previousDoc')} title={t('docs.archive.previousDoc')}>
+        <ChevronUp size={18} aria-hidden />
+      </button>
+      <button type="button" onClick={() => step(1)} disabled={at < 0 || (page - 1) * size + at + 1 >= total} className="rounded-full p-2 hover:bg-sheet-2 disabled:opacity-30" aria-label={t('docs.archive.nextDoc')} title={t('docs.archive.nextDoc')}>
+        <ChevronDown size={18} aria-hidden />
+      </button>
+      {at >= 0 && (
+        <span className="ml-1 tabular-nums" data-testid="pane-position">
+          {t('docs.archive.position', { at: n((page - 1) * size + at + 1), total: n(total) })}
+        </span>
+      )}
+      <span className="ml-3 hidden text-xs text-muted 2xl:inline">{t('docs.archive.keysHint')}</span>
+    </div>
+  )
+  return (
+    <div className="flex gap-6 px-6 lg:px-8" data-testid="archive-split">
+      <div ref={top} className="w-[34rem] shrink-0 space-y-5 pt-6 pb-12 lg:pt-8">
+        {content}
+      </div>
+      <aside className="soft-scroll sticky top-0 h-dvh min-w-0 flex-1 overflow-y-auto border-l border-line pt-6 pb-8 pl-6 lg:pt-8" aria-label={t('docs.archive.paneLabel')}>
+        <DocumentPane
+          id={open}
+          slots={slots}
+          pane={{
+            onClose: () => show(0),
+            onGone: (notice, link) => {
+              const next = new URLSearchParams(params)
+              next.delete('open')
+              navigate({ search: next.toString() }, { state: { notice, ...(link ? { link } : {}) } })
+              setAgain((value) => value + 1)
+              mayGo.reload()
+            },
+            onChanged: () => setAgain((value) => value + 1),
+            bar,
+          }}
+        />
+      </aside>
     </div>
   )
 }
@@ -1021,11 +1129,17 @@ type TableProps = {
   select?: KeepPick
   /** Under the rows: the sums of the whole result. */
   footer?: ReactNode
+  /** Wide screens: a plain click opens the document beside the list instead of on its own page. */
+  onOpen?: (id: number) => void
+  /** The document open beside the list, marked in its row. */
+  openId?: number
+  /** Beside an open document: two lines per row (title; sender and date), the amount and the kind on the right. */
+  narrow?: boolean
 }
 
 type KeepPick = { picked: Set<number>; toggle: (id: number) => void; all: boolean; toggleAll: () => void }
 
-function Table({ hits, vaultById, vaultName, searching, order, onOrder, bare = false, keep, select, footer }: TableProps) {
+function Table({ hits, vaultById, vaultName, searching, order, onOrder, bare = false, keep, select, footer, onOpen, openId, narrow = false }: TableProps) {
   const { t, i18n } = useTranslation()
   const byDate = !bare && order.endsWith('date')
   const monthName = (key: string) => {
@@ -1044,7 +1158,7 @@ function Table({ hits, vaultById, vaultName, searching, order, onOrder, bare = f
       )
       month = key
     }
-    rows.push(<Row key={hit.document.id} hit={hit} vault={vaultById.get(hit.document.vault_id)} vaultName={vaultName} searching={searching} keep={keep} select={select} />)
+    rows.push(<Row key={hit.document.id} hit={hit} vault={vaultById.get(hit.document.vault_id)} vaultName={vaultName} searching={searching} keep={keep} select={select} onOpen={onOpen} open={openId === hit.document.id} narrow={narrow} />)
   }
   const head = (column: 'title' | 'sender' | 'date' | 'amount', label: string, right = false) => {
     const on = order === column || order === `-${column}`
@@ -1062,6 +1176,21 @@ function Table({ hits, vaultById, vaultName, searching, order, onOrder, bare = f
       </button>
     )
   }
+  if (narrow)
+    return (
+      <div className="card overflow-hidden p-0" data-testid="table">
+        {!bare && (
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-line px-4 py-2.5 text-xs font-bold tracking-wide text-muted">
+            {head('title', t('docs.archive.colTitle'))}
+            {head('sender', t('docs.archive.sender'))}
+            {head('date', t('docs.archive.colDate'))}
+            {!keep && head('amount', t('docs.archive.colAmount'))}
+          </div>
+        )}
+        <ul className="divide-y divide-line">{rows}</ul>
+        {footer && <div className="flex justify-end border-t border-line px-4 py-2.5 text-right">{footer}</div>}
+      </div>
+    )
   return (
     <div className="card overflow-hidden p-0" data-testid="table">
       {!bare && (
@@ -1084,28 +1213,101 @@ function Table({ hits, vaultById, vaultName, searching, order, onOrder, bare = f
   )
 }
 
-function Row({ hit, vault, vaultName, searching, keep, select }: { hit: SearchHit; vault: Vault | undefined; vaultName: (v: Vault) => string; searching: boolean; keep?: KeepPick; select?: KeepPick }) {
+type RowProps = { hit: SearchHit; vault: Vault | undefined; vaultName: (v: Vault) => string; searching: boolean; keep?: KeepPick; select?: KeepPick; onOpen?: (id: number) => void; open?: boolean; narrow?: boolean }
+
+function Row({ hit, vault, vaultName, searching, keep, select, onOpen, open = false, narrow = false }: RowProps) {
   const { t, i18n } = useTranslation()
   const d = hit.document
   const when = shortDate(d.date ?? d.added_at, i18n.language)
   const kept = keep ? keptOf(d) : null
+  // A plain click opens beside the list; Ctrl, Shift, Cmd and the middle button still open the page (a new tab).
+  const click = (event: React.MouseEvent) => {
+    if (!onOpen || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
+    event.preventDefault()
+    onOpen(d.id)
+  }
+  const marks = (
+    <span className="flex items-center gap-1.5 text-muted">
+      <FileSign state={d.files_state} />
+      {d.einvoice && <FileCode2 size={14} aria-label={t('sorting.einvoice.icon')} />}
+      {d.notes > 0 && <MessageSquare size={14} aria-label={t('docs.archive.withNote')} />}
+      {(d.share_count ?? 0) > 0 && <Users size={14} aria-label={t('docs.archive.sharedOut')} />}
+      {((d.link_count ?? 0) > 0 || d.shown_outside) && <Link2 size={14} aria-label={t('docs.archive.linkOut')} data-testid="link-out" />}
+      {d.has_related && <Paperclip size={14} aria-label={t('related.inArchive')} data-testid="goes-with" />}
+      {d.pinned && <Pin size={14} className="fill-current text-accent" aria-label={t('pins.inArchive')} data-testid="pinned" />}
+    </span>
+  )
+  const box = keep ?? select
+  if (narrow) {
+    const line = (
+      <Link
+        to={`/dokument/${d.id}`}
+        onClick={click}
+        aria-current={open ? 'true' : undefined}
+        className={`flex min-w-0 flex-1 items-center gap-3 py-2.5 ${box ? 'pr-4 pl-3' : 'px-4'} ${open ? 'bg-accent-soft shadow-[inset_3px_0_0_var(--accent)]' : 'hover:bg-sheet-2/60'}`}
+      >
+        <DocThumb document={d} className="w-7 shrink-0" />
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <span className="truncate font-semibold">
+              <Marked text={d.title} marks={hit.title_marks} />
+            </span>
+            {marks}
+          </div>
+          <div className="flex items-center gap-1.5 text-sm text-ink-2">
+            {d.sender && (
+              <>
+                <span className="truncate">
+                  <Marked text={d.sender.name} marks={hit.sender_marks} />
+                </span>
+                <span className="shrink-0 text-muted">·</span>
+              </>
+            )}
+            <span className="shrink-0 tabular-nums">{when}</span>
+          </div>
+          {searching && hit.excerpt && (
+            <p className="mt-0.5 line-clamp-1 text-sm text-muted" data-testid="excerpt">
+              {hit.excerpt.source === 'notes' && <MessageSquare size={12} className="mr-1 inline" aria-label={t('docs.archive.inNote')} />}
+              <Marked text={hit.excerpt.text} marks={hit.excerpt.marks} />
+            </p>
+          )}
+        </div>
+        <div className="flex shrink-0 flex-col items-end gap-1">
+          {keep ? (
+            <span className="inline-flex items-center gap-1 text-sm text-ink-2 tabular-nums" data-testid="keep-until">
+              <Archive size={13} className="text-muted" aria-hidden /> {kept ? shortDate(kept.date, i18n.language) : ''}
+            </span>
+          ) : (
+            <span className="text-sm font-semibold tabular-nums">{money(d.amount, i18n.language, d.currency)}</span>
+          )}
+          <KindPill kind={d.kind} small />
+        </div>
+      </Link>
+    )
+    return (
+      <li data-testid="row" data-doc={d.id} className={box ? 'flex items-center pl-4' : undefined}>
+        {box && (
+          <input
+            type="checkbox"
+            checked={box.picked.has(d.id)}
+            onChange={() => box.toggle(d.id)}
+            className="h-4 w-4 shrink-0 accent-[var(--accent)]"
+            aria-label={keep ? t('keeping.pick', { title: d.title }) : t('docs.inbox.select', { title: d.title })}
+          />
+        )}
+        {line}
+      </li>
+    )
+  }
   const link = (
-      <Link to={`/dokument/${d.id}`} className={`flex items-center gap-3 py-2 hover:bg-sheet-2/60 ${keep ? `min-w-0 flex-1 px-4 ${COLUMNS_KEEP}` : select ? `min-w-0 flex-1 px-4 ${COLUMNS}` : `px-4 ${COLUMNS}`}`}>
+      <Link to={`/dokument/${d.id}`} onClick={click} className={`flex items-center gap-3 py-2 hover:bg-sheet-2/60 ${keep ? `min-w-0 flex-1 px-4 ${COLUMNS_KEEP}` : select ? `min-w-0 flex-1 px-4 ${COLUMNS}` : `px-4 ${COLUMNS}`}`}>
         <DocThumb document={d} className="w-6 shrink-0" />
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <span className="truncate font-semibold">
               <Marked text={d.title} marks={hit.title_marks} />
             </span>
-            <span className="flex items-center gap-1.5 text-muted">
-              <FileSign state={d.files_state} />
-              {d.einvoice && <FileCode2 size={14} aria-label={t('sorting.einvoice.icon')} />}
-              {d.notes > 0 && <MessageSquare size={14} aria-label={t('docs.archive.withNote')} />}
-              {(d.share_count ?? 0) > 0 && <Users size={14} aria-label={t('docs.archive.sharedOut')} />}
-              {((d.link_count ?? 0) > 0 || d.shown_outside) && <Link2 size={14} aria-label={t('docs.archive.linkOut')} data-testid="link-out" />}
-              {d.has_related && <Paperclip size={14} aria-label={t('related.inArchive')} data-testid="goes-with" />}
-              {d.pinned && <Pin size={14} className="fill-current text-accent" aria-label={t('pins.inArchive')} data-testid="pinned" />}
-            </span>
+            {marks}
           </div>
           <div className="truncate text-sm text-ink-2 md:hidden">
             {d.sender && (
@@ -1152,10 +1354,9 @@ function Row({ hit, vault, vaultName, searching, keep, select }: { hit: SearchHi
         )}
       </Link>
   )
-  const box = keep ?? select
-  if (!box) return <li data-testid="row">{link}</li>
+  if (!box) return <li data-testid="row" data-doc={d.id}>{link}</li>
   return (
-    <li data-testid="row" className="flex items-center pl-4">
+    <li data-testid="row" data-doc={d.id} className="flex items-center pl-4">
       <input
         type="checkbox"
         checked={box.picked.has(d.id)}
@@ -1341,14 +1542,16 @@ type FiltersProps = {
   active: number
   /** The filter "Frist" only for somebody who uses deadlines. */
   deadlines: boolean
+  /** In the narrow list beside an open document: two columns. */
+  narrow?: boolean
 }
 
-function Filters({ chosen, choose, kinds, senders, tags, people, years, active, deadlines }: FiltersProps) {
+function Filters({ chosen, choose, kinds, senders, tags, people, years, active, deadlines, narrow }: FiltersProps) {
   const { t } = useTranslation()
   // The years the archive has, and the chosen one even when it has none (an address from elsewhere).
   const yearOptions = [...new Set([...years.map((y) => String(y.year)), ...(chosen.year ? [chosen.year] : [])])].sort().reverse()
   return (
-    <div className="card rise grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-7">
+    <div className={`card rise grid gap-3 p-4 ${narrow ? 'grid-cols-2' : 'sm:grid-cols-2 lg:grid-cols-7'}`}>
       <Select label={t('docs.archive.kind')} value={representative(kinds, chosen.kind)} onChange={(kind) => choose({ kind })} options={oneOfEachName(kinds).map((k) => [String(k.id), k.name])} empty={t('docs.archive.all')} />
       <div className="text-sm sm:col-span-2">
         <span className="text-xs font-semibold text-muted">{t('docs.archive.sender')}</span>

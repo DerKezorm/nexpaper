@@ -86,7 +86,7 @@ export function VaultsPage() {
     })
 
   return (
-    <div className="page space-y-6 pt-6 pb-28 lg:pt-8 lg:pb-12">
+    <div className="page page-wide space-y-6 pt-6 pb-28 lg:pt-8 lg:pb-12">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="font-display text-3xl font-semibold tracking-tight">{t('vaults.title')}</h1>
@@ -101,7 +101,7 @@ export function VaultsPage() {
 
       <Feedback problem={problem} />
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-2 3xl:grid-cols-3">
         {(vaults ?? []).map((v) => {
           const own = v.personal_of === mineId
           const owner = v.personal_of !== null ? personById.get(v.personal_of) : undefined
