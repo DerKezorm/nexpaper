@@ -1,4 +1,24 @@
 {
+  "1.7.0": {
+    "lead": "Im Eingang stehen alle Daten aus dem Text zur Wahl, und der Import aus Paperless kann je Speicherpfad einen Tresor anlegen.",
+    "sections": [
+      {
+        "title": "Alle Daten aus dem Text",
+        "where": "Eingang, unter Datum und Betrag",
+        "body": "Stehen auf einem Blatt mehrere Daten und nexpaper hat das falsche genommen, musst du es nicht mehr abtippen: Unter dem Datum stehen alle Daten aus dem Text, in der Reihenfolge des Blatts. Ein Tipp übernimmt eines. Wo der Text es sagt, steht dabei, was es ist: das Datum des Dokuments, eine Fälligkeit oder ein Zeitraum."
+      },
+      {
+        "title": "Je Speicherpfad ein Tresor",
+        "where": "Einstellungen, Import, Wohin",
+        "body": "Hat dein Paperless Speicherpfade, kann jeder davon ein gemeinsamer Tresor mit seinem Namen werden. Vorher siehst du jeden Pfad mit der Zahl seiner Dokumente und ob es den Tresor schon gibt. Neue Tresore verwaltest du, wem dort Dokumente gehören, darf sie bearbeiten. Ein Tresor mit dem Namen, den es schon gibt, wird genommen und behält seine Mitglieder. Dokumente ohne Speicherpfad kommen in die persönlichen Tresore. Ein späterer Lauf füllt dieselben Tresore, auch wenn du sie umbenannt hast."
+      }
+    ],
+    "smallTitle": "Außerdem",
+    "small": [
+      "Neben einem offenen Dokument waren die Filter der Archivliste so schmal, dass sich Absender und Art kaum wählen ließen. Jetzt stehen sie in zwei Spalten.",
+      "Nach dem Löschen von Seiten stand unter dem Dokument mitunter „Seite 2 von 1“. Jetzt zeigt es die letzte Seite, die es gibt."
+    ]
+  },
   "1.6.0": {
     "lead": "Auf großen Bildschirmen steht ein Dokument jetzt neben der Archivliste, und die Seiten eines Dokuments wachsen mit dem Fenster.",
     "sections": [

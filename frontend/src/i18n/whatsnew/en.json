@@ -1,4 +1,24 @@
 {
+  "1.7.0": {
+    "lead": "The inbox offers every date of the text to choose from, and the import from Paperless can make a vault for each storage path.",
+    "sections": [
+      {
+        "title": "Every date of the text",
+        "where": "Inbox, under the date and the amount",
+        "body": "When a sheet has several dates and nexpaper took the wrong one, you no longer type it: under the date stand all the dates of the text, in the order of the sheet. One tap takes one. Where the text says so, each is marked with what it is: the date of the document, a due date or a period."
+      },
+      {
+        "title": "A vault for each storage path",
+        "where": "Settings, Import, Where to",
+        "body": "If your Paperless has storage paths, each can become a shared vault with its name. Before the start you see each path with its number of documents and whether the vault is here already. You manage the new vaults, and whoever owns documents in one may change them. A vault of that name that is here already is used and keeps its members. Documents without a storage path go to the personal vaults. A later run fills the same vaults, even when you renamed them."
+      }
+    ],
+    "smallTitle": "Also",
+    "small": [
+      "Beside an open document the filters of the archive list were so narrow that the sender and the kind could hardly be chosen. Now they stand in two columns.",
+      "After deleting pages the document could say “Page 2 of 1”. Now it shows the last page there is."
+    ]
+  },
   "1.6.0": {
     "lead": "On large screens a document now stands beside the archive list, and the pages of a document grow with the window.",
     "sections": [
