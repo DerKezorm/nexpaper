@@ -38,12 +38,13 @@ class Doc:
                                                                  "change": {"users": [], "groups": []}})
     original_file_name: str = "scan.pdf"
     asn: int | None = None
+    storage_path: int | None = None
 
     def detail(self) -> dict[str, Any]:
         return {
             "id": self.id, "title": self.title, "content": self.content, "created": self.created + "T00:00:00+01:00",
             "created_date": self.created, "correspondent": self.correspondent, "document_type": self.document_type,
-            "storage_path": None, "tags": self.tags, "owner": self.owner, "notes": self.notes,
+            "storage_path": self.storage_path, "tags": self.tags, "owner": self.owner, "notes": self.notes,
             "custom_fields": self.custom_fields, "permissions": self.permissions,
             "original_file_name": self.original_file_name,
             "archived_file_name": "archive.pdf" if self.archive is not None else None,
@@ -65,7 +66,9 @@ class Paperless:
         self.types: dict[int, str] = {}
         self.users: dict[int, dict[str, Any]] = {}
         self.fields: dict[int, dict[str, Any]] = {}
+        self.storage_paths: dict[int, str] = {}
         self.users_forbidden = False
+        self.storage_paths_forbidden = False
         self.hooks: list[tuple[re.Pattern[str], Callable[[Handler], bool]]] = []
         self.requests: list[str] = []
         self.next_url = ""
@@ -162,7 +165,12 @@ class Handler(BaseHTTPRequestHandler):
             "/api/document_types/": [{"id": k, "name": v} for k, v in sorted(paperless.types.items())],
             "/api/custom_fields/": [{"id": k, **v} for k, v in sorted(paperless.fields.items())],
             "/api/users/": [{"id": k, **v} for k, v in sorted(paperless.users.items())],
+            "/api/storage_paths/": [{"id": k, "name": v, "path": "{{ created_year }}/{{ title }}"}
+                                    for k, v in sorted(paperless.storage_paths.items())],
         }
+        if path == "/api/storage_paths/" and paperless.storage_paths_forbidden:
+            self.send_json({"detail": "You do not have permission."}, 403)
+            return
         if path == "/api/users/" and paperless.users_forbidden:
             self.send_json({"detail": "You do not have permission."}, 403)
             return

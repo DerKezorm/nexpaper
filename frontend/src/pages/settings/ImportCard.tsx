@@ -7,7 +7,7 @@ import { ArrowRight, Inbox } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import { ApiError, paperlessApi, type PaperlessCheck, type PaperlessRun, type PaperlessSettings, type PaperlessSkipped, type PaperlessSort } from '../../api/client'
+import { ApiError, paperlessApi, type PaperlessCheck, type PaperlessRun, type PaperlessSettings, type PaperlessSkipped, type PaperlessSort, type PaperlessWhere } from '../../api/client'
 import { useConfirm } from '../../components/useConfirm'
 import { errorText } from '../../lib/errors'
 import { Button, Card, Input, Segment, Toggle } from './ui'
@@ -47,7 +47,7 @@ export function ImportCard() {
   const [own, setOwn] = useState(false)
   const [found, setFound] = useState<PaperlessCheck | null>(null)
   const [people, setPeople] = useState<Record<string, number>>({})
-  const [where, setWhere] = useState<'owner' | 'vault'>('owner')
+  const [where, setWhere] = useState<PaperlessWhere>('owner')
   const [vault, setVault] = useState<number | null>(null)
   const [sort, setSort] = useState<PaperlessSort>('paperless')
   const [busy, setBusy] = useState(false)
@@ -100,7 +100,8 @@ export function ImportCard() {
       setPeople(Object.fromEntries(looked.owners.map((owner) => [String(owner.paperless_id), owner.user_id])))
       const firstShared = looked.vaults.find((v) => !v.own) ?? looked.vaults[0]
       setVault(saved.vault_id ?? firstShared?.id ?? null)
-      setWhere(saved.where)
+      // A vault for each storage path only where Paperless has paths in use.
+      setWhere(saved.where === 'storage' && !looked.storage_paths?.length ? 'owner' : saved.where)
       setSort(saved.sort ?? 'paperless')
       setStage('check')
     })
@@ -213,8 +214,8 @@ function CheckView({
   found: PaperlessCheck
   people: Record<string, number>
   setPeople: (next: Record<string, number>) => void
-  where: 'owner' | 'vault'
-  setWhere: (next: 'owner' | 'vault') => void
+  where: PaperlessWhere
+  setWhere: (next: PaperlessWhere) => void
   vault: number | null
   setVault: (next: number) => void
   sort: PaperlessSort
@@ -228,6 +229,7 @@ function CheckView({
   const chosen = found.vaults.find((v) => v.id === vault)
   const vaultName = (v: { name: string; own: boolean }) => (v.own ? t('paperless.myVault') : v.name)
   const left = Math.max(0, found.documents - found.already)
+  const paths = found.storage_paths ?? []
   const inbox = Math.min(found.inbox_documents ?? 0, found.documents)
   const personName = (id: number) => {
     const person = found.people.find((p) => p.id === id)
@@ -304,6 +306,7 @@ function CheckView({
             options={[
               { value: 'owner', label: t('paperless.whereOwner') },
               { value: 'vault', label: t('paperless.whereVault', { name: chosen ? vaultName(chosen) : '…' }) },
+              ...(paths.length > 0 ? [{ value: 'storage' as const, label: t('paperless.whereStorage') }] : []),
             ]}
           />
           {where === 'vault' && found.vaults.length > 1 && (
@@ -321,7 +324,21 @@ function CheckView({
             </select>
           )}
         </div>
-        <p className="mt-1 text-xs text-muted">{where === 'owner' ? t('paperless.whereOwnerHint') : t('paperless.whereVaultHint')}</p>
+        <p className="mt-1 text-xs text-muted">
+          {where === 'owner' ? t('paperless.whereOwnerHint') : where === 'vault' ? t('paperless.whereVaultHint') : t('paperless.whereStorageHint')}
+        </p>
+        {where === 'storage' && (
+          <ul className="mt-2 flex flex-wrap gap-1.5" aria-label={t('paperless.storagePaths')} data-testid="storage-paths">
+            {paths.map((path) => (
+              <li key={path.name} className="rounded-full bg-sheet-2 px-2.5 py-1 text-xs">
+                <span className="font-semibold">{path.name}</span> · {number(path.documents)} · <span className="text-muted">{path.exists ? t('paperless.storageExists') : t('paperless.storageNew')}</span>
+              </li>
+            ))}
+            {(found.without_storage_path ?? 0) > 0 && (
+              <li className="rounded-full border border-line px-2.5 py-1 text-xs text-muted">{t('paperless.storageNone', { n: number(found.without_storage_path ?? 0) })}</li>
+            )}
+          </ul>
+        )}
         <p className="mt-1 text-xs text-muted">{t('paperless.whereHint')}</p>
       </div>
       <div>

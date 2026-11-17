@@ -27,11 +27,12 @@ from fastapi import Path as PathParam
 from pydantic import BaseModel
 from sqlalchemy import select
 
+from .. import clock as wall
 from ..db import SessionLocal
 from ..deps import DbSession, Reader, link_guard
 from ..errors import error
 from ..models import Version, VersionText
-from ..services import brakes, deadlines, ocr, rights, search, searchtext, sharing
+from ..services import brakes, deadlines, ocr, rights, search, searchtext, sharing, textfacts
 from .public import _not_found
 from .schemas import DocumentOut, KindOut, document_out, kind_out
 
@@ -326,6 +327,37 @@ def version_text(document_id: DOCUMENT, number: VERSION, account: Reader, db: Db
     if version is None:
         raise error("not_found", "Not found.", 404)
     return _text_of(db, version)
+
+
+class FoundDate(BaseModel):
+    date: Date
+    #: What the text says it is: ``date`` (after a word that names the date of the document), ``due`` (a due date),
+    #: ``period`` (the start or end of a span) or empty (no word before it).
+    role: Literal["date", "due", "period", ""]
+
+
+class FoundDatesOut(BaseModel):
+    version: int
+    #: ``done``: the text was read; ``pending``: not yet (ask again later); ``none``: there is no text.
+    state: Literal["done", "pending", "none"]
+    #: Every distinct date of the text in the order it stands there, at most ``textfacts.MOST_FOUND``.
+    dates: list[FoundDate]
+
+
+@router.get("/documents/{document_id}/versions/{number}/dates", response_model=FoundDatesOut,
+            summary="The dates written in the text of a version, to choose the date of the document from")
+def version_dates(document_id: DOCUMENT, number: VERSION, account: Reader, db: DbSession) -> FoundDatesOut:
+    """When the date proposed is the wrong one of several on the sheet (issue #9), the inbox offers the others."""
+    rights.require_document(db, account.id, document_id)
+    version = db.scalar(select(Version).where(Version.document_id == document_id, Version.n == number))
+    if version is None:
+        raise error("not_found", "Not found.", 404)
+    row = db.get(VersionText, version.id)
+    if row is None:
+        state: Literal["pending", "none"] = "none" if version.original_path.lower().endswith(".xml") else "pending"
+        return FoundDatesOut(version=version.n, state=state, dates=[])
+    found = textfacts.found_dates(row.text or "", wall.now().date())
+    return FoundDatesOut(version=version.n, state="done", dates=[FoundDate(date=day, role=role) for day, role in found])
 
 
 @router.get("/l/{token}/text", response_model=TextOut,

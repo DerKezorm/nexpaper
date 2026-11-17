@@ -357,6 +357,12 @@ while (the inbox says so while the text is `pending`). `state`: `done`, `pending
 reading the document. Through a link: `GET /api/v1/l/{token}/text`, only when the link allows downloading (`403
 download_not_allowed` else).
 
+`GET /api/v1/documents/{id}/versions/{n}/dates`: `{version, state, dates: [{date, role}]}`, every distinct date written
+in the text of the version in the order it stands there (at most 12, none more than 30 years back or 10 years ahead), for
+choosing the date of the document when the one proposed is wrong (the inbox shows them as buttons). `role`: `date` (after
+a word that names the date of the document), `due` (after a word that names a due date), `period` (the start or end of a
+span) or empty. `state` as for the text; the rights of reading the document.
+
 ### `GET /api/v1/search`
 
 What the caller may see (a browser, a device, a program with a read key), newest first (the document's date, else the
@@ -599,8 +605,15 @@ the run puts documents into the vaults of other people.
   Word file, say, comes as its searchable PDF), the text Paperless recognised (no new recognition; the search finds it),
   title, date, correspondent (sender), document type (kind; unknown ones become new kinds), tags (an inbox tag puts the
   document in the inbox, else it is filed), notes, custom fields and the archive serial number (one note), the people it
-  was shared with (users and groups, the same people here as far as they can be told). Storage paths and workflows are
-  left out. Every file is checked by its content like an upload, limited by the size limit, and needs room on the disk
+  was shared with (users and groups, the same people here as far as they can be told). Workflows are left out.
+- Where the documents go (`where` of `POST /api/v1/settings/paperless/start`): `owner`, each into the own vault of its
+  person; `vault` with `vault_id`, all into one vault; `storage`, a shared vault for each storage path, named after it.
+  A vault of that name that is here already (shared, case aside) is used and keeps its members: who is not in it gets
+  the document shared. A vault the import makes is managed by the operator who started it, and each person a document
+  in it belongs to becomes a member who may change it. Documents without a storage path, and those of a path no vault
+  can be made for (too many vaults), go into the own vault of their person. The vault of each path is remembered: a
+  later run fills it even after it was renamed. The look before the start (`POST /api/v1/settings/paperless/check`)
+  lists `storage_paths` in use (`name`, `documents`, `exists`) and `without_storage_path`. Every file is checked by its content like an upload, limited by the size limit, and needs room on the disk
   (`disk_full` stops the run).
 - Every request to Paperless is resolved once and checked, follows no redirect (`502 paperless_redirected`: give the
   address Paperless answers at) and no `next` address of an answer, has a deadline (30 s for data, 15 minutes for a file,

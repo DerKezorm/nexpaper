@@ -108,6 +108,8 @@ TABLE = [
     # A1: the sums of a search count only what the caller may see (``test_archive_sum.py``).
     Row("GET", "/api/v1/search/sum", None, "any", 200),
     Row("GET", "/api/v1/documents/{d}/versions/{x}/text", None, "read", 404),
+    # The dates of the text to choose the date from (issue #9): read like the text.
+    Row("GET", "/api/v1/documents/{d}/versions/{x}/dates", None, "read", 404),
     # Deleting for good from the trash: a manager of the vault, or the owner while they may change it (the editor
     # owns this one), from a signed-in browser only; the document is not in the trash here, so who may gets 409.
     Row("POST", "/api/v1/documents/{d}/purge", None, "edit-browser", 404),

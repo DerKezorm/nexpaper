@@ -30,10 +30,11 @@ from app.models import (
     Share,
     Tag,
     Vault,
+    VaultMember,
     Version,
     VersionText,
 )
-from app.services import jobs, paperless, processing, settings_service
+from app.services import jobs, paperless, processing, settings_service, vaults
 
 from . import fake_paperless, files
 from .conftest import DATA_DIR, make_account, new_client
@@ -877,3 +878,127 @@ def test_an_import_that_took_nothing_tells_nobody(
     client.post("/api/v1/settings/paperless/start", json={"where": "owner", "people": mapping(client, people)})
     run_import()
     assert told == []
+
+
+# --- A vault for each storage path (issue #8) -------------------------------------------------------------------------
+
+
+def fill_paths(made: Paperless) -> None:
+    """The household of ``fill`` with storage paths: "Haus" holds the two documents of admin and tom, "Auto" the one of
+    the scanner, and a fourth document of tom has none."""
+    fill(made)
+    made.storage_paths = {1: "Haus", 2: "Auto", 3: "Leer"}
+    made.documents[1].storage_path = 1
+    made.documents[2].storage_path = 1
+    made.documents[3].storage_path = 2
+    made.add(Doc(4, "Versicherung", pdf("Versicherung Police"), owner=2, content="Police"))
+
+
+def members_of(vault_id: int) -> dict[int, str]:
+    with SessionLocal() as db:
+        return {m.user_id: m.right for m in db.scalars(select(VaultMember).where(VaultMember.vault_id == vault_id))}
+
+
+def vault_named(name: str) -> int | None:
+    with SessionLocal() as db:
+        found = db.scalar(select(Vault.id).where(Vault.name == name, Vault.personal_of.is_(None)))
+        return int(found) if found is not None else None
+
+
+def test_looking_lists_the_storage_paths_in_use_and_whether_a_vault_of_that_name_is_here(
+        client: TestClient, operator: Account, people: dict[str, Account], fake: Any) -> None:
+    made, server = fake
+    fill_paths(made)
+    connect(client, made, server)
+    shared_vault("auto", operator)
+    vaults_before = count(Vault)
+    found = client.post("/api/v1/settings/paperless/check").json()
+    # A path nothing uses is left out; a shared vault of the same name (case aside) is taken, not made again.
+    assert found["storage_paths"] == [{"name": "Auto", "documents": 1, "exists": True},
+                                      {"name": "Haus", "documents": 2, "exists": False}]
+    assert found["without_storage_path"] == 1
+    assert count(Vault) == vaults_before
+
+
+def test_a_vault_for_each_storage_path_with_the_people_whose_documents_are_in_it(
+        client: TestClient, operator: Account, people: dict[str, Account], fake: Any) -> None:
+    made, server = fake
+    fill_paths(made)
+    connect(client, made, server)
+    auto = shared_vault("Auto", operator)
+    answer = client.post("/api/v1/settings/paperless/start", json={"where": "storage", "people": mapping(client, people)})
+    assert answer.status_code == 202, answer.text
+    run_import()
+    assert run_state(client)["state"] == "done"
+    assert client.get("/api/v1/settings/paperless").json()["where"] == "storage"
+    jule, tom = people["jule"], people["tom"]
+    haus = vault_named("Haus")
+    assert haus is not None and vault_named("Leer") is None
+    # Made by the import: the operator manages it, the people whose documents came in may change them.
+    assert members_of(haus) == {operator.id: "manage", jule.id: "edit", tom.id: "edit"}
+    with SessionLocal() as db:
+        where = {d.title: (d.vault_id, d.owner_id) for d in db.scalars(select(Document))}
+        shares = {(s.document_id, s.user_id) for s in db.scalars(select(Share))}
+        auto_doc = db.scalar(select(Document.id).where(Document.title == "Quittung Baumarkt"))
+    assert where["Strom März"] == (haus, jule.id) and where["Nebenkosten 2025"] == (haus, tom.id)
+    # A vault that was here keeps its members: the document is the operator's there, shared with its person.
+    assert members_of(auto) == {operator.id: "manage"}
+    assert where["Quittung Baumarkt"] == (auto, operator.id) and (auto_doc, jule.id) in shares
+    # Without a storage path: into the own vault of its person.
+    assert where["Versicherung"] == (own_vault(tom), tom.id)
+    with new_client(jule) as seen:
+        titles = {hit["document"]["title"] for hit in seen.get("/api/v1/search", params={"q": ""}).json()["items"]}
+    assert {"Strom März", "Nebenkosten 2025", "Quittung Baumarkt"} <= titles and "Versicherung" not in titles
+
+
+def test_a_second_run_fills_the_vault_made_for_a_path_even_when_it_was_renamed(
+        client: TestClient, operator: Account, people: dict[str, Account], fake: Any) -> None:
+    made, server = fake
+    fill_paths(made)
+    connect(client, made, server)
+    body = {"where": "storage", "people": mapping(client, people)}
+    client.post("/api/v1/settings/paperless/start", json=body)
+    run_import()
+    haus = vault_named("Haus")
+    assert haus is not None
+    assert client.patch(f"/api/v1/vaults/{haus}", json={"name": "Zuhause"}).status_code == 200
+    made.add(Doc(5, "Wasser", pdf("Wasserrechnung"), owner=3, content="Wasser", storage_path=1))
+    client.post("/api/v1/settings/paperless/start", json=body)
+    run_import()
+    assert vault_named("Haus") is None
+    with SessionLocal() as db:
+        assert db.scalar(select(Document.vault_id).where(Document.title == "Wasser")) == haus
+    # Going on after a stop keeps them too.
+    client.post("/api/v1/settings/paperless/start", json={"resume": True})
+    run_import()
+    assert vault_named("Haus") is None and members_of(haus)[people["jule"].id] == "edit"
+
+
+def test_a_paperless_that_hides_its_storage_paths_sends_everything_to_the_own_vaults(
+        client: TestClient, operator: Account, people: dict[str, Account], fake: Any) -> None:
+    made, server = fake
+    fill_paths(made)
+    made.storage_paths_forbidden = True
+    connect(client, made, server)
+    found = client.post("/api/v1/settings/paperless/check").json()
+    assert found["storage_paths"] == [] and found["without_storage_path"] == 4
+    vaults_before = count(Vault)
+    client.post("/api/v1/settings/paperless/start", json={"where": "storage", "people": mapping(client, people)})
+    run_import()
+    assert run_state(client)["state"] == "done" and count(Vault) == vaults_before
+    with SessionLocal() as db:
+        assert {d.vault_id for d in db.scalars(select(Document))} == {own_vault(people["jule"]), own_vault(people["tom"])}
+
+
+def test_a_storage_path_that_cannot_become_a_vault_goes_to_the_own_vault(
+        client: TestClient, operator: Account, people: dict[str, Account], fake: Any,
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    made, server = fake
+    fill_paths(made)
+    connect(client, made, server)
+    monkeypatch.setattr(vaults, "MAX_VAULTS", count(Vault))
+    client.post("/api/v1/settings/paperless/start", json={"where": "storage", "people": mapping(client, people)})
+    run_import()
+    assert run_state(client)["state"] == "done" and vault_named("Haus") is None
+    with SessionLocal() as db:
+        assert db.scalar(select(Document.vault_id).where(Document.title == "Strom März")) == own_vault(people["jule"])

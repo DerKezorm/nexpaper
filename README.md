@@ -498,7 +498,9 @@ operator sees none of them. A backup together with `secret.key` can open them, s
 
 - **Import from Paperless-ngx** (Settings, Import; the operator): give the address and an API token, look first (how
   many documents, tags, correspondents and types, who owns what), choose a person here for each owner and whether each
-  document goes into the own vault of its person or everything into one vault. The documents come with the file as it
+  document goes into the own vault of its person, everything into one vault, or a shared vault for each storage path
+  (named after it; a vault of that name that is here already is used, documents without a path go to the own vault of
+  their person). The documents come with the file as it
   came, the searchable copy and the text Paperless recognised (nothing is read again), title, date, sender, kind, tags,
   notes, custom fields (as a note) and the people they were shared with. It runs in the background, can be stopped and
   goes on where it stopped, also after a restart; running it again takes only what is new. Office files (Word, Excel)

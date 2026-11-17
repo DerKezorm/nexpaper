@@ -44,8 +44,9 @@ class PaperlessOut(BaseModel):
     token_set: bool
     #: Paperless may lie in the own network.
     private: bool
-    #: What was chosen at the last start: each document into the own vault of its person, or all into ``vault_id``.
-    where: Literal["owner", "vault"]
+    #: What was chosen at the last start: each document into the own vault of its person, all into ``vault_id``, or
+    #: a vault for each storage path of Paperless (those without one into the own vault of their person).
+    where: Literal["owner", "vault", "storage"]
     vault_id: int | None
     #: How the last start sorted: as Paperless did (its inbox into the inbox, the rest filed) or all into the inbox.
     sort: Literal["paperless", "inbox"] = "paperless"
@@ -99,6 +100,15 @@ class PaperlessVaultChoice(BaseModel):
     own: bool
 
 
+class PaperlessStoragePathOut(BaseModel):
+    """A storage path of Paperless in use, for the choice "a vault for each storage path"."""
+
+    name: str
+    documents: int
+    #: A shared vault of that name is here already: the documents go there (no new vault is made).
+    exists: bool
+
+
 class PaperlessCheckOut(BaseModel):
     version: str
     api_version: int
@@ -116,6 +126,9 @@ class PaperlessCheckOut(BaseModel):
     already: int
     #: Documents Paperless still has in its inbox (carrying an inbox tag).
     inbox_documents: int = 0
+    #: The storage paths in use (at most ``paperless.MAX_STORAGE_VAULTS``), and the documents without one.
+    storage_paths: list[PaperlessStoragePathOut] = Field(default_factory=list)
+    without_storage_path: int = 0
     people: list[ImportPersonOut]
     vaults: list[PaperlessVaultChoice]
 
@@ -126,7 +139,7 @@ class ImportOwnerIn(BaseModel):
 
 
 class ImportStartIn(BaseModel):
-    where: Literal["owner", "vault"] = "owner"
+    where: Literal["owner", "vault", "storage"] = "owner"
     vault_id: StrictInt | None = None
     #: ``paperless``: what Paperless had in its inbox waits in the inbox, the rest is filed. ``inbox``: all waits there.
     sort: Literal["paperless", "inbox"] = "paperless"
@@ -185,7 +198,8 @@ def check(operator: OperatorAccount, db: DbSession) -> PaperlessCheckOut:
     vaults = [PaperlessVaultChoice(id=v.id, name=v.name, own=v.personal_of == operator.id)
               for v in db.scalars(choices.order_by(Vault.personal_of.is_(None), Vault.id))]
     owners = [PaperlessOwnerOut(**owner) for owner in found["owners"]]
-    return PaperlessCheckOut(**{**found, "owners": owners}, people=people, vaults=vaults)
+    paths = [PaperlessStoragePathOut(**path) for path in found["storage_paths"]]
+    return PaperlessCheckOut(**{**found, "owners": owners, "storage_paths": paths}, people=people, vaults=vaults)
 
 
 @router.post("/settings/paperless/start", response_model=PaperlessOut, status_code=202,

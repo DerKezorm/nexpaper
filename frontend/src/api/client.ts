@@ -831,6 +831,9 @@ export type SearchFilters = {
   limit?: number
 }
 export type VersionText = { version: number; state: 'done' | 'pending' | 'none'; pages: string[]; ocr_pages: number; languages: string; long_document_pages?: number }
+/** A date written in the text, and what the text says it is (issue #9): of the document, due, the start or end of a span, or no word. */
+export type FoundDate = { date: string; role: 'date' | 'due' | 'period' | '' }
+export type FoundDates = { version: number; state: 'done' | 'pending' | 'none'; dates: FoundDate[] }
 
 /** The orders of a numbered page: a minus is the largest (the newest, Z) first; empty senders and amounts come last. */
 export type SearchOrder = '-date' | 'date' | '-title' | 'title' | '-sender' | 'sender' | '-amount' | 'amount'
@@ -853,6 +856,8 @@ export const searchApi = {
   /** The sums of everything the search finds (asked for after the page: it takes its own time). */
   sum: (q: string, filters: SearchFilters = {}, signal?: AbortSignal) => api<SearchSum>('/api/v1/search/sum', { query: { q, ...filters }, signal }),
   text: (document: number, version: number) => api<VersionText>(`/api/v1/documents/${document}/versions/${version}/text`),
+  /** Every date written in the text, to choose the date of the document from. */
+  dates: (document: number, version: number) => api<FoundDates>(`/api/v1/documents/${document}/versions/${version}/dates`),
 }
 
 // ---- The archive's table: many at once, saved searches (A1) ---------------------------------------------------------
@@ -909,7 +914,9 @@ export type PaperlessRun = {
   started_at: string | null
   finished_at: string | null
 }
-export type PaperlessSettings = { url: string; token_set: boolean; private: boolean; where: 'owner' | 'vault'; vault_id: number | null; sort?: PaperlessSort; run: PaperlessRun }
+/** Each into the own vault of its person, all into one vault, or a vault for each storage path of Paperless. */
+export type PaperlessWhere = 'owner' | 'vault' | 'storage'
+export type PaperlessSettings = { url: string; token_set: boolean; private: boolean; where: PaperlessWhere; vault_id: number | null; sort?: PaperlessSort; run: PaperlessRun }
 /** The documents of the import that were skipped: their number in Paperless and the reason (a code), nothing else. */
 export type PaperlessSkipped = { items: { paperless_id: number; reason: string }[]; total: number; more: number }
 export type PaperlessChange = Partial<{ url: string; token: string; private: boolean }>
@@ -928,12 +935,16 @@ export type PaperlessCheck = {
   already: number
   /** Documents Paperless still has in its inbox. */
   inbox_documents?: number
+  /** The storage paths in use, and whether a shared vault of that name is here already (it is taken, not made). */
+  storage_paths?: { name: string; documents: number; exists: boolean }[]
+  /** Documents without a storage path: with a vault for each path they go into the own vaults of their people. */
+  without_storage_path?: number
   people: Person[]
   vaults: { id: number; name: string; own: boolean }[]
 }
 /** As in Paperless (its inbox into the inbox, the rest filed), or everything into the inbox. */
 export type PaperlessSort = 'paperless' | 'inbox'
-export type PaperlessStart = { where: 'owner' | 'vault'; vault_id?: number | null; sort?: PaperlessSort; people: { paperless_id: number | null; user_id: number }[] }
+export type PaperlessStart = { where: PaperlessWhere; vault_id?: number | null; sort?: PaperlessSort; people: { paperless_id: number | null; user_id: number }[] }
 
 export const paperlessApi = {
   read: () => api<PaperlessSettings>('/api/v1/settings/paperless'),

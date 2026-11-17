@@ -11,7 +11,7 @@ import { changeLanguage } from '../i18n'
 import { forgetPictures } from '../lib/pictures'
 import { INBOX_CHANGED } from '../lib/say'
 import { INBOX, Page, Server, inboxOf, plain } from '../test/harness'
-import { until } from '../test/wait'
+import { idle, until } from '../test/wait'
 import { InboxPage } from './InboxPage'
 
 // The notice of a missing file speaks to the operator and to everybody else differently: the signed-in person is needed.
@@ -68,6 +68,7 @@ beforeEach(async () => {
     'GET /api/v1/senders': [{ name: 'Elektro Brandt GmbH', items: [{ id: 5, vault_id: 9 }] }],
     'GET /api/v1/documents/11/origin': { source: 'mail', unknown: true, sender: 'rechnung@example.com', subject: 'Ihre Rechnung', folder: '', file: '', at: null },
     'GET /api/v1/documents/11/versions/1/text': { version: 1, state: 'done', pages: ['Rechnung'], ocr_pages: 0, languages: '', long_document_pages: 300 },
+    'GET /api/v1/documents/11/versions/1/dates': { version: 1, state: 'done', dates: [{ date: '2026-10-06', role: 'date' }] },
     'PATCH /api/v1/documents/11': { ...heating, status: 'filed' },
     'POST /api/v1/documents/11/move': { ...heating, vault_id: 7 },
   }
@@ -165,6 +166,36 @@ describe('the inbox', () => {
     expect(server.called('POST', '/api/v1/documents/11/move')!.body).toEqual({ vault_id: 7 })
     expect(server.called('PATCH', '/api/v1/documents/11')!.body).toEqual({ title: 'Heizung Oktober', amount: 23000, status: 'filed' })
     expect(where()).toBe('/eingang/12')
+  })
+
+  it('offers the dates of the text under the date, and one tap takes one (issue #9)', async () => {
+    server.answers['GET /api/v1/documents/11/versions/1/dates'] = {
+      version: 1, state: 'done',
+      dates: [{ date: '2026-10-02', role: '' }, { date: '2026-10-06', role: 'date' }, { date: '2026-09-01', role: 'period' }, { date: '2026-10-20', role: 'due' }],
+    }
+    await show('/eingang/11')
+    await until(() => page.box.querySelector('[data-testid="found-dates"]') !== null, 'the dates of the text')
+    const box = page.box.querySelector<HTMLElement>('[data-testid="found-dates"]')!
+    expect(plain(box.textContent)).toBe('Im Text gefunden · Antippen übernimmt das Datum.02.10.202606.10.2026Datum01.09.2026Zeitraum20.10.2026fällig')
+    expect(page.button('06.10.2026 als Datum übernehmen')!.getAttribute('aria-pressed')).toBe('true')
+    await page.click(page.button('02.10.2026 als Datum übernehmen'))
+    expect(page.box.querySelector<HTMLInputElement>('input[aria-label="Datum"]')!.value).toBe('2026-10-02')
+    expect(page.button('02.10.2026 als Datum übernehmen')!.getAttribute('aria-pressed')).toBe('true')
+    expect(server.changes()).toEqual([])
+    await page.click(page.button('Ablegen'))
+    expect(server.called('PATCH', '/api/v1/documents/11')!.body).toEqual({ date: '2026-10-02', status: 'filed' })
+  })
+
+  it('shows no dates of the text when there is none other than the date, nor before the text is read', async () => {
+    await show('/eingang/11')
+    await until(() => server.called('GET', '/api/v1/documents/11/versions/1/dates') !== undefined, 'the dates asked for')
+    expect(page.box.querySelector('[data-testid="found-dates"]')).toBeNull()
+    page.close()
+    server.calls.length = 0
+    server.answers['GET /api/v1/documents/11/versions/1/text'] = { version: 1, state: 'pending', pages: [], ocr_pages: 0, languages: '', long_document_pages: 300 }
+    await show('/eingang/11')
+    await idle()
+    expect(server.called('GET', '/api/v1/documents/11/versions/1/dates')).toBeUndefined()
   })
 
   it('follows the server for the fields the person has not touched, and never files its own stale copy over them', async () => {

@@ -3025,6 +3025,62 @@
         "title": "ForgotIn",
         "type": "object"
       },
+      "FoundDate": {
+        "properties": {
+          "date": {
+            "format": "date",
+            "title": "Date",
+            "type": "string"
+          },
+          "role": {
+            "enum": [
+              "date",
+              "due",
+              "period",
+              ""
+            ],
+            "title": "Role",
+            "type": "string"
+          }
+        },
+        "required": [
+          "date",
+          "role"
+        ],
+        "title": "FoundDate",
+        "type": "object"
+      },
+      "FoundDatesOut": {
+        "properties": {
+          "dates": {
+            "items": {
+              "$ref": "#/components/schemas/FoundDate"
+            },
+            "title": "Dates",
+            "type": "array"
+          },
+          "state": {
+            "enum": [
+              "done",
+              "pending",
+              "none"
+            ],
+            "title": "State",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "version",
+          "state",
+          "dates"
+        ],
+        "title": "FoundDatesOut",
+        "type": "object"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -3146,7 +3202,8 @@
             "default": "owner",
             "enum": [
               "owner",
-              "vault"
+              "vault",
+              "storage"
             ],
             "title": "Where",
             "type": "string"
@@ -5925,6 +5982,13 @@
             "title": "People",
             "type": "array"
           },
+          "storage_paths": {
+            "items": {
+              "$ref": "#/components/schemas/PaperlessStoragePathOut"
+            },
+            "title": "Storage Paths",
+            "type": "array"
+          },
           "tags": {
             "title": "Tags",
             "type": "integer"
@@ -5943,6 +6007,11 @@
           "version": {
             "title": "Version",
             "type": "string"
+          },
+          "without_storage_path": {
+            "default": 0,
+            "title": "Without Storage Path",
+            "type": "integer"
           }
         },
         "required": [
@@ -6044,7 +6113,8 @@
           "where": {
             "enum": [
               "owner",
-              "vault"
+              "vault",
+              "storage"
             ],
             "title": "Where",
             "type": "string"
@@ -6226,6 +6296,30 @@
           "more"
         ],
         "title": "PaperlessSkippedOut",
+        "type": "object"
+      },
+      "PaperlessStoragePathOut": {
+        "description": "A storage path of Paperless in use, for the choice \"a vault for each storage path\".",
+        "properties": {
+          "documents": {
+            "title": "Documents",
+            "type": "integer"
+          },
+          "exists": {
+            "title": "Exists",
+            "type": "boolean"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "documents",
+          "exists"
+        ],
+        "title": "PaperlessStoragePathOut",
         "type": "object"
       },
       "PaperlessVaultChoice": {
@@ -16194,6 +16288,69 @@
         "summary": "The PDF made from a picture, or the searchable copy (404 while there is none)",
         "tags": [
           "files"
+        ]
+      }
+    },
+    "/api/v1/documents/{document_id}/versions/{number}/dates": {
+      "get": {
+        "description": "When the date proposed is the wrong one of several on the sheet (issue #9), the inbox offers the others.",
+        "operationId": "version_dates_api_v1_documents__document_id__versions__number__dates_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "document_id",
+            "required": true,
+            "schema": {
+              "maximum": 2147483647,
+              "minimum": 1,
+              "title": "Document Id",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "The number of the version",
+            "in": "path",
+            "name": "number",
+            "required": true,
+            "schema": {
+              "description": "The number of the version",
+              "maximum": 2147483647,
+              "minimum": 1,
+              "title": "Number",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FoundDatesOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "The dates written in the text of a version, to choose the date of the document from",
+        "tags": [
+          "search"
         ]
       }
     },

@@ -28,6 +28,7 @@ import {
   type DocumentKind,
   type DocumentOrigin,
   type DocumentVersion,
+  type FoundDate,
   type InboxPage as InboxView,
   type InboxQuery,
   type Person,
@@ -50,6 +51,7 @@ import { UploadRequestButton } from '../components/UploadRequests'
 import { VaultFilter } from '../components/VaultFilter'
 import { VaultIcon } from '../components/VaultIcon'
 import { problemOf, refusedOf, refusedValue, shownAtField } from '../lib/dateInput'
+import { shortDate } from '../lib/dates'
 import { errorText } from '../lib/errors'
 import { useVaultTags } from '../lib/tags'
 import { changesOf, draftOf, follow, type Draft } from '../lib/inbox'
@@ -973,6 +975,7 @@ function Detail({ document: d, next, slots, search, onChanged }: { document: Doc
               <AmountInput cents={f.amount} onChange={(amount) => setF({ ...f, amount })} label={t('docs.fields.amount')} language={i18n.language} />
             </Field>
           </div>
+          <FoundDates document={d} text={text} chosen={f.date} onPick={(date) => setF((was) => ({ ...was, date }))} />
           <Field label={t('docs.fields.vault')} why={why.vault}>
             <select
               value={f.vault_id}
@@ -1106,6 +1109,55 @@ function LargeDocument({ document: d, pdfUrl, page, onClose }: { document: Docum
             ))}
           </div>
         )}
+      </div>
+    </div>
+  )
+}
+
+/**
+ * The dates written in the text, as buttons under the date (issue #9): when the date proposed is the wrong one of several
+ * on the sheet, one tap takes the right one. Asked once the text is read; shown only when there is one to change to.
+ */
+function FoundDates({ document: d, text, chosen, onPick }: { document: DocumentInfo; text: VersionText | null; chosen: string; onPick: (date: string) => void }) {
+  const { t, i18n } = useTranslation()
+  const [found, setFound] = useState<FoundDate[]>([])
+  const read = text?.state === 'done' && text.version === d.current_version
+  useEffect(() => {
+    setFound([])
+    if (!read) return
+    let alive = true
+    searchApi.dates(d.id, d.current_version).then(
+      (answer) => alive && setFound(answer.state === 'done' ? answer.dates : []),
+      () => undefined,
+    )
+    return () => {
+      alive = false
+    }
+  }, [d.id, d.current_version, read])
+  if (!found.some((item) => item.date !== chosen)) return null
+  return (
+    <div className="text-sm" data-testid="found-dates">
+      <p className="mb-1.5 text-xs text-muted">
+        <span className="font-semibold">{t('docs.inbox.found')}</span> · {t('docs.inbox.foundHint')}
+      </p>
+      <div className="flex flex-wrap gap-1.5">
+        {found.map((item) => {
+          const day = shortDate(item.date, i18n.language)
+          const on = item.date === chosen
+          return (
+            <button
+              key={item.date}
+              type="button"
+              onClick={() => onPick(item.date)}
+              aria-pressed={on}
+              aria-label={t('docs.inbox.foundPick', { date: day })}
+              className={`inline-flex items-baseline gap-1.5 rounded-full border px-2.5 py-1 tabular-nums transition-colors ${on ? 'border-accent bg-accent-soft text-accent' : 'border-line bg-sheet hover:border-accent hover:text-accent'}`}
+            >
+              {day}
+              {item.role && <span className="text-xs text-muted">{t(`docs.inbox.foundRole.${item.role}`)}</span>}
+            </button>
+          )
+        })}
       </div>
     </div>
   )

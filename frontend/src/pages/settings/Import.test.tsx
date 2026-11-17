@@ -6,7 +6,7 @@
  */
 import type { PaperlessCheck, PaperlessRun, PaperlessSettings, PaperlessSkipped } from '../../api/client'
 import { changeLanguage } from '../../i18n'
-import { Page, Server } from '../../test/harness'
+import { Page, Server, plain } from '../../test/harness'
 import { ImportCard } from './ImportCard'
 
 const server = new Server()
@@ -90,7 +90,7 @@ describe('Settings, Import', () => {
       '1.432', 'Dokumente', '38', 'Tags', '112', 'Korrespondenten', '14', 'Dokumenttypen', 'So wird übersetzt',
       'Korrespondent → Absender, Dokumenttyp → Art (unbekannte werden neue Arten), Tags → Tags',
       'Notizen → Notizen, eigene Felder → eine Notiz mit allen Werten',
-      'Speicherpfade und Arbeitsabläufe → gibt es hier nicht, werden übersprungen', 'Neue Arten: Nebenkostenabrechnung',
+      'Speicherpfade → auf Wunsch je ein Tresor (unten bei „Wohin“), Arbeitsabläufe → gibt es hier nicht, werden übersprungen', 'Neue Arten: Nebenkostenabrechnung',
       'Besitzer in Paperless → Person hier', 'admin', 'scanner', 'Wohin', 'Je Besitzer in dessen Tresor', 'Alles nach Haushalt',
       'Danach lässt sich alles verschieben. Was in Paperless mit anderen geteilt war, wird hier mit denselben Personen geteilt.',
       '1.432 Dokumente übernehmen', 'Zurück',
@@ -114,6 +114,34 @@ describe('Settings, Import', () => {
     })
     expect(page.text).toContain('Startet gleich.')
     expect(page.text).toContain('Anhalten')
+  })
+
+  it('offers a vault for each storage path only when Paperless has paths in use, and starts with it (issue #8)', async () => {
+    await connect()
+    const choice = (words: string) => [...document.querySelectorAll<HTMLButtonElement>('button[role="radio"]')].find((b) => b.textContent === words)
+    expect(choice('Je Speicherpfad ein Tresor')).toBeUndefined()
+    page.close()
+    server.answers['POST /api/v1/settings/paperless/check'] = {
+      ...looked, without_storage_path: 32,
+      storage_paths: [{ name: 'Auto', documents: 200, exists: true }, { name: 'Haus', documents: 1200, exists: false }],
+    }
+    await connect()
+    await page.click(choice('Je Speicherpfad ein Tresor'))
+    expect(page.text).toContain('Jeder Speicherpfad wird ein gemeinsamer Tresor mit seinem Namen.')
+    const paths = [...document.querySelectorAll('[data-testid="storage-paths"] li')].map((li) => plain(li.textContent))
+    expect(paths).toEqual(['Auto · 200 · Tresor gibt es schon', 'Haus · 1.200 · wird angelegt', 'ohne Speicherpfad · 32'])
+    await page.click(page.button('1.432 Dokumente übernehmen'))
+    expect(server.called('POST', '/api/v1/settings/paperless/start')!.body).toEqual({
+      where: 'storage', vault_id: null, sort: 'paperless',
+      people: [{ paperless_id: 1, user_id: 1 }, { paperless_id: 2, user_id: 2 }, { paperless_id: 3, user_id: 1 }],
+    })
+  })
+
+  it('falls back to the own vaults when the choice of the last start has no storage paths any more', async () => {
+    server.answers['PUT /api/v1/settings/paperless'] = settings({ url: 'http://paperless.example.com:8000/', token_set: true, private: true, where: 'storage' })
+    await connect()
+    await page.click(page.button('1.432 Dokumente übernehmen'))
+    expect((server.called('POST', '/api/v1/settings/paperless/start')!.body as { where: string }).where).toBe('owner')
   })
 
   it('asks how to sort, with how many Paperless has in its inbox, and starts with the answer', async () => {

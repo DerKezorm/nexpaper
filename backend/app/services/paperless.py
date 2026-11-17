@@ -48,6 +48,7 @@ from .. import clock
 from ..config import get_settings
 from ..errors import error
 from ..models import (
+    EDIT,
     FILED,
     INBOX,
     OPERATOR,
@@ -81,6 +82,7 @@ from . import (
     similar,
     storage,
     tell,
+    vaults,
 )
 
 logger = logging.getLogger("nexpaper.paperless")
@@ -105,6 +107,11 @@ MAX_NAMES = 20_000
 PAGE = 1000
 #: How a run sorts: as Paperless did (its inbox into the inbox, the rest filed), or everything into the inbox.
 SORTS = ("paperless", "inbox")
+#: Where the documents go: each into the own vault of its person, all into one vault, or a vault for each storage path
+#: of Paperless (those without a path into the own vault of their person; issue #8).
+WHERES = ("owner", "vault", "storage")
+#: The most storage paths the look before the start lists.
+MAX_STORAGE_VAULTS = 200
 #: The lowest version of Paperless's API that has owners and notes (Paperless-ngx 1.14), and the highest asked for.
 API_MIN = 3
 API_MAX = 9
@@ -222,7 +229,7 @@ def view(db: Session) -> dict[str, Any]:
         "token_set": bool(values["paperless_token_enc"]),
         "private": bool(values["paperless_private"]),
         "run": run_state(db),
-        "where": plan.get("where") if plan.get("where") in ("owner", "vault") else "owner",
+        "where": plan.get("where") if plan.get("where") in WHERES else "owner",
         "vault_id": plan.get("vault_id") if isinstance(plan.get("vault_id"), int) else None,
         "sort": plan.get("sort") if plan.get("sort") in SORTS else "paperless",
     }
@@ -294,6 +301,65 @@ def _owner_in(db: Session, vault_id: int, owner: int, operator: int) -> int:
     manager = db.scalar(select(VaultMember.user_id).where(VaultMember.vault_id == vault_id,
                                                           VaultMember.right == "manage").order_by(VaultMember.user_id))
     return int(manager) if manager is not None else owner
+
+
+def _shared_vault_named(db: Session, name: str) -> Vault | None:
+    """The shared vault of this name (spaces and case aside), the oldest when there are several. A personal vault is
+    never one: it belongs to its person."""
+    key = " ".join(name.split()).casefold()
+    for vault in db.scalars(select(Vault).where(Vault.personal_of.is_(None)).order_by(Vault.id)):
+        if " ".join(vault.name.split()).casefold() == key:
+            return vault
+    return None
+
+
+def _storage_vault(db: Session, plan: Plan, found: Names, path: int | None, owner: int) -> int | None:
+    """A vault for each storage path (issue #8): the one this import uses for the path, else the shared vault of its
+    name, else a new one, made by the operator who started the run (who manages it). A vault the import made takes the
+    person a document belongs to as a member who may change it; one that was here before keeps its members, and the
+    person gets the document shared as with "everything into one vault". ``None`` (into the own vault of the person)
+    for a document without a path, and when no vault can be made (too many vaults, a name that is none)."""
+    if path is None or path not in found.storage_paths:
+        return None
+    key = str(path)
+    vault_id: int | None = None
+    made = False
+    known = plan.storage_vaults.get(key)
+    if known:
+        vault = db.get(Vault, known[0])
+        if vault is not None and vault.personal_of is None:
+            vault_id, made = vault.id, bool(known[1])
+    if vault_id is None:
+        name = found.storage_paths[path]
+        existing = _shared_vault_named(db, name)
+        if existing is not None:
+            vault_id = existing.id
+        else:
+            maker = db.get(Account, plan.by)
+            if maker is None or maker.blocked_at is not None:
+                maker = operator_of(db)
+            if maker is None:
+                return None
+            try:
+                vault_id, made = vaults.create_shared(db, maker, name, "folder").id, True
+            except HTTPException as exc:
+                db.rollback()
+                code = exc.detail.get("code", "") if isinstance(exc.detail, dict) else ""
+                logger.warning("Paperless storage path without a vault paperless_path=%s error=%s", path, code)
+                return None
+            logger.info("Paperless storage path became a vault paperless_path=%s vault_id=%s", path, vault_id)
+        plan.storage_vaults[key] = [vault_id, made]
+        changes.write_lock(db)
+        raw = settings_service.get(db, "paperless_plan")
+        saved = dict(raw) if isinstance(raw, dict) else {}
+        saved["storage_vaults"] = plan.storage_vaults
+        settings_service.save(db, {"paperless_plan": saved})
+    if made and db.get(VaultMember, (vault_id, owner)) is None:
+        changes.write_lock(db)
+        if db.get(VaultMember, (vault_id, owner)) is None:
+            db.add(VaultMember(vault_id=vault_id, user_id=owner, right=EDIT))
+        db.commit()
+    return vault_id
 
 
 # --- Talking to Paperless -------------------------------------------------------------------------------------------
@@ -483,6 +549,8 @@ class Names:
     types: dict[int, str] = field(default_factory=dict)
     users: dict[int, tuple[str, list[int]]] = field(default_factory=dict)
     fields: dict[int, tuple[str, str, dict[str, str]]] = field(default_factory=dict)
+    #: The storage paths by their names: with ``where == "storage"`` each becomes a vault of its own.
+    storage_paths: dict[int, str] = field(default_factory=dict)
     #: The token may not list the users (no right to): owners are known by their number only.
     users_hidden: bool = False
 
@@ -530,32 +598,37 @@ def names(client: Client) -> Names:
                     else:
                         options[str(index)] = name_of(option, 120)
             found.fields[int(row["id"])] = (name, name_of(row.get("data_type"), 20), options)
+    _data, status = client.get("api/storage_paths/", {"page_size": PAGE}, allow=(401, 403, 404))
+    if status == 200:
+        found.storage_paths = _named(client.pages("api/storage_paths/", {"page_size": PAGE}, MAX_NAMES),
+                                     vaults.NAME_MAX)
     return found
 
 
 def document_ids(client: Client, inbox_tags: frozenset[int] = frozenset()
-                 ) -> list[tuple[int, int | None, int | None, bool]]:
-    """``(id, owner, document type, in Paperless's inbox)`` of every document, in the order of their numbers; in the
-    inbox means carrying one of ``inbox_tags``. A Paperless that ignores ``fields`` sends whole documents: then the
-    pages are made smaller until they fit."""
+                 ) -> list[tuple[int, int | None, int | None, bool, int | None]]:
+    """``(id, owner, document type, in Paperless's inbox, storage path)`` of every document, in the order of their
+    numbers; in the inbox means carrying one of ``inbox_tags``. A Paperless that ignores ``fields`` sends whole
+    documents: then the pages are made smaller until they fit."""
     for size in (PAGE, 100, 10):
         try:
             rows = client.pages("api/documents/", {"page_size": size, "ordering": "id",
-                                                   "fields": "id,owner,document_type,tags", "truncate_content": "true"},
+                                                   "fields": "id,owner,document_type,tags,storage_path",
+                                                   "truncate_content": "true"},
                                 MAX_DOCUMENTS)
             break
         except Failure as exc:
             if exc.code != "paperless_unreadable" or size == 10:
                 raise
-    out: dict[int, tuple[int | None, int | None, bool]] = {}
+    out: dict[int, tuple[int | None, int | None, bool, int | None]] = {}
     for row in rows:
         if number(row.get("id")):
-            owner, kind = row.get("owner"), row.get("document_type")
+            owner, kind, path = row.get("owner"), row.get("document_type"), row.get("storage_path")
             tags = row.get("tags") if isinstance(row.get("tags"), list) else []
             in_inbox = any(number(tag) and int(tag) in inbox_tags for tag in tags[:1000])
             out[int(row["id"])] = (int(owner) if number(owner) else None, int(kind) if number(kind) else None,
-                                   in_inbox)
-    return [(pid, owner, kind, in_inbox) for pid, (owner, kind, in_inbox) in sorted(out.items())]
+                                   in_inbox, int(path) if number(path) else None)
+    return [(pid, owner, kind, in_inbox, path) for pid, (owner, kind, in_inbox, path) in sorted(out.items())]
 
 
 # --- Looking before taking ------------------------------------------------------------------------------------------
@@ -587,8 +660,8 @@ def check(db: Session, operator_id: int) -> dict[str, Any]:
             raise Failure("paperless_too_many", 422, max=MAX_DOCUMENTS)
         found = names(client)
         scanned = document_ids(client, frozenset(tag for tag, (_name, inbox) in found.tags.items() if inbox))
-    owned = Counter(owner for _id, owner, _kind, _inbox in scanned)
-    used = {kind for _id, _owner, kind, _inbox in scanned if kind is not None}
+    owned = Counter(owner for _id, owner, _kind, _inbox, _path in scanned)
+    used = {kind for _id, _owner, kind, _inbox, _path in scanned if kind is not None}
     # The kinds that come with nexpaper count as known even before they are in the list (looking writes nothing). The
     # others are made in the vault a document goes to, when it comes.
     known = {key for (key,) in db.execute(select(Kind.name_key).where(Kind.vault_id.is_(None)))}
@@ -604,13 +677,22 @@ def check(db: Session, operator_id: int) -> dict[str, Any]:
                        "user_id": person.id if person is not None else operator_id})
     already = len(db.scalars(select(PaperlessItem.paperless_id).where(
         PaperlessItem.origin == conn.origin, PaperlessItem.state == "done")).all())
+    # For the choice "a vault for each storage path": the paths in use, how many each holds, and whether a shared vault
+    # of that name is here already (it is taken then, not made again).
+    in_path = Counter(path for _id, _owner, _kind, _inbox, path in scanned if path in found.storage_paths)
+    storage_paths = [{"name": found.storage_paths[path], "documents": count,
+                      "exists": _shared_vault_named(db, found.storage_paths[path]) is not None}
+                     for path, count in sorted(in_path.items(),
+                                               key=lambda pair: found.storage_paths[pair[0]].casefold())]
     return {
         "version": client.version, "api_version": client.api_version, "documents": total,
         "tags": len(found.tags), "correspondents": len(found.correspondents), "document_types": len(found.types),
         "custom_fields": len(found.fields), "new_kinds": new_kinds[:50], "owners": owners,
         "users_hidden": found.users_hidden, "already": already,
         # For the question how to sort: how many Paperless still had in its inbox.
-        "inbox_documents": sum(1 for _id, _owner, _kind, inbox in scanned if inbox),
+        "inbox_documents": sum(1 for _id, _owner, _kind, inbox, _path in scanned if inbox),
+        "storage_paths": storage_paths[:MAX_STORAGE_VAULTS],
+        "without_storage_path": len(scanned) - sum(in_path.values()),
     }
 
 
@@ -646,7 +728,7 @@ def start(db: Session, operator: Account, *, where: str, vault_id: int | None,
     waits in the inbox, the rest is filed; ``inbox``: everything waits in the inbox). One at a time (checked and written
     under the write lock); a second start while one runs is ``paperless_running``."""
     conn = connection(db)
-    if where not in ("owner", "vault"):
+    if where not in WHERES:
         raise Failure("paperless_vault_invalid", 422)
     if sort not in SORTS:
         raise Failure("paperless_sort_invalid", 422)
@@ -664,8 +746,12 @@ def start(db: Session, operator: Account, *, where: str, vault_id: int | None,
     if run_state(db)["state"] in ACTIVE:
         db.rollback()
         raise Failure("paperless_running", 409)
-    plan = {"origin": conn.origin, "where": where, "vault_id": vault_id if where == "vault" else None,
-            "people": chosen, "by": operator.id, "sort": sort}
+    plan: dict[str, Any] = {"origin": conn.origin, "where": where, "vault_id": vault_id if where == "vault" else None,
+                            "people": chosen, "by": operator.id, "sort": sort}
+    before = _plan(db)
+    if before.origin == conn.origin and before.storage_vaults:
+        # Starting again at the same Paperless: the vaults made for its storage paths are still the ones to fill.
+        plan["storage_vaults"] = before.storage_vaults
     run = {"state": QUEUED, "total": 0, "done": 0, "skipped": 0, "taken": 0, "reasons": {}, "error": "",
            "stop": False, "started_at": clock.now().isoformat(), "finished_at": None}
     jobs.enqueue(db, jobs.IMPORT, 0)
@@ -728,15 +814,24 @@ class Plan:
     people: dict[str, int]
     by: int
     sort: str = "paperless"
+    #: ``where == "storage"``: the vault of each storage path so far (its number in Paperless as text), and whether
+    #: this import made it (``[vault_id, made]``). A vault it made takes the people whose documents come in as members.
+    storage_vaults: dict[str, list[Any]] = field(default_factory=dict)
 
 
 def _plan(db: Session) -> Plan:
     raw = settings_service.get(db, "paperless_plan")
     plan = raw if isinstance(raw, dict) else {}
     people = {str(k): int(v) for k, v in (plan.get("people") or {}).items() if isinstance(v, int)}
-    return Plan(origin=str(plan.get("origin") or ""), where=str(plan.get("where") or "owner"),
+    raw_vaults = plan.get("storage_vaults") if isinstance(plan.get("storage_vaults"), dict) else {}
+    storage_vaults: dict[str, list[Any]] = {
+        str(k): [int(v[0]), bool(v[1])] for k, v in raw_vaults.items()
+        if isinstance(v, list) and len(v) == 2 and isinstance(v[0], int) and not isinstance(v[0], bool)}
+    return Plan(origin=str(plan.get("origin") or ""),
+                where=plan.get("where") if plan.get("where") in WHERES else "owner",
                 vault_id=plan.get("vault_id") if isinstance(plan.get("vault_id"), int) else None, people=people,
-                by=int(plan.get("by") or 0), sort=plan.get("sort") if plan.get("sort") in SORTS else "paperless")
+                by=int(plan.get("by") or 0), sort=plan.get("sort") if plan.get("sort") in SORTS else "paperless",
+                storage_vaults=storage_vaults)
 
 
 def staging() -> Path:
@@ -791,7 +886,7 @@ def _run(db: Session) -> None:
             PaperlessItem.origin == plan.origin,
             (PaperlessItem.state == "done") | PaperlessItem.reason.in_(FOR_GOOD))))
         db.rollback()
-        pending = [(pid, owner) for pid, owner, _kind, _inbox in everything if pid not in taken]
+        pending = [(pid, owner) for pid, owner, _kind, _inbox, _path in everything if pid not in taken]
         done_before = len(everything) - len(pending)
         _save_run(db, total=len(everything), done=done_before, skipped=0, taken=0, reasons={})
         reasons: Counter[str] = Counter()
@@ -907,6 +1002,8 @@ class Incoming:
     fields: str
     readers: list[int]
     writers: list[int]
+    #: The storage path in Paperless (its number), or none.
+    storage_path: int | None = None
     #: Everything into one vault the owner is not in: the person it belonged to, who gets it as a share.
     keeper: int | None = None
 
@@ -975,6 +1072,7 @@ def read(data: Any, found: Names, pid: int) -> Incoming:
     kind_id = data.get("document_type")
     owner = data.get("owner")
     file_name = name_of(data.get("original_file_name"), 200)
+    path = data.get("storage_path")
     return Incoming(
         pid=pid, title=name_of(data.get("title"), documents.TITLE_MAX), file_name=file_name,
         day=date_of(data.get("created_date")) or date_of(data.get("created")),
@@ -984,7 +1082,7 @@ def read(data: Any, found: Names, pid: int) -> Incoming:
         owner=int(owner) if number(owner) else None, content=text_of(data.get("content"), ocr.MAX_CHARS),
         has_archive=bool(data.get("archived_file_name")), notes=notes,
         fields=("Paperless\n" + "\n".join(lines))[: documents.NOTE_MAX] if lines else "",
-        readers=readers, writers=writers,
+        readers=readers, writers=writers, storage_path=int(path) if number(path) else None,
     )
 
 
@@ -1081,8 +1179,9 @@ def take_one(db: Session, client: Client, found: Names, plan: Plan, pid: int) ->
     owner = _person(db, plan, found, incoming.owner, owner=True)
     if owner is None:
         raise Skip("no_person")
-    if plan.where == "vault":
-        vault_id = plan.vault_id
+    by_path = _storage_vault(db, plan, found, incoming.storage_path, owner) if plan.where == "storage" else None
+    if plan.where == "vault" or by_path is not None:
+        vault_id = by_path if by_path is not None else plan.vault_id
         if vault_id is None or db.get(Vault, vault_id) is None:
             raise Failure("paperless_vault_invalid", 409)
         chosen = owner
@@ -1091,6 +1190,7 @@ def take_one(db: Session, client: Client, found: Names, plan: Plan, pid: int) ->
             # The person it belonged to keeps it: shared with them, with the right to change it.
             incoming.keeper = chosen
     else:
+        # Each into the own vault of its person; with a vault for each storage path, those without a path too.
         vault_id = receiving.personal_vault(db, owner)
     kind_id = _kind_id(db, vault_id, owner, incoming.kind)
     limit = limits.current(db).max_file

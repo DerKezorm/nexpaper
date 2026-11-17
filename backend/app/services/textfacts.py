@@ -199,6 +199,41 @@ def read(text: str, today: Date) -> Facts:
     return Facts(date=date, date_reason=reason, due=due, amount=amount, amount_reason=amount_reason, currency=currency)
 
 
+#: The dates of a text offered to choose from (issue #9): no more than this many.
+MOST_FOUND = 12
+#: A date further ahead than this many years is no date of a document, nor a due date.
+FURTHEST_YEARS = 10
+
+
+def found_dates(text: str, today: Date, most: int = MOST_FOUND) -> list[tuple[Date, str]]:
+    """Every distinct date of a text in the order it stands there, for a person to pick the right one when the
+    proposal is wrong. Each with what the text says it is: ``date`` (after a word that names the date of the document),
+    ``due`` (after a word that names a due date), ``period`` (the start or end of a span) or ``""`` (no word). A date
+    that stands several times keeps the first word that names it."""
+    text = (text or "")[:MAX_TEXT].replace("\r", "\n").replace("\f", "\n")
+    oldest = today - timedelta(days=365 * OLDEST_YEARS)
+    furthest = today + timedelta(days=365 * FURTHEST_YEARS)
+    found: dict[Date, str] = {}
+    for item in dates_in(text):
+        if not oldest <= item.value <= furthest:
+            continue
+        before = _before(text, item.at)
+        if DUE_WORDS.search(before):
+            role = "due"
+        elif PERIOD_WORDS.search(before) or PERIOD_AFTER.match(text, item.end) or PERIOD_BEFORE.search(before):
+            role = "period"
+        elif DATE_WORDS.search(before):
+            role = "date"
+        else:
+            role = ""
+        if item.value in found:
+            if not found[item.value]:
+                found[item.value] = role
+        elif len(found) < most:
+            found[item.value] = role
+    return list(found.items())
+
+
 def _amount(text: str) -> tuple[int | None, str, str]:
     labelled: list[tuple[int, int, str]] = []  # (strength, cents, currency)
     largest: tuple[int, str] | None = None
@@ -232,4 +267,4 @@ def _amount(text: str) -> tuple[int | None, str, str]:
     return None, "", ""
 
 
-__all__ = ["Facts", "dates_in", "parse_amount", "read"]
+__all__ = ["Facts", "dates_in", "found_dates", "parse_amount", "read"]

@@ -107,3 +107,38 @@ def test_a_hostile_text_takes_no_long() -> None:
     started = time.monotonic()
     read(hostile)
     assert time.monotonic() - started < 2.0
+
+
+# --- All the dates of a text, to choose from (issue #9) ---------------------------------------------------------------
+
+def test_found_dates_are_every_distinct_date_in_the_order_of_the_text_with_what_names_them() -> None:
+    text = ("Lindenau, 03.10.2026\nAngebot vom 12.08.2026\nRechnungsdatum 06.10.2026\n"
+            "Leistungszeitraum 01.09.2026 bis 30.09.2026\nZahlbar bis 20.10.2026\n"
+            "Wie besprochen am 06.10.2026\nTermin 2026-11-05")
+    assert textfacts.found_dates(text, TODAY) == [
+        (Date(2026, 10, 3), ""), (Date(2026, 8, 12), ""), (Date(2026, 10, 6), "date"), (Date(2026, 9, 1), "period"),
+        (Date(2026, 9, 30), "period"), (Date(2026, 10, 20), "due"), (Date(2026, 11, 5), "")]
+
+
+def test_a_date_that_stands_again_keeps_the_first_word_that_names_it() -> None:
+    text = "Brief vom 01.10.2026\nRechnungsdatum 01.10.2026\nFällig am 01.10.2026"
+    assert textfacts.found_dates(text, TODAY) == [(Date(2026, 10, 1), "date")]
+
+
+def test_found_dates_leave_out_what_is_no_date_of_a_paper_and_stop_at_the_most() -> None:
+    old = TODAY.replace(year=TODAY.year - textfacts.OLDEST_YEARS - 1)
+    far = TODAY.replace(year=TODAY.year + textfacts.FURTHEST_YEARS + 1)
+    text = f"Geboren {old:%d.%m.%Y}\nGültig bis {far:%d.%m.%Y}\nDatum 01.10.2026"
+    assert textfacts.found_dates(text, TODAY) == [(Date(2026, 10, 1), "date")]
+    many = "\n".join(f"Am {day:02d}.10.2026" for day in range(1, 29))
+    found = textfacts.found_dates(many, TODAY)
+    assert len(found) == textfacts.MOST_FOUND and found[0][0] == Date(2026, 10, 1)
+    assert found[-1][0] == Date(2026, 10, textfacts.MOST_FOUND)
+    assert textfacts.found_dates("", TODAY) == [] and textfacts.found_dates("keine Zahl", TODAY) == []
+
+
+def test_found_dates_cost_time_in_proportion_to_the_text() -> None:
+    hostile = "1.1." * 50_000 + "01.10.2026"
+    began = time.perf_counter()
+    textfacts.found_dates(hostile, TODAY)
+    assert time.perf_counter() - began < 2.0
