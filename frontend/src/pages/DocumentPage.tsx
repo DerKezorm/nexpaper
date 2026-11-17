@@ -315,6 +315,10 @@ function Doc({ document: d, setDocument, reload, slots, pane }: { document: Docu
   const sourceHint = d.source === 'camera' ? t('docs.document.originalCamera') : t('docs.document.originalAsCame')
   const invoice = useEInvoice(d)
   const pages = d.pages
+  // Pages taken away (the page tools, a version brought back): the page shown cannot be past the last one (issue #10).
+  useEffect(() => {
+    setPage((at) => Math.min(at, Math.max(pages, 1)))
+  }, [pages, d.current_version])
   const PageEditor = slots.PageEditor
   const MergeDialog = slots.MergeDialog
   const NewVersion = slots.NewVersion

@@ -1550,10 +1550,13 @@ function Filters({ chosen, choose, kinds, senders, tags, people, years, active, 
   const { t } = useTranslation()
   // The years the archive has, and the chosen one even when it has none (an address from elsewhere).
   const yearOptions = [...new Set([...years.map((y) => String(y.year)), ...(chosen.year ? [chosen.year] : [])])].sort().reverse()
+  // Beside an open document the list is narrow at any window width: two columns, and no span of the wide grid may
+  // reach in (a span of seven made seven columns of two fields' room, issue #7).
+  const wide = (spans: string) => (narrow ? 'col-span-2' : spans)
   return (
-    <div className={`card rise grid gap-3 p-4 ${narrow ? 'grid-cols-2' : 'sm:grid-cols-2 lg:grid-cols-7'}`}>
+    <div className={`card rise grid gap-3 p-4 ${narrow ? 'grid-flow-row-dense grid-cols-2' : 'sm:grid-cols-2 lg:grid-cols-7'}`} data-testid="archive-filters">
       <Select label={t('docs.archive.kind')} value={representative(kinds, chosen.kind)} onChange={(kind) => choose({ kind })} options={oneOfEachName(kinds).map((k) => [String(k.id), k.name])} empty={t('docs.archive.all')} />
-      <div className="text-sm sm:col-span-2">
+      <div className={`text-sm ${wide('sm:col-span-2')}`}>
         <span className="text-xs font-semibold text-muted">{t('docs.archive.sender')}</span>
         <div className="mt-1">
           <SenderPicker known value={chosen.sender} onChange={(value) => choose({ sender: value })} names={senders.map((g) => g.name)} label={t('docs.archive.sender')} placeholder={t('docs.archive.all')} className="input h-10" />
@@ -1565,7 +1568,7 @@ function Filters({ chosen, choose, kinds, senders, tags, people, years, active, 
       {deadlines && (
         <Select label={t('deadlines.archive.filter')} value={chosen.deadline} onChange={(deadline) => choose({ deadline })} options={DEADLINE_FILTER.map(([value, word]) => [value, t(`deadlines.archive.${word}`)])} empty={t('deadlines.archive.any')} />
       )}
-      <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-sm font-semibold text-accent sm:col-span-2 lg:col-span-7">
+      <div className={`flex flex-wrap items-center gap-x-5 gap-y-1 text-sm font-semibold text-accent ${wide('sm:col-span-2 lg:col-span-7')}`}>
         {active > 0 && (
           <button type="button" onClick={() => choose({ kind: '', sender: '', tag: '', owner: '', year: '', deadline: '', keep: '' })} className="text-left">
             {t('docs.archive.reset')}

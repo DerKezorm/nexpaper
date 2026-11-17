@@ -114,6 +114,18 @@ describe('below the width', () => {
 describe('on a wide screen', () => {
   beforeEach(() => windowOf(1920))
 
+  it('keeps the filters of the narrow list to its two columns (issue #7)', async () => {
+    await show('/?all=1&open=2')
+    await until(() => paneTitle() === 'Kfz-Versicherung', 'the document beside the list')
+    await page.click(page.button('Filter'))
+    const box = page.box.querySelector<HTMLElement>('[data-testid="archive-filters"]')!
+    expect(box.className).toContain('grid-cols-2')
+    expect(box.className).not.toMatch(/lg:grid-cols/)
+    // A span of the wide grid (seven columns) in a grid of two makes seven columns of two fields' room.
+    for (const field of box.children) expect(field.className).not.toMatch(/(?:sm|md|lg|xl):col-span|col-span-(?:[3-9]|full)/)
+    expect(box.querySelector('input[aria-label="Absender"]')!.closest('.col-span-2')).toBeTruthy()
+  })
+
   it('opens a document beside the list and marks its row', async () => {
     await show('/?all=1')
     await page.click(link(2))

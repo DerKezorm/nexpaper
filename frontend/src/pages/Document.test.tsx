@@ -248,6 +248,19 @@ describe('a document for somebody who may change it', () => {
     expect(server.called('POST', '/api/v1/documents/7/versions/2/restore')!.body).toEqual({ base_version: 1 })
   })
 
+  it('shows the last page there is once pages were taken away, not one past it (issue #10)', async () => {
+    const PageEditor = ({ onDone }: { onDone: (changed: boolean) => void }) => <button type="button" onClick={() => onDone(true)}>pages saved</button>
+    await show({ PageEditor })
+    await page.click(page.button('Seite 6'))
+    expect(page.text).toContain('Seite 6 von 6')
+    server.answers['GET /api/v1/documents/7'] = { ...base, pages: 2, current_version: 2 }
+    await page.click(page.button('Seiten bearbeiten'))
+    await page.click(page.button('pages saved'))
+    await until(() => page.text.includes('von 2'))
+    expect(page.text).toContain('Seite 2 von 2')
+    expect(page.text).not.toContain('Seite 6 von')
+  })
+
   it('has no page tools without them', async () => {
     await show()
     expect(page.button('Seiten bearbeiten')).toBeUndefined()
