@@ -1,4 +1,16 @@
 {
+  "1.7.1": {
+    "lead": "Die neueren Modelle von OpenAI lassen sich jetzt für die KI nutzen.",
+    "sections": [
+      {
+        "title": "Neuere Modelle von OpenAI",
+        "where": "Einstellungen, KI; Vorschläge im Eingang",
+        "body": "Mit einem neueren Modell von OpenAI wie GPT-5 scheiterte jede Anfrage mit dem Fehler 400, schon beim Prüfen der Einstellung. Diese Modelle wollen die Grenze für die Antwort unter einem anderen Namen. nexpaper fragt jetzt so, wie das Modell es verlangt, gibt ihm Platz zum Nachdenken und bittet es, sich dabei kurz zu fassen. Ältere Modelle wie GPT-4o laufen wie bisher."
+      }
+    ],
+    "smallTitle": "Außerdem",
+    "small": []
+  },
   "1.7.0": {
     "lead": "Im Eingang stehen alle Daten aus dem Text zur Wahl, und der Import aus Paperless kann je Speicherpfad einen Tresor anlegen.",
     "sections": [

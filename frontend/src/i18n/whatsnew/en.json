@@ -1,4 +1,16 @@
 {
+  "1.7.1": {
+    "lead": "The newer OpenAI models can now be used for the AI.",
+    "sections": [
+      {
+        "title": "Newer OpenAI models",
+        "where": "Settings, AI; suggestions in the inbox",
+        "body": "With a newer OpenAI model such as GPT-5, every request failed with error 400, already when the setting was checked. These models want the limit for the answer under another name. nexpaper now asks the way the model wants it, gives it room to think and asks it to keep that short. Older models such as GPT-4o work as before."
+      }
+    ],
+    "smallTitle": "Also",
+    "small": []
+  },
   "1.7.0": {
     "lead": "The inbox offers every date of the text to choose from, and the import from Paperless can make a vault for each storage path.",
     "sections": [
