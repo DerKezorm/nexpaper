@@ -194,6 +194,74 @@ def test_a_model_that_turns_down_the_temperature_is_asked_once_more_without(clie
 
 
 
+def newer_openai(model: Model, reasoning: bool = True) -> Callable[[httpx.Request], httpx.Response]:
+    """As OpenAI's newer models answer: the limit only as ``max_completion_tokens``, no temperature but their own."""
+    def answer(request: httpx.Request) -> httpx.Response:
+        body = json.loads(request.content)
+        if "max_tokens" in body:
+            return httpx.Response(400, json={"error": {
+                "message": "Unsupported parameter: 'max_tokens' is not supported with this model. "
+                           "Use 'max_completion_tokens' instead.", "param": "max_tokens"}})
+        if "temperature" in body:
+            return httpx.Response(400, json={"error": {
+                "message": "Unsupported value: 'temperature' does not support 0.3 with this model. "
+                           "Only the default (1) value is supported."}})
+        if not reasoning and "reasoning_effort" in body:
+            return httpx.Response(400, json={"error": {"message": "Unrecognized request argument: reasoning_effort"}})
+        return model.write(request)
+    return answer
+
+
+def test_a_newer_openai_model_gets_the_limit_as_max_completion_tokens(client: TestClient, account: Account,
+                                                                      model: Model) -> None:
+    # Same as nexdiary issue #3: gpt-5 and later turn down max_tokens and a temperature of their own choosing.
+    set_up(client)
+    model.answer = newer_openai(model)
+    assert probe(client).status_code == 200
+    assert len(model.requests) == 3
+    body = model.body()
+    assert "max_tokens" not in body and "temperature" not in body
+    assert body["max_completion_tokens"] == 20 + ai.THINKING_OUT
+    assert body["reasoning_effort"] == "low"
+
+
+def test_a_newer_model_that_does_not_take_reasoning_effort_is_asked_without(client: TestClient, account: Account,
+                                                                            model: Model) -> None:
+    set_up(client)
+    model.answer = newer_openai(model, reasoning=False)
+    assert probe(client).status_code == 200
+    body = model.body()
+    assert "max_completion_tokens" in body and "max_tokens" not in body and "reasoning_effort" not in body
+
+
+def test_an_older_openai_model_keeps_max_tokens(client: TestClient, account: Account, model: Model) -> None:
+    set_up(client)
+    assert probe(client).status_code == 200
+    assert len(model.requests) == 1
+    assert model.body()["max_tokens"] == 20 and "max_completion_tokens" not in model.body()
+
+
+@pytest.mark.parametrize(("provider", "url"), [("messages", CLOUD), ("local", LOCAL)])
+def test_a_refusal_that_only_names_max_tokens_is_not_asked_again(client: TestClient, account: Account, model: Model,
+                                                                 provider: str, url: str) -> None:
+    # A limit that is too high is not a reason to send another name.
+    set_up(client, provider, url)
+    model.answer = lambda request: httpx.Response(400, json={"error": {
+        "message": "max_tokens: 100000 > 64000, which is the maximum allowed"}})
+    assert probe(client).status_code != 200
+    assert len(model.requests) == 1
+
+
+def test_the_messages_api_keeps_max_tokens_whatever_it_says(client: TestClient, account: Account,
+                                                            model: Model) -> None:
+    set_up(client, "messages", CLOUD)
+    model.answer = lambda request: httpx.Response(400, json={"error": {
+        "message": "Use 'max_completion_tokens' instead."}})
+    assert probe(client).status_code != 200
+    assert len(model.requests) == 1
+    assert "max_tokens" in model.body() and "max_completion_tokens" not in model.body()
+
+
 @pytest.mark.parametrize("provider", ["openai", "messages", "local"])
 def test_only_a_local_model_is_asked_not_to_think(client: TestClient, account: Account, model: Model,
                                                   provider: str) -> None:
