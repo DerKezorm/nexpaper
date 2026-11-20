@@ -1,4 +1,19 @@
 {
+  "1.8.0": {
+    "lead": "A new or changed rule can now be applied to everything that already waits in the inbox.",
+    "sections": [
+      {
+        "title": "Apply rules again",
+        "where": "Inbox, button “Apply rules”; after “Remember as a rule”",
+        "body": "Until now a rule only applied to documents that came after it. Now nexpaper works out the proposals for the documents in the inbox again: for all of them, for the ones selected, or right after “Remember as a rule”. First you see what would change, every field before and after and where the new value comes from. What would go to another vault is at the top. Only what you leave ticked is taken over. What you entered yourself stays, and everything stays in the inbox until you file it. The text is not read again and the AI is not asked again."
+      }
+    ],
+    "smallTitle": "Also",
+    "small": [
+      "A rule now also sees a sender, a kind or an amount you entered yourself.",
+      "A title from a rule such as “Electricity {month} {year}” now also takes a date you entered yourself."
+    ]
+  },
   "1.7.1": {
     "lead": "The newer OpenAI models can now be used for the AI.",
     "sections": [

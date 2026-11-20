@@ -1,4 +1,19 @@
 {
+  "1.8.0": {
+    "lead": "Eine neue oder geänderte Regel lässt sich jetzt auf alles anwenden, was schon im Eingang liegt.",
+    "sections": [
+      {
+        "title": "Regeln erneut anwenden",
+        "where": "Eingang, Knopf „Regeln anwenden“; nach „Als Regel merken“",
+        "body": "Bisher galt eine Regel nur für Dokumente, die danach kamen. Jetzt rechnet nexpaper die Vorschläge für die Dokumente im Eingang neu aus: für alle, für die ausgewählten oder direkt nach „Als Regel merken“. Zuerst siehst du, was sich ändern würde, jedes Feld vorher und nachher und woher der neue Wert kommt. Was in einen anderen Tresor käme, steht oben. Übernommen wird nur, was du angehakt lässt. Was du selbst eingetragen hast, bleibt, und alles bleibt im Eingang, bis du es ablegst. Der Text wird nicht neu gelesen und die KI nicht neu gefragt."
+      }
+    ],
+    "smallTitle": "Außerdem",
+    "small": [
+      "Eine Regel sieht jetzt auch einen Absender, eine Art oder einen Betrag, die du selbst eingetragen hast.",
+      "Ein Titel aus einer Regel wie „Strom {monat} {jahr}“ nimmt jetzt auch ein Datum, das du selbst eingetragen hast."
+    ]
+  },
   "1.7.1": {
     "lead": "Die neueren Modelle von OpenAI lassen sich jetzt für die KI nutzen.",
     "sections": [
