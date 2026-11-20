@@ -272,6 +272,8 @@ TOKEN_ROUTES = {
     ("GET", "/api/v1/me/reminders"),
     ("PUT", "/api/v1/me/reminders"),
     ("POST", "/api/v1/me/reminders/test"),
+    # The owner's iPad takes the iPhone's connection from iCloud and comes in under a token of its own.
+    ("POST", "/api/v1/devices/sibling"),
     # Goes with (N1): setting, removing, turning a proposal down (edit on both documents).
     ("PUT", "/api/v1/documents/{document_id}/related/{other_id}"),
     ("DELETE", "/api/v1/documents/{document_id}/related/{other_id}"),

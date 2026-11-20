@@ -38,6 +38,7 @@ from app.services import (  # noqa: E402
     apikeys,
     backups,
     brakes,
+    devices,
     jobs,
     notices,
     oidc_store,
@@ -90,6 +91,7 @@ def clean_db(schema: None) -> Iterator[None]:
     updates.forget()
     ai.forget()
     apikeys.forget()
+    devices.forget()
     notices.forget()
     push.forget()
     passkeys.forget()

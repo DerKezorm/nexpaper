@@ -44,6 +44,12 @@ Made in the web app (**My account, Devices and apps**, or `POST /api/v1/devices`
   everywhere" is used, and while the operator requires a second factor the account has not set up yet.
 - A device can also pair itself with a code the web app shows (QR code) or, for an app, with OAuth 2 and PKCE: see
   [Pairing a device](#pairing-a-device).
+- A device brings in another device of its account: `POST /api/v1/devices/sibling` with its token and `{"name": "iPad"}`
+  answers like a pairing (`201`, `token` shown once, `device` with `via: device`, `account`). The iPhone app uses it for
+  the owner's iPad, which takes the iPhone's connection from the iCloud Keychain and comes in under a token and a name of
+  its own (revoking one leaves the other). The new device has the rights of the account, like any device. At most five
+  an hour per account (`429 too_many_new_devices`, `Retry-After`); a browser gets `403 device_only` (it pairs with
+  `POST /api/v1/devices` or a code).
 
 ### API keys
 

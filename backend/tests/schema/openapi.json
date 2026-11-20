@@ -536,6 +536,29 @@
         "title": "AutoTrashOut",
         "type": "object"
       },
+      "BroughtOut": {
+        "description": "The answer of ``POST /devices/pair``: the new device, its token (shown once) and the account.",
+        "properties": {
+          "account": {
+            "title": "Account",
+            "type": "string"
+          },
+          "device": {
+            "$ref": "#/components/schemas/DeviceOut"
+          },
+          "token": {
+            "title": "Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "device",
+          "token",
+          "account"
+        ],
+        "title": "BroughtOut",
+        "type": "object"
+      },
       "BulkIn": {
         "additionalProperties": false,
         "properties": {
@@ -13518,6 +13541,52 @@
           }
         ],
         "summary": "End the open pairing code",
+        "tags": [
+          "devices"
+        ]
+      }
+    },
+    "/api/v1/devices/sibling": {
+      "post": {
+        "operationId": "bring_in_api_v1_devices_sibling_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/app__routers__devices__DeviceIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BroughtOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "A device brings in another device of its account; the new token is shown once",
         "tags": [
           "devices"
         ]

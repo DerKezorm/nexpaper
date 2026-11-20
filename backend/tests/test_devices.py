@@ -298,3 +298,54 @@ def test_a_device_token_cannot_switch_off_the_notice_of_new_sign_ins(client: Tes
     assert profile["notify_login"] is True and profile["mode"] == "dark"
     # The browser may.
     assert client.put("/api/v1/me/preferences", json={"notify_login": False}).json()["notify_login"] is False
+
+
+# --- A device brings in another device of its account (the iPad that takes the iPhone's connection from iCloud) -------
+
+
+def test_a_device_brings_in_another_device_with_a_token_of_its_own(client: TestClient, operator: Account) -> None:
+    token, phone = pair(client, "iPhone")
+    with program() as device:
+        answer = device.post("/api/v1/devices/sibling", headers=bearer(token), json={"name": "iPad"})
+        assert answer.status_code == 201, answer.text
+        body = answer.json()
+        assert body["account"] == "tester" and body["device"]["via"] == "device" and body["device"]["name"] == "iPad"
+        other = str(body["token"])
+        assert other.startswith("npd_") and other != token
+        assert device.get("/api/v1/auth/me", headers=bearer(other)).json()["name"] == "tester"
+        # It is a device like any: nothing of the browser's side.
+        refused = device.get("/api/v1/settings", headers=bearer(other))
+        assert (refused.status_code, refused.json()["detail"]["code"]) == (403, "browser_only")
+    # Both stand in the list, and revoking the iPad leaves the iPhone working.
+    listed = {row["name"]: row["id"] for row in client.get("/api/v1/devices").json()}
+    assert set(listed) == {"iPhone", "iPad"} and listed["iPhone"] == phone
+    assert client.delete(f"/api/v1/devices/{listed['iPad']}").status_code == 204
+    with program() as device:
+        assert device.get("/api/v1/auth/me", headers=bearer(other)).status_code == 401
+        assert device.get("/api/v1/auth/me", headers=bearer(token)).status_code == 200
+
+
+def test_only_a_device_brings_one_in(client: TestClient, operator: Account) -> None:
+    refused = client.post("/api/v1/devices/sibling", json={"name": "iPad"})
+    assert (refused.status_code, refused.json()["detail"]["code"]) == (403, "device_only")
+    with program() as stranger:
+        wrong = stranger.post("/api/v1/devices/sibling", headers=bearer("npd_" + "x" * 43), json={"name": "iPad"})
+        assert (wrong.status_code, wrong.json()["detail"]["code"]) == (401, "token_invalid")
+    token, uid = pair(client)
+    assert client.delete(f"/api/v1/devices/{uid}").status_code == 204
+    with program() as device:
+        dead = device.post("/api/v1/devices/sibling", headers=bearer(token), json={"name": "iPad"})
+        assert dead.status_code == 401
+    assert client.get("/api/v1/devices").json() == []
+
+
+def test_a_device_brings_in_at_most_five_an_hour(client: TestClient, operator: Account) -> None:
+    token, _uid = pair(client)
+    with program() as device:
+        for n in range(devices.SIBLINGS_PER_HOUR):
+            made = device.post("/api/v1/devices/sibling", headers=bearer(token), json={"name": f"iPad {n}"})
+            assert made.status_code == 201, made.text
+        stopped = device.post("/api/v1/devices/sibling", headers=bearer(token), json={"name": "one more"})
+        assert (stopped.status_code, stopped.json()["detail"]["code"]) == (429, "too_many_new_devices")
+        assert stopped.headers["Retry-After"] == "3600"
+    assert len(client.get("/api/v1/devices").json()) == 1 + devices.SIBLINGS_PER_HOUR

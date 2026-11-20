@@ -1,8 +1,9 @@
 """Paired devices: a phone, a later native app or a script that speaks for an account with a token of its own.
 
-Making, listing and revoking want a signed-in browser (``BrowserAccount``): a device cannot pair another one, and a lost
-phone cannot make itself a new token. The token is shown once. Pairing by a QR code and by OAuth with PKCE is in
-``routers/pairing.py``; this is the token itself.
+Making, listing and revoking want a signed-in browser (``BrowserAccount``): a lost phone cannot make itself a new token.
+One exception: a device brings in another device of its account (``POST /sibling``), for the owner's iPad that takes the
+iPhone's connection from iCloud; the new device has a token and a place in the list of its own. The token is shown once.
+Pairing by a QR code and by OAuth with PKCE is in ``routers/pairing.py``; this is the token itself.
 """
 
 from __future__ import annotations
@@ -10,10 +11,10 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Annotated
 
-from fastapi import APIRouter, Path
+from fastapi import APIRouter, Path, Request
 from pydantic import BaseModel, Field
 
-from ..deps import BrowserAccount, DbSession
+from ..deps import Account, BrowserAccount, DbSession
 from ..errors import error
 from ..models import Device
 from ..services import devices
@@ -29,7 +30,8 @@ class DeviceOut(BaseModel):
     prefix: str
     created_at: datetime
     last_used_at: datetime | None = None
-    #: How it was paired: ``token`` (made in the browser), ``qr`` (a pairing code), ``app:<client>`` (an app, OAuth).
+    #: How it was paired: ``token`` (made in the browser), ``qr`` (a pairing code), ``app:<client>`` (an app, OAuth),
+    #: ``device`` (brought in by another device of the account).
     via: str = "token"
 
 
@@ -57,6 +59,24 @@ def listing(account: BrowserAccount, db: DbSession) -> list[DeviceOut]:
 def pair(body: DeviceIn, account: BrowserAccount, db: DbSession) -> PairedOut:
     row, token = devices.make(db, account, body.name)
     return PairedOut(device=_out(row), token=token)
+
+
+class BroughtOut(BaseModel):
+    """The answer of ``POST /devices/pair``: the new device, its token (shown once) and the account."""
+    device: DeviceOut
+    token: str
+    account: str
+
+
+@router.post("/sibling", response_model=BroughtOut, status_code=201,
+             summary="A device brings in another device of its account; the new token is shown once")
+def bring_in(body: DeviceIn, request: Request, account: Account, db: DbSession) -> BroughtOut:
+    parent = getattr(request.state, "device", None)
+    if parent is None:
+        # A browser pairs with ``POST /devices`` or a code; this way is for a device that hands its connection on.
+        raise error("device_only", "This needs a device token.", 403)
+    row, token = devices.sibling(db, account, parent, body.name)
+    return BroughtOut(device=_out(row), token=token, account=account.name)
 
 
 @router.delete("/{uid}", status_code=204, summary="Revoke a device: its token stops working at once")
