@@ -9101,6 +9101,168 @@
         "title": "SnoozeOut",
         "type": "object"
       },
+      "SortAgainApplyIn": {
+        "additionalProperties": false,
+        "properties": {
+          "ids": {
+            "items": {
+              "type": "integer"
+            },
+            "maxItems": 1000,
+            "minItems": 1,
+            "title": "Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "ids"
+        ],
+        "title": "SortAgainApplyIn",
+        "type": "object"
+      },
+      "SortAgainIn": {
+        "additionalProperties": false,
+        "properties": {
+          "after": {
+            "default": 0,
+            "maximum": 2147483647.0,
+            "minimum": 0.0,
+            "title": "After",
+            "type": "integer"
+          },
+          "ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "integer"
+                },
+                "maxItems": 1000,
+                "minItems": 1,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ids"
+          }
+        },
+        "title": "SortAgainIn",
+        "type": "object"
+      },
+      "SortAgainItem": {
+        "properties": {
+          "after": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DocumentOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "before": {
+            "$ref": "#/components/schemas/DocumentOut"
+          },
+          "fields": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Fields",
+            "type": "array"
+          },
+          "origins": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Origins",
+            "type": "object"
+          }
+        },
+        "required": [
+          "fields",
+          "origins",
+          "before",
+          "after"
+        ],
+        "title": "SortAgainItem",
+        "type": "object"
+      },
+      "SortAgainOut": {
+        "properties": {
+          "changed": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Changed",
+            "type": "array"
+          },
+          "failed": {
+            "title": "Failed",
+            "type": "integer"
+          },
+          "moved": {
+            "title": "Moved",
+            "type": "integer"
+          },
+          "skipped": {
+            "title": "Skipped",
+            "type": "integer"
+          },
+          "unchanged": {
+            "title": "Unchanged",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "changed",
+          "moved",
+          "unchanged",
+          "skipped",
+          "failed"
+        ],
+        "title": "SortAgainOut",
+        "type": "object"
+      },
+      "SortAgainPreview": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/SortAgainItem"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "looked_at": {
+            "title": "Looked At",
+            "type": "integer"
+          },
+          "next": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "looked_at",
+          "total",
+          "next"
+        ],
+        "title": "SortAgainPreview",
+        "type": "object"
+      },
       "SplitIn": {
         "additionalProperties": false,
         "properties": {
@@ -17773,6 +17935,100 @@
           }
         ],
         "summary": "File many documents at once, with a vault, a kind and tags for all of them",
+        "tags": [
+          "inbox"
+        ]
+      }
+    },
+    "/api/v1/inbox/sort-again": {
+      "post": {
+        "description": "Worked out anew when asked, not taken from the look: what changed since is part of it. Each document on its\nown; the documents stay in the inbox until a person files them. A rule may move a document to another vault, as\nwhen it arrived.",
+        "operationId": "sort_again_apply_api_v1_inbox_sort_again_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SortAgainApplyIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SortAgainOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Work the proposals of documents in the inbox out again, after a rule was made or changed",
+        "tags": [
+          "inbox"
+        ]
+      }
+    },
+    "/api/v1/inbox/sort-again/preview": {
+      "post": {
+        "description": "At most 100 documents in one answer, in the order of their numbers; `next` says where to go on. Every document\nis worked out exactly as `POST /inbox/sort-again` would, in a transaction that is rolled back:\nthe rules of the vault it arrived in, as last time, the text, and what the AI answered when it arrived (no new\nreading, no new question). A field a person set stays as it is. Only documents waiting in the inbox the caller may\nchange; one being read, filed or in the trash is left out.",
+        "operationId": "sort_again_preview_api_v1_inbox_sort_again_preview_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SortAgainIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SortAgainPreview"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "What working the proposals out again would change, without changing anything",
         "tags": [
           "inbox"
         ]

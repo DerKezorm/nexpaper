@@ -226,6 +226,15 @@ answers `404 not_found`, exactly like one that does not exist; one they see but 
   the answer is `{"filed": [ids], "failed": [{"id", "code"}]}` with the code a single change would have given
   (`forbidden`, `still_processing`, `not_in_inbox`, `kind_unknown` ...); a document the caller may not see fails as
   `not_found`, exactly like one that does not exist. A kind or a tag the target does not accept is found before anything changes, so the document stays untouched in its old vault.
+- Sorting again after a rule changed (issue #11): `POST /inbox/sort-again/preview` `{"ids"?, "after"?}` works the
+  proposals out again exactly as on arrival (the rules of the vault the document arrived in, as last time, the text
+  read then, the AI's answer of then; no new reading, no new question) and rolls everything back. It looks at up to 100
+  documents an answer, in the order of their numbers: `{"items": [{"fields", "origins", "before", "after"}],
+  "looked_at", "total", "next"}`; ask again with `after` = `next` until `next` is `null`. Without `ids` it is the whole
+  inbox the caller may change (being read, filed and trashed documents are left out). `after` is `null` when a rule
+  would move the document where the caller does not reach. `POST /inbox/sort-again` `{"ids"}` (at most 1000) does it
+  and keeps it, each document on its own, worked out anew: `{"changed": [ids], "moved", "unchanged", "skipped",
+  "failed"}`. A field a person set stays theirs; the documents stay in the inbox. Browser or device, like filing.
 - **Deleting an account** (operator, browser): `GET /accounts/{id}/leaving` says how many documents its own vault holds and
   which shared vaults it manages alone. `DELETE /accounts/{id}` takes the operator's password, `confirm_name` (the
   account's name as it is) and, when there are documents, `documents`: `transfer_to_user` (with `target_user_id`: into

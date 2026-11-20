@@ -279,8 +279,20 @@ def propose(db: Session, document: Document, text: str, *, invoice: EInvoice | N
         proposal.offer("kind", origin, _usable_kind(db, kind_id, vault_now(), bring_from=arrival if origin == RULE
                                                     else None))
 
-    # 2. The rules, against the document as it would be without them.
+    def as_set(name: str) -> Any:
+        """What a person set for a field, as it stands on the document."""
+        if name == "sender":
+            row = db.get(Sender, document.sender_id) if document.sender_id else None
+            return row.name if row is not None else None
+        if name == "currency":
+            return document.currency
+        return {"kind": document.kind_id, "date": document.date, "amount": document.amount}.get(name)
+
+    # 2. The rules, against the document as it would be without them; what a person set counts as it stands (sorting
+    # again after "Als Regel merken" must find the sender the person gave the document).
     def best(name: str) -> Any:
+        if name in human:
+            return as_set(name)
         if name in proposal.values:
             return proposal.values[name]
         if name == "sender" and previous is not None:
@@ -324,13 +336,20 @@ def propose(db: Session, document: Document, text: str, *, invoice: EInvoice | N
     if isinstance(ai, dict) and isinstance(ai.get("kind"), str) and ai["kind"]:
         proposal.offer("kind", AI, _kind_named(db, vault_now(), name=ai["kind"]))
 
-    # The title of a rule is a pattern of the other fields: made last, with what the fields will be.
+    # The title of a rule is a pattern of the other fields: made last, with what the fields will be (a field a person
+    # set as it stands).
     if rule_title:
-        kind_row = db.get(Kind, proposal.values.get("kind")) if proposal.values.get("kind") else None
-        rendered = rules.render_title(rule_title, sender=str(proposal.values.get("sender") or ""),
-                                      kind=kind_row.name if kind_row else "", day=proposal.values.get("date"),
-                                      amount=proposal.values.get("amount"),
-                                      currency=str(proposal.values.get("currency") or "EUR"), language=language)
+        def will_be(name: str) -> Any:
+            # The currency goes with the amount.
+            theirs = "amount" if name == "currency" else name
+            return as_set(name) if theirs in human else proposal.values.get(name)
+
+        kind_id = will_be("kind")
+        kind_row = db.get(Kind, kind_id) if kind_id else None
+        rendered = rules.render_title(rule_title, sender=str(will_be("sender") or ""),
+                                      kind=kind_row.name if kind_row else "", day=will_be("date"),
+                                      amount=will_be("amount"), currency=str(will_be("currency") or "EUR"),
+                                      language=language)
         if rendered:
             proposal.values["title"], proposal.origins["title"] = rendered, RULE
     changed = _apply(db, document, proposal, human)

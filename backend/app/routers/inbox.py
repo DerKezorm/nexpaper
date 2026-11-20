@@ -1,5 +1,5 @@
-"""The inbox as a list: what waits to be filed, found and sorted, a page at a time; filing many documents at once; the
-numbers the menu shows.
+"""The inbox as a list: what waits to be filed, found and sorted, a page at a time; filing many documents at once;
+sorting again after a rule changed (first a look, then the change); the numbers the menu shows.
 
 The inbox of a person is what is not filed yet in the vaults where they may change things (see ``services/inbox.py``).
 Reading needs a browser, a device or a program with a key; filing changes documents and needs a browser or a device.
@@ -7,14 +7,17 @@ Reading needs a browser, a device or a program with a key; filing changes docume
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, Query
 from pydantic import BaseModel, ConfigDict, Field, StrictInt
+from sqlalchemy.orm import Session
 
 from ..deps import Account as Caller
 from ..deps import DbSession, Reader
-from ..services import deadlines, documents, inbox, related
+from ..models import Document
+from ..services import deadlines, documents, inbox, related, sort_again
 from .related import SuggestionOut, suggestion_out
 from .schemas import DocumentOut, document_out
 
@@ -124,3 +127,82 @@ def file_documents(payload: FileIn, account: Caller, db: DbSession) -> FileOut:
     done = inbox.file_many(db, account.id, payload.ids, vault_id=payload.vault_id, kind_id=payload.kind_id,
                            add_tags=payload.add_tags)
     return FileOut(filed=done.filed, failed=[Refused(id=i, code=c) for i, c in done.failed])
+
+
+class SortAgainIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    #: The documents to look at; left out, every document in the caller's inbox.
+    ids: list[StrictInt] | None = Field(default=None, min_length=1, max_length=sort_again.MAX)
+    #: Go on after this document: the `next` of the answer before.
+    after: StrictInt = Field(default=0, ge=0, le=2**31 - 1)
+
+
+class SortAgainItem(BaseModel):
+    #: The fields that would change: `title`, `sender`, `kind`, `date`, `amount`, `dates`, `tags`, `vault`.
+    fields: list[str]
+    #: Per changed field where the new value comes from: `rule`, `last_time`, `text`, `ai`, `einvoice`.
+    origins: dict[str, str]
+    before: DocumentOut
+    #: The document afterwards; `null` when a rule would move it where the caller does not reach.
+    after: DocumentOut | None
+
+
+class SortAgainPreview(BaseModel):
+    #: Only the documents whose proposals would change.
+    items: list[SortAgainItem]
+    #: How many documents this answer looked at (at most 100).
+    looked_at: int
+    #: How many documents there are to look at in all (the inbox, or of the ids named).
+    total: int
+    #: Ask again with `after` set to this to look at the next ones; `null` when all were looked at.
+    next: int | None
+
+
+def _shown(account_id: int) -> Callable[[Session, Document], DocumentOut]:
+    def shown(db: Session, document: Document) -> DocumentOut:
+        return document_out(documents.rows(db, account_id, [document])[0])
+
+    return shown
+
+
+@router.post("/inbox/sort-again/preview", response_model=SortAgainPreview,
+             summary="What working the proposals out again would change, without changing anything")
+def sort_again_preview(payload: SortAgainIn, account: Caller, db: DbSession) -> SortAgainPreview:
+    """At most 100 documents in one answer, in the order of their numbers; `next` says where to go on. Every document
+    is worked out exactly as `POST /inbox/sort-again` would, in a transaction that is rolled back:
+    the rules of the vault it arrived in, as last time, the text, and what the AI answered when it arrived (no new
+    reading, no new question). A field a person set stays as it is. Only documents waiting in the inbox the caller may
+    change; one being read, filed or in the trash is left out."""
+    found = sort_again.preview(db, account.id, payload.ids, _shown(account.id), after=payload.after)
+    return SortAgainPreview(items=[SortAgainItem(fields=i.fields, origins=i.origins, before=i.before, after=i.after)
+                                   for i in found.items], looked_at=found.looked_at, total=found.total,
+                            next=found.next)
+
+
+class SortAgainApplyIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    #: The documents to sort again (the ones the person ticked in the look).
+    ids: list[StrictInt] = Field(min_length=1, max_length=sort_again.MAX)
+
+
+class SortAgainOut(BaseModel):
+    #: The documents whose proposals changed.
+    changed: list[int]
+    #: How many of them a rule moved to another vault.
+    moved: int
+    #: Worked out again, nothing new.
+    unchanged: int
+    #: No longer waiting in the inbox, or no longer the caller's to change.
+    skipped: int
+    failed: int
+
+
+@router.post("/inbox/sort-again", response_model=SortAgainOut,
+             summary="Work the proposals of documents in the inbox out again, after a rule was made or changed")
+def sort_again_apply(payload: SortAgainApplyIn, account: Caller, db: DbSession) -> SortAgainOut:
+    """Worked out anew when asked, not taken from the look: what changed since is part of it. Each document on its
+    own; the documents stay in the inbox until a person files them. A rule may move a document to another vault, as
+    when it arrived."""
+    done = sort_again.apply(db, account.id, payload.ids)
+    return SortAgainOut(changed=done.changed, moved=done.moved, unchanged=done.unchanged, skipped=done.skipped,
+                        failed=done.failed)

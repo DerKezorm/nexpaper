@@ -237,6 +237,9 @@ TOKEN_ROUTES = {
     ("DELETE", "/api/v1/kinds/{kind_id}"),
     ("POST", "/api/v1/kinds/{kind_id}/merge"),
     ("POST", "/api/v1/inbox/file"),
+    # Sorting the inbox again after a rule changed: the look and the change, like filing (``test_sort_again.py``).
+    ("POST", "/api/v1/inbox/sort-again/preview"),
+    ("POST", "/api/v1/inbox/sort-again"),
     # Sorting documents in: the rules of the vaults a person manages, and a rule from a document in the inbox. The
     # operator's rules for the whole server need the browser (``/settings/rules``).
     ("GET", "/api/v1/rules"),

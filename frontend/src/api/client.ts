@@ -634,7 +634,18 @@ export const inboxApi = {
   counts: () => api<MenuCounts>('/api/v1/counts'),
   /** Files many at once with a vault, a kind and tags for all of them; each is checked on its own. At most 200. */
   file: (body: { ids: number[]; vault_id?: number; kind_id?: number; add_tags?: string[] }) => api<FiledMany>('/api/v1/inbox/file', { method: 'POST', body }),
+  /** What working the proposals out again would change, at most 100 documents an answer; nothing is changed. Without
+   * `ids` the whole inbox; `after` is the `next` of the answer before. */
+  lookAgain: (body: { ids?: number[]; after?: number }) => api<SortAgainLook>('/api/v1/inbox/sort-again/preview', { method: 'POST', body }),
+  /** Works the proposals of these documents out again and keeps them (at most 1000). */
+  sortAgain: (body: { ids: number[] }) => api<SortAgainDone>('/api/v1/inbox/sort-again', { method: 'POST', body }),
 }
+
+/** One document whose proposals would change: the fields, where the new values come from, before and after
+ * (`after` is `null` when a rule would move it to a vault the person does not reach). */
+export type SortAgainItem = { fields: string[]; origins: Record<string, string>; before: DocumentInfo; after: DocumentInfo | null }
+export type SortAgainLook = { items: SortAgainItem[]; looked_at: number; total: number; next: number | null }
+export type SortAgainDone = { changed: number[]; moved: number; unchanged: number; skipped: number; failed: number }
 
 // ---- Uploads ----------------------------------------------------------------------------------------------------------
 

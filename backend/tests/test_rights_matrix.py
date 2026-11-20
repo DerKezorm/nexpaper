@@ -100,6 +100,10 @@ TABLE = [
     Row("GET", "/api/v1/inbox", None, "any", 200),
     Row("GET", "/api/v1/counts", None, "any", 200),
     Row("POST", "/api/v1/inbox/file", {"ids": [2**31 - 1]}, "any", 200),
+    # Sorting again looks only at the inbox the caller may change; another's document counts as skipped
+    # (``test_sort_again.py``).
+    Row("POST", "/api/v1/inbox/sort-again/preview", {"ids": [2**31 - 1]}, "any", 200),
+    Row("POST", "/api/v1/inbox/sort-again", {"ids": [2**31 - 1]}, "any", 200),
     Row("GET", "/api/v1/changes", None, "any", 200),
     Row("GET", "/api/v1/documents/{d}/origin", None, "read", 404),
     Row("GET", "/api/v1/search", None, "any", 200),

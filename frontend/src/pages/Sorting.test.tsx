@@ -101,7 +101,12 @@ describe('the e-invoice and the rules in the inbox', () => {
     await page.click(page.button('Als Regel merken'))
     expect(server.changes()).toEqual(['POST /api/v1/documents/11/rule'])
     expect(server.called('POST', '/api/v1/documents/11/rule')!.body).toEqual({ kind_id: 2 })
-    expect(page.text).toContain('Regel angelegt. Sie gilt ab dem nächsten Dokument.')
+    expect(page.text).toContain('Regel angelegt. Sie gilt für alles, was neu kommt.')
+    // What already waits in the inbox is offered the new rule, with a look first.
+    await page.click(page.button('Auf den Eingang anwenden …'))
+    await until(() => server.called('POST', '/api/v1/inbox/sort-again/preview'))
+    expect(server.called('POST', '/api/v1/inbox/sort-again/preview')!.body).toEqual({})
+    expect(page.dialog!.getAttribute('aria-label')).toBe('Regeln erneut anwenden')
   })
 
   it('saves a sender typed in the field before the rule names it, and "Nur diesmal" makes none', async () => {

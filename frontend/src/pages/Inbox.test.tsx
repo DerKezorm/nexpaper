@@ -104,6 +104,15 @@ describe('the inbox', () => {
     expect(items[2]).toContain('Zahnreinigung Lea')
   })
 
+  it('applies the rules again to the whole inbox, with a look first (issue #11)', async () => {
+    server.answers['POST /api/v1/inbox/sort-again/preview'] = { items: [], looked_at: 2, total: 2, next: null }
+    await show('/eingang')
+    await page.click(page.button('Regeln anwenden'))
+    await until(() => page.dialog?.querySelector('[data-testid="sort-again-nothing"]'))
+    expect(server.called('POST', '/api/v1/inbox/sort-again/preview')!.body).toEqual({})
+    expect(server.changes()).toEqual(['POST /api/v1/inbox/sort-again/preview'])
+  })
+
   it('says when everything is filed', async () => {
     server.answers[INBOX] = inboxOf([])
     await show('/eingang')
@@ -460,6 +469,17 @@ describe('filing many at once', () => {
     await page.click(page.button('2 ablegen'))
     expect(server.called('POST', '/api/v1/inbox/file')!.body).toEqual({ ids: [11, 12], kind_id: 2, add_tags: ['Steuer'] })
     expect(server.changes()).toEqual(['POST /api/v1/inbox/file'])
+  })
+
+  it('applies the rules again to the selected ones, with a look first (issue #11)', async () => {
+    server.answers['POST /api/v1/inbox/sort-again/preview'] = { items: [], looked_at: 2, total: 2, next: null }
+    await show('/eingang')
+    await pick('Rechnung Heizungswartung')
+    await pick('Zahnreinigung Lea')
+    await page.click(page.button('Regeln anwenden', page.box.querySelector('[role="region"]')!))
+    await until(() => server.called('POST', '/api/v1/inbox/sort-again/preview'))
+    expect(server.called('POST', '/api/v1/inbox/sort-again/preview')!.body).toEqual({ ids: [11, 12] })
+    expect(server.changes()).toEqual(['POST /api/v1/inbox/sort-again/preview'])
   })
 
   it('does not offer to select what is still being read', async () => {

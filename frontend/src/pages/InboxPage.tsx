@@ -6,7 +6,8 @@
  * them together; on the right one document with its pages and every field, where each proposal came from, the hint
  * when it looks like one the person has, and why reading it failed with a way to try again. "Ablegen" (Ctrl+Enter)
  * files it and goes on to the next; j and k step through the list. A phone shows the list, and one document on a page
- * of its own.
+ * of its own. "Regeln anwenden" works the proposals of the inbox (or of the documents selected) out again after a rule
+ * changed, with a look first (`components/SortAgain.tsx`).
  */
 import { AlertTriangle, ArrowLeft, Check, CheckSquare, Copy, FileCode2, FileText, FolderInput, Inbox, Mail, Maximize2, RotateCcw, RotateCw, Scissors, Search, Share2, SlidersHorizontal, Smartphone, Sparkles, Trash2, Upload, Wand2, X } from 'lucide-react'
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -39,6 +40,7 @@ import {
 import { Button } from '../components/Button'
 import { AmountInput, DateInput, Dates, Field, TagEditor } from '../components/DocumentFields'
 import { SenderPicker } from '../components/SenderPicker'
+import { SortAgainDialog } from '../components/SortAgain'
 import { Chip, DocThumb, FileNotice, FileSign, KindPill } from '../components/docs'
 import { EInvoiceNotice, useEInvoice } from '../components/EInvoice'
 import { NewKindButton, NewKindForm } from '../components/NewKind'
@@ -120,6 +122,8 @@ export function InboxPage({ slots = appSlots }: { slots?: Slots }) {
   // The boxes to select many show only after "Auswählen" (or the key x); "Fertig" puts them away again.
   const [selecting, setSelecting] = useState(false)
   const [fetched, setFetched] = useState<DocumentInfo | null>(null)
+  // "Regeln anwenden": the whole inbox (no ids) or the documents selected.
+  const [again, setAgain] = useState<{ ids?: number[] } | null>(null)
 
   // Everything the list is filtered by stands in the address: a filtered inbox can be bookmarked, the back button works.
   const vault = params.get('vault') ?? ''
@@ -307,6 +311,9 @@ export function InboxPage({ slots = appSlots }: { slots?: Slots }) {
                   <option value="old">{t('docs.inbox.sortOld')}</option>
                   <option value="date">{t('docs.inbox.sortDate')}</option>
                 </select>
+                <Button variant="line" onClick={() => setAgain({})} disabled={view.all === 0}>
+                  <Wand2 size={15} aria-hidden /> {t('sorting.again.button')}
+                </Button>
               </div>
               {showFilters && (
                 <div className="card rise grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -364,6 +371,7 @@ export function InboxPage({ slots = appSlots }: { slots?: Slots }) {
                   kinds={kinds}
                   vaults={vaults}
                   onClear={() => setSelected([])}
+                  onAgain={() => setAgain({ ids: selected })}
                   onDone={(filed) => {
                     setSelected((had) => had.filter((n) => !filed.includes(n)))
                     inboxChanged()
@@ -457,6 +465,7 @@ export function InboxPage({ slots = appSlots }: { slots?: Slots }) {
           </>
         )
       )}
+      {again && <SortAgainDialog ids={again.ids} vaults={vaults} mineId={me.id} onClose={() => setAgain(null)} />}
     </div>
   )
 }
@@ -518,7 +527,7 @@ const Entry = memo(function Entry({ document: d, on, picked, selecting, search, 
 
 /** Several selected at once: file them with what the proposals say, and a vault, a kind and a tag for all of them. One
  * call per 200 (the most the server takes); what could not be filed is named with the reason. */
-function BulkBar({ ids, items, writable, kinds, vaults, onClear, onDone }: { ids: number[]; items: DocumentInfo[]; writable: Vault[]; kinds: DocumentKind[]; vaults: Vault[]; onClear: () => void; onDone: (filed: number[]) => void }) {
+function BulkBar({ ids, items, writable, kinds, vaults, onClear, onAgain, onDone }: { ids: number[]; items: DocumentInfo[]; writable: Vault[]; kinds: DocumentKind[]; vaults: Vault[]; onClear: () => void; onAgain: () => void; onDone: (filed: number[]) => void }) {
   const { t } = useTranslation()
   const say = useSay()
   const [vaultId, setVaultId] = useState('')
@@ -617,9 +626,14 @@ function BulkBar({ ids, items, writable, kinds, vaults, onClear, onDone }: { ids
           </ul>
         </div>
       )}
-      <Button variant="primary" onClick={() => void file()} disabled={busy || vaults.length === 0}>
-        <Check size={17} aria-hidden /> {t('docs.inbox.bulkFile', { count: ids.length })}
-      </Button>
+      <div className="flex flex-wrap gap-2">
+        <Button variant="primary" onClick={() => void file()} disabled={busy || vaults.length === 0}>
+          <Check size={17} aria-hidden /> {t('docs.inbox.bulkFile', { count: ids.length })}
+        </Button>
+        <Button variant="line" onClick={onAgain} disabled={busy}>
+          <Wand2 size={15} aria-hidden /> {t('sorting.again.button')}
+        </Button>
+      </div>
     </div>
   )
 }
@@ -668,6 +682,9 @@ function Detail({ document: d, next, slots, search, onChanged }: { document: Doc
   // "Immer so?": what the person just chose for the kind or the vault, offered as a rule for this sender.
   const [offer, setOffer] = useState<{ kind_id?: number; vault_id?: number } | null>(null)
   const [remembered, setRemembered] = useState<string | null>(null)
+  // After "Als Regel merken": the new rule offered for what already waits in the inbox.
+  const [againOpen, setAgainOpen] = useState(false)
+  const { me } = useAuth()
   const [makingKind, setMakingKind] = useState(false)
   const { ask, dialog } = useConfirm()
 
@@ -1036,10 +1053,14 @@ function Detail({ document: d, next, slots, search, onChanged }: { document: Doc
             </div>
           )}
           {remembered && (
-            <p role="status" className="text-sm font-semibold text-accent">
-              {remembered}
-            </p>
+            <div role="status" className="flex flex-wrap items-center gap-2 text-sm">
+              <span className="font-semibold text-accent">{remembered}</span>
+              <Button size="sm" variant="line" onClick={() => setAgainOpen(true)}>
+                <Wand2 size={14} aria-hidden /> {t('sorting.remember.applyNow')}
+              </Button>
+            </div>
           )}
+          {againOpen && me && <SortAgainDialog vaults={vaults} mineId={me.id} onClose={() => setAgainOpen(false)} />}
 
           {problem && !shownAtField(problem) && (
             <p role="alert" className="rounded-xl border border-bad/40 bg-bad/10 px-3 py-2 text-sm text-bad">

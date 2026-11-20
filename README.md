@@ -328,7 +328,11 @@ knew them; a proposal is only a proposal, and the inbox says where each field ca
 New documents wait in the inbox with proposals. **Rules** (a vault's own, made by its managers, and the operator's for
 the whole server) fill in a vault, a kind, a tag, a sender or a title when conditions hold; their words are compared as
 plain text, never as patterns. A rule of the operator's for the whole server does not reach into the personal vault of
-anybody else. **Kinds** come in two sorts: the ones that come with nexpaper and the operator keeps, and the ones a vault
+anybody else. A new or changed rule can be **applied again to what already waits in the inbox** ("Apply rules", for
+the whole inbox or the documents selected, and offered right after "Remember as a rule"): nexpaper first shows every
+document whose proposals would change, each field before and after, moves to another vault first, and changes only
+the ones left ticked. It uses the text read when the document arrived, asks the AI nothing new, and keeps what a
+person entered. **Kinds** come in two sorts: the ones that come with nexpaper and the operator keeps, and the ones a vault
 makes for itself (anybody who may edit it, with "+ New kind" at the end of the choice of kinds; a name that sounds like
 an existing one is shown first). A document that moves takes its kind along by name. E-invoices (ZUGFeRD, Factur-X,
 XRechnung) are read from their data, with limits on the size and the shape of the XML.
