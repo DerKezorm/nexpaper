@@ -351,7 +351,7 @@ export function DevicesCard({ me }: { me: Me }) {
     devicesApi.list().then((found) => setPaired(Array.isArray(found) ? found : []), () => setPaired([]))
   }, [])
   useEffect(load, [load])
-  const how = (device: PairedDevice) => t(device.via === 'qr' ? 'phone.devices.qr' : device.via?.startsWith('app:') ? 'phone.devices.app' : 'phone.devices.token')
+  const how = (device: PairedDevice) => t(device.via === 'qr' ? 'phone.devices.qr' : device.via === 'device' ? 'phone.devices.device' : device.via?.startsWith('app:') ? 'phone.devices.app' : 'phone.devices.token')
   return (
     <SignInNoticeCard me={me}>
       {list && (

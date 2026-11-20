@@ -1351,6 +1351,7 @@
       }
     },
     "devices": {
+      "device": "added by another device",
       "qr": "paired by QR code",
       "app": "paired through the app",
       "token": "paired with a key",

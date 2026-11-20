@@ -1,4 +1,18 @@
 {
+  "1.9.0": {
+    "lead": "The iPhone app now connects your iPad on its own.",
+    "sections": [
+      {
+        "title": "iPad without pairing again",
+        "where": "iPhone and iPad app from version 1.3.0; My account, Devices and apps",
+        "body": "Once the app on your iPhone is paired, the app on your iPad with the same Apple Account connects on its own through iCloud Keychain. The iPad gets a key of its own and stands under Devices and apps as a device of its own, “added by another device”. You can lock it there alone, and the iPhone stays connected. A device can add at most five others an hour this way, and none of them may do more than any other paired device."
+      }
+    ],
+    "smallTitle": "Also",
+    "small": [
+      "Under Devices and apps every device says how it came in: by QR code, through the app, with a key or from another device."
+    ]
+  },
   "1.8.0": {
     "lead": "A new or changed rule can now be applied to everything that already waits in the inbox.",
     "sections": [

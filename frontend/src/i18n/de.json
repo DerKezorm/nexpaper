@@ -1351,6 +1351,7 @@
       }
     },
     "devices": {
+      "device": "von einem anderen Gerät hinzugefügt",
       "qr": "gekoppelt per QR-Code",
       "app": "gekoppelt über die App",
       "token": "gekoppelt mit Schlüssel",
