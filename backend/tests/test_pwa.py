@@ -35,7 +35,7 @@ def test_the_manifest_names_the_app_its_shortcuts_and_the_share_target() -> None
     assert manifest["name"] == "nexpaper" and manifest["short_name"] == "nexpaper"
     assert manifest["start_url"] == "/" and manifest["display"] == "standalone"
     assert manifest["background_color"] == manifest["theme_color"] == "#f7f3ec"
-    assert manifest["icons"][0]["src"] == "/logo.svg"
+    assert manifest["icons"][0]["src"] == "/logo.svg?v=2"  # the version passes old copies in the browser by
     # The file speaks English; the server names the shortcuts in the browser's language (below).
     assert [(item["name"], item["url"]) for item in manifest["shortcuts"]] == [
         ("Upload", "/schnell"), ("Take a photo", "/kamera")]
@@ -73,7 +73,8 @@ def test_the_built_app_serves_the_worker_and_the_manifest_fresh(tmp_path: Path) 
         assert worker.status_code == 200 and "javascript" in worker.headers["content-type"]
         assert worker.headers["cache-control"] == "no-cache"
         assert browser.get("/manifest.webmanifest").headers["cache-control"] == "no-cache"
-        assert "cache-control" not in browser.get("/logo.svg").headers
+        # The mark is asked for again too: a kept old one put the old mark on a freshly installed web app.
+        assert browser.get("/logo.svg?v=2").headers["cache-control"] == "no-cache"
 
 
 def test_phones_get_png_symbols_and_notifications_a_png_icon_and_a_badge() -> None:
@@ -88,16 +89,16 @@ def test_phones_get_png_symbols_and_notifications_a_png_icon_and_a_badge() -> No
     manifest = json.loads((PUBLIC / "manifest.webmanifest").read_text(encoding="utf-8"))
     pngs = {icon["src"]: icon for icon in manifest["icons"] if icon["type"] == "image/png"}
     assert {(src, icon["sizes"], icon["purpose"]) for src, icon in pngs.items()} == {
-        ("/icon-192.png", "192x192", "any"), ("/icon-512.png", "512x512", "any"),
-        ("/icon-maskable-512.png", "512x512", "maskable")}
+        ("/icon-192.png?v=2", "192x192", "any"), ("/icon-512.png?v=2", "512x512", "any"),
+        ("/icon-maskable-512.png?v=2", "512x512", "maskable")}
     for src, icon in pngs.items():
-        width, height = size_of(src.lstrip("/"))
+        width, height = size_of(src.lstrip("/").split("?")[0])
         assert f"{width}x{height}" == icon["sizes"], src
     assert size_of("apple-touch-icon.png") == (180, 180) and size_of("badge-96.png") == (96, 96)
     index = (PUBLIC.parent / "index.html").read_text(encoding="utf-8")
-    assert '<link rel="apple-touch-icon" href="/apple-touch-icon.png" />' in index
+    assert '<link rel="apple-touch-icon" href="/apple-touch-icon.png?v=2" />' in index
     worker = (PUBLIC / "sw.js").read_text(encoding="utf-8")
-    assert "icon: '/icon-192.png'" in worker and "badge: '/badge-96.png'" in worker
+    assert "icon: '/icon-192.png?v=2'" in worker and "badge: '/badge-96.png?v=2'" in worker
 
 
 # --- The manifest in the language of the browser ------------------------------------------------------------
