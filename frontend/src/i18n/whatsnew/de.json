@@ -1,4 +1,18 @@
 {
+  "1.10.0": {
+    "lead": "nexpaper hat ein neues Zeichen: einen Ablagekorb mit zwei Blättern.",
+    "sections": [
+      {
+        "title": "Neues Zeichen",
+        "where": "Kopfzeile, Anmeldung, Browser-Tab und Home-Bildschirm",
+        "body": "Der Ablagekorb mit zwei Blättern ersetzt das einzelne Blatt. Das Logo folgt dem hellen und dunklen Modus, der Browser-Tab folgt dem System. Auch die Symbole für den Home-Bildschirm und das Abzeichen der Mitteilungen sind neu."
+      }
+    ],
+    "smallTitle": "Außerdem",
+    "small": [
+      "Zeichen, Symbole und das Skript für den Modus fragt der Browser jetzt vor dem Benutzen nach, und ihre Adressen tragen eine Fassung. So kommt ein neues Zeichen auch in einer installierten Web-App an."
+    ]
+  },
   "1.9.0": {
     "lead": "Die iPhone-App verbindet dein iPad jetzt von selbst.",
     "sections": [
