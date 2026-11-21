@@ -2,8 +2,13 @@
 <html lang="de">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/logo.svg" />
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <!--
+      ?v=2 since the new mark (1.10.0): browsers had kept the old icons, served without a cache header, and
+      kept showing them. A new address passes that entry by. Raise the number with a new mark, here, in the
+      manifest and in sw.js.
+    -->
+    <link rel="icon" type="image/svg+xml" href="/logo.svg?v=2" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=2" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />
     <meta name="theme-color" content="#f7f3ec" />

@@ -207,3 +207,25 @@ mark {
     width: min(100%, max(var(--sheet-least, 28rem), calc((100dvh - var(--sheet-around, 20rem)) * 210 / 297)));
   }
 }
+
+/* The colours of the mark (components/Logo.tsx), light version first (nexpaper starts light). The same values are in
+   public/logo.svg and scripts/app-icons.mjs. */
+:root {
+  --np-logo-grund: #ffffff;
+  --np-logo-rand: #9a6a3a;
+  --np-logo-rand-deckung: 0.35;
+  --np-logo-verlauf-1: #d9a86c;
+  --np-logo-verlauf-2: #9a6a3a;
+  --np-logo-verlauf-3: #5e3d1d;
+  --np-logo-akzent: #c0661c;
+}
+
+:root[data-theme='dark'] {
+  --np-logo-grund: #15100a;
+  --np-logo-rand: #c8935a;
+  --np-logo-rand-deckung: 0.45;
+  --np-logo-verlauf-1: #f3dcbc;
+  --np-logo-verlauf-2: #c8935a;
+  --np-logo-verlauf-3: #8a5c2f;
+  --np-logo-akzent: #eda15a;
+}

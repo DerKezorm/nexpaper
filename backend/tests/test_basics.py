@@ -135,3 +135,21 @@ def test_the_entrypoint_does_as_root_only_what_the_compose_file_allows() -> None
     assert as_root == [], "root removes nothing in /data"
     for capability in ("CHOWN", "DAC_READ_SEARCH", "SETUID", "SETGID"):
         assert f"- {capability}" in compose
+
+
+def test_the_mark_and_the_icons_are_asked_for_again(tmp_path: Path) -> None:
+    """A kept old icon put the old mark on a freshly installed web app (seen with a sister app)."""
+    client = _built(tmp_path)
+    dist = tmp_path / "dist"
+    (dist / "icon-192.png").write_bytes(b"made up")
+    answer = client.get("/icon-192.png?v=2")
+    assert answer.status_code == 200
+    assert answer.headers["cache-control"] == "no-cache"
+
+
+def test_every_file_at_the_top_of_public_is_asked_for_again() -> None:
+    from app.main import FRESH, MANIFEST
+
+    public = Path(__file__).resolve().parents[2] / "frontend" / "public"
+    files = {p.name for p in public.iterdir() if p.is_file()} - {MANIFEST}
+    assert files and files <= set(FRESH), sorted(files - set(FRESH))

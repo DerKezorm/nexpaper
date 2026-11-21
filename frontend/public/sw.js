@@ -98,8 +98,8 @@ self.addEventListener('push', (event) => {
     self.registration.showNotification(title, {
       body,
       // PNG, not SVG: Android and Windows draw no SVG in a notification. The badge is read as a mask, white on clear.
-      icon: '/icon-192.png',
-      badge: '/badge-96.png',
+      icon: '/icon-192.png?v=2',
+      badge: '/badge-96.png?v=2',
       tag: typeof data.tag === 'string' ? data.tag.slice(0, 40) : undefined,
       data: { url: onPhone() ? phone : desk },
     }),

@@ -304,8 +304,11 @@ for module in ROUTERS:
 
 
 #: Files a browser asks the server about again each time: the service worker (an old one would keep its old ways for a
-#: day). The manifest is asked about afresh too, and comes in the language of the browser (``_manifest`` below).
-FRESH = ("sw.js",)
+#: day), the mark, the icons and the theme script (kept ones put the old mark on a freshly installed web app; seen with
+#: a sister app after its new icon). The manifest is asked about afresh too, and comes in the language of the browser
+#: (``_manifest`` below). test_basics.py checks that every file at the top of public/ is listed.
+FRESH = ("sw.js", "logo.svg", "theme.js", "icon-192.png", "icon-512.png", "icon-maskable-512.png",
+         "apple-touch-icon.png", "badge-96.png")
 MANIFEST = "manifest.webmanifest"
 
 #: The PDF frame (``frontend/pdfview.html``, the document page shows its pages with pdf.js there): a sandbox without an
