@@ -453,7 +453,9 @@ with `edit`; somebody who may only read gets none), in the inbox or filed, by th
 items (1 to 500, 200). Filters `vault_id`, `shared=true`, `what` (`pay`, `cancel`, `warranty`), `done=true` (else
 `done` is empty). An item: `document_id`, `title`, `status`, `vault_id`, `via_share`, `sender`, `amount`, `currency`,
 `kind`, `what` (`pay`, `cancel`, `ends`, `warranty`), `date` (the day to act), `days` (from today, below 0 overdue),
-`end`, `notice`, `renew_months`, `renews_to`, `missed`, `done`, `snoozed_until`. A contract is due on its last day to
+`end`, `notice`, `renew_months`, `renews_to`, `missed`, `done`, `snoozed_until`, `url` (the page of the document in
+the web app, as in `GET /dashboard`: the public address when the operator set one, else the address the request came
+to; `/dokument/<id>` when filed, `/eingang/<id>` in the inbox; a calendar like nextime links there). A contract is due on its last day to
 cancel; once that has passed, its end is the deadline (`what: ends`, `missed` the passed day, `renews_to` where it
 moves without notice).
 
