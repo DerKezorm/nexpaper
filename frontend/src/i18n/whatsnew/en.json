@@ -1,4 +1,30 @@
 {
+  "1.11.0": {
+    "lead": "nexpaper now looks and works like the other nex apps: the same sidebar, the same settings, the same buttons and fields.",
+    "sections": [
+      {
+        "title": "Sidebar",
+        "where": "On the left on large screens",
+        "body": "At the top “Upload” and a search field (Ctrl K jumps to the archive's search). Below it inbox, archive and deadlines with their numbers, your vaults with one click to their documents, the saved searches, then order and trash. At the foot your account with the gear to the settings."
+      },
+      {
+        "title": "Settings on one page",
+        "where": "The gear at the foot of the sidebar",
+        "body": "My account, Server and “About nexpaper” now stand together, with a navigation on the left: Profile, Security, Appearance, Connections and more. No setting was dropped; old links to “My account” and “Settings” lead to the right place. Signing out is under Profile."
+      },
+      {
+        "title": "A calmer look",
+        "where": "Everywhere",
+        "body": "One font for everything, flatter buttons, fields and cards, checkboxes instead of sliding switches. In dialogs “Cancel” is always on the left, the main action on the right."
+      }
+    ],
+    "smallTitle": "Also",
+    "small": [
+      "Deadlines name the address of their document through the interface, for a calendar like nextime.",
+      "When no AI is set up, the own AI switch is locked and says why.",
+      "API keys are now called API tokens, as in the other nex apps."
+    ]
+  },
   "1.10.0": {
     "lead": "nexpaper has a new mark: an in-tray holding two sheets.",
     "sections": [

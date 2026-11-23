@@ -1,4 +1,30 @@
 {
+  "1.11.0": {
+    "lead": "nexpaper sieht jetzt aus und bedient sich wie die anderen nex-Apps: gleiche Seitenleiste, gleiche Einstellungen, gleiche Knöpfe und Felder.",
+    "sections": [
+      {
+        "title": "Seitenleiste",
+        "where": "Links auf großen Bildschirmen",
+        "body": "Oben „Hochladen“ und ein Suchfeld (Strg K springt ins Archiv-Suchfeld). Darunter Eingang, Archiv und Fristen mit ihren Zahlen, deine Tresore mit einem Klick zu ihren Dokumenten, die gemerkten Suchen, dann Ordnung und Papierkorb. Ganz unten dein Konto mit dem Zahnrad zu den Einstellungen."
+      },
+      {
+        "title": "Einstellungen auf einer Seite",
+        "where": "Zahnrad unten in der Seitenleiste",
+        "body": "Mein Konto, Server und „Über nexpaper“ stehen jetzt zusammen, mit einer Navigation links: Profil, Sicherheit, Darstellung, Verbindungen und mehr. Keine Einstellung ist weggefallen; alte Links auf „Mein Konto“ und „Einstellungen“ führen an die richtige Stelle. Abmelden steht unter Profil."
+      },
+      {
+        "title": "Ruhigeres Aussehen",
+        "where": "Überall",
+        "body": "Eine Schrift für alles, flachere Knöpfe, Felder und Karten, Kästchen statt Schiebeschalter. In Dialogen steht „Abbrechen“ immer links, die Hauptaktion rechts."
+      }
+    ],
+    "smallTitle": "Außerdem",
+    "small": [
+      "Fristen nennen über die Schnittstelle die Adresse ihres Dokuments, etwa für einen Kalender wie nextime.",
+      "Ist keine KI eingerichtet, ist der eigene KI-Schalter gesperrt und sagt, warum.",
+      "API-Schlüssel heißen jetzt API-Token, wie in den anderen nex-Apps."
+    ]
+  },
   "1.10.0": {
     "lead": "nexpaper hat ein neues Zeichen: einen Ablagekorb mit zwei Blättern.",
     "sections": [

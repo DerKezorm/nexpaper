@@ -127,7 +127,7 @@ with care and at least this:
 6. **Backups somewhere else**, as carefully as the data folder. A backup holds every account and the server's secrets
    (`secret.key`) but **not the documents**: those are plain files in `/data/dokumente` and belong in the backup your
    server makes anyway. Try a restore with "Check" now and then.
-7. **Leave the switches closed that you do not need**: API keys, upload requests and the AI are off until the operator
+7. **Leave the switches closed that you do not need**: API tokens, upload requests and the AI are off until the operator
    opens them. Pin a version instead of `latest`, update on purpose, back up before. An upload request is the one way
    in for somebody without an account that takes files: whoever holds its address can put up to its number of files
    into one person's inbox, nothing else (see Inputs, and [SECURITY.md](SECURITY.md)).
@@ -163,7 +163,7 @@ the list), and **authentik in one step**.
 - **The second factor**: "The provider checks the second factor itself" is on for a new provider. Off, whoever has a
   second factor in nexpaper is asked for its code after the provider. "Require a second factor" is for signing in with
   a password: an account without a password, and whoever comes in through a provider whose entry has "The provider
-  checks the second factor itself" on, is not made to set one up (a change from 1.0.1). Device tokens and API keys of
+  checks the second factor itself" on, is not made to set one up (a change from 1.0.1). Device tokens and API tokens of
   an account with a password and no second factor of its own wait until it sets one up, also when it signs in through a
   provider that checks one.
 - **Password sign-in** can go off once a provider is active; the operator can always sign in with the password.
@@ -236,7 +236,7 @@ the largest part of the database, and it is built anew from the recognised text 
 that goes on, with more and more hits). Together with `secret.key` it opens the mail and AI credentials, the addresses
 of open links and the kept PDF passwords, so keep backups protected.
 
-Settings, Backups: automatic daily or weekly with a number to keep, "Back up now", upload, download, check and restore.
+Settings, Storage and backups: automatic daily or weekly with a number to keep, "Back up now", upload, download, check and restore.
 The **trial run** ("Check", and again in the dialog before a restore) starts the database of the archive the way the
 server would, on a scratch copy, and says whether the archive is whole (a damaged one is told as damaged) and can be
 started, which version made it (one from a newer nexpaper is refused), how many documents it knows, which of their files
@@ -249,7 +249,7 @@ restore it, and copy the documents folder along.
 
 ### Checking the files, and the storage card
 
-Every file has a checksum. Once a week, and on a click (Settings, Backups, "Check files"), nexpaper reads them all in
+Every file has a checksum. Once a week, and on a click (Settings, Storage and backups, "Check files"), nexpaper reads them all in
 small portions with pauses and compares. A document whose file is missing or changed gets a warning sign in the archive,
 the inbox and on its page, a line in its history, and the operator a notice. The sign goes at the next check, or at once
 when the operator asks for that one document on its page, when a new version of it was read, when a version that could
@@ -261,7 +261,7 @@ left. It warns, here and in the log at the start, when the database lies on a ne
 
 With an image: `docker compose pull && docker compose up -d`. Built from source: pull the new code and run
 `docker compose up -d --build`. nexpaper adds what the database lacks at the start and makes a backup first; nothing
-needs doing by hand. The way back is under Settings, Backups.
+needs doing by hand. The way back is under Settings, Storage and backups.
 
 Going back from 1.1.0 to 1.0.1: there, the sign-in through the provider works only if its entry had "The provider
 checks the second factor itself" on; otherwise only the password does. Coming up to 1.1.0 again brings everything back.
@@ -269,7 +269,7 @@ checks the second factor itself" on; otherwise only the password does. Coming up
 **From 1.4.0 on there is no way back to an older version.** 1.4.0 changes the database (schema 11 to 13: deadlines,
 keeping times, reminders; 1.4.1 adds the switch of the kinds, schema 14), and an older nexpaper does not open it: it
 stops at the start with a message that the database is newer. That includes going back to 1.1.0 or 1.0.1, which was possible until 1.3.0. Make a backup before you
-update (Settings, Backups; nexpaper also makes one itself before it changes the database). The only way back is to
+update (Settings, Storage and backups; nexpaper also makes one itself before it changes the database). The only way back is to
 restore that backup with the older version, and what was entered after the update is lost with it. The first start after
 the update sends no wave of reminders for deadlines that were entered before.
 
@@ -314,7 +314,7 @@ knew them; a proposal is only a proposal, and the inbox says where each field ca
   would otherwise spend the short answer on its thoughts and give back nothing. A local server that does not know the
   field is asked once more without it.
 - A local service must lie in your own network and a service on the internet must be reached over https: an address
-  that points elsewhere is refused, when it is saved and at every request. The API key is sealed and never shown again.
+  that points elsewhere is refused, when it is saved and at every request. The API token is sealed and never shown again.
 - What goes out is the text of the first two pages and the list of kinds the document can have, nothing else. Documents
   in personal vaults stay away from it unless the operator lets them in.
 - The operator sets a **limit of documents per day** for the whole server (200 from the start, 0 for none), so that a
@@ -427,7 +427,7 @@ start.
 
 ## Push
 
-Notices arrive by Web Push, to every device a person signs up (My account, Devices and apps): of a new sign-in, of an
+Notices arrive by Web Push, to every device a person signs up (My account, Connections): of a new sign-in, of an
 export that is ready or failed or a finished import from Paperless, of a second factor the operator reset or an account
 the operator unlinked from a sign-in provider; operators also hear when the check of the files finds something wrong or
 a restore fails. It needs https (or localhost). On an iPhone it works only for the app added to the home screen (Share,
@@ -481,7 +481,7 @@ itself: it all waits in an inbox.
   you gave the request and marked unknown; nothing is filed by itself, and a rule may propose fields but never moves
   such a document to another vault. A request lasts at most as long as a link, takes 10 files unless you say otherwise
   (50 at most), and you withdraw it whenever you like (My account, Upload, or the dialog). **Off from the start**: the
-  operator switches them on under Settings, Sharing, and they need the public address of the server. The page behind
+  operator switches them on under Settings, General, and they need the public address of the server. The page behind
   the address shows who asks, for whom, and how many files still go; never what arrived already. You get a notice (at
   most one per request and hour) with the name of the request and the number of files, never a file name.
 
@@ -514,7 +514,7 @@ operator sees none of them. A backup together with `secret.key` can open them, s
   archive: the searchable PDFs, the originals if wanted, e-invoices as XML and a list as CSV (Excel opens it as it is),
   in folders as on the disk. It is made and fetched in the browser, packed in the background, and a notice says when it
   is ready. Instead of downloading
-  it, the ZIP can go to the tax adviser as a link without an account, valid as long as links are (Settings, Sharing);
+  it, the ZIP can go to the tax adviser as a link without an account, valid as long as links are (Settings, General);
   it shows when it was opened and can be revoked. With "Take the documents that go with them" the delivery note comes
   along with its invoice even outside the period (only what you see in your vaults), and the list names them in a
   column of its own.
@@ -536,7 +536,7 @@ changing its pages: the page tools, joining, splitting, a new version or an old 
 ## For programs
 
 Everything the web app does goes through `/api/v1`; the web app uses nothing else. A phone or a later app pairs with a
-**device token** (My account, Devices and apps) and acts with the rights of its account; scripts use an **API key** that
+**device token** (My account, Connections) and acts with the rights of its account; scripts use an **API token** that
 only reads or only uploads, never more than its account may (off until the operator switches it on; 120 requests a
 minute, 50 uploads an hour). The description is served at `/api/v1/docs` and, for machines, at `/api/v1/openapi.json`;
 [docs/api.md](docs/api.md) says how to sign in.
@@ -546,7 +546,7 @@ minute, 50 uploads an hour). The description is served at `/api/v1/docs` and, fo
 - Passwords are hashed with Argon2id. Five failed sign-ins lock an account and an address for 15 minutes; with a second
   factor, the password alone opens nothing. A session ends after 30 days without use (`NEXPAPER_SESSION_DAYS`), or after
   12 hours when "stay signed in" was not ticked, and every device can be signed out on its own.
-- Rights are checked on the server for every request. A wrong device token or API key counts against the sender like a
+- Rights are checked on the server for every request. A wrong device token or API token counts against the sender like a
   wrong password. A device token never changes the way into the account (password, second factor, passkeys), never
   reaches the operator's side (settings, accounts, backups, the log) and never pairs another device; a lost phone is
   blocked in the list and stops at once.
