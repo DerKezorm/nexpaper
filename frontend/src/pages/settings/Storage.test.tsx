@@ -1,7 +1,8 @@
 /**
- * Settings, Storage: the limits on what comes in are shown with their values, changed with one Save (only what changed is
- * sent), refused on the page when a number is out of its range; the disk card shows how the files lie (the queue is on
- * the card of the text recognition, `Ocr.test.tsx`).
+ * Settings, General, the card "Grenzen": the limits on what comes in are shown with their values; the size of one file
+ * has its own row and Save as in nexnotes, the further limits one Save below (each sends only what changed in its part),
+ * refused on the page when a number is out of its range. Settings, Storage: the disk card shows how the files lie (the
+ * queue is on the card of the text recognition, `Ocr.test.tsx`).
  */
 import { changeLanguage } from '../../i18n'
 import { Page, Server } from '../../test/harness'
@@ -28,6 +29,11 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
+/** The Save of the row of one file, and the Save of the further limits. */
+function save(part: 'file' | 'more', name = 'Speichern'): HTMLButtonElement | undefined {
+  return page.button(name, document.querySelector(`[data-testid="limit-${part}"]`)!)
+}
+
 function field(label: string): HTMLInputElement {
   const input = [...document.querySelectorAll<HTMLLabelElement>('label')].find((l) => l.textContent?.startsWith(label))?.querySelector('input')
   expect(input, label).toBeTruthy()
@@ -37,7 +43,10 @@ function field(label: string): HTMLInputElement {
 describe('the limits', () => {
   it('show the numbers the server has, with the words of the card', async () => {
     await page.show(<LimitsCard />)
-    expect(page.text).toContain('Hochladen und Grenzen')
+    expect(page.text).toContain('Grenzen')
+    // The size of one file stands in the row of its own, as in nexnotes; the others below it.
+    expect(document.querySelector('[data-testid="limit-file"]')!.contains(field('Größe einer Datei (MB)'))).toBe(true)
+    expect(document.querySelector('[data-testid="limit-more"]')!.contains(field('Seiten je Dokument'))).toBe(true)
     expect(field('Größe einer Datei (MB)').value).toBe('200')
     expect(field('Seiten je Dokument').value).toBe('2000')
     expect(field('Bildpunkte je Bild (Millionen)').value).toBe('100')
@@ -49,23 +58,32 @@ describe('the limits', () => {
     expect(page.text).toContain('0 heißt: keine Grenze, sonst mindestens 256.')
   })
 
-  it('send only what was changed, on Save', async () => {
-    server.answers['PUT /api/v1/settings'] = { ...settings, upload_max_mb: 50, process_timeout_seconds: 120 }
+  it('send only what was changed, each Save its own part', async () => {
+    server.answers['PUT /api/v1/settings'] = { ...settings, process_timeout_seconds: 120, upload_open_count: 12 }
     await page.show(<LimitsCard />)
-    await page.type(field('Größe einer Datei (MB)'), '50')
     await page.type(field('Zeit je Dokument (Sekunden)'), '120')
+    await page.type(field('Offene Uploads je Konto'), '12')
     // Typed, but the same as it was: not sent.
     await page.type(field('Seiten je Dokument'), '2001')
     await page.type(field('Seiten je Dokument'), '2000')
-    await page.click(page.button('Speichern'))
-    expect(server.called('PUT', '/api/v1/settings')!.body).toEqual({ upload_max_mb: 50, process_timeout_seconds: 120 })
+    // Typed in the row of one file, but saved with the other button: not sent by this one.
+    await page.type(field('Größe einer Datei (MB)'), '50')
+    await page.click(save('more'))
+    expect(server.called('PUT', '/api/v1/settings')!.body).toEqual({ process_timeout_seconds: 120, upload_open_count: 12 })
     expect(page.text).toContain('Gespeichert.')
+    expect(field('Zeit je Dokument (Sekunden)').value).toBe('120')
+    // The size of one file waits for its own button, and goes alone.
+    expect(field('Größe einer Datei (MB)').value).toBe('50')
+    server.answers['PUT /api/v1/settings'] = { ...settings, process_timeout_seconds: 120, upload_open_count: 12, upload_max_mb: 50 }
+    await page.click(save('file'))
+    expect(server.calls.filter((c) => c.method === 'PUT').at(-1)!.body).toEqual({ upload_max_mb: 50 })
     expect(field('Größe einer Datei (MB)').value).toBe('50')
   })
 
   it('send nothing when nothing changed', async () => {
     await page.show(<LimitsCard />)
-    await page.click(page.button('Speichern'))
+    await page.click(save('file'))
+    await page.click(save('more'))
     expect(server.changes()).toEqual([])
   })
 
@@ -74,7 +92,7 @@ describe('the limits', () => {
     async (label, value) => {
       await page.show(<LimitsCard />)
       await page.type(field(label), value)
-      await page.click(page.button('Speichern'))
+      await page.click(save(label.startsWith('Größe einer Datei') ? 'file' : 'more'))
       expect(page.text).toContain('Die Zahlen müssen in den erlaubten Bereich fallen.')
       expect(server.changes()).toEqual([])
     },
@@ -84,7 +102,7 @@ describe('the limits', () => {
     server.answers['PUT /api/v1/settings'] = { ...settings, process_memory_mb: 0 }
     await page.show(<LimitsCard />)
     await page.type(field('Arbeitsspeicher je Dokument (MB)'), '0')
-    await page.click(page.button('Speichern'))
+    await page.click(save('more'))
     expect(server.called('PUT', '/api/v1/settings')!.body).toEqual({ process_memory_mb: 0 })
   })
 
@@ -92,7 +110,7 @@ describe('the limits', () => {
     server.fails['PUT /api/v1/settings'] = { status: 422, code: 'invalid_input' }
     await page.show(<LimitsCard />)
     await page.type(field('Größe einer Datei (MB)'), '50')
-    await page.click(page.button('Speichern'))
+    await page.click(save('file'))
     expect(document.querySelector('[role="alert"]')!.textContent).toContain('Die Eingabe ist nicht gültig')
     expect(field('Größe einer Datei (MB)').value).toBe('200')
   })
@@ -100,9 +118,10 @@ describe('the limits', () => {
   it('are in English too', async () => {
     await changeLanguage('en', false)
     await page.show(<LimitsCard />)
-    expect(page.text).toContain('Uploading and limits')
+    expect(page.text).toContain('Limits')
     expect(field('Size of one file (MB)').value).toBe('200')
-    expect(page.button('Save')).toBeTruthy()
+    expect(save('file', 'Save')).toBeTruthy()
+    expect(save('more', 'Save')).toBeTruthy()
   })
 })
 

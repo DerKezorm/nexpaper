@@ -269,7 +269,7 @@ export function InboxPage({ slots = appSlots }: { slots?: Slots }) {
   return (
     <div className="page page-wide pt-6 pb-28 lg:pt-8 lg:pb-12">
       <div className={`mb-5 ${chosen !== null ? 'hidden lg:block' : ''}`}>
-        <h1 className="font-display text-3xl font-semibold tracking-tight">{t('docs.inbox.title')}</h1>
+        <h1 className="text-2xl font-bold tracking-tight">{t('docs.inbox.title')}</h1>
         <p className="text-sm text-muted">{empty ? t('home.sub') : t('docs.inbox.sub')}</p>
         {!empty && <p className="mt-1 max-w-3xl text-sm text-muted">{t('docs.inbox.explain')}</p>}
         <div className="mt-3"><UploadRequestButton /></div>
@@ -285,7 +285,7 @@ export function InboxPage({ slots = appSlots }: { slots?: Slots }) {
       {empty ? (
         <div className="card p-12 text-center">
           <Check size={30} className="mx-auto text-ok" aria-hidden />
-          <p className="mt-3 font-display text-xl font-semibold">{t('home.empty')}</p>
+          <p className="mt-3 text-xl font-semibold">{t('home.empty')}</p>
           <p className="mt-1 text-sm text-ink-2">{t('home.emptyText')}</p>
         </div>
       ) : (
@@ -797,7 +797,7 @@ function Detail({ document: d, next, slots, search, onChanged }: { document: Doc
     return (
       <div className="card p-6" data-testid="inbox-reading">
         <BackLink />
-        <p className="font-display text-xl font-semibold">{t('docs.inbox.readingTitle')}</p>
+        <p className="text-xl font-semibold">{t('docs.inbox.readingTitle')}</p>
         <p className="mt-1 text-sm text-ink-2">{t('docs.inbox.readingText')}</p>
         <div className="mt-5 flex gap-3">
           {Array.from({ length: Math.min(Math.max(d.pages, 3), 6) }, (_, i) => (
@@ -1172,7 +1172,7 @@ function FoundDates({ document: d, text, chosen, onPick }: { document: DocumentI
               onClick={() => onPick(item.date)}
               aria-pressed={on}
               aria-label={t('docs.inbox.foundPick', { date: day })}
-              className={`inline-flex items-baseline gap-1.5 rounded-full border px-2.5 py-1 tabular-nums transition-colors ${on ? 'border-accent bg-accent-soft text-accent' : 'border-line bg-sheet hover:border-accent hover:text-accent'}`}
+              className={`inline-flex items-baseline gap-1.5 rounded-[9px] border px-2.5 py-1 tabular-nums transition-colors ${on ? 'border-accent bg-accent-soft text-accent' : 'border-line bg-sheet hover:border-accent hover:text-accent'}`}
             >
               {day}
               {item.role && <span className="text-xs text-muted">{t(`docs.inbox.foundRole.${item.role}`)}</span>}

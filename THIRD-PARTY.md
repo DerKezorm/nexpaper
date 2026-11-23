@@ -9,7 +9,7 @@ These files travel inside the container image, so their notices travel with them
 
 | What | Copyright | Licence | Notice in the app |
 |---|---|---|---|
-| Fonts Fraunces and Figtree (via Fontsource) | The Fraunces and Figtree Project Authors | OFL-1.1 | `/licenses/fonts.txt` |
+| Font Inter (via Fontsource, `@fontsource-variable/inter`) | The Inter Project Authors | OFL-1.1 | `/licenses/fonts.txt` |
 | Lucide icons (partly from Feather) | Lucide Contributors; Cole Bemis | ISC, MIT | `/licenses/lucide.txt` |
 | OpenCV.js (the camera's edge finder, from the npm package `@techstark/opencv-js`, copied at build time) | OpenCV team and contributors | Apache-2.0 | `/scanner/opencv.LICENSE.txt` |
 | jscanify (finds the sheet of paper with OpenCV; `frontend/public/scanner/jscanify.js`, unchanged) | ColonelParrot and contributors | MIT | `/licenses/jscanify.txt` |

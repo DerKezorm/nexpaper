@@ -20,7 +20,8 @@ function codeOf(error: unknown): string {
   return error instanceof ApiError ? error.code : 'internal_error'
 }
 
-export function MyProviders({ me }: { me: Me }) {
+/** `bare`: the list alone, as the first rows of "Anmeldung und Sicherheit" (as nexnotes); otherwise a card of its own. */
+export function MyProviders({ me, bare = false }: { me: Me; bare?: boolean }) {
   const { t } = useTranslation()
   const { refresh } = useAuth()
   const [params] = useSearchParams()
@@ -33,7 +34,10 @@ export function MyProviders({ me }: { me: Me }) {
   const { ask, dialog } = useConfirm()
   const linked = params.get('linked')
 
-  const load = useCallback(async () => setProviders(await oidcApi.mine()), [])
+  const load = useCallback(async () => {
+    const found = await oidcApi.mine()
+    setProviders(Array.isArray(found) ? found : [])
+  }, [])
   useEffect(() => {
     void load().catch(() => setProviders([]))
   }, [load])
@@ -58,14 +62,14 @@ export function MyProviders({ me }: { me: Me }) {
     }
   }
 
-  return (
-    <Card icon={ShieldCheck} title={t('oidc.account.title')} text={t('oidc.account.text')}>
+  const content = (
+    <>
       {backFrom && !done && !problem && (
         <p role="status" className="text-sm font-semibold text-accent">
           ✓ {t('me.oidc.linkedTo', { name: backFrom.label })}
         </p>
       )}
-      <ul className="divide-y divide-line rounded-xl border border-line" data-testid="my-providers">
+      <ul className="divide-y divide-line rounded-[12px] border border-line" data-testid="my-providers" aria-label={t('oidc.account.title')}>
         {providers.map((provider) => {
           const lastLink = me.sign_in === 'oidc' && provider.linked && linkedCount === 1
           return (
@@ -139,11 +143,11 @@ export function MyProviders({ me }: { me: Me }) {
                   }}
                 >
                   <Input label={t('auth.password')} type="password" value={password} onChange={setPassword} autoComplete="current-password" autoFocus className="min-w-48 flex-1" />
-                  <Button type="submit" small busy={busy} disabled={!password}>
-                    {t('oidc.account.link')}
-                  </Button>
                   <Button small onClick={() => setLinking(null)}>
                     {t('common.cancel')}
+                  </Button>
+                  <Button type="submit" small primary busy={busy} disabled={!password}>
+                    {t('oidc.account.link')}
                   </Button>
                 </form>
               )}
@@ -153,7 +157,7 @@ export function MyProviders({ me }: { me: Me }) {
       </ul>
       <div aria-live="polite">
         {problem && (
-          <p role="alert" className="rounded-xl border border-bad/40 bg-bad/10 px-3 py-2 text-sm text-bad">
+          <p role="alert" className="text-sm text-bad">
             {errorText(problem)}
           </p>
         )}
@@ -164,6 +168,12 @@ export function MyProviders({ me }: { me: Me }) {
         )}
       </div>
       {dialog}
+    </>
+  )
+  if (bare) return <div className="space-y-3">{content}</div>
+  return (
+    <Card icon={ShieldCheck} title={t('oidc.account.title')} text={t('oidc.account.text')}>
+      {content}
     </Card>
   )
 }

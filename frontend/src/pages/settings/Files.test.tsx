@@ -1,7 +1,8 @@
 /**
- * Settings, Backups: the card "Check files" (the state of the last check, a check on a click, the progress of one that
- * runs), the card "Storage" (sizes, the warning for a database on a network share) and the trial run before a restore,
- * against a stand-in of the server. Also the warning signs on a document.
+ * Settings, Storage and backups: the card "Check files" (the state of the last check, a check on a click, the progress of
+ * one that runs), the block of what lies where at the head of "Speicher und Sicherung" (sizes, the warning for a
+ * database on a network share) and the trial run before a restore, against a stand-in of the server. Also the warning
+ * signs on a document.
  */
 import { act } from 'react'
 
@@ -11,6 +12,7 @@ import { changeLanguage } from '../../i18n'
 import { Page, Server } from '../../test/harness'
 import { FilesCards, type StorageInfo } from './FilesCards'
 import { BackupsCard, type ServerSettings } from './ServerCards'
+import { StoragePart } from './SettingsAreas'
 
 const me = { id: 1, name: 'jule', role: 'operator', sign_in: 'password' } as unknown as { role: string } & Me
 vi.mock('../../state/auth', () => ({ useAuth: () => ({ me }) }))
@@ -110,11 +112,17 @@ describe('the card "Dateien prüfen"', () => {
   })
 })
 
-describe('the card "Speicher"', () => {
+describe('the head of the card "Speicher und Sicherung"', () => {
   it('shows what lies where, and the free room', async () => {
-    await page.show(<FilesCards />)
+    await page.show(<StoragePart server={{ settings, busy: false } as never} />)
     const text = page.text
-    expect(text).toContain('Speicher')
+    expect(text).toContain('Speicher und Backups')
+    // What nexpaper takes, in one sum; its parts in one line, as nexnotes' block of the data folder.
+    expect(document.querySelector('[data-testid="nexpaper-used"]')!.textContent).toBe('9,5 GB')
+    expect(document.querySelector('[data-testid="space-parts"]')!.textContent).toBe(
+      'Dokumente 8,8 GB (davon Originale 2,1 GB) · Datenbank 142 MB (davon Suchindex 90 MB) · Seitenbilder (Zwischenspeicher) 300 MB · Exporte 0 B · Sicherungen 296 MB',
+    )
+    expect(document.querySelector('[data-testid="disk-free"]')!.textContent).toBe('Auf dem Laufwerk noch 31 GB von 500 GB frei')
     expect(text).toContain('8,8 GB')
     expect(text).toContain('davon Originale 2,1 GB')
     expect(text).toContain('142 MB')
@@ -126,7 +134,7 @@ describe('the card "Speicher"', () => {
   })
 
   it('is calm about a database on a local drive', async () => {
-    await page.show(<FilesCards />)
+    await page.show(<StoragePart server={{ settings, busy: false } as never} />)
     const box = document.querySelector('[data-testid="database-local"]')
     expect(box?.textContent).toContain('Die Datenbank liegt auf einem lokalen Laufwerk.')
     expect(box?.getAttribute('role')).toBeNull()
@@ -134,7 +142,7 @@ describe('the card "Speicher"', () => {
 
   it('warns about a database on a network share, as an alert, with the kind of share', async () => {
     server.answers['GET /api/v1/storage'] = info({ database: { ...info().database, where: share }, data: { where: share } })
-    await page.show(<FilesCards />)
+    await page.show(<StoragePart server={{ settings, busy: false } as never} />)
     const box = document.querySelector('[data-testid="database-network"]')
     expect(box?.getAttribute('role')).toBe('alert')
     expect(box?.textContent).toContain('Die Datenbank liegt auf einer Netzwerkfreigabe (nfs4).')
@@ -144,22 +152,32 @@ describe('the card "Speicher"', () => {
 
   it('does not claim to know where the database lies when the server could not tell', async () => {
     server.answers['GET /api/v1/storage'] = info({ database: { ...info().database, where: { kind: 'unknown', fstype: '', network: false } } })
-    await page.show(<FilesCards />)
+    await page.show(<StoragePart server={{ settings, busy: false } as never} />)
     expect(document.querySelector('[data-testid="database-unknown"]')?.textContent).toContain('Nicht festzustellen')
     expect(page.text).not.toContain('Die Datenbank liegt auf einem lokalen Laufwerk')
   })
 
   it('says documents on a share are fine, and when a count was cut off', async () => {
     server.answers['GET /api/v1/storage'] = info({ documents: { ...info().documents, where: share, complete: false } })
-    await page.show(<FilesCards />)
+    await page.show(<StoragePart server={{ settings, busy: false } as never} />)
     expect(page.text).toContain('Die Dokumente liegen auf einer Netzwerkfreigabe. Das ist in Ordnung.')
     expect(page.text).toContain('Die Zahlen sind mindestens so groß.')
+  })
+
+  it('stands before the disk card and the check of the files, all from one request of what lies where', async () => {
+    await page.show(<StoragePart server={{ settings, busy: false } as never} />)
+    const order = ['backups', 'disk', 'files-check'].map((id) => document.getElementById(id))
+    expect(order.every(Boolean)).toBe(true)
+    expect(order[0]!.compareDocumentPosition(order[1]!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(order[1]!.compareDocumentPosition(order[2]!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(order[0]!.querySelector('[data-testid="data-folder"]')).toBeTruthy()
+    expect(server.calls.filter((call) => call.url === '/api/v1/storage')).toHaveLength(1)
   })
 
   it('has no German left in the English page', async () => {
     await changeLanguage('en', false)
     server.answers['GET /api/v1/storage'] = info({ database: { ...info().database, where: share } })
-    await page.show(<FilesCards />)
+    await page.show(<StoragePart server={{ settings, busy: false } as never} />)
     expect(page.text).toContain('The database lies on a network share (nfs4).')
     expect(page.text).toContain('Storage')
     expect(page.text).not.toMatch(/Datenbank|Netzwerkfreigabe|Speicher/)
@@ -202,7 +220,7 @@ describe('the trial run before a restore', () => {
     await page.click(page.button('Prüfen'))
     const lines = document.querySelector('[data-testid="restore-preview"]')?.textContent ?? ''
     expect(lines).toContain('Zurückspielen macht 2 Geräte wieder gültig, die seit der Sicherung gesperrt oder entfernt wurden.')
-    expect(lines).toContain('Zurückspielen macht 1 Schlüssel wieder gültig, der seit der Sicherung gesperrt wurde.')
+    expect(lines).toContain('Zurückspielen macht 1 Token wieder gültig, der seit der Sicherung gesperrt wurde.')
     expect(lines).toContain('Zurückspielen macht 3 Links wieder gültig, die seit der Sicherung zurückgezogen wurden.')
   })
 
@@ -296,7 +314,7 @@ describe('the warning sign of a document', () => {
     const operatorText = document.querySelector('[data-testid="file-notice"]')?.textContent ?? ''
     expect(operatorText).toContain('aus der Sicherung deines Servers zurück')
     expect(operatorText).toContain('Zu „Dateien prüfen“')
-    expect(document.querySelector('[data-testid="file-notice"] a')?.getAttribute('href')).toBe('/einstellungen?tab=backups')
+    expect(document.querySelector('[data-testid="file-notice"] a')?.getAttribute('href')).toBe('/settings/storage')
     expect(operatorText).not.toContain('Sag dem Betreiber')
     page.close()
     me.role = 'member'

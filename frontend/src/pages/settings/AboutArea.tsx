@@ -1,6 +1,6 @@
 /**
  * About nexpaper: version, licence, where it comes from, whether a newer one is out, and
- * what it is built with. Reached from the account menu.
+ * what it is built with. The last area of the settings, `/settings/about`, as "About nexnotes" in nexnotes.
  *
  * The switch for the daily check stands here, where its answer shows, and the page says what goes out. Every account
  * sees the answer; switching and asking now belong to the operator, because the question goes out for the whole
@@ -10,12 +10,12 @@ import { BookOpen, RefreshCw } from 'lucide-react'
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import { api, ApiError } from '../api/client'
-import { LogoMark } from '../components/Logo'
-import { WhatsNewWindow } from '../components/WhatsNew'
-import { useWhatsNew } from '../lib/whatsNew'
-import { useAuth } from '../state/auth'
-import { Button, Card, Feedback, Toggle } from './settings/ui'
+import { api, ApiError } from '../../api/client'
+import { LogoMark } from '../../components/Logo'
+import { WhatsNewWindow } from '../../components/WhatsNew'
+import { useWhatsNew } from '../../lib/whatsNew'
+import { useAuth } from '../../state/auth'
+import { Button, Card, Feedback, Toggle } from './ui'
 
 type About = { version: string; license: string; repo_url: string; releases_url: string; project_url: string }
 type Updates = { update_check: boolean; checked: boolean; latest: string | null; newer: boolean; checked_at: string | null; release_url: string | null }
@@ -39,7 +39,7 @@ const PARTS = [
   { name: 'Lucide', url: 'https://lucide.dev', licence: 'ISC' },
   { name: 'i18next', url: 'https://www.i18next.com', licence: 'MIT' },
 ]
-const FONTS = ['Fraunces', 'Figtree']
+const FONTS = ['Inter']
 
 function Out({ href, children }: { href: string; children: ReactNode }) {
   return (
@@ -62,7 +62,7 @@ function code(error: unknown): string {
   return error instanceof ApiError ? error.code : 'internal_error'
 }
 
-export function AboutPage() {
+export function AboutArea() {
   const { t, i18n } = useTranslation()
   const { me } = useAuth()
   const operator = me?.role === 'operator'
@@ -105,17 +105,20 @@ export function AboutPage() {
 
   const latest = updates?.latest?.replace(/^v/, '')
   return (
-    <div className="page space-y-6 pt-8 pb-28 lg:pb-12">
-      <div className="flex items-center gap-4">
-        <LogoMark size={52} />
-        <div>
-          <h1 className="font-display text-3xl font-semibold tracking-tight">nexpaper</h1>
-          <p className="text-sm text-ink-2">{t('about.subtitle')}</p>
-        </div>
-      </div>
+    <div className="space-y-6" data-testid="about-area">
       <Feedback problem={problem} />
-      {about && (
-        <dl className="card px-6 py-2" data-testid="about-facts">
+      <section aria-labelledby="about-facts-title" className="card p-5">
+        <div className="mb-2 flex items-center gap-3">
+          <LogoMark size={36} />
+          <div>
+            <h2 id="about-facts-title" className="text-lg font-semibold">
+              nexpaper
+            </h2>
+            <p className="text-sm text-muted">{t('about.subtitle')}</p>
+          </div>
+        </div>
+        {about && (
+        <dl data-testid="about-facts">
           <Row label={t('about.version')}>
             <span className="flex flex-wrap items-center gap-2">
               <span data-testid="about-version">{about.version}</span>
@@ -147,7 +150,8 @@ export function AboutPage() {
             <Out href={`${about.repo_url}/issues/new`}>{t('about.reportLink')}</Out>
           </Row>
         </dl>
-      )}
+        )}
+      </section>
 
       <Card icon={RefreshCw} title={t('about.updates.title')} text={t('about.updates.text')} id="about-updates">
         {operator && updates && <Toggle label={t('about.updates.daily')} hint={t('about.updates.dailyHint')} checked={updates.update_check} onChange={(on) => void switchCheck(on)} />}

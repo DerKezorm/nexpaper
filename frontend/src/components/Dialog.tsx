@@ -8,9 +8,10 @@ import { useTranslation } from 'react-i18next'
 const open: symbol[] = []
 
 /** A dialog over the page: from below on a phone, in the middle on a larger screen. Escape and the scrim
- * close it, focus starts inside and comes back afterwards. `above`: over everything, also over the big view of a photo
+ * close it, focus starts inside and comes back afterwards. `medium`: a little wider, for a form of several parts (as
+ * nexnotes' medium dialog). `above`: over everything, also over the big view of a photo
  * (drawn into the body, outside the page behind, which stands still while that view is open). */
-export function Dialog({ title, onClose, children, wide = false, above = false }: { title: string; onClose: () => void; children: ReactNode; wide?: boolean; above?: boolean }) {
+export function Dialog({ title, onClose, children, wide = false, medium = false, above = false }: { title: string; onClose: () => void; children: ReactNode; wide?: boolean; medium?: boolean; above?: boolean }) {
   const { t } = useTranslation()
   const panel = useRef<HTMLDivElement>(null)
   // The latest way to close, kept apart from the effect: the dialog starts once, however often its page draws it anew.
@@ -37,14 +38,15 @@ export function Dialog({ title, onClose, children, wide = false, above = false }
   }, [])
   const dialog = (
     <div className={`fixed inset-0 ${above ? 'z-[70]' : 'z-50'} flex items-end justify-center bg-scrim p-0 sm:items-center sm:p-6`} onPointerDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div ref={panel} role="dialog" aria-modal="true" aria-label={title} className={`card rise max-h-[92dvh] w-full overflow-auto rounded-b-none p-6 sm:rounded-b-[1.25rem] ${wide ? 'max-w-3xl' : 'max-w-lg'}`}>
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="font-display text-xl font-semibold">{title}</h2>
-          <button type="button" data-close onClick={onClose} className="rounded-full p-2 text-muted hover:bg-sheet-2" aria-label={t('common.close')}>
-            <X size={18} />
+      {/* As nexnotes' dialog: 16 px corners, a head with a line below it, the content scrolling under it. */}
+      <div ref={panel} role="dialog" aria-modal="true" aria-label={title} className={`rise flex max-h-[92dvh] w-full min-w-0 flex-col rounded-t-[16px] border border-line bg-sheet shadow-2xl shadow-black/25 sm:rounded-b-[16px] ${wide ? 'max-w-3xl' : medium ? 'max-w-xl' : 'max-w-lg'}`}>
+        <div className="flex shrink-0 items-center justify-between gap-3 border-b border-line px-5 py-3.5">
+          <h2 className="min-w-0 text-base font-semibold">{title}</h2>
+          <button type="button" data-close onClick={onClose} className="rounded-full p-1.5 text-muted hover:bg-sheet-2 hover:text-ink" aria-label={t('common.close')}>
+            <X className="h-4 w-4" />
           </button>
         </div>
-        {children}
+        <div className="soft-scroll min-h-0 overflow-y-auto p-5">{children}</div>
       </div>
     </div>
   )

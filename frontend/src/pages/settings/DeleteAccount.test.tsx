@@ -44,8 +44,10 @@ afterEach(() => {
 
 async function openFor(name: string): Promise<HTMLElement> {
   await page.show(<AccountsCard />, '/einstellungen?tab=accounts')
-  await page.click(page.button(`Mehr für ${name}`))
-  await page.click(page.button('Konto löschen'))
+  // The menu of a row is named by the name the table shows: the display name.
+  const shown = { tom: 'Tom', lea: 'Lea' }[name] ?? name
+  await page.click(page.button(`Aktionen für ${shown}`))
+  await page.click(page.button('Löschen …'))
   return document.querySelector<HTMLElement>('[role="dialog"]')!
 }
 
@@ -156,8 +158,8 @@ describe('deleting an account', () => {
   it('speaks English too', async () => {
     await changeLanguage('en', false)
     await page.show(<AccountsCard />, '/einstellungen?tab=accounts')
-    await page.click(page.button('More for tom'))
-    await page.click(page.button('Delete account'))
+    await page.click(page.button('Actions for Tom'))
+    await page.click(page.button('Delete …'))
     const dialog = document.querySelector<HTMLElement>('[role="dialog"]')!
     expect(dialog.textContent).toContain('The own vault holds 1,637 documents, the trash included.')
     expect(dialog.textContent).toContain('To another person')

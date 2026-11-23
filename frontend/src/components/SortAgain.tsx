@@ -231,7 +231,7 @@ export function SortAgainDialog({ ids, vaults, mineId, onClose }: { ids?: number
             {t('sorting.again.applying', { done: applied, total: chosen.length })}
           </p>
         )}
-        <Button variant="ghost" onClick={close}>
+        <Button variant="line" onClick={close}>
           {looking ? t('sorting.again.stop') : t('common.cancel')}
         </Button>
         {!looking && items.length > 0 && (

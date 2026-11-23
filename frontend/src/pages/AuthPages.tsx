@@ -33,7 +33,7 @@ function AuthFrame({ title, text, children, wide = false }: { title: string; tex
       </header>
       <main className="flex flex-1 items-start justify-center px-4 pt-[8vh] pb-10">
         <div className={`card w-full p-7 ${wide ? 'max-w-lg' : 'max-w-sm'}`}>
-          <h1 className="font-display text-2xl font-semibold tracking-tight">{title}</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
           {text && <p className="mt-1 text-sm text-ink-2">{text}</p>}
           <div className="mt-6">{children}</div>
         </div>
@@ -44,7 +44,7 @@ function AuthFrame({ title, text, children, wide = false }: { title: string; tex
 
 function Primary({ children, busy = false }: { children: ReactNode; busy?: boolean }) {
   return (
-    <button type="submit" disabled={busy} className="h-11 w-full rounded-full bg-accent px-4 font-semibold text-accent-ink hover:brightness-105 disabled:opacity-50">
+    <button type="submit" disabled={busy} className="btn btn-accent h-11 w-full">
       {children}
     </button>
   )
@@ -59,7 +59,7 @@ function Problem({ code }: { code: string | null }) {
   )
 }
 
-const OUTLINE = 'flex h-11 w-full items-center justify-center gap-2 rounded-full border border-line text-sm font-semibold hover:bg-sheet-2'
+const OUTLINE = 'btn btn-ghost h-11 w-full'
 
 const codeOf = (error: unknown) => (error instanceof ApiError ? error.code : 'internal_error')
 
@@ -356,7 +356,7 @@ function SecondFactorSetup({ me, next }: { me: Me; next: string }) {
                 navigate(next, { replace: true })
               })
             }
-            className="h-11 w-full rounded-full bg-accent px-4 font-semibold text-accent-ink hover:brightness-105 disabled:opacity-50"
+            className="btn btn-accent h-11 w-full"
           >
             {t('auth.codes.done')}
           </button>
@@ -434,7 +434,7 @@ export function InvitePage() {
     // A link for a new account, opened by somebody signed in already: there is nothing to join.
     return (
       <AuthFrame title={t('auth.invite.title')} text={t('auth.invite.haveAccount', { name: state.signed_in_as })}>
-        <Link to="/" className="flex h-11 w-full items-center justify-center rounded-full bg-accent px-4 font-semibold text-accent-ink hover:brightness-105">
+        <Link to="/" className="btn btn-accent h-11 w-full">
           {t('auth.invite.toApp')}
         </Link>
       </AuthFrame>
@@ -583,7 +583,7 @@ export function ResetPage() {
         <p role="status" className="text-sm text-ink-2">
           {t('auth.reset.doneText')}
         </p>
-        <Link to="/login" className="mt-5 flex h-11 w-full items-center justify-center rounded-full bg-accent px-4 font-semibold text-accent-ink hover:brightness-105">
+        <Link to="/login" className="btn btn-accent mt-5 h-11 w-full">
           {t('auth.login.submit')}
         </Link>
       </AuthFrame>
@@ -640,7 +640,7 @@ export function MailConfirmPage() {
     api<MailState>(`/api/v1/email/confirm/${encodeURIComponent(token)}`).then(setState, () => setInvalid(true))
   }, [token])
 
-  const next = status === 'signedIn' ? { to: '/konto', label: t('auth.mail.toAccount') } : { to: '/login', label: t('auth.backToLogin') }
+  const next = status === 'signedIn' ? { to: '/settings', label: t('auth.mail.toAccount') } : { to: '/login', label: t('auth.backToLogin') }
   if (invalid) {
     return (
       <AuthFrame title={t('auth.mail.invalidTitle')}>
@@ -658,7 +658,7 @@ export function MailConfirmPage() {
           {t('auth.mail.doneText', { address: state.address })}
           {told && ' ' + t('auth.mail.oldTold')}
         </p>
-        <Link to={next.to} className="mt-5 flex h-11 w-full items-center justify-center rounded-full bg-accent px-4 font-semibold text-accent-ink hover:brightness-105">
+        <Link to={next.to} className="btn btn-accent mt-5 h-11 w-full">
           {next.label}
         </Link>
       </AuthFrame>
@@ -709,7 +709,7 @@ export function SenderConfirmPage() {
     intakeApi.senderLink(token).then(setState, () => setInvalid(true))
   }, [token])
 
-  const next = status === 'signedIn' ? { to: '/konto?tab=upload', label: t('auth.mail.toAccount') } : { to: '/login', label: t('auth.backToLogin') }
+  const next = status === 'signedIn' ? { to: '/settings/upload', label: t('auth.mail.toAccount') } : { to: '/login', label: t('auth.backToLogin') }
   if (invalid) {
     return (
       <AuthFrame title={t('intake.confirm.invalidTitle')}>
@@ -726,7 +726,7 @@ export function SenderConfirmPage() {
         <p role="status" className="text-sm text-ink-2">
           {t('intake.confirm.doneText', { address: state.address, name: state.name })}
         </p>
-        <Link to={next.to} className="mt-5 flex h-11 w-full items-center justify-center rounded-full bg-accent px-4 font-semibold text-accent-ink hover:brightness-105">
+        <Link to={next.to} className="btn btn-accent mt-5 h-11 w-full">
           {next.label}
         </Link>
       </AuthFrame>

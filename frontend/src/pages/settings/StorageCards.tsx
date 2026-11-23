@@ -1,8 +1,10 @@
 /**
- * Settings, Storage: the limits on what comes in (with the card that shows how the files lie on
- * the disk; the queue is on the card of the text recognition, `OcrCard`). The operator's numbers count from the next file on.
+ * Settings, General: the card "Grenzen" (limits), laid out as nexnotes' card of the same name: the size of one file
+ * first, in its own row with its own button; nexpaper's further limits on what comes in below it, two to a row, with one
+ * button for all of them. Settings, Storage: the card that shows how the files lie on the disk. The operator's numbers
+ * count from the next file on.
  */
-import { FolderTree, Upload } from 'lucide-react'
+import { FolderTree, Gauge } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
@@ -10,10 +12,12 @@ import { Button, Card, Feedback, Input } from './ui'
 import { useServerSettings, type ServerSettings } from './ServerCards'
 
 type Field = keyof Pick<ServerSettings, 'upload_max_mb' | 'upload_max_pages' | 'upload_max_megapixels' | 'upload_open_count' | 'upload_open_mb' | 'process_timeout_seconds' | 'process_memory_mb' | 'cache_max_mb'>
+type Limit = { key: Field; label: string; hint: string; min: number; max: number }
 
-/** The fields, the range the server takes for each, and the texts. */
-const FIELDS: { key: Field; label: string; hint: string; min: number; max: number }[] = [
-  { key: 'upload_max_mb', label: 'maxFile', hint: 'maxFileHint', min: 1, max: 10240 },
+/** The size of one file: the limit both apps have, in the row of its own. */
+const FILE: Limit = { key: 'upload_max_mb', label: 'maxFile', hint: 'maxFileHint', min: 1, max: 10240 }
+/** nexpaper's further limits, the range the server takes for each, and the texts. */
+const MORE: Limit[] = [
   { key: 'upload_max_pages', label: 'maxPages', hint: 'maxPagesHint', min: 1, max: 20000 },
   { key: 'upload_max_megapixels', label: 'maxMegapixels', hint: 'maxMegapixelsHint', min: 1, max: 1000 },
   { key: 'upload_open_count', label: 'openCount', hint: 'openCountHint', min: 1, max: 100 },
@@ -31,9 +35,10 @@ export function LimitsCard() {
   const [invalid, setInvalid] = useState(false)
   if (!settings) return null
   const shown = (key: Field) => typed[key] ?? String(settings[key])
-  const save = async () => {
+  /** Each button saves the fields of its own part, and only those that changed; a number out of range sends nothing. */
+  const save = async (fields: Limit[]) => {
     const change: Partial<Record<Field, number>> = {}
-    for (const field of FIELDS) {
+    for (const field of fields) {
       const text = typed[field.key]
       if (text === undefined) continue
       const number = Number(text)
@@ -48,35 +53,62 @@ export function LimitsCard() {
     setInvalid(false)
     if (Object.keys(change).length === 0) return
     await server.save(change, t('storage.limits.saved'))
-    setTyped({})
+    setTyped((before) => {
+      const left = { ...before }
+      for (const field of fields) delete left[field.key]
+      return left
+    })
   }
+  const field = (limit: Limit, className = '') => (
+    <Input
+      key={limit.key}
+      label={t(`storage.limits.${limit.label}`)}
+      hint={t(`storage.limits.${limit.hint}`)}
+      type="number"
+      min={limit.min}
+      max={limit.max}
+      value={shown(limit.key)}
+      onChange={(value) => setTyped({ ...typed, [limit.key]: value })}
+      className={className}
+    />
+  )
   return (
-    <Card icon={Upload} title={t('storage.limits.title')} text={t('storage.limits.text')}>
-      <div className="grid gap-4 sm:grid-cols-2">
-        {FIELDS.map((field) => (
-          <Input
-            key={field.key}
-            label={t(`storage.limits.${field.label}`)}
-            hint={t(`storage.limits.${field.hint}`)}
-            type="number"
-            min={field.min}
-            max={field.max}
-            value={shown(field.key)}
-            onChange={(value) => setTyped({ ...typed, [field.key]: value })}
-          />
-        ))}
-      </div>
+    <Card id="limits" icon={Gauge} title={t('storage.limits.title')} text={t('storage.limits.text')}>
+      {/* The page checks the ranges itself and says so in words; the browser's own bubbles would say it twice. */}
+      <form
+        noValidate
+        className="flex flex-wrap items-end gap-2"
+        data-testid="limit-file"
+        onSubmit={(event) => {
+          event.preventDefault()
+          void save([FILE])
+        }}
+      >
+        {field(FILE, 'min-w-60 flex-1 sm:max-w-md')}
+        <Button type="submit" busy={server.busy}>
+          {t('storage.limits.save')}
+        </Button>
+      </form>
+      <form
+        noValidate
+        className="space-y-3"
+        data-testid="limit-more"
+        onSubmit={(event) => {
+          event.preventDefault()
+          void save(MORE)
+        }}
+      >
+        <div className="grid gap-4 sm:grid-cols-2">{MORE.map((limit) => field(limit))}</div>
+        <Button type="submit" busy={server.busy}>
+          {t('storage.limits.save')}
+        </Button>
+      </form>
       {invalid && (
         <p role="alert" className="rounded-xl border border-bad/40 bg-bad/10 px-3 py-2 text-sm text-bad">
           {t('storage.limits.invalid')}
         </p>
       )}
       <Feedback problem={server.problem} done={server.done} values={server.values} />
-      <div>
-        <Button primary busy={server.busy} onClick={() => void save()}>
-          {t('storage.limits.save')}
-        </Button>
-      </div>
     </Card>
   )
 }
@@ -85,7 +117,7 @@ export function LimitsCard() {
 export function DiskCard() {
   const { t } = useTranslation()
   return (
-    <Card icon={FolderTree} title={t('storage.disk.title')} text={t('storage.disk.text')}>
+    <Card id="disk" icon={FolderTree} title={t('storage.disk.title')} text={t('storage.disk.text')}>
       <pre className="overflow-x-auto rounded-xl bg-sheet-2 p-3 font-mono text-xs leading-relaxed text-ink-2">
         {`/data/dokumente/Haushalt/2026/Stadtwerke Lindenau/2026-10-01 Rechnung.jpg
 /data/dokumente/Haushalt/2026/Stadtwerke Lindenau/2026-10-01 Rechnung (searchable).pdf`}

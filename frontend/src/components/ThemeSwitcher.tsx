@@ -14,7 +14,7 @@ export function ThemeSwitcher() {
     { value: 'dark' as const, icon: Moon, label: t('theme.dark') },
   ]
   return (
-    <div role="radiogroup" aria-label={t('theme.group')} className="inline-flex rounded-full border border-line bg-sheet p-0.5">
+    <div role="radiogroup" aria-label={t('theme.group')} className="inline-flex rounded-[9px] border border-line bg-sheet p-0.5">
       {options.map(({ value, icon: Icon, label }) => (
         <button
           key={value}
@@ -27,7 +27,7 @@ export function ThemeSwitcher() {
             applyMode(value)
             setMode(value)
           }}
-          className={`rounded-full p-1.5 ${mode === value ? 'bg-accent-soft text-accent' : 'text-muted hover:text-ink'}`}
+          className={`rounded-[7px] p-1.5 ${mode === value ? 'bg-accent-soft text-accent' : 'text-muted hover:text-ink'}`}
         >
           <Icon size={15} />
         </button>

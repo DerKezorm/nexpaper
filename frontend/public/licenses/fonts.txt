@@ -1,11 +1,6 @@
-The fonts nexpaper brings along, from the Fontsource packages, each under the SIL Open Font License 1.1.
-Fraunces for headings, Figtree for the interface.
+The font nexpaper brings along, from the Fontsource package @fontsource-variable/inter, under the SIL Open Font License 1.1.
 
-Fraunces (Fontsource package @fontsource-variable/fraunces):
-Copyright 2020 The Fraunces Project Authors (github.com/undercasetype/Fraunces) Fraunces-Italic[SOFT,WONK,opsz,wght].ttf: Copyright 2020 The Fraunces Project Authors (github.com/undercasetype/Fraunces)
-
-Figtree (Fontsource package @fontsource-variable/figtree):
-Copyright 2022 The Figtree Project Authors (https://github.com/erikdkennedy/figtree)
+Copyright 2016 The Inter Project Authors (https://github.com/rsms/inter) Inter-Italic[opsz,wght].ttf: Copyright 2016 The Inter Project Authors (https://github.com/rsms/inter)
 
 This Font Software is licensed under the SIL Open Font License, Version 1.1.
 This license is copied below, and is also available with a FAQ at:

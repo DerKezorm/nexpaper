@@ -57,7 +57,7 @@ function field(label: string): HTMLInputElement {
 }
 
 function toggle(label: string): HTMLButtonElement {
-  const found = document.querySelector<HTMLButtonElement>(`button[role="switch"][aria-label="${label}"]`)
+  const found = document.querySelector<HTMLButtonElement>(`[role="switch"][aria-label="${label}"]`)
   expect(found, label).toBeTruthy()
   return found!
 }

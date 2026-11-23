@@ -586,6 +586,6 @@ it is changed at its source only.
 
 [AGPL-3.0](LICENSE).
 
-The icons are [Lucide](https://lucide.dev) (ISC, partly MIT from Feather); the fonts are Fraunces and Figtree (OFL-1.1).
+The icons are [Lucide](https://lucide.dev) (ISC, partly MIT from Feather); the font is Inter (OFL-1.1).
 Their notices ship with the app at `/licenses/`. Everything else nexpaper ships or depends on, with its licence, is
 listed in [THIRD-PARTY.md](THIRD-PARTY.md).

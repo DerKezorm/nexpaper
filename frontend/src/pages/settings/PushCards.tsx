@@ -128,10 +128,10 @@ export function PushDevicesCard({ me }: { me: Me }) {
                   }}
                 >
                   <Input label={t('me.push.name')} value={naming.name} onChange={(name) => setNaming({ id: device.id, name })} className="min-w-48 flex-1" autoFocus />
-                  <Button type="submit" busy={action.busy} disabled={!naming.name.trim()}>
+                  <Button onClick={() => setNaming(null)}>{t('common.cancel')}</Button>
+                  <Button type="submit" primary busy={action.busy} disabled={!naming.name.trim()}>
                     {t('common.save')}
                   </Button>
-                  <Button onClick={() => setNaming(null)}>{t('common.cancel')}</Button>
                 </form>
               ) : (
                 <>
@@ -214,7 +214,7 @@ export function SignInNoticeCard({ me, children }: { me: Me; children?: ReactNod
   )
 }
 
-const AREA = 'mt-1 block min-h-24 w-full rounded-xl border border-line bg-sheet px-3.5 py-2.5 font-mono text-[0.9rem] text-ink outline-none placeholder:text-muted/70 focus:border-accent'
+const AREA = 'mt-1 block min-h-24 w-full rounded-[9px] border border-edge bg-sheet px-3 py-2 font-mono text-[0.85rem] text-ink outline-none placeholder:text-muted/70 focus:border-accent'
 
 export function PushServerCard() {
   const { t } = useTranslation()

@@ -7,10 +7,10 @@ import { inboxApi } from '../api/client'
 import { usesDeadlines } from '../lib/deadlines'
 import { INBOX_CHANGED, type NoticeLink } from '../lib/say'
 import { useAuth } from '../state/auth'
-import { AccountMenu } from './AccountMenu'
+import { Avatar } from './Avatar'
 import { Wordmark } from './Logo'
-import { SavedNav } from './SavedNav'
-import { CameraLink, DropSheet, UploadButton, UploadPanel, UploadRound } from './UploadPanel'
+import { Sidebar, type MenuCounts } from './Sidebar'
+import { DropSheet, UploadPanel, UploadRound } from './UploadPanel'
 import { WhatsNewBanner } from './WhatsNew'
 
 /** A short sentence after something was done ("Gespeichert."), handed over by the page that did it as `notice` in the
@@ -36,7 +36,7 @@ function Toast() {
   if (!shown) return null
   return (
     <div role="status" className="rise fixed inset-x-0 bottom-24 z-40 flex justify-center px-4 lg:bottom-8">
-      <p className="rounded-full bg-ink px-4 py-2.5 text-sm font-semibold text-paper shadow-soft">
+      <p className="rounded-[12px] border border-line bg-sheet-2 px-4 py-2.5 text-[13.5px] text-ink shadow-xl shadow-black/20">
         {shown.text}
         {shown.link && (
           <>
@@ -71,7 +71,7 @@ const COUNT_EVERY_MS = 60_000
 
 /** How many documents wait in the inbox or are being read, how many deadlines are overdue or come in the next 14 days
  * (and whether one is overdue), and how many are in the trash, for the badges of the menu. */
-function useMenuCounts(): { inbox: number; trash: number; deadlines: number; overdue: boolean } {
+function useMenuCounts(): MenuCounts {
   const { pathname } = useLocation()
   const [count, setCount] = useState({ inbox: 0, trash: 0, deadlines: 0, overdue: false })
   useEffect(() => {
@@ -100,8 +100,22 @@ function useMenuCounts(): { inbox: number; trash: number; deadlines: number; ove
   return count
 }
 
+/** Ctrl/⌘ K anywhere: the archive with its search field in focus, as the search of nexnotes. */
+function useSearchKey() {
+  const navigate = useNavigate()
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (!(event.ctrlKey || event.metaKey) || event.altKey || event.shiftKey || event.key.toLowerCase() !== 'k') return
+      event.preventDefault()
+      navigate('/', { state: { search: true } })
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [navigate])
+}
+
 /**
- * The frame: a sidebar on a large screen, a header on a phone, the menu below on a phone (inbox with the number of what waits there, archive, vaults, order, trash).
+ * The frame: the sidebar on a large screen (`Sidebar.tsx`, as nexnotes'), a header on a phone, a header on a phone, the menu below on a phone (inbox with the number of what waits there, archive, vaults, order, trash).
  */
 export function AppShell() {
   const { t } = useTranslation()
@@ -113,50 +127,30 @@ function Frame({ t }: { t: (key: string) => string }) {
   const counts = useMenuCounts()
   const { me } = useAuth()
   const items = menuFor(usesDeadlines(me))
+  useSearchKey()
   const badge = (to: string) => (to === '/eingang' ? counts.inbox : to === '/papierkorb' ? counts.trash : to === '/fristen' ? counts.deadlines : 0)
   const deadlineBadge = counts.overdue ? 'bg-warn text-paper' : 'bg-accent text-accent-ink'
   return (
     <div className="lg:flex">
-      <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col overflow-y-auto border-r border-line px-4 py-6 lg:flex">
-        <div className="px-2 pb-6">
-          <Wordmark />
-        </div>
-        <UploadButton />
-        <CameraLink />
-        <nav className="mt-5 space-y-1" aria-label={t('app.mainMenu')}>
-          {items.map(({ to, label, icon: Icon }) => (
-            <NavLink
-              key={to}
-              to={to}
-              end={to === '/'}
-              className={({ isActive }) => `flex items-center gap-3 rounded-xl px-3 py-2.5 font-semibold transition ${isActive ? 'bg-accent-soft text-accent' : 'text-ink-2 hover:bg-sheet-2'}`}
-            >
-              <Icon size={19} aria-hidden /> {t(label)}
-              {badge(to) > 0 && to === '/fristen' && (
-                <span className={`ml-auto rounded-full px-1.5 text-xs font-bold ${deadlineBadge}`} title={t(counts.overdue ? 'deadlines.badgeOverdue' : 'deadlines.badgeSoon')} data-testid="deadline-count">
-                  {badge(to)}
-                </span>
-              )}
-              {badge(to) > 0 && to !== '/fristen' && (
-                <span className={`ml-auto rounded-full px-1.5 text-xs font-bold ${to === '/eingang' ? 'bg-accent text-accent-ink' : 'bg-sheet-2 text-ink-2'}`} data-testid={to === '/eingang' ? 'inbox-count' : 'trash-count'}>
-                  {badge(to)}
-                </span>
-              )}
-            </NavLink>
-          ))}
-        </nav>
-        <SavedNav />
-        <div className="mt-auto pt-4">
-          <AccountMenu up />
-        </div>
-      </aside>
+      <Sidebar counts={counts} />
 
       <main className="min-w-0 flex-1">
         <div className="flex items-center justify-between px-4 pt-4 lg:hidden">
           <Wordmark size={30} />
           <div className="flex items-center gap-2">
             <UploadRound />
-            <AccountMenu />
+            {/* On the phone the bottom bar has room for five: "Ordnung" waits here, unless it took the place of
+               "Fristen" there. The picture leads to the settings, as the account's row in the sidebar. */}
+            {usesDeadlines(me) && (
+              <Link to="/ordnung" className="rounded-full p-2 text-ink-2 hover:bg-sheet-2" aria-label={t('order.menu')} title={t('order.menu')}>
+                <ListTree size={18} aria-hidden />
+              </Link>
+            )}
+            {me && (
+              <Link to="/settings" aria-label={`${me.display_name || me.name} · ${t('settings.title')}`} data-testid="phone-account">
+                <Avatar person={me} size={34} />
+              </Link>
+            )}
           </div>
         </div>
         <WhatsNewBanner />

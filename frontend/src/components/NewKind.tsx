@@ -20,7 +20,7 @@ export function NewKindButton({ onClick }: { onClick: () => void }) {
     <button
       type="button"
       onClick={onClick}
-      className="inline-flex items-center gap-1 rounded-full border border-dashed border-line px-2.5 py-0.5 text-xs font-semibold text-ink-2 hover:bg-sheet-2 hover:text-ink"
+      className="inline-flex items-center gap-1 rounded-[7px] border border-dashed border-line px-2.5 py-0.5 text-xs font-semibold text-ink-2 hover:bg-sheet-2 hover:text-ink"
     >
       <Plus size={13} aria-hidden /> {t('kinds.new.button')}
     </button>
@@ -62,11 +62,11 @@ export function NewKindForm({ vaultId, kinds, onMade, onClose }: { vaultId: numb
       </label>
       <div className="flex flex-wrap items-center gap-2">
         <input id={field} value={name} maxLength={60} autoFocus onChange={(event) => setName(event.target.value)} placeholder={t('kinds.new.placeholder')} className="input h-9 min-w-40 flex-1" />
+        <Button size="sm" variant="line" onClick={onClose}>
+          {t('common.cancel')}
+        </Button>
         <Button size="sm" variant="primary" type="submit" disabled={!name.trim() || busy}>
           {found.same ? t('kinds.new.take') : t('kinds.new.make')}
-        </Button>
-        <Button size="sm" variant="ghost" onClick={onClose}>
-          {t('common.cancel')}
         </Button>
       </div>
       {found.same && (

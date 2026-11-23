@@ -126,20 +126,19 @@ export function RulesCard({ server = false }: { server?: boolean }) {
                   </button>
                 </span>
               )}
-              <button
-                type="button"
+              <input
+                type="checkbox"
                 role="switch"
+                checked={rule.on}
                 aria-checked={rule.on}
                 aria-label={t('sorting.rules.switch')}
-                onClick={() => void action.run(async () => {
+                onChange={() => void action.run(async () => {
                   setRules(rules.map((r) => (r.id === rule.id ? { ...r, on: !r.on } : r)))
                   await calls.change(rule.id, { on: !rule.on })
                   await load()
                 })}
-                className={`relative h-6 w-10 shrink-0 rounded-full transition ${rule.on ? 'bg-accent' : 'bg-line'}`}
-              >
-                <span className={`absolute top-1 h-4 w-4 rounded-full bg-sheet shadow transition-all ${rule.on ? 'left-5' : 'left-1'}`} />
-              </button>
+                className="h-5 w-5 shrink-0 cursor-pointer accent-[var(--accent)]"
+              />
               <button
                 type="button"
                 onClick={() =>
@@ -351,11 +350,11 @@ function RuleForm({ server, names, managed, onCancel, onSave, busy }: { server: 
         )}
       </div>
       {thenField === 'title' && <p className="text-xs text-muted">{t('sorting.rules.titleHint')}</p>}
-      <div className="flex gap-2">
+      <div className="flex justify-end gap-2">
+        <Button onClick={onCancel}>{t('sorting.rules.cancel')}</Button>
         <Button primary type="submit" busy={busy} disabled={!ready}>
           {t('sorting.rules.create')}
         </Button>
-        <Button onClick={onCancel}>{t('sorting.rules.cancel')}</Button>
       </div>
       <p className="text-xs text-muted">{t('sorting.rules.hint')}</p>
     </form>

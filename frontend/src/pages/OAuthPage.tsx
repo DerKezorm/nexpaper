@@ -75,19 +75,19 @@ export function OAuthPage() {
         </div>
         {problem ? (
           <>
-            <h1 className="font-display text-2xl font-semibold">{t('phone.oauth.refused')}</h1>
+            <h1 className="text-2xl font-semibold">{t('phone.oauth.refused')}</h1>
             <p role="alert" className="text-sm text-bad">
               {errorText(problem.code)}
             </p>
             {problem.back && (
-              <button type="button" onClick={() => leave.to(problem.back!)} className="h-10 rounded-full border border-line px-4 text-sm font-semibold text-ink-2">
+              <button type="button" onClick={() => leave.to(problem.back!)} className="btn btn-ghost">
                 {t('phone.oauth.backToApp')}
               </button>
             )}
           </>
         ) : asked ? (
           <>
-            <h1 className="font-display text-2xl font-semibold">{t('phone.oauth.title', { app })}</h1>
+            <h1 className="text-2xl font-semibold">{t('phone.oauth.title', { app })}</h1>
             <p className="text-sm text-ink-2">{t('phone.oauth.text')}</p>
             <p className="text-sm">{t('phone.oauth.device', { name: asked.device_name })}</p>
             {leaving ? (
@@ -96,10 +96,10 @@ export function OAuthPage() {
               </p>
             ) : (
               <div className="flex gap-2 pt-2">
-                <button type="button" disabled={busy} onClick={() => void answer(true)} className="h-11 flex-1 rounded-full bg-accent px-5 font-semibold text-accent-ink disabled:opacity-50">
+                <button type="button" disabled={busy} onClick={() => void answer(true)} className="btn btn-accent h-11 flex-1">
                   {t('phone.oauth.allow')}
                 </button>
-                <button type="button" disabled={busy} onClick={() => void answer(false)} className="h-11 rounded-full border border-line px-5 font-semibold text-ink-2 disabled:opacity-50">
+                <button type="button" disabled={busy} onClick={() => void answer(false)} className="btn btn-ghost h-11">
                   {t('phone.oauth.deny')}
                 </button>
               </div>

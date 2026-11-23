@@ -4,8 +4,6 @@ import { Navigate, Outlet, Route, Routes, useLocation, useNavigate } from 'react
 import { inboxApi } from './api/client'
 import { AppShell } from './components/AppShell'
 import { usesDeadlines } from './lib/deadlines'
-import { AboutPage } from './pages/AboutPage'
-import { AccountPage } from './pages/AccountPage'
 import { ForgotPage, InvitePage, LoginPage, MailConfirmPage, ResetPage, SenderConfirmPage, SetupPage } from './pages/AuthPages'
 import { ArchivePage } from './pages/ArchivePage'
 import { DeadlinesPage } from './pages/DeadlinesPage'
@@ -16,7 +14,7 @@ import { LinkPage } from './pages/LinkPage'
 import { OAuthPage } from './pages/OAuthPage'
 import { OrderPage } from './pages/OrderPage'
 import { QuickPage } from './pages/QuickPage'
-import { SettingsPage } from './pages/SettingsPage'
+import { FormerAddress, SettingsPage } from './pages/SettingsPage'
 import { TrashPage } from './pages/TrashPage'
 import { UploadRequestPage } from './pages/UploadRequestPage'
 import { VaultsPage } from './pages/VaultsPage'
@@ -43,7 +41,7 @@ function SignedIn({ children }: { children: ReactNode }) {
   if (status === 'signedOut') return <Navigate to={`/login?next=${encodeURIComponent(location.pathname + location.search)}`} replace />
   // Right after the password, the sign-in page sets the second factor up before anything else opens.
   if (me?.session_stage && me.session_stage !== 'full') return <Navigate to={`/login?next=${encodeURIComponent(location.pathname + location.search)}`} replace />
-  if (me?.second_factor_setup_required && location.pathname !== '/konto') return <Navigate to="/konto?tab=security" replace />
+  if (me?.second_factor_setup_required && location.pathname !== '/settings/security') return <Navigate to="/settings/security" replace />
   return children
 }
 
@@ -150,9 +148,12 @@ export default function App() {
           <Route path="papierkorb" element={<TrashPage />} />
           <Route path="tresore" element={<VaultsPage />} />
           <Route path="ordnung" element={<OrderPage />} />
-          <Route path="konto" element={<AccountPage />} />
-          <Route path="einstellungen" element={<SettingsPage />} />
-          <Route path="ueber" element={<AboutPage />} />
+          <Route path="settings" element={<SettingsPage />} />
+          <Route path="settings/:tab" element={<SettingsPage />} />
+          {/* The pages of before, for links in mails, notices and the providers' answers. */}
+          <Route path="konto" element={<FormerAddress page="konto" />} />
+          <Route path="einstellungen" element={<FormerAddress page="einstellungen" />} />
+          <Route path="ueber" element={<FormerAddress page="ueber" />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Route>

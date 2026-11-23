@@ -114,7 +114,7 @@ export function PageEditor({ document: given, onDone, onSplit, say, onReloaded }
       }),
     )
 
-  const tool = 'inline-flex items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-sm font-semibold text-ink-2 hover:bg-sheet-2 disabled:opacity-40'
+  const tool = 'inline-flex items-center gap-1.5 rounded-[9px] border border-line px-3 py-1.5 text-sm font-semibold text-ink-2 hover:bg-sheet-2 disabled:opacity-40'
   return (
     <div data-testid="page-editor">
       <p className="mb-3 text-sm text-ink-2">{t('pagetools.editor.hint')}</p>
@@ -167,11 +167,11 @@ export function PageEditor({ document: given, onDone, onSplit, say, onReloaded }
       {asking && (
         <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl bg-sheet-2/60 px-4 py-2.5 text-sm" role="group">
           <span className="flex-1 text-ink-2">{t('pagetools.editor.fromHereAsk', { n: sel + 1 })}</span>
-          <Button size="sm" variant="soft" disabled={busy} onClick={splitHere}>
-            <Scissors size={14} /> {t('pagetools.editor.fromHereGo')}
-          </Button>
-          <Button size="sm" variant="ghost" onClick={() => setAsking(false)}>
+          <Button size="sm" variant="line" onClick={() => setAsking(false)}>
             {t('pagetools.editor.cancel')}
+          </Button>
+          <Button size="sm" variant="primary" disabled={busy} onClick={splitHere}>
+            <Scissors size={14} /> {t('pagetools.editor.fromHereGo')}
           </Button>
         </div>
       )}
@@ -182,12 +182,12 @@ export function PageEditor({ document: given, onDone, onSplit, say, onReloaded }
         </Button>
       )}
       {dialog}
-      <div className="mt-5 flex gap-2 border-t border-line pt-4">
-        <Button variant="primary" size="sm" disabled={busy} onClick={save}>
-          <Check size={15} /> {t('pagetools.editor.save')}
-        </Button>
-        <Button variant="ghost" size="sm" disabled={busy} onClick={() => onDone(null)}>
+      <div className="mt-5 flex justify-end gap-2 border-t border-line pt-4">
+        <Button variant="line" disabled={busy} onClick={() => onDone(null)}>
           {t('pagetools.editor.cancel')}
+        </Button>
+        <Button variant="primary" disabled={busy} onClick={save}>
+          <Check size={15} /> {t('pagetools.editor.save')}
         </Button>
       </div>
     </div>

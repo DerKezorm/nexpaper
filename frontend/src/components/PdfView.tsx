@@ -149,12 +149,12 @@ export function PdfView({ url, page, onPage, onLoaded, onFailed, onClick, title 
   }, [say])
 
   const find = (previous: boolean, again: boolean) => query.trim() && say({ type: 'find', query: query.trim(), previous, again })
-  const tool = 'inline-grid h-8 w-8 place-items-center rounded-full text-ink-2 hover:bg-sheet-2 disabled:opacity-40'
+  const tool = 'inline-grid h-8 w-8 place-items-center rounded-[7px] text-ink-2 hover:bg-sheet-2 disabled:opacity-40'
   const ready = pages > 0
   return (
     <div className="relative h-full w-full" data-testid="pdf-view" data-pages={pages}>
       <iframe ref={frame} key={url} src="/pdfview.html" sandbox="allow-scripts" title={t('docs.pdf.frame', { title })} className="absolute inset-0 h-full w-full rounded-[3px] border-0" data-testid="pdf-frame" />
-      <div className="absolute top-2 right-2 flex items-center gap-0.5 rounded-full border border-line bg-sheet/95 p-0.5 shadow-soft" role="toolbar" aria-label={t('docs.pdf.tools')}>
+      <div className="absolute top-2 right-2 flex items-center gap-0.5 rounded-[9px] border border-line bg-sheet/95 p-0.5 shadow-soft" role="toolbar" aria-label={t('docs.pdf.tools')}>
         {finding ? (
           <>
             <Search size={14} className="ml-2 text-muted" aria-hidden />

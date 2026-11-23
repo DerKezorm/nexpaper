@@ -183,11 +183,11 @@ export function ExportDialog({ onClose, filters: given = {}, q, count, sum, say,
           <div className="flex gap-3">
             <label className="flex-1 text-sm">
               <span className="font-semibold">{t('exports.from')}</span>
-              <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="mt-1 block h-10 w-full rounded-xl border border-line bg-sheet px-3" />
+              <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="input mt-1 px-3" />
             </label>
             <label className="flex-1 text-sm">
               <span className="font-semibold">{t('exports.to')}</span>
-              <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="mt-1 block h-10 w-full rounded-xl border border-line bg-sheet px-3" />
+              <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="input mt-1 px-3" />
             </label>
           </div>
           <div>
@@ -201,8 +201,8 @@ export function ExportDialog({ onClose, filters: given = {}, q, count, sum, say,
                     type="button"
                     aria-pressed={active}
                     onClick={() => setChosen(active ? chosen.filter((id) => id !== vault.id) : [...chosen, vault.id])}
-                    className={`inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full border px-3 text-sm font-semibold transition ${
-                      active ? 'border-transparent bg-accent text-accent-ink' : 'border-line bg-sheet text-ink-2 hover:border-accent'
+                    className={`inline-flex h-8 shrink-0 items-center gap-1.5 rounded-[9px] border px-3 text-sm font-semibold transition ${
+                      active ? 'chosen border-accent/50' : 'border-line bg-sheet text-ink-2 hover:border-accent'
                     }`}
                   >
                     <VaultIcon icon={vault.icon} size={14} /> {vaultName(vault)}
@@ -235,7 +235,7 @@ export function ExportDialog({ onClose, filters: given = {}, q, count, sum, say,
         <div className="space-y-4">
           <div className="rounded-2xl bg-sheet-2 p-4 text-sm" aria-live="polite">
             <p className="text-xs font-bold tracking-wide text-muted uppercase">{t('exports.inZip')}</p>
-            <p className="mt-2 font-display text-2xl font-semibold">{t('exports.documents', { n: shownCount.toLocaleString(i18n.language) })}</p>
+            <p className="mt-2 text-2xl font-semibold">{t('exports.documents', { n: shownCount.toLocaleString(i18n.language) })}</p>
             <p className="text-ink-2">{t('exports.sizeSum', { size: formatBytes(preview?.size ?? 0, i18n.language, 1000), sum: shownSum })}</p>
             {preview && preview.sample?.length > 0 && (
               <pre className="mt-3 overflow-x-auto rounded-xl bg-sheet p-3 font-mono text-[0.7rem] leading-relaxed text-ink-2">{treeOf(preview.sample)}</pre>
@@ -259,7 +259,7 @@ export function ExportDialog({ onClose, filters: given = {}, q, count, sum, say,
               {asLink && (
                 <label className="block pl-8 text-sm">
                   <span className="font-semibold">{t('exports.recipient')}</span>
-                  <input value={recipient} maxLength={100} onChange={(e) => setRecipient(e.target.value)} className="mt-1 block h-10 w-full rounded-xl border border-line bg-sheet px-3" />
+                  <input value={recipient} maxLength={100} onChange={(e) => setRecipient(e.target.value)} className="input mt-1 px-3" />
                 </label>
               )}
             </div>
@@ -274,7 +274,7 @@ export function ExportDialog({ onClose, filters: given = {}, q, count, sum, say,
         </p>
       )}
       <div className="mt-6 flex justify-end gap-2">
-        <Button variant="ghost" onClick={onClose}>
+        <Button variant="line" onClick={onClose}>
           {t('exports.cancel')}
         </Button>
         <Button variant="primary" onClick={() => void create()} disabled={busy || !chosen.length || preview?.too_many === true || (asLink && !recipient.trim())}>
@@ -362,7 +362,7 @@ function ExportList({
               </span>
               <span className="flex flex-wrap gap-1">
                 {item.state === 'ready' && (
-                  <a href={exportsApi.fileUrl(item.id)} download className="inline-flex h-8 items-center gap-1.5 rounded-full bg-accent-soft px-3.5 text-sm font-semibold text-accent">
+                  <a href={exportsApi.fileUrl(item.id)} download className="btn btn-ghost h-8 px-2.5 text-xs">
                     <Download size={14} aria-hidden /> {t('exports.download')}
                   </a>
                 )}

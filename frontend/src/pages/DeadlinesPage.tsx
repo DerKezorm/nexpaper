@@ -102,9 +102,9 @@ export function DeadlinesPage() {
   return (
     <div className="page pt-6 pb-28 lg:pt-8 lg:pb-12">
       <div className="mb-5">
-        <h1 className="font-display text-3xl font-semibold tracking-tight">{t('deadlines.title')}</h1>
+        <h1 className="text-2xl font-bold tracking-tight">{t('deadlines.title')}</h1>
         <p className="max-w-2xl text-sm text-muted">
-          {t('deadlines.intro')} <Trans i18nKey="reminders.remindedHow" components={{ account: <Link to="/konto?tab=erinnerungen" className="font-semibold text-accent hover:underline" /> }} />
+          {t('deadlines.intro')} <Trans i18nKey="reminders.remindedHow" components={{ account: <Link to="/settings/reminders" className="font-semibold text-accent hover:underline" /> }} />
         </p>
       </div>
 
@@ -153,7 +153,7 @@ export function DeadlinesPage() {
         <div className="space-y-7">
           <div className="card p-12 text-center">
             <Check size={30} className="mx-auto text-ok" aria-hidden />
-            <p className="mt-3 font-display text-xl font-semibold">{t('deadlines.nothing')}</p>
+            <p className="mt-3 text-xl font-semibold">{t('deadlines.nothing')}</p>
             <p className="mt-1 text-sm text-ink-2">{t('deadlines.nothingHint')}</p>
           </div>
           {filter === 'all' && mayGo.total > 0 && <MayGo items={mayGo.items} total={mayGo.total} vaults={vaults} mineId={me?.id ?? 0} onChanged={goChanged} />}
@@ -217,7 +217,7 @@ function DateBlock({ date, warn, done }: { date: string; warn?: boolean; done?: 
   return (
     <div className={`flex w-14 shrink-0 flex-col items-center rounded-xl py-1.5 leading-none ${done ? 'bg-sheet-2 text-muted' : warn ? 'bg-warn text-paper' : 'bg-accent-soft text-accent'}`} aria-hidden>
       <span className="text-[0.65rem] font-bold uppercase">{days[weekday(date)]}</span>
-      <span className="font-display text-2xl font-semibold tabular-nums">{d}</span>
+      <span className="text-2xl font-semibold tabular-nums">{d}</span>
       <span className="text-[0.7rem] font-bold uppercase">{months[m - 1]}</span>
     </div>
   )
@@ -263,7 +263,7 @@ function Row({ x, vault, muted, onChanged }: { x: Deadline; vault: Vault | undef
           </span>
           {!x.done && <span className={`rounded-full px-2 py-0.5 text-xs ${overdue ? 'bg-warn-soft' : 'bg-sheet-2 text-muted'}`}>{t(`deadlines.relative.${rel.key}`, { count: rel.count })}</span>}
         </p>
-        <Link to={x.status === 'inbox' ? `/eingang/${x.document_id}` : `/dokument/${x.document_id}`} className="mt-0.5 flex min-w-0 items-center gap-2 font-display text-lg font-semibold hover:text-accent">
+        <Link to={x.status === 'inbox' ? `/eingang/${x.document_id}` : `/dokument/${x.document_id}`} className="mt-0.5 flex min-w-0 items-center gap-2 text-lg font-semibold hover:text-accent">
           <bdi className="truncate">{x.title}</bdi>
           {x.status === 'inbox' && <span className="shrink-0 rounded-full bg-accent-soft px-2 py-0.5 font-sans text-xs font-bold text-accent">{t('deadlines.inInbox')}</span>}
         </Link>

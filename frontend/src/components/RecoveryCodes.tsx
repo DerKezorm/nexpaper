@@ -20,7 +20,7 @@ export function KeepCodes({ codes, account, className = '' }: { codes: string[];
   const { t } = useTranslation()
   const [copied, setCopied] = useState(false)
   const text = codes.join('\n')
-  const look = 'h-10 flex-1 rounded-full border border-line text-sm font-semibold hover:bg-sheet-2'
+  const look = 'btn btn-ghost flex-1'
   return (
     <div className={'flex gap-2 ' + className}>
       <button type="button" className={look} onClick={() => void copyText(text).then(setCopied)}>

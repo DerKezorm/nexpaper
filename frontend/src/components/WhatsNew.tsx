@@ -38,7 +38,7 @@ export function WhatsNewWindow({ version, entry, onClose }: { version: string; e
         <div className="mb-5 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <LogoMark size={34} />
-            <h2 id={titleId} className="font-display text-xl font-semibold">
+            <h2 id={titleId} className="text-xl font-semibold">
               {t('whatsNew.title', { version })}
             </h2>
           </div>
@@ -74,7 +74,7 @@ export function WhatsNewWindow({ version, entry, onClose }: { version: string; e
           </section>
         )}
         <div className="mt-6 flex justify-end">
-          <button type="button" onClick={onClose} className="inline-flex h-10 items-center rounded-full bg-accent px-4 text-sm font-semibold text-accent-ink hover:brightness-105">
+          <button type="button" onClick={onClose} className="btn btn-accent">
             {t('whatsNew.done')}
           </button>
         </div>
@@ -103,7 +103,7 @@ export function WhatsNewBanner() {
       <div className="flex items-center gap-3 rounded-2xl bg-accent-soft px-4 py-2.5 text-sm" role="status" data-testid="whats-new-banner">
         <Sparkles size={16} className="shrink-0 text-accent" />
         <span className="min-w-0 flex-1 font-semibold">{t('whatsNew.banner', { version: me.version })}</span>
-        <button type="button" onClick={() => setOpen(true)} className="h-8 rounded-full bg-accent px-3.5 text-xs font-semibold text-accent-ink hover:brightness-105">
+        <button type="button" onClick={() => setOpen(true)} className="btn btn-accent h-8 px-3 text-xs">
           {t('whatsNew.show')}
         </button>
         <button type="button" onClick={putAway} aria-label={t('whatsNew.putAway')} title={t('whatsNew.putAway')} className="rounded-full p-1 text-muted hover:text-ink">

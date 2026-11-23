@@ -7,7 +7,7 @@ import type { Me } from '../api/client'
 import { changeLanguage } from '../i18n'
 import { entriesFor } from '../lib/whatsNew'
 import { Page, Server } from '../test/harness'
-import { AboutPage } from './AboutPage'
+import { AboutArea } from './settings/AboutArea'
 
 const me = {
   id: 1, name: 'jule', display_name: 'Jule', role: 'operator', sign_in: 'password', email: '', language: 'de', version: '1.0.0', whats_new_seen: '1.0.0',
@@ -43,7 +43,7 @@ afterEach(() => {
 
 describe('the facts', () => {
   it('show the version, the licence, the source, the releases and where to report a problem', async () => {
-    await page.show(<AboutPage />)
+    await page.show(<AboutArea />)
     const facts = document.querySelector('[data-testid="about-facts"]')!.textContent!
     expect(document.querySelector('[data-testid="about-version"]')?.textContent).toBe('1.0.0')
     expect(facts).toContain('AGPL-3.0')
@@ -56,13 +56,13 @@ describe('the facts', () => {
   })
 
   it('say that this is the newest version', async () => {
-    await page.show(<AboutPage />)
+    await page.show(<AboutArea />)
     expect(document.querySelector('[data-testid="about-update-state"]')?.textContent).toBe('Das ist die neueste Version.')
   })
 
   it('say that a newer version is out, with the way to it', async () => {
     server.answers['GET /api/v1/about/updates'] = { ...current, latest: 'v0.1.1', newer: true, release_url: 'https://github.com/example/nexpaper/releases/tag/v0.1.1' }
-    await page.show(<AboutPage />)
+    await page.show(<AboutArea />)
     expect(document.querySelector('[data-testid="about-update-state"]')?.textContent).toContain('0.1.1')
     expect(page.text).toContain('Version 0.1.1 ist erschienen')
     expect(document.querySelector('[data-testid="about-update-state"] a')?.getAttribute('href')).toBe('https://github.com/example/nexpaper/releases/tag/v0.1.1')
@@ -73,7 +73,7 @@ describe('the daily question', () => {
   it('is switched and asked now by the operator, and says what goes out', async () => {
     server.answers['PUT /api/v1/about/updates'] = { ...current, update_check: false }
     server.answers['POST /api/v1/about/updates/check'] = current
-    await page.show(<AboutPage />)
+    await page.show(<AboutArea />)
     expect(page.text).toContain('Hinaus geht nur die Frage')
     await page.click(page.button('Jetzt nachsehen'))
     expect(server.changes()).toEqual(['POST /api/v1/about/updates/check'])
@@ -83,7 +83,7 @@ describe('the daily question', () => {
 
   it('is only shown, not changed, to a member', async () => {
     auth.me = { ...me, role: 'member' } as Me
-    await page.show(<AboutPage />)
+    await page.show(<AboutArea />)
     expect(document.querySelector('[role="switch"]')).toBeNull()
     expect(page.button('Jetzt nachsehen')).toBeUndefined()
     expect(document.querySelector('[data-testid="about-update-state"]')?.textContent).toBe('Das ist die neueste Version.')
@@ -95,7 +95,7 @@ describe('what is new', () => {
     // The texts come by a dynamic import: loaded before the page, the button is there at its first idle moment, also
     // on a busy machine.
     await entriesFor('de')
-    await page.show(<AboutPage />)
+    await page.show(<AboutArea />)
     await page.click(page.button('Neu in nexpaper 1.0.0'))
     const window = document.querySelector('[data-testid="whats-new-window"]')!
     expect(window.textContent).toContain('Das ist nexpaper 1.0')
@@ -108,7 +108,7 @@ describe('what is new', () => {
   it('has the same text in English', async () => {
     await changeLanguage('en', false)
     await entriesFor('en')
-    await page.show(<AboutPage />)
+    await page.show(<AboutArea />)
     await page.click(page.button('New in nexpaper 1.0.0'))
     const window = document.querySelector('[data-testid="whats-new-window"]')!
     expect(window.textContent).toContain('This is nexpaper 1.0')
@@ -119,9 +119,9 @@ describe('what is new', () => {
 
 describe('what it is built with', () => {
   it('names the text recognition, the PDF tools, the camera and the fonts with their licences', async () => {
-    await page.show(<AboutPage />)
+    await page.show(<AboutArea />)
     const built = [...document.querySelectorAll('li')].map((item) => (item.textContent ?? '').replace(/\s+/g, ' ').replace('(', ' ('))
-    for (const part of ['OCRmyPDF (MPL-2.0)', 'Tesseract (Apache-2.0)', 'pikepdf (MPL-2.0)', 'img2pdf (LGPL-3.0)', 'PDF.js (Apache-2.0)', 'OpenCV.js (Apache-2.0)', 'jscanify (MIT)', 'Fraunces (OFL-1.1)', 'Figtree (OFL-1.1)']) {
+    for (const part of ['OCRmyPDF (MPL-2.0)', 'Tesseract (Apache-2.0)', 'pikepdf (MPL-2.0)', 'img2pdf (LGPL-3.0)', 'PDF.js (Apache-2.0)', 'OpenCV.js (Apache-2.0)', 'jscanify (MIT)', 'Inter (OFL-1.1)']) {
       expect(built, part).toContain(part)
     }
   })

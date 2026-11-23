@@ -63,7 +63,7 @@ async function connect() {
   await page.show(<ImportCard />)
   await page.type(field('Adresse von Paperless'), 'http://paperless.example.com:8000')
   await page.type(field('API-Token'), 'made-up-token')
-  await page.click(document.querySelector<HTMLButtonElement>('button[role="switch"][aria-label="Paperless läuft im eigenen Netz"]'))
+  await page.click(document.querySelector<HTMLButtonElement>('[role="switch"][aria-label="Paperless läuft im eigenen Netz"]'))
   await page.click(page.button('Verbinden und nachsehen'))
 }
 

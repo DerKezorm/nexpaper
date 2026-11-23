@@ -50,7 +50,7 @@ describe('the dialog that asks first', () => {
     expect(page.dialog!.textContent).toContain('Das lässt sich nicht zurückholen.')
     expect(document.activeElement).toBe(page.button('Abbrechen', page.dialog!))
     // Red where it cannot be taken back.
-    expect(page.button('Endgültig löschen', page.dialog!)!.className).toContain('bg-bad')
+    expect(page.button('Endgültig löschen', page.dialog!)!.className).toContain('btn-danger')
     await page.inDialog('Endgültig löschen')
     expect(run).toHaveBeenCalledTimes(1)
     expect(page.dialog).toBeNull()

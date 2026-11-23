@@ -247,7 +247,7 @@ function CheckView({
           ] as const
         ).map(([value, label]) => (
           <div key={label} className="rounded-xl bg-sheet-2 px-4 py-3">
-            <p className="font-display text-2xl font-semibold">{number(value)}</p>
+            <p className="text-2xl font-semibold">{number(value)}</p>
             <p className="text-xs text-muted">{label}</p>
           </div>
         ))}
@@ -314,7 +314,7 @@ function CheckView({
               aria-label={t('paperless.vault')}
               value={vault ?? ''}
               onChange={(event) => setVault(Number(event.target.value))}
-              className="h-9 rounded-xl border border-line bg-sheet px-2 text-ink"
+              className="input h-9 w-auto px-2"
             >
               {found.vaults.map((v) => (
                 <option key={v.id} value={v.id}>
@@ -361,11 +361,11 @@ function CheckView({
         </p>
       </div>
       {found.already > 0 && <p className="text-xs text-muted">{t('paperless.already', { n: number(found.already) })}</p>}
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap justify-end gap-2">
+        <Button onClick={onBack}>{t('paperless.back')}</Button>
         <Button primary onClick={onStart} busy={busy} disabled={left === 0 || (where === 'vault' && vault === null)}>
           {t('paperless.go', { n: number(left) })}
         </Button>
-        <Button onClick={onBack}>{t('paperless.back')}</Button>
       </div>
     </div>
   )

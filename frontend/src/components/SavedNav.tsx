@@ -49,9 +49,9 @@ export function SavedNav() {
       },
     })
   return (
-    <div className="mt-6" data-testid="saved-nav">
-      <p className="px-3 pb-1.5 text-xs font-bold tracking-wide text-muted uppercase">{t('saved.title')}</p>
-      <ul className="space-y-0.5">
+    <section aria-label={t('saved.title')} className="pb-1" data-testid="saved-nav">
+      <h2 className="px-2.5 pt-3.5 pb-1 text-[11px] font-semibold tracking-[0.06em] text-muted uppercase">{t('saved.title')}</h2>
+      <ul className="flex flex-col">
         {list.map((entry, index) => (
           <Entry
             key={entry.id}
@@ -68,7 +68,7 @@ export function SavedNav() {
         ))}
       </ul>
       {dialog}
-    </div>
+    </section>
   )
 }
 
@@ -106,7 +106,7 @@ function Entry({ entry, active, first, last, above, onUp, onDown, onRename, onDe
     window.addEventListener('mousedown', close)
     return () => window.removeEventListener('mousedown', close)
   }, [menu])
-  const item = 'flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm font-semibold text-ink-2 hover:bg-sheet-2 hover:text-ink disabled:pointer-events-none disabled:opacity-40'
+  const item = 'menu-item'
   const hint = savedHint(entry, t)
 
   if (renaming)
@@ -140,9 +140,9 @@ function Entry({ entry, active, first, last, above, onUp, onDown, onRename, onDe
         to={`/?${entry.query}`}
         title={hint || undefined}
         aria-current={active ? 'page' : undefined}
-        className={`flex items-center gap-3 rounded-xl py-2 pr-3 pl-3 text-sm font-semibold transition ${active ? 'bg-accent-soft text-accent' : 'text-ink-2 hover:bg-sheet-2'}`}
+        className={`flex min-h-8 items-center gap-2 rounded-lg px-2.5 py-1 text-[13.5px] pointer-coarse:min-h-11 ${active ? 'chosen font-semibold' : 'text-ink hover:bg-sheet-2'}`}
       >
-        <Bookmark size={16} className={`shrink-0 ${active ? 'fill-current' : ''}`} aria-hidden />
+        <Bookmark className={`h-3.5 w-3.5 shrink-0 ${active ? 'fill-current' : ''}`} strokeWidth={2} aria-hidden />
         <bdi className="line-clamp-2 min-w-0 flex-1 break-words">{entry.name}</bdi>
         <SavedCount entry={entry} className="group-hover:opacity-0 group-focus-within:opacity-0" />
       </Link>
@@ -151,24 +151,24 @@ function Entry({ entry, active, first, last, above, onUp, onDown, onRename, onDe
         onClick={() => setMenu(!menu)}
         aria-label={t('saved.more', { name: entry.name })}
         aria-expanded={menu}
-        className={`absolute top-1/2 right-1.5 -translate-y-1/2 rounded-full p-1 text-muted hover:bg-sheet hover:text-ink ${menu ? 'opacity-100' : 'opacity-0 group-hover:opacity-100 focus:opacity-100'}`}
+        className={`absolute top-1/2 right-1 -translate-y-1/2 rounded p-0.5 text-muted hover:bg-line hover:text-ink ${menu ? 'opacity-100' : 'opacity-0 group-hover:opacity-100 focus:opacity-100'}`}
       >
-        <MoreHorizontal size={16} aria-hidden />
+        <MoreHorizontal className="h-4 w-4" aria-hidden />
       </button>
       {menu && (
-        <div className={`card rise absolute left-2 z-50 w-52 p-1.5 ${above ? 'bottom-full mb-1' : 'top-full mt-1'}`} role="menu">
+        <div className={`menu rise absolute left-2 w-52 ${above ? 'bottom-full mb-1' : 'top-full mt-1'}`} role="menu">
           <button type="button" role="menuitem" className={item} onClick={() => (setMenu(false), setName(entry.name), setRenaming(true))}>
-            <Pencil size={15} aria-hidden /> {t('saved.rename')}
+            <Pencil className="h-4 w-4" aria-hidden /> {t('saved.rename')}
           </button>
           <button type="button" role="menuitem" className={item} disabled={first} onClick={() => (setMenu(false), onUp())}>
-            <ArrowUp size={15} aria-hidden /> {t('saved.up')}
+            <ArrowUp className="h-4 w-4" aria-hidden /> {t('saved.up')}
           </button>
           <button type="button" role="menuitem" className={item} disabled={last} onClick={() => (setMenu(false), onDown())}>
-            <ArrowDown size={15} aria-hidden /> {t('saved.down')}
+            <ArrowDown className="h-4 w-4" aria-hidden /> {t('saved.down')}
           </button>
-          <div className="my-1 h-px bg-line" />
+          <div className="my-1 h-px bg-line" role="separator" />
           <button type="button" role="menuitem" className={item} onClick={() => (setMenu(false), onDelete())}>
-            <Trash2 size={15} aria-hidden /> {t('saved.delete')}
+            <Trash2 className="h-4 w-4" aria-hidden /> {t('saved.delete')}
           </button>
         </div>
       )}

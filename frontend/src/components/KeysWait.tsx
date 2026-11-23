@@ -15,7 +15,7 @@ export function KeysWait({ className = '' }: { className?: string }) {
   return (
     <p role="note" data-testid="keys-wait" className={'rounded-xl border border-warn/40 bg-warn-soft px-4 py-3 text-sm text-ink-2 ' + className}>
       {t('me.keysWait')}{' '}
-      <Link to="/konto?tab=security" className="font-semibold underline">
+      <Link to="/settings/security" className="font-semibold underline">
         {t('me.keysWaitLink')}
       </Link>
     </p>

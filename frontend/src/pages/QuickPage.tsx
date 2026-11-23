@@ -193,7 +193,7 @@ export function QuickPage({ shared = false }: { shared?: boolean }) {
             <Camera size={28} aria-hidden />
           </span>
           <span>
-            <span className="block font-display text-xl font-semibold">{t('phone.quick.photo')}</span>
+            <span className="block text-xl font-semibold">{t('phone.quick.photo')}</span>
             <span className="text-sm opacity-85">{t('phone.quick.photoText')}</span>
           </span>
         </Link>
@@ -308,7 +308,7 @@ export function QuickPage({ shared = false }: { shared?: boolean }) {
       {refused && <UploadNotice lead={toast ?? ''} summary={refused} onClose={() => setRefused(null)} />}
       {toast && !refused && (
         <div role="status" className="rise fixed inset-x-0 bottom-24 z-50 flex justify-center px-4">
-          <p className="rounded-full bg-ink px-5 py-2.5 text-center text-sm font-semibold text-paper shadow-soft">{toast}</p>
+          <p className="rounded-[12px] border border-line bg-sheet-2 px-4 py-2.5 text-center text-[13.5px] text-ink shadow-xl shadow-black/20">{toast}</p>
         </div>
       )}
     </div>

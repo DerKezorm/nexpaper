@@ -67,7 +67,7 @@ export function ExportLinkPage() {
       <main className="mx-auto max-w-4xl px-4 py-6">
         {gone && (
           <div className="card p-10 text-center" role="alert">
-            <p className="font-display text-xl font-semibold">{t('link.gone')}</p>
+            <p className="text-xl font-semibold">{t('link.gone')}</p>
             <p className="mt-1 text-sm text-ink-2">{t('link.goneText')}</p>
           </div>
         )}
@@ -83,7 +83,7 @@ export function ExportLinkPage() {
               <span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-accent-soft text-accent">
                 <FileArchive size={28} aria-hidden />
               </span>
-              <h1 className="font-display text-2xl font-semibold">{t('exports.page.heading', { recipient: found.recipient })}</h1>
+              <h1 className="text-2xl font-semibold">{t('exports.page.heading', { recipient: found.recipient })}</h1>
               {found.state === 'ready' && (
                 <p className="text-sm text-muted">
                   {t('exports.page.meta', { n: found.documents.toLocaleString(i18n.language), size: formatBytes(found.size, i18n.language, 1000) })}
@@ -98,7 +98,7 @@ export function ExportLinkPage() {
               {found.state === 'ready' ? (
                 <>
                   <p className="text-sm text-ink-2">{t('exports.page.ready')}</p>
-                  <a href={exportsApi.publicFileUrl(token)} download className="inline-flex h-10 items-center gap-2 rounded-full bg-accent px-4 font-semibold text-accent-ink">
+                  <a href={exportsApi.publicFileUrl(token)} download className="btn btn-accent">
                     <Download size={16} aria-hidden /> {t('exports.page.download')}
                   </a>
                 </>

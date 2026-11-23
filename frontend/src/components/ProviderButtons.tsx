@@ -18,7 +18,7 @@ export function OrLine() {
   )
 }
 
-const OUTLINE = 'flex h-11 w-full items-center justify-center gap-2 rounded-full border border-line text-sm font-semibold hover:bg-sheet-2'
+const OUTLINE = 'btn btn-ghost h-11 w-full'
 
 export function ProviderButtons({
   providers,

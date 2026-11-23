@@ -8,7 +8,7 @@ import type { Me } from '../api/client'
 import { ApiKeys } from '../components/ApiKeys'
 import { changeLanguage } from '../i18n'
 import { INBOX, Page, Server, inboxOf, plain } from '../test/harness'
-import { AccountPage } from './AccountPage'
+import { SettingsRoutes } from '../test/settings'
 import { InboxPage } from './InboxPage'
 import { AccountsCard, LanguagesCard, useServerSettings } from './settings/ServerCards'
 import { SignInPart } from './settings/SignInCards'
@@ -73,33 +73,34 @@ async function asksFirst(trigger: () => HTMLElement | undefined, red: string, se
 
 describe('my account', () => {
   it('asks before the profile picture goes', async () => {
-    await page.show(<AccountPage />, '/konto')
-    await asksFirst(() => page.button('Entfernen'), 'Bild entfernen', 'DELETE /api/v1/auth/avatar')
+    await page.show(<SettingsRoutes />, '/konto')
+    await asksFirst(() => page.button('Bild entfernen'), 'Bild entfernen', 'DELETE /api/v1/auth/avatar')
   })
 
   it('asks before the mail address goes, and names it', async () => {
-    await page.show(<AccountPage />, '/konto')
-    // The password is asked again for a change of the address.
+    await page.show(<SettingsRoutes />, '/konto')
+    // An emptied address is removed; the password is asked again for a change of the address.
+    await page.type(document.querySelector<HTMLInputElement>('input[type="email"]'), '')
     await page.type(document.querySelector<HTMLInputElement>('input[type="password"]'), 'geheimwort')
-    await page.click(page.button('Adresse entfernen'))
+    await page.click(page.button('Speichern'))
     expect(plain(page.dialog!.textContent)).toContain('Die Adresse jule@example.com wird gelöscht.')
     await page.inDialog('Abbrechen')
     expect(server.changes()).toEqual([])
   })
 
   it('asks before the link to the provider is let go', async () => {
-    await page.show(<AccountPage />, '/konto?tab=security')
+    await page.show(<SettingsRoutes />, '/konto?tab=security')
     await asksFirst(() => page.button('Lösen'), 'Verknüpfung lösen', 'DELETE /api/v1/oidc/authentik/link')
   })
 
   it('asks before an API key is deleted, and names it', async () => {
     await page.show(<ApiKeys />, '/konto?tab=devices')
-    await page.click(page.button('Schlüssel „Scanner im Flur“ löschen') ?? document.querySelector<HTMLElement>('button[aria-label*="Scanner im Flur"]'))
-    expect(plain(page.dialog!.textContent)).toContain('Programme mit dem Schlüssel „Scanner im Flur“ kommen danach nicht mehr in nexpaper.')
+    await page.click(page.button('Token „Scanner im Flur“ löschen') ?? document.querySelector<HTMLElement>('button[aria-label*="Scanner im Flur"]'))
+    expect(plain(page.dialog!.textContent)).toContain('Programme mit dem Token „Scanner im Flur“ kommen danach nicht mehr in nexpaper.')
     expect(server.changes()).toEqual([])
     await page.inDialog('Abbrechen')
     await page.click(document.querySelector<HTMLElement>('button[aria-label*="Scanner im Flur"]'))
-    await page.inDialog('Schlüssel löschen')
+    await page.inDialog('Token löschen')
     expect(server.changes()).toEqual(['DELETE /api/v1/api-keys/4'])
   })
 })

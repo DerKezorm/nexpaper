@@ -51,7 +51,7 @@ export function MemoDialog({ sender, memo, onClose, onSaved }: { sender: { id: n
         <p className="mt-1 text-right text-xs text-muted tabular-nums">{t('senderMemo.count', { count: text.length, max: MEMO_MAX })}</p>
         {problem && <p className="mt-2 text-sm text-bad">{errorText(problem)}</p>}
         <div className="mt-4 flex justify-end gap-2">
-          <Button variant="ghost" onClick={onClose}>
+          <Button variant="line" onClick={onClose}>
             {t('common.cancel')}
           </Button>
           <Button variant="primary" type="submit" disabled={busy}>

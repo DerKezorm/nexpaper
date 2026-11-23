@@ -223,7 +223,7 @@ export function OrderPage() {
   return (
     <div className="page space-y-5 pt-6 pb-28 lg:pt-8 lg:pb-12">
       <div>
-        <h1 className="font-display text-3xl font-semibold tracking-tight">{t('order.title')}</h1>
+        <h1 className="text-2xl font-bold tracking-tight">{t('order.title')}</h1>
         <p className="max-w-2xl text-sm text-muted">{t('order.intro')}</p>
       </div>
 
@@ -406,19 +406,19 @@ function AutoTrashSwitch({ entry, onChange }: { entry: OrderEntry; onChange: (on
   const on = Boolean(entry.auto_trash)
   if (!entry.can_change) return on ? <span className="basis-full text-sm text-muted">{t('keeping.auto.fixed')}</span> : null
   return (
-    <span className="flex shrink-0 items-center gap-2 text-sm" data-testid="auto-trash" title={t('keeping.auto.hint')}>
+    <label className="flex shrink-0 cursor-pointer items-center gap-2 text-sm" data-testid="auto-trash" title={t('keeping.auto.hint')}>
       <span className="text-ink-2">{t('keeping.auto.label')}</span>
-      <button
-        type="button"
+      {/* A checkbox as everywhere in the nex apps, never a sliding switch. */}
+      <input
+        type="checkbox"
         role="switch"
+        checked={on}
         aria-checked={on}
         aria-label={t('keeping.auto.label')}
-        onClick={() => onChange(!on)}
-        className={`relative h-6 w-10 shrink-0 rounded-full transition ${on ? 'bg-accent' : 'bg-line'}`}
-      >
-        <span className={`absolute top-1 h-4 w-4 rounded-full bg-sheet shadow transition-all ${on ? 'left-5' : 'left-1'}`} />
-      </button>
-    </span>
+        onChange={() => onChange(!on)}
+        className="h-5 w-5 shrink-0 accent-[var(--accent)]"
+      />
+    </label>
   )
 }
 
@@ -503,7 +503,7 @@ function KeepDialog({ entry, years, onClose, onDone }: { entry: OrderEntry; year
         )}
         {problem && <Feedback problem={problem} />}
         <div className="flex flex-wrap justify-end gap-2 pt-1">
-          <Button variant="ghost" onClick={onClose}>
+          <Button variant="line" onClick={onClose}>
             {t('common.cancel')}
           </Button>
           <Button variant="line" disabled={!found || busy} onClick={() => void set(false)}>
@@ -623,7 +623,7 @@ function RenameDialog({ what, entry, onClose, onDone }: { what: OrderWhat; entry
         )}
         {problem && <p role="alert" className="mt-2 text-sm text-bad">{errorText(problem.code, problem.values)}</p>}
         <div className="mt-5 flex justify-end gap-2">
-          <Button variant="ghost" onClick={onClose}>
+          <Button variant="line" onClick={onClose}>
             {t('common.cancel')}
           </Button>
           <Button variant="primary" type="submit" disabled={!clean || clean === entry.name || busy}>

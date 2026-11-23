@@ -144,7 +144,7 @@ describe('the column "Aufbewahren" of the kinds', () => {
 describe('the switch "Abgelaufene selbst in den Papierkorb"', () => {
   const steuer = { ...KINDS[1], keep_years: 10 }
   const switchOf = (name: string) =>
-    [...page.box.querySelectorAll('ul[aria-label] > li')].find((li) => plain(li.textContent).includes(name))?.querySelector<HTMLButtonElement>('button[role="switch"]') ?? null
+    [...page.box.querySelectorAll('ul[aria-label] > li')].find((li) => plain(li.textContent).includes(name))?.querySelector<HTMLButtonElement>('[role="switch"]') ?? null
 
   /** What was changed: the questions (previews) change nothing. */
   const changed = () => server.changes().filter((c) => !c.endsWith('/preview'))

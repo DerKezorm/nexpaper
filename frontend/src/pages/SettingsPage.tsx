@@ -1,108 +1,46 @@
 /**
- * Settings, for the operator only: the server in one row of tabs (accounts, sign-in, mail, AI, storage, sharing, Web Push,
- * backups, languages, log, API). Everything personal is under "My account". The part is in the address (`?tab=signin`), so a
- * link can point at one. A member has no use for this page and is sent to their account. Filing, inputs, sharing and
- * import join the row with the blocks that make them.
+ * Settings in areas, as in nexnotes: "My account" for every account, "Server" for the operator, "About nexpaper" for
+ * everyone at the end. Each area has its own address (`/settings/<slug>`, `settings/areas.ts`), `/settings` is the
+ * profile. An area someone may not open leads on to the profile, so the navigation always marks where one is. The
+ * pages of before (`/konto`, `/einstellungen`, `/ueber`, each with its `?tab=`) lead to their area (`FormerAddress`).
  */
-import { BellRing, FolderInput, FolderTree, HardDrive, Inbox, KeyRound, Languages, Link2, Mail, Plug, ScrollText, Sparkles, Users } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { Navigate, useSearchParams } from 'react-router-dom'
+import { Navigate, useLocation, useParams } from 'react-router-dom'
 
 import { useAuth } from '../state/auth'
-import { AiCard } from './settings/AiCard'
-import { ImportCard } from './settings/ImportCard'
-import { IntakeCards } from './settings/IntakeCards'
-import { PushServerCard } from './settings/PushCards'
-import { ReadinessCard } from './settings/ReadinessCards'
-import { SharingCard } from './settings/SharingCard'
-import { KindsCard, RulesCard } from './settings/SortingCards'
-import { ShortcutLinkCard } from './settings/ShortcutLinkCard'
-import { FilesCards } from './settings/FilesCards'
-import { DiskCard, LimitsCard } from './settings/StorageCards'
-import { OcrCard } from './settings/OcrCard'
-import { AccountsCard, ApiKeysCard, BackupsCard, InterfaceCard, LanguagesCard, LogCard, MailCard, useServerSettings } from './settings/ServerCards'
-import { SignInPart } from './settings/SignInCards'
-import { TabRow, type Tab } from './settings/ui'
-
-type Part = 'accounts' | 'signin' | 'mail' | 'ai' | 'storage' | 'inputs' | 'sharing' | 'push' | 'backups' | 'languages' | 'import' | 'log' | 'api'
-const PARTS: Part[] = ['accounts', 'signin', 'mail', 'ai', 'storage', 'inputs', 'sharing', 'push', 'backups', 'languages', 'import', 'log', 'api']
-const PART_ICON = { accounts: Users, signin: KeyRound, mail: Mail, ai: Sparkles, storage: FolderTree, inputs: FolderInput, sharing: Link2, push: BellRing, backups: HardDrive, languages: Languages, import: Inbox, log: ScrollText, api: Plug }
+import { findArea, formerAddress, resolveArea } from './settings/areas'
+import { AreaContent } from './settings/SettingsAreas'
+import { SettingsJump, SettingsNav } from './settings/SettingsNav'
 
 export function SettingsPage() {
   const { t } = useTranslation()
   const { me } = useAuth()
-  const [params, setParams] = useSearchParams()
+  const { tab: asked } = useParams()
+  const { search } = useLocation()
   if (!me) return null
-  if (me.role !== 'operator') return <Navigate to="/konto" replace />
-  const asked = params.get('tab') as Part | null
-  const part: Part = asked && PARTS.includes(asked) ? asked : 'accounts'
-  const tabs: Tab<Part>[] = PARTS.map((value) => ({ value, label: value === 'inputs' ? t('intake.tab') : value === 'import' ? t('paperless.tab') : t(`settings.parts.${value}`), icon: PART_ICON[value] }))
+  const where = resolveArea(asked, me.role, search)
+  if ('redirect' in where) return <Navigate to={where.redirect} replace />
+  const area = findArea(where.area)
+  if (!area) return null
   return (
-    <div className="page space-y-5 pt-8 pb-28 lg:pb-12">
-      <h1 className="font-display text-3xl font-semibold tracking-tight">{t('settings.title')}</h1>
-      <TabRow tabs={tabs} active={part} onChange={(value) => setParams(value === 'accounts' ? {} : { tab: value }, { replace: true })} label={t('settings.title')} />
-      <div className="space-y-6 pt-1">
-        <ServerPart part={part} />
+    <div className="@container mx-auto w-full max-w-6xl px-4 pt-6 pb-28 sm:px-6 sm:pt-8 lg:pb-12">
+      <div className="flex flex-col gap-5 @min-[700px]:flex-row @min-[700px]:items-start @min-[700px]:gap-8">
+        <SettingsNav me={me} current={area.slug} />
+        <SettingsJump me={me} current={area.slug} />
+        <div className="min-w-0 flex-1 space-y-5" data-testid={`settings-area-${area.slug}`}>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">{t(`settings.areas.${area.key}.title`)}</h1>
+            <p className="mt-1 text-sm text-muted">{t(`settings.areas.${area.key}.text`)}</p>
+          </div>
+          <AreaContent key={area.slug} area={area.slug} />
+        </div>
       </div>
     </div>
   )
 }
 
-/** One part of the server, for the operator. */
-function ServerPart({ part }: { part: Part }) {
-  const server = useServerSettings()
-  switch (part) {
-    case 'accounts':
-      return <AccountsCard />
-    case 'signin':
-      return (
-        <div className="space-y-6">
-          {/* nexpaper's own look at the server (its points say "below"), then the three cards of the shared module,
-             one below the other. */}
-          <ReadinessCard />
-          <SignInPart server={server} />
-        </div>
-      )
-    case 'mail':
-      return <MailCard server={server} />
-    case 'ai':
-      return <AiCard />
-    case 'storage':
-      return (
-        <div className="space-y-6">
-          <KindsCard />
-          <RulesCard server />
-          <LimitsCard />
-          <OcrCard />
-          <DiskCard />
-        </div>
-      )
-    case 'inputs':
-      return <IntakeCards />
-    case 'sharing':
-      return <SharingCard />
-    case 'push':
-      return <PushServerCard />
-    case 'backups':
-      return (
-        <div className="space-y-6">
-          <BackupsCard server={server} />
-          <FilesCards />
-        </div>
-      )
-    case 'languages':
-      return <LanguagesCard />
-    case 'import':
-      return <ImportCard />
-    case 'log':
-      return <LogCard />
-    case 'api':
-      return (
-        <div className="space-y-6">
-          <InterfaceCard />
-          <ApiKeysCard server={server} />
-          <ShortcutLinkCard />
-        </div>
-      )
-  }
+/** An address of before (`/konto?tab=…`, `/einstellungen?tab=…`, `/ueber`): on to the area it meant. */
+export function FormerAddress({ page }: { page: 'konto' | 'einstellungen' | 'ueber' }) {
+  const { search } = useLocation()
+  return <Navigate to={formerAddress(page, search)} replace />
 }

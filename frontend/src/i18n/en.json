@@ -44,14 +44,102 @@
     },
     "language": {
       "title": "Language",
-      "text": "Applies to your account. The others choose their own. The operator adds more languages under Settings, Languages."
+      "text": "Applies to your account. The others choose their own. The operator adds more languages under Settings, Languages.",
+      "hint": "(applies on all your devices)"
     },
     "phone": {
       "title": "On the phone",
       "text": "For on the go: nexpaper opens with the big buttons Take a photo and Choose a file, and below them what is happening.",
       "quickStart": "Start with the quick upload on the phone",
       "quickStartHint": "\"All\" leads from there into the whole app."
-    }
+    },
+    "areas": {
+      "about": {
+        "title": "About nexpaper",
+        "text": "Version, licence, source and whether there is a newer version."
+      },
+      "accounts": {
+        "title": "Accounts",
+        "text": "Who uses nexpaper, with their role, open invitations and the API tokens of all accounts."
+      },
+      "aiSetup": {
+        "title": "AI",
+        "text": "Which provider makes suggestions when filing, and within which limits."
+      },
+      "api": {
+        "title": "API",
+        "text": "The interface for apps and scripts, and the iPhone shortcut."
+      },
+      "appearance": {
+        "title": "Appearance",
+        "text": "How nexpaper looks on all your devices, and how the archive starts."
+      },
+      "connections": {
+        "title": "Connections",
+        "text": "Devices, apps and tokens that work with your documents, and notifications on your devices."
+      },
+      "filing": {
+        "title": "Filing",
+        "text": "The kinds for everyone and the rules of the server."
+      },
+      "general": {
+        "title": "General",
+        "text": "Limits, features for all accounts, Web Push and own languages."
+      },
+      "import": {
+        "title": "Import",
+        "text": "Take documents over from Paperless-ngx."
+      },
+      "inputs": {
+        "title": "Inputs",
+        "text": "Intake folder and mailbox, through which documents arrive on their own."
+      },
+      "log": {
+        "title": "Log",
+        "text": "What the server writes down, to look up when something goes wrong."
+      },
+      "mail": {
+        "title": "Mail",
+        "text": "The mail server nexpaper sends invitations, reset links and notices through."
+      },
+      "myAi": {
+        "title": "AI",
+        "text": "Whether the AI helps filing your documents."
+      },
+      "ocr": {
+        "title": "Text recognition",
+        "text": "In which languages nexpaper reads text in scans, photos and PDFs."
+      },
+      "profile": {
+        "title": "Profile",
+        "text": "Picture, name, mail address and language of your account."
+      },
+      "reminders": {
+        "title": "Reminders",
+        "text": "Whether and how nexpaper reminds you of deadlines."
+      },
+      "security": {
+        "title": "Security",
+        "text": "Password, second factor, passkeys, providers and signed-in devices."
+      },
+      "signIn": {
+        "title": "Sign-in",
+        "text": "How everyone signs in: password, public address, second factor and providers."
+      },
+      "storage": {
+        "title": "Storage and backups",
+        "text": "The space in use, the backups of the server and the check of the files."
+      },
+      "upload": {
+        "title": "Upload",
+        "text": "Where your uploads go, where the phone starts, your inputs and upload requests."
+      }
+    },
+    "groups": {
+      "account": "My account",
+      "server": "Server"
+    },
+    "jump": "Page of the settings"
   },
   "auth": {
     "name": "Name",
@@ -163,8 +251,8 @@
     "report": "Found a problem?",
     "reportLink": "Report it on GitHub",
     "builtWith": "Built with",
-    "fonts": "Fonts in the image",
-    "fontsText": "nexpaper brings its fonts along, so that opening it asks no other server.",
+    "fonts": "Font in the image",
+    "fontsText": "nexpaper brings its font along, so that opening it asks no other server.",
     "updates": {
       "title": "Updates",
       "text": "Whether a newer version of nexpaper is out.",
@@ -202,10 +290,11 @@
       "email": "Email",
       "upload": "Upload a picture",
       "change": "Another picture",
-      "remove": "Remove",
+      "remove": "Remove picture",
       "saved": "Picture saved.",
       "removed": "Picture removed.",
-      "hint": "A photo from your phone or camera. It is cut to a square, and nothing of the file but the picture is kept: no place, no device."
+      "hint": "A photo from your phone or camera. It is cut to a square, and nothing of the file but the picture is kept: no place, no device.",
+      "roleLine": "Role: {{role}} · Sign-in name: {{name}}"
     },
     "password": {
       "title": "Password",
@@ -214,7 +303,8 @@
       "new": "New password",
       "again": "Once more",
       "submit": "Change password",
-      "done": "Password changed. Every other device is signed out."
+      "done": "Password changed. Every other device is signed out.",
+      "change": "Change"
     },
     "role": {
       "operator": "Operator",
@@ -227,7 +317,9 @@
       "text": "Proposes title, sender, kind, date and amount in the inbox. You always confirm yourself.",
       "mine": "AI proposals for my documents",
       "mineHint": "Off: your uploads get only rules and what nexpaper reads itself, and your text never goes to a model.",
-      "byOperator": "Set by the operator:"
+      "byOperator": "Set by the operator:",
+      "none": "The operator has not set up an AI. Until then there are only rules and what nexpaper reads from the text itself; your choice here is kept for later.",
+      "noneOperator": "No AI is set up. You choose a provider under <settings>Server › AI</settings>; your choice here is kept until then."
     },
     "push": {
       "title": "Notifications on your devices",
@@ -298,8 +390,20 @@
       "takeAddress": "Take it",
       "addressTaken": "The address is your account's now. Confirm it under Profile, then it counts for documents by mail too."
     },
-    "keysWait": "Devices and API keys work only once you set up a second factor.",
-    "keysWaitLink": "Set up a second factor"
+    "keysWait": "Devices and API tokens work only once you set up a second factor.",
+    "keysWaitLink": "Set up a second factor",
+    "signOut": {
+      "title": "Sign out",
+      "text": "Ends your session in this browser. Your documents stay as they are.",
+      "provider": "You stay signed in at your sign-in provider; only nexpaper signs you out.",
+      "button": "Sign out"
+    },
+    "security": {
+      "title": "Sign-in and security"
+    },
+    "sessions": {
+      "text": "Signs you out of every other browser, for instance after a lost phone. Paired devices you disconnect one by one under Connections."
+    }
   },
   "twofactor": {
     "title": "Second factor",
@@ -345,8 +449,7 @@
     "aiAllowed": "AI allowed",
     "permissionsHint": "Single accounts can be left out of the AI.",
     "accounts": "Accounts",
-    "accountsHint": "Who uses nexpaper. Every account gets its personal vault when it is made. As the operator you manage accounts and shared vaults; you do not look into personal vaults.",
-    "invite": "Invite somebody",
+    "invite": "Invite a person",
     "inviteText": "Whoever follows the link makes an account of their own. Without a mail server you copy the link and pass it on yourself.",
     "signInBy": {
       "password": "password",
@@ -357,14 +460,14 @@
     "blocked": "blocked",
     "makeOperator": "Make operator",
     "makeMember": "Make member",
-    "newPassword": "Send a link to reset",
-    "givePassword": "Send a link for a password",
-    "resetTwoFactor": "Remove second factor",
+    "newPassword": "Reset link …",
+    "givePassword": "Link for a password …",
+    "resetTwoFactor": "Reset the second factor",
     "signOutEverywhere": "Sign out everywhere",
     "block": "Block",
     "unblock": "Unblock",
-    "deleteAccount": "Delete account",
-    "more": "More for {{name}}",
+    "deleteAccount": "Delete …",
+    "more": "Actions for {{name}}",
     "confirm": {
       "role": {
         "title": "Change the role of {{name}}?",
@@ -377,9 +480,9 @@
         "text": "{{name}} becomes a member and no longer reaches the server's settings."
       },
       "reset": {
-        "title": "Remove the second factor of {{name}}?",
+        "title": "Reset the second factor of {{name}}?",
         "text": "For a lost phone: the code from the app, the passkeys and the recovery codes go, every device is signed out, and the person is told. At the next sign-in they set the second factor up again.",
-        "button": "Remove"
+        "button": "Reset"
       },
       "signout": {
         "title": "Sign {{name}} out everywhere?",
@@ -444,7 +547,6 @@
     "smtpUser": "User",
     "smtpFrom": "Sender",
     "none": "none",
-    "mailTestTitle": "Try it",
     "mailTest": "Test mail to",
     "send": "Send",
     "mailSent": "The test mail is out.",
@@ -486,11 +588,9 @@
     "upload": "Upload a language",
     "languageAdded": "Language added. It appears under My account, Profile.",
     "log": "Log",
-    "logHint": "What the server did. Without the content of documents.",
+    "logHint": "Four levels. The two deep ones switch themselves off after an hour. Never the content of documents, passwords or tokens.",
     "level": "Level",
-    "allLevels": "All levels",
-    "logSearch": "Contains …",
-    "refresh": "Refresh",
+    "logSearch": "Search the text …",
     "logEmpty": "Nothing in the log.",
     "detail": "Detail",
     "levels": {
@@ -499,7 +599,7 @@
       "detailed": "Detailed (1 hour)",
       "trace": "Everything (1 hour)"
     },
-    "logClear": "Clear",
+    "logClear": "Clear log",
     "logClearText": "Every line goes. New ones come as before.",
     "logUntil": "Back to normal at {{time}}.",
     "checkNewer": "This backup comes from a newer version of nexpaper. Update nexpaper first, then restore.",
@@ -538,7 +638,7 @@
       "keysText": "nexpaper made a key pair of its own. Making a new one signs every device off; each person has to sign them up again.",
       "renew": "Make new",
       "renewTitle": "Make a new key pair?",
-      "renewText": "Every device is signed off. Each person has to sign them up again under My account, Devices and apps.",
+      "renewText": "Every device is signed off. Each person has to sign them up again under My account, Connections.",
       "renewed": "New key pair made. Every device is signed off.",
       "probe": "Test to my devices",
       "hosts": "More push services",
@@ -554,17 +654,18 @@
     "backupNoDocuments": "The documents themselves are not in the backup.",
     "backupNoDocumentsText": "They lie as plain files under /data/dokumente, readable without nexpaper too. Put this folder into the backup your server makes anyway (Hyper Backup, restic, snapshots). Whoever backs up only this file has filing without documents after a disk failure.",
     "apiKeys": {
-      "title": "API keys",
-      "text": "Programs read or upload with a key that each person makes under My account. Here you allow that and see every key, never the key itself.",
-      "allow": "Allow API keys",
-      "allowHint": "Off: nobody can make keys, and existing ones stop working.",
+      "title": "API tokens of all accounts",
+      "text": "Per token the account, name, right, run-out and last use. Never the token itself. Whether there are tokens at all you set under General.",
+      "allow": "Allow API tokens",
+      "allowHint": "Each person makes tokens under My account, Connections, with which programs read or upload. Off: nobody can make tokens, and existing ones stop working.",
       "block": "Block",
-      "blockNamed": "Block the key {{name}} of {{account}}",
-      "blockTitle": "Block the key {{name}} of {{account}}?",
+      "blockNamed": "Block the token {{name}} of {{account}}",
+      "blockTitle": "Block the token {{name}} of {{account}}?",
       "blockText": "It stops working at once, for good. The account sees it blocked in its list.",
       "blocked": "blocked",
-      "offHint": "A key only reads or only uploads, and never does more than its account may.",
-      "own": "Make your own keys"
+      "offHint": "A token only reads or only uploads, and never does more than its account may.",
+      "own": "Make your own tokens",
+      "none": "No account has an API token yet."
     },
     "interface": {
       "title": "Interface",
@@ -576,8 +677,8 @@
       "pair": "Pair a device",
       "pairText": "QR code from My account, a key of its own for each device",
       "auth": "How programs sign in",
-      "authText": "device or key in the header of every request; they need no password and no session",
-      "limits": "Limits per key: 120 requests a minute, 50 uploads an hour. Wrong keys count like wrong passwords."
+      "authText": "device or token in the header of every request; they need no password and no session",
+      "limits": "Limits per token: 120 requests a minute, 50 uploads an hour. Wrong tokens count like wrong passwords."
     },
     "remove": {
       "title": "Delete {{name}}?",
@@ -619,8 +720,8 @@
       "index": "The search is built anew afterwards. That takes a while, and until then it finds more and more.",
       "revivedDevices_one": "Restoring makes {{count}} device valid again that was locked out or removed since the backup.",
       "revivedDevices_other": "Restoring makes {{count}} devices valid again that were locked out or removed since the backup.",
-      "revivedKeys_one": "Restoring makes {{count}} key valid again that was blocked since the backup.",
-      "revivedKeys_other": "Restoring makes {{count}} keys valid again that were blocked since the backup.",
+      "revivedKeys_one": "Restoring makes {{count}} token valid again that was blocked since the backup.",
+      "revivedKeys_other": "Restoring makes {{count}} tokens valid again that were blocked since the backup.",
       "revivedLinks_one": "Restoring makes {{count}} link valid again that was withdrawn since the backup.",
       "revivedLinks_other": "Restoring makes {{count}} links valid again that were withdrawn since the backup.",
       "revivedPdfPasswords_one": "Restoring brings back {{count}} remembered PDF password that was deleted since the backup.",
@@ -632,20 +733,44 @@
       "order": "Move {{name}} (arrow keys)",
       "more": "More"
     },
-    "unlinkProvider": "Unlink: {{name}}"
+    "unlinkProvider": "Unlink from {{name}}",
+    "features": "Features for all accounts",
+    "accountsLead_one": "{{count}} account. Each gets its personal vault when it is made. As the operator you manage accounts and shared vaults; you do not look into personal vaults.",
+    "accountsLead_other": "{{count}} accounts. Each gets its personal vault when it is made. As the operator you manage accounts and shared vaults; you do not look into personal vaults.",
+    "openInvites": "Open invitations",
+    "table": {
+      "person": "Person",
+      "signIn": "Sign-in",
+      "role": "Role",
+      "ai": "AI",
+      "last": "Last seen",
+      "actions": "Actions",
+      "never": "never",
+      "passwordTwoFactor": "Password + 2FA"
+    },
+    "storageBackups": "Storage and backups",
+    "lastBackup": "Last backup: {{time}}",
+    "forBackup": "{{action}}: backup of {{name}}",
+    "logAll": "All",
+    "logLevelHint": "A filter always shows the higher levels too: “WARNING” includes the errors.",
+    "logTime": "Time",
+    "logSource": "Source",
+    "logRequest": "No. / account",
+    "logMessage": "Message",
+    "logRequestHint": "Show only this request"
   },
   "errors": {
     "ai_not_allowed": "Your operator has not allowed the AI for your account.",
     "account_blocked": "This account is blocked.",
     "account_locked": "Too many wrong tries. The account waits a quarter of an hour.",
     "already_set_up": "nexpaper is set up already.",
-    "api_off": "The operator has not switched API keys on.",
+    "api_off": "The operator has not switched API tokens on.",
     "avatar_not_a_picture": "This is not a picture nexpaper takes (JPEG, PNG, WebP, GIF, HEIC or AVIF).",
     "avatar_too_large": "The picture is too large, at most {{max_mb}} MB.",
     "backup_damaged": "The backup is damaged. Nothing was changed.",
     "backup_invalid": "This is not a nexpaper backup.",
     "backup_too_large": "The backup unpacks to more than a backup may hold. Nothing was changed.",
-    "backup_too_new": "The backup comes from a newer version of nexpaper. Nothing was changed.",
+    "backup_too_new": "This backup comes from a newer version of nexpaper. Update nexpaper first.",
     "bad_preference": "nexpaper does not offer this value.",
     "busy": "nexpaper is busy right now. Try again in a moment.",
     "cannot_block_self": "You cannot block yourself.",
@@ -693,9 +818,9 @@
     "secret_required": "Enter the client secret.",
     "setup_code_wrong": "The setup code is wrong. It stands in the server's log.",
     "sign_in_required": "Sign in first.",
-    "slow_down": "Too many requests with this key. Wait a minute.",
+    "slow_down": "Too many requests with this token. Wait a minute.",
     "token_invalid": "No valid device token.",
-    "token_wrong_kind": "This is the wrong kind of key for this route: device tokens and API keys are two different things.",
+    "token_wrong_kind": "This is the wrong kind of token for this route: device tokens and API tokens are two different things.",
     "too_large": "The file is larger than allowed, at most {{max_mb}} MB.",
     "too_many_attempts": "Too many attempts. Wait a little and try again.",
     "totp_code_wrong": "The code is not right. A code from the app: check the time on the phone. A recovery code works once only.",
@@ -759,11 +884,11 @@
     "reset_invalid": "This link does not work any more.",
     "reset_off": "This is not set up on this server. Ask the operator.",
     "use_account_page": "You change your own password under My account.",
-    "key_invalid": "No valid API key.",
+    "key_invalid": "No valid API token.",
     "browser_only": "This needs a signed-in browser, not a device.",
     "device_name_invalid": "The name of a device has 1 to 80 characters, without control characters.",
     "too_many_devices": "That is enough devices: block one first.",
-    "too_many_keys": "That is enough keys: delete one first.",
+    "too_many_keys": "That is enough tokens: delete one first.",
     "email_same": "This is your confirmed address already.",
     "email_link_invalid": "This link does not work any more.",
     "forbidden": "Your right does not allow this.",
@@ -818,7 +943,7 @@
     "incomplete": "Not everything has arrived yet.",
     "checksum_mismatch": "The file did not arrive whole, its checksum is wrong. Try again.",
     "upload_expired": "This upload has run out. Start it again.",
-    "key_scope": "This key is not meant for this.",
+    "key_scope": "This token is not meant for this.",
     "not_ready": "The document is still being read.",
     "render_failed": "This page could not be drawn.",
     "nothing_to_retry": "This document was read without a problem.",
@@ -830,7 +955,7 @@
     "oauth_redirect_refused": "nexpaper may not send the app back to this address.",
     "oauth_invalid_request": "The app’s request is incomplete.",
     "oauth_pkce_required": "The app asks without the protection it needs (PKCE with S256).",
-    "upload_limit": "This key has brought {{per_hour}} files this hour already.",
+    "upload_limit": "This token has brought {{per_hour}} files this hour already.",
     "shortcut_link_invalid": "Enter the iCloud link of the shortcut (https://www.icloud.com/shortcuts/…).",
     "query_too_long": "The search is too long. At most {{max}} characters.",
     "too_many_terms": "Too many words and filters in one search. At most {{max}}.",
@@ -951,66 +1076,60 @@
     "removed": "Address removed.",
     "off": "The operator has not set up a mail server yet, so no link can be sent.",
     "passwordHint": "For safety: the address is the way back into the account.",
-    "passwordFirst": "Enter the password above for that"
+    "passwordFirst": "Enter the password above for that",
+    "confirmedLine": "Mail address confirmed",
+    "unconfirmedLine": "Mail address not confirmed"
   },
   "looks": {
-    "title": "Light or dark",
+    "title": "Appearance",
     "text": "For your account only.",
     "archive": "Archive",
-    "archiveText": "How the list looks when you open nexpaper.",
+    "archiveText": "(how the list looks when you open nexpaper)",
     "list": "List",
-    "grid": "Tiles"
+    "grid": "Tiles",
+    "mode": "Look",
+    "everywhere": "(applies on all your devices)",
+    "archiveStyle": "Look of the archive"
   },
   "pairing": {
-    "title": "Pair a device",
-    "text": "For programs and apps of your own. The device gets a key of its own that you can block any time.",
-    "new": "Pair a device",
-    "name": "Name of the device",
-    "namePlaceholder": "jule's iPhone",
-    "make": "Pair",
-    "shownOnce": "Key for \"{{name}}\", shown only now:",
-    "useIt": "The device sends it with every request as Authorization: Bearer.",
-    "done": "Done",
-    "since": "paired {{when}}",
-    "used": "last used {{when}}",
-    "unused": "never used",
-    "takeOff": "Block",
-    "takeOffNamed": "Block the device {{name}}",
-    "takeOffTitle": "Block {{name}}?",
-    "takeOffText": "The key of the device stops working at once. It has to be paired again.",
-    "hint": "A device acts with the rights of your account. It cannot change settings or pair other devices."
+    "title": "Devices",
+    "text": "iPhone and iPad with the nexpaper app, and programs of your own. Each device has a key of its own; disconnecting blocks it at once.",
+    "none": "No device paired yet.",
+    "connect": "Pair a device",
+    "dialogTitle": "Pair a device",
+    "disconnect": "Disconnect",
+    "disconnectNamed": "Disconnect {{name}}"
   },
   "apiKeys": {
-    "title": "API keys",
-    "text": "For your own scripts, nexdeck or a scanner that uploads directly. A key can only read or only upload, never change settings.",
-    "off": "The operator has not allowed API keys.",
-    "offForOperator": "API keys are not allowed yet.",
-    "offOperator": "Allow them under Settings, API.",
+    "title": "API tokens",
+    "text": "For your own scripts, nexdeck or a scanner that uploads directly. A token can only read or only upload, never change settings.",
+    "off": "The operator has not allowed API tokens.",
+    "offForOperator": "API tokens are not allowed yet.",
+    "offOperator": "Allow them under Settings, General.",
     "enable": "Allow them now",
     "enableConfirm": "Allow",
-    "enableTitle": "Allow API keys for everybody?",
-    "enableText": "After that every person on this server can make keys under My account. A key lets a program either only read or only upload, never more than the account that made it may. You can switch this off again under Settings, API at any time; keys that exist stop working then too.",
-    "uploadNote": "A key for uploading only puts documents into an inbox: the one of your target vault or, when the program names another, the one of a vault you may add to. It cannot read, change or delete anything.",
-    "new": "New key",
+    "enableTitle": "Allow API tokens for everybody?",
+    "enableText": "After that every person on this server can make tokens under My account. A token lets a program either only read or only upload, never more than the account that made it may. You can switch this off again under Settings, General at any time; tokens that exist stop working then too.",
+    "uploadNote": "A token for uploading only puts documents into an inbox: the one of your target vault or, when the program names another, the one of a vault you may add to. It cannot read, change or delete anything.",
+    "new": "New API token",
     "name": "Name",
     "namePlaceholder": "nexdeck",
-    "lifetime": "Valid",
+    "lifetime": "Expiry",
     "lifetimeNever": "No end",
-    "lifetimeHint": "A key that never runs out is the one nobody remembers when it falls into the wrong hands. A year is usually enough; the list shows a week ahead that it runs out.",
-    "lifetimeHintUpload": "A key for uploading can only put documents into your inbox. It does not read your archive. So it does not run out by itself, and a shortcut or a scanner does not have to be set up again after a year. You can delete it at any time, or choose a time.",
+    "lifetimeHint": "A token that never runs out is the one nobody remembers when it falls into the wrong hands. A year is usually enough; the list shows a week ahead that it runs out.",
+    "lifetimeHintUpload": "A token for uploading can only put documents into your inbox. It does not read your archive. So it does not run out by itself, and a shortcut or a scanner does not have to be set up again after a year. You can delete it at any time, or choose a time.",
     "lifetimeDays": {
       "30": "30 days",
       "90": "90 days",
       "365": "365 days"
     },
-    "make": "Make the key",
-    "shownOnce": "Key \"{{name}}\", shown only now:",
-    "key": "Key",
+    "make": "Make the token",
+    "key": "Token",
     "header": "Header line for the program",
     "tryIt": "To try it",
     "done": "Done",
     "copyNamed": "Copy {{what}}",
-    "deleteNamed": "Delete the key {{name}}",
+    "deleteNamed": "Delete the token {{name}}",
     "readOnlyOne": "read only",
     "never": "does not run out",
     "runsOut": "runs out on {{day}}",
@@ -1018,7 +1137,21 @@
     "blocked": "blocked by the operator",
     "used": "last used {{when}}",
     "unused": "never used",
-    "docs": "Everything the web app can do works through the interface under /api/v1 as well. The description is at /api/v1/docs."
+    "docs": "Everything the web app can do works through the interface under /api/v1 as well. The description is at /api/v1/docs.",
+    "made": "“{{name}}” made",
+    "once": "Copy the token now. It is shown this once only.",
+    "address": "Address for programs",
+    "headerLine": "Programs send the token as “Authorization: Bearer …”.",
+    "docsLink": "API documentation",
+    "none": "No API token yet.",
+    "delete": "Delete",
+    "right": "Right",
+    "scope": {
+      "read": "Read only",
+      "readHint": "Read documents, vaults and the search, as far as your account may. It cannot change anything.",
+      "upload": "Upload only",
+      "uploadHint": "For a scanner, a script or the shortcut: puts documents into an inbox and reads nothing."
+    }
   },
   "rights": {
     "read": {
@@ -1134,8 +1267,8 @@
   "sharingSettings": {
     "title": "Links to the outside",
     "text": "Lets you give single documents or an export to people without an account, such as your tax advisor.",
-    "allow": "Allow links to the outside",
-    "allowHint": "Off: sharing only with people on this server. Existing links stop working at once.",
+    "allow": "Sharing by link",
+    "allowHint": "Links to single documents or an export for people without an account, such as the tax adviser. Off: sharing only with people on this server, existing links stop working at once.",
     "longest": "Valid for at most",
     "days": "{{count}} days",
     "hint": "A link shows only the one document or the one export, cannot be guessed and can be revoked at any time. Opening it is noted in the history of the document, at most once every ten minutes per link.",
@@ -1196,8 +1329,8 @@
   },
   "storage": {
     "limits": {
-      "title": "Uploading and limits",
-      "text": "What nexpaper takes and how much. Applies to the browser, the phone and apps, from the next file on.",
+      "title": "Limits",
+      "text": "What nexpaper takes in. Applies to browser, phone and apps, from the next file on.",
       "maxFile": "Size of one file (MB)",
       "maxFileHint": "Larger files are refused. Files over 8 MB go in pieces, and after a break in the network they go on where they stopped.",
       "maxPages": "Pages per document",
@@ -1296,14 +1429,12 @@
       "photo": "Photo"
     },
     "pair": {
-      "show": "Show a code for pairing",
       "scan": "Scan it with the device. The code is valid for 5 minutes and once.",
       "byHand": "Or by hand:",
       "address": "address",
       "code": "code",
       "left": "Valid for {{time}} more.",
-      "cancel": "Cancel",
-      "paired": "Paired. The device now stands under Security with the signed-in devices.",
+      "paired": "Paired. The device is in the list now.",
       "expired": "The code has run out.",
       "newCode": "Show a new code",
       "qr": "QR code for pairing",
@@ -1314,22 +1445,22 @@
       "text": "On the iPhone nexpaper is missing from the share menu, because Safari does not allow it for web apps. A shortcut steps in: it then stands in the share menu of every app and sends PDFs and photos straight to your inbox.",
       "load": "Load the shortcut",
       "link1": "On the iPhone, tap “Load the shortcut” and add it.",
-      "link2": "While it is added it asks for the address and a key: “Key for the shortcut” below shows both.",
+      "link2": "While it is added it asks for the address and a token: “Token for the shortcut” below shows both.",
       "link3": "In Mail, Files or the banking app: Share, then “Nach nexpaper”.",
       "build": "The operator has not shared a finished shortcut yet. This is how you build it in two minutes:",
-      "build1": "Tap “Key for the shortcut” below. The address and a key for uploading then stay there to copy.",
+      "build1": "Tap “Token for the shortcut” below. The address and a token for uploading then stay there to copy.",
       "build2": "In the Shortcuts app, make a new shortcut “Nach nexpaper”, switch on “Show in Share Sheet” under Details, with PDFs and images as input.",
       "build3": "Action “Get Contents of URL”: the address from below, method POST, header “Authorization” with the value from below, request body Form, field “file” as a file with the Shortcut Input.",
       "build4": "Action “Show Notification” with “It is in the inbox.” after it, done.",
       "android": "On Android nexpaper stands in the share menu by itself once it is on the home screen.",
-      "key": "Key for the shortcut",
-      "shown": "A key for uploading, for the shortcut, shown only now. It can only upload and then stands with the API keys, where you can delete it.",
+      "key": "Token for the shortcut",
+      "shown": "A token for uploading, for the shortcut, shown only now. It can only upload and then stands with the API tokens, where you can delete it.",
       "address": "Address",
       "header": "Value of the header Authorization",
       "done": "Done",
       "keyName": "iPhone shortcut",
-      "warning": "Never put your key into a shortcut you share with others: whoever has it can upload into your account. To share a shortcut, set up the address and the key as Import Questions.",
-      "off": "The shortcut needs a key for uploading, and the operator has not switched API keys on."
+      "warning": "Never put your token into a shortcut you share with others: whoever has it can upload into your account. To share a shortcut, set up the address and the token as Import Questions.",
+      "off": "The shortcut needs a token for uploading, and the operator has not switched API tokens on."
     },
     "vault": {
       "title": "Where your uploads go",
@@ -1357,17 +1488,17 @@
       "token": "paired with a key",
       "meta": "{{how}} · last {{when}}",
       "never": "never used",
-      "revokeTitle": "Sign {{name}} out?",
+      "revokeTitle": "Disconnect “{{name}}”?",
       "revokeText": "Its key stops working at once. It has to be paired again.",
-      "revoked": "{{name}} is signed out."
+      "revoked": "{{name}} is disconnected."
     },
     "keys": {
-      "upload": "Key for uploading",
+      "upload": "Token for uploading",
       "uploadOne": "upload only",
-      "uploadButton": "Key for uploading (for scanners and apps)",
+      "uploadButton": "Token for uploading (for scanners and apps)",
       "scope": "May",
       "read": "read only",
-      "limits": "Limits per key: 120 requests a minute, 50 uploads an hour.",
+      "limits": "Limits per token: 120 requests a minute, 50 uploads an hour.",
       "uploadPlaceholder": "Scanner in the hall"
     },
     "settings": {
@@ -1499,7 +1630,7 @@
   },
   "ocr": {
     "title": "Text recognition",
-    "text": "So that the search finds what is in photos and scans too. PDFs that already have text stay as they are.",
+    "text": "Languages read in scans, photos and PDFs. PDFs that already have text stay as they are.",
     "unavailable": "This server has no text recognition (ocrmypdf and Tesseract). Only the text a PDF brings along itself is found.",
     "languages": "Languages",
     "language": {
@@ -1528,7 +1659,8 @@
     "maxMinutes": "Time per document (minutes)",
     "maxMinutesHint": "A page may take at most ten times the average. If a document takes longer, it waits in the inbox without text and can be tried again.",
     "maxMinutesInvalid": "Enter a whole number from 1 to 1440 minutes.",
-    "save": "Save"
+    "save": "Save",
+    "processing": "Processing"
   },
   "docs": {
     "loading": "Loading …",
@@ -1685,7 +1817,11 @@
       "found": "Found in the text",
       "foundHint": "Tap one to take it as the date.",
       "foundPick": "Take {{date}} as the date",
-      "foundRole": { "date": "date", "due": "due", "period": "period" },
+      "foundRole": {
+        "date": "date",
+        "due": "due",
+        "period": "period"
+      },
       "large": "View large",
       "largePage": "View page {{n}} large",
       "title": "Inbox",
@@ -2353,9 +2489,9 @@
       "confirm": "Lock out device"
     },
     "apiKey": {
-      "title": "Delete the key?",
-      "text": "Programs with the key \"{{name}}\" can no longer reach nexpaper afterwards. This cannot be undone.",
-      "confirm": "Delete key"
+      "title": "Delete the token?",
+      "text": "Programs with the token \"{{name}}\" can no longer reach nexpaper afterwards. This cannot be undone.",
+      "confirm": "Delete token"
     },
     "session": {
       "title": "End the session?",
@@ -2613,8 +2749,6 @@
     "note": "When a file is missing or no longer matches, the document shows a warning sign in the archive and you get a notice. The check reads in small portions with pauses, so the disk does not work all the time."
   },
   "space": {
-    "title": "Storage",
-    "text": "Where things lie and how much.",
     "documents": "Documents",
     "originals": "of which originals {{size}}",
     "database": "Database",
@@ -2622,8 +2756,6 @@
     "cache": "Page pictures (cache)",
     "exports": "Exports",
     "backups": "Backups",
-    "free": "free on the drive",
-    "of": "of {{size}}",
     "partial": "Counting was cut off after a while. The numbers are at least this large.",
     "local": {
       "title": "The database lies on a local drive.",
@@ -2637,7 +2769,11 @@
       "title": "Cannot tell where the database lies.",
       "text": "On a Linux server with Docker nexpaper can see it. Check yourself that the data folder lies on a local drive and not on a network share."
     },
-    "documentsOnShare": "The documents lie on a network share. That is fine."
+    "documentsOnShare": "The documents lie on a network share. That is fine.",
+    "uses": "nexpaper takes",
+    "part": "{{name}} {{size}}",
+    "bar": "nexpaper takes {{own}}, {{used}} of {{total}} on the drive are in use",
+    "diskFree": "{{free}} of {{total}} still free on the drive"
   },
   "order": {
     "title": "Organise",
@@ -2992,7 +3128,7 @@
     "push": "Push to the phone and the browser",
     "pushHint_one": "Switched on on {{count}} device. A tap opens the document.",
     "pushHint_other": "Switched on on {{count}} devices. A tap opens the document.",
-    "pushNone": "Not switched on on any device yet. That is under Devices and apps.",
+    "pushNone": "Not switched on on any device yet. That is under My account, Connections.",
     "mailTo": "Mail to {{address}}",
     "mail": "Mail",
     "mailHint": "Your confirmed address. Without the operator's mail server this does not work.",
@@ -3424,7 +3560,7 @@
       "text": "The address for {{name}} takes nothing from then on. What arrived stays in your inbox. The request cannot be brought back, but you can make a new one.",
       "confirm": "Withdraw"
     },
-    "off": "Upload requests are switched off on this server. The operator switches them on under Settings, Sharing.",
+    "off": "Upload requests are switched off on this server. The operator switches them on under Settings, General.",
     "noAddress": "An upload request needs the public address of the server. The operator enters it under Settings, Sign-in.",
     "cardTitle": "Upload requests",
     "cardText": "Addresses through which somebody without an account sends you files. Everything lands in your inbox.",
@@ -3454,8 +3590,8 @@
     "ready": {
       "title": "Upload requests",
       "ok": "Switched off. Nobody without an account can send files.",
-      "warn_one": "Switched on: whoever has an address can put files into a person's inbox. Right now {{count}} request takes files. Switch it off under Settings, Sharing.",
-      "warn_other": "Switched on: whoever has an address can put files into a person's inbox. Right now {{count}} requests take files. Switch it off under Settings, Sharing."
+      "warn_one": "Switched on: whoever has an address can put files into a person's inbox. Right now {{count}} request takes files. Switch it off under Settings, General.",
+      "warn_other": "Switched on: whoever has an address can put files into a person's inbox. Right now {{count}} requests take files. Switch it off under Settings, General."
     },
     "page": {
       "asks": "<name>{{name}}</name> asks you for documents",
@@ -3496,5 +3632,10 @@
     },
     "eventWho": "Somebody through the upload request “{{name}}”",
     "fromRequest": "through an upload request"
+  },
+  "nav": {
+    "search": "Search",
+    "searchKey": "Ctrl K",
+    "manageVaults": "Manage vaults"
   }
 }

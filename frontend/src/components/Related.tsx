@@ -90,7 +90,7 @@ export function RelatedSection({ document: d, canEdit, onChange }: { document: P
   return (
     <section className="card p-5" aria-label={t('related.title')} data-testid="related">
       <div className="mb-3 flex items-center justify-between gap-2">
-        <h2 className="font-display text-lg font-semibold">{t('related.title')}</h2>
+        <h2 className="text-lg font-semibold">{t('related.title')}</h2>
         {canEdit && !trashed && (items?.length ?? 0) > 0 && (
           <Button variant="soft" size="sm" onClick={() => setOpen(true)}>
             <Plus size={14} aria-hidden /> {t('related.link')}
@@ -270,7 +270,7 @@ export function RelatedDialog({ document: d, linked, onClose, onLinked }: { docu
       )}
       {problem && <p className="mt-3 text-sm text-bad">{errorText(problem)}</p>}
       <div className="mt-5 flex justify-end">
-        <Button variant="ghost" onClick={onClose}>
+        <Button variant="line" onClick={onClose}>
           {t('common.close')}
         </Button>
       </div>

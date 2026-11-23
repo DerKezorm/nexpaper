@@ -1,7 +1,6 @@
 /**
  * The frame of the app and the pages around it, against a stand-in of the server: after the sign-in the archive and the
- * menu with the count of the inbox; the settings as one row of nine tabs for the operator and
- * nothing for a member; the page of the link in the mail to a new address (one press confirms, a link that does not
+ * sidebar with the count of the inbox; the settings in areas as in nexnotes, the server's only for the operator; the page of the link in the mail to a new address (one press confirms, a link that does not
  * hold says so).
  */
 import { act } from 'react'
@@ -85,17 +84,19 @@ describe('after the sign-in', () => {
     sessionStorage.setItem('nexpaper.startShown', '1')
     await show('/')
     expect(box.querySelector('h1')!.textContent).toBe('Archiv')
-    // The sidebar holds the mark, the camera under the upload button, archive, inbox and vaults, and the
-    // person's menu. The round button of the phone leads to the quick upload.
+    // The sidebar as nexnotes': the mark, the search field (to the archive), the camera, inbox, archive and deadlines,
+    // below a line the vaults' page, order and trash, at the foot the account's row to the settings. The round button
+    // of the phone leads to the quick upload.
     const side = box.querySelector('aside')!
-    expect([...side.querySelectorAll('a')].map((a) => a.getAttribute('href'))).toEqual(['/kamera', '/eingang', '/', '/fristen', '/tresore', '/ordnung', '/papierkorb'])
+    expect([...side.querySelectorAll('a')].map((a) => a.getAttribute('href'))).toEqual(['/', '/', '/kamera', '/eingang', '/', '/fristen', '/tresore', '/ordnung', '/papierkorb', '/settings'])
+    expect(side.querySelector('[data-testid="sidebar-search"]')!.textContent).toContain('Strg K')
     expect(side.textContent).toContain('NEXPAPER')
     expect(side.querySelector('[data-testid="inbox-count"]')!.textContent).toBe('3')
     expect(side.querySelector('[data-testid="trash-count"]')!.textContent).toBe('4')
     // Deadlines: overdue and the next 14 days; something is overdue, so the number is drawn in the warning colour.
     const deadlines = side.querySelector('[data-testid="deadline-count"]')!
     expect(deadlines.textContent).toBe('6')
-    expect(deadlines.className).toContain('bg-warn')
+    expect(deadlines.className).toContain('text-warn')
     expect(deadlines.getAttribute('title')).toBe('Etwas ist überfällig')
     // "Darf weg" (the keeping time is over) is no deadline: the menu does not count it. The archive asks for its own
     // number (one document, for the chip and the hint), nothing else.
@@ -112,16 +113,13 @@ describe('after the sign-in', () => {
     sessionStorage.setItem('nexpaper.startShown', '1')
     await show('/')
     const side = box.querySelector('aside')!
-    expect([...side.querySelectorAll('a')].map((a) => a.getAttribute('href'))).toEqual(['/kamera', '/eingang', '/', '/tresore', '/ordnung', '/papierkorb'])
+    expect([...side.querySelectorAll('a')].map((a) => a.getAttribute('href'))).toEqual(['/', '/', '/kamera', '/eingang', '/', '/tresore', '/ordnung', '/papierkorb', '/settings'])
     expect(side.querySelector('[data-testid="deadline-count"]')).toBeNull()
     expect(side.textContent).not.toContain('Fristen')
-    // The bar of the phone gets Order back, and the account menu does not list it a second time.
+    // The bar of the phone gets Order back, and the phone's header does not offer it a second time.
     const bar = box.querySelector('main ~ nav')!
     expect([...bar.querySelectorAll('a')].map((a) => a.getAttribute('href'))).toEqual(['/eingang', '/', '/tresore', '/ordnung', '/papierkorb'])
-    await click(box.querySelector('aside button[aria-haspopup="true"]'))
-    const hidden = [...document.querySelectorAll('aside .card a')].find((a) => a.getAttribute('href') === '/ordnung')!
-    expect(hidden.className).toContain('hidden')
-    expect(hidden.className).not.toContain('lg:hidden')
+    expect(box.querySelector('main a[href="/ordnung"]')).toBeNull()
     // The old address and a bookmark lead to the archive; the deadlines are not even asked for.
     act(() => root.unmount())
     box.remove()
@@ -160,19 +158,17 @@ describe('after the sign-in', () => {
     expect(box.querySelector('h1')!.textContent).toBe('Archiv')
   })
 
-  it('has the menu of the person: account, settings for the operator, about, sign out', async () => {
+  it('has at its foot the account with the gear, the way into the settings, as nexnotes', async () => {
     await show('/')
-    await click(box.querySelector('aside button[aria-haspopup="true"]'))
-    const items = [...document.querySelectorAll('aside .card a, aside .card button')].map((item) => item.textContent?.trim())
-    expect(items).toEqual(['Mein Konto', 'Ordnung', 'Einstellungen', 'Über nexpaper', 'Abmelden'])
-  })
-
-  it('leaves the settings out of the menu of a member', async () => {
-    auth.me = { ...operator, role: 'member' }
-    await show('/')
-    await click(box.querySelector('aside button[aria-haspopup="true"]'))
-    const items = [...document.querySelectorAll('aside .card a, aside .card button')].map((item) => item.textContent?.trim())
-    expect(items).toEqual(['Mein Konto', 'Ordnung', 'Über nexpaper', 'Abmelden'])
+    const account = box.querySelector('[data-testid="sidebar-account"]')!
+    expect(account.getAttribute('href')).toBe('/settings')
+    expect(account.textContent).toContain('Jule')
+    expect(account.getAttribute('aria-label')).toBe('Jule · Einstellungen')
+    // No menu of the person any more: signing out stands in the profile.
+    expect(box.querySelector('aside [aria-haspopup]')).toBeNull()
+    await click(account)
+    expect(box.querySelector('h1')!.textContent).toBe('Profil')
+    expect(box.querySelector('[data-testid="sign-out-card"]')).toBeTruthy()
   })
 })
 
@@ -197,25 +193,37 @@ describe('a link to a document', () => {
   })
 })
 
+/** The names of a group of the settings' navigation, in their order. */
+function group(name: 'account' | 'server'): (string | undefined)[] {
+  return [...box.querySelectorAll(`[aria-labelledby="settings-group-${name}"] a`)].map((item) => item.textContent?.trim())
+}
+
 describe('the settings', () => {
-  it('are one row of thirteen tabs for the operator, in their order, and the part is in the address', async () => {
-    await show('/einstellungen')
-    expect([...box.querySelectorAll('[role="tab"]')].map((item) => item.textContent?.trim())).toEqual([
-      'Konten', 'Anmeldung', 'Mail', 'KI', 'Ablage', 'Eingänge', 'Teilen', 'Web Push', 'Sicherung', 'Sprachen', 'Import', 'Log', 'API',
-    ])
-    expect(box.querySelector('[role="tab"][aria-selected="true"]')!.textContent).toContain('Konten')
+  it('are the areas of nexnotes for the operator, nexpaper\'s own between them, each with its address', async () => {
+    answers['GET /api/v1/settings/push'] = { devices: 0, key: '', contact: '', contact_used: '', known: [], hosts: [] }
+    answers['GET /api/v1/about'] = { version: '0.0.1', license: 'AGPL-3.0', repo_url: 'https://example.com/nexpaper', releases_url: 'https://example.com/nexpaper/releases', project_url: '' }
+    await show('/settings/general')
+    expect(group('account')).toEqual(['Profil', 'Sicherheit', 'Darstellung', 'Verbindungen', 'Hochladen', 'Erinnerungen', 'KI'])
+    expect(group('server')).toEqual(['Allgemein', 'Anmeldung', 'Mail', 'Speicher und Sicherung', 'Texterkennung', 'Ablage', 'KI', 'Eingänge', 'Import', 'API', 'Konten', 'Log'])
+    expect(box.querySelector('h1')!.textContent).toBe('Allgemein')
     act(() => root.unmount())
     box.remove()
+    // An address of before leads to its area.
     await show('/einstellungen?tab=api')
-    expect(box.querySelector('[role="tab"][aria-selected="true"]')!.textContent).toContain('API')
+    expect(box.querySelector('[data-testid^="settings-nav-"][aria-current="page"]')!.textContent).toContain('API')
     expect(box.textContent).toContain('Schnittstelle')
     expect(box.textContent).toContain('/api/v1/docs')
+    act(() => root.unmount())
+    box.remove()
+    await show('/ueber')
+    expect(box.querySelector('h1')!.textContent).toBe('Über nexpaper')
   })
 
-  it('send a member to the own account', async () => {
+  it('show a member only the own account, and an area of the server leads to the profile', async () => {
     auth.me = { ...operator, role: 'member' }
-    await show('/einstellungen')
-    expect(box.querySelector('h1')!.textContent).toBe('Mein Konto')
+    await show('/settings/general')
+    expect(box.querySelector('h1')!.textContent).toBe('Profil')
+    expect(box.querySelector('[aria-labelledby="settings-group-server"]')).toBeNull()
   })
 })
 

@@ -106,7 +106,7 @@ export function UploadRequestPage() {
       <main className="mx-auto max-w-3xl px-4 py-6">
         {gone && (
           <div className="card p-10 text-center" role="alert" data-testid="request-gone">
-            <p className="font-display text-xl font-semibold">{t('uploadRequest.page.gone')}</p>
+            <p className="text-xl font-semibold">{t('uploadRequest.page.gone')}</p>
             <p className="mt-1 text-sm text-ink-2">{t('uploadRequest.page.goneText')}</p>
           </div>
         )}
@@ -118,7 +118,7 @@ export function UploadRequestPage() {
         {!request && !gone && !busy && <p className="text-sm text-muted">{t('uploadRequest.page.loading')}</p>}
         {request && (
           <>
-            <h1 className="font-display text-2xl font-semibold break-words">{who ? t('uploadRequest.page.title', { name: iso(who) }) : t('uploadRequest.page.titleUnknown')}</h1>
+            <h1 className="text-2xl font-semibold break-words">{who ? t('uploadRequest.page.title', { name: iso(who) }) : t('uploadRequest.page.titleUnknown')}</h1>
             <p className="mt-1 text-sm text-ink-2">
               <NamedSentence i18nKey="uploadRequest.page.for" name={request.name} />
             </p>
@@ -137,8 +137,8 @@ export function UploadRequestPage() {
               <Upload size={34} className="text-accent" aria-hidden />
               {remaining > 0 ? (
                 <>
-                  <p className="font-display text-lg font-semibold">{t('uploadRequest.page.drop')}</p>
-                  <button type="button" disabled={running} onClick={() => chooser.current?.click()} className="inline-flex h-11 items-center gap-2 rounded-full bg-accent px-5 font-semibold text-accent-ink hover:brightness-105 disabled:opacity-60">
+                  <p className="text-lg font-semibold">{t('uploadRequest.page.drop')}</p>
+                  <button type="button" disabled={running} onClick={() => chooser.current?.click()} className="btn btn-accent h-11 px-5 text-accent-ink hover:brightness-105 disabled:opacity-60">
                     {t('uploadRequest.page.choose')}
                   </button>
                   <input
@@ -157,7 +157,7 @@ export function UploadRequestPage() {
                   <p className="text-sm text-ink-2">{t('uploadRequest.page.remaining', { count: remaining })}</p>
                 </>
               ) : (
-                <p className="font-display text-lg font-semibold" data-testid="request-full">{t('uploadRequest.page.full')}</p>
+                <p className="text-lg font-semibold" data-testid="request-full">{t('uploadRequest.page.full')}</p>
               )}
               <p className="max-w-md text-xs text-muted">{t('uploadRequest.page.accepts', { mb: request.max_mb })}</p>
             </section>

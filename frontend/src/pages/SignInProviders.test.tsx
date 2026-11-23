@@ -9,7 +9,7 @@ import { Route, Routes } from 'react-router-dom'
 import type { Me, OidcProvider } from '../api/client'
 import i18n, { changeLanguage } from '../i18n'
 import { Page, Server, plain } from '../test/harness'
-import { AccountPage } from './AccountPage'
+import { SettingsRoutes } from '../test/settings'
 import { InvitePage, LoginPage } from './AuthPages'
 import { AccountsCard, useServerSettings } from './settings/ServerCards'
 import { SignInPart } from './settings/SignInCards'
@@ -246,7 +246,7 @@ describe('the account page', () => {
     server.answers['POST /api/v1/oidc/entra/link'] = { url: 'https://login.microsoftonline.com/authorize' }
     const assign = vi.fn()
     vi.stubGlobal('location', { ...window.location, assign })
-    await page.show(<AccountPage />, '/konto?tab=security&linked=authentik')
+    await page.show(<SettingsRoutes />, '/konto?tab=security&linked=authentik')
     expect(page.text).toContain('Dein Konto ist mit authentik verknüpft.')
     const rows = [...document.querySelectorAll('[data-testid="my-providers"] li')].map((row) => plain(row.textContent))
     expect(rows[0]).toContain('Verknüpft')
@@ -262,7 +262,7 @@ describe('the account page', () => {
   it('keeps the last link of an account without a password', async () => {
     auth.me = { ...me, sign_in: 'oidc' }
     server.answers['GET /api/v1/oidc/me'] = [{ slug: 'authentik', label: 'authentik', linked: true, address: null }]
-    await page.show(<AccountPage />, '/konto?tab=security')
+    await page.show(<SettingsRoutes />, '/konto?tab=security')
     expect(page.text).toContain('Dieses Konto meldet sich nur über authentik an.')
     expect(page.button('Lösen')).toBeUndefined()
   })
@@ -272,8 +272,8 @@ describe('the account page', () => {
     server.answers['GET /api/v1/devices'] = []
     server.answers['GET /api/v1/api-keys'] = { allowed: true, keys: [] }
     server.answers['GET /api/v1/push'] = { key: '', devices: [] }
-    await page.show(<AccountPage />, '/konto?tab=devices')
-    expect(document.querySelector('[data-testid="keys-wait"]')?.textContent).toContain('Geräte und API-Schlüssel wirken erst, wenn du einen zweiten Faktor einrichtest.')
+    await page.show(<SettingsRoutes />, '/konto?tab=devices')
+    expect(document.querySelector('[data-testid="keys-wait"]')?.textContent).toContain('Geräte und API-Token wirken erst, wenn du einen zweiten Faktor einrichtest.')
   })
 })
 
@@ -286,8 +286,8 @@ describe('the account list', () => {
     server.answers['DELETE /api/v1/oidc/admin/accounts/7/links/3'] = 204
     await page.show(<AccountsCard />)
     expect(document.querySelector('[data-testid="account-providers"]')?.textContent).toBe('authentik')
-    await page.click(document.querySelector<HTMLElement>('button[aria-haspopup="true"]'))
-    await page.click(page.button('Verknüpfung lösen: authentik'))
+    await page.click(page.button('Aktionen für tom'))
+    await page.click(page.button('Verknüpfung mit authentik lösen'))
     expect(plain(page.dialog?.textContent)).toContain('tom meldet sich danach nicht mehr über authentik an und bekommt Bescheid.')
     await page.type(page.dialog!.querySelector<HTMLInputElement>('input[type="password"]'), 'geheimwort')
     await page.inDialog('Lösen')

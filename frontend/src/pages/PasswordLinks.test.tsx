@@ -14,7 +14,7 @@ import { changeLanguage } from '../i18n'
 import { ForgotPage, LoginPage, MailConfirmPage, ResetPage } from './AuthPages'
 import { ReadinessCard } from './settings/ReadinessCards'
 import { PasskeysCard } from './settings/SecurityCards'
-import { AccountsCard, ApiKeysCard, BackupsCard, type ServerSettings } from './settings/ServerCards'
+import { AccountsCard, AllApiKeysCard, BackupsCard, type ServerSettings } from './settings/ServerCards'
 import { idle } from '../test/wait'
 
 const me: Me = {
@@ -203,7 +203,10 @@ describe("the operator sends a link instead of setting a password", () => {
     answers['GET /api/v1/invites'] = []
     await show(<AccountsCard />, '/einstellungen')
     expect(box.textContent).not.toContain('Passwort geben')
-    await click(button('Link zum Zurücksetzen schicken', box))
+    // As in nexnotes, the link sits in the menu of the row, not as a button of its own.
+    expect(button('Link zum Zurücksetzen …', box)).toBeUndefined()
+    await click(button('Aktionen für Anna', box))
+    await click(button('Link zum Zurücksetzen …', box))
     const dialog = document.querySelector('[role="dialog"]')!
     expect(dialog.textContent).toContain('Die Person wählt ihr Passwort selbst.')
     await type(dialog.querySelector<HTMLInputElement>('input[type="password"]'), 'the own password')
@@ -287,18 +290,18 @@ describe("the operator's pages say what they hold", () => {
     expect(box.querySelector('[data-testid="backup-without-documents"]')!.textContent).toContain('The documents themselves are not in the backup.')
   })
 
-  it('points from the switch to where the own keys are made', async () => {
-    await show(<ApiKeysCard server={server} />, '/einstellungen')
-    const link = [...box.querySelectorAll('a')].find((a) => a.textContent === 'Eigene Schlüssel anlegen')
+  it('points from the list of all keys to where the own keys are made', async () => {
+    await show(<AllApiKeysCard />, '/einstellungen')
+    const link = [...box.querySelectorAll('a')].find((a) => a.textContent === 'Eigene Tokens anlegen')
     expect(link).toBeTruthy()
-    expect(link!.getAttribute('href')).toBe('/konto?tab=devices')
+    expect(link!.getAttribute('href')).toBe('/settings/connections')
   })
 
   it('shows the operator whose key it is, what it is called and its first characters, never the key', async () => {
     answers['GET /api/v1/admin/api-keys'] = [
       { id: 1, account: 'anna', name: 'nexdeck', scope: 'read', prefix: 'npk_Ab3d', created_at: '2026-10-01T10:00:00Z', last_used_at: null, expires_at: null, blocked: false },
     ]
-    await show(<ApiKeysCard server={server} />, '/einstellungen')
+    await show(<AllApiKeysCard />, '/einstellungen')
     const row = box.querySelector('[data-testid="admin-api-keys"] li')!
     expect(row.textContent).toContain('npk_Ab3d')
     expect(row.textContent).toContain('nexdeck')

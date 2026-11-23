@@ -74,14 +74,14 @@ export function ConfirmDialog({ title, text, confirm, danger = true, password = 
             type="button"
             data-autofocus={password ? undefined : ''}
             onClick={onCancel}
-            className="inline-flex h-10 items-center justify-center rounded-full border border-line px-4 text-sm font-semibold text-ink-2 transition hover:bg-sheet-2"
+            className="btn btn-ghost"
           >
             {t('common.cancel')}
           </button>
           <button
             type="submit"
             disabled={busy}
-            className={`inline-flex h-10 items-center justify-center rounded-full px-4 text-sm font-semibold transition disabled:opacity-50 ${danger ? 'bg-bad text-bad-ink hover:brightness-110' : 'bg-accent text-accent-ink hover:brightness-105'}`}
+            className={`btn ${danger ? 'btn-danger' : 'btn-accent'}`}
           >
             {busy ? '…' : confirm}
           </button>

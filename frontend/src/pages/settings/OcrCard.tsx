@@ -1,6 +1,7 @@
 /**
- * Settings, Storage: the card "Text recognition". The languages the recognition reads (the six the server
- * carries), straightening, the switch for blank separator pages (kept now, acted on by the page tools later) and the
+ * Settings, Text recognition: the card "Texterkennung", as nexnotes' card: the languages the recognition reads (the
+ * six the server carries) as a row of chips right under the head. Below, under "Verarbeitung", nexpaper's own:
+ * straightening, the switch for blank separator pages (kept now, acted on by the page tools later) and the
  * queue: how many documents are being read, how many wait, and how long a page took. A switch or a language is saved at
  * once; the longest time for one document (shown in minutes, kept in seconds) with its own button.
  */
@@ -9,7 +10,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { ocrApi, type OcrSettings } from '../../api/client'
-import { Button, Card, Feedback, Input, Toggle, useAction } from './ui'
+import { Button, Card, Feedback, Input, SubHead, Toggle, useAction } from './ui'
 
 export function OcrCard() {
   const { t, i18n } = useTranslation()
@@ -57,27 +58,25 @@ export function OcrCard() {
           {t('ocr.unavailable')}
         </p>
       )}
-      <div>
-        <p className="text-sm font-semibold">{t('ocr.languages')}</p>
-        <div className="mt-2 flex flex-wrap gap-2">
-          {settings.offered.map((code) => {
-            const on = settings.languages.includes(code)
-            return (
-              <button
-                key={code}
-                type="button"
-                aria-pressed={on}
-                onClick={() => toggle(code)}
-                className={`rounded-full border px-3.5 py-1.5 text-sm font-semibold ${on ? 'border-accent/50 bg-accent-soft text-accent' : 'border-line text-ink-2'}`}
-              >
-                {t(`ocr.language.${code}`)}
-              </button>
-            )
-          })}
-        </div>
-        <p className="mt-2 text-xs text-muted">{t('ocr.languagesHint')}</p>
+      <div className="flex flex-wrap gap-2" role="group" aria-label={t('ocr.languages')}>
+        {settings.offered.map((code) => {
+          const on = settings.languages.includes(code)
+          return (
+            <button
+              key={code}
+              type="button"
+              aria-pressed={on}
+              onClick={() => toggle(code)}
+              className={`rounded-[9px] border px-3 py-1.5 text-sm ${on ? 'chosen border-accent/50' : 'border-line text-muted hover:text-ink'}`}
+            >
+              {t(`ocr.language.${code}`)}
+            </button>
+          )
+        })}
       </div>
-      <div className="space-y-2 pt-1">
+      <p className="text-xs text-muted">{t('ocr.languagesHint')}</p>
+      <SubHead title={t('ocr.processing')} />
+      <div className="space-y-2">
         <Toggle label={t('ocr.straighten')} hint={t('ocr.straightenHint')} checked={settings.straighten} onChange={(straighten) => save({ straighten })} />
         <Toggle label={t('ocr.blank')} hint={t('ocr.blankHint')} checked={settings.blank_pages} onChange={(blank_pages) => save({ blank_pages })} />
       </div>

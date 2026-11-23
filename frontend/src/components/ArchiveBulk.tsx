@@ -232,7 +232,7 @@ export function BulkBar({ selected, vaults, kinds, tags, meId, onClear, onDone }
               </p>
             )}
             <div className="flex justify-end gap-2">
-              <Button type="button" variant="ghost" onClick={() => setOpen(null)}>
+              <Button type="button" variant="line" onClick={() => setOpen(null)}>
                 {t('saved.cancel')}
               </Button>
               <Button

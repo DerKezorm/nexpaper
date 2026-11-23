@@ -10,7 +10,7 @@
 import { Archive, ArrowDown, ArrowUp, Bookmark, BookmarkPlus, Check, CheckSquare, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Download, FileCode2, LayoutGrid, Link2, List, ListTree, MessageSquare, Paperclip, Pin, Search, SlidersHorizontal, Trash2, Users, X } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 
 import {
   ApiError,
@@ -161,6 +161,12 @@ export function ArchivePage({ slots = appSlots }: { slots?: Slots }) {
   const searchBox = useRef<HTMLDivElement>(null)
   const field = useRef<HTMLInputElement>(null)
   const top = useRef<HTMLDivElement>(null)
+  // The search field of the sidebar and Ctrl/⌘ K come here with `search` in the state: the field takes the focus.
+  const arrived = useLocation()
+  const wantsSearch = Boolean((arrived.state as { search?: unknown } | null)?.search)
+  useEffect(() => {
+    if (wantsSearch) field.current?.focus()
+  }, [wantsSearch, arrived.key])
   const examples: [string, string][] = [
     ...Array.from({ length: HELP }, (_, index): [string, string] => [t(`docs.archive.example.${index}`), t(`docs.archive.help.${index}`)]),
     // Keeping (F3): the documents whose keeping time is over.
@@ -525,7 +531,7 @@ export function ArchivePage({ slots = appSlots }: { slots?: Slots }) {
     <>
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="font-display text-3xl font-semibold tracking-tight">{t('docs.archive.title')}</h1>
+          <h1 className="text-2xl font-bold tracking-tight">{t('docs.archive.title')}</h1>
           <p className="text-sm text-muted" data-testid="archive-count">
             {whole !== null &&
               t('docs.archive.sub', {
@@ -546,7 +552,7 @@ export function ArchivePage({ slots = appSlots }: { slots?: Slots }) {
                   aria-label={label}
                   title={label}
                   onClick={() => setView(value)}
-                  className={`rounded-full p-2 ${view === value ? 'bg-accent-soft text-accent' : 'text-muted hover:text-ink'}`}
+                  className={`rounded-[7px] p-2 ${view === value ? 'bg-accent-soft text-accent' : 'text-muted hover:text-ink'}`}
                 >
                   <Icon size={16} aria-hidden />
                 </button>
@@ -579,7 +585,7 @@ export function ArchivePage({ slots = appSlots }: { slots?: Slots }) {
           placeholder={t('docs.archive.placeholder')}
           aria-label={t('docs.archive.searchLabel')}
           maxLength={500}
-          className="h-13 w-full rounded-2xl border border-line bg-sheet pr-12 pl-12 text-[1.02rem] shadow-soft outline-none placeholder:text-muted focus:border-accent [&::-webkit-search-cancel-button]:hidden"
+          className="input h-12 pr-12 pl-12 text-base [&::-webkit-search-cancel-button]:hidden"
         />
         {typed && (
           <button type="button" onClick={() => setTyped('')} className="absolute top-1/2 right-3 -translate-y-1/2 rounded-full p-1.5 text-muted hover:bg-sheet-2" aria-label={t('docs.archive.clear')}>
@@ -652,7 +658,7 @@ export function ArchivePage({ slots = appSlots }: { slots?: Slots }) {
                 key={entry.id}
                 to={`/?${entry.query}`}
                 title={savedHint(entry, t) || undefined}
-                className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full border border-line bg-sheet px-3 text-sm font-semibold text-ink-2"
+                className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-[9px] border border-line bg-sheet px-3 text-sm font-semibold text-ink-2"
               >
                 <Bookmark size={14} className="text-accent" aria-hidden /> <bdi>{entry.name}</bdi>
                 <SavedCount entry={entry} className="text-sm" />
@@ -837,7 +843,7 @@ export function ArchivePage({ slots = appSlots }: { slots?: Slots }) {
       )}
       {said && (
         <div role="status" className="rise fixed inset-x-0 bottom-24 z-50 flex justify-center px-4 lg:bottom-8">
-          <p className="rounded-full bg-ink px-5 py-2.5 text-center text-sm font-semibold text-paper shadow-soft">{said}</p>
+          <p className="rounded-[12px] border border-line bg-sheet-2 px-4 py-2.5 text-center text-[13.5px] text-ink shadow-xl shadow-black/20">{said}</p>
         </div>
       )}
       {exporting && slots.ExportDialog && (
@@ -939,7 +945,7 @@ function SaveDialog({ suggestion, full, onClose, onSave }: { suggestion: string;
           </p>
         )}
         <div className="flex justify-end gap-2">
-          <Button type="button" variant="ghost" onClick={onClose}>
+          <Button type="button" variant="line" onClick={onClose}>
             {t('saved.cancel')}
           </Button>
           <Button type="submit" variant="primary" disabled={!name.trim() || full || busy}>
@@ -1437,7 +1443,7 @@ type PagerProps = { page: number; pages: number; from: number; to: number; total
 function Pager({ page, pages, from, to, total, size, onPage, onSize }: PagerProps) {
   const { t, i18n } = useTranslation()
   const n = (value: number) => value.toLocaleString(i18n.language)
-  const button = 'inline-flex h-9 min-w-9 items-center justify-center rounded-full px-2 text-sm font-semibold tabular-nums'
+  const button = 'inline-flex h-9 min-w-9 items-center justify-center rounded-[9px] px-2 text-sm font-semibold tabular-nums'
   return (
     <div className="flex flex-wrap items-center justify-between gap-3" data-testid="pager">
       <span className="text-sm text-ink-2 tabular-nums">{t('docs.archive.range', { from: n(from), to: n(to), total: n(total) })}</span>
@@ -1470,7 +1476,7 @@ function Pager({ page, pages, from, to, total, size, onPage, onSize }: PagerProp
         </nav>
       )}
       <label className="flex items-center gap-2 text-sm text-ink-2">
-        <select value={size} onChange={(event) => onSize(Number(event.target.value))} aria-label={t('docs.archive.perPage')} className="h-9 rounded-xl border border-line bg-sheet px-2 text-ink outline-none focus:border-accent">
+        <select value={size} onChange={(event) => onSize(Number(event.target.value))} aria-label={t('docs.archive.perPage')} className="input h-9 w-auto px-2">
           {SIZES.map((value) => (
             <option key={value} value={value}>
               {value}
@@ -1498,7 +1504,7 @@ function SenderDialog({ senders, onClose, onPick }: { senders: NameCount[]; onCl
           <Search size={16} className="absolute top-1/2 left-3 -translate-y-1/2 text-muted" aria-hidden />
           <input data-autofocus value={find} onChange={(event) => setFind(event.target.value)} placeholder={t('docs.archive.findSender')} aria-label={t('docs.archive.findSender')} className="input h-10 w-full pl-9" />
         </div>
-        <select value={byName ? 'name' : 'count'} onChange={(event) => setByName(event.target.value === 'name')} aria-label={t('docs.archive.senderOrder')} className="h-10 rounded-xl border border-line bg-sheet px-2 text-sm outline-none focus:border-accent">
+        <select value={byName ? 'name' : 'count'} onChange={(event) => setByName(event.target.value === 'name')} aria-label={t('docs.archive.senderOrder')} className="input w-auto px-2">
           <option value="count">{t('docs.archive.mostFirst')}</option>
           <option value="name">{t('docs.archive.aToZ')}</option>
         </select>
@@ -1519,7 +1525,7 @@ function Select({ label, value, onChange, options, empty }: { label: string; val
   return (
     <label className="text-sm">
       <span className="text-xs font-semibold text-muted">{label}</span>
-      <select value={value} onChange={(event) => onChange(event.target.value)} aria-label={label} className="mt-1 block h-10 w-full rounded-xl border border-line bg-sheet px-3 text-ink outline-none focus:border-accent">
+      <select value={value} onChange={(event) => onChange(event.target.value)} aria-label={label} className="input mt-1 px-3">
         <option value="">{empty}</option>
         {options.map(([v, l]) => (
           <option key={v} value={v}>

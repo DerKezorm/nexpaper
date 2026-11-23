@@ -360,11 +360,11 @@ function Doc({ document: d, setDocument, reload, slots, pane }: { document: Docu
                   ;(event.target as HTMLInputElement).blur()
                 }
               }}
-              className="w-full rounded-lg bg-transparent font-display text-2xl font-semibold tracking-tight outline-none hover:bg-sheet-2/60 focus:bg-sheet sm:text-3xl"
+              className="w-full rounded-lg bg-transparent text-2xl font-bold tracking-tight outline-none hover:bg-sheet-2/60 focus:bg-sheet"
               aria-label={t('docs.fields.title')}
             />
           ) : (
-            <h1 className="font-display text-2xl font-semibold tracking-tight sm:text-3xl">
+            <h1 className="text-2xl font-bold tracking-tight">
               <bdi>{d.title}</bdi>
             </h1>
           )}
@@ -939,11 +939,11 @@ function Notes({ document: d, onCount }: { document: DocumentInfo; onCount: (cou
                 }}
               >
                 <input value={editing.text} onChange={(event) => setEditing({ ...editing, text: event.target.value })} aria-label={t('docs.notes.edit')} maxLength={5000} className="input h-9" autoFocus />
-                <Button size="sm" variant="soft" type="submit">
-                  {t('common.save')}
-                </Button>
-                <Button size="sm" variant="ghost" onClick={() => setEditing(null)}>
+                <Button size="sm" variant="line" onClick={() => setEditing(null)}>
                   {t('common.cancel')}
+                </Button>
+                <Button size="sm" variant="primary" type="submit">
+                  {t('common.save')}
                 </Button>
               </form>
             ) : (
@@ -1092,7 +1092,7 @@ function MoveDialog({ document: d, vaults, vaultName, onClose, onMoved }: { docu
       )}
       {problem && <p className="mt-3 text-sm text-bad">{errorText(problem)}</p>}
       <div className="mt-5 flex justify-end gap-2">
-        <Button variant="ghost" onClick={onClose}>
+        <Button variant="line" onClick={onClose}>
           {t('common.cancel')}
         </Button>
         {vaults.length > 0 && (

@@ -267,7 +267,7 @@ export default function CameraPage() {
           </button>
         </header>
         <div className="mx-auto flex max-w-sm flex-1 flex-col items-center justify-center px-6 text-center">
-          <p className="font-display text-2xl font-semibold">{t('phone.camera.noCamera')}</p>
+          <p className="text-2xl font-semibold">{t('phone.camera.noCamera')}</p>
           <p className="mt-2 text-sm text-white/70">{why === 'insecure' ? t('phone.camera.insecure') : t('phone.camera.noCameraText')}</p>
           <button type="button" onClick={() => file.current?.click()} className="mt-6 flex h-12 items-center gap-2 rounded-full px-6 font-bold text-black" style={{ background: GOLD }}>
             <FileUp size={18} aria-hidden /> {t('phone.camera.chooseFile')}

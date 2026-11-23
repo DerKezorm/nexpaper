@@ -20,7 +20,7 @@ export function UploadButton() {
   const { t } = useTranslation()
   const { pick } = useUploads()
   return (
-    <button type="button" onClick={pick} className="flex h-11 w-full items-center justify-center gap-2 rounded-full bg-accent font-semibold text-accent-ink shadow-soft hover:brightness-105">
+    <button type="button" onClick={pick} className="btn btn-accent w-full">
       <Upload size={17} aria-hidden /> {t('upload.button')}
     </button>
   )
@@ -30,7 +30,7 @@ export function UploadButton() {
 export function CameraLink() {
   const { t } = useTranslation()
   return (
-    <Link to="/kamera" className="mt-2 flex h-9 w-full items-center justify-center gap-2 rounded-full text-sm font-semibold text-ink-2 hover:bg-sheet-2">
+    <Link to="/kamera" className="mt-2 flex h-9 w-full items-center justify-center gap-2 rounded-[9px] text-sm font-semibold text-ink-2 hover:bg-sheet-2">
       <Camera size={16} aria-hidden /> {t('phone.quick.photo')}
     </Link>
   )
@@ -55,7 +55,7 @@ export function DropSheet() {
     <div data-testid="drop-sheet" className="pointer-events-none fixed inset-3 z-[60] flex items-center justify-center rounded-3xl border-4 border-dashed border-accent bg-paper/85">
       <div className="text-center">
         <Upload size={40} className="mx-auto text-accent" aria-hidden />
-        <p className="mt-3 font-display text-2xl font-semibold">{t('upload.dropTitle')}</p>
+        <p className="mt-3 text-2xl font-semibold">{t('upload.dropTitle')}</p>
         <p className="text-sm text-ink-2">{t('upload.dropText')}</p>
       </div>
     </div>
@@ -113,7 +113,7 @@ function Row({ entry, vault }: { entry: Entry; vault: string | null }) {
   const running = entry.phase === 'hashing' || entry.phase === 'sending'
   const Icon = entry.phase === 'done' || entry.phase === 'exists' ? (entry.duplicate ? Copy : Check) : entry.phase === 'failed' ? AlertTriangle : entry.phase === 'paused' ? Pause : running || entry.phase === 'finishing' ? Loader2 : FileText
   const tone = entry.phase === 'failed' ? 'text-bad' : entry.phase === 'done' || entry.phase === 'exists' ? (entry.duplicate ? 'text-warn' : 'text-ok') : 'text-muted'
-  const link = 'rounded-full border border-line px-3 py-1 text-xs font-semibold text-ink-2 hover:bg-sheet-2'
+  const link = 'rounded-[9px] border border-line px-3 py-1 text-xs font-semibold text-ink-2 hover:bg-sheet-2'
   return (
     <li data-phase={entry.phase} className="flex items-start gap-3 px-4 py-3">
       <Icon size={18} aria-hidden className={`mt-0.5 shrink-0 ${tone} ${running ? 'animate-spin' : ''}`} />
@@ -155,7 +155,7 @@ export function UploadNotice({ lead, summary, onClose }: { lead: string; summary
     if (!lead) return null
     return (
       <div role="status" className="rise fixed inset-x-0 bottom-24 z-50 flex justify-center px-4 lg:bottom-8">
-        <p className="max-w-lg rounded-full bg-ink px-5 py-2.5 text-center text-sm font-semibold text-paper shadow-soft">{lead}</p>
+        <p className="max-w-lg rounded-[12px] border border-line bg-sheet-2 px-4 py-2.5 text-center text-[13.5px] text-ink shadow-xl shadow-black/20">{lead}</p>
       </div>
     )
   }
@@ -199,7 +199,7 @@ export function UploadPanel() {
       {entries.length > 0 && (
         <section aria-label={t('upload.panelTitle')} className="fixed right-4 bottom-52 z-40 w-[min(24rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-line bg-sheet shadow-soft lg:bottom-6 lg:right-6">
           <header className="flex items-center justify-between border-b border-line px-4 py-2.5">
-            <h2 className="font-display text-base font-semibold">{t('upload.panelTitle')}</h2>
+            <h2 className="text-base font-semibold">{t('upload.panelTitle')}</h2>
             {finished && (
               <button type="button" onClick={clear} aria-label={t('upload.panelClear')} title={t('upload.panelClear')} className="rounded-full p-1.5 text-muted hover:bg-sheet-2 hover:text-ink">
                 <X size={16} aria-hidden />

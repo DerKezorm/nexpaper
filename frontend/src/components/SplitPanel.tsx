@@ -115,7 +115,7 @@ export function SplitPanel({ document, onSplit, onKeep, back, say }: SplitPanelP
   return (
     <div className="card min-w-0 p-5" data-testid="split-panel">
       {back}
-      <p className="flex items-center gap-2 font-display text-xl font-semibold">
+      <p className="flex items-center gap-2 text-xl font-semibold">
         <Scissors size={19} className="text-accent" /> {t('pagetools.split.title')}
       </p>
       <p className="mt-1 text-sm text-ink-2">

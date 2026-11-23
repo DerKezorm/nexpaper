@@ -1,10 +1,11 @@
 /**
- * Settings, Backups: the two cards that belong to the backup. "Check files" (every file
- * carries a checksum; once a week and on a click nexpaper looks whether all documents are still there and unchanged)
- * and "Storage" (what the data folder holds, the free room, and a warning when the database lies on a network share).
- * One request fills both; while a check runs, the page asks again every few seconds.
+ * Settings, Storage and backups: what belongs to the backup besides it. "Dateien prüfen" (every file carries a checksum;
+ * once a week and on a click nexpaper looks whether all documents are still there and unchanged), and the block of what
+ * nexpaper takes on its disk that heads the card "Speicher und Sicherung" (as nexnotes' block of the data folder: the
+ * parts in one line, a bar, the free room, and a warning when the database lies on a network share). One request fills
+ * both; while a check runs, the page asks again every few seconds.
  */
-import { AlertTriangle, Check, HardDrive, ShieldCheck } from 'lucide-react'
+import { AlertTriangle, Check, ShieldCheck } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
@@ -58,18 +59,14 @@ export function useStorage() {
   return { info, load }
 }
 
+/** "Dateien prüfen" on its own, loading what it shows itself. */
 export function FilesCards() {
   const storage = useStorage()
   if (!storage.info) return null
-  return (
-    <>
-      <FilesCheckCard info={storage.info} reload={storage.load} />
-      <SpaceCard info={storage.info} />
-    </>
-  )
+  return <FilesCheckCard info={storage.info} reload={storage.load} />
 }
 
-function FilesCheckCard({ info, reload }: { info: StorageInfo; reload: () => Promise<unknown> }) {
+export function FilesCheckCard({ info, reload }: { info: StorageInfo; reload: () => Promise<unknown> }) {
   const { t, i18n } = useTranslation()
   const action = useAction()
   const files = info.files
@@ -115,43 +112,64 @@ function FilesCheckCard({ info, reload }: { info: StorageInfo; reload: () => Pro
   )
 }
 
-function SpaceCard({ info }: { info: StorageInfo }) {
+/** What nexpaper takes on its disk: the sum, its parts in one line, a bar of its share next to what else lies there, the
+ * free room, and where the database lies (a network share is the one place SQLite must not be). */
+export function SpaceBlock({ info }: { info: StorageInfo }) {
   const { t, i18n } = useTranslation()
   const size = (bytes: number) => formatBytes(bytes, i18n.language, 1000)
   const where = info.database.where
   const partial = !info.documents.complete || !info.cache.complete || !info.exports.complete || !info.backups.complete
-  const tiles: [string, string, string | null][] = [
-    [size(info.documents.bytes), t('space.documents'), info.documents.originals_bytes > 0 ? t('space.originals', { size: size(info.documents.originals_bytes) }) : null],
-    [size(info.database.bytes), t('space.database'), info.database.index_bytes ? t('space.index', { size: size(info.database.index_bytes) }) : null],
-    [size(info.cache.bytes), t('space.cache'), null],
-    [size(info.exports.bytes), t('space.exports'), null],
-    [size(info.backups.bytes), t('space.backups'), null],
-    [size(info.free_bytes), t('space.free'), info.total_bytes > 0 ? t('space.of', { size: size(info.total_bytes) }) : null],
+  const own = info.documents.bytes + info.database.bytes + info.cache.bytes + info.exports.bytes + info.backups.bytes
+  const used = Math.max(0, info.total_bytes - info.free_bytes)
+  const share = (part: number) => (info.total_bytes > 0 ? Math.min(100, (part / info.total_bytes) * 100) : 0)
+  const ownShare = share(own)
+  const otherShare = Math.min(100 - ownShare, share(Math.max(0, used - own)))
+  const nearlyFull = info.total_bytes > 0 && used / info.total_bytes > 0.9
+  const parts: [string, number, string | null][] = [
+    [t('space.documents'), info.documents.bytes, info.documents.originals_bytes > 0 ? t('space.originals', { size: size(info.documents.originals_bytes) }) : null],
+    [t('space.database'), info.database.bytes, info.database.index_bytes ? t('space.index', { size: size(info.database.index_bytes) }) : null],
+    [t('space.cache'), info.cache.bytes, null],
+    [t('space.exports'), info.exports.bytes, null],
+    [t('space.backups'), info.backups.bytes, null],
   ]
   return (
-    <Card id="space" icon={HardDrive} title={t('space.title')} text={t('space.text')}>
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-        {tiles.map(([value, label, note]) => (
-          <div key={label} className="rounded-xl bg-sheet-2 px-4 py-3">
-            <p className="font-display text-xl font-semibold">{value}</p>
-            <p className="text-xs text-muted">{label}</p>
-            {note && <p className="text-xs text-muted">{note}</p>}
-          </div>
-        ))}
+    <div className="space-y-1.5" data-testid="data-folder">
+      <div className="flex flex-wrap justify-between gap-2 text-sm">
+        <span className="text-ink-2">{t('space.uses')}</span>
+        <span data-testid="nexpaper-used">{size(own)}</span>
       </div>
+      <p className="text-xs text-muted" data-testid="space-parts">
+        {parts.map(([name, bytes, note]) => t('space.part', { name, size: size(bytes) }) + (note ? ` (${note})` : '')).join(' · ')}
+      </p>
+      <div className="flex h-2 overflow-hidden rounded-full bg-sheet-2" role="img" aria-label={t('space.bar', { own: size(own), used: size(used), total: size(info.total_bytes) })}>
+        <div className="h-full bg-accent" style={{ width: `${ownShare}%`, minWidth: own > 0 ? 3 : 0 }} />
+        <div className={'h-full ' + (nearlyFull ? 'bg-warn' : 'bg-muted opacity-40')} style={{ width: `${otherShare}%` }} />
+      </div>
+      <p className={'text-xs ' + (nearlyFull ? 'text-warn' : 'text-muted')} data-testid="disk-free">
+        {t('space.diskFree', { free: size(info.free_bytes), total: size(info.total_bytes) })}
+      </p>
       {partial && <p className="text-xs text-muted">{t('space.partial')}</p>}
-      <div
-        className={`flex items-start gap-3 rounded-xl border px-4 py-3 text-sm ${where.network ? 'border-bad/40 bg-bad/10' : where.kind === 'local' ? 'border-ok/40 bg-ok-soft' : 'border-warn/40 bg-warn-soft'}`}
-        role={where.network ? 'alert' : undefined}
-        data-testid={`database-${where.kind}`}
-      >
-        {where.kind === 'local' ? <Check size={16} className="mt-0.5 shrink-0 text-ok" aria-hidden /> : <AlertTriangle size={16} className={`mt-0.5 shrink-0 ${where.network ? 'text-bad' : 'text-warn'}`} aria-hidden />}
-        <span>
-          <span className="font-semibold">{t(`space.${where.kind}.title`, { type: where.fstype })}</span>
-          <span className="block text-xs text-ink-2">{t(`space.${where.kind}.text`)}</span>
-        </span>
-      </div>
+      {where.kind === 'local' ? (
+        <p className="flex items-start gap-1.5 text-xs text-muted" data-testid="database-local">
+          <Check size={14} className="mt-px shrink-0 text-ok" aria-hidden />
+          <span>
+            {t('space.local.title')} {t('space.local.text')}
+          </span>
+        </p>
+      ) : (
+        <div
+          className={`flex items-start gap-3 rounded-[9px] border px-3 py-2 text-sm ${where.network ? 'border-bad/40 bg-bad/10' : 'border-warn/40 bg-warn-soft'}`}
+          role={where.network ? 'alert' : undefined}
+          data-testid={`database-${where.kind}`}
+        >
+          <AlertTriangle size={16} className={`mt-0.5 shrink-0 ${where.network ? 'text-bad' : 'text-warn'}`} aria-hidden />
+          <span>
+            <span className="font-semibold">{t(`space.${where.kind}.title`, { type: where.fstype })}</span>
+            <span className="block text-xs text-ink-2">{t(`space.${where.kind}.text`)}</span>
+          </span>
+        </div>
+      )}
       {info.documents.where.network && <p className="text-xs text-muted">{t('space.documentsOnShare')}</p>}
-    </Card>
+    </div>
   )
 }

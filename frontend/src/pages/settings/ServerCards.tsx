@@ -1,10 +1,11 @@
 /**
- * The operator's part of the settings: accounts and invitations, mail, API keys, backups,
+ * The operator's part of the settings, laid out card by card as nexnotes' (`pages/settings/ServerCards.tsx` and
+ * `AccountsTab.tsx` there): accounts and invitations, the API keys of all accounts, mail, storage and backups,
  * languages and the log. Sign-in (password, public address, second factor, providers, authentik) is in
  * ``SignInCards.tsx``. Everything here is the
  * server's; it applies to all. The operator manages accounts and does not read the documents in them.
  */
-import { AlertTriangle, Download, FileText, HardDrive, Languages, Mail, MoreHorizontal, Plug, Plus, RotateCcw, ScrollText, ShieldCheck, Trash2, Upload, Users } from 'lucide-react'
+import { AlertTriangle, Download, FileText, Globe, HardDrive, Info, KeyRound, Mail, MoreHorizontal, RotateCcw, ShieldCheck, Trash2, Upload, UserPlus } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
@@ -14,9 +15,11 @@ import { Avatar } from '../../components/Avatar'
 import { Dialog } from '../../components/Dialog'
 import { useConfirm } from '../../components/useConfirm'
 import { byName, forgetAddedLanguages, templateFile } from '../../i18n'
+import { ago } from '../../lib/ago'
 import { iso } from '../../lib/say'
 import { useAuth } from '../../state/auth'
-import { Button, Card, Confirm, CopyLink, Feedback, Input, saveAsFile, Select, SubHead, Toggle, useAction } from './ui'
+import { SpaceBlock, type StorageInfo } from './FilesCards'
+import { Button, Card, Confirm, CopyLink, Feedback, Input, saveAsFile, Select, Toggle, useAction } from './ui'
 
 export type ServerSettings = {
   public_url: string
@@ -95,16 +98,22 @@ type OpenInvite = { id: number; email: string; expires_at: string }
 type Asking = 'role' | 'delete' | 'link' | 'reset' | 'signout' | 'block' | 'unblock' | 'unlink'
 /** What came of sending a link to set a new password: by mail, or to pass on once. */
 type LinkMade = { name: string; sent: boolean; email?: string; link?: string }
+/** The open menu of one row: where its button is, for a menu that the table's scrolling box does not cut off. */
+type OpenMenu = { id: number; top: number; right: number }
 const DAYS = ['1', '7', '30'] as const
 
-/** Every account, and the invitations that bring new ones. */
+/**
+ * Every account, as nexnotes' table: person, way of signing in, role, whether the AI may read along (nexpaper's column
+ * where nexnotes shows the storage), last use, and the menu with everything the operator can do to an account. "Person
+ * einladen" top right; the open invitations as a card of their own below.
+ */
 export function AccountsCard() {
   const { t, i18n } = useTranslation()
   const { me } = useAuth()
   const [list, setList] = useState<AccountRow[]>([])
   const [inviting, setInviting] = useState(false)
   const [invites, setInvites] = useState<OpenInvite[]>([])
-  const [menu, setMenu] = useState<number | null>(null)
+  const [menu, setMenu] = useState<OpenMenu | null>(null)
   const [asking, setAsking] = useState<{ kind: Asking; account: AccountRow; link?: AccountLink } | null>(null)
   const [links, setLinks] = useState<AccountLink[]>([])
   const [made, setMade] = useState<LinkMade | null>(null)
@@ -122,162 +131,212 @@ export function AccountsCard() {
       if (!(event.target as Element).closest('[data-account-actions]')) setMenu(null)
     }
     const escape = (event: KeyboardEvent) => event.key === 'Escape' && setMenu(null)
+    // The menu stands where the button was; once the page moves, it would stand beside it.
+    const moved = () => setMenu(null)
     document.addEventListener('mousedown', away)
     document.addEventListener('keydown', escape)
+    window.addEventListener('scroll', moved, true)
+    window.addEventListener('resize', moved)
     return () => {
       document.removeEventListener('mousedown', away)
       document.removeEventListener('keydown', escape)
+      window.removeEventListener('scroll', moved, true)
+      window.removeEventListener('resize', moved)
     }
   }, [menu])
 
+  const lang = i18n.language
   const linksOf = (row: AccountRow) => links.filter((entry) => entry.account_id === row.id)
   const actions = (row: AccountRow): { kind: Asking; label: string; link?: AccountLink }[] => [
     { kind: 'role', label: row.role === 'operator' ? t('server.makeMember') : t('server.makeOperator') },
-    ...linksOf(row).map((link) => ({ kind: 'unlink' as const, label: t('server.unlinkProvider', { name: link.label }), link })),
+    // The operator sets no password: a link lets the person do it (an account of a provider gets its first one).
+    { kind: 'link', label: row.has_password === false ? t('server.givePassword') : t('server.newPassword') },
     ...(row.two_factor ? [{ kind: 'reset' as const, label: t('server.resetTwoFactor') }] : []),
     { kind: 'signout', label: t('server.signOutEverywhere') },
+    ...linksOf(row).map((link) => ({ kind: 'unlink' as const, label: t('server.unlinkProvider', { name: link.label }), link })),
     row.blocked ? { kind: 'unblock' as const, label: t('server.unblock') } : { kind: 'block' as const, label: t('server.block') },
     { kind: 'delete', label: t('server.deleteAccount') },
   ]
+  /** How the account signs in: the providers it is linked to, and its password (with the second factor). */
+  const wayIn = (row: AccountRow) => {
+    const providers = linksOf(row).map((link) => link.label)
+    const password = row.has_password === false ? null : row.two_factor ? t('server.table.passwordTwoFactor') : t('server.signInBy.password')
+    if (providers.length === 0) return password ?? t(`server.signInBy.${row.sign_in}`)
+    return (
+      <>
+        <span data-testid="account-providers">{providers.join(', ')}</span>
+        {password && ` · ${password}`}
+      </>
+    )
+  }
+  const last = (row: AccountRow) => {
+    if (row.blocked) return <span className="text-bad">{t('server.blocked')}</span>
+    const seen = row.last_seen_at ? <span title={new Date(row.last_seen_at).toLocaleString(lang)}>{ago(row.last_seen_at, lang, t('me.justNow'))}</span> : t('server.table.never')
+    // Held back a while by the sign-in brake: said beside the last use, it ends by itself.
+    return row.locked ? (
+      <>
+        {seen}
+        <span className="block text-warn">{t('server.locked')}</span>
+      </>
+    ) : (
+      seen
+    )
+  }
+  const allowAi = (row: AccountRow, allowed: boolean) => {
+    setList((rows) => rows.map((item) => (item.id === row.id ? { ...item, ai_allowed: allowed } : item)))
+    void run(async () => {
+      try {
+        await api(`/api/v1/accounts/${row.id}/permissions`, { method: 'PUT', body: { ai_allowed: allowed } })
+      } catch (error) {
+        load()
+        throw error
+      }
+    })
+  }
+  const cell = 'px-3 py-2.5 align-middle'
 
   return (
-    <Card id="accounts" icon={Users} title={t('server.accounts')} text={t('server.accountsHint')}>
-      <ul className="divide-y divide-line rounded-xl border border-line">
-        {list.map((row) => (
-          <li key={row.id} className="flex flex-wrap items-center gap-3 px-4 py-3 text-sm">
-            <Avatar person={row} size={34} />
-            <span className="min-w-0 flex-1">
-              <span className="block truncate font-semibold">
-                {row.display_name || row.name}
-                {row.display_name && <span className="ml-1 text-xs font-normal text-muted">{row.name}</span>}
-              </span>
-              <span className="block text-xs text-muted">
-                {t(`me.role.${row.role}`)} · {t(`server.signInBy.${row.sign_in}`)}
-                {row.two_factor ? ' · ' + t('server.withTwoFactor') : ''}
-                {row.locked ? ' · ' + t('server.locked') : ''}
-                {row.blocked ? ' · ' + t('server.blocked') : ''}
-              </span>
-              {linksOf(row).length > 0 && (
-                <span className="mt-1 flex flex-wrap gap-1" data-testid="account-providers">
-                  {linksOf(row).map((link) => (
-                    <span key={link.provider_id} className="rounded-full border border-line px-2 py-0.5 text-[11px] font-semibold text-ink-2">
-                      {link.label}
-                    </span>
-                  ))}
-                </span>
-              )}
-            </span>
-            {row.id !== me?.id && (
-              <span className="relative flex items-center gap-1.5" data-account-actions>
-                <Button small onClick={() => setAsking({ kind: 'link', account: row })}>
-                  {row.has_password === false ? t('server.givePassword') : t('server.newPassword')}
-                </Button>
-                <button
-                  type="button"
-                  aria-expanded={menu === row.id}
-                  aria-haspopup="true"
-                  aria-label={t('server.more', { name: row.name })}
-                  onClick={() => setMenu(menu === row.id ? null : row.id)}
-                  className="rounded-full p-1.5 text-muted hover:bg-sheet-2 hover:text-ink"
-                >
-                  <MoreHorizontal size={18} />
-                </button>
-                {menu === row.id && (
-                  <span className="card rise absolute top-full right-0 z-40 mt-1 block w-60 p-1.5">
-                    {actions(row).map((entry) => (
-                      <button
-                        key={entry.kind + (entry.link ? `-${entry.link.provider_id}` : '')}
-                        type="button"
-                        onClick={() => {
-                          setMenu(null)
-                          setAsking({ kind: entry.kind, account: row, link: entry.link })
-                        }}
-                        className={`block w-full rounded-lg px-3 py-2 text-left text-sm font-semibold hover:bg-sheet-2 ${entry.kind === 'delete' || entry.kind === 'block' ? 'text-bad' : 'text-ink-2'}`}
-                      >
-                        {entry.label}
-                      </button>
-                    ))}
-                  </span>
-                )}
-              </span>
-            )}
-            <span className="flex basis-full flex-wrap gap-x-5 gap-y-1 text-xs text-ink-2 sm:pl-[3.1rem]" data-permissions>
-              {(['ai_allowed'] as const).map((key) => (
-                <label key={key} className="inline-flex items-center gap-1.5 font-semibold">
-                  <input
-                    type="checkbox"
-                    className="h-4 w-4 accent-[var(--accent)]"
-                    checked={row[key]}
-                    disabled={busy}
-                    aria-label={`${t('server.aiAllowed')}: ${row.display_name || row.name}`}
-                    onChange={(event) => {
-                      const allowed = event.target.checked
-                      setList((rows) => rows.map((item) => (item.id === row.id ? { ...item, [key]: allowed } : item)))
-                      void run(async () => {
-                        try {
-                          await api(`/api/v1/accounts/${row.id}/permissions`, { method: 'PUT', body: { [key]: allowed } })
-                        } catch (error) {
-                          load()
-                          throw error
-                        }
-                      })
-                    }}
-                  />
-                  {t('server.aiAllowed')}
-                </label>
-              ))}
-            </span>
-          </li>
-        ))}
-      </ul>
-      <p className="text-xs text-muted">{t('server.permissionsHint')}</p>
-      {invites.length > 0 && (
-        <ul className="space-y-2" data-testid="open-invites">
-          {invites.map((invite) => (
-            <li key={invite.id} className="flex items-center gap-3 rounded-xl border border-line bg-sheet-2/50 px-4 py-2.5 text-sm">
-              <span className="flex-1">
-                <span className="font-semibold">{invite.email || t('invite.noEmail')}</span>
-                <span className="block text-xs text-muted">{t('invite.until', { when: new Date(invite.expires_at).toLocaleDateString(i18n.language) })}</span>
-              </span>
-              <Button
-                small
-                busy={busy}
-                onClick={() =>
-                  ask({
-                    title: t('confirm.invite.title'),
-                    text: t('confirm.invite.text'),
-                    confirm: t('confirm.invite.confirm'),
-                    run: async () => {
-                      await api(`/api/v1/invites/${invite.id}`, { method: 'DELETE' })
-                      load()
-                    },
-                  })
-                }
-              >
-                {t('invite.withdraw')}
-              </Button>
-            </li>
-          ))}
-        </ul>
-      )}
-      <div className="flex flex-wrap gap-2 pt-1">
-        <Button primary onClick={() => setInviting(true)}>
-          <Plus size={16} /> {t('server.invite')}
-        </Button>
-      </div>
-      {made && (
-        <div className="space-y-2 text-sm text-ink-2" role="status">
-          {made.sent ? (
-            <p>{t('server.linkSent', { name: made.name, email: made.email })}</p>
-          ) : (
-            <>
-              <p>{t('server.linkShown', { name: made.name })}</p>
-              {made.link && <CopyLink value={made.link} label={t('server.linkLabel')} />}
-            </>
-          )}
+    <>
+      <Card id="accounts" icon={UserPlus} title={t('server.accounts')} text={t('server.accountsLead', { count: list.length })}>
+        <div className="flex justify-end">
+          <Button primary onClick={() => setInviting(true)}>
+            <UserPlus size={16} aria-hidden /> {t('server.invite')}
+          </Button>
         </div>
+        <div className="soft-scroll overflow-x-auto rounded-[12px] border border-line">
+          <table className="w-full min-w-[720px] text-left text-sm" data-testid="account-table">
+            <thead className="border-b border-line text-xs text-muted">
+              <tr>
+                <th className="px-3 py-2 font-medium">{t('server.table.person')}</th>
+                <th className="px-3 py-2 font-medium">{t('server.table.signIn')}</th>
+                <th className="px-3 py-2 font-medium">{t('server.table.role')}</th>
+                <th className="px-3 py-2 font-medium" title={t('server.permissionsHint')}>
+                  {t('server.table.ai')}
+                </th>
+                <th className="px-3 py-2 font-medium">{t('server.table.last')}</th>
+                <th className="px-3 py-2 font-medium">
+                  <span className="sr-only">{t('server.table.actions')}</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-line">
+              {list.map((row) => {
+                const shown = row.display_name || row.name
+                return (
+                  <tr key={row.id} data-testid={`account-${row.name}`} className={row.blocked ? 'text-muted' : ''}>
+                    <td className={cell}>
+                      <div className="flex items-center gap-2.5">
+                        <Avatar person={row} size={32} />
+                        <span className="min-w-0">
+                          <span className="block truncate font-medium text-ink">{shown}</span>
+                          <span className="block truncate text-xs text-muted">{row.email || row.name}</span>
+                        </span>
+                      </div>
+                    </td>
+                    <td className={cell}>{wayIn(row)}</td>
+                    <td className={cell}>{t(`me.role.${row.role}`)}</td>
+                    <td className={cell}>
+                      <input
+                        type="checkbox"
+                        className="h-4 w-4 accent-[var(--accent)]"
+                        checked={row.ai_allowed}
+                        disabled={busy}
+                        aria-label={`${t('server.aiAllowed')}: ${shown}`}
+                        onChange={(event) => allowAi(row, event.target.checked)}
+                      />
+                    </td>
+                    <td className={cell + ' text-xs'}>{last(row)}</td>
+                    <td className={cell + ' text-right'}>
+                      {/* The own account has nothing here: no role, no lock, no deleting oneself. */}
+                      {row.id !== me?.id && (
+                        <span data-account-actions>
+                          <button
+                            type="button"
+                            aria-expanded={menu?.id === row.id}
+                            aria-haspopup="menu"
+                            aria-label={t('server.more', { name: shown })}
+                            data-testid="account-menu-button"
+                            onClick={(event) => {
+                              const spot = event.currentTarget.getBoundingClientRect()
+                              setMenu(menu?.id === row.id ? null : { id: row.id, top: spot.bottom + 4, right: window.innerWidth - spot.right })
+                            }}
+                            className="btn btn-ghost h-8 w-8 px-0"
+                          >
+                            <MoreHorizontal size={16} aria-hidden />
+                          </button>
+                          {menu?.id === row.id && (
+                            <span role="menu" aria-label={t('server.more', { name: shown })} className="menu fixed block w-64 text-left" style={{ top: menu.top, right: menu.right }}>
+                              {actions(row).map((entry) => (
+                                <button
+                                  key={entry.kind + (entry.link ? `-${entry.link.provider_id}` : '')}
+                                  type="button"
+                                  role="menuitem"
+                                  onClick={() => {
+                                    setMenu(null)
+                                    setAsking({ kind: entry.kind, account: row, link: entry.link })
+                                  }}
+                                  className={'menu-item ' + (entry.kind === 'delete' || entry.kind === 'block' ? 'text-bad not-disabled:hover:text-bad' : '')}
+                                >
+                                  <span className="truncate">{entry.label}</span>
+                                </button>
+                              ))}
+                            </span>
+                          )}
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+        <p className="text-xs text-muted">{t('server.permissionsHint')}</p>
+        {made && (
+          <div className="space-y-2 text-sm text-ink-2" role="status">
+            {made.sent ? (
+              <p>{t('server.linkSent', { name: made.name, email: made.email })}</p>
+            ) : (
+              <>
+                <p>{t('server.linkShown', { name: made.name })}</p>
+                {made.link && <CopyLink value={made.link} label={t('server.linkLabel')} />}
+              </>
+            )}
+          </div>
+        )}
+        <Feedback problem={problem} done={done} />
+      </Card>
+
+      {invites.length > 0 && (
+        <Card id="invites" icon={UserPlus} title={t('server.openInvites')}>
+          <ul className="divide-y divide-line rounded-[12px] border border-line text-sm" data-testid="open-invites">
+            {invites.map((invite) => (
+              <li key={invite.id} className="flex flex-wrap items-center gap-2 px-3 py-2.5">
+                <span className="min-w-0 flex-1 truncate">{invite.email || t('invite.noEmail')}</span>
+                <span className="text-xs text-muted">{t('invite.until', { when: new Date(invite.expires_at).toLocaleDateString(lang) })}</span>
+                <Button
+                  small
+                  danger
+                  busy={busy}
+                  onClick={() =>
+                    ask({
+                      title: t('confirm.invite.title'),
+                      text: t('confirm.invite.text'),
+                      confirm: t('confirm.invite.confirm'),
+                      run: async () => {
+                        await api(`/api/v1/invites/${invite.id}`, { method: 'DELETE' })
+                        load()
+                      },
+                    })
+                  }
+                >
+                  {t('invite.withdraw')}
+                </Button>
+              </li>
+            ))}
+          </ul>
+        </Card>
       )}
-      <Feedback problem={problem} done={done} />
       {dialog}
       {inviting && (
         <InviteDialog
@@ -324,7 +383,7 @@ export function AccountsCard() {
           }}
         />
       )}
-    </Card>
+    </>
   )
 }
 
@@ -545,9 +604,10 @@ export function InterfaceCard() {
   )
 }
 
-/** The switch for API keys, and every key there is: who made it, what it is called, when it was used; blocked for good
- * on request (every way out needs a latch). Never the key itself. */
-export function ApiKeysCard({ server }: { server: Server }) {
+/** "API-Schlüssel aller Konten", as nexnotes' card of all tokens: every key there is, whose it is, what it is called,
+ * what it may and when it was used; blocked for good on request (every way out needs a latch). Never the key itself.
+ * The switch that allows keys at all is under General, "Funktionen für alle Konten". */
+export function AllApiKeysCard() {
   const { t, i18n } = useTranslation()
   const { busy, problem, run } = useAction()
   const [keys, setKeys] = useState<AnyApiKey[] | null>(null)
@@ -556,27 +616,42 @@ export function ApiKeysCard({ server }: { server: Server }) {
     apiKeysApi.every().then(setKeys, () => setKeys(null))
   }, [])
   useEffect(load, [load])
-  const s = server.settings
-  if (!s) return null
+  const lang = i18n.language
+  const describe = (key: AnyApiKey) =>
+    [
+      key.scope === 'upload' ? t('phone.keys.uploadOne') : t('apiKeys.readOnlyOne'),
+      key.expires_at ? t('apiKeys.runsOut', { day: new Date(key.expires_at).toLocaleDateString(lang) }) : t('apiKeys.never'),
+      key.last_used_at ? t('apiKeys.used', { when: new Date(key.last_used_at).toLocaleString(lang, { dateStyle: 'short', timeStyle: 'short' }) }) : t('apiKeys.unused'),
+    ].join(' · ')
   return (
-    <Card id="api-keys" icon={Plug} title={t('server.apiKeys.title')} text={t('server.apiKeys.text')}>
-      <Toggle label={t('server.apiKeys.allow')} hint={t('server.apiKeys.allowHint')} checked={s.api_keys_allowed} onChange={(api_keys_allowed) => void server.save({ api_keys_allowed })} />
+    <Card id="all-api-keys" icon={KeyRound} title={t('server.apiKeys.title')} text={t('server.apiKeys.text')}>
+      {keys && keys.length === 0 && (
+        <p className="text-sm text-muted" data-testid="admin-api-keys-none">
+          {t('server.apiKeys.none')}
+        </p>
+      )}
       {keys && keys.length > 0 && (
-        <ul className="divide-y divide-line rounded-xl border border-line text-sm" data-testid="admin-api-keys">
+        <ul className="flex flex-col" data-testid="admin-api-keys">
           {keys.map((key) => (
-            <li key={key.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
-              <span className="min-w-0 flex-1">
-                <span className="font-semibold">{key.name}</span> <code className="font-mono text-xs text-muted">{key.prefix}…</code>
-                <span className="block text-xs text-muted">
-                  {key.account} · {key.last_used_at ? new Date(key.last_used_at).toLocaleString(i18n.language, { dateStyle: 'short', timeStyle: 'short' }) : t('apiKeys.unused')}
+            <li key={key.id} className="flex items-center gap-3 border-b border-line py-2.5 last:border-0">
+              <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                <span className="truncate text-sm">
+                  <span className="text-muted">{key.account}</span> · {key.name} <code className="font-mono text-xs text-muted">{key.prefix}…</code>
                 </span>
+                <span className="text-xs text-muted">{describe(key)}</span>
               </span>
               {key.blocked ? (
-                <span className="text-xs font-semibold text-bad">{t('server.apiKeys.blocked')}</span>
+                <span className="text-xs text-bad">{t('server.apiKeys.blocked')}</span>
               ) : (
-                <Button small danger busy={busy} onClick={() => setBlocking(key)} label={t('server.apiKeys.blockNamed', { name: key.name, account: key.account })}>
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => setBlocking(key)}
+                  aria-label={t('server.apiKeys.blockNamed', { name: key.name, account: key.account })}
+                  className="text-[13px] text-bad hover:underline disabled:opacity-50"
+                >
                   {t('server.apiKeys.block')}
-                </Button>
+                </button>
               )}
             </li>
           ))}
@@ -584,11 +659,11 @@ export function ApiKeysCard({ server }: { server: Server }) {
       )}
       <p className="text-xs text-muted">{t('server.apiKeys.offHint')}</p>
       <p className="text-sm">
-        <Link to="/konto?tab=devices" className="font-semibold text-accent underline decoration-accent/40 underline-offset-4">
+        <Link to="/settings/connections" className="font-semibold text-accent underline decoration-accent/40 underline-offset-4">
           {t('server.apiKeys.own')}
         </Link>
       </p>
-      <Feedback problem={problem ?? server.problem} done={server.done} />
+      <Feedback problem={problem} />
       {blocking && (
         <Confirm
           title={t('server.apiKeys.blockTitle', { name: blocking.name, account: blocking.account })}
@@ -623,6 +698,7 @@ export function MailCard({ server }: { server: Server }) {
         className="grid gap-3 sm:grid-cols-2"
         onSubmit={(event) => {
           event.preventDefault()
+          test.clear()
           void server.save(draft, t('settings.saved')).then(() => setDraft({}))
         }}
       >
@@ -647,12 +723,11 @@ export function MailCard({ server }: { server: Server }) {
           </Button>
         </div>
       </form>
-      <Feedback problem={server.problem} done={server.done} />
-      <SubHead title={t('server.mailTestTitle')} />
       <form
         className="flex flex-wrap items-end gap-2"
         onSubmit={(event) => {
           event.preventDefault()
+          server.clear()
           void test.run(() => api('/api/v1/settings/mail-test', { method: 'POST', body: { to } }), t('server.mailSent'))
         }}
       >
@@ -661,7 +736,8 @@ export function MailCard({ server }: { server: Server }) {
           {t('server.send')}
         </Button>
       </form>
-      <Feedback problem={test.problem} done={test.done} />
+      {/* One line for both, as in nexnotes: what the test said, else what saving said. */}
+      <Feedback problem={test.problem ?? server.problem} done={test.done ?? server.done} values={test.problem ? test.values : server.values} />
     </Card>
   )
 }
@@ -720,7 +796,12 @@ function PreviewLines({ brief }: { brief: Brief }) {
   )
 }
 
-export function BackupsCard({ server }: { server: Server }) {
+/**
+ * "Speicher und Sicherung", as nexnotes' card "Speicher und Backups": on top what nexpaper takes on its disk (when the
+ * area hands it in), then that the documents themselves are not in a backup, the last backup, one row with the schedule,
+ * how many to keep, "Sicherung hochladen" and "Jetzt sichern", and the list of backups with their small buttons.
+ */
+export function BackupsCard({ server, space = null }: { server: Server; space?: StorageInfo | null }) {
   const { t, i18n } = useTranslation()
   const { me } = useAuth()
   const [list, setList] = useState<Backup[]>([])
@@ -737,10 +818,16 @@ export function BackupsCard({ server }: { server: Server }) {
   useEffect(load, [load])
   const s = server.settings
   if (!s) return null
+  const lang = i18n.language
   const size = (bytes: number) => (bytes > 1024 * 1024 ? `${(bytes / 1024 / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`)
-  const icon = 'rounded-full p-1.5 text-muted hover:bg-sheet hover:text-ink'
+  const moment = (value: string) => new Date(value).toLocaleString(lang)
+  const forBackup = (entry: Backup, verb: string) => t('server.forBackup', { name: moment(entry.created), action: verb })
+  // The server lists the newest first.
+  const last = list[0]
+  const small = 'h-3.5 w-3.5'
   return (
-    <Card id="backups" icon={HardDrive} title={t('server.backups')} text={t('server.backupsHint')}>
+    <Card id="backups" icon={HardDrive} title={t('server.storageBackups')} text={t('server.backupsHint')}>
+      {space && <SpaceBlock info={space} />}
       <div className="flex items-start gap-3 rounded-xl border border-warn/40 bg-warn-soft px-4 py-3 text-sm" data-testid="backup-without-documents">
         <AlertTriangle size={16} className="mt-0.5 shrink-0 text-warn" aria-hidden />
         <span>
@@ -748,7 +835,10 @@ export function BackupsCard({ server }: { server: Server }) {
           <span className="block text-xs text-ink-2">{t('server.backupNoDocumentsText')}</span>
         </span>
       </div>
-      <div className="flex flex-wrap items-end gap-3">
+      <p className="text-sm text-ink-2" data-testid="last-backup">
+        {last ? t('server.lastBackup', { time: moment(last.created) }) : t('server.noBackups')}
+      </p>
+      <div className="flex flex-wrap items-end gap-2">
         <Select
           label={t('server.schedule')}
           value={s.backup_schedule}
@@ -758,7 +848,7 @@ export function BackupsCard({ server }: { server: Server }) {
             { value: 'daily', label: t('server.daily') },
             { value: 'weekly', label: t('server.weekly') },
           ]}
-          className="w-48"
+          className="w-44"
         />
         <form
           className="flex items-end gap-2"
@@ -772,77 +862,83 @@ export function BackupsCard({ server }: { server: Server }) {
             {t('common.save')}
           </Button>
         </form>
+        <span className="ml-auto flex flex-wrap gap-2">
+          <input
+            ref={picker}
+            type="file"
+            accept=".zip,application/zip"
+            className="hidden"
+            aria-label={t('server.uploadBackup')}
+            onChange={(event) => {
+              const file = event.target.files?.[0]
+              event.target.value = ''
+              if (file) setAsking({ kind: 'upload', name: file.name, file })
+            }}
+          />
+          <Button onClick={() => picker.current?.click()}>
+            <Upload size={16} aria-hidden />
+            {t('server.uploadBackup')}
+          </Button>
+          <Button
+            primary
+            busy={action.busy}
+            onClick={() =>
+              void action.run(async () => {
+                await api('/api/v1/backups', { method: 'POST', body: { note: '' } })
+                load()
+              }, t('server.backupMade'))
+            }
+          >
+            {t('server.backupNow')}
+          </Button>
+        </span>
       </div>
       <Feedback problem={server.problem} done={server.done} />
-      <div className="flex flex-wrap gap-2">
-        <Button
-          primary
-          busy={action.busy}
-          onClick={() =>
-            void action.run(async () => {
-              await api('/api/v1/backups', { method: 'POST', body: { note: '' } })
-              load()
-            }, t('server.backupMade'))
-          }
-        >
-          {t('server.backupNow')}
-        </Button>
-        <input
-          ref={picker}
-          type="file"
-          accept=".zip,application/zip"
-          className="hidden"
-          aria-label={t('server.uploadBackup')}
-          onChange={(event) => {
-            const file = event.target.files?.[0]
-            event.target.value = ''
-            if (file) setAsking({ kind: 'upload', name: file.name, file })
-          }}
-        />
-        <Button onClick={() => picker.current?.click()}>
-          <Upload size={16} />
-          {t('server.uploadBackup')}
-        </Button>
-      </div>
-      <ul className="space-y-2 text-sm">
-        {list.length === 0 && <li className="text-muted">{t('server.noBackups')}</li>}
-        {list.map((entry) => (
-          <li key={entry.name} className="flex flex-wrap items-center gap-2 rounded-xl border border-line bg-sheet-2/50 px-4 py-2.5">
-            <span className="min-w-0 flex-1">
-              <span className="block font-semibold">{new Date(entry.created).toLocaleString(i18n.language)}</span>
-              <span className="block text-xs text-muted">
-                {entry.uploaded ? t('server.uploaded') : t(`server.kinds.${entry.kind}`)} · {t('server.countAccounts', { count: entry.accounts })}
-                {entry.documents ? `, ${t('server.countDocuments', { count: entry.documents })}` : ''} · {size(entry.size)} · {entry.version}
+      {/* Without backups the line above says so once; an empty list would say it a second time. */}
+      {list.length > 0 && (
+        <ul className="divide-y divide-line rounded-[12px] border border-line text-sm" data-testid="backup-list">
+          {list.map((entry) => (
+            <li key={entry.name} className="flex flex-wrap items-center gap-2 px-4 py-2.5">
+              <span className="min-w-0 flex-1">
+                <span className="block">{moment(entry.created)}</span>
+                <span className="block text-xs text-muted">
+                  {entry.uploaded ? t('server.uploaded') : t(`server.kinds.${entry.kind}`)} · {t('server.countAccounts', { count: entry.accounts })}
+                  {entry.documents ? `, ${t('server.countDocuments', { count: entry.documents })}` : ''} · {size(entry.size)} · {entry.version}
+                </span>
               </span>
-            </span>
-            <button type="button" className={icon} title={t('server.check')} aria-label={t('server.check')} onClick={() => void action.run(async () => setBrief({ ...(await api<Brief>(`/api/v1/backups/${entry.name}/check`, { method: 'POST' })), name: entry.name }))}>
-              <ShieldCheck size={16} />
-            </button>
-            <button type="button" className={icon} title={t('server.download')} aria-label={t('server.download')} onClick={() => setAsking({ kind: 'download', name: entry.name })}>
-              <Download size={16} />
-            </button>
-            <button
-              type="button"
-              className={icon}
-              title={t('server.restore')}
-              aria-label={t('server.restore')}
-              onClick={() =>
-                // The trial run first: the dialog that asks for the password tells what the restore would do.
-                void action.run(async () => {
-                  const found = await api<Brief>(`/api/v1/backups/${entry.name}/check`, { method: 'POST' })
-                  if (found.usable) setAsking({ kind: 'restore', name: entry.name, brief: found })
-                  else setBrief({ ...found, name: entry.name })
-                })
-              }
-            >
-              <RotateCcw size={16} />
-            </button>
-            <button type="button" className={icon + ' hover:text-bad'} title={t('server.deleteBackup')} aria-label={t('server.deleteBackup')} onClick={() => setAsking({ kind: 'delete', name: entry.name })}>
-              <Trash2 size={16} />
-            </button>
-          </li>
-        ))}
-      </ul>
+              <span className="flex flex-wrap gap-1.5">
+                <Button small label={forBackup(entry, t('server.check'))} onClick={() => void action.run(async () => setBrief({ ...(await api<Brief>(`/api/v1/backups/${entry.name}/check`, { method: 'POST' })), name: entry.name }))}>
+                  <ShieldCheck className={small} aria-hidden />
+                  {t('server.check')}
+                </Button>
+                <Button small label={forBackup(entry, t('server.download'))} onClick={() => setAsking({ kind: 'download', name: entry.name })}>
+                  <Download className={small} aria-hidden />
+                  {t('server.download')}
+                </Button>
+                <Button
+                  small
+                  label={forBackup(entry, t('server.restore'))}
+                  onClick={() =>
+                    // The trial run first: the dialog that asks for the password tells what the restore would do.
+                    void action.run(async () => {
+                      const found = await api<Brief>(`/api/v1/backups/${entry.name}/check`, { method: 'POST' })
+                      if (found.usable) setAsking({ kind: 'restore', name: entry.name, brief: found })
+                      else setBrief({ ...found, name: entry.name })
+                    })
+                  }
+                >
+                  <RotateCcw className={small} aria-hidden />
+                  {t('server.restore')}
+                </Button>
+                <Button small danger label={forBackup(entry, t('server.deleteBackup'))} onClick={() => setAsking({ kind: 'delete', name: entry.name })}>
+                  <Trash2 className={small} aria-hidden />
+                  {t('server.deleteBackup')}
+                </Button>
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
       {brief && (
         <div className={'rounded-xl border px-4 py-3 text-sm ' + (brief.usable ? 'border-accent/40 bg-accent-soft/50' : 'border-bad/40 bg-bad/10 text-bad')} data-testid="trial-run">
           {brief.usable
@@ -916,7 +1012,7 @@ export function LanguagesCard() {
   useEffect(load, [load])
   const chip = 'flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold'
   return (
-    <Card id="languages" icon={Languages} title={t('server.languages')} text={t('server.languagesHint')}>
+    <Card id="languages" icon={Globe} title={t('server.languages')} text={t('server.languagesHint')}>
       <div className="flex flex-wrap gap-2">
         <span className={chip + ' border-line text-ink-2'}>Deutsch · {t('server.builtIn')}</span>
         <span className={chip + ' border-line text-ink-2'}>English · {t('server.builtIn')}</span>
@@ -979,9 +1075,19 @@ export function LanguagesCard() {
   )
 }
 
-type LogLine = { time: string; level: string; logger: string; message: string }
+type LogLine = { time: string; level: string; logger: string; message: string; request_id?: string | null; user?: string | null }
 type LogMode = { mode: string; until: string | null; fixed_by_env: boolean; modes: string[] }
 
+const LOG_LEVELS = ['', 'INFO', 'WARNING', 'ERROR'] as const
+/** The newest lines shown; the server gives no older ones page by page, so there is no "load older". */
+const LOG_LINES = 300
+const TONE: Record<string, string> = { DEBUG: 'text-muted', INFO: 'text-muted', WARNING: 'font-semibold text-warn', ERROR: 'font-semibold text-bad', CRITICAL: 'font-semibold text-bad' }
+
+/**
+ * "Log", laid out as nexnotes' card: one bar with chips for the level (a level shows the higher ones too), a search in
+ * the text, the level of detail, download and clear (asks first); below a table of time, level, source, request and
+ * account, message, and on a phone a card per line instead (no table, no sideways scrolling). The newest come first.
+ */
 export function LogCard() {
   const { t } = useTranslation()
   const [lines, setLines] = useState<LogLine[] | null>(null)
@@ -991,7 +1097,7 @@ export function LogCard() {
   const [clearing, setClearing] = useState(false)
   const action = useAction()
   const load = useCallback(() => {
-    api<LogLine[]>('/api/v1/logs', { query: { level: level || undefined, search: words.trim() || undefined, limit: 300 } }).then(setLines, () => undefined)
+    api<LogLine[]>('/api/v1/logs', { query: { level: level || undefined, search: words.trim() || undefined, limit: LOG_LINES } }).then(setLines, () => undefined)
   }, [level, words])
   useEffect(() => {
     const timer = window.setTimeout(load, 250)
@@ -1000,44 +1106,50 @@ export function LogCard() {
   useEffect(() => {
     api<LogMode>('/api/v1/logs/level').then(setMode, () => undefined)
   }, [])
-  const tone = (line: LogLine) => (line.level === 'ERROR' || line.level === 'CRITICAL' ? 'text-bad' : line.level === 'WARNING' ? 'text-warn' : '')
+  const request = (line: LogLine) =>
+    line.request_id ? (
+      <button type="button" onClick={() => setWords(line.request_id ?? '')} title={t('server.logRequestHint')} className="font-mono text-accent hover:underline">
+        {line.request_id}
+      </button>
+    ) : (
+      <span className="text-muted">–</span>
+    )
+  const td = 'border-b border-line/60 px-3 py-1.5 align-top'
   return (
-    <Card id="log" icon={ScrollText} title={t('server.log')} text={t('server.logHint')}>
-      <div className="flex flex-wrap items-end gap-2">
-        <Select
-          label={t('server.level')}
-          value={level}
-          onChange={setLevel}
-          options={[
-            { value: '', label: t('server.allLevels') },
-            { value: 'INFO', label: 'INFO' },
-            { value: 'WARNING', label: 'WARNING' },
-            { value: 'ERROR', label: 'ERROR' },
-          ]}
-          className="w-40"
+    <Card id="log" icon={Info} title={t('server.log')} text={t('server.logHint')}>
+      <div className="flex flex-wrap items-center gap-2" data-testid="log-bar">
+        <div role="radiogroup" aria-label={t('server.level')} className="flex flex-wrap gap-1.5">
+          {LOG_LEVELS.map((value) => (
+            <button
+              key={value || 'all'}
+              type="button"
+              role="radio"
+              aria-checked={level === value}
+              onClick={() => setLevel(value)}
+              className={'rounded-full border px-3 py-1 text-[13px] font-medium ' + (level === value ? 'chosen border-accent/50' : 'border-line text-muted hover:text-ink')}
+              data-testid={`log-level-${value || 'all'}`}
+            >
+              {value || t('server.logAll')}
+            </button>
+          ))}
+        </div>
+        <input
+          type="search"
+          value={words}
+          onChange={(event) => setWords(event.target.value)}
+          placeholder={t('server.logSearch')}
+          aria-label={t('server.logSearch')}
+          className="input h-9 min-w-40 flex-1"
+          data-testid="log-search"
         />
-        <Input label={t('server.logSearch')} value={words} onChange={setWords} className="min-w-40 flex-1" />
-        <Button onClick={load}>{t('server.refresh')}</Button>
-      </div>
-      <div className="max-h-[28rem] overflow-auto rounded-xl border border-line font-mono text-xs" role="log">
-        {lines?.length === 0 && <p className="px-4 py-2.5 text-muted">{t('server.logEmpty')}</p>}
-        {lines?.map((line, index) => (
-          <div key={index} className={'flex gap-4 border-b border-line px-4 py-2 break-words whitespace-pre-wrap last:border-b-0 ' + tone(line)}>
-            <span className="w-36 shrink-0 text-muted">{line.time}</span>
-            <span className="min-w-0">
-              {line.level} <span className="text-muted">{line.logger}</span> {line.message}
-            </span>
-          </div>
-        ))}
-      </div>
-      <div className="flex flex-wrap items-end gap-2">
         {mode && (
-          <label className="block text-sm">
-            <span className="font-semibold">{t('server.detail')}</span>
+          <label className="flex items-center gap-2 text-[13px] text-muted">
+            {t('server.detail')}
             <select
-              className="mt-1 block h-11 w-56 rounded-xl border border-line bg-sheet px-3 text-ink"
+              className="input h-9 w-auto px-2"
               value={mode.mode}
               disabled={mode.fixed_by_env}
+              data-testid="log-mode"
               onChange={(e) => void action.run(async () => setMode(await api<LogMode>('/api/v1/logs/level', { method: 'PUT', body: { mode: e.target.value, minutes: e.target.value === 'detailed' || e.target.value === 'trace' ? 60 : 0 } })))}
             >
               {mode.modes.map((value) => (
@@ -1048,16 +1160,81 @@ export function LogCard() {
             </select>
           </label>
         )}
-        <a href="/api/v1/logs/download" className="inline-flex h-10 items-center justify-center gap-2 rounded-full border border-line px-4 text-sm font-semibold text-ink-2 hover:bg-sheet-2">
-          <Download size={16} />
+        <a href="/api/v1/logs/download" className="btn btn-ghost h-9">
+          <Download size={16} aria-hidden />
           {t('server.download')}
         </a>
-        <Button onClick={() => setClearing(true)}>
-          <Trash2 size={15} /> {t('server.logClear')}
+        <Button danger className="h-9" onClick={() => setClearing(true)}>
+          <Trash2 size={16} aria-hidden />
+          {t('server.logClear')}
         </Button>
       </div>
+      <p className="-mt-1 text-xs text-muted">{t('server.logLevelHint')}</p>
       {mode?.until && <p className="text-xs text-muted">{t('server.logUntil', { time: new Date(mode.until).toLocaleTimeString() })}</p>}
       <Feedback problem={action.problem} done={action.done} />
+      {lines?.length === 0 && <p className="rounded-[12px] border border-dashed border-line px-6 py-10 text-center text-sm text-muted">{t('server.logEmpty')}</p>}
+      {lines && lines.length > 0 && (
+        <>
+          <div className="hidden overflow-hidden rounded-[12px] border border-line md:block">
+            <table className="w-full table-fixed border-separate border-spacing-0 text-left text-xs" data-testid="log-table" role="log">
+              <colgroup>
+                <col className="w-[9.5rem]" />
+                <col className="w-[5.5rem]" />
+                <col className="w-[9rem]" />
+                <col className="w-[9rem]" />
+                <col />
+              </colgroup>
+              <thead className="text-muted">
+                <tr>
+                  {(['logTime', 'level', 'logSource', 'logRequest', 'logMessage'] as const).map((key) => (
+                    <th key={key} className="border-b border-line px-3 py-2 font-medium">
+                      {t(`server.${key}`)}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {lines.map((line, index) => (
+                  <tr key={index} data-testid="log-row" data-level={line.level}>
+                    <td className={td + ' whitespace-nowrap text-muted'}>{line.time}</td>
+                    <td className={td + ' ' + (TONE[line.level] ?? '')} data-testid="log-level">
+                      {line.level}
+                    </td>
+                    <td className={td + ' truncate text-muted'} title={line.logger}>
+                      {line.logger}
+                    </td>
+                    <td className={td}>
+                      <span className="flex flex-col">
+                        {request(line)}
+                        {line.user && <span className="truncate text-muted">{line.user}</span>}
+                      </span>
+                    </td>
+                    <td className={td + ' break-words whitespace-pre-wrap text-ink-2'}>{line.message}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <ul className="flex flex-col gap-2 md:hidden" data-testid="log-cards" role="log">
+            {lines.map((line, index) => (
+              <li key={index} className="rounded-[10px] border border-line px-3 py-2 text-xs" data-testid="log-card">
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                  <span className={TONE[line.level] ?? ''}>{line.level}</span>
+                  <span className="text-muted">{line.time}</span>
+                  <span className="min-w-0 truncate text-muted">{line.logger}</span>
+                </div>
+                <p className="mt-1 break-words whitespace-pre-wrap text-ink-2">{line.message}</p>
+                {(line.request_id || line.user) && (
+                  <div className="mt-1 flex flex-wrap gap-2">
+                    {line.request_id && request(line)}
+                    {line.user && <span className="text-muted">{line.user}</span>}
+                  </div>
+                )}
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
       {clearing && (
         <Confirm
           title={t('server.logClear')}

@@ -10,7 +10,7 @@ import { changeLanguage } from '../i18n'
 import { INBOX_CHANGED } from '../lib/say'
 import { Page, Server, plain } from '../test/harness'
 import { idle } from '../test/wait'
-import { SharingCard } from './settings/SharingCard'
+import { FeaturesCard } from './settings/FeaturesCard'
 import { VaultsPage } from './VaultsPage'
 
 const me: Me = {
@@ -207,15 +207,16 @@ describe('a shared vault', () => {
   })
 })
 
-describe('the settings for links to the outside', () => {
+describe('the switches for all accounts (links to the outside, upload requests, API keys)', () => {
   const settings = { links_allowed: true, link_max_days: 30, public_url: '', password_login: true, two_factor_required: false, oidc_second_factor_by_provider: false, backup_schedule: 'daily', backup_keep: 7, smtp_host: '', smtp_port: 587, smtp_security: 'starttls', smtp_user: '', smtp_password_set: false, smtp_from: '', api_keys_allowed: false, update_check: true }
 
   it('show the switch, the longest time and who has links open', async () => {
     server.answers['GET /api/v1/settings'] = settings
     server.answers['GET /api/v1/sharing/overview'] = { open_links: 2, people: 2, next_end: '2026-10-31T10:00:00Z' }
-    await page.show(<SharingCard />, '/einstellungen?tab=sharing')
-    expect(page.text).toContain('Links nach außen erlauben')
-    expect(page.text).toContain('2 Links von 2 Personen, der nächste läuft am 31.10.2026 ab.')
+    await page.show(<FeaturesCard />, '/einstellungen?tab=sharing')
+    expect(page.text).toContain('Funktionen für alle Konten')
+    expect(page.text).toContain('Teilen per Link')
+    expect(page.text).toContain('Gerade offen: 2 Links von 2 Personen, der nächste läuft am 31.10.2026 ab.')
     expect((document.querySelector('select') as HTMLSelectElement).value).toBe('30')
   })
 
@@ -223,7 +224,7 @@ describe('the settings for links to the outside', () => {
     server.answers['GET /api/v1/settings'] = settings
     server.answers['GET /api/v1/sharing/overview'] = { open_links: 0, people: 0, next_end: null }
     server.answers['PUT /api/v1/settings'] = { ...settings, link_max_days: 14 }
-    await page.show(<SharingCard />, '/einstellungen?tab=sharing')
+    await page.show(<FeaturesCard />, '/einstellungen?tab=sharing')
     expect(page.text).toContain('Gerade ist kein Link offen.')
     await page.choose(document.querySelector('select'), '14')
     expect(server.called('PUT', '/api/v1/settings')!.body).toEqual({ link_max_days: 14 })
@@ -231,6 +232,33 @@ describe('the settings for links to the outside', () => {
     await page.click(document.querySelector<HTMLElement>('[role="switch"]'))
     expect(server.calls.filter((c) => c.method === 'PUT').at(-1)!.body).toEqual({ links_allowed: false })
     expect(document.querySelector('select')).toBeNull()
+  })
+
+  it('switch upload requests on, and then say how many take files and when the public address is missing', async () => {
+    server.answers['GET /api/v1/settings'] = { ...settings, upload_requests_allowed: false }
+    server.answers['GET /api/v1/sharing/overview'] = { open_links: 0, people: 0, next_end: null }
+    server.answers['GET /api/v1/upload-requests/overview'] = { open_requests: 3, people: 2 }
+    server.answers['PUT /api/v1/settings'] = { ...settings, upload_requests_allowed: true }
+    await page.show(<FeaturesCard />, '/settings/general')
+    const toggle = document.querySelector<HTMLElement>('[role="switch"][aria-label="Upload-Bitten erlauben"]')
+    expect(toggle!.getAttribute('aria-checked')).toBe('false')
+    expect(document.querySelector('[data-testid="request-overview"]')).toBeNull()
+    await page.click(toggle)
+    expect(server.called('PUT', '/api/v1/settings')!.body).toEqual({ upload_requests_allowed: true })
+    expect(document.querySelector('[data-testid="request-overview"]')!.textContent).toBe('Offen: 3 Bitten von 2 Personen.')
+    expect(page.text).toContain('Ohne öffentliche Adresse (Einstellungen, Anmeldung) lässt sich keine Bitte erstellen.')
+  })
+
+  it('switch API keys for everybody, here and no longer under API', async () => {
+    server.answers['GET /api/v1/settings'] = settings
+    server.answers['GET /api/v1/sharing/overview'] = { open_links: 0, people: 0, next_end: null }
+    server.answers['PUT /api/v1/settings'] = { ...settings, api_keys_allowed: true }
+    await page.show(<FeaturesCard />, '/settings/general')
+    const toggle = document.querySelector<HTMLElement>('[role="switch"][aria-label="API-Token erlauben"]')
+    expect(toggle!.getAttribute('aria-checked')).toBe('false')
+    await page.click(toggle)
+    expect(server.called('PUT', '/api/v1/settings')!.body).toEqual({ api_keys_allowed: true })
+    expect(toggle!.getAttribute('aria-checked')).toBe('true')
   })
 })
 

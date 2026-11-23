@@ -7,7 +7,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Trans, useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 
-import { api, ApiError, authApi, devicesApi, passkeyApi, type Me, type PairedDevice, type Passkey, type SignedSession } from '../../api/client'
+import { api, ApiError, authApi, passkeyApi, type Me, type Passkey, type SignedSession } from '../../api/client'
 import { Dialog } from '../../components/Dialog'
 import { useConfirm } from '../../components/useConfirm'
 import { KeepCodes, RecoveryCodes } from '../../components/RecoveryCodes'
@@ -44,7 +44,11 @@ function FreshCodes({ codes, me, onDone }: { codes: string[]; me: Me; onDone: ()
  * operator asks for a second factor, the last one cannot be turned off. An account from the provider gives no
  * password; the server takes a sign-in of the last few minutes instead.
  */
-export function SecondFactorCard({ me }: { me: Me }) {
+/** Said after "Überall sonst abmelden" (the row of "Anmeldung und Sicherheit"): the list of devices asks again. */
+export const SESSIONS_CHANGED = 'nexpaper:sessions-changed'
+
+/** `bare`: only its content, for the row "Zweiter Faktor" of "Anmeldung und Sicherheit" (as nexnotes). */
+export function SecondFactorCard({ me, bare = false }: { me: Me; bare?: boolean }) {
   const { t } = useTranslation()
   const { refresh } = useAuth()
   const [enrolment, setEnrolment] = useState<Enrolment | null>(null)
@@ -99,11 +103,11 @@ export function SecondFactorCard({ me }: { me: Me }) {
           <Input label={t('twofactor.code')} value={digits} onChange={setDigits} autoComplete="one-time-code" autoFocus />
           {withPassword && <Input label={t('auth.password')} value={password} onChange={setPassword} type="password" autoComplete="current-password" hint={t('twofactor.passwordHint')} />}
           <Feedback problem={action.problem} />
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap justify-end gap-2">
+            <Button onClick={close}>{t('common.cancel')}</Button>
             <Button type="submit" primary busy={action.busy} disabled={digits.trim().length !== 6 || (withPassword && !password)}>
               {t('twofactor.confirm')}
             </Button>
-            <Button onClick={close}>{t('common.cancel')}</Button>
           </div>
         </form>
       </div>
@@ -130,11 +134,11 @@ export function SecondFactorCard({ me }: { me: Me }) {
         <p className="text-sm text-ink-2">{asking === 'disable' ? t('twofactor.disableText') : t('twofactor.renewText')}</p>
         {withPassword && <Input label={t('auth.password')} value={password} onChange={setPassword} type="password" autoComplete="current-password" autoFocus className="max-w-sm" />}
         <Feedback problem={action.problem} />
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap justify-end gap-2">
+          <Button onClick={close}>{t('common.cancel')}</Button>
           <Button type="submit" busy={action.busy} disabled={withPassword && !password} primary={asking === 'renew'} danger={asking === 'disable'}>
             {asking === 'disable' ? t('twofactor.disable') : t('twofactor.renew')}
           </Button>
-          <Button onClick={close}>{t('common.cancel')}</Button>
         </div>
       </form>
     )
@@ -174,6 +178,7 @@ export function SecondFactorCard({ me }: { me: Me }) {
         <Feedback problem={action.problem} />
       </div>
     )
+  if (bare) return <div data-testid="second-factor">{body}</div>
   return (
     <Card icon={ShieldCheck} title={t('twofactor.title')} text={t('twofactor.lead')}>
       {body}
@@ -294,7 +299,7 @@ export function PasskeysCard({ me }: { me: Me }) {
               {!inBrowser ? (
                 t('me.passkeys.unavailable')
               ) : me.role === 'operator' ? (
-                <Trans i18nKey="me.passkeys.noAddressOperator" components={{ settings: <Link to="/einstellungen?tab=signin" className="font-semibold text-accent underline-offset-2 hover:underline" /> }} />
+                <Trans i18nKey="me.passkeys.noAddressOperator" components={{ settings: <Link to="/settings/sign-in" className="font-semibold text-accent underline-offset-2 hover:underline" /> }} />
               ) : (
                 t('me.passkeys.noAddressMember')
               )}
@@ -337,21 +342,21 @@ export function PasskeysCard({ me }: { me: Me }) {
   )
 }
 
-/** "Angemeldete Geräte": where the account is signed in, sign out one or all others; and the notice of a new one. */
+/** "Angemeldete Geräte": the browsers where the account is signed in, sign out one; and the notice of a new one. The
+ * paired devices and apps stand under Connections, "Geräte", as in nexnotes. */
 export function DevicesCard({ me }: { me: Me }) {
   const { t, i18n } = useTranslation()
   const [list, setList] = useState<SignedSession[] | null>(null)
-  // The paired devices and apps stand here too: a phone paired by a QR code, the iPhone shortcut, an app.
-  const [paired, setPaired] = useState<PairedDevice[]>([])
-  const [taking, setTaking] = useState<PairedDevice | null>(null)
   const action = useAction()
   const { ask, dialog } = useConfirm()
   const load = useCallback(() => {
     authApi.sessions().then(setList, () => undefined)
-    devicesApi.list().then((found) => setPaired(Array.isArray(found) ? found : []), () => setPaired([]))
   }, [])
   useEffect(load, [load])
-  const how = (device: PairedDevice) => t(device.via === 'qr' ? 'phone.devices.qr' : device.via === 'device' ? 'phone.devices.device' : device.via?.startsWith('app:') ? 'phone.devices.app' : 'phone.devices.token')
+  useEffect(() => {
+    window.addEventListener(SESSIONS_CHANGED, load)
+    return () => window.removeEventListener(SESSIONS_CHANGED, load)
+  }, [load])
   return (
     <SignInNoticeCard me={me}>
       {list && (
@@ -389,59 +394,8 @@ export function DevicesCard({ me }: { me: Me }) {
               </li>
             )
           })}
-          {paired.map((device) => (
-            <li key={device.id} className="flex flex-wrap items-center gap-3 rounded-xl border border-line bg-sheet-2/50 px-4 py-3 text-sm" data-testid="paired-device">
-              <Smartphone size={18} className="shrink-0 text-accent" aria-hidden />
-              <span className="min-w-0 flex-1">
-                <span className="font-semibold break-words">{device.name}</span>
-                <span className="block text-xs text-muted">
-                  {t('phone.devices.meta', { how: how(device), when: device.last_used_at ? ago(device.last_used_at, i18n.language, t('me.justNow')) : t('phone.devices.never') })}
-                </span>
-              </span>
-              <Button busy={action.busy} onClick={() => setTaking(device)} label={t('pairing.takeOffNamed', { name: device.name })}>
-                {t('me.devices.signOut')}
-              </Button>
-            </li>
-          ))}
         </ul>
       )}
-      {taking && (
-        <Confirm
-          title={t('phone.devices.revokeTitle', { name: taking.name })}
-          text={t('phone.devices.revokeText')}
-          confirm={t('me.devices.signOut')}
-          danger
-          onCancel={() => setTaking(null)}
-          onConfirm={async () => {
-            const name = taking.name
-            await action.run(async () => {
-              await devicesApi.revoke(taking.id)
-              load()
-            }, t('phone.devices.revoked', { name }))
-            setTaking(null)
-          }}
-        />
-      )}
-      <div className="flex flex-wrap gap-2">
-        <Button
-          busy={action.busy}
-          onClick={() =>
-            ask({
-              title: t('confirm.logoutOthers.title'),
-              text: t('confirm.logoutOthers.text'),
-              confirm: t('confirm.logoutOthers.confirm'),
-              run: async () => {
-                await action.run(async () => {
-                  await authApi.logoutOthers()
-                  load()
-                }, t('me.devices.endedAll'))
-              },
-            })
-          }
-        >
-          {t('me.devices.everywhereElse')}
-        </Button>
-      </div>
       <Feedback problem={action.problem} done={action.done} />
       {dialog}
     </SignInNoticeCard>

@@ -201,7 +201,7 @@ describe('the second factor right after the password', () => {
 })
 
 describe('the own account, Security', () => {
-  it('lists the signed-in devices, signs out one and all others', async () => {
+  it('lists the signed-in devices and signs out one', async () => {
     answers['GET /api/v1/auth/sessions'] = [
       { id: 'a'.repeat(32), device: 'Firefox unter Windows', phone: false, network: 'Netz 203.0.113.0/24', created_at: new Date(NOW).toISOString(), last_seen_at: new Date(NOW).toISOString(), remember: true, here: true },
       { id: 'b'.repeat(32), device: 'Safari unter iPhone', phone: true, network: 'eigenes Netz 192.168.1.0/24', created_at: new Date(NOW).toISOString(), last_seen_at: new Date(NOW - 2 * 3600_000).toISOString(), remember: true, here: false },
@@ -223,10 +223,8 @@ describe('the own account, Security', () => {
     await click(button('Sitzung beenden', document.body.querySelector<HTMLElement>('[role="dialog"]')!))
     expect(calls.some(sessionCall)).toBe(true)
     expect(box.textContent).toContain('Safari unter iPhone ist abgemeldet.')
-    await click(button('Überall sonst abmelden', box))
-    expect(calls.some((call) => call.url === '/api/v1/auth/logout-all')).toBe(false)
-    await click(button('Überall sonst abmelden', document.body.querySelector<HTMLElement>('[role="dialog"]')!))
-    expect(calls.some((call) => call.url === '/api/v1/auth/logout-all')).toBe(true)
+    // "Überall sonst abmelden" is a row of "Anmeldung und Sicherheit" now, as in nexnotes (Account.test.tsx).
+    expect(button('Überall sonst abmelden', box)).toBeUndefined()
     expect(box.textContent).toContain('Bei einer neuen Anmeldung Bescheid geben')
   })
 
@@ -252,7 +250,7 @@ describe('the own account, Security', () => {
       answers['GET /api/v1/auth/methods'] = { password: true, providers: [], passkeys: false }
       await show(<PasskeysCard me={me} />, '/konto')
       expect(hint()!.textContent).toBe('Trag zuerst die öffentliche Adresse ein (Einstellungen → Anmeldung).')
-      expect(hint()!.querySelector('a')!.getAttribute('href')).toBe('/einstellungen?tab=signin')
+      expect(hint()!.querySelector('a')!.getAttribute('href')).toBe('/settings/sign-in')
       expect(hint()!.textContent).not.toContain('nur über https')
       expect(button('Passkey anlegen', box)!.disabled).toBe(true)
     })
@@ -271,7 +269,7 @@ describe('the own account, Security', () => {
       answers['GET /api/v1/auth/methods'] = { password: true, providers: [], passkeys: false }
       await show(<PasskeysCard me={me} />, '/konto')
       expect(hint()!.textContent).toBe('Enter the public address first (Settings → Sign-in).')
-      expect(hint()!.querySelector('a')!.getAttribute('href')).toBe('/einstellungen?tab=signin')
+      expect(hint()!.querySelector('a')!.getAttribute('href')).toBe('/settings/sign-in')
       act(() => root.unmount())
       box.remove()
       await show(<PasskeysCard me={{ ...me, role: 'member' }} />, '/konto')

@@ -226,7 +226,7 @@ describe('the notice of a new sign-in', () => {
   it('is a switch, on from the start, kept with the account', async () => {
     await show(<SignInNoticeCard me={me} />)
     expect(box.textContent).toContain('Bei einer neuen Anmeldung Bescheid geben')
-    const toggle = box.querySelector<HTMLButtonElement>('button[role="switch"]')!
+    const toggle = box.querySelector<HTMLButtonElement>('[role="switch"]')!
     expect(toggle.getAttribute('aria-checked')).toBe('true')
     await click(toggle)
     expect(calls.find((call) => call.url === '/api/v1/me/preferences')!.body).toEqual({ notify_login: false })

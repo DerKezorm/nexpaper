@@ -27,7 +27,7 @@ type Props = {
 
 type Option = { key: string; name: string; kind: 'match' | 'similar' | 'create'; marks: [number, number][] }
 
-export function TagPicker({ known, taken, onAdd, label, placeholder, className = 'h-7 w-24 rounded-full border border-dashed border-line bg-transparent px-2.5 text-xs outline-none focus:border-accent', maxLength = 40 }: Props) {
+export function TagPicker({ known, taken, onAdd, label, placeholder, className = 'h-7 w-24 rounded-[7px] border border-dashed border-line bg-transparent px-2.5 text-xs outline-none focus:border-accent', maxLength = 40 }: Props) {
   const { t } = useTranslation()
   const id = useId()
   const [text, setText] = useState('')

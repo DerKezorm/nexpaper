@@ -148,12 +148,12 @@ export function UploadVersionDialog({ document, onClose, onUploaded, say }: Uplo
       <input value={note} onChange={(e) => setNote(e.target.value)} maxLength={200} placeholder={t('pagetools.versions.uploadNote')} aria-label={t('pagetools.versions.uploadNote')} className="input mt-3" />
       <ToolProblem code={problem} />
       {dialog}
-      <div className="mt-5 flex gap-2">
-        <Button variant="primary" size="sm" disabled={busy || !file} onClick={send}>
-          <Upload size={15} /> {t('pagetools.versions.upload')}
-        </Button>
-        <Button variant="ghost" size="sm" disabled={busy} onClick={onClose}>
+      <div className="mt-5 flex justify-end gap-2">
+        <Button variant="line" disabled={busy} onClick={onClose}>
           {t('pagetools.editor.cancel')}
+        </Button>
+        <Button variant="primary" disabled={busy || !file} onClick={send}>
+          <Upload size={15} /> {t('pagetools.versions.upload')}
         </Button>
       </div>
     </Dialog>

@@ -22,6 +22,7 @@
   --mark: #f6dfa9; /* search hits */
   --shadow: 0 1px 2px rgb(70 45 20 / 0.06), 0 8px 24px -12px rgb(70 45 20 / 0.18);
   --scrim: rgb(35 25 15 / 0.45);
+  --edge: #94877a; /* the edge of a field: 3:1 to its ground, as nexnotes' */
 }
 
 :root[data-theme='dark'] {
@@ -45,6 +46,7 @@
   --mark: #6b5320;
   --shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 10px 28px -14px rgb(0 0 0 / 0.7);
   --scrim: rgb(0 0 0 / 0.6);
+  --edge: #7d6e5f;
 }
 
 @theme inline {
@@ -68,9 +70,15 @@
   --color-warn-soft: var(--warn-soft);
   --color-mark: var(--mark);
   --color-scrim: var(--scrim);
-  --font-sans: 'Figtree Variable', ui-sans-serif, system-ui, sans-serif;
-  --font-display: 'Fraunces Variable', Georgia, serif;
+  --color-edge: var(--edge);
+  /* One font for everything, as in nexnotes and the other nex apps. */
+  --font-sans: 'Inter Variable', 'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: 'Cascadia Mono', 'Cascadia Code', Consolas, 'DejaVu Sans Mono', monospace;
   --shadow-soft: var(--shadow);
+  /* The corners of nexnotes: buttons and fields 9 px, cards 12 px, dialogs 16 px. */
+  --radius-button: 9px;
+  --radius-tile: 12px;
+  --radius-dialog: 16px;
 }
 
 html,
@@ -94,6 +102,14 @@ body {
 }
 ::selection {
   background: var(--accent-soft);
+}
+kbd {
+  border: 1px solid var(--line);
+  border-radius: 0.25rem;
+  padding-inline: 0.375rem;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--muted);
 }
 mark {
   background: var(--mark);
@@ -120,25 +136,57 @@ mark {
       padding-inline: 2rem;
     }
   }
+  /* A card as in nexnotes: a line around it, 12 px corners, no shadow. */
   .card {
     background: var(--sheet);
     border: 1px solid var(--line);
-    border-radius: 1.25rem;
-    box-shadow: var(--shadow);
+    border-radius: var(--radius-tile);
   }
+  /* A field as nexnotes' `.nn-field`: 40 px, 9 px corners, an edge at 3:1, the accent edge and a ring in focus. */
   .input {
     display: block;
     height: 2.5rem;
     width: 100%;
-    border-radius: 0.75rem;
-    border: 1px solid var(--line);
+    border-radius: var(--radius-button);
+    border: 1px solid var(--edge);
     background: var(--sheet);
     padding-inline: 0.75rem;
+    font-size: 0.875rem;
     color: var(--ink);
     outline: none;
   }
+  .input::placeholder {
+    color: var(--muted);
+  }
   .input:focus {
     border-color: var(--accent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 28%, transparent);
+  }
+  /* The buttons of nexnotes: 40 px, 9 px corners. One accent button for the main step, the others with an edge. A
+     locked button stays grey in every state (hover only `not-disabled:`). */
+  .btn {
+    @apply inline-flex h-10 items-center justify-center gap-2 px-4 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:bg-sheet-2 disabled:text-muted;
+    border-radius: var(--radius-button);
+  }
+  .btn-accent {
+    @apply bg-accent text-accent-ink not-disabled:hover:brightness-110;
+  }
+  .btn-ghost {
+    @apply border border-edge text-ink-2 not-disabled:hover:bg-sheet-2 not-disabled:hover:text-ink;
+  }
+  .btn-danger {
+    @apply bg-bad text-bad-ink not-disabled:hover:opacity-90;
+  }
+  /* The chosen row or tab: the accent as text on its wash. */
+  .chosen {
+    @apply bg-accent-soft text-accent;
+  }
+  /* A menu as nexnotes' `.nn-menu`. */
+  .menu {
+    @apply z-50 min-w-48 rounded-xl border border-line bg-sheet p-1 shadow-xl shadow-black/15;
+  }
+  .menu-item {
+    @apply flex w-full items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-left text-sm text-ink-2 not-disabled:hover:bg-sheet-2 not-disabled:hover:text-ink disabled:opacity-40;
   }
   /* A list that scrolls inside a page: a thin bar in the colours of the page, not the system's heavy one. */
   .soft-scroll {

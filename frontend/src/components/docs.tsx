@@ -59,8 +59,8 @@ export function Chip({ active = false, children, onClick, label }: { active?: bo
       onClick={onClick}
       aria-pressed={active}
       aria-label={label}
-      className={`inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full border px-3 text-sm font-semibold transition ${
-        active ? 'border-transparent bg-accent text-accent-ink' : 'border-line bg-sheet text-ink-2 hover:border-accent'
+      className={`inline-flex h-8 shrink-0 items-center gap-1.5 rounded-[9px] border px-3 text-sm font-semibold transition ${
+        active ? 'chosen border-accent/50' : 'border-line bg-sheet text-ink-2 hover:border-accent'
       }`}
     >
       {children}
@@ -172,7 +172,7 @@ export function FileNotice({ state, documentId, onChecked }: { state?: string; d
               {t('docs.files.recheck')}
             </button>
           )}
-          <Link to="/einstellungen?tab=backups" className="font-semibold text-accent underline decoration-accent/40 underline-offset-4">
+          <Link to="/settings/storage" className="font-semibold text-accent underline decoration-accent/40 underline-offset-4">
             {t('docs.files.checkLink')}
           </Link>
           {failed && (

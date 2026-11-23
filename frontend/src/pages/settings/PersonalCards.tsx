@@ -2,7 +2,7 @@
  * What is personal, as cards for "My account": the language, light or dark and the look of the archive, and where a
  * phone starts. Each is kept with the account (never only in this browser).
  */
-import { Globe, Monitor, Moon, Palette, Smartphone, Sun } from 'lucide-react'
+import { Globe, LayoutGrid, LayoutList, List, Monitor, Moon, Palette, Smartphone, Sun } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
@@ -10,7 +10,7 @@ import { authApi, type ArchiveView, type Profile } from '../../api/client'
 import { changeLanguage, languageOptions, type LanguageOption } from '../../i18n'
 import { applyMode, storedMode, type Mode } from '../../lib/theme'
 import { useAuth } from '../../state/auth'
-import { Card, Feedback, Segment, SubHead, Toggle, useAction } from './ui'
+import { Card, Feedback, Segment, Toggle, useAction } from './ui'
 
 export function LanguageCard() {
   const { t, i18n } = useTranslation()
@@ -39,7 +39,11 @@ export function LanguageCard() {
   )
 }
 
-/** Light, dark or as the system, and how the archive shows the documents; both kept with the account. */
+/**
+ * "Darstellung" as in nexnotes: a card for light, dark or as the system (nexnotes' segmented choice with words), and a
+ * card for how the archive shows the documents (nexnotes' choice of the list style, with a sign each). nexpaper keeps
+ * both with the account, so the hints say "on all your devices".
+ */
 export function LooksCard() {
   const { t } = useTranslation()
   const { me, setMe } = useAuth()
@@ -52,42 +56,68 @@ export function LooksCard() {
     })
   }
   const modes: { value: Mode; label: string; icon: typeof Sun }[] = [
-    { value: 'system', label: t('theme.system'), icon: Monitor },
     { value: 'light', label: t('theme.light'), icon: Sun },
     { value: 'dark', label: t('theme.dark'), icon: Moon },
+    { value: 'system', label: t('theme.system'), icon: Monitor },
   ]
+  const views: { value: ArchiveView; label: string; icon: typeof Sun }[] = [
+    { value: 'list', label: t('looks.list'), icon: List },
+    { value: 'grid', label: t('looks.grid'), icon: LayoutGrid },
+  ]
+  const view = me?.profile.view ?? 'list'
   return (
-    <Card icon={Palette} title={t('looks.title')} text={t('looks.text')}>
-      <div role="radiogroup" aria-label={t('looks.title')} className="grid gap-3 sm:grid-cols-3">
-        {modes.map(({ value, label, icon: Icon }) => (
-          <button
-            key={value}
-            type="button"
-            role="radio"
-            aria-checked={mode === value}
-            onClick={() => {
-              setMode(value)
-              applyMode(value)
-              save({ mode: value })
-            }}
-            className={`flex items-center gap-3 rounded-2xl border p-4 text-left text-sm font-semibold ${mode === value ? 'border-accent/50 bg-accent-soft text-accent' : 'border-line text-ink-2 hover:text-ink'}`}
-          >
-            <Icon size={18} aria-hidden /> {label}
-          </button>
-        ))}
-      </div>
-      <SubHead title={t('looks.archive')} text={t('looks.archiveText')} />
-      <Segment
-        label={t('looks.archive')}
-        value={me?.profile.view ?? 'list'}
-        onChange={(view: ArchiveView) => save({ view })}
-        options={[
-          { value: 'list', label: t('looks.list') },
-          { value: 'grid', label: t('looks.grid') },
-        ]}
-      />
-      <Feedback problem={action.problem} />
-    </Card>
+    <>
+      <Card id="looks" icon={Palette} title={t('looks.title')}>
+        <div className="text-sm">
+          <span className="font-medium">{t('looks.mode')}</span> <span className="text-xs text-muted">{t('looks.everywhere')}</span>
+          <div className="mt-1.5">
+            <div className="inline-flex items-center gap-0.5 rounded-[9px] border border-line bg-sheet p-0.5" role="radiogroup" aria-label={t('looks.mode')}>
+              {modes.map(({ value, label, icon: Icon }) => (
+                <button
+                  key={value}
+                  type="button"
+                  role="radio"
+                  aria-checked={mode === value}
+                  onClick={() => {
+                    setMode(value)
+                    applyMode(value)
+                    save({ mode: value })
+                  }}
+                  className={'inline-flex items-center gap-1.5 rounded-[7px] px-2 py-1.5 text-sm transition-colors ' + (mode === value ? 'bg-accent font-semibold text-accent-ink' : 'text-muted hover:text-ink')}
+                >
+                  <Icon className="h-3.5 w-3.5" strokeWidth={2.2} aria-hidden />
+                  <span>{label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+        <Feedback problem={action.problem} />
+      </Card>
+      <Card id="archive-look" icon={LayoutList} title={t('looks.archive')}>
+        <div className="text-sm">
+          <span className="font-medium" id="archive-look-label">
+            {t('looks.archiveStyle')}
+          </span>{' '}
+          <span className="text-xs text-muted">{t('looks.archiveText')}</span>
+          <div role="radiogroup" aria-labelledby="archive-look-label" className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {views.map(({ value, label, icon: Icon }) => (
+              <button
+                key={value}
+                type="button"
+                role="radio"
+                aria-checked={view === value}
+                onClick={() => view !== value && save({ view: value })}
+                className={'flex flex-col items-center gap-1.5 rounded-[10px] border px-2 py-3 text-[13px] ' + (view === value ? 'chosen border-accent font-semibold' : 'border-line text-ink-2 hover:text-ink')}
+              >
+                <Icon className="h-5 w-5" strokeWidth={1.8} aria-hidden />
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </Card>
+    </>
   )
 }
 

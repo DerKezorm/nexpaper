@@ -95,7 +95,7 @@ export function LinkPage() {
       <main className="mx-auto max-w-4xl px-4 py-6">
         {gone && (
           <div className="card p-10 text-center" role="alert">
-            <p className="font-display text-xl font-semibold">{t('link.gone')}</p>
+            <p className="text-xl font-semibold">{t('link.gone')}</p>
             <p className="mt-1 text-sm text-ink-2">{t('link.goneText')}</p>
           </div>
         )}
@@ -114,13 +114,13 @@ export function LinkPage() {
             )}
             <div className="flex flex-wrap items-end justify-between gap-3">
               <div className="min-w-0">
-                <h1 className="font-display text-2xl font-semibold break-words">
+                <h1 className="text-2xl font-semibold break-words">
                   <bdi>{shown.title}</bdi>
                 </h1>
                 <p className="text-sm text-muted">{shown.meta}</p>
               </div>
               {shown.has_file && link.allow_download && (
-                <a href={fileUrl} download className="inline-flex h-10 items-center gap-2 rounded-full bg-accent px-4 font-semibold text-accent-ink">
+                <a href={fileUrl} download className="btn btn-accent">
                   <Download size={16} aria-hidden /> {t('link.download')}
                 </a>
               )}

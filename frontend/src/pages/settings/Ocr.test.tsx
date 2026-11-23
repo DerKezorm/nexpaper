@@ -1,7 +1,7 @@
 /**
- * Settings, Storage, the card "Text recognition": the six languages of the server with the chosen ones marked, a change
- * saved at once (in the order of the offer, never the last language off), the two switches, the queue with the pace, and
- * an honest line when the server has no recognition.
+ * Settings, the card "Text recognition", as nexnotes': the six languages of the server as chips right under the head
+ * with the chosen ones marked, a change saved at once (in the order of the offer, never the last language off); under
+ * "Verarbeitung" the two switches, the queue with the pace, and an honest line when the server has no recognition.
  */
 import { changeLanguage } from '../../i18n'
 import { Page, Server } from '../../test/harness'
@@ -36,8 +36,14 @@ describe('the card of the text recognition', () => {
   it('shows its words, the six languages and the queue', async () => {
     await page.show(<OcrCard />)
     expect(page.text).toContain('Texterkennung')
-    expect(page.text).toContain('Damit die Suche auch in Fotos und Scans findet. PDFs, die schon Text haben, bleiben, wie sie sind.')
+    expect(page.text).toContain('Sprachen, die in Scans, Fotos und PDFs gelesen werden. PDFs, die schon Text haben, bleiben, wie sie sind.')
     expect([...document.querySelectorAll('button[aria-pressed]')].map((b) => b.textContent)).toEqual(['Deutsch', 'Englisch', 'Französisch', 'Niederländisch', 'Polnisch', 'Türkisch'])
+    // As in nexnotes: the chips are the first thing in the card, without a heading of their own; nexpaper's own below a
+    // heading of theirs.
+    const card = document.querySelector('section')!
+    expect(card.querySelector('h3')!.textContent).toBe('Verarbeitung')
+    expect(card.querySelector('[role="group"]')!.compareDocumentPosition(card.querySelector('h3')!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(card.querySelector('h3')!.compareDocumentPosition(card.querySelector('[role="switch"]')!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     expect(chip('Deutsch').getAttribute('aria-pressed')).toBe('true')
     expect(chip('Polnisch').getAttribute('aria-pressed')).toBe('false')
     // Nothing is loaded later: the hint says so.
@@ -69,7 +75,7 @@ describe('the card of the text recognition', () => {
     server.answers['PUT /api/v1/settings/ocr'] = { ...state, straighten: false }
     await page.show(<OcrCard />)
     expect(page.text).toContain('Ein Stapelscan wird im Eingang zum Aufteilen vorgeschlagen.')
-    const straighten = document.querySelector<HTMLButtonElement>('button[role="switch"][aria-label="Schiefe Seiten gerade richten und drehen"]')
+    const straighten = document.querySelector<HTMLButtonElement>('[role="switch"][aria-label="Schiefe Seiten gerade richten und drehen"]')
     await page.click(straighten)
     expect(server.called('PUT', '/api/v1/settings/ocr')!.body).toEqual({ straighten: false })
     expect(straighten!.getAttribute('aria-checked')).toBe('false')

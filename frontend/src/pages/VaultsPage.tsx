@@ -42,6 +42,12 @@ export function VaultsPage() {
   const [editing, setEditing] = useState<Vault | null>(null)
   const [creating, setCreating] = useState(false)
   const { ask, dialog } = useConfirm()
+  // "+" beside "Tresore" in the sidebar (the operator's): this page with its dialog for a new shared vault open.
+  const arrived = useLocation()
+  const wantsNew = Boolean((arrived.state as { create?: unknown } | null)?.create) && me?.role === 'operator'
+  useEffect(() => {
+    if (wantsNew) setCreating(true)
+  }, [wantsNew, arrived.key])
 
   const load = useCallback(async () => {
     try {
@@ -89,7 +95,7 @@ export function VaultsPage() {
     <div className="page page-wide space-y-6 pt-6 pb-28 lg:pt-8 lg:pb-12">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="font-display text-3xl font-semibold tracking-tight">{t('vaults.title')}</h1>
+          <h1 className="text-2xl font-bold tracking-tight">{t('vaults.title')}</h1>
           <p className="max-w-2xl text-sm text-muted">{t('vaults.intro')}</p>
         </div>
         {me.role === 'operator' && (
@@ -112,7 +118,7 @@ export function VaultsPage() {
                   <VaultIcon icon={v.icon} size={20} />
                 </span>
                 <div className="min-w-0 flex-1">
-                  <h2 className="font-display text-xl font-semibold">{own ? t('vaults.mine') : v.name}</h2>
+                  <h2 className="text-xl font-semibold">{own ? t('vaults.mine') : v.name}</h2>
                   <p className="text-sm text-muted">
                     {v.personal_of !== null ? (own ? t('vaults.personalMine') : t('vaults.personalOf', { name: owner ? personName(owner) : v.name })) : t('vaults.shared')} ·{' '}
                     {t('vaults.documents', { count: v.documents, n: v.documents.toLocaleString(i18n.language) })} · {formatBytes(v.size, i18n.language, 1000)}
@@ -349,7 +355,7 @@ function Members({ vault, people, mineId, onClose, onSaved }: { vault: Vault; pe
       </div>
       {dialog}
       <div className="mt-5 flex justify-end gap-2">
-        <Button variant="ghost" onClick={onClose}>
+        <Button variant="line" onClick={onClose}>
           {t('common.cancel')}
         </Button>
         <Button variant="primary" onClick={() => void save()} disabled={busy}>
@@ -396,7 +402,7 @@ function Create({ onClose, onCreated }: { onClose: () => void; onCreated: (name:
           <Feedback problem={problem} />
         </div>
         <div className="mt-5 flex justify-end gap-2">
-          <Button variant="ghost" onClick={onClose}>
+          <Button variant="line" onClick={onClose}>
             {t('common.cancel')}
           </Button>
           <Button variant="primary" type="submit" disabled={busy || !name.trim()}>

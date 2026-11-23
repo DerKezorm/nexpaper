@@ -638,7 +638,7 @@ def week_mail(account: Account, week: Week, lang: str, base: str, today: Date) -
     else:
         parts.append(f'<p style="margin-top:18px;font-weight:bold;color:#9a6a3a">{esc(words["all"])}</p>')
     parts.append(f'<p style="font-size:12px;color:#7a6f66">{esc(words["week_why"])}</p>')
-    markup = ('<!doctype html><html><body style="font-family:Figtree,Arial,sans-serif;font-size:14px;color:#1c1814">'
+    markup = ('<!doctype html><html><body style="font-family:Inter,Arial,sans-serif;font-size:14px;color:#1c1814">'
               + "".join(parts) + "</body></html>")
     return _mail(account.email, subject, "\n".join(text) + "\n", markup)
 

@@ -44,14 +44,102 @@
     },
     "language": {
       "title": "Sprache",
-      "text": "Gilt für dein Konto. Die anderen wählen ihre eigene. Weitere Sprachen fügt der Betreiber unter Einstellungen, Sprachen hinzu."
+      "text": "Gilt für dein Konto. Die anderen wählen ihre eigene. Weitere Sprachen fügt der Betreiber unter Einstellungen, Sprachen hinzu.",
+      "hint": "(gilt auf allen deinen Geräten)"
     },
     "phone": {
       "title": "Auf dem Handy",
       "text": "Für unterwegs: nexpaper öffnet mit den großen Knöpfen Fotografieren und Datei wählen, darunter was gerade passiert.",
       "quickStart": "Auf dem Handy mit dem Schnell-Upload starten",
       "quickStartHint": "„Alles“ führt von dort in die ganze App."
-    }
+    },
+    "areas": {
+      "about": {
+        "title": "Über nexpaper",
+        "text": "Version, Lizenz, Herkunft und ob es eine neuere Version gibt."
+      },
+      "accounts": {
+        "title": "Konten",
+        "text": "Wer nexpaper nutzt, mit Rolle, offene Einladungen und die API-Token aller Konten."
+      },
+      "aiSetup": {
+        "title": "KI",
+        "text": "Welcher Anbieter beim Einsortieren Vorschläge macht, und mit welchen Grenzen."
+      },
+      "api": {
+        "title": "API",
+        "text": "Die Schnittstelle für Apps und Skripte und der iPhone-Kurzbefehl."
+      },
+      "appearance": {
+        "title": "Darstellung",
+        "text": "Wie nexpaper auf allen deinen Geräten aussieht, und wie das Archiv beginnt."
+      },
+      "connections": {
+        "title": "Verbindungen",
+        "text": "Geräte, Apps und Token, die mit deinen Dokumenten arbeiten, und Mitteilungen auf deinen Geräten."
+      },
+      "filing": {
+        "title": "Ablage",
+        "text": "Die Arten für alle und die Regeln des Servers."
+      },
+      "general": {
+        "title": "Allgemein",
+        "text": "Grenzen, Funktionen für alle Konten, Web Push und eigene Sprachen."
+      },
+      "import": {
+        "title": "Import",
+        "text": "Dokumente aus Paperless-ngx übernehmen."
+      },
+      "inputs": {
+        "title": "Eingänge",
+        "text": "Eingangsordner und Postfach, über die Dokumente von selbst ankommen."
+      },
+      "log": {
+        "title": "Log",
+        "text": "Was der Server mitschreibt, zum Nachsehen bei Fehlern."
+      },
+      "mail": {
+        "title": "Mail",
+        "text": "Der Mailserver, über den nexpaper Einladungen, Links zum Zurücksetzen und Bescheide verschickt."
+      },
+      "myAi": {
+        "title": "KI",
+        "text": "Ob die KI beim Einsortieren deiner Dokumente hilft."
+      },
+      "ocr": {
+        "title": "Texterkennung",
+        "text": "In welchen Sprachen nexpaper Text in Scans, Fotos und PDFs liest."
+      },
+      "profile": {
+        "title": "Profil",
+        "text": "Bild, Name, Mailadresse und Sprache deines Kontos."
+      },
+      "reminders": {
+        "title": "Erinnerungen",
+        "text": "Ob und wie nexpaper dich an Fristen erinnert."
+      },
+      "security": {
+        "title": "Sicherheit",
+        "text": "Passwort, zweiter Faktor, Passkeys, Anbieter und angemeldete Geräte."
+      },
+      "signIn": {
+        "title": "Anmeldung",
+        "text": "Wie sich alle anmelden: Passwort, öffentliche Adresse, zweiter Faktor und Anbieter."
+      },
+      "storage": {
+        "title": "Speicher und Sicherung",
+        "text": "Der belegte Platz, die Backups des Servers und die Prüfung der Dateien."
+      },
+      "upload": {
+        "title": "Hochladen",
+        "text": "Wohin deine Uploads gehen, wo das Handy startet, deine Eingänge und Upload-Bitten."
+      }
+    },
+    "groups": {
+      "account": "Mein Konto",
+      "server": "Server"
+    },
+    "jump": "Seite der Einstellungen"
   },
   "auth": {
     "name": "Name",
@@ -163,8 +251,8 @@
     "report": "Einen Fehler gefunden?",
     "reportLink": "Auf GitHub melden",
     "builtWith": "Gebaut mit",
-    "fonts": "Schriften im Abbild",
-    "fontsText": "nexpaper bringt seine Schriften mit, damit beim Öffnen kein anderer Server gefragt wird.",
+    "fonts": "Schrift im Abbild",
+    "fontsText": "nexpaper bringt seine Schrift mit, damit beim Öffnen kein anderer Server gefragt wird.",
     "updates": {
       "title": "Aktualisierungen",
       "text": "Ob es eine neuere Version von nexpaper gibt.",
@@ -202,10 +290,11 @@
       "email": "E-Mail",
       "upload": "Bild hochladen",
       "change": "Anderes Bild",
-      "remove": "Entfernen",
+      "remove": "Bild entfernen",
       "saved": "Bild gespeichert.",
       "removed": "Bild entfernt.",
-      "hint": "Ein Foto vom Handy oder von der Kamera. Es wird quadratisch zugeschnitten, und von der Datei bleibt nur das Bild: kein Ort, kein Gerät."
+      "hint": "Ein Foto vom Handy oder von der Kamera. Es wird quadratisch zugeschnitten, und von der Datei bleibt nur das Bild: kein Ort, kein Gerät.",
+      "roleLine": "Rolle: {{role}} · Anmeldename: {{name}}"
     },
     "password": {
       "title": "Passwort",
@@ -214,7 +303,8 @@
       "new": "Neues Passwort",
       "again": "Noch einmal",
       "submit": "Passwort ändern",
-      "done": "Passwort geändert. Alle anderen Geräte sind abgemeldet."
+      "done": "Passwort geändert. Alle anderen Geräte sind abgemeldet.",
+      "change": "Ändern"
     },
     "role": {
       "operator": "Betreiber",
@@ -227,7 +317,9 @@
       "text": "Schlägt im Eingang Titel, Absender, Art, Datum und Betrag vor. Du bestätigst immer selbst.",
       "mine": "KI-Vorschläge für meine Dokumente",
       "mineHint": "Aus: Für deine Uploads gibt es nur Regeln und was nexpaper selbst liest, und dein Text geht nie an ein Modell.",
-      "byOperator": "Vom Betreiber eingestellt:"
+      "byOperator": "Vom Betreiber eingestellt:",
+      "none": "Der Betreiber hat keine KI eingerichtet. Solange gibt es nur Regeln und was nexpaper selbst aus dem Text liest; deine Wahl hier bleibt für später gespeichert.",
+      "noneOperator": "Es ist keine KI eingerichtet. Einen Anbieter wählst du unter <settings>Server › KI</settings>; deine Wahl hier bleibt bis dahin gespeichert."
     },
     "push": {
       "title": "Benachrichtigungen auf deinen Geräten",
@@ -298,8 +390,20 @@
       "takeAddress": "Übernehmen",
       "addressTaken": "Die Adresse gilt jetzt für dein Konto. Bestätige sie unter Profil, dann zählt sie auch für Dokumente per Mail."
     },
-    "keysWait": "Geräte und API-Schlüssel wirken erst, wenn du einen zweiten Faktor einrichtest.",
-    "keysWaitLink": "Zweiten Faktor einrichten"
+    "keysWait": "Geräte und API-Token wirken erst, wenn du einen zweiten Faktor einrichtest.",
+    "keysWaitLink": "Zweiten Faktor einrichten",
+    "signOut": {
+      "title": "Abmelden",
+      "text": "Beendet deine Sitzung in diesem Browser. Deine Dokumente bleiben, wie sie sind.",
+      "provider": "Bei deinem Anmeldeanbieter bleibst du angemeldet; nur nexpaper meldet dich ab.",
+      "button": "Abmelden"
+    },
+    "security": {
+      "title": "Anmeldung und Sicherheit"
+    },
+    "sessions": {
+      "text": "Meldet dich in allen anderen Browsern ab, etwa nach einem verlorenen Handy. Gekoppelte Geräte trennst du einzeln unter Verbindungen."
+    }
   },
   "twofactor": {
     "title": "Zweiter Faktor",
@@ -345,8 +449,7 @@
     "aiAllowed": "KI erlaubt",
     "permissionsHint": "Einzelne Konten lassen sich von der KI ausnehmen.",
     "accounts": "Konten",
-    "accountsHint": "Wer nexpaper nutzt. Jedes Konto bekommt beim Anlegen seinen persönlichen Tresor. Als Betreiber verwaltest du Konten und gemeinsame Tresore, in persönliche Tresore schaust du nicht hinein.",
-    "invite": "Jemanden einladen",
+    "invite": "Person einladen",
     "inviteText": "Wer dem Link folgt, legt sich ein eigenes Konto an. Ohne Mailserver kopierst du den Link und gibst ihn selbst weiter.",
     "signInBy": {
       "password": "Passwort",
@@ -357,14 +460,14 @@
     "blocked": "gesperrt",
     "makeOperator": "Zum Betreiber machen",
     "makeMember": "Zum Mitglied machen",
-    "newPassword": "Link zum Zurücksetzen schicken",
-    "givePassword": "Link für ein Passwort schicken",
-    "resetTwoFactor": "Zweiten Faktor entfernen",
+    "newPassword": "Link zum Zurücksetzen …",
+    "givePassword": "Link für ein Passwort …",
+    "resetTwoFactor": "Zweiten Faktor zurücksetzen",
     "signOutEverywhere": "Überall abmelden",
     "block": "Sperren",
     "unblock": "Entsperren",
-    "deleteAccount": "Konto löschen",
-    "more": "Mehr für {{name}}",
+    "deleteAccount": "Löschen …",
+    "more": "Aktionen für {{name}}",
     "confirm": {
       "role": {
         "title": "Rolle von {{name}} ändern?",
@@ -377,9 +480,9 @@
         "text": "{{name}} wird Mitglied und kommt nicht mehr an die Einstellungen des Servers."
       },
       "reset": {
-        "title": "Zweiten Faktor von {{name}} entfernen?",
+        "title": "Zweiten Faktor von {{name}} zurücksetzen?",
         "text": "Für ein verlorenes Handy: Code aus der App, Passkeys und Wiederherstellungscodes gehen weg, alle Geräte werden abgemeldet, und die Person bekommt Bescheid. Bei der nächsten Anmeldung richtet sie den zweiten Faktor neu ein.",
-        "button": "Entfernen"
+        "button": "Zurücksetzen"
       },
       "signout": {
         "title": "{{name}} überall abmelden?",
@@ -444,7 +547,6 @@
     "smtpUser": "Benutzer",
     "smtpFrom": "Absender",
     "none": "keine",
-    "mailTestTitle": "Ausprobieren",
     "mailTest": "Testmail an",
     "send": "Senden",
     "mailSent": "Die Testmail ist raus.",
@@ -486,11 +588,9 @@
     "upload": "Sprache hochladen",
     "languageAdded": "Sprache hinzugefügt. Sie erscheint unter Mein Konto, Profil.",
     "log": "Log",
-    "logHint": "Was der Server getan hat. Ohne Inhalte von Dokumenten.",
+    "logHint": "Vier Stufen. Die beiden tiefen schalten sich nach einer Stunde selbst ab. Nie Inhalte von Dokumenten, Passwörter oder Tokens.",
     "level": "Stufe",
-    "allLevels": "Alle Stufen",
-    "logSearch": "Enthält …",
-    "refresh": "Aktualisieren",
+    "logSearch": "Im Text suchen …",
     "logEmpty": "Nichts im Log.",
     "detail": "Ausführlichkeit",
     "levels": {
@@ -499,7 +599,7 @@
       "detailed": "Ausführlich (1 Stunde)",
       "trace": "Alles (1 Stunde)"
     },
-    "logClear": "Leeren",
+    "logClear": "Protokoll leeren",
     "logClearText": "Jede Zeile geht. Neue kommen wie bisher.",
     "logUntil": "Um {{time}} zurück auf normal.",
     "checkNewer": "Diese Sicherung stammt aus einer neueren Version von nexpaper. Erst nexpaper aktualisieren, dann wiederherstellen.",
@@ -538,7 +638,7 @@
       "keysText": "nexpaper hat ein eigenes Schlüsselpaar erzeugt. Neu erzeugen meldet alle Geräte ab; jede Person muss sie neu anmelden.",
       "renew": "Neu erzeugen",
       "renewTitle": "Neues Schlüsselpaar erzeugen?",
-      "renewText": "Alle Geräte werden abgemeldet. Jede Person muss sie unter Mein Konto, Geräte und Apps neu anmelden.",
+      "renewText": "Alle Geräte werden abgemeldet. Jede Person muss sie unter Mein Konto, Verbindungen neu anmelden.",
       "renewed": "Neues Schlüsselpaar erzeugt. Alle Geräte sind abgemeldet.",
       "probe": "Probe an meine Geräte",
       "hosts": "Weitere Push-Dienste",
@@ -554,17 +654,18 @@
     "backupNoDocuments": "Die Dokumente selbst sind nicht in der Sicherung.",
     "backupNoDocumentsText": "Sie liegen als normale Dateien unter /data/dokumente, lesbar auch ohne nexpaper. Nimm diesen Ordner in die Sicherung, die dein Server sowieso macht (Hyper Backup, restic, Snapshots). Wer nur diese Datei sichert, hat nach einem Plattenschaden Zuordnungen ohne Dokumente.",
     "apiKeys": {
-      "title": "API-Schlüssel",
-      "text": "Programme lesen oder laden hoch mit einem Schlüssel, den jede Person unter Mein Konto anlegt. Hier gibst du das frei und siehst alle Schlüssel, nie den Schlüssel selbst.",
-      "allow": "API-Schlüssel erlauben",
-      "allowHint": "Aus: Niemand kann Schlüssel anlegen, und vorhandene gehen nicht mehr.",
+      "title": "API-Token aller Konten",
+      "text": "Je Token Konto, Name, Recht, Ablauf und letzte Nutzung. Nie der Token selbst. Ob es Tokens gibt, stellst du unter Allgemein ein.",
+      "allow": "API-Token erlauben",
+      "allowHint": "Jede Person legt unter Mein Konto, Verbindungen Tokens an, mit denen Programme lesen oder hochladen. Aus: niemand kann Tokens anlegen, und vorhandene gehen nicht mehr.",
       "block": "Sperren",
-      "blockNamed": "Schlüssel {{name}} von {{account}} sperren",
-      "blockTitle": "Schlüssel {{name}} von {{account}} sperren?",
+      "blockNamed": "Token {{name}} von {{account}} sperren",
+      "blockTitle": "Token {{name}} von {{account}} sperren?",
       "blockText": "Er hört sofort auf zu gehen, für immer. Das Konto sieht ihn gesperrt in seiner Liste.",
       "blocked": "gesperrt",
-      "offHint": "Ein Schlüssel kann lesen oder nur hochladen und nie mehr, als das Konto darf.",
-      "own": "Eigene Schlüssel anlegen"
+      "offHint": "Ein Token kann lesen oder nur hochladen und nie mehr, als das Konto darf.",
+      "own": "Eigene Tokens anlegen",
+      "none": "Noch kein Konto hat einen API-Token."
     },
     "interface": {
       "title": "Schnittstelle",
@@ -576,8 +677,8 @@
       "pair": "Gerät koppeln",
       "pairText": "QR-Code aus Mein Konto, eigener Schlüssel je Gerät",
       "auth": "Anmelden von Programmen",
-      "authText": "Gerät oder Schlüssel in der Kopfzeile jeder Anfrage; Passwort und Sitzung brauchen sie nicht",
-      "limits": "Grenzen je Schlüssel: 120 Anfragen in der Minute, 50 Uploads in der Stunde. Falsche Schlüssel zählen wie falsche Passwörter."
+      "authText": "Gerät oder Token in der Kopfzeile jeder Anfrage; Passwort und Sitzung brauchen sie nicht",
+      "limits": "Grenzen je Token: 120 Anfragen in der Minute, 50 Uploads in der Stunde. Falsche Tokens zählen wie falsche Passwörter."
     },
     "remove": {
       "title": "{{name}} löschen?",
@@ -619,8 +720,8 @@
       "index": "Die Suche wird danach neu aufgebaut. Das dauert eine Weile, bis dahin findet sie nach und nach alles.",
       "revivedDevices_one": "Zurückspielen macht {{count}} Gerät wieder gültig, das seit der Sicherung gesperrt oder entfernt wurde.",
       "revivedDevices_other": "Zurückspielen macht {{count}} Geräte wieder gültig, die seit der Sicherung gesperrt oder entfernt wurden.",
-      "revivedKeys_one": "Zurückspielen macht {{count}} Schlüssel wieder gültig, der seit der Sicherung gesperrt wurde.",
-      "revivedKeys_other": "Zurückspielen macht {{count}} Schlüssel wieder gültig, die seit der Sicherung gesperrt wurden.",
+      "revivedKeys_one": "Zurückspielen macht {{count}} Token wieder gültig, der seit der Sicherung gesperrt wurde.",
+      "revivedKeys_other": "Zurückspielen macht {{count}} Tokens wieder gültig, die seit der Sicherung gesperrt wurden.",
       "revivedLinks_one": "Zurückspielen macht {{count}} Link wieder gültig, der seit der Sicherung zurückgezogen wurde.",
       "revivedLinks_other": "Zurückspielen macht {{count}} Links wieder gültig, die seit der Sicherung zurückgezogen wurden.",
       "revivedPdfPasswords_one": "Zurückspielen bringt {{count}} gemerktes PDF-Passwort zurück, das seit der Sicherung gelöscht wurde.",
@@ -632,20 +733,44 @@
       "order": "{{name}} verschieben (Pfeiltasten)",
       "more": "Mehr"
     },
-    "unlinkProvider": "Verknüpfung lösen: {{name}}"
+    "unlinkProvider": "Verknüpfung mit {{name}} lösen",
+    "features": "Funktionen für alle Konten",
+    "accountsLead_one": "{{count}} Konto. Jedes bekommt beim Anlegen seinen persönlichen Tresor. Als Betreiber verwaltest du Konten und gemeinsame Tresore, in persönliche Tresore schaust du nicht hinein.",
+    "accountsLead_other": "{{count}} Konten. Jedes bekommt beim Anlegen seinen persönlichen Tresor. Als Betreiber verwaltest du Konten und gemeinsame Tresore, in persönliche Tresore schaust du nicht hinein.",
+    "openInvites": "Offene Einladungen",
+    "table": {
+      "person": "Person",
+      "signIn": "Anmeldung",
+      "role": "Rolle",
+      "ai": "KI",
+      "last": "Zuletzt",
+      "actions": "Aktionen",
+      "never": "noch nie",
+      "passwordTwoFactor": "Passwort + 2FA"
+    },
+    "storageBackups": "Speicher und Backups",
+    "lastBackup": "Letztes Backup: {{time}}",
+    "forBackup": "{{action}}: Backup vom {{name}}",
+    "logAll": "Alle",
+    "logLevelHint": "Ein Filter zeigt immer auch die höheren Stufen: „WARNING“ enthält also die Fehler.",
+    "logTime": "Zeit",
+    "logSource": "Quelle",
+    "logRequest": "Nr. / Konto",
+    "logMessage": "Meldung",
+    "logRequestHint": "Nur diese Anfrage zeigen"
   },
   "errors": {
     "ai_not_allowed": "Dein Betreiber hat die KI für dein Konto nicht freigegeben.",
     "account_blocked": "Dieses Konto ist gesperrt.",
     "account_locked": "Zu viele falsche Versuche. Das Konto wartet eine Viertelstunde.",
     "already_set_up": "nexpaper ist schon eingerichtet.",
-    "api_off": "Der Betreiber hat API-Schlüssel nicht eingeschaltet.",
+    "api_off": "Der Betreiber hat API-Token nicht eingeschaltet.",
     "avatar_not_a_picture": "Das ist kein Bild, das nexpaper annimmt (JPEG, PNG, WebP, GIF, HEIC oder AVIF).",
     "avatar_too_large": "Das Bild ist zu groß, höchstens {{max_mb}} MB.",
     "backup_damaged": "Die Sicherung ist beschädigt. Nichts wurde geändert.",
     "backup_invalid": "Das ist keine nexpaper-Sicherung.",
     "backup_too_large": "Die Sicherung entpackt sich zu mehr, als eine Sicherung enthalten darf. Nichts wurde geändert.",
-    "backup_too_new": "Die Sicherung stammt aus einer neueren Version von nexpaper. Nichts wurde geändert.",
+    "backup_too_new": "Dieses Backup stammt aus einer neueren Version von nexpaper. Aktualisiere zuerst nexpaper.",
     "bad_preference": "Diesen Wert bietet nexpaper nicht an.",
     "busy": "nexpaper ist gerade beschäftigt. Versuch es gleich noch einmal.",
     "cannot_block_self": "Dich selbst kannst du nicht sperren.",
@@ -693,9 +818,9 @@
     "secret_required": "Bitte das Client-Geheimnis eintragen.",
     "setup_code_wrong": "Der Einrichtungscode stimmt nicht. Er steht im Log des Servers.",
     "sign_in_required": "Bitte erst anmelden.",
-    "slow_down": "Zu viele Anfragen mit diesem Schlüssel. Eine Minute warten.",
+    "slow_down": "Zu viele Anfragen mit diesem Token. Eine Minute warten.",
     "token_invalid": "Kein gültiges Gerät-Token.",
-    "token_wrong_kind": "Das ist die falsche Art Schlüssel für diesen Weg: Geräte-Token und API-Schlüssel sind zwei verschiedene Dinge.",
+    "token_wrong_kind": "Das ist die falsche Art Token für diesen Weg: Geräte-Token und API-Token sind zwei verschiedene Dinge.",
     "too_large": "Die Datei ist größer als erlaubt, höchstens {{max_mb}} MB.",
     "too_many_attempts": "Zu viele Versuche. Kurz warten und noch einmal.",
     "totp_code_wrong": "Der Code stimmt nicht. Ein Code aus der App: Uhrzeit auf dem Handy prüfen. Ein Wiederherstellungscode gilt nur einmal.",
@@ -759,11 +884,11 @@
     "reset_invalid": "Dieser Link gilt nicht mehr.",
     "reset_off": "Das ist auf diesem Server nicht eingerichtet. Frag den Betreiber.",
     "use_account_page": "Dein eigenes Passwort änderst du unter Mein Konto.",
-    "key_invalid": "Kein gültiger API-Schlüssel.",
+    "key_invalid": "Kein gültiger API-Token.",
     "browser_only": "Das geht nur in einem angemeldeten Browser, nicht mit einem Gerät.",
     "device_name_invalid": "Der Name eines Geräts hat 1 bis 80 Zeichen, ohne Steuerzeichen.",
     "too_many_devices": "So viele Geräte sind genug: Sperre zuerst eines.",
-    "too_many_keys": "So viele Schlüssel sind genug: Lösche zuerst einen.",
+    "too_many_keys": "So viele Tokens sind genug: Lösche zuerst einen.",
     "email_same": "Das ist schon deine bestätigte Adresse.",
     "email_link_invalid": "Dieser Link gilt nicht mehr.",
     "forbidden": "Dein Recht reicht dafür nicht.",
@@ -818,7 +943,7 @@
     "incomplete": "Es ist noch nicht alles angekommen.",
     "checksum_mismatch": "Die Datei ist nicht vollständig angekommen, die Prüfsumme stimmt nicht. Versuche es noch einmal.",
     "upload_expired": "Dieser Upload ist abgelaufen. Starte ihn neu.",
-    "key_scope": "Dieser Schlüssel ist dafür nicht gedacht.",
+    "key_scope": "Dieser Token ist dafür nicht gedacht.",
     "not_ready": "Das Dokument wird noch eingelesen.",
     "render_failed": "Diese Seite ließ sich nicht darstellen.",
     "nothing_to_retry": "Dieses Dokument wurde ohne Fehler eingelesen.",
@@ -830,7 +955,7 @@
     "oauth_redirect_refused": "Zu dieser Adresse darf nexpaper die App nicht zurückschicken.",
     "oauth_invalid_request": "Die Anfrage der App ist unvollständig.",
     "oauth_pkce_required": "Die App fragt ohne die nötige Absicherung (PKCE mit S256).",
-    "upload_limit": "Dieser Schlüssel hat in dieser Stunde schon {{per_hour}} Dateien gebracht.",
+    "upload_limit": "Dieser Token hat in dieser Stunde schon {{per_hour}} Dateien gebracht.",
     "shortcut_link_invalid": "Bitte den iCloud-Link des Kurzbefehls eintragen (https://www.icloud.com/shortcuts/…).",
     "query_too_long": "Die Suche ist zu lang. Höchstens {{max}} Zeichen.",
     "too_many_terms": "Zu viele Wörter und Filter in einer Suche. Höchstens {{max}}.",
@@ -951,66 +1076,60 @@
     "removed": "Adresse entfernt.",
     "off": "Der Betreiber hat noch keinen Mailserver eingerichtet, deshalb kann kein Link verschickt werden.",
     "passwordHint": "Zur Sicherheit: Die Adresse ist der Weg zurück ins Konto.",
-    "passwordFirst": "Dafür oben das Passwort eintragen"
+    "passwordFirst": "Dafür oben das Passwort eintragen",
+    "confirmedLine": "Mailadresse bestätigt",
+    "unconfirmedLine": "Mailadresse nicht bestätigt"
   },
   "looks": {
-    "title": "Hell oder dunkel",
+    "title": "Aussehen",
     "text": "Nur für dein Konto.",
     "archive": "Archiv",
-    "archiveText": "Wie die Liste aussieht, wenn du nexpaper öffnest.",
+    "archiveText": "(wie die Liste aussieht, wenn du nexpaper öffnest)",
     "list": "Liste",
-    "grid": "Kacheln"
+    "grid": "Kacheln",
+    "mode": "Darstellung",
+    "everywhere": "(gilt auf allen deinen Geräten)",
+    "archiveStyle": "Darstellung des Archivs"
   },
   "pairing": {
-    "title": "Gerät koppeln",
-    "text": "Für eigene Programme und Apps. Das Gerät bekommt einen eigenen Schlüssel, den du jederzeit sperren kannst.",
-    "new": "Gerät koppeln",
-    "name": "Name des Geräts",
-    "namePlaceholder": "iPhone von jule",
-    "make": "Koppeln",
-    "shownOnce": "Schlüssel für „{{name}}“, wird nur jetzt gezeigt:",
-    "useIt": "Das Gerät schickt ihn bei jeder Anfrage als Authorization: Bearer mit.",
-    "done": "Fertig",
-    "since": "gekoppelt {{when}}",
-    "used": "zuletzt benutzt {{when}}",
-    "unused": "noch nie benutzt",
-    "takeOff": "Sperren",
-    "takeOffNamed": "Gerät {{name}} sperren",
-    "takeOffTitle": "{{name}} sperren?",
-    "takeOffText": "Der Schlüssel des Geräts gilt sofort nicht mehr. Es muss neu gekoppelt werden.",
-    "hint": "Ein Gerät handelt mit den Rechten deines Kontos. Einstellungen ändern und weitere Geräte koppeln kann es nicht."
+    "title": "Geräte",
+    "text": "iPhone und iPad mit der nexpaper-App und eigene Programme. Jedes Gerät hat einen eigenen Schlüssel, Trennen sperrt ihn sofort.",
+    "none": "Noch kein Gerät gekoppelt.",
+    "connect": "Gerät koppeln",
+    "dialogTitle": "Gerät koppeln",
+    "disconnect": "Trennen",
+    "disconnectNamed": "{{name}} trennen"
   },
   "apiKeys": {
-    "title": "API-Schlüssel",
-    "text": "Für eigene Skripte, nexdeck oder einen Scanner, der direkt hochlädt. Ein Schlüssel kann nur lesen oder nur hochladen, nie Einstellungen ändern.",
-    "off": "Der Betreiber hat API-Schlüssel nicht freigegeben.",
-    "offForOperator": "API-Schlüssel sind noch nicht freigegeben.",
-    "offOperator": "Unter Einstellungen, API freigeben.",
+    "title": "API-Token",
+    "text": "Für eigene Skripte, nexdeck oder einen Scanner, der direkt hochlädt. Ein Token kann nur lesen oder nur hochladen, nie Einstellungen ändern.",
+    "off": "Der Betreiber hat API-Token nicht freigegeben.",
+    "offForOperator": "API-Token sind noch nicht freigegeben.",
+    "offOperator": "Unter Einstellungen, Allgemein freigeben.",
     "enable": "Jetzt freigeben",
     "enableConfirm": "Freigeben",
-    "enableTitle": "API-Schlüssel für alle freigeben?",
-    "enableText": "Danach kann jede Person auf diesem Server unter Mein Konto Schlüssel anlegen. Ein Schlüssel lässt ein Programm entweder nur lesen oder nur hochladen, nie mehr, als das Konto darf, das ihn anlegt. Du kannst die Freigabe unter Einstellungen, API jederzeit wieder ausschalten; dann gehen auch vorhandene Schlüssel nicht mehr.",
-    "uploadNote": "Ein Schlüssel zum Hochladen legt Dokumente nur in einen Eingang: in den deines Ziel-Tresors oder, wenn das Programm einen anderen nennt, in den eines Tresors, in dem du ablegen darfst. Lesen, ändern oder löschen kann er nichts.",
-    "new": "Neuer Schlüssel",
+    "enableTitle": "API-Token für alle freigeben?",
+    "enableText": "Danach kann jede Person auf diesem Server unter Mein Konto Tokens anlegen. Ein Token lässt ein Programm entweder nur lesen oder nur hochladen, nie mehr, als das Konto darf, das ihn anlegt. Du kannst die Freigabe unter Einstellungen, Allgemein jederzeit wieder ausschalten; dann gehen auch vorhandene Tokens nicht mehr.",
+    "uploadNote": "Ein Token zum Hochladen legt Dokumente nur in einen Eingang: in den deines Ziel-Tresors oder, wenn das Programm einen anderen nennt, in den eines Tresors, in dem du ablegen darfst. Lesen, ändern oder löschen kann er nichts.",
+    "new": "Neuer API-Token",
     "name": "Name",
     "namePlaceholder": "nexdeck",
-    "lifetime": "Gültig",
+    "lifetime": "Ablauf",
     "lifetimeNever": "Ohne Ablauf",
-    "lifetimeHint": "Ein Schlüssel, der nie abläuft, ist der, an den sich niemand mehr erinnert, wenn er in falsche Hände gerät. Ein Jahr reicht meist; die Liste zeigt eine Woche vorher, dass er abläuft.",
-    "lifetimeHintUpload": "Ein Schlüssel zum Hochladen kann nur Dokumente in deinen Eingang legen. Dein Archiv liest er nicht. Darum läuft er von sich aus nicht ab, und ein Kurzbefehl oder Scanner muss nicht nach einem Jahr neu eingerichtet werden. Du kannst ihn jederzeit löschen, oder eine Dauer wählen.",
+    "lifetimeHint": "Ein Token, der nie abläuft, ist der, an den sich niemand mehr erinnert, wenn er in falsche Hände gerät. Ein Jahr reicht meist; die Liste zeigt eine Woche vorher, dass er abläuft.",
+    "lifetimeHintUpload": "Ein Token zum Hochladen kann nur Dokumente in deinen Eingang legen. Dein Archiv liest er nicht. Darum läuft er von sich aus nicht ab, und ein Kurzbefehl oder Scanner muss nicht nach einem Jahr neu eingerichtet werden. Du kannst ihn jederzeit löschen, oder eine Dauer wählen.",
     "lifetimeDays": {
       "30": "30 Tage",
       "90": "90 Tage",
       "365": "365 Tage"
     },
-    "make": "Schlüssel anlegen",
-    "shownOnce": "Schlüssel „{{name}}“, wird nur jetzt gezeigt:",
-    "key": "Schlüssel",
+    "make": "Token anlegen",
+    "key": "Token",
     "header": "Kopfzeile für das Programm",
     "tryIt": "Zum Ausprobieren",
     "done": "Fertig",
     "copyNamed": "{{what}} kopieren",
-    "deleteNamed": "Schlüssel {{name}} löschen",
+    "deleteNamed": "Token {{name}} löschen",
     "readOnlyOne": "nur lesen",
     "never": "läuft nicht ab",
     "runsOut": "läuft am {{day}} ab",
@@ -1018,7 +1137,21 @@
     "blocked": "vom Betreiber gesperrt",
     "used": "zuletzt benutzt {{when}}",
     "unused": "noch nie benutzt",
-    "docs": "Alles, was die Web-App kann, geht auch über die Schnittstelle unter /api/v1. Die Beschreibung liegt unter /api/v1/docs."
+    "docs": "Alles, was die Web-App kann, geht auch über die Schnittstelle unter /api/v1. Die Beschreibung liegt unter /api/v1/docs.",
+    "made": "„{{name}}“ angelegt",
+    "once": "Kopiere den Token jetzt. Er wird nur dieses eine Mal angezeigt.",
+    "address": "Adresse für Programme",
+    "headerLine": "Programme schicken den Token als „Authorization: Bearer …“.",
+    "docsLink": "API-Dokumentation",
+    "none": "Noch kein API-Token.",
+    "delete": "Löschen",
+    "right": "Recht",
+    "scope": {
+      "read": "Nur lesen",
+      "readHint": "Dokumente, Tresore und Suche lesen, so weit dein Konto darf. Ändern kann er nichts.",
+      "upload": "Nur hochladen",
+      "uploadHint": "Für einen Scanner, ein Skript oder den Kurzbefehl: legt Dokumente in einen Eingang und liest nichts."
+    }
   },
   "rights": {
     "read": {
@@ -1134,8 +1267,8 @@
   "sharingSettings": {
     "title": "Links nach außen",
     "text": "Damit lassen sich einzelne Dokumente oder ein Export an Leute ohne Konto geben, etwa an den Steuerberater.",
-    "allow": "Links nach außen erlauben",
-    "allowHint": "Aus: Nur Teilen mit Personen auf diesem Server. Vorhandene Links hören sofort auf zu gehen.",
+    "allow": "Teilen per Link",
+    "allowHint": "Links zu einzelnen Dokumenten oder einem Export für Leute ohne Konto, etwa den Steuerberater. Aus: nur Teilen mit Personen auf diesem Server, vorhandene Links hören sofort auf zu gehen.",
     "longest": "Höchstens gültig",
     "days": "{{count}} Tage",
     "hint": "Ein Link zeigt nur das eine Dokument oder den einen Export, ist nicht zu erraten und lässt sich jederzeit zurückziehen. Das Öffnen steht im Verlauf des Dokuments, höchstens einmal alle zehn Minuten je Link.",
@@ -1196,8 +1329,8 @@
   },
   "storage": {
     "limits": {
-      "title": "Hochladen und Grenzen",
-      "text": "Was nexpaper annimmt und wie viel. Gilt für Browser, Handy und Apps und zählt ab der nächsten Datei.",
+      "title": "Grenzen",
+      "text": "Was nexpaper annimmt. Gilt für Browser, Handy und Apps, ab der nächsten Datei.",
       "maxFile": "Größe einer Datei (MB)",
       "maxFileHint": "Größere Dateien lehnt nexpaper ab. Dateien über 8 MB gehen in Stücken, und nach einem Netzabbruch geht es dort weiter, wo es aufgehört hat.",
       "maxPages": "Seiten je Dokument",
@@ -1296,14 +1429,12 @@
       "photo": "Aufnahme"
     },
     "pair": {
-      "show": "Code zum Koppeln zeigen",
       "scan": "Mit dem Gerät scannen. Der Code gilt 5 Minuten und nur einmal.",
       "byHand": "Oder von Hand:",
       "address": "Adresse",
       "code": "Code",
       "left": "Gilt noch {{time}}.",
-      "cancel": "Abbrechen",
-      "paired": "Gekoppelt. Das Gerät steht jetzt unter Sicherheit bei den angemeldeten Geräten.",
+      "paired": "Gekoppelt. Das Gerät steht jetzt in der Liste.",
       "expired": "Der Code ist abgelaufen.",
       "newCode": "Neuen Code zeigen",
       "qr": "QR-Code zum Koppeln",
@@ -1314,22 +1445,22 @@
       "text": "Auf dem iPhone fehlt nexpaper im Teilen-Menü, weil Safari das Web-Apps nicht erlaubt. Ein Kurzbefehl springt ein: Er steht danach im Teilen-Menü jeder App und schickt PDFs und Fotos direkt in deinen Eingang.",
       "load": "Kurzbefehl laden",
       "link1": "Auf dem iPhone „Kurzbefehl laden“ antippen und hinzufügen.",
-      "link2": "Beim Hinzufügen fragt er nach Adresse und Schlüssel: beides zeigt „Schlüssel für den Kurzbefehl“ hier unten.",
+      "link2": "Beim Hinzufügen fragt er nach Adresse und Token: beides zeigt „Token für den Kurzbefehl“ hier unten.",
       "link3": "In Mail, Dateien oder der Banking-App: Teilen, dann „Nach nexpaper“.",
       "build": "Einen fertigen Kurzbefehl hat der Betreiber noch nicht hinterlegt. So baust du ihn in zwei Minuten selbst:",
-      "build1": "Unten „Schlüssel für den Kurzbefehl“ antippen. Adresse und Schlüssel zum Hochladen bleiben dann zum Kopieren stehen.",
+      "build1": "Unten „Token für den Kurzbefehl“ antippen. Adresse und Token zum Hochladen bleiben dann zum Kopieren stehen.",
       "build2": "In der App Kurzbefehle einen neuen Kurzbefehl „Nach nexpaper“ anlegen, unter Details „Im Share-Sheet anzeigen“ einschalten, als Eingabe PDFs und Bilder.",
       "build3": "Aktion „Inhalte von URL abrufen“: die Adresse von unten, Methode POST, Header „Authorization“ mit dem Wert von unten, Anfragetext Formular, Feld „file“ als Datei mit der Kurzbefehleingabe.",
       "build4": "Aktion „Mitteilung anzeigen“ mit „Liegt im Eingang.“ dahinter, fertig.",
       "android": "Unter Android steht nexpaper von selbst im Teilen-Menü, sobald es auf dem Startbildschirm liegt.",
-      "key": "Schlüssel für den Kurzbefehl",
-      "shown": "Schlüssel zum Hochladen für den Kurzbefehl, wird nur jetzt gezeigt. Er kann nur hochladen und steht danach bei den API-Schlüsseln, wo du ihn löschen kannst.",
+      "key": "Token für den Kurzbefehl",
+      "shown": "Token zum Hochladen für den Kurzbefehl, wird nur jetzt gezeigt. Er kann nur hochladen und steht danach bei den API-Tokens, wo du ihn löschen kannst.",
       "address": "Adresse",
       "header": "Wert für den Header Authorization",
       "done": "Fertig",
       "keyName": "iPhone-Kurzbefehl",
-      "warning": "Trag deinen Schlüssel nie in einen Kurzbefehl ein, den du mit anderen teilst: Wer ihn hat, kann in dein Konto hochladen. Wer einen Kurzbefehl teilt, legt Adresse und Schlüssel als Import-Fragen an.",
-      "off": "Der Kurzbefehl braucht einen Schlüssel zum Hochladen, und API-Schlüssel hat der Betreiber nicht freigegeben."
+      "warning": "Trag deinen Token nie in einen Kurzbefehl ein, den du mit anderen teilst: Wer ihn hat, kann in dein Konto hochladen. Wer einen Kurzbefehl teilt, legt Adresse und Tokens als Import-Fragen an.",
+      "off": "Der Kurzbefehl braucht einen Token zum Hochladen, und API-Token hat der Betreiber nicht freigegeben."
     },
     "vault": {
       "title": "Wohin deine Uploads gehen",
@@ -1357,17 +1488,17 @@
       "token": "gekoppelt mit Schlüssel",
       "meta": "{{how}} · zuletzt {{when}}",
       "never": "noch nie benutzt",
-      "revokeTitle": "{{name}} abmelden?",
+      "revokeTitle": "„{{name}}“ trennen?",
       "revokeText": "Sein Schlüssel gilt sofort nicht mehr. Es muss neu gekoppelt werden.",
-      "revoked": "{{name}} ist abgemeldet."
+      "revoked": "{{name}} ist getrennt."
     },
     "keys": {
-      "upload": "Schlüssel zum Hochladen",
+      "upload": "Token zum Hochladen",
       "uploadOne": "nur hochladen",
-      "uploadButton": "Schlüssel zum Hochladen (für Scanner und Apps)",
+      "uploadButton": "Token zum Hochladen (für Scanner und Apps)",
       "scope": "Darf",
       "read": "nur lesen",
-      "limits": "Grenzen je Schlüssel: 120 Anfragen in der Minute, 50 Uploads in der Stunde.",
+      "limits": "Grenzen je Token: 120 Anfragen in der Minute, 50 Uploads in der Stunde.",
       "uploadPlaceholder": "Scanner im Flur"
     },
     "settings": {
@@ -1499,7 +1630,7 @@
   },
   "ocr": {
     "title": "Texterkennung",
-    "text": "Damit die Suche auch in Fotos und Scans findet. PDFs, die schon Text haben, bleiben, wie sie sind.",
+    "text": "Sprachen, die in Scans, Fotos und PDFs gelesen werden. PDFs, die schon Text haben, bleiben, wie sie sind.",
     "unavailable": "Auf diesem Server fehlt die Texterkennung (ocrmypdf und Tesseract). Gefunden wird nur der Text, den ein PDF selbst mitbringt.",
     "languages": "Sprachen",
     "language": {
@@ -1528,7 +1659,8 @@
     "maxMinutes": "Zeit je Dokument (Minuten)",
     "maxMinutesHint": "Eine Seite darf höchstens das Zehnfache des Schnitts dauern. Dauert ein Dokument länger, bleibt es ohne Text im Eingang und lässt sich neu versuchen.",
     "maxMinutesInvalid": "Gib eine ganze Zahl von 1 bis 1440 Minuten an.",
-    "save": "Speichern"
+    "save": "Speichern",
+    "processing": "Verarbeitung"
   },
   "docs": {
     "loading": "Wird geladen …",
@@ -1685,7 +1817,11 @@
       "found": "Im Text gefunden",
       "foundHint": "Antippen übernimmt das Datum.",
       "foundPick": "{{date}} als Datum übernehmen",
-      "foundRole": { "date": "Datum", "due": "fällig", "period": "Zeitraum" },
+      "foundRole": {
+        "date": "Datum",
+        "due": "fällig",
+        "period": "Zeitraum"
+      },
       "large": "Groß ansehen",
       "largePage": "Seite {{n}} groß ansehen",
       "title": "Eingang",
@@ -2353,9 +2489,9 @@
       "confirm": "Gerät sperren"
     },
     "apiKey": {
-      "title": "Schlüssel löschen?",
-      "text": "Programme mit dem Schlüssel „{{name}}“ kommen danach nicht mehr in nexpaper. Das lässt sich nicht zurückholen.",
-      "confirm": "Schlüssel löschen"
+      "title": "Token löschen?",
+      "text": "Programme mit dem Token „{{name}}“ kommen danach nicht mehr in nexpaper. Das lässt sich nicht zurückholen.",
+      "confirm": "Token löschen"
     },
     "session": {
       "title": "Sitzung beenden?",
@@ -2613,8 +2749,6 @@
     "note": "Fehlt eine Datei oder stimmt sie nicht mehr, steht das Dokument im Archiv mit einem Warnzeichen, und du bekommst Bescheid. Geprüft wird in kleinen Portionen mit Pausen, damit die Platte nicht dauernd arbeitet."
   },
   "space": {
-    "title": "Speicher",
-    "text": "Wo was liegt und wie viel.",
     "documents": "Dokumente",
     "originals": "davon Originale {{size}}",
     "database": "Datenbank",
@@ -2622,8 +2756,6 @@
     "cache": "Seitenbilder (Zwischenspeicher)",
     "exports": "Exporte",
     "backups": "Sicherungen",
-    "free": "frei auf dem Laufwerk",
-    "of": "von {{size}}",
     "partial": "Das Zählen wurde nach einer Weile abgebrochen. Die Zahlen sind mindestens so groß.",
     "local": {
       "title": "Die Datenbank liegt auf einem lokalen Laufwerk.",
@@ -2637,7 +2769,11 @@
       "title": "Nicht festzustellen, wo die Datenbank liegt.",
       "text": "Auf einem Linux-Server mit Docker sieht nexpaper das. Prüfe selbst, dass der Datenordner auf einem lokalen Laufwerk liegt und nicht auf einer Netzwerkfreigabe."
     },
-    "documentsOnShare": "Die Dokumente liegen auf einer Netzwerkfreigabe. Das ist in Ordnung."
+    "documentsOnShare": "Die Dokumente liegen auf einer Netzwerkfreigabe. Das ist in Ordnung.",
+    "uses": "nexpaper belegt",
+    "part": "{{name}} {{size}}",
+    "bar": "nexpaper belegt {{own}}, auf dem Laufwerk sind {{used}} von {{total}} belegt",
+    "diskFree": "Auf dem Laufwerk noch {{free}} von {{total}} frei"
   },
   "order": {
     "title": "Ordnung",
@@ -2992,7 +3128,7 @@
     "push": "Push aufs Handy und in den Browser",
     "pushHint_one": "Auf {{count}} Gerät eingeschaltet. Tippen öffnet das Dokument.",
     "pushHint_other": "Auf {{count}} Geräten eingeschaltet. Tippen öffnet das Dokument.",
-    "pushNone": "Noch auf keinem Gerät eingeschaltet. Das geht unter Geräte und Apps.",
+    "pushNone": "Noch auf keinem Gerät eingeschaltet. Das geht unter Mein Konto, Verbindungen.",
     "mailTo": "Mail an {{address}}",
     "mail": "Mail",
     "mailHint": "Deine bestätigte Adresse. Ohne Mailserver des Betreibers geht das nicht.",
@@ -3424,7 +3560,7 @@
       "text": "Die Adresse für {{name}} nimmt danach nichts mehr an. Was schon angekommen ist, bleibt in deinem Eingang. Zurückholen lässt sich die Bitte nicht, du kannst aber eine neue erstellen.",
       "confirm": "Zurückziehen"
     },
-    "off": "Upload-Bitten sind auf diesem Server ausgeschaltet. Der Betreiber schaltet sie unter Einstellungen, Teilen ein.",
+    "off": "Upload-Bitten sind auf diesem Server ausgeschaltet. Der Betreiber schaltet sie unter Einstellungen, Allgemein ein.",
     "noAddress": "Für eine Upload-Bitte braucht der Server seine öffentliche Adresse. Der Betreiber trägt sie unter Einstellungen, Anmeldung ein.",
     "cardTitle": "Upload-Bitten",
     "cardText": "Adressen, über die dir jemand ohne Konto Dateien schickt. Alles landet in deinem Eingang.",
@@ -3454,8 +3590,8 @@
     "ready": {
       "title": "Upload-Bitten",
       "ok": "Ausgeschaltet. Niemand ohne Konto kann Dateien schicken.",
-      "warn_one": "Eingeschaltet: wer eine Adresse hat, kann Dateien in den Eingang einer Person legen. Gerade nimmt {{count}} Bitte etwas an. Ausschalten unter Einstellungen, Teilen.",
-      "warn_other": "Eingeschaltet: wer eine Adresse hat, kann Dateien in den Eingang einer Person legen. Gerade nehmen {{count}} Bitten etwas an. Ausschalten unter Einstellungen, Teilen."
+      "warn_one": "Eingeschaltet: wer eine Adresse hat, kann Dateien in den Eingang einer Person legen. Gerade nimmt {{count}} Bitte etwas an. Ausschalten unter Einstellungen, Allgemein.",
+      "warn_other": "Eingeschaltet: wer eine Adresse hat, kann Dateien in den Eingang einer Person legen. Gerade nehmen {{count}} Bitten etwas an. Ausschalten unter Einstellungen, Allgemein."
     },
     "page": {
       "asks": "<name>{{name}}</name> bittet dich um Dokumente",
@@ -3496,5 +3632,10 @@
     },
     "eventWho": "Jemand über die Upload-Bitte „{{name}}“",
     "fromRequest": "über eine Upload-Bitte"
+  },
+  "nav": {
+    "search": "Suchen",
+    "searchKey": "Strg K",
+    "manageVaults": "Tresore verwalten"
   }
 }

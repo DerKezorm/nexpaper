@@ -69,7 +69,7 @@ export function ShortcutCard() {
         <p className="rounded-xl bg-sheet-2 px-4 py-3 text-sm text-ink-2" data-testid="shortcut-off">
           {t('phone.iphone.off')}{' '}
           {me?.role === 'operator' && (
-            <Link to="/einstellungen?tab=api" className="font-semibold text-accent underline decoration-accent/40 underline-offset-4">
+            <Link to="/settings/general" className="font-semibold text-accent underline decoration-accent/40 underline-offset-4">
               {t('apiKeys.offOperator')}
             </Link>
           )}
@@ -123,7 +123,7 @@ export function UploadVaultCard() {
               setMe({ ...me, profile: { ...me.profile, default_vault: vault.id } })
               void action.run(async () => setMe({ ...me, profile: await authApi.preferences({ default_vault: vault.id }) })).then((worked) => worked || setMe(before))
             }}
-            className={`rounded-full border px-4 py-2 text-sm font-semibold ${vault.id === chosen ? 'border-accent/50 bg-accent-soft text-accent' : 'border-line text-ink-2 hover:text-ink'}`}
+            className={`rounded-[9px] border px-4 py-2 text-sm font-semibold ${vault.id === chosen ? 'border-accent/50 bg-accent-soft text-accent' : 'border-line text-ink-2 hover:text-ink'}`}
           >
             {vault.personal_of === me.id ? t('phone.quick.mine') : vault.name}
           </button>

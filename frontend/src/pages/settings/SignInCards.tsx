@@ -7,7 +7,7 @@
  * 2. Sign-in providers: the list with its marks, the drag handle, and the form as a dialog.
  * 3. authentik in one step: address, token, "Set up", the authentik blueprint file, and the steps with the reason of a failure.
  */
-import { Download, GripVertical, KeyRound, Shield, Sparkles } from 'lucide-react'
+import { GripVertical, KeyRound, ShieldCheck, Sparkles } from 'lucide-react'
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import type { TFunction } from 'i18next'
 import { useTranslation } from 'react-i18next'
@@ -71,7 +71,7 @@ function SignInCard({ server, anyActive }: { server: Server; anyActive: boolean 
   // name that switch by the words of the shared module.
   const trusts = { trusts: t('oidc.admin.trustsSecondFactor') }
   return (
-    <Card id="sign-in" icon={Shield} title={t('oidc.admin.signInTitle')}>
+    <Card id="sign-in" icon={ShieldCheck} title={t('oidc.admin.signInTitle')}>
       <Toggle
         label={t('oidc.admin.password')}
         hint={t('oidc.admin.passwordHint')}
@@ -81,7 +81,7 @@ function SignInCard({ server, anyActive }: { server: Server; anyActive: boolean 
         onChange={(password_login) => void server.save({ password_login })}
       />
       <form
-        className="flex flex-wrap items-start gap-2"
+        className="flex flex-wrap items-end gap-2"
         onSubmit={(event) => {
           event.preventDefault()
           setSaved(null)
@@ -99,7 +99,7 @@ function SignInCard({ server, anyActive }: { server: Server; anyActive: boolean 
           hint={t('oidc.admin.addressHint')}
           className="min-w-60 flex-1"
         />
-        <Button type="submit" busy={server.busy} className="mt-6">
+        <Button type="submit" busy={server.busy}>
           {t('common.save')}
         </Button>
       </form>
@@ -366,7 +366,7 @@ function ProviderDialog({ entry, publicUrl, onClose, onSaved }: { entry: OidcPro
   const problemAt = (field: FieldName) => (fieldError?.field === field ? <FieldProblem text={fieldError.text} /> : null)
 
   return (
-    <Dialog title={entry ? `${t('oidc.admin.edit')}: ${entry.label}` : t('oidc.admin.add')} onClose={() => !busy && onClose()} wide>
+    <Dialog title={entry ? `${t('oidc.admin.edit')}: ${entry.label}` : t('oidc.admin.add')} onClose={() => !busy && onClose()} medium>
       <form className="space-y-3" onSubmit={(event) => void submit(event)} data-testid="provider-form">
         <Input label={t('oidc.admin.label')} value={form.label} onChange={(label) => set({ label })} />
         {problemAt('label')}
@@ -573,8 +573,8 @@ function AuthentikCard({
               {t('oidc.authentik.adoptOnly')}
             </Button>
           )}
-          <a href="/api/v1/oidc/authentik/blueprint" className="inline-flex h-10 items-center justify-center gap-2 rounded-full border border-line px-4 text-sm font-semibold text-ink-2 hover:bg-sheet-2">
-            <Download size={16} aria-hidden />
+          {/* As in nexnotes: the blueprint is the way round the button, a quiet link beside it. */}
+          <a href="/api/v1/oidc/authentik/blueprint" className="text-sm text-accent hover:underline">
             {t('oidc.authentik.blueprint')}
           </a>
         </div>

@@ -62,7 +62,7 @@ export function TrashPage() {
         <Link to="/" className="mb-2 inline-flex items-center gap-1.5 text-sm font-semibold text-ink-2">
           <ArrowLeft size={16} aria-hidden /> {t('docs.archive.title')}
         </Link>
-        <h1 className="font-display text-3xl font-semibold tracking-tight">{t('docs.trash.title')}</h1>
+        <h1 className="text-2xl font-bold tracking-tight">{t('docs.trash.title')}</h1>
         <p className="text-sm text-muted">{t('docs.trash.sub')}</p>
       </div>
       {problem && (

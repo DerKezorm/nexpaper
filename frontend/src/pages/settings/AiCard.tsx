@@ -14,7 +14,7 @@ import { Button, Card, Feedback, Input, Select, Toggle, useAction } from './ui'
 
 /** The most the operator's own wishes may be, as the server keeps them. */
 const WISHES_MAX = 2000
-const AREA = 'mt-1 block min-h-28 w-full rounded-xl border border-line bg-sheet px-3.5 py-2.5 text-[0.95rem] text-ink outline-none placeholder:text-muted/70 focus:border-accent'
+const AREA = 'mt-1 block min-h-28 w-full rounded-[9px] border border-edge bg-sheet px-3 py-2 text-sm text-ink outline-none placeholder:text-muted/70 focus:border-accent'
 
 export function AiCard() {
   const { t, i18n } = useTranslation()

@@ -9,7 +9,7 @@ import type { Deadline, Me, Reminders } from '../api/client'
 import { changeLanguage } from '../i18n'
 import { Page, Server, plain } from '../test/harness'
 import { idle, until } from '../test/wait'
-import { AccountPage } from './AccountPage'
+import { SettingsRoutes } from '../test/settings'
 import { DeadlinesPage } from './DeadlinesPage'
 
 const me: Me = {
@@ -85,15 +85,15 @@ const cards = () => [...page.box.querySelectorAll('section h2')].map((h) => plai
 
 describe('my account, reminders', () => {
   it('has the four cards with the choices from the start', async () => {
-    await page.show(<AccountPage />, '/konto?tab=erinnerungen')
-    expect(page.box.querySelector('[role="tab"][aria-selected="true"]')!.textContent).toContain('Erinnerungen')
+    await page.show(<SettingsRoutes />, '/konto?tab=erinnerungen')
+    expect(page.box.querySelector('[aria-current="page"][data-testid^="settings-nav-"]')!.textContent).toContain('Erinnerungen')
     expect(cards()).toEqual(['Fristen verwenden', 'Wie du erinnert wirst', 'Wie früh', 'Welche Tresore', 'So sieht es aus'])
     expect(page.text).toContain('Je Frist eine Nachricht, so früh wie unten eingestellt.')
     expect(toggle('Push aufs Handy und in den Browser')!.getAttribute('aria-checked')).toBe('true')
     expect(page.text).toContain('Auf 2 Geräten eingeschaltet. Tippen öffnet das Dokument.')
     expect(toggle('Mail an jule@example.com')!.getAttribute('aria-checked')).toBe('false')
     expect(page.text).toContain('Um 8 Uhr morgens in deiner Zeitzone (Europe/Berlin).')
-    const leads = [...page.box.querySelectorAll<HTMLSelectElement>('select')].map((s) => [s.getAttribute('aria-label'), s.value])
+    const leads = [...page.box.querySelectorAll<HTMLSelectElement>('[data-testid="account-reminders"] select')].map((s) => [s.getAttribute('aria-label'), s.value])
     expect(leads).toEqual([['Rechnung fällig, wie früh', '3'], ['Letzter Kündigungstag, wie früh', '14'], ['Garantie läuft ab, wie früh', '30']])
     expect(toggle('Mein Tresor')!.getAttribute('aria-checked')).toBe('true')
     expect(page.text).toContain('Auch die anderen mit Bearbeiten-Recht werden erinnert.')
@@ -113,30 +113,30 @@ describe('my account, reminders', () => {
 
   it('shows the documents that may go in the preview of the weekly overview, the number the server gives', async () => {
     answer({ may_go: 5 })
-    await page.show(<AccountPage />, '/konto?tab=erinnerungen')
+    await page.show(<SettingsRoutes />, '/konto?tab=erinnerungen')
     expect(page.text).toContain('Darf weg')
     expect(page.text).toContain('Bei 5 Dokumenten ist die Aufbewahrungszeit um.')
     page.close()
     answer({ may_go: 1 })
-    await page.show(<AccountPage />, '/konto?tab=erinnerungen')
+    await page.show(<SettingsRoutes />, '/konto?tab=erinnerungen')
     expect(page.text).toContain('Bei einem Dokument ist die Aufbewahrungszeit um.')
   })
 
   it('says in the preview what nexpaper put in the trash by itself in the last week', async () => {
-    await page.show(<AccountPage />, '/konto?tab=erinnerungen')
+    await page.show(<SettingsRoutes />, '/konto?tab=erinnerungen')
     expect(page.text).not.toContain('hat nexpaper in den Papierkorb gelegt')
     page.close()
     answer({ trashed: 3 })
-    await page.show(<AccountPage />, '/konto?tab=erinnerungen')
+    await page.show(<SettingsRoutes />, '/konto?tab=erinnerungen')
     expect(page.text).toContain('3 Dokumente hat nexpaper in den Papierkorb gelegt, ihre Aufbewahrungszeit war um. Dort lassen sie sich 30 Tage zurückholen.')
     page.close()
     answer({ trashed: 1 })
-    await page.show(<AccountPage />, '/konto?tab=erinnerungen')
+    await page.show(<SettingsRoutes />, '/konto?tab=erinnerungen')
     expect(page.text).toContain('Ein Dokument hat nexpaper in den Papierkorb gelegt')
   })
 
   it('sends only what changed, at once', async () => {
-    await page.show(<AccountPage />, '/konto?tab=erinnerungen')
+    await page.show(<SettingsRoutes />, '/konto?tab=erinnerungen')
     await page.click(toggle('Haushalt'))
     expect(server.called('PUT', '/api/v1/me/reminders')!.body).toEqual({ muted: [2] })
     const due = page.box.querySelector<HTMLSelectElement>('select[aria-label="Rechnung fällig, wie früh"]')!
@@ -152,7 +152,7 @@ describe('my account, reminders', () => {
 
   it('says why mail cannot go and offers no weekly overview then', async () => {
     answer({ mail_problem: 'no_server', mail_address: '' })
-    await page.show(<AccountPage />, '/konto?tab=erinnerungen')
+    await page.show(<SettingsRoutes />, '/konto?tab=erinnerungen')
     const mail = toggle('Mail')!
     expect(mail.disabled).toBe(true)
     expect(page.text).toContain('Der Betreiber hat keinen Mailserver eingerichtet, darum geht das nicht.')
@@ -164,7 +164,7 @@ describe('my account, reminders', () => {
 
   it('with the weekly overview alone shows where it goes and no single ways', async () => {
     answer({ rhythm: 'weekly' })
-    await page.show(<AccountPage />, '/konto?tab=erinnerungen')
+    await page.show(<SettingsRoutes />, '/konto?tab=erinnerungen')
     expect(page.text).toContain('Die Wochenübersicht geht per Mail an jule@example.com.')
     expect(page.text).toContain('Montags um 8 Uhr eine Mail mit allem, was in dieser Woche ansteht.')
     expect(toggle('Push aufs Handy und in den Browser')).toBeNull()
@@ -173,19 +173,19 @@ describe('my account, reminders', () => {
 
   it('warns when no single reminder can reach the person', async () => {
     answer({ push: false })
-    await page.show(<AccountPage />, '/konto?tab=erinnerungen')
+    await page.show(<SettingsRoutes />, '/konto?tab=erinnerungen')
     expect(page.text).toContain('So bekommst du keine einzelnen Erinnerungen. Die Seite Fristen zeigt trotzdem alles.')
   })
 
   it('sends a test message', async () => {
-    await page.show(<AccountPage />, '/konto?tab=erinnerungen')
+    await page.show(<SettingsRoutes />, '/konto?tab=erinnerungen')
     await page.click(page.button('Testnachricht schicken'))
     expect(server.changes()).toEqual(['POST /api/v1/me/reminders/test'])
   })
 
   it('shows a refused change with its reason and the choices as they stand', async () => {
     server.fails['PUT /api/v1/me/reminders'] = { status: 409, code: 'mail_unavailable' }
-    await page.show(<AccountPage />, '/konto?tab=erinnerungen')
+    await page.show(<SettingsRoutes />, '/konto?tab=erinnerungen')
     await page.click(toggle('Mail an jule@example.com'))
     expect(page.text).toContain('Erinnerungen per Mail brauchen einen Mailserver und eine bestätigte Adresse.')
     expect(toggle('Mail an jule@example.com')!.getAttribute('aria-checked')).toBe('false')
@@ -193,12 +193,12 @@ describe('my account, reminders', () => {
 
   it('comes in English too', async () => {
     await changeLanguage('en', false)
-    await page.show(<AccountPage />, '/konto?tab=erinnerungen')
+    await page.show(<SettingsRoutes />, '/konto?tab=erinnerungen')
     expect(cards()).toEqual(['Use deadlines', 'How you are reminded', 'How early', 'Which vaults', 'What it looks like'])
     expect(page.text).toContain('Cancel by Thu, Oct 22: Handyvertrag Telekom')
     page.close()
     answer({ may_go: 2 })
-    await page.show(<AccountPage />, '/konto?tab=erinnerungen')
+    await page.show(<SettingsRoutes />, '/konto?tab=erinnerungen')
     expect(page.text).toContain('The keeping time of 2 documents is over.')
   })
 })
@@ -208,7 +208,7 @@ describe('deadlines on or off for the person', () => {
 
   it('is on from the start, with a switch at the top that asks before it switches off', async () => {
     server.answers['PUT /api/v1/me/preferences'] = { ...me.profile, deadlines: false }
-    await page.show(<AccountPage />, '/konto?tab=erinnerungen')
+    await page.show(<SettingsRoutes />, '/konto?tab=erinnerungen')
     expect(toggle('Fristen verwenden')!.getAttribute('aria-checked')).toBe('true')
     expect(page.text).toContain('Gilt nur für dich. Die anderen im Haushalt behalten ihre Einstellungen.')
     await page.click(toggle('Fristen verwenden'))
@@ -232,7 +232,7 @@ describe('deadlines on or off for the person', () => {
   it('says that deadlines are off, with the way to switch them on again, and nothing else', async () => {
     auth.me = off
     server.answers['PUT /api/v1/me/preferences'] = { ...me.profile, deadlines: true }
-    await page.show(<AccountPage />, '/konto?tab=erinnerungen')
+    await page.show(<SettingsRoutes />, '/konto?tab=erinnerungen')
     expect(cards()).toEqual(['Fristen sind aus'])
     expect(page.text).toContain('Im Menü steht kein Punkt Fristen, du bekommst keine Erinnerungen und keine Wochenübersicht.')
     expect(page.text).toContain('Die Termine an den Dokumenten bleiben, und die anderen Personen sind nicht betroffen.')
@@ -247,7 +247,7 @@ describe('deadlines on or off for the person', () => {
 
   it('shows a refusal of the server and stays as it is', async () => {
     server.fails['PUT /api/v1/me/preferences'] = { status: 422, code: 'bad_preference' }
-    await page.show(<AccountPage />, '/konto?tab=erinnerungen')
+    await page.show(<SettingsRoutes />, '/konto?tab=erinnerungen')
     await page.click(toggle('Fristen verwenden'))
     await until(() => page.dialog)
     await page.inDialog('Ausschalten')
@@ -258,7 +258,7 @@ describe('deadlines on or off for the person', () => {
   it('reads the same in English', async () => {
     await changeLanguage('en', false)
     auth.me = off
-    await page.show(<AccountPage />, '/konto?tab=erinnerungen')
+    await page.show(<SettingsRoutes />, '/konto?tab=erinnerungen')
     expect(cards()).toEqual(['Deadlines are off'])
     expect(page.button('Switch deadlines on')).toBeTruthy()
     auth.me = me
@@ -272,6 +272,6 @@ describe('the deadlines page', () => {
     const rows = [...page.box.querySelectorAll('[data-testid="deadline"]')]
     expect(rows.map((row) => plain(row.textContent).includes('stumm'))).toEqual([true, false])
     const link = [...page.box.querySelectorAll('a')].find((a) => a.textContent === 'Mein Konto, Erinnerungen')!
-    expect(link.getAttribute('href')).toBe('/konto?tab=erinnerungen')
+    expect(link.getAttribute('href')).toBe('/settings/reminders')
   })
 })
