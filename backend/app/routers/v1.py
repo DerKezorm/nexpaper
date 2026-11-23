@@ -25,8 +25,9 @@ from .. import __version__
 from ..db import SessionLocal
 from ..deps import address_failed, address_guard, bearer_scheme, bearer_token
 from ..errors import error
-from ..services import apikeys, dashboard, devices, logs, settings_service
+from ..services import apikeys, dashboard, devices, logs
 from ..services.apikeys import Caller
+from .pages import document_pages
 
 logger = logging.getLogger("nexpaper.api")
 
@@ -121,11 +122,8 @@ def dashboard_card(request: Request, found: Reader) -> DashboardOut:
     if found.scope != "read":
         raise error("key_scope", "This key is not for this.", 403)
     with SessionLocal() as db:
-        base = settings_service.public_url(db) or str(request.base_url).rstrip("/")
+        page = document_pages(db, request)
         card = dashboard.numbers(db, found.account)
-
-    def page(document_id: int, status: str) -> str:
-        return f"{base}/dokument/{document_id}" if status == "filed" else f"{base}/eingang/{document_id}"
 
     return DashboardOut(
         version=__version__, inbox=card.inbox,

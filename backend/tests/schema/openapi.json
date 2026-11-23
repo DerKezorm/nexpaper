@@ -10648,6 +10648,10 @@
             "title": "Title",
             "type": "string"
           },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          },
           "vault_id": {
             "title": "Vault Id",
             "type": "integer"
@@ -10687,7 +10691,8 @@
           "renews_to",
           "missed",
           "done",
-          "snoozed_until"
+          "snoozed_until",
+          "url"
         ],
         "title": "DeadlineOut",
         "type": "object"
@@ -13245,7 +13250,7 @@
     },
     "/api/v1/deadlines": {
       "get": {
-        "description": "The deadlines of the documents the caller may change (`edit` or `manage` in the vault, or a share with `edit`),\nin the inbox or filed. A vault the caller does not reach answers like an empty one.",
+        "description": "The deadlines of the documents the caller may change (`edit` or `manage` in the vault, or a share with `edit`),\nin the inbox or filed. A vault the caller does not reach answers like an empty one. `url` is the page of the\ndocument: the public address when the operator set one, else the address this request came to.",
         "operationId": "listing_api_v1_deadlines_get",
         "parameters": [
           {

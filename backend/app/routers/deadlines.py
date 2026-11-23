@@ -9,15 +9,17 @@ may not see answers 404, one they may only read 403. The number beside "Fristen"
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from datetime import date as Date
 from typing import Literal
 
-from fastapi import APIRouter, Query, Response
+from fastapi import APIRouter, Query, Request, Response
 from pydantic import BaseModel, ConfigDict
 
 from ..deps import Account as Caller
 from ..deps import DbSession, Reader
 from ..services import deadlines, documents
+from .pages import document_pages
 from .schemas import DocumentOut, DoneOut, NoticeOut, document_out, person
 
 router = APIRouter(prefix="/api/v1", tags=["deadlines"])
@@ -57,6 +59,10 @@ class DeadlineOut(BaseModel):
     done: DoneOut | None
     #: The caller's own "later", while it lasts.
     snoozed_until: Date | None
+    #: The page of the document in the web app (as `GET /api/v1/dashboard` names it): the public address when the
+    #: operator set one, else the address this request came to; `/dokument/<id>` when filed, `/eingang/<id>` in the
+    #: inbox.
+    url: str
 
 
 class SectionOut(BaseModel):
@@ -81,7 +87,7 @@ class DeadlinesOut(BaseModel):
     shared: int
 
 
-def _out(d: deadlines.Deadline) -> DeadlineOut:
+def _out(d: deadlines.Deadline, page: Callable[[int, str], str]) -> DeadlineOut:
     row, document, worked = d.row, d.document, d.worked
     return DeadlineOut(
         document_id=document.id, title=document.title, status=document.status,  # type: ignore[arg-type]
@@ -93,17 +99,18 @@ def _out(d: deadlines.Deadline) -> DeadlineOut:
         done=DoneOut(at=row.done_at, by=person(d.done_by)) if row.done_at else None,
         snoozed_until=d.snoozed_until,
         note=(row.note or "") if row.kind == deadlines.FOLLOW_UP else None,
+        url=page(document.id, document.status),
     )
 
 
-def _section(section: deadlines.Section) -> SectionOut:
-    return SectionOut(total=section.total, items=[_out(d) for d in section.items])
+def _section(section: deadlines.Section, page: Callable[[int, str], str]) -> SectionOut:
+    return SectionOut(total=section.total, items=[_out(d, page) for d in section.items])
 
 
 @router.get("/deadlines", response_model=DeadlinesOut,
             summary="What is to be paid, cancelled or claimed: overdue, the next 14 days, later, done")
 def listing(
-    account: Reader, db: DbSession,
+    request: Request, account: Reader, db: DbSession,
     vault_id: int | None = Query(default=None, ge=1, le=2**31 - 1),
     shared: bool = Query(default=False, description="Only documents the caller reaches through a share alone"),
     what: Literal["pay", "cancel", "warranty", "follow_up"] | None = Query(
@@ -113,13 +120,16 @@ def listing(
     limit: int = Query(default=200, ge=1, le=500, description="At most this many in each section"),
 ) -> DeadlinesOut:
     """The deadlines of the documents the caller may change (`edit` or `manage` in the vault, or a share with `edit`),
-    in the inbox or filed. A vault the caller does not reach answers like an empty one."""
+    in the inbox or filed. A vault the caller does not reach answers like an empty one. `url` is the page of the
+    document: the public address when the operator set one, else the address this request came to."""
     today = deadlines.today_of(account)
     found = deadlines.listing(db, account.id, today, deadlines.Narrow(vault_id=vault_id, shared=shared, what=what),
                               with_done=done, limit=limit)
+    page = document_pages(db, request)
     return DeadlinesOut(
-        today=today, soon_days=deadlines.SOON_DAYS, overdue=_section(found.overdue), soon=_section(found.soon),
-        later=_section(found.later), done=_section(found.done) if found.done is not None else None,
+        today=today, soon_days=deadlines.SOON_DAYS, overdue=_section(found.overdue, page),
+        soon=_section(found.soon, page),
+        later=_section(found.later, page), done=_section(found.done, page) if found.done is not None else None,
         counts={str(v): n for v, n in found.counts.items()}, shared=found.shared,
     )
 
