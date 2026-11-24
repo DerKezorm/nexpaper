@@ -1,4 +1,18 @@
 {
+  "1.12.0": {
+    "lead": "nexpaper now speaks French too.",
+    "sections": [
+      {
+        "title": "Français",
+        "where": "Settings, Profile, Language",
+        "body": "French is built in now, next to German and English. It is in the language choice and follows a French browser by itself, and a server set up in French names its kinds in French. Thank you, 3dRikal, for the translation: your first contribution to an open project, and a very welcome one."
+      }
+    ],
+    "smallTitle": "Also",
+    "small": [
+      "What the server writes itself (mails, the readable copy of an e-invoice) comes in English for every language but German, no longer in German."
+    ]
+  },
   "1.11.0": {
     "lead": "nexpaper now looks and works like the other nex apps: the same sidebar, the same settings, the same buttons and fields.",
     "sections": [
