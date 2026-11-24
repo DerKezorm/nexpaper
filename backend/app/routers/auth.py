@@ -83,7 +83,7 @@ logger = logging.getLogger("nexpaper.auth")
 router = APIRouter(prefix="/api/v1", tags=["auth"])
 
 #: The languages inside the frontend; others come as files from the operator.
-SHIPPED = ("en", "de")
+SHIPPED = ("en", "de", "fr")
 #: Names a sign-in waiting for its second factor (``services/totp.py``), and nothing else.
 PENDING_COOKIE = "nexpaper_2fa" + get_settings().cookie_name_suffix()
 

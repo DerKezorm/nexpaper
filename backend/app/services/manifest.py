@@ -1,13 +1,14 @@
 """The manifest of the app on the home screen, in the language of the browser.
 
 A long press on the app's symbol (Android) shows its shortcuts, "Upload" and "Take a photo"; those names and the
-description come in the first language of the browser's ``Accept-Language`` that nexpaper has: the two it ships and
+description come in the first language of the browser's ``Accept-Language`` that nexpaper has: the three it ships and
 those the operator added (``services/locales.py``). Anything else gets English. The rest of the manifest is the file
 of the built interface, unchanged.
 
-The words for German and English are the ones under ``manifest`` in the interface's ``de.json`` and ``en.json`` (a test
-holds both the same). A language file of the operator may bring its own ``manifest`` texts, also for ``de`` and ``en``,
-as for every other text; what it leaves out comes from English (or from the shipped language it lays itself over).
+The words for German, English and French are the ones under ``manifest`` in the interface's ``de.json``, ``en.json`` and
+``fr.json`` (a test holds them the same). A language file of the operator may bring its own ``manifest`` texts, also for
+``de`` and ``en``, as for every other text; what it leaves out comes from English (or from the shipped language it lays
+itself over).
 """
 
 from __future__ import annotations
@@ -27,6 +28,9 @@ SHIPPED: dict[str, dict[str, str]] = {
            "upload": "Hochladen", "uploadShort": "Hochladen", "camera": "Fotografieren", "cameraShort": "Kamera"},
     "en": {"description": "A light paper filing cabinet for households and small firms.",
            "upload": "Upload", "uploadShort": "Upload", "camera": "Take a photo", "cameraShort": "Camera"},
+    "fr": {"description": "Un classeur de papiers léger pour les ménages et les petites entreprises.",
+           "upload": "Téléverser", "uploadShort": "Téléverser", "camera": "Prendre une photo",
+           "cameraShort": "Appareil photo"},
 }
 #: The shortcuts by their address: which words name them.
 SHORTCUTS = {"/schnell": ("upload", "uploadShort"), "/kamera": ("camera", "cameraShort")}

@@ -218,7 +218,9 @@ def _usable_kind(db: Session, kind_id: int | None, vault_id: int, *, bring_from:
 
 def _language(db: Session, document: Document) -> str:
     owner = db.get(Account, document.owner_id) if document.owner_id else None
-    return "en" if owner is not None and (owner.language or "").lower().startswith("en") else "de"
+    from .mail_text import german_or_english
+
+    return german_or_english(owner.language if owner is not None else "")
 
 
 def _default_vault(db: Session, document: Document) -> bool:

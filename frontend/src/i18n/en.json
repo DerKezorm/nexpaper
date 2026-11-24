@@ -578,7 +578,7 @@
     "deleteBackup": "Delete",
     "restarting": "nexpaper restarts with the backup. The page reloads in a moment.",
     "languages": "Languages",
-    "languagesHint": "German and English are built in. Add more as a JSON file; missing texts fall back to English.",
+    "languagesHint": "German, English and French are built in. Add more as a JSON file; missing texts fall back to English.",
     "builtIn": "built in",
     "texts_one": "one text",
     "texts_other": "{{count}} texts",

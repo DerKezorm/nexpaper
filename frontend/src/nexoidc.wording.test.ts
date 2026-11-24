@@ -1,5 +1,5 @@
 /**
- * Every text of the oidc module is in the app, in German and English, through the app's
+ * Every text of the oidc module is in the app, in German, English and French, through the app's
  * own i18n.
  *
  * The module's own tests already check the wording files word for word; this test checks that the
@@ -11,6 +11,8 @@ import { describe, expect, it } from 'vitest'
 import { oidcVariables, oidcWording, type OidcWording } from './vendor/nexoidc/oidc'
 import de from './vendor/nexoidc/oidc.de.json'
 import en from './vendor/nexoidc/oidc.en.json'
+// French is the app's own until the module brings it (see i18n/index.ts).
+import fr from './i18n/oidc.fr.json'
 // The app's i18n instance after its set-up (with the module's files merged into the resources).
 import i18n from './i18n'
 
@@ -39,7 +41,7 @@ function leaves(tree: Tree, prefix = ''): [string, string][] {
 const values = { name: 'N', count: 2, only: 1, status: 403, address: 'https://app.example.com' }
 
 describe('the oidc texts', () => {
-  for (const [language, tree] of [['de', de], ['en', en]] as const) {
+  for (const [language, tree] of [['de', de], ['en', en], ['fr', fr]] as const) {
     it(`are all in the app in ${language}, word for word, with the app's name`, async () => {
       await i18n.changeLanguage(language)
       for (const [key, text] of leaves(oidcWording(tree, WORDING))) {

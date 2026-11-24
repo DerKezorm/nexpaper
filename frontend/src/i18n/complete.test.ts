@@ -2,6 +2,9 @@
 
 import de from './de.json'
 import en from './en.json'
+import fr from './fr.json'
+import oidcFr from './oidc.fr.json'
+import oidcEn from '../vendor/nexoidc/oidc.en.json'
 import whatsNewDe from './whatsnew/de.json'
 import whatsNewEn from './whatsnew/en.json'
 
@@ -52,6 +55,40 @@ describe('shipped languages', () => {
     expect(about.filter(([, text]) => /Fassung/.test(text)).map(([key, text]) => `${key}: ${text}`)).toEqual([])
     expect(german.get('about.version')).toBe('Version')
     expect(german.get('about.updates.current')).toBe('Das ist die neueste Version.')
+  })
+})
+
+/**
+ * French ships too, translated by a person who speaks it. It holds every key of the English file, so nothing falls back to
+ * English unseen; the words of the sign-in module come in `oidc.fr.json` beside it, in the shape of the module's own files.
+ */
+describe('French', () => {
+  const french = flat(fr)
+  const holes = (text: string) => [...text.matchAll(/\{\{(\w+)\}\}/g)].map((m) => m[1]).sort()
+  const tags = (text: string) => [...text.matchAll(/<\/?(\w+)>/g)].map((m) => m[0]).sort()
+
+  it('has exactly the keys of English', () => {
+    expect([...english.keys()].filter((key) => !french.has(key))).toEqual([])
+    expect([...french.keys()].filter((key) => !english.has(key))).toEqual([])
+  })
+
+  it('uses the placeholders and the markup of English for each key', () => {
+    const differ = (pick: (text: string) => string[]) =>
+      [...french].filter(([key, text]) => JSON.stringify(pick(text)) !== JSON.stringify(pick(english.get(key) ?? ''))).map(([key]) => key)
+    expect(differ(holes)).toEqual([])
+    expect(differ(tags)).toEqual([])
+  })
+
+  it('never pauses with a dash', () => {
+    expect([...french].filter(([, text]) => /[–—]/.test(text)).map(([key]) => key)).toEqual([])
+  })
+
+  it('has every word of the sign-in module, with its placeholders', () => {
+    const module = flat(oidcEn)
+    const words = flat(oidcFr)
+    expect([...module.keys()].filter((key) => !words.has(key))).toEqual([])
+    expect([...words.keys()].filter((key) => !module.has(key))).toEqual([])
+    expect([...words].filter(([key, text]) => JSON.stringify(holes(text)) !== JSON.stringify(holes(module.get(key) ?? ''))).map(([key]) => key)).toEqual([])
   })
 })
 
