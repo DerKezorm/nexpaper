@@ -1,0 +1,132 @@
+{
+  "version": "1.12.0",
+  "test_key": "tests/conftest.py (NEXPAPER_SECRET_KEY)",
+  "provider": {
+    "slug": "sso",
+    "issuer": "https://sso.example.com",
+    "client_id": "nexpaper-bestand",
+    "client_pass": "bestand-client"
+  },
+  "settings": {
+    "two_factor_required": false,
+    "api_keys_allowed": true,
+    "password_login": true,
+    "mail": "none"
+  },
+  "accounts": [
+    {
+      "name": "betreiber",
+      "password": "Bestand-betreiber-2026",
+      "email": "betrieb@example.com",
+      "email_confirmed": true,
+      "operator": true,
+      "second_factor": "totp-betreiber",
+      "recovery_codes": [
+        "hry7e-nv4bj",
+        "sz8fp-w5ckt",
+        "29gqx-6dmu3",
+        "ahry7-env4b",
+        "jsz8f-pw5ck",
+        "t29gq-x6dmu",
+        "3ahry-7env4",
+        "bjsz8-fpw5c"
+      ],
+      "case": "operator, password, own confirmed address, second factor with recovery codes"
+    },
+    {
+      "name": "anna",
+      "password": "Bestand-anna-2026",
+      "email": "anna@example.com",
+      "email_confirmed": true,
+      "api_key": "npk_bestand-api-anna-8",
+      "device": "npd_bestand-device-anna-9",
+      "reset_link": "bestand-reset-self-anna-10",
+      "case": "password, own confirmed address, API key, paired iPhone, open link asked for herself"
+    },
+    {
+      "name": "ben",
+      "password": "Bestand-ben-2026x",
+      "email": "ben@example.net",
+      "email_confirmed": false,
+      "reset_link": "bestand-reset-operator-ben-14",
+      "case": "password, the invitation's address (not confirmed), open link the operator made"
+    },
+    {
+      "name": "carla",
+      "password": "Bestand-carla-2026",
+      "email": "familie@example.org",
+      "email_confirmed": false,
+      "shared_email": true,
+      "case": "address shared with dora, from the invitation (not confirmed)"
+    },
+    {
+      "name": "dora",
+      "password": "Bestand-dora-2026x",
+      "email": "Familie@Example.org",
+      "email_confirmed": true,
+      "shared_email": true,
+      "case": "address shared with carla in other case, confirmed by its link"
+    },
+    {
+      "name": "emil",
+      "password": "Bestand-emil-2026x",
+      "email": "",
+      "email_confirmed": false,
+      "pending_email": "emil@example.com",
+      "pending_link": "bestand-email-emil-25",
+      "session": "bestand-session-emil-24",
+      "case": "password, no address, a new address waiting for its link, open browser session"
+    },
+    {
+      "name": "fritz",
+      "password": "",
+      "email": "fritz@example.com",
+      "email_confirmed": false,
+      "provider": {
+        "sub": "bestand-fritz",
+        "preferred_username": "fritz",
+        "name": "Fritz Faber",
+        "email": "fritz@example.com",
+        "email_verified": true
+      },
+      "case": "provider only, made by it, its address (from the provider, not confirmed)"
+    },
+    {
+      "name": "greta",
+      "password": "Bestand-greta-2026",
+      "email": "greta@example.com",
+      "email_confirmed": false,
+      "provider": {
+        "sub": "bestand-greta",
+        "preferred_username": "greta.g",
+        "name": "Greta",
+        "email": "greta@example.com"
+      },
+      "case": "password and provider, the invitation's address"
+    },
+    {
+      "name": "hans",
+      "password": "Bestand-hans-2026x",
+      "email": "hans@example.com",
+      "email_confirmed": false,
+      "blocked": true,
+      "case": "blocked by the operator"
+    }
+  ],
+  "deleted": {
+    "name": "ida",
+    "password": "Bestand-ida-2026xx",
+    "case": "deleted by the operator: no row is left"
+  },
+  "open_invites": [
+    {
+      "token": "bestand-invite-open-with-37",
+      "email": "neu@example.com"
+    },
+    {
+      "token": "bestand-invite-open-without-38",
+      "email": ""
+    }
+  ],
+  "not_covered": "passkeys (need an authenticator; they hang on the account id like the second factor)"
+}
