@@ -343,12 +343,13 @@ def recognize_text(db: Session, document: Document, version: Version, run: Run) 
 
 
 def _language_of(db: Session, document: Document) -> str:
-    """The language the readable copy of an e-invoice is set in: the owner's, German or English (German first)."""
+    """The language the readable copy of an e-invoice is set in: German for a German owner (and one who left it to the
+    browser), English for every other language."""
     from ..models import Account
+    from .mail_text import german_or_english
 
     owner = db.get(Account, document.owner_id) if document.owner_id else None
-    language = (owner.language if owner is not None else "") or ""
-    return "en" if language.lower().startswith("en") else "de"
+    return german_or_english(owner.language if owner is not None else "")
 
 
 def _read_texts(path: Path) -> list[str]:

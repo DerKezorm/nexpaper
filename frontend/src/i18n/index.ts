@@ -1,6 +1,6 @@
 /**
- * Languages, as in nexlore. English and German ship with the app; the operator can add more as JSON files, which the
- * server offers under `/api/v1/locales`.
+ * Languages, as in nexlore. English, German and French ship with the app; the operator can add more as JSON files,
+ * which the server offers under `/api/v1/locales`.
  *
  * English is always loaded and is the fallback: an added language may be incomplete, and whatever it leaves out
  * appears in English instead of as a raw key. An added file for `en` or `de` is laid over the shipped texts, so a
@@ -18,6 +18,8 @@ import oidcEn from '../vendor/nexoidc/oidc.en.json'
 import { oidcVariables, oidcWording } from '../vendor/nexoidc/oidc'
 import ownDe from './de.json'
 import ownEn from './en.json'
+import ownFr from './fr.json'
+import oidcFr from './oidc.fr.json'
 
 type Texts = Record<string, unknown>
 
@@ -30,10 +32,16 @@ export const APP_NAME = 'nexpaper'
  */
 const en: Texts = { ...ownEn, ...oidcWording(oidcEn, { singleAccount: false, invitations: true }) }
 const de: Texts = { ...ownDe, ...oidcWording(oidcDe, { singleAccount: false, invitations: true }) }
+/**
+ * The shared module has no French yet, so nexpaper keeps the French words of the module next to its own, in the same
+ * shape as `oidc.en.json`. When the module brings `oidc.fr.json` itself, this file goes to the module.
+ */
+const fr: Texts = { ...ownFr, ...oidcWording(oidcFr, { singleAccount: false, invitations: true }) }
 
 export const SHIPPED: Record<string, { name: string; texts: Texts }> = {
   en: { name: 'English', texts: en },
   de: { name: 'Deutsch', texts: de },
+  fr: { name: 'Français', texts: fr },
 }
 
 export type LanguageOption = { code: string; name: string; added: boolean }
@@ -125,7 +133,7 @@ function browserLanguage(): string {
 // The shipped languages at once, so the first picture is never raw keys; an added one follows from the server.
 const first = storedLanguage() ?? browserLanguage()
 i18n.use(initReactI18next).init({
-  resources: { en: { translation: en }, de: { translation: de } },
+  resources: { en: { translation: en }, de: { translation: de }, fr: { translation: fr } },
   lng: first in SHIPPED ? first : FALLBACK,
   fallbackLng: FALLBACK,
   interpolation: { escapeValue: false, defaultVariables: oidcVariables(APP_NAME) },

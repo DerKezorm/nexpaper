@@ -1,0 +1,141 @@
+{
+  "oidc": {
+    "login": {
+      "button": "Se connecter avec {{name}}",
+      "or": "ou",
+      "operator": "Se connecter en tant qu'administrateur avec un mot de passe"
+    },
+    "invite": {
+      "button": "Continuer avec {{name}}"
+    },
+    "admin": {
+      "signInTitle": "Connexion",
+      "password": "Connexion par mot de passe",
+      "passwordHint": "Désactivé : seuls les fournisseurs laissent entrer. Vous, en tant qu'administrateur, pouvez toujours utiliser votre mot de passe.",
+      "address": "Adresse publique",
+      "addressHint": "L'adresse que les gens utilisent pour joindre {{app}}. Les invitations, les fournisseurs et les liens dans les courriels l'utilisent.",
+      "addressChangeConfirm": "authentik connaît encore l'adresse de redirection {{address}}. Après l'enregistrement, la connexion par authentik ne fonctionnera de nouveau qu'une fois que vous aurez relancé le bouton sous « authentik en une étape ».",
+      "addressChangeHand_one": "Pour {{count}} fournisseur saisi à la main, modifiez-y vous-même l'adresse de redirection.",
+      "addressChangeHand_other": "Pour {{count}} fournisseurs saisis à la main, modifiez-y vous-même l'adresse de redirection.",
+      "providersTitle": "Fournisseurs de connexion",
+      "providersText": "Tout fournisseur qui parle OpenID Connect : authentik, Microsoft Entra ID, Keycloak, Authelia, Pocket ID. Chacun reçoit un bouton sur la page de connexion.",
+      "empty": "Aucun fournisseur pour l'instant. Configurez authentik ci-dessous en une étape ou ajoutez un fournisseur à la main.",
+      "add": "Ajouter un fournisseur",
+      "edit": "Modifier",
+      "remove": "Retirer",
+      "removeConfirm_one": "Retirer « {{name}} » ? {{count}} compte perd le lien ; pour {{only}} d'entre eux, c'est le seul moyen d'entrer.",
+      "removeConfirm_other": "Retirer « {{name}} » ? {{count}} comptes perdent le lien ; pour {{only}} d'entre eux, c'est le seul moyen d'entrer.",
+      "active": "activé",
+      "inactive": "désactivé",
+      "managed": "configuré via authentik",
+      "label": "Nom sur le bouton",
+      "slug": "Nom court",
+      "slugHint": "Fait partie de l'adresse de redirection ; il ne peut pas être modifié plus tard.",
+      "issuer": "Émetteur",
+      "issuerHint": "authentik : https://auth.example.com/application/o/{{slug}}/. Microsoft Entra ID : https://login.microsoftonline.com/TENANT-ID/v2.0, ou common ou organizations pour plusieurs locataires. Entra n'accepte que des adresses de redirection en https (localhost excepté) et n'envoie l'adresse courriel que comme revendication facultative email.",
+      "clientId": "ID client",
+      "secret": "Secret client",
+      "secretKept": "enregistré, laisser vide pour le conserver",
+      "redirect": "Adresse de redirection pour le fournisseur",
+      "enabled": "Activé",
+      "autoCreate": "Les nouvelles personnes reçoivent un compte",
+      "autoCreateHint": "Désactivé : seules les personnes invitées et les comptes liés entrent par ce fournisseur. Activé : quiconque a un compte là-bas en reçoit un ici en tant que membre.",
+      "trustsSecondFactor": "Le fournisseur vérifie lui-même le second facteur",
+      "trustsSecondFactorHint": "Désactivé : qui a un second facteur ici se voit demander le code après s'être connecté par le fournisseur.",
+      "scopes": "Portées (scopes)",
+      "issuerChangeConfirm_one": "Un autre émetteur est un autre fournisseur. {{count}} compte devra se lier de nouveau ensuite.",
+      "issuerChangeConfirm_other": "Un autre émetteur est un autre fournisseur. {{count}} comptes devront se lier de nouveau ensuite."
+    },
+    "authentik": {
+      "title": "authentik en une étape",
+      "text": "Avec un jeton API autorisé à créer des applications, {{app}} configure lui-même le fournisseur et l'application dans authentik. Le jeton ne sert qu'à cela et n'est jamais stocké.",
+      "url": "Adresse d'authentik",
+      "token": "Jeton API",
+      "run": "Configurer",
+      "blueprint": "Télécharger plutôt le blueprint",
+      "asking": "Un instant, authentik est interrogé. Cela peut prendre jusqu'à 20 secondes.",
+      "noAddress": "Pas encore d'adresse publique. Vous joignez {{app}} à cette adresse en ce moment, et authentik y ramène après la connexion :",
+      "adopt": "L'utiliser et configurer",
+      "adoptOnly": "L'utiliser seulement",
+      "proxyWarning": "Le serveur reçoit cette requête comme {{address}}. Si {{app}} fonctionne derrière un proxy, celui-ci doit transmettre le schéma (X-Forwarded-Proto) et {{app}} doit lui faire confiance (le paramètre des proxys de confiance, voir la documentation).",
+      "stale": "authentik connaît encore l'ancienne adresse de redirection {{address}}. La connexion par authentik ne fonctionne pas tant que vous n'avez pas relancé le bouton avec un jeton.",
+      "step": {
+        "reached": "Connexion à authentik",
+        "signingKey": "Clé de signature",
+        "mapping": "Correspondances pour le nom et l'adresse",
+        "provider": "Fournisseur",
+        "application": "Application",
+        "filled": "Paramètres ici",
+        "binding": "Seulement votre compte"
+      },
+      "why": {
+        "unreachable": "authentik est injoignable à cette adresse. Vérifiez l'adresse et que {{app}} peut joindre ce réseau.",
+        "unusable": "Cette adresse ne peut pas être utilisée. Vérifiez son orthographe.",
+        "token": "authentik n'a pas accepté le jeton (réponse {{status}}). Vérifiez qu'il est valide et dispose des droits nécessaires.",
+        "malformed": "Le jeton contient des caractères qu'aucun jeton ne contient. Copiez-le de nouveau depuis authentik.",
+        "answered": "Quelque chose répond à cette adresse, mais pas authentik comme prévu (réponse {{status}}). Vérifiez l'adresse ; la réponse complète figure dans le journal.",
+        "slug": "Chaque slug que {{app}} donnerait à son application appartient déjà à une autre application dans authentik. Renommez-y le fournisseur {{app}} et réessayez.",
+        "coupled": "Tant que {{app}} est couplé, la connexion passe par le couplage. Découplez d'abord, puis configurez authentik ici.",
+        "issuer_change_one": "C'est un autre authentik qu'avant, donc un autre émetteur. {{count}} compte devra se lier de nouveau ensuite.",
+        "issuer_change_other": "C'est un autre authentik qu'avant, donc un autre émetteur. {{count}} comptes devront se lier de nouveau ensuite.",
+        "public_url_needed": "{{app}} n'a pas encore d'adresse publique. Utilisez celle proposée, et {{app}} configure authentik avec."
+      }
+    },
+    "account": {
+      "title": "Fournisseurs de connexion",
+      "text": "Liez votre compte à un fournisseur, vous pourrez alors aussi vous connecter par celui-ci. Votre mot de passe confirme que c'est bien vous.",
+      "linked": "Lié",
+      "notLinked": "Non lié",
+      "link": "Lier",
+      "unlink": "Délier",
+      "only": "Ce compte se connecte uniquement par {{name}}."
+    },
+    "error": {
+      "oidc_not_configured": "Ce fournisseur n'est pas configuré.",
+      "oidc_provider_unreachable": "Le fournisseur est injoignable pour l'instant.",
+      "oidc_provider_invalid": "La réponse du fournisseur est incompréhensible.",
+      "oidc_issuer_mismatch": "Le fournisseur se présente sous un autre nom que celui saisi.",
+      "oidc_state_mismatch": "La connexion a expiré ou venait d'ailleurs. Réessayez.",
+      "oidc_provider_error": "Le fournisseur a interrompu la connexion.",
+      "oidc_token_refused": "Le fournisseur n'a pas validé le code.",
+      "oidc_token_invalid": "La réponse du fournisseur n'était pas valide.",
+      "oidc_no_signing_key": "Le fournisseur signe sans clé. Choisissez-y une clé de signature pour le fournisseur.",
+      "oidc_no_account": "Il n'y a pas de compte pour vous ici. Demandez une invitation, ou connectez-vous avec votre mot de passe et liez votre compte dans les paramètres de votre compte.",
+      "oidc_subject_taken": "Cette identité est déjà liée à un autre compte.",
+      "oidc_only_account": "Ce compte se connecte uniquement par ce fournisseur. Le dernier lien reste.",
+      "oidc_link_mismatch": "Ce lien appartient à un autre compte.",
+      "invite_invalid": "L'invitation a expiré ou a été utilisée.",
+      "account_blocked": "Ce compte est bloqué. Adressez-vous à l'administrateur.",
+      "too_many_attempts": "Trop de tentatives. Attendez un instant, puis réessayez."
+    },
+    "formError": {
+      "slug_invalid": "Le nom court accepte a à z, les chiffres et les tirets, jusqu'à 40 caractères.",
+      "slug_taken": "Une autre entrée a déjà ce nom court.",
+      "label_required": "Saisissez un nom pour le bouton.",
+      "issuer_invalid": "L'émetteur doit commencer par http:// ou https://.",
+      "client_id_required": "Saisissez l'ID client.",
+      "client_secret_invalid": "Le secret client est trop long.",
+      "scopes_invalid": "Les portées doivent contenir openid.",
+      "provider_managed": "Ce fournisseur vient d'un couplage et ne se modifie que là.",
+      "provider_unknown": "Ce fournisseur n'existe plus."
+    },
+    "noInvitations": {
+      "admin": {
+        "addressHint": "L'adresse que les gens utilisent pour joindre {{app}}. Les fournisseurs y ramènent les gens après la connexion.",
+        "autoCreateHint": "Désactivé : seuls les comptes liés entrent par ce fournisseur. Activé : quiconque a un compte là-bas en reçoit un ici en tant que membre."
+      },
+      "error": {
+        "oidc_no_account": "Il n'y a pas de compte pour vous ici. Demandez-en un à l'administrateur, ou connectez-vous avec votre mot de passe et liez votre compte dans les paramètres de votre compte."
+      }
+    },
+    "single": {
+      "admin": {
+        "passwordHint": "Désactivé : vous aussi ne vous connectez plus que par un fournisseur. Pour revenir en arrière, utilisez cet interrupteur, ou une commande sur le serveur si plus aucun fournisseur ne vous laisse entrer.",
+        "addressHint": "L'adresse à laquelle vous joignez {{app}}. Les fournisseurs vous y ramènent après la connexion."
+      },
+      "error": {
+        "oidc_no_account": "Cette identité n'est pas liée ici. Seule l'identité liée au compte de {{app}} peut entrer."
+      }
+    }
+  }
+}

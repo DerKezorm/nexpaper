@@ -51,6 +51,26 @@ def test_a_server_set_up_in_german_keeps_the_german_kinds(client: TestClient) ->
     assert "Rechnung" in names and "Invoice" not in names
 
 
+def test_a_server_set_up_in_french_has_its_kinds_in_french(client: TestClient) -> None:
+    """French ships with the interface: it is a language of its own at the setup, no file of the operator needed."""
+    made = client.post("/api/v1/setup", json={"code": SETUP_CODE, "name": "boss", "password": GOOD, "language": "fr"})
+    assert made.status_code == 200
+    names = kinds_of(client)
+    assert "Facture" in names and "Contrat" in names and "Rechnung" not in names and "Invoice" not in names
+    assert client.get("/api/v1/auth/me").json()["language"] == "fr"
+
+
+def test_the_words_the_server_writes_itself_are_german_only_for_german() -> None:
+    """Mails, the readable copy of an e-invoice and the sorting words exist in German and English. French and every
+    other language read English, as the interface falls back; an account that left it to the browser keeps German."""
+    from app.services.mail_text import german_or_english
+
+    for language in ("", "de", "DE-at"):
+        assert german_or_english(language) == "de", language
+    for language in ("en", "en-GB", "fr", "fr-CA", "es", "deu"):
+        assert german_or_english(language) == "en", language
+
+
 def test_setup_refuses_a_language_nexpaper_does_not_have(client: TestClient) -> None:
     refused = client.post("/api/v1/setup", json={"code": SETUP_CODE, "name": "boss", "password": GOOD, "language": "xx"})
     assert refused.status_code == 422 and refused.json()["detail"]["code"] == "unknown_language"

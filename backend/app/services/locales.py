@@ -1,6 +1,6 @@
 """The operator's own languages: JSON files in ``<data_dir>/locales``.
 
-English and German ship inside the frontend. Every further language is one file named after its code
+English, German and French ship inside the frontend. Every further language is one file named after its code
 (``es.json``, ``pt-BR.json``) that holds the same keys as the frontend's ``en.json``; what it leaves out falls
 back to English in the browser. A file for ``en`` or ``de`` is laid over the shipped texts, so a wording can be
 changed without a new release.

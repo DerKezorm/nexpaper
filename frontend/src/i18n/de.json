@@ -578,7 +578,7 @@
     "deleteBackup": "Löschen",
     "restarting": "nexpaper startet mit der Sicherung neu. Die Seite lädt gleich neu.",
     "languages": "Sprachen",
-    "languagesHint": "Deutsch und Englisch sind eingebaut. Weitere als JSON-Datei hinzufügen, fehlende Texte fallen auf Englisch zurück.",
+    "languagesHint": "Deutsch, Englisch und Französisch sind eingebaut. Weitere als JSON-Datei hinzufügen, fehlende Texte fallen auf Englisch zurück.",
     "builtIn": "eingebaut",
     "texts_one": "ein Text",
     "texts_other": "{{count}} Texte",

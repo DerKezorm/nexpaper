@@ -144,8 +144,8 @@ def test_the_manifest_names_the_shortcuts_in_the_language_of_the_browser(home_sc
         ("de", german),
         ("en-US,en;q=0.9,de;q=0.8", english),
         # The weight counts, not only the order; a language nexpaper does not have is passed over.
-        ("en;q=0.2, fr;q=1, de;q=0.7", german),
-        ("fr-FR, fr;q=0.9", english),
+        ("en;q=0.2, it;q=1, de;q=0.7", german),
+        ("it-IT, it;q=0.9", english),
         ("", english),
         (None, english),
         ("*", english),
@@ -227,9 +227,10 @@ def test_the_language_of_a_new_account_follows_the_weight_too() -> None:
         return interface_language(Request({"type": "http", "headers": [(b"accept-language", accept.encode())]}))
 
     assert ask("en;q=0.2, de;q=0.9") == "de"
-    assert ask("fr, de;level=1;Q=0.5") == "de"
+    assert ask("it, de;level=1;Q=0.5") == "de"
     assert ask("DE-at") == "de"
-    assert ask("fr") == ""
+    assert ask("it") == ""
+    assert ask("fr-FR, de;q=0.5") == "fr"
 
 
 def test_the_words_of_the_server_are_those_of_the_interface() -> None:

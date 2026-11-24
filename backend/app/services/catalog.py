@@ -56,18 +56,26 @@ KIND_NAMES_EN: dict[str, str] = {
     "invoice": "Invoice", "contract": "Contract", "insurance": "Insurance", "tax": "Tax", "health": "Health",
     "bank": "Bank", "authority": "Authorities", "receipt": "Receipt", "school": "School", "other": "Other",
 }
+#: And in French, for a server set up in French.
+KIND_NAMES_FR: dict[str, str] = {
+    "invoice": "Facture", "contract": "Contrat", "insurance": "Assurance", "tax": "Impôts", "health": "Santé",
+    "bank": "Banque", "authority": "Administration", "receipt": "Ticket de caisse", "school": "École", "other": "Autre",
+}
+#: The names by the language part of the operator's language; every other language keeps the German ones.
+KIND_NAMES: dict[str, dict[str, str]] = {"en": KIND_NAMES_EN, "fr": KIND_NAMES_FR}
 
 
 def name_kinds_for(db: Session, language: str) -> None:
-    """At the setup of a server: the kinds that come with nexpaper in the operator's language (German or English), as
-    long as each still has the name it came with. A kind somebody renamed keeps that name."""
-    if not language.lower().startswith("en"):
+    """At the setup of a server: the kinds that come with nexpaper in the operator's language (German, English or
+    French), as long as each still has the name it came with. A kind somebody renamed keeps that name."""
+    names = KIND_NAMES.get(language.lower().split("-")[0])
+    if names is None:
         return
     ensure_kinds(db)
     german = {key: name for key, name, _hue in DEFAULT_KINDS}
-    for kind in db.scalars(select(Kind).where(Kind.vault_id.is_(None), Kind.key.in_(list(KIND_NAMES_EN)))):
+    for kind in db.scalars(select(Kind).where(Kind.vault_id.is_(None), Kind.key.in_(list(names)))):
         if kind.key and kind.name == german.get(kind.key):
-            kind.name = KIND_NAMES_EN[kind.key]
+            kind.name = names[kind.key]
             kind.name_key = name_key(kind.name)
 
 

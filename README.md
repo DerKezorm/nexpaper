@@ -32,7 +32,9 @@ over what you already have in Paperless-ngx.
   comes with a second factor from the start, passkeys, sign-in through your own provider and a checklist in the
   settings. Everything the web app does goes through an open API (`/api/v1`) for your own tools.
 
-nexpaper is one of the nex apps and looks like them: light paper and kraft by day, a dark desk by night.
+nexpaper is one of the nex apps and looks like them: light paper and kraft by day, a dark desk by night. It speaks
+German, English and French; the operator adds more languages as JSON files, and whatever a file leaves out appears in
+English.
 
 **1.0.0.** Back up `/data` like any other data of yours (the documents are plain files in `/data/dokumente`) and read
 what a backup holds and what it does not (below). nexpaper is an independent project and not affiliated with

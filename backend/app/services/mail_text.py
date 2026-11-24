@@ -100,7 +100,14 @@ _HIDDEN = dict.fromkeys(map(ord, "\u200b\u200c\u200d\u2060\ufeff\u00ad"), None)
 
 def language_of(db: Session, uid: int) -> str:
     owner = db.get(Account, uid)
-    return "en" if owner is not None and (owner.language or "").lower().startswith("en") else "de"
+    return german_or_english(owner.language if owner is not None else "")
+
+
+def german_or_english(language: str) -> str:
+    """The server's own words exist in German and English: German for German and for an account that left the language
+    to its browser (as before), English for every other language, French included, as the interface falls back."""
+    code = (language or "").lower()
+    return "de" if not code or code.split("-")[0] == "de" else "en"
 
 
 @dataclass

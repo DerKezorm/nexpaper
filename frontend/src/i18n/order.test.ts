@@ -1,5 +1,5 @@
 /**
- * Every language choice of the family lists the languages by their names: Deutsch, English, and
+ * Every language choice of the family lists the languages by their names: Deutsch, English, Français, and
  * a language the operator added in its place among them, not simply at the end.
  */
 
@@ -21,17 +21,17 @@ afterEach(() => {
 describe('the language choice', () => {
   it('lists the shipped languages by name', async () => {
     serve([])
-    expect((await languageOptions()).map((option) => option.name)).toEqual(['Deutsch', 'English'])
+    expect((await languageOptions()).map((option) => option.name)).toEqual(['Deutsch', 'English', 'Français'])
   })
 
   it('puts an added language in its place, not at the end', async () => {
     serve([
-      { code: 'fr', name: 'Français', keys: 1 },
+      { code: 'it', name: 'Italiano', keys: 1 },
       { code: 'af', name: 'Afrikaans', keys: 1 },
       { code: 'es', name: 'Español', keys: 1 },
     ])
     const options = await languageOptions()
-    expect(options.map((option) => option.name)).toEqual(['Afrikaans', 'Deutsch', 'English', 'Español', 'Français'])
-    expect(options.filter((option) => option.added).map((option) => option.code)).toEqual(['af', 'es', 'fr'])
+    expect(options.map((option) => option.name)).toEqual(['Afrikaans', 'Deutsch', 'English', 'Español', 'Français', 'Italiano'])
+    expect(options.filter((option) => option.added).map((option) => option.code)).toEqual(['af', 'es', 'it'])
   })
 })
