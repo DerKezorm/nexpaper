@@ -48,7 +48,7 @@ MONTHS = {
 TEXTS = {
     "de": {
         "title": "Neue Anmeldung bei nexpaper",
-        "body": "{device}, {when}, {where}. Warst du das nicht? Tippe hier.",
+        "body": "{device}, {when}. Warst du das nicht? Tippe hier.",
         "on": "{browser} unter {system}",
         "network": "Netz {network}",
         "own": "eigenes Netz {network}",
@@ -58,7 +58,7 @@ TEXTS = {
     },
     "en": {
         "title": "New sign-in to nexpaper",
-        "body": "{device}, {when}, {where}. Not you? Tap here.",
+        "body": "{device}, {when}. Not you? Tap here.",
         "on": "{browser} on {system}",
         "network": "network {network}",
         "own": "own network {network}",
@@ -150,7 +150,7 @@ def _room(account_id: int) -> bool:
         return True
 
 
-def new_sign_in(account: Account, address: str, agent: str, *, first: bool, known: bool) -> bool:
+def new_sign_in(account: Account, agent: str, *, first: bool, known: bool) -> bool:
     """Called at every sign-in, before the session is made. Sends the notice in the background when it is due;
     gives whether it is."""
     profile = account.profile if isinstance(account.profile, dict) else {}
@@ -159,7 +159,7 @@ def new_sign_in(account: Account, address: str, agent: str, *, first: bool, know
     if not _room(account.id):
         logger.warning("Sign-in notice left out, too many this hour name=%s", account.name)
         return False
-    future = _pool.submit(_send, account.id, address[:64], agent[:500], clock.now())
+    future = _pool.submit(_send, account.id, agent[:500], clock.now())
     with _lock:
         _pending.add(future)
     future.add_done_callback(_done)
@@ -194,7 +194,7 @@ def settle(seconds: float = 30) -> None:
     wait(pending, timeout=seconds)
 
 
-def _send(account_id: int, address: str, agent: str, moment: datetime) -> None:
+def _send(account_id: int, agent: str, moment: datetime) -> None:
     from ..db import SessionLocal
 
     try:
@@ -210,15 +210,15 @@ def _send(account_id: int, address: str, agent: str, moment: datetime) -> None:
         def for_lang(lang: str) -> push.Message:
             chosen = language_of(lang or account.language)
             words = TEXTS[chosen]
-            body = words["body"].format(device=device_name(agent, chosen), when=when_of(moment, account, chosen),
-                                        where=network_of(address, chosen))
+            # Browser on its system and the moment, never a network (decided 25.11.2026, as the mail).
+            body = words["body"].format(device=device_name(agent, chosen), when=when_of(moment, account, chosen))
             return push.Message(title=words["title"], body=body, url=SECURITY_PATH, desk=SECURITY_PATH, tag=TAG,
                                 urgency="high")
 
         result = push.send_to_person(account_id, for_lang)
         logger.info("Sign-in notice pushed name=%s devices=%s", account.name, result.sent)
         if mail_to:
-            _mail(account, mail_to, base, agent, address, moment)
+            _mail(account, mail_to, base, agent, moment)
     except Exception:
         # A notice that fails never touches the sign-in.
         logger.exception("A sign-in notice failed")
@@ -238,10 +238,9 @@ def sign_in_letter(db: Any, account: Account, to: str, agent: str, moment: datet
                                 time_zone=timezones.zone_of(account))
 
 
-def _mail(account: Account, to: str, base: str, agent: str, address: str, moment: datetime) -> None:
+def _mail(account: Account, to: str, base: str, agent: str, moment: datetime) -> None:
     """The mail "New sign-in" (``sign_in_letter``), at once as in 1.12.0 (this runs in the background already; a
     server that does not take it leaves it in the outbox for another try)."""
-    del address
     from ..db import SessionLocal
 
     with SessionLocal() as db:

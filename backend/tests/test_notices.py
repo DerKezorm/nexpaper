@@ -1,6 +1,7 @@
 """A notice when an account signs in from a new device: a push to its devices and a mail. Not from a browser that
 signed in as it before, not for the very first sign-in of an account, not when the person switched it off. It names
-device, browser, the network (never the whole address) and the time, and leads to the own account, Security."""
+device, browser and the time, never an address or a network (decided 25.11.2026, push and mail alike), and leads to
+the own account, Security."""
 
 from __future__ import annotations
 
@@ -83,8 +84,7 @@ def test_a_new_device_is_told_to_the_others_and_by_mail(anna: Account, push_serv
     notices.settle()
     [came] = push_service.received
     assert came.message["title"] == "Neue Anmeldung bei nexpaper"
-    assert came.message["body"] == ("Safari unter iPhone, 7. Oktober, 21:14, Netz 203.0.113.0/24. "
-                                    "Warst du das nicht? Tippe hier.")
+    assert came.message["body"] == "Safari unter iPhone, 7. Oktober, 21:14. Warst du das nicht? Tippe hier."
     assert came.message["url"] == came.message["desk"] == "/konto?tab=security"
     [mail] = mails
     # The shared post module's mail: the browser and its system, nothing more (no address, no network).
@@ -202,7 +202,25 @@ def test_a_flood_of_sign_ins_is_no_flood_of_notices(anna: Account, push_service:
     assert len(mails) == notices.PER_HOUR
 
 
+def test_the_push_names_no_network_and_no_address(anna: Account, push_service: FakePushService) -> None:
+    """Push like mail: browser on its system and the moment, nothing of where the sign-in came from, in either
+    language (decided 25.11.2026)."""
+    for address, language in (("203.0.113.57", "de"), ("2001:db8:aa:bb::1", "en"), ("192.168.1.30", "de")):
+        with SessionLocal() as db:
+            found = db.get(Account, anna.id)
+            assert found is not None
+            found.language = language
+            db.commit()
+        with browser(address, SAFARI) as phone:
+            log_in(phone)
+        notices.settle()
+        text = str(push_service.received[-1].message)
+        for said in (address, "203.0.113", "2001:db8", "192.168.1", "Netz", "network"):
+            assert said not in text, (said, text)
+
+
 def test_the_network_never_the_address(anna: Account) -> None:
+    """The list of signed-in devices still names the network of a session (never the whole address)."""
     assert notices.network_of("203.0.113.57", "de") == "Netz 203.0.113.0/24"
     assert notices.network_of("2001:db8:aa:bb::1", "en") == "network 2001:db8:aa::/48"
     assert notices.network_of("::ffff:192.168.1.20", "de") == "eigenes Netz 192.168.1.0/24"

@@ -61,7 +61,8 @@ Die Abschnitte ab 1 sind die Bestandsaufnahme und der Plan von vorher; was davon
   „Neue Anmeldung“ sofort (wie 1.12.0, mit Link auf Sicherheit nur unter der öffentlichen Adresse).
 - Mail „Neue Anmeldung“ (1.0.0): `notices.sign_in_letter` mit Browser auf System, Uhrzeit in der Zeitzone des
   Kontos (`timezones.zone_of`), Knopf zur Seite Sicherheit unter der öffentlichen Adresse, nie eine Netzadresse. Die
-  Push-Mitteilung an die eigenen Geräte nennt das Netz weiter wie 1.12.0.
+  Push-Mitteilung an die eigenen Geräte ebenso nur Browser auf System und Uhrzeit, kein Netz mehr (Entscheidung
+  25.11.2026).
 - Vertrags-Adapter: `sign_in_from`, `listed_invites`, `forgot_through_route`, `picture_status` (nexkonten),
   `new_sign_in_letter` (nexpost), alle über die echten Routen.
 - Notfallbefehl `python -m app.reset_link <name oder adresse> [--days]` über `server_reset_link`.

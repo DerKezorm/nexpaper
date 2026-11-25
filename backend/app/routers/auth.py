@@ -391,7 +391,7 @@ def start(
     token = start_session(db, account, client_ip(request), agent, remember=remember,
                           second_factor_by_provider=by_provider)
     _set_cookie(response, request, token, remember)
-    notices.new_sign_in(account, client_ip(request), agent, first=first, known=known)
+    notices.new_sign_in(account, agent, first=first, known=known)
     return STAGE_FULL
 
 
