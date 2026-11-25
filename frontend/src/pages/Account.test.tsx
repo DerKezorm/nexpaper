@@ -80,7 +80,15 @@ async function type(input: HTMLInputElement | null | undefined, value: string): 
 
 function field(label: string, within: ParentNode = box): HTMLInputElement | null {
   const found = [...within.querySelectorAll('label')].find((item) => item.textContent?.startsWith(label))
-  return found?.querySelector('input') ?? null
+  if (!found) return null
+  // The kit's fields name their input with `for`; older ones hold it inside the label.
+  return found.querySelector('input') ?? (found.htmlFor ? document.getElementById(found.htmlFor) as HTMLInputElement | null : null)
+}
+
+/** The dialog open last (the kit's dialogs stand outside the page's box). */
+function lastDialog(): HTMLElement {
+  const dialogs = document.querySelectorAll<HTMLElement>('[role="dialog"]')
+  return dialogs[dialogs.length - 1]!
 }
 
 beforeEach(async () => {
@@ -190,17 +198,18 @@ describe('the areas of my account', () => {
 describe('the mail address', () => {
   it('asks for the password and waits for the link: the old address stays until it is opened', async () => {
     auth.me = { ...baseMe, email: 'old@example.com', email_confirmed: true }
-    answers['PUT /api/v1/me/email'] = { ...baseMe, email: 'old@example.com', email_confirmed: true, email_pending: 'new@example.com' }
+    answers['PUT /api/v1/me/profile'] = { ...baseMe, email: 'old@example.com', email_confirmed: true, email_pending: 'new@example.com' }
     await show()
     expect(field('E-Mail')!.value).toBe('old@example.com')
     expect(box.querySelector('[data-testid="mail-state"]')!.textContent).toBe('Mailadresse bestätigt')
-    // As nexnotes: the address beside the name, one "Speichern"; nexpaper asks for the password once it changed.
-    expect(field('Passwort')).toBeNull()
-    await type(field('E-Mail'), 'new@example.com')
+    // The shared account module's profile: one "Speichern" for all; a new address asks for the password once.
     expect(button('Speichern')!.disabled).toBe(true)
-    await type(field('Passwort'), 'the own password')
+    await type(field('E-Mail'), 'new@example.com')
     await click(button('Speichern'))
-    expect(calls.find((call) => call.method === 'PUT' && call.url === '/api/v1/me/email')!.body).toEqual({ email: 'new@example.com', password: 'the own password' })
+    expect(calls.some((call) => call.method === 'PUT' && call.url === '/api/v1/me/profile')).toBe(false)
+    await type(field('Aktuelles Passwort', lastDialog()) ?? lastDialog().querySelector<HTMLInputElement>('input[type="password"]'), 'the own password')
+    await click(button('Speichern', lastDialog()))
+    expect(calls.find((call) => call.method === 'PUT' && call.url === '/api/v1/me/profile')!.body).toEqual({ email: 'new@example.com', password: 'the own password' })
     expect(auth.setMe).toHaveBeenCalled()
   })
 
@@ -209,31 +218,31 @@ describe('the mail address', () => {
     answers['GET /api/v1/auth/me'] = { ...baseMe, email: 'old@example.com', email_confirmed: true }
     await show()
     const pending = box.querySelector('[data-testid="mail-pending"]')!
-    expect(pending.textContent).toContain('Link an new@example.com verschickt.')
-    expect(pending.textContent).toContain('Bis du ihn öffnest, bleibt old@example.com.')
+    expect(pending.textContent).toContain('Wartet auf Bestätigung: new@example.com')
     expect(field('E-Mail')!.value).toBe('old@example.com')
-    await click(button('Zurückziehen'))
+    await click(button('Zurücknehmen', pending))
     expect(calls.some((call) => call.method === 'DELETE' && call.url === '/api/v1/me/email/pending')).toBe(true)
   })
 
   it('marks an address nobody confirmed and offers the link', async () => {
-    auth.me = { ...baseMe, email: 'typed@example.com', email_confirmed: false }
+    auth.me = { ...baseMe, email: 'typed@example.com', email_confirmed: false, mail_links: true }
     await show()
-    expect(box.querySelector('[data-testid="mail-state"]')!.textContent).toBe('Mailadresse nicht bestätigt')
+    expect(box.querySelector('[data-testid="mail-state"]')!.textContent).toContain('Mailadresse nicht bestätigt')
     // The link again: it asks for the password, then "Speichern" sends it to the address there is.
     await click(button('Bestätigung schicken'))
-    await type(field('Passwort'), 'the own password')
-    await click(button('Speichern'))
+    await type(lastDialog().querySelector<HTMLInputElement>('input[type="password"]'), 'the own password')
+    await click(button('Speichern', lastDialog()))
     expect(calls.find((call) => call.method === 'PUT' && call.url === '/api/v1/me/email')!.body).toEqual({ email: 'typed@example.com', password: 'the own password' })
   })
 
   it('says what stands in the way, in words', async () => {
-    fails['PUT /api/v1/me/email'] = { status: 409, code: 'mail_off' }
+    fails['PUT /api/v1/me/profile'] = { status: 409, code: 'mail_off' }
     await show()
     await type(field('E-Mail'), 'new@example.com')
-    await type(field('Passwort'), 'the own password')
     await click(button('Speichern'))
-    expect(box.textContent).toContain('Es ist kein Mailserver eingetragen.')
+    await type(lastDialog().querySelector<HTMLInputElement>('input[type="password"]'), 'the own password')
+    await click(button('Speichern', lastDialog()))
+    expect(document.body.textContent).toContain('Es ist kein Mailserver eingetragen.')
   })
 })
 

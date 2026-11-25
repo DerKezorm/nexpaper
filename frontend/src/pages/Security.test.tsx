@@ -84,7 +84,9 @@ async function type(input: HTMLInputElement | null | undefined, value: string): 
 
 function field(label: string, within: ParentNode = box): HTMLInputElement | null {
   const found = [...within.querySelectorAll('label')].find((item) => item.textContent?.startsWith(label))
-  return found?.querySelector('input') ?? null
+  if (!found) return null
+  // The kit's fields name their input with `for`; older ones hold it inside the label.
+  return found.querySelector('input') ?? (found.htmlFor ? document.getElementById(found.htmlFor) as HTMLInputElement | null : null)
 }
 
 async function submit(form: HTMLFormElement | null): Promise<void> {
@@ -125,7 +127,7 @@ describe('signing in', () => {
     expect(box.textContent).toContain('Auf diesem Gerät angemeldet bleiben')
     // No passkey button where the browser has none.
     expect(button('Mit Passkey anmelden')).toBeUndefined()
-    await type(field('Name'), 'jule')
+    await type(field('Benutzername oder E-Mail'), 'jule')
     await type(field('Passwort'), 'a long enough password')
     await submit(box.querySelector('form'))
     expect(calls.find((call) => call.url === '/api/v1/auth/login')!.body).toEqual({ name: 'jule', password: 'a long enough password', remember: true })
@@ -143,7 +145,7 @@ describe('signing in', () => {
     answers['GET /api/v1/auth/me'] = me
     await show(<LoginPage />)
     await click(box.querySelector<HTMLInputElement>('input[type="checkbox"]')!)
-    await type(field('Name'), 'jule')
+    await type(field('Benutzername oder E-Mail'), 'jule')
     await type(field('Passwort'), 'a long enough password')
     await submit(box.querySelector('form'))
     expect(calls.find((call) => call.url === '/api/v1/auth/login')!.body).toEqual({ name: 'jule', password: 'a long enough password', remember: false })
@@ -154,7 +156,7 @@ describe('signing in', () => {
     answers['POST /api/v1/auth/login'] = { second_factor: true, totp: false, passkey: true }
     await show(<LoginPage />)
     expect(button('Mit Passkey anmelden')).toBeTruthy()
-    await type(field('Name'), 'jule')
+    await type(field('Benutzername oder E-Mail'), 'jule')
     await type(field('Passwort'), 'a long enough password')
     await submit(box.querySelector('form'))
     expect(box.textContent).toContain('Melde dich mit deinem Passkey an oder gib einen Wiederherstellungscode ein.')
