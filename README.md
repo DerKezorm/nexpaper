@@ -106,8 +106,10 @@ It needs the **setup code** from the log, so that nobody who reaches a fresh ins
 docker logs nexpaper
 ```
 
-shows the code, new at every start until nexpaper is set up. To choose it yourself, set `NEXPAPER_SETUP_TOKEN`. Right
-after the password the account sets up its second factor; then the operator invites the others by link. Everything
+shows the code, new at every start until nexpaper is set up. To choose it yourself, set `NEXPAPER_SETUP_TOKEN` (at
+least 16 characters; a shorter one is passed over and the log says so). The setup asks a display name, a username, an
+address (optional) and the password twice; then the operator invites the others by link. People sign in with their
+username or their address. Everything
 personal is under "My account" for everybody; "Settings" is the operator's and holds the server.
 
 ## Reaching nexpaper from outside
@@ -122,8 +124,10 @@ with care and at least this:
 3. **Tell nexpaper about the proxy**: `NEXPAPER_PUBLIC_URL` (the address people use), `NEXPAPER_TRUSTED_PROXIES` (the
    proxy's address or network; without it every sign-in seems to come from the proxy and the brake against guessing
    cannot tell people apart) and `NEXPAPER_COOKIE_SECURE: "on"`.
-4. **A second factor** is required from the start: right after the password every account sets one up (a code from an
-   app, or a passkey) and keeps the recovery codes. The operator may switch the requirement off; do not.
+4. **Require a second factor** (Settings, Sign-in): right after the password every account then sets one up (a code
+   from an app, or a passkey) and keeps the recovery codes. A new installation does not require it; an installation
+   updated from 1.12.0 keeps the setting it had. If a lost phone ever locks everybody out, `NEXPAPER_SECOND_FACTOR_OFF=1`
+   switches the second factor off until it is removed again (the pages say so plainly).
 5. **Look at "Ready for the internet?"** (Settings, Sign-in). It checks the points above for itself: https, the
    second factor, your own account with one, the brake, the server secrets, the cookies, the proxy and the backups.
 6. **Backups somewhere else**, as carefully as the data folder. A backup holds every account and the server's secrets
@@ -185,14 +189,16 @@ next start of the newer version.
 ## Forgot your password, and no mail server
 
 Whoever can run a command in the container holds the database and the secrets anyway, so a link made there gives
-nothing away. It is the same link the operator sends from Settings, Accounts: it works once and for 24 hours, a new
-one replaces the one before, and using it ends every session and lifts a lock after failed sign-ins. The second factor
+nothing away. It is the same link the operator makes in Settings, Accounts: it works once and for one day (`--days 7`
+or `--days 30` for longer), a new one replaces the one before, and using it ends every browser session and lifts a lock
+after failed sign-ins; paired devices, API keys and passkeys stay, and the account page lists them at the next sign-in
+with "Disconnect all". A link asked for with "Forgot your password?" holds one hour. The second factor
 stays: sign in with the new password, then with the code from your app, a passkey or a recovery code. An account that
 signs in only through a provider gets a password this way and becomes an account with a password, as with the link the
 operator sends.
 
 ```sh
-docker exec -it -u nexpaper nexpaper python -m app.reset_link <account>
+docker exec -it -u nexpaper nexpaper python -m app.reset_link <username or email>
 ```
 
 `-u nexpaper` runs it as the user the server runs as (with the ids of `PUID` and `PGID`); as root it refuses, because a
@@ -289,7 +295,8 @@ already there once, in the background; nothing needs doing by hand.
 | `NEXPAPER_SECRET_KEY` | made on first start | Protects server-side secrets; when set, it wins over `secret.key` |
 | `NEXPAPER_PUBLIC_URL` | from the request | The address people use, for invitation links and the redirect address of the sign-in providers. The setting in the interface wins |
 | `NEXPAPER_TRUSTED_PROXIES` | none | Addresses or networks of reverse proxies whose `X-Forwarded-For` and `X-Forwarded-Proto` are believed, comma separated |
-| `NEXPAPER_SETUP_TOKEN` | made at start | The code the first account needs |
+| `NEXPAPER_SETUP_TOKEN` | made at start | The code the first account needs (at least 16 characters) |
+| `NEXPAPER_SECOND_FACTOR_OFF` | none | `1` switches the second factor off for an emergency (everybody signs in with the password alone while it is set) |
 | `NEXPAPER_OPERATOR_NETWORKS` | none | Networks the operator's settings may be changed from, comma separated |
 | `NEXPAPER_SESSION_DAYS` | `30` | A session of "stay signed in on this device" ends after this many days without use |
 | `NEXPAPER_COOKIE_SECURE` | `auto` | `on`, `off` or `auto` (from the request, or `X-Forwarded-Proto` of a trusted proxy) |
@@ -463,7 +470,9 @@ itself: it all waits in an inbox.
   scanner or a share) with a subfolder per person. A file is taken once it lay still for 10 seconds, goes into that
   person's inbox and leaves the folder; what is not taken (another kind of file, too large, empty) is moved to
   `abgelehnt/` beside it with the reason. Files in the folder itself or in a subfolder nobody has go to the operator,
-  marked unknown. Links are not followed, hidden and temporary files are left alone.
+  marked unknown. Links are not followed, hidden and temporary files are left alone. After a person changes their
+  username, the subfolder and the plus address of the former name keep reaching them (a former name never goes to
+  anybody else); My account, Upload lists them.
 - **Mailbox**: one IMAP mailbox for the whole server, fetched every 5 minutes. PDF, pictures and e-invoices as XML are
   taken from the mails, also from forwarded ones; the mails themselves do not become documents, unless you switch on
   "Take mails without an attachment as a document" (off from the start): then a mail without any attachment that comes

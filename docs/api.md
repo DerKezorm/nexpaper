@@ -44,8 +44,13 @@ Made in the web app (**My account, Devices and apps**, or `POST /api/v1/devices`
   everywhere" is used, and while the operator requires a second factor the account has not set up yet.
 - A device can also pair itself with a code the web app shows (QR code) or, for an app, with OAuth 2 and PKCE: see
   [Pairing a device](#pairing-a-device).
+- Every answer that pairs a device (`POST /api/v1/devices`, `POST /api/v1/devices/pair`, `POST
+  /api/v1/devices/sibling`, `POST /api/v1/oauth/token`) names the account twice: `account_id`, the id of the account (a
+  JSON number, the same for good: keep a connection by it), and `account`, the account's **first** username, which stays
+  the same across renames (apps up to nexpaper-ios 1.3 keep the connection by it). The current username is `name` in
+  `GET /api/v1/auth/me`.
 - A device brings in another device of its account: `POST /api/v1/devices/sibling` with its token and `{"name": "iPad"}`
-  answers like a pairing (`201`, `token` shown once, `device` with `via: device`, `account`). The iPhone app uses it for
+  answers like a pairing (`201`, `token` shown once, `device` with `via: device`, `account`, `account_id`). The iPhone app uses it for
   the owner's iPad, which takes the iPhone's connection from the iCloud Keychain and comes in under a token and a name of
   its own (revoking one leaves the other). The new device has the rights of the account, like any device. At most five
   an hour per account (`429 too_many_new_devices`, `Retry-After`); a browser gets `403 device_only` (it pairs with
@@ -87,7 +92,8 @@ A wrong token counts against the sender like a wrong password.
 
 ### `GET /api/v1/me`
 
-With an API key: who the key speaks for: `name`, `display_name`, `scope` and the nexpaper `version`.
+With an API key: who the key speaks for: `id` (the same for good), `name` (the current username), `display_name`,
+`scope` and the nexpaper `version`.
 
 ### `GET /api/v1/dashboard`
 

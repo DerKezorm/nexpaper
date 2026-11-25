@@ -1,7 +1,7 @@
 # Anbindung der gemeinsamen Konto-Module an nexpaper
 
 Stand 25.11.2026, Zweig `konten` (auf `main` nach „Delete a shared vault from the web app“, nexpaper 1.12.0, Schema 20).
-**Plan, noch nichts gebaut.** Zielstand der Module (aus `bauplaene`, Zweig `konten`): **konten 0.3.9, oidc 1.1.0,
+**Gebaut, Stand in Abschnitt 0.** Zielstand der Module (aus `bauplaene`, Zweig `konten`): **konten 0.3.9, oidc 1.1.0,
 post 0.1.1, ui 0.1.1**. Maßgeblich sind der Entwurf in nexlore (`Development/nexapps/Baupläne/Entwurf Konten,
 Einrichtung und Anmeldung.md`, Tabellen „Entscheidungen“, „Teil 2“, „Beim Bauen entschieden“),
 `bauplaene/konten/SCHNITTSTELLE.md` und `README.md` („Was ist neu“ bis 0.3.9), `bauplaene/ui/README.md`,
@@ -20,30 +20,50 @@ nexpaper „per Link bewiesen“** und entscheidet, wessen Tresor eine Mail an d
 seit 0.2.0 die zweite Angabe `proven`); **der Benutzername ist Eingangsordner und Plus-Adresse** (alte Namen gelten
 dort weiter); und **die iPhone-App hängt am Benutzernamen** (Abschnitt 12). Umbenennen kommt gleich mit dem Umbau.
 
-## 0. Das Wichtigste für den Umbau-Agenten
+## 0. Stand (gebaut 25.11.2026, Zweig `konten`)
 
-1. **Der Test „Bestand“ hängt an Namen der App.** `tests/test_bestand.py` importiert `app.security.MAX_FAILURES` und
-   `SESSION_COOKIE`, `app.services.mailer`, `notices`, `settings_service`, `totp`, ruft `totp.code_at(...)` und
-   `notices.settle()` und fängt die Mail von „Passwort vergessen“ über
-   `monkeypatch.setattr(mailer, "send_reset", …)` mit der Unterschrift `send_reset(db, to, link, *, name, hours)`;
-   `name` muss der Benutzername sein, `link` endet mit dem Token. Also: `resets.forgot_in_background(..., later=
-   notices.later, send=…)`, und `send` ruft **`mailer.send_reset`** (das darf innen `post` nehmen, aber sofort, nicht
-   über die Outbox). `tests/conftest.py` leert vor jedem Test zusätzlich `nexkonten.brake.BRAKE` und die wartenden
-   Anmeldungen des Moduls.
-2. **Sperre nach Fehlversuchen bleibt bei 5** (`security.MAX_FAILURES`), solange der Besitzer nichts anderes entscheidet (Frage 1):
-   `test_the_lock_after_wrong_passwords_still_holds_per_account` tippt `MAX_FAILURES`-mal falsch und dann richtig und
-   erwartet jedes Mal 401. Mit 10 bremst der Topf `account:<id>` des Moduls ab dem siebten Versuch mit 429, der Test
-   wird rot.
-3. **Zwei Angaben zur Adresse:** `Account.email_confirmed` (zählt) = neue Spalte `users.email_counts` (Bestand: 1 für
-   jede Adresse), `Account.email_proven` (bewiesen) = `users.email_confirmed_at IS NOT NULL` wie heute. Posteingang
-   (`mail_senders.owners`), Erinnerungen, Bescheide und Exporte lesen weiter nur `email_confirmed_at`. Der Start schreibt
-   **keine Zeile in `settings`** (der Test zählt sie); neue Einstellungen gelten über `DEFAULTS`.
-4. **Umbenennen jetzt:** Tabelle `former_names`; Eingangsordner und Plus-Adresse nehmen aktuelle **und frühere** Namen
-   des Kontos (Abschnitt 2); Koppel-Antworten bekommen `account_id`, und `account` nennt den **ältesten** Namen des
-   Kontos, damit iPhone-Apps vor dem Update beim Neukoppeln nichts leeren (Abschnitt 12).
-5. **Kontenliste neu aus konten 0.3.9 und ui 0.1.1**, nichts geht verloren: Haken „KI erlaubt“, Angabe „Dokumente“,
-   der eigene Lösch-Dialog (Übergabe an Person, Tresor oder mitlöschen, Sperre bei alleinigem Tresorverwalter, Kontoname
-   eintippen) an der Stelle der Lösch-Rückfrage, Karte „Schlüssel aller Konten“ darunter (Abschnitt 9).
+**Gebaut** auf konten 0.3.9, oidc 1.1.0, post 0.1.1, ui 0.1.1 (Kopien aus `bauplaene-0.3.9`, `sync.py check` grün).
+Die Abschnitte ab 1 sind die Bestandsaufnahme und der Plan von vorher; was davon abweicht, steht hier.
+
+**Backend**
+
+- Daten: neue Spalten am Ende von `users` (`email_counts`, `avatar_source`, `offered_email`, `offered_email_provider`,
+  `declined_email`, `device_key`, `totp_pending`, `totp_pending_until`, `new_password_origin`, `password_changed_at`),
+  `invites` (`display_name`, `mailed`), `password_resets` (`origin`); Tabellen `former_names`, `setup_claims`,
+  `failed_unknown`, `mail_outbox` (`models_accounts.py`). Alles als `db._additions_konten`, **ohne neue Schemanummer**
+  (Rückweg auf 1.12.0 bleibt), Sicherung davor beim ersten Start, Indizes `lower(name)` (eindeutig nach Zählen) und
+  `lower(email)` (nicht eindeutig). `two_factor_required` ab Werk aus; eine Datenbank von 1.12.0 mit Konten und ohne
+  Zeile bekommt die Zeile `true`. Schema `v20.sql` neu aufgezeichnet, `released/1.12.0.sql` hält den Stand davor.
+- Store `services/konten_store.py` (alle Stores von Teil 1 und 2): `email_counts` = zählt, `email_confirmed_at` =
+  bewiesen; wartende Adresse in `email_confirmations`; Sitzungen in `auth_sessions` (wartende Anmeldung des Moduls als
+  Stufe `waiting`), gekoppelte Geräte in `devices` (Abmelden widerruft); Wiederherstellungscodes mit dem Schlüssel von
+  1.12.0 (`h1:` gilt weiter); `user_handle` = Bytes des Hex-Handles von 1.12.0. Sperre **nach 10** (`MAX_FAILURES`).
+- Routen: Anmelden, Einrichtung, Einladung, Passwort vergessen (1 Stunde, über `mailer.send_reset`), Links,
+  Profil (`PUT /me/profile` mit `name`, `email`, `password`), Adresse (`PUT /me/email`, `POST /me/email/resend`),
+  Faktor (`factor` des Moduls, Seed wartet versiegelt), Sitzungsliste des Moduls, `GET/POST /auth/access…`, Betreiber
+  (`PUT /accounts/{id}/name`, `/display-name`, `DELETE /accounts/{id}/email`, Link 1/7/30 Tage, Faktor-Übersicht).
+  Passkeys bleiben nexpapers Routen und Dienst (gleiche Tabelle), neu mit Schalter „Passkeys erlaubt“.
+- `account_id` (JSON-Zahl) und `account` = **ältester** Benutzername in `/devices/pair`, `/devices`,
+  `/devices/sibling`, `/oauth/token`; `GET /api/v1/me` hat `id`. Je Route ein Test (`tests/test_konten.py`).
+- Posteingang: Plus-Adresse und Eingangsordner früherer Namen gehen ans Konto (`konten_store.by_any_name`,
+  `names_by_account`), gelöschte Namen an niemanden; `GET /me/intake` hat `former`. Nur bewiesene Adressen ziehen Post.
+- Mail: Systemmails über `post` (Logo `app/assets/mail-logo.png`, DE/EN/FR); Bescheide über die Outbox (Minutenrunde),
+  „Neue Anmeldung“ sofort (wie 1.12.0, mit Link auf Sicherheit nur unter der öffentlichen Adresse).
+- Notfallbefehl `python -m app.reset_link <name oder adresse> [--days]` über `server_reset_link`.
+
+**Frontend**: `--nexui-*` in Kraftpapier hell/dunkel, Wortlaute `account`/`mail` DE/EN/FR (nexpapers eigene alte
+Schlüssel `account` und `mail` umbenannt: `mailAddress`), Anmeldeseiten mit den Feldern von `SCREENS`, Profil nach
+`PAGES.profile` (ein Speichern, Passwort-Rückfrage), Sicherheit mit „Diese Geräte haben noch Zugriff“ und „zuletzt
+geändert“, Kontenliste `pages/settings/AccountsTab.tsx` (Haken „KI erlaubt“, Angabe „Dokumente“, eigener Lösch-Dialog,
+Karte „Schlüssel aller Konten“ darunter), Schalter „Passkeys erlaubt“, Absendername.
+
+**Bewusst anders als der Plan oben**
+
+- Sperre nach **10** (Entscheidung 25.11.2026); Hinweis an jede alte Adresse, die zählte (Entscheidung 25.11.2026).
+- Ein Passkey ohne Authenticator ist nur bei „Zweiter Faktor für alle“ ein zweiter Schritt (Modul); 1.12.0 fragte ihn
+  immer nach dem Passwort.
+- Die Bremse des Moduls 0.3.9 lässt je Topf sechs durch (erst die sechste Fehlanmeldung setzt die Wartezeit).
+- Die Mail „Neue Anmeldung“ nennt nur Browser und System (Modul), nicht mehr Netz und Uhrzeit.
 
 ## 1. Bestand heute (1.12.0, Schema 20)
 
