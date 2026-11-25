@@ -1,0 +1,122 @@
+{
+  "apiKeys": {
+    "title": "Clés d’API",
+    "hint": "Une clé d’API permet à un programme de travailler avec tes {things}, par exemple n8n, Home Assistant ou un script. Elle ne peut jamais plus que ton compte.",
+    "new": "Nouvelle clé d’API",
+    "empty": "Pas encore de clé d’API.",
+    "count": "{count} clés sur {max}",
+    "off": "L’exploitant a désactivé l’interface de programmation. Les clés existantes fonctionneront de nouveau quand il la réactivera.",
+    "offOperator": "Activer sous Serveur › Général › Interfaces.",
+    "address": "Adresse pour les programmes",
+    "addressHint": "Les programmes envoient la clé comme « Authorization: Bearer … ».",
+    "docs": "Description de l’interface"
+  },
+  "tools": {
+    "title": "Outils d’IA (MCP)",
+    "hint": "Les programmes connectés avec ton accord, et les clés MCP. Ils agissent en ton nom, jamais avec plus.",
+    "programs": "Programmes connectés",
+    "programsHint": "Un outil d’IA demande ton accord dans le navigateur lorsqu’il se connecte.",
+    "programsEmpty": "Aucun programme connecté pour l’instant.",
+    "keys": "Clés MCP",
+    "keysEmpty": "Pas encore de clé MCP.",
+    "new": "Nouvelle clé MCP",
+    "address": "Adresse pour les outils d’IA",
+    "off": "L’exploitant a désactivé l’accès MCP. Les programmes connectés et les clés fonctionneront de nouveau quand il le réactivera.",
+    "none": "{app} n’a pas encore d’accès MCP.",
+    "viaApiKey": "Une clé d’API avec « Aussi pour les outils d’IA (MCP) » vaut aussi pour les outils d’IA. Tu la crées sous « Clés d’API »."
+  },
+  "interfaces": {
+    "title": "Interfaces",
+    "api": "Interface de programmation (API) pour les membres",
+    "apiHint": "Les membres créent des clés d’API et les programmes travaillent avec. Désactivée : toute requête à l’interface est refusée, les clés restent.",
+    "mcp": "Accès MCP",
+    "mcpHint": "Les membres connectent des outils d’IA et créent des clés pour eux. Désactivé : aucun outil d’IA n’entre, les accès restent.",
+    "app": "Autoriser l’app iPhone",
+    "appHint": "Désactivé : aucune app n’entre plus, même déjà connectée. Les appareils restent dans la liste.",
+    "pairing": "Connecter de nouveaux appareils",
+    "pairingHint": "Désactivé : aucun nouvel appareil ne peut se connecter ; ceux déjà connectés continuent.",
+    "docs": "Description de l’interface"
+  },
+  "allKeys": {
+    "title": "Clés d’API de tous les comptes",
+    "hint": "Pour chaque clé le compte, le nom, le droit et la dernière utilisation. Jamais la clé elle-même, jamais de contenu.",
+    "empty": "Aucun compte n’a encore de clé d’API.",
+    "block": "Bloquer",
+    "unblock": "Débloquer",
+    "askBlock": "Bloquer « {name} » de {account} ?",
+    "askBlockText": "La clé cesse de fonctionner aussitôt. Le compte la voit comme « Bloquée par l’exploitant » ; tu peux la débloquer.",
+    "hidden": "Nom visible du compte seulement"
+  },
+  "columns": {
+    "account": "Compte",
+    "name": "Nom",
+    "right": "Droit",
+    "expires": "Expiration",
+    "used": "Dernière utilisation",
+    "action": "Action"
+  },
+  "key": {
+    "made": "« {name} » créée",
+    "madeText": "Copie la clé maintenant. Elle n’est affichée que cette fois ; {app} ne garde qu’une somme de contrôle.",
+    "secret": "Clé",
+    "header": "En-tête pour le programme",
+    "done": "Terminé",
+    "newTitle": "Nouvelle clé d’API",
+    "newMcpTitle": "Nouvelle clé MCP",
+    "editTitle": "Modifier la clé",
+    "name": "Nom",
+    "nameHint": "Seulement pour la reconnaître, par ex. « n8n météo ».",
+    "right": "Droit",
+    "areas": "Ce que la clé atteint",
+    "areasAll": "Tout, aussi ce qui viendra plus tard",
+    "areasSome": "Seulement ceux-ci",
+    "areasNone": "Tu n’as encore rien qu’une clé pourrait atteindre.",
+    "expiry": "Expiration",
+    "days": "{days} jours",
+    "year": "1 an",
+    "never": "Jamais",
+    "create": "Créer",
+    "save": "Enregistrer",
+    "edit": "Modifier",
+    "revoke": "Révoquer",
+    "askRevoke": "Révoquer « {name} » ?",
+    "askRevokeText": "Le programme n’entre plus, tout de suite. Ce qu’il a écrit reste.",
+    "cancel": "Annuler",
+    "expires": "Expire le {date}",
+    "expired": "Expirée",
+    "neverExpires": "N’expire jamais",
+    "blocked": "Bloquée par l’exploitant",
+    "neverUsed": "jamais",
+    "allAreas": "tout",
+    "someAreas": "{count} choisis",
+    "program": "programme connecté",
+    "mcp": "MCP",
+    "wait": "Ne fonctionne qu’une fois un second facteur configuré.",
+    "waitLink": "Configurer un second facteur",
+    "failed": "Cela n’a pas marché. Réessaie dans un instant."
+  },
+  "rights": {
+    "read": "Lecture seule",
+    "write": "Lecture et écriture",
+    "upload": "Envoi seulement"
+  },
+  "options": {
+    "mcp": "Aussi pour les outils d’IA (MCP)",
+    "mcpHint": "La clé vaut alors aussi pour les outils d’IA."
+  },
+  "legacy": {
+    "card": "carte nexdeck seulement (ancienne clé)"
+  },
+  "errors": {
+    "name_missing": "Donne un nom à la clé.",
+    "name_too_long": "Le nom est trop long.",
+    "right_invalid": "Ce droit n’est pas proposé ici.",
+    "option_invalid": "Ce n’est pas proposé ici.",
+    "choose_areas": "Choisis-en au moins un.",
+    "areas_invalid": "L’un d’eux n’appartient pas à ton compte.",
+    "days_invalid": "Cette expiration n’est pas proposée ici.",
+    "too_many_keys": "Tu as déjà {max} clés. Révoque-en une avant d’en créer une nouvelle.",
+    "api_off": "L’exploitant a désactivé l’interface de programmation.",
+    "mcp_off": "L’exploitant a désactivé l’accès MCP."
+  }
+}

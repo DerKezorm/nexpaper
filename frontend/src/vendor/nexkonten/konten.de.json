@@ -227,7 +227,95 @@
       "avatars_busy": "Gerade werden zu viele Bilder verarbeitet. Versuch es gleich noch einmal.",
       "public_url_needed": "Für den Link braucht {{app}} seine öffentliche Adresse. Trag sie in den Einstellungen des Servers ein.",
       "nothing_to_prove": "Es gibt keine Adresse, die noch per Link zu bestätigen ist.",
-      "unknown": "Das hat nicht geklappt. Versuch es noch einmal."
-    }
+      "unknown": "Das hat nicht geklappt. Versuch es noch einmal.",
+      "cannot_demote_self": "Deine eigene Rolle änderst du nicht hier.",
+      "cannot_block_self": "Dein eigenes Konto sperrst du nicht.",
+      "cannot_delete_self": "Dein eigenes Konto löschst du nicht hier.",
+      "last_operator": "{{app}} braucht mindestens einen Betreiber, der sich anmelden kann.",
+      "feature_off": "Das gibt es in {{app}} nicht.",
+      "invalid_limit": "Die Grenze ist eine Zahl ab 0, höchstens 10 TB.",
+      "theme_invalid": "Wähle Hell, Dunkel oder Wie das System.",
+      "provider_first": "Ohne aktiven Anmeldeanbieter bleibt die Anmeldung mit Passwort an.",
+      "own_second_factor_first": "Richte zuerst deinen eigenen zweiten Faktor ein."
+    },
+    "ownSecondFactorFirst": "Richte zuerst deinen eigenen zweiten Faktor ein (Mein Konto, Sicherheit), sonst wärst du der Erste, der nicht mehr weiterkommt.",
+    "factorRequiredOffTitle": "Zweiten Faktor nicht mehr verlangen?",
+    "factorRequiredOffText": "Dann reicht wieder ein Passwort, um in ein Konto zu kommen. Wer schon einen zweiten Faktor hat, behält ihn.",
+    "factorRequiredOff": "Nicht mehr verlangen",
+    "passkeysAllowedHint": "Anmelden mit Fingerabdruck, Gesicht oder der PIN des Geräts, ohne Passwort.",
+    "emailUnconfirmed": "Adresse noch nicht bestätigt",
+    "emailUnconfirmedHint": "Ein Link an {{email}} zeigt, dass die Adresse dir gehört.",
+    "emailProveSend": "Link schicken",
+    "signOut": "Abmelden",
+    "signOutText": "Beendet deine Sitzung in diesem Browser. Deine {{things}} bleiben, wie sie sind.",
+    "signOutProvider": "Bei deinem Anmeldeanbieter bleibst du angemeldet; nur {{app}} meldet dich ab.",
+    "signOutPending_one": "{{count}} Änderung ist noch nicht gespeichert. Meldest du dich jetzt ab, geht sie verloren.",
+    "signOutPending_other": "{{count}} Änderungen sind noch nicht gespeichert. Meldest du dich jetzt ab, gehen sie verloren.",
+    "waitForChanges": "Warten",
+    "signOutAnyway": "Trotzdem abmelden",
+    "whatYouSee": "Was du siehst",
+    "storage": "Speicher",
+    "storageUsedOf": "{{used}} von {{limit}}",
+    "storageUsedNoLimit": "{{used}}, ohne Grenze",
+    "storageLimit": "Speichergrenze",
+    "storageLimitTitle": "Speichergrenze für {{name}}",
+    "storageLimitField": "Grenze in GB",
+    "storageUsed": "Belegt: {{used}}",
+    "storageLimitRemove": "Grenze entfernen",
+    "rightAi": "KI erlaubt",
+    "rightImmich": "Immich erlaubt",
+    "ready": {
+      "title": "Bereit fürs Internet?",
+      "text": "Viele erreichen {{app}} auch von unterwegs. Das hier prüft {{app}} selbst, jedes Mal, wenn du die Seite öffnest.",
+      "open_one": "{{count}} Punkt offen",
+      "open_other": "{{count}} Punkte offen",
+      "allGood": "Alles erfüllt",
+      "state": {
+        "ok": "erfüllt",
+        "warn": "prüfen",
+        "bad": "offen"
+      },
+      "address": {
+        "title": "Öffentliche Adresse mit https",
+        "ok": "{{app}} ist unter {{address}} erreichbar; Passwörter und Cookies gehen verschlüsselt durchs Netz.",
+        "warn": "{{address}} hat https, aber diese Anfrage kam ohne. Öffne {{app}} über diese Adresse, oder lass den Proxy X-Forwarded-Proto mitschicken und trag ihn in {{variable}} ein.",
+        "bad": "Ohne https gehen Passwörter offen durchs Netz, und Web Push und Passkeys funktionieren gar nicht. Trage unten die öffentliche Adresse mit https ein.",
+        "missing": "Noch keine öffentliche Adresse. Trage unten die Adresse mit https ein, unter der man {{app}} erreicht."
+      },
+      "factorForAll": {
+        "title": "Zweiter Faktor für alle",
+        "ok": "Wer sich mit Passwort anmeldet, braucht dazu einen Code oder einen Passkey.",
+        "bad": "Aus: Ein erratenes oder gestohlenes Passwort reicht, um in ein Konto zu kommen. Schalte unten „Zweiten Faktor für alle verlangen“ ein.",
+        "warn": "Pflicht für Konten mit Passwort. Bei {{providers}} prüft der Anbieter den zweiten Faktor selbst, {{app}} fragt dort keinen eigenen. Prüf, ob der Anbieter das wirklich verlangt.",
+        "off": "{{variable}} ist gesetzt: Niemand wird nach einem zweiten Faktor gefragt. Entferne die Variable und starte {{app}} neu."
+      },
+      "ownAccount": {
+        "title": "Dein eigenes Konto",
+        "ok": "Hat einen zweiten Faktor.",
+        "bad": "Hat noch keinen zweiten Faktor, und es darf alles einstellen. Richte ihn unter Mein Konto, Sicherheit ein."
+      },
+      "brake": {
+        "title": "Schutz vor Raten",
+        "ok": "5 Versuche sind frei, danach wartet jeder weitere länger. Nach 10 falschen Passwörtern ist das Konto 15 Minuten gesperrt. Jeder Versuch steht im Log.",
+        "warn": "Alle Besucher kommen über einen Proxy, den {{app}} nicht kennt: Die Pause greift je Konto, je Adresse aber nur grob. Siehe „Hinter dem Proxy“.",
+        "bad": "Die Liste der vertrauenswürdigen Proxys enthält öffentliche Netze ({{networks}}). So könnte jeder die Adresse des Absenders erfinden, und die Pause nach falschen Versuchen greift nicht mehr. Trage nur die Adresse deines Proxys ein.",
+        "broken": "Der Schutz vor Raten besteht seinen eigenen Test nicht. Starte {{app}} neu; hilft das nicht, melde es bitte."
+      },
+      "cookies": {
+        "title": "Sitzungen und Cookies",
+        "ok_one": "Cookies nur über https und nicht für Skripte lesbar; eine Anmeldung läuft nach {{count}} Tag ohne Nutzung ab.",
+        "ok_other": "Cookies nur über https und nicht für Skripte lesbar; eine Anmeldung läuft nach {{count}} Tagen ohne Nutzung ab.",
+        "warn": "Ohne https gehen die Anmelde-Cookies offen mit. Über https schützt {{app}} sie von selbst.",
+        "bad": "{{variable}} steht auf off: Die Cookies gehen auch über https ungeschützt. Setze den Wert auf auto."
+      },
+      "proxy": {
+        "title": "Hinter dem Proxy",
+        "ok": "Die echte Adresse der Besucher kommt an (Proxy {{proxies}} als vertrauenswürdig eingetragen). Ohne das sähe der Schutz vor Raten alle als einen.",
+        "direct": "Die Besucher kommen direkt an, ohne Proxy dazwischen.",
+        "warn": "Die Anfragen kommen über einen Proxy ({{proxy}}), der nicht als vertrauenswürdig eingetragen ist: Der Schutz vor Raten sieht alle als einen. Setze {{variable}} auf seine Adresse.",
+        "bad": "Als vertrauenswürdig eingetragen sind öffentliche Netze ({{networks}}). Setze {{variable}} auf die Adresse deines Proxys, nicht auf das ganze Internet."
+      }
+    },
+    "cancel": "Abbrechen"
   }
 }

@@ -57,6 +57,7 @@
   },
   "browser_on": "{{browser}} on {{system}}",
   "browser_unknown": "an unknown browser",
+  "unsubscribe": "Unsubscribe from these mails",
   "date": "{{y}}-{{m}}-{{d}}",
   "moment": "{{day}} at {{time}} ({{zone}})"
 }

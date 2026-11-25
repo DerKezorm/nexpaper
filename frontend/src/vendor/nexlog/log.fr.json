@@ -1,0 +1,34 @@
+{
+  "title": "Journal",
+  "hint": "Quatre niveaux. Les deux plus détaillés se désactivent d'eux-mêmes au bout d'une heure. Jamais le contenu des {things}, ni mots de passe, ni clés.",
+  "level": "Niveau",
+  "all": "Tous",
+  "levelHint": "Un filtre affiche toujours aussi les niveaux supérieurs : « WARNING » inclut donc les erreurs.",
+  "search": "Rechercher",
+  "searchPlaceholder": "Rechercher dans le texte …",
+  "detail": "Détail",
+  "modes": {
+    "quiet": "Discret",
+    "normal": "Normal",
+    "detailed": "Détaillé (1 heure)",
+    "trace": "Tout (1 heure)"
+  },
+  "until": "Retour à la normale à {time}.",
+  "fixed": "Le niveau est fixé dans {variable} et ne peut pas être changé ici.",
+  "refresh": "Actualiser",
+  "download": "Télécharger",
+  "clear": "Vider le journal",
+  "clearText": "Toutes les lignes sont effacées. Les nouvelles arrivent comme avant.",
+  "cancel": "Annuler",
+  "empty": "Rien dans le journal.",
+  "columns": {
+    "time": "Heure",
+    "level": "Niveau",
+    "source": "Source",
+    "request": "Requête / compte",
+    "message": "Message"
+  },
+  "requestHint": "Afficher seulement cette requête",
+  "more": "Charger les plus anciennes",
+  "failed": "Cela n'a pas marché. Réessayez dans un instant."
+}

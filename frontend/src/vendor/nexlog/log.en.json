@@ -1,0 +1,34 @@
+{
+  "title": "Log",
+  "hint": "Four levels. The two deep ones switch themselves off after an hour. Never the content of {things}, passwords or keys.",
+  "level": "Level",
+  "all": "All",
+  "levelHint": "A filter always shows the higher levels too: “WARNING” includes the errors.",
+  "search": "Search",
+  "searchPlaceholder": "Search in the text …",
+  "detail": "Detail",
+  "modes": {
+    "quiet": "Quiet",
+    "normal": "Normal",
+    "detailed": "Detailed (1 hour)",
+    "trace": "Everything (1 hour)"
+  },
+  "until": "Back to normal at {time}.",
+  "fixed": "The level is set in {variable} and cannot be changed here.",
+  "refresh": "Refresh",
+  "download": "Download",
+  "clear": "Clear log",
+  "clearText": "Every line is removed. New ones come as before.",
+  "cancel": "Cancel",
+  "empty": "Nothing in the log.",
+  "columns": {
+    "time": "Time",
+    "level": "Level",
+    "source": "Source",
+    "request": "Request / account",
+    "message": "Message"
+  },
+  "requestHint": "Show only this request",
+  "more": "Load older",
+  "failed": "That did not work just now. Try again in a moment."
+}

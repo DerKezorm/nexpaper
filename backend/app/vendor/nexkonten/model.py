@@ -104,6 +104,20 @@ class Account:
     #: the box Password under Security in every app. None: not known (a password of an older version that kept no
     #: date, or no password at all); the page then says so.
     password_changed_at: datetime | None = None
+    #: Since 1.1.0 (``manage``): when the operator blocked the account (None: not blocked) and when it was deleted
+    #: (None: not deleted; it can be brought back for ``manage.DELETE_DAYS`` days). ``blocked`` stays true for both.
+    #: A store of an older version leaves them out: then ``blocked`` alone tells, and the operator's functions of 1.1.0
+    #: cannot run (the contract tests of 1.1.0 ask for them).
+    blocked_at: datetime | None = None
+    deleted_at: datetime | None = None
+    #: Since 1.1.0: light or dark, for the account on every device: ``light``, ``dark``, ``system``; "" while the
+    #: account has chosen nothing yet (the server then takes the browser's value once, ``profiles.adopt_theme``).
+    theme: str = ""
+    #: Since 1.1.0, only in apps with the feature ``storage_limit``: the account's limit in bytes, None for none.
+    storage_limit: int | None = None
+    #: Since 1.1.0: the rights of the app the operator granted this account, by name (``ai``, ``immich``); only the
+    #: features of the app count (``config.FEATURES``).
+    rights: frozenset[str] = frozenset()
 
 
 @dataclass(frozen=True)
@@ -238,6 +252,14 @@ EVENT_EMAIL_CHANGED = "email_changed"
 EVENT_PASSWORD_SET = "password_set"
 #: Since 0.3.10: an address that counted already was proven by its link (``profiles.prove_email``); ``new`` is it.
 EVENT_EMAIL_PROVEN = "email_proven"
+#: Since 1.1.0 (``manage``): the operator's functions. ``details["operator"]`` says the new role; ``purged``: gone for
+#: good after its days (the app removed everything it owned in ``ManageStore.purge_account``).
+EVENT_ROLE_CHANGED = "role_changed"
+EVENT_BLOCKED = "blocked"
+EVENT_UNBLOCKED = "unblocked"
+EVENT_DELETED = "deleted"
+EVENT_RESTORED = "restored"
+EVENT_PURGED = "purged"
 
 
 @dataclass(frozen=True)

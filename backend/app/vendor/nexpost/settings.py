@@ -13,6 +13,7 @@ from . import config
 from .errors import MailError
 from .letters import check_address, one_line
 from .model import NONE, SECURITY, STARTTLS, TLS, MailSettings, MailStatus, Store
+from .outbox import waiting
 
 #: Values of older versions.
 OLDER_SECURITY = {"ssl": TLS, "keine": NONE, "starttls": STARTTLS, "tls": TLS, "none": NONE, "": STARTTLS}
@@ -97,6 +98,8 @@ def view(store: Store) -> dict[str, object]:
         "last_ok_at": status.last_ok_at.isoformat() if status.last_ok_at else None,
         "last_error": status.last_error,
         "last_error_at": status.last_error_at.isoformat() if status.last_error_at else None,
+        # Since 1.1.0: the mails waiting in the outbox (None where the store cannot tell).
+        "waiting": waiting(store),
     }
 
 

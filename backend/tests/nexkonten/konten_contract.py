@@ -63,6 +63,9 @@ class StandardAdapter:
     blocking: bool = True
     required_second_factor: bool = True
     reusable_invites: bool = True
+    #: Since 1.1.0 (E23): the migration to 1.1.0 marks every address of before that counts as proven; only nexpaper
+    #: keeps its unproven ones (it showed "not confirmed" before) and says True here.
+    keeps_unproven_addresses: bool = False
 
     def start(self) -> None:
         """APP: an empty app with a fresh database, ``nexkonten.configure(...)`` as at start-up."""
@@ -207,6 +210,22 @@ class StandardAdapter:
         404, whatever the app answers)."""
         raise NotImplementedError("APP: picture_status")
 
+    def age_deletion(self, account_id: Any, days: int) -> None:
+        """APP (since 1.1.0): move the moment a deleted account was deleted ``days`` back, straight in the app's table
+        (as if the days had passed)."""
+        raise NotImplementedError("APP: age_deletion")
+
+    def provider_active(self, on: bool) -> None:
+        """APP (since 1.1.0): one active sign-in provider of the module oidc in the app's table (``on``), or none, so
+        that ``SignInStore.active_providers`` answers 1 or 0."""
+        raise NotImplementedError("APP: provider_active")
+
+    def readiness(self, operator: Any) -> dict[str, Any]:
+        """APP (since 1.1.0): what the app's route of "Ready for the internet?" answers the operator ``operator``
+        (signed in, over https: ``TestClient(app, base_url="https://testserver")``): ``readiness.check(...).as_dict()``
+        with the app's own points in ``extra``."""
+        raise NotImplementedError("APP: readiness")
+
 
 def konten_package(adapter: Any) -> ModuleType:
     package = importlib.import_module(adapter.package)
@@ -223,6 +242,10 @@ def konten_package(adapter: Any) -> ModuleType:
         "sessions",
         "avatars",
         "passkeys",
+        "manage",
+        "signin",
+        "readiness",
+        "model3",
     ):
         importlib.import_module(f"{adapter.package}.{name}")
     return package

@@ -1,0 +1,122 @@
+{
+  "apiKeys": {
+    "title": "API keys",
+    "hint": "An API key lets a program work with your {things}, such as n8n, Home Assistant or a script. It can never do more than your account.",
+    "new": "New API key",
+    "empty": "No API key yet.",
+    "count": "{count} of {max} keys",
+    "off": "The operator has switched the programming interface off. Existing keys work again once it is switched on.",
+    "offOperator": "Switch it on under Server › General › Interfaces.",
+    "address": "Address for programs",
+    "addressHint": "Programs send the key as “Authorization: Bearer …”.",
+    "docs": "Description of the interface"
+  },
+  "tools": {
+    "title": "AI tools (MCP)",
+    "hint": "Programs that connected with your consent, and MCP keys. They work as you, never with more.",
+    "programs": "Connected programs",
+    "programsHint": "An AI tool asks for your consent in the browser when it connects.",
+    "programsEmpty": "No program connected yet.",
+    "keys": "MCP keys",
+    "keysEmpty": "No MCP key yet.",
+    "new": "New MCP key",
+    "address": "Address for AI tools",
+    "off": "The operator has switched MCP access off. Connected programs and keys work again once it is switched on.",
+    "none": "{app} has no MCP access yet.",
+    "viaApiKey": "An API key with “Also for AI tools (MCP)” works for AI tools too. You make it under “API keys”."
+  },
+  "interfaces": {
+    "title": "Interfaces",
+    "api": "Programming interface (API) for members",
+    "apiHint": "Members make API keys and programs work with them. Off: every request to the interface is refused, the keys stay.",
+    "mcp": "MCP access",
+    "mcpHint": "Members connect AI tools and make keys for them. Off: no AI tool gets in, the accesses stay.",
+    "app": "Allow the iPhone app",
+    "appHint": "Off: no app gets in any more, not even one already connected. The devices stay in the list.",
+    "pairing": "Connect new devices",
+    "pairingHint": "Off: no new device can connect; connected ones keep working.",
+    "docs": "Description of the interface"
+  },
+  "allKeys": {
+    "title": "API keys of all accounts",
+    "hint": "For each key the account, name, right and last use. Never the key itself, never any content.",
+    "empty": "No account has an API key yet.",
+    "block": "Lock",
+    "unblock": "Unlock",
+    "askBlock": "Lock “{name}” of {account}?",
+    "askBlockText": "The key stops working at once. The account sees it as “Locked by the operator”; you can unlock it again.",
+    "hidden": "Name for the account only"
+  },
+  "columns": {
+    "account": "Account",
+    "name": "Name",
+    "right": "Right",
+    "expires": "Expiry",
+    "used": "Last used",
+    "action": "Action"
+  },
+  "key": {
+    "made": "“{name}” made",
+    "madeText": "Copy the key now. It is shown this once only; {app} keeps nothing but a checksum.",
+    "secret": "Key",
+    "header": "Header for the program",
+    "done": "Done",
+    "newTitle": "New API key",
+    "newMcpTitle": "New MCP key",
+    "editTitle": "Edit key",
+    "name": "Name",
+    "nameHint": "Only to recognise it, e.g. “n8n weather report”.",
+    "right": "Right",
+    "areas": "What the key reaches",
+    "areasAll": "Everything, also what comes later",
+    "areasSome": "Only these",
+    "areasNone": "You have nothing yet that a key could reach.",
+    "expiry": "Expiry",
+    "days": "{days} days",
+    "year": "1 year",
+    "never": "Never",
+    "create": "Make",
+    "save": "Save",
+    "edit": "Edit",
+    "revoke": "Revoke",
+    "askRevoke": "Revoke “{name}”?",
+    "askRevokeText": "The program is out at once. What it wrote stays.",
+    "cancel": "Cancel",
+    "expires": "Expires on {date}",
+    "expired": "Expired",
+    "neverExpires": "Never expires",
+    "blocked": "Locked by the operator",
+    "neverUsed": "never",
+    "allAreas": "everything",
+    "someAreas": "{count} chosen",
+    "program": "connected program",
+    "mcp": "MCP",
+    "wait": "Works only once you set up a second factor.",
+    "waitLink": "Set up a second factor",
+    "failed": "That did not work just now. Try again in a moment."
+  },
+  "rights": {
+    "read": "Read only",
+    "write": "Read and write",
+    "upload": "Upload only"
+  },
+  "options": {
+    "mcp": "Also for AI tools (MCP)",
+    "mcpHint": "The key then works for AI tools too."
+  },
+  "legacy": {
+    "card": "nexdeck card only (older key)"
+  },
+  "errors": {
+    "name_missing": "Give the key a name.",
+    "name_too_long": "The name is too long.",
+    "right_invalid": "This right is not offered here.",
+    "option_invalid": "This is not offered here.",
+    "choose_areas": "Choose at least one.",
+    "areas_invalid": "One of them does not belong to your account.",
+    "days_invalid": "This expiry is not offered here.",
+    "too_many_keys": "You have {max} keys already. Revoke one before you make a new one.",
+    "api_off": "The operator has switched the programming interface off.",
+    "mcp_off": "The operator has switched MCP access off."
+  }
+}

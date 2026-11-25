@@ -1,16 +1,25 @@
 {
   "files": {
+    "frontend/src/vendor/nexui/About.tsx": "sha256-ArKSn7qLa3hf+Qoqk4Makd/iL+24ky3VuwUZ6SuX4y0=",
     "frontend/src/vendor/nexui/Avatar.tsx": "sha256-A7ONEhFXqDCJ4UAxzADYCA+qHi6Dje+T2rgHXDdwA9Y=",
-    "frontend/src/vendor/nexui/Button.tsx": "sha256-CoubnHTKQOgJZThSRT46eV9NagXXyFZW14tEbQjcIYg=",
-    "frontend/src/vendor/nexui/Card.tsx": "sha256-0jmAasRZZ97QVqlUsCsGHS6h3S6zOvxA8L8YyngbHtY=",
+    "frontend/src/vendor/nexui/Button.tsx": "sha256-DXM+vCAGLJBCbfdh3Z/SWTixHkTj8jw0Ut+gIuvQStI=",
+    "frontend/src/vendor/nexui/Card.tsx": "sha256-xtPj/vX5JrW1Kpvn0JXLAIDYufarEzizrGr2OcSCelY=",
+    "frontend/src/vendor/nexui/Chip.tsx": "sha256-ZEetk95QZfDbyRd5oR0BVpCWzenIYMm4sQe4yfEDHvI=",
+    "frontend/src/vendor/nexui/Collapsible.tsx": "sha256-uhbNYW7mbiqHZnFQqRIngg+ZcqMxYwlw3tbrNahflIk=",
+    "frontend/src/vendor/nexui/CopyRow.tsx": "sha256-61xh8d/QrghkgDYqij/Ml7huR4mbtFuIffLE5yyoShU=",
     "frontend/src/vendor/nexui/Dialog.tsx": "sha256-xSIzWJv20susiIlQMPxj2MJiF6OaG6EIxre/sXWG2WA=",
     "frontend/src/vendor/nexui/Facts.tsx": "sha256-IAzTIrYxh9UULDaMUWOuazZ6DQ+EhA/EHJdq1PE547o=",
-    "frontend/src/vendor/nexui/Field.tsx": "sha256-/B4hAANlwb0oUcUHwfSRDyrk4HNVUpZJO3WXOGGIU1M=",
+    "frontend/src/vendor/nexui/Field.tsx": "sha256-fJ87yvwO0oXXN6B5D6uChKAZEavTwovfpLWhVUGM47M=",
     "frontend/src/vendor/nexui/Notice.tsx": "sha256-pMXKJd4oisKcV02aj4GpuXezGXzj7GywqH8rsHcyUMc=",
-    "frontend/src/vendor/nexui/icons.ts": "sha256-08zBKAWXynfI21ZJhCUabVDyqsanXBTsGvONU4xwtEU=",
-    "frontend/src/vendor/nexui/index.ts": "sha256-n+B3VgJCsx6uFqQAxn42GIHq/NRBBxHQF5U3TCOJKMI=",
-    "frontend/src/vendor/nexui/nexui.test.tsx": "sha256-GnmHvDT/DF9DPp9vQXer83ZBbY8ZQc03t19Nzasov9w=",
-    "frontend/src/vendor/nexui/styles.ts": "sha256-MJMZGWjIUUQ+N4WO/DRtjhJpixV9bVSyYwy+afJxfD4="
+    "frontend/src/vendor/nexui/NotifyWays.tsx": "sha256-cYMJJH4PPQvVI1JzBoR50RhnRPuE+gQt64IrSA1DcZ8=",
+    "frontend/src/vendor/nexui/Segment.tsx": "sha256-Y+Rozyhmqgq5ZlmLxvnXkuYGAo+T4Tg3c57OXlK5Gfs=",
+    "frontend/src/vendor/nexui/Settings.tsx": "sha256-zGq+6ucZmWtCgk0qJJyuGoeZdURTRyvl7v2L4T4mhyc=",
+    "frontend/src/vendor/nexui/Table.tsx": "sha256-AOBjzPee6IEppde1Ru8OyPOvIqc4Wo7oyCNHWtGjTto=",
+    "frontend/src/vendor/nexui/icons.ts": "sha256-Pp+2gPW4lbFbX35apMrJ4iA+sKuQnqSgVIr3PmnxjP4=",
+    "frontend/src/vendor/nexui/index.ts": "sha256-GIhi17MmSd2YLYuw/avIpCzhRSbchcbTAxZPweSQuAg=",
+    "frontend/src/vendor/nexui/nexui.test.tsx": "sha256-Z65IL0LTDyz5BV+liMti8zFu6xB+IpRwhiV+GXEUlGM=",
+    "frontend/src/vendor/nexui/styles.ts": "sha256-8JqU6nYkFqI8KGmP77RpKR/eA0RbxATHHFRDAYPUKss=",
+    "frontend/src/vendor/nexui/texts.ts": "sha256-FWyfb8m8alzeU2vuVJFwq1w0gsXW9icwlJx3oi2ZYo8="
   },
   "module": "ui",
   "requires": {
@@ -20,5 +29,5 @@
     "tailwindcss": ">=4.1.0"
   },
   "vendor_path": "frontend/src/vendor/nexui",
-  "version": "1.0.0"
+  "version": "1.1.0"
 }

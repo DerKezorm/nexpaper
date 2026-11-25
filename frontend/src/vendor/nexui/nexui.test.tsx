@@ -9,7 +9,38 @@ import { act, type ReactNode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { Avatar, Badge, Box, Button, ButtonGroup, Card, Checkbox, CheckboxRow, ConfirmDialog, Facts, Field, Row, Rows, SelectField, ICONS } from './index'
+import {
+  AboutPage,
+  Avatar,
+  Badge,
+  Box,
+  Button,
+  ButtonGroup,
+  Card,
+  Checkbox,
+  CheckboxRow,
+  Chip,
+  Collapsible,
+  ConfirmDialog,
+  CopyRow,
+  Facts,
+  Field,
+  IconButton,
+  NEXUI_TEXTS,
+  NexuiLanguage,
+  NotifyWays,
+  Row,
+  Rows,
+  Segment,
+  SelectField,
+  SettingsLayout,
+  SettingsNav,
+  SettingsPage,
+  Table,
+  ThemeSegment,
+  ICONS,
+} from './index'
+import { BUTTON_KIND } from './styles'
 
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
@@ -317,5 +348,429 @@ describe('Avatar, Row with a picture, Facts, ButtonGroup (since 0.1.1)', () => {
     const rights = getByRole(root, 'region', { name: 'Rights' })
     expect(rights.dataset.groupLayout).toBe('list')
     expect(getByRole(rights, 'checkbox', { name: 'AI allowed' })).toBeTruthy()
+  })
+})
+
+describe('Button sizes, Field action, Segment (since 1.1.0)', () => {
+  it('has two sizes, md by default as in 1.0.0 and sm for rows, both with symbol and words, in the three kinds only', () => {
+    expect(Object.keys(BUTTON_KIND)).toEqual(['primary', 'secondary', 'danger'])
+    const root = show(
+      <>
+        <Button kind="primary" icon="Check">Save</Button>
+        <Button kind="primary" icon="Check" size="sm">Save row</Button>
+        <Button kind="secondary" icon="Pencil" size="sm">Edit</Button>
+        <Button kind="danger" icon="Trash2" size="sm">Remove</Button>
+        <Button kind="secondary" icon="Download" size="sm" href="/file">Download</Button>
+        <Button kind="secondary" icon="Upload" size="sm" onFile={() => undefined} testId="picker">Upload</Button>
+      </>,
+    )
+    const all = Array.from(root.querySelectorAll<HTMLElement>('[data-kind]'))
+    expect(all.map((element) => element.dataset.size)).toEqual(['md', 'sm', 'sm', 'sm', 'sm', 'sm'])
+    for (const element of all) {
+      // The symbol pledge holds for both sizes: a hidden symbol first, then words.
+      expect(element.firstElementChild?.tagName.toLowerCase(), element.textContent ?? '').toBe('svg')
+      expect(element.firstElementChild?.getAttribute('aria-hidden')).toBe('true')
+      expect(element.dataset.icon).toBeTruthy()
+      expect(element.textContent?.trim()).not.toBe('')
+      expect(['primary', 'secondary', 'danger']).toContain(element.dataset.kind)
+    }
+    const [md, ...small] = all
+    for (const size of ['h-10', 'px-4', 'text-sm']) expect(md?.className.split(' ')).toContain(size)
+    expect(md?.firstElementChild?.getAttribute('class')).toContain('h-4')
+    for (const element of small) {
+      const classes = element.className.split(' ')
+      for (const size of ['h-8', 'px-3', 'text-[13px]', 'rounded-[9px]', 'font-semibold']) expect(classes, size).toContain(size)
+      expect(classes).not.toContain('h-10')
+      expect(element.firstElementChild?.getAttribute('class')).toContain('h-3.5')
+    }
+  })
+
+  it('puts the button of a field right of it, level with the field, and the hints under both over the whole width', () => {
+    const root = show(
+      <Field
+        label="Public address"
+        hints={['Links in mails start with it.']}
+        value="https://notes.example.com"
+        onChange={() => undefined}
+        action={<Button kind="primary" icon="Check">Save</Button>}
+      />,
+    )
+    const field = getByLabelText(root, 'Public address')
+    const row = root.querySelector<HTMLElement>('[data-part="field-action"]')
+    expect(row?.contains(field)).toBe(true)
+    expect(row?.contains(getByRole(root, 'button', { name: 'Save' }))).toBe(true)
+    expect(row?.className.split(' ')).toContain('items-start')
+    expect(row?.contains(root.querySelector('label'))).toBe(false)
+    const hint = document.getElementById(field.getAttribute('aria-describedby') ?? '')
+    expect(hint?.textContent).toBe('Links in mails start with it.')
+    expect(row?.contains(hint as Node)).toBe(false)
+    expect(hint?.parentElement).toBe(row?.parentElement)
+    // Without an action the field is laid out as in 1.0.0.
+    shown?.unmount()
+    shown = null
+    const plain = show(<Field label="Name" value="" onChange={() => undefined} />)
+    expect(plain.querySelector('[data-part="field-action"]')).toBeNull()
+  })
+
+  it('a segment is a radiogroup named by its label, the chosen one in the accent, the arrows move the choice', () => {
+    const changed = vi.fn()
+    const root = show(
+      <Segment
+        label="Light or dark"
+        hints={['Applies on all your devices.']}
+        value="system"
+        onChange={changed}
+        options={[
+          { value: 'light', label: 'Light', icon: 'Sun' },
+          { value: 'dark', label: 'Dark', icon: 'Moon', disabled: true },
+          { value: 'system', label: 'As the system', icon: 'Monitor' },
+        ]}
+      />,
+    )
+    const group = getByRole(root, 'radiogroup', { name: 'Light or dark' })
+    expect(document.getElementById(group.getAttribute('aria-describedby') ?? '')?.textContent).toBe('Applies on all your devices.')
+    const radios = getAllByRole(group, 'radio')
+    expect(radios.map((radio) => radio.getAttribute('aria-checked'))).toEqual(['false', 'false', 'true'])
+    expect(radios.map((radio) => radio.tabIndex)).toEqual([-1, -1, 0])
+    expect(radios.map((radio) => radio.dataset.icon)).toEqual(['Sun', 'Moon', 'Monitor'])
+    expect(radios[2]?.className).toContain('color-mix(in_srgb,var(--nexui-accent)_14%,transparent)')
+    expect(radios[2]?.className.split(' ')).toContain('h-8')
+    fireEvent.click(radios[0] as HTMLElement)
+    expect(changed).toHaveBeenLastCalledWith('light')
+    // The arrows go round and skip the disabled one: from "As the system" both ways lead to "Light".
+    changed.mockClear()
+    fireEvent.keyDown(radios[2] as HTMLElement, { key: 'ArrowRight' })
+    expect(changed).toHaveBeenLastCalledWith('light')
+    changed.mockClear()
+    fireEvent.keyDown(radios[2] as HTMLElement, { key: 'ArrowLeft' })
+    expect(changed).toHaveBeenLastCalledWith('light')
+    expect((radios[1] as HTMLButtonElement).disabled).toBe(true)
+  })
+
+  it('a segment with multiple is a group of boxes to tick, and keeps the last one when it must', () => {
+    const changed = vi.fn()
+    const root = show(
+      <Segment
+        multiple
+        min={1}
+        label="Languages"
+        hideLabel
+        value={['deu']}
+        onChange={changed}
+        options={[
+          { value: 'deu', label: 'Deutsch' },
+          { value: 'eng', label: 'English' },
+        ]}
+      />,
+    )
+    const group = getByRole(root, 'group', { name: 'Languages' })
+    expect(root.textContent).not.toContain('Languages')
+    const [german, english] = getAllByRole(group, 'checkbox') as HTMLButtonElement[]
+    expect(german?.getAttribute('aria-checked')).toBe('true')
+    expect(german?.disabled).toBe(true)
+    fireEvent.click(english as HTMLElement)
+    expect(changed).toHaveBeenLastCalledWith(['deu', 'eng'])
+  })
+})
+
+describe('the parts of the settings (since 1.1.0)', () => {
+  it('has its words in German, English and French, each with the same keys and none empty but a line', () => {
+    const keys = (value: object, prefix = ''): string[] =>
+      Object.entries(value).flatMap(([key, inner]) => (typeof inner === 'object' && inner ? keys(inner as object, `${prefix}${key}.`) : [`${prefix}${key}`]))
+    const german = keys(NEXUI_TEXTS.de).sort()
+    expect(keys(NEXUI_TEXTS.en).sort()).toEqual(german)
+    expect(keys(NEXUI_TEXTS.fr).sort()).toEqual(german)
+    for (const language of ['de', 'en', 'fr'] as const) {
+      for (const [key, text] of Object.entries(NEXUI_TEXTS[language])) if (typeof text === 'string') expect(text, `${language}.${key}`).not.toBe('')
+      expect(NEXUI_TEXTS[language].areas.profile.text).not.toBe('')
+    }
+    // The plan's words, word for word.
+    expect(NEXUI_TEXTS.de.areas.connections.text).toBe('Geräte, andere Apps, API-Schlüssel und KI-Werkzeuge, die mit deinen {things} arbeiten.')
+    expect(NEXUI_TEXTS.de.themeHint).toBe('Gilt auf allen deinen Geräten. „Wie das System“ folgt dem Gerät.')
+  })
+
+  it('a card carries its id as data-card; a button without words is only for moving and dragging, and named', () => {
+    const root = show(
+      <Card id="notify-ways" icon="Bell" title="Which way">
+        <IconButton icon="ArrowUp" aria-label="Move Pocket ID up" />
+        <IconButton icon="GripVertical" aria-label="Drag Pocket ID" />
+      </Card>,
+    )
+    expect(root.querySelector('[data-card="notify-ways"]')?.tagName.toLowerCase()).toBe('section')
+    const up = getByRole(root, 'button', { name: 'Move Pocket ID up' })
+    expect(up.dataset.icon).toBe('ArrowUp')
+    expect(up.textContent).toBe('')
+    expect(up.getAttribute('title')).toBe('Move Pocket ID up')
+    expect(getByRole(root, 'button', { name: 'Drag Pocket ID' }).className).toContain('cursor-grab')
+  })
+
+  it('a collapsible is closed until opened, its head a button that says how it stands, the status beside the title', () => {
+    const root = show(
+      <>
+        <Collapsible title="Address with https" status={<Badge tone="on">ok</Badge>}>
+          <p>Explained.</p>
+        </Collapsible>
+        <Collapsible variant="card" id="nextasks" icon="Plug" logo="/nextasks.svg" title="nextasks" subtitle="Tasks from notes" status="connected · tasks.example.com">
+          <p>Address and key.</p>
+        </Collapsible>
+      </>,
+    )
+    const [box, card] = getAllByRole(root, 'button')
+    expect(box?.getAttribute('aria-expanded')).toBe('false')
+    expect(root.textContent).not.toContain('Explained.')
+    expect(getByRole(root, 'heading', { level: 3, name: /Address with https/ }).contains(box as Node)).toBe(true)
+    expect(box?.textContent).toContain('ok')
+    act(() => {
+      fireEvent.click(box as HTMLElement)
+    })
+    expect(box?.getAttribute('aria-expanded')).toBe('true')
+    expect(document.getElementById(box?.getAttribute('aria-controls') ?? '')?.textContent).toBe('Explained.')
+    const section = root.querySelector<HTMLElement>('[data-card="nextasks"]')
+    expect(section?.dataset.collapsible).toBe('card')
+    expect(section?.querySelector('img')?.getAttribute('src')).toBe('/nextasks.svg')
+    expect(getByRole(root, 'heading', { level: 2, name: /nextasks/ }).contains(card as Node)).toBe(true)
+    expect(card?.textContent).toContain('connected · tasks.example.com')
+  })
+
+  it('a collapsible held by the caller opens only when told', () => {
+    const asked = vi.fn()
+    const root = show(
+      <Collapsible title="Proxy" open={false} onOpenChange={asked}>
+        <p>Inside.</p>
+      </Collapsible>,
+    )
+    fireEvent.click(getByRole(root, 'button', { name: /Proxy/ }))
+    expect(asked).toHaveBeenCalledWith(true)
+    expect(root.textContent).not.toContain('Inside.')
+  })
+
+  it('a table has a head row and the same rows as cards for a phone, both with their marks', () => {
+    type Line = { id: number; level: string; message: string }
+    const root = show(
+      <Table<Line, 'level' | 'message'>
+        label="Log"
+        columns={[
+          { key: 'level', label: 'Level', width: '5.5rem' },
+          { key: 'message', label: 'Message' },
+        ]}
+        rows={[
+          { id: 1, level: 'ERROR', message: 'It broke' },
+          { id: 2, level: 'INFO', message: 'Started' },
+        ]}
+        rowKey={(line) => line.id}
+        rowProps={(line) => ({ 'data-level': line.level })}
+        cell={(line, key) => line[key]}
+      />,
+    )
+    const table = getByRole(root, 'table', { name: 'Log' })
+    expect(getAllByRole(table, 'columnheader').map((head) => head.textContent)).toEqual(['Level', 'Message'])
+    expect(Array.from(table.querySelectorAll('tbody tr')).map((row) => row.getAttribute('data-level'))).toEqual(['ERROR', 'INFO'])
+    expect(table.className).toContain('@min-[640px]:table')
+    const cards = getByRole(root, 'list', { name: 'Log' })
+    expect(cards.className).toContain('@min-[640px]:hidden')
+    const items = getAllByRole(cards, 'listitem')
+    expect(items.map((item) => item.getAttribute('data-level'))).toEqual(['ERROR', 'INFO'])
+    expect(Array.from(items[0]?.querySelectorAll('dt') ?? []).map((term) => term.textContent)).toEqual(['Level', 'Message'])
+    shown?.unmount()
+    shown = null
+    const none = show(<Table label="Log" columns={[{ key: 'a', label: 'A' }]} rows={[]} cell={() => null} empty="Nothing yet." />)
+    expect(none.textContent).toBe('Nothing yet.')
+  })
+
+  it('a copy row shows the value in fixed letters and copies it with a small button that says so', async () => {
+    const written = vi.fn(() => Promise.resolve())
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText: written }, configurable: true })
+    const root = show(
+      <NexuiLanguage language="de-DE">
+        <CopyRow label="Adresse" value="https://notes.example.com/caldav" />
+      </NexuiLanguage>,
+    )
+    const field = getByLabelText(root, 'Adresse') as HTMLInputElement
+    expect(field.readOnly).toBe(true)
+    expect(field.className).toContain('font-mono')
+    const button = getByRole(root, 'button', { name: 'Kopieren' })
+    expect([button.dataset.size, button.dataset.kind, button.dataset.icon]).toEqual(['sm', 'secondary', 'Copy'])
+    await act(async () => {
+      fireEvent.click(button)
+      await Promise.resolve()
+    })
+    expect(written).toHaveBeenCalledWith('https://notes.example.com/caldav')
+    expect(getByRole(root, 'button', { name: 'Kopiert' }).dataset.icon).toBe('Check')
+    expect(getByRole(root, 'status').textContent).toBe('Kopiert')
+  })
+
+  it('a chip shows a thing and, where it may go, a remove button named after it', () => {
+    const removed = vi.fn()
+    const root = show(
+      <NexuiLanguage language="en">
+        <Chip>Deutsch</Chip>
+        <Chip name="Plattdeutsch" onRemove={removed}>
+          Plattdeutsch (nds) · 412 texts
+        </Chip>
+      </NexuiLanguage>,
+    )
+    expect(getAllByRole(root, 'button')).toHaveLength(1)
+    fireEvent.click(getByRole(root, 'button', { name: 'Remove Plattdeutsch' }))
+    expect(removed).toHaveBeenCalledTimes(1)
+  })
+
+  it("the theme segment says light, dark, as the system in the kit's words", () => {
+    const chosen = vi.fn()
+    const root = show(
+      <NexuiLanguage language="de">
+        <ThemeSegment value="system" onChange={chosen} />
+      </NexuiLanguage>,
+    )
+    const group = getByRole(root, 'radiogroup', { name: 'Hell oder dunkel' })
+    expect(getAllByRole(group, 'radio').map((radio) => [radio.textContent, radio.dataset.icon, radio.getAttribute('aria-checked')])).toEqual([
+      ['Hell', 'Sun', 'false'],
+      ['Dunkel', 'Moon', 'false'],
+      ['Wie das System', 'Monitor', 'true'],
+    ])
+    fireEvent.click(getByRole(group, 'radio', { name: 'Dunkel' }))
+    expect(chosen).toHaveBeenCalledWith('dark')
+  })
+
+  it("the navigation puts my account first, the app's own group next, server last and about apart, marking where one is", () => {
+    const root = show(
+      <NexuiLanguage language="de">
+        <SettingsLayout
+          back="/settings"
+          nav={
+            <SettingsNav
+              app="nexmail"
+              things="Mails"
+              current="rules"
+              account={{ name: 'Kim', role: 'Betreiber' }}
+              about={{ href: '/settings/about' }}
+              groups={[
+                { id: 'server', areas: [{ slug: 'general', icon: 'SlidersHorizontal', href: '/settings/general' }] },
+                { id: 'account', areas: [{ slug: 'profile', icon: 'UserRound', href: '/settings/profile' }] },
+                { id: 'mail', title: 'Mail', areas: [{ slug: 'rules', title: 'Regeln', icon: 'Mail', href: '/settings/rules' }] },
+              ]}
+            />
+          }
+        >
+          <SettingsPage slug="connections" app="nexmail" things="Mails">
+            <Card id="devices" icon="Smartphone" title="Geräte" />
+          </SettingsPage>
+        </SettingsLayout>
+      </NexuiLanguage>,
+    )
+    const nav = getByRole(root, 'navigation', { name: 'Einstellungen' })
+    expect(Array.from(nav.querySelectorAll('[data-group]')).map((group) => group.getAttribute('data-group'))).toEqual(['account', 'mail', 'server'])
+    expect(getAllByRole(nav, 'link').map((link) => link.textContent)).toEqual(['Profil', 'Regeln', 'Allgemein', 'Über nexmail'])
+    expect(getByRole(nav, 'link', { name: 'Regeln' }).getAttribute('aria-current')).toBe('page')
+    expect(getByRole(nav, 'list', { name: 'Mein Konto' })).toBeTruthy()
+    expect(getByRole(root, 'heading', { level: 1, name: 'Verbindungen' })).toBeTruthy()
+    expect(root.textContent).toContain('Geräte, andere Apps, API-Schlüssel und KI-Werkzeuge, die mit deinen Mails arbeiten.')
+    // A phone in an area: the list is hidden, the way back is there; on the list it is the other way round.
+    const side = root.querySelector('[data-part="settings-side"]')
+    expect(side?.className.split(' ')).toContain('hidden')
+    expect(getByRole(root, 'link', { name: 'Einstellungen' }).getAttribute('href')).toBe('/settings')
+    expect(root.querySelector('[data-part="settings-cards"] [data-card="devices"]')).not.toBeNull()
+  })
+
+  it('the about page shows version, what is new, licence, source, releases and the updates, the operator acts', () => {
+    const checked = vi.fn()
+    const daily = vi.fn()
+    const root = show(
+      <NexuiLanguage language="de">
+        <AboutPage
+          app="nexnotes"
+          logo="/logo.svg"
+          tagline="Schnelle Notizen, selbst gehostet."
+          version="1.1.0"
+          licence={{ name: 'AGPL-3.0', href: 'https://www.gnu.org/licenses/agpl-3.0.html' }}
+          source="https://github.com/example/nexnotes"
+          releases="https://github.com/example/nexnotes/releases"
+          project="https://github.com/example/nexnotes"
+          whatsNew={{ lead: 'Neu.', sections: [{ title: 'Einstellungen', where: 'Einstellungen', body: 'Aufgeräumt.' }], smallTitle: 'Kleines', small: ['Schneller'] }}
+          updates={{ checkDaily: true, checked: true, latest: 'v1.2.0', newer: true, releaseUrl: 'https://github.com/example/nexnotes/releases/tag/v1.2.0' }}
+          operator
+          onDaily={daily}
+          onCheck={checked}
+          builtWith={[{ name: 'React', url: 'https://react.dev', licence: 'MIT' }]}
+        />
+      </NexuiLanguage>,
+    )
+    const head = root.querySelector<HTMLElement>('[data-card="about"]') as HTMLElement
+    expect(head.querySelector('img')?.getAttribute('src')).toBe('/logo.svg')
+    expect(getByRole(head, 'heading', { level: 2, name: 'nexnotes' })).toBeTruthy()
+    expect(Array.from(head.querySelectorAll('dt')).map((term) => term.textContent)).toEqual([
+      'Version',
+      'Was ist neu',
+      'Lizenz',
+      'Quelltext',
+      'Veröffentlichungen',
+      'Einen Fehler gefunden?',
+    ])
+    expect(getByText(head, 'Version 1.2.0 ist erschienen').dataset.tone).toBe('accent')
+    const news = getByRole(head, 'button', { name: 'Neu in nexnotes 1.1.0' })
+    expect([news.dataset.size, news.dataset.kind]).toEqual(['sm', 'secondary'])
+    act(() => {
+      fireEvent.click(news)
+    })
+    const dialog = getByRole(document.body, 'dialog', { name: 'Neu in nexnotes 1.1.0' })
+    expect(dialog.textContent).toContain('Aufgeräumt.')
+    act(() => {
+      fireEvent.click(getByRole(dialog, 'button', { name: 'Verstanden' }))
+    })
+    expect(queryByRole(document.body, 'dialog')).toBeNull()
+    const updates = root.querySelector<HTMLElement>('[data-card="about-updates"]') as HTMLElement
+    fireEvent.click(getByRole(updates, 'checkbox', { name: 'Einmal am Tag nachsehen' }))
+    expect(daily).toHaveBeenCalledWith(false)
+    fireEvent.click(getByRole(updates, 'button', { name: 'Jetzt nachsehen' }))
+    expect(checked).toHaveBeenCalledTimes(1)
+    expect(updates.textContent).toContain('api.github.com')
+    expect(root.querySelector('[data-card="about-built-with"]')?.textContent).toContain('React(MIT)')
+  })
+
+  it("the ways of notifications show only the ways an app has, with the plan's buttons", () => {
+    const removed = vi.fn()
+    const root = show(
+      <NexuiLanguage language="de">
+        <NotifyWays
+          mail={{ address: 'kim@example.com', confirmed: true, onChange: () => undefined }}
+          browser={{ on: true, onTurnOn: () => undefined, onTurnOff: () => undefined, onProbe: () => undefined }}
+          browsers={{ items: [{ id: 'a', name: 'Firefox unter Linux', current: true }], onRemove: removed }}
+        />
+      </NexuiLanguage>,
+    )
+    const card = root.querySelector<HTMLElement>('[data-card="notify-ways"]') as HTMLElement
+    expect(getByRole(card, 'heading', { level: 2, name: 'Auf welchem Weg' })).toBeTruthy()
+    expect(getAllByRole(card, 'heading', { level: 3 }).map((heading) => heading.textContent)).toEqual(['Mail', 'Dieser Browser', 'Browser mit Mitteilungen'])
+    const said = (name: string) => {
+      const button = getByRole(card, 'button', { name })
+      return [button.dataset.kind, button.dataset.size, button.dataset.icon]
+    }
+    expect(said('Im Profil ändern')).toEqual(['secondary', 'sm', 'UserPen'])
+    expect(said('Ausschalten')).toEqual(['danger', 'md', 'BellOff'])
+    expect(said('Probemeldung schicken')).toEqual(['secondary', 'md', 'Send'])
+    expect(said('Entfernen')).toEqual(['danger', 'sm', 'Trash2'])
+    fireEvent.click(getByRole(card, 'button', { name: 'Entfernen' }))
+    expect(removed).toHaveBeenCalledWith('a')
+    expect(queryByRole(card, 'heading', { name: 'iPhone und iPad' })).toBeNull()
+  })
+
+  it('every button of the kit has a symbol and words, a size and one of the three kinds (the symbol-only ones excepted)', () => {
+    const root = show(
+      <NexuiLanguage language="en">
+        <NotifyWays
+          mail={{ address: 'kim@example.com', confirmed: false, onChange: () => undefined }}
+          browser={{ on: false, onTurnOn: () => undefined, onTurnOff: () => undefined }}
+          devices={{ onOpen: () => undefined }}
+        />
+        <CopyRow label="Key" value="ntk_x" />
+      </NexuiLanguage>,
+    )
+    const buttons = Array.from(root.querySelectorAll<HTMLElement>('button, a[data-kind]'))
+    expect(buttons.length).toBeGreaterThan(2)
+    for (const button of buttons) {
+      expect(['md', 'sm'], button.outerHTML).toContain(button.dataset.size)
+      expect(['primary', 'secondary', 'danger']).toContain(button.dataset.kind)
+      expect(button.firstElementChild?.tagName.toLowerCase()).toBe('svg')
+      expect(button.textContent?.trim()).not.toBe('')
+    }
   })
 })

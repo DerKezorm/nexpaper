@@ -227,7 +227,95 @@
       "avatars_busy": "Too many pictures at once. Try again in a moment.",
       "public_url_needed": "The link needs the public address of {{app}}. Enter it in the server settings.",
       "nothing_to_prove": "There is no address left to confirm by link.",
-      "unknown": "That did not work. Try again."
-    }
+      "unknown": "That did not work. Try again.",
+      "cannot_demote_self": "You do not change your own role here.",
+      "cannot_block_self": "You do not block your own account.",
+      "cannot_delete_self": "You do not delete your own account here.",
+      "last_operator": "{{app}} needs at least one operator who can sign in.",
+      "feature_off": "{{app}} does not have this.",
+      "invalid_limit": "The limit is a number from 0, at most 10 TB.",
+      "theme_invalid": "Choose Light, Dark or Like the system.",
+      "provider_first": "Without an active sign-in provider, signing in with a password stays on.",
+      "own_second_factor_first": "Set up a second factor of your own first."
+    },
+    "ownSecondFactorFirst": "Set up a second factor of your own first (My account, Security), or you would be the first one locked out.",
+    "factorRequiredOffTitle": "Stop requiring a second factor?",
+    "factorRequiredOffText": "A password alone gets into an account again then. Whoever has a second factor already keeps it.",
+    "factorRequiredOff": "Stop requiring",
+    "passkeysAllowedHint": "Sign in with a fingerprint, a face or the device's PIN, without a password.",
+    "emailUnconfirmed": "Address not confirmed yet",
+    "emailUnconfirmedHint": "A link to {{email}} shows that the address is yours.",
+    "emailProveSend": "Send link",
+    "signOut": "Sign out",
+    "signOutText": "Ends your session in this browser. Your {{things}} stay as they are.",
+    "signOutProvider": "You stay signed in at your sign-in provider; only {{app}} signs you out.",
+    "signOutPending_one": "{{count}} change is not saved yet. If you sign out now, it is lost.",
+    "signOutPending_other": "{{count}} changes are not saved yet. If you sign out now, they are lost.",
+    "waitForChanges": "Wait",
+    "signOutAnyway": "Sign out anyway",
+    "whatYouSee": "What you see",
+    "storage": "Storage",
+    "storageUsedOf": "{{used}} of {{limit}}",
+    "storageUsedNoLimit": "{{used}}, no limit",
+    "storageLimit": "Storage limit",
+    "storageLimitTitle": "Storage limit for {{name}}",
+    "storageLimitField": "Limit in GB",
+    "storageUsed": "Used: {{used}}",
+    "storageLimitRemove": "Remove limit",
+    "rightAi": "AI allowed",
+    "rightImmich": "Immich allowed",
+    "ready": {
+      "title": "Ready for the internet?",
+      "text": "Many reach {{app}} from on the road as well. {{app}} checks this itself, each time you open the page.",
+      "open_one": "{{count}} point open",
+      "open_other": "{{count}} points open",
+      "allGood": "All done",
+      "state": {
+        "ok": "done",
+        "warn": "check",
+        "bad": "open"
+      },
+      "address": {
+        "title": "Public address with https",
+        "ok": "{{app}} is reached at {{address}}; passwords and cookies cross the network encrypted.",
+        "warn": "{{address}} has https, but this request came without. Open {{app}} through that address, or let the proxy send X-Forwarded-Proto and put it into {{variable}}.",
+        "bad": "Without https, passwords cross the network in the open, and web push and passkeys do not work at all. Enter the public address with https below.",
+        "missing": "No public address yet. Enter the address with https below at which {{app}} is reached."
+      },
+      "factorForAll": {
+        "title": "Second factor for everybody",
+        "ok": "Whoever signs in with a password needs a code or a passkey as well.",
+        "bad": "Off: a guessed or stolen password is enough to get into an account. Switch on “Require a second factor of everybody” below.",
+        "warn": "Required of accounts with a password. At {{providers}} the provider checks the second factor itself, {{app}} asks none of its own there. Check that the provider really requires it.",
+        "off": "{{variable}} is set: nobody is asked for a second factor. Remove the variable and restart {{app}}."
+      },
+      "ownAccount": {
+        "title": "Your own account",
+        "ok": "Has a second factor.",
+        "bad": "Has no second factor yet, and it may set everything. Set one up under My account, Security."
+      },
+      "brake": {
+        "title": "Protection against guessing",
+        "ok": "5 tries are free, after that each further one waits longer. After 10 wrong passwords the account is locked for 15 minutes. Every try is in the log.",
+        "warn": "All visitors come through a proxy {{app}} does not know: the pause holds per account, but per address only roughly. See “Behind the proxy”.",
+        "bad": "The list of trusted proxies holds public networks ({{networks}}). Anybody could then make up the sender's address, and the pause after wrong tries no longer holds. Enter only the address of your proxy.",
+        "broken": "The protection against guessing fails its own test. Restart {{app}}; if that does not help, please report it."
+      },
+      "cookies": {
+        "title": "Sessions and cookies",
+        "ok_one": "Cookies only over https and not readable by scripts; a sign-in ends after {{count}} day without use.",
+        "ok_other": "Cookies only over https and not readable by scripts; a sign-in ends after {{count}} days without use.",
+        "warn": "Without https the sign-in cookies travel in the open. Over https {{app}} protects them by itself.",
+        "bad": "{{variable}} is off: the cookies go unprotected over https too. Set the value to auto."
+      },
+      "proxy": {
+        "title": "Behind the proxy",
+        "ok": "The visitors' real address arrives (proxy {{proxies}} entered as trusted). Without that, the protection against guessing would see everybody as one.",
+        "direct": "The visitors arrive directly, without a proxy in between.",
+        "warn": "The requests come through a proxy ({{proxy}}) that is not entered as trusted: the protection against guessing sees everybody as one. Set {{variable}} to its address.",
+        "bad": "Public networks are entered as trusted ({{networks}}). Set {{variable}} to the address of your proxy, not to the whole internet."
+      }
+    },
+    "cancel": "Cancel"
   }
 }

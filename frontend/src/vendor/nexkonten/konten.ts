@@ -57,6 +57,16 @@ export const ACCOUNT_ERROR_CODES = [
   'avatars_busy',
   'public_url_needed',
   'nothing_to_prove',
+  // since 1.1.0
+  'cannot_demote_self',
+  'cannot_block_self',
+  'cannot_delete_self',
+  'last_operator',
+  'feature_off',
+  'invalid_limit',
+  'theme_invalid',
+  'provider_first',
+  'own_second_factor_first',
 ] as const
 
 export type AccountErrorCode = (typeof ACCOUNT_ERROR_CODES)[number]
@@ -278,7 +288,15 @@ export type ButtonKind = (typeof BUTTON_KINDS)[number]
 export interface ButtonSpec {
   kind: ButtonKind
   icon: string
+  /** Since 1.1.0 (ui 1.1.0): ``sm`` for a button in a row, a list or a small box (``data-size``); left out ``md``. The
+   * dialog "Manage" keeps ``md`` (decided 25.11.2026). */
+  size?: 'sm'
 }
+
+/** Since 1.1.0: the two sizes of ui 1.1.0. */
+export const BUTTON_SIZES = ['md', 'sm'] as const
+
+export type ButtonSize = (typeof BUTTON_SIZES)[number]
 
 /** Since 0.3.8: every button of the account pages and screens with its kind and symbol, so that the same button looks
  * the same in every app. Keyed by its text key where the module (or ``oidc``) words it, else by its role (the app
@@ -292,19 +310,19 @@ export const BUTTONS = {
   'account.save': { kind: 'primary', icon: 'Check' },
   'account.providerEmailTake': { kind: 'primary', icon: 'Check' },
   'account.providerEmailDismiss': { kind: 'secondary', icon: 'X' },
-  'account.emailResend': { kind: 'secondary', icon: 'Send' },
-  'account.emailWithdraw': { kind: 'danger', icon: 'Undo2' },
+  'account.emailResend': { kind: 'secondary', icon: 'Send', size: 'sm' },
+  'account.emailWithdraw': { kind: 'danger', icon: 'Undo2', size: 'sm' },
   'account.emailRemove': { kind: 'danger', icon: 'Trash2' },
   // Since 0.3.10: "Confirm by link" for an address that counts and is not proven yet (profiles.prove_email)
-  'account.emailProve': { kind: 'secondary', icon: 'Send' },
+  'account.emailProve': { kind: 'secondary', icon: 'Send', size: 'sm' },
   // Security
   'account.passwordChange': { kind: 'secondary', icon: 'KeyRound' },
   'account.totpSetup': { kind: 'primary', icon: 'ShieldCheck' },
   'account.totpRemove': { kind: 'danger', icon: 'ShieldOff' },
   'account.recoveryCodesNew': { kind: 'secondary', icon: 'RefreshCw' },
   'account.passkeyAdd': { kind: 'secondary', icon: 'Fingerprint' },
-  'account.passkeyRemove': { kind: 'danger', icon: 'Trash2' },
-  'account.sessionSignOut': { kind: 'danger', icon: 'LogOut' },
+  'account.passkeyRemove': { kind: 'danger', icon: 'Trash2', size: 'sm' },
+  'account.sessionSignOut': { kind: 'danger', icon: 'LogOut', size: 'sm' },
   'account.signOutEverywhere': { kind: 'danger', icon: 'LogOut' },
   'account.disconnectAll': { kind: 'danger', icon: 'Unplug' },
   // Signing in, setup, invitation, forgotten password, the dialog "Session expired"
@@ -316,7 +334,7 @@ export const BUTTONS = {
   'account.factorReset': { kind: 'danger', icon: 'ShieldOff' },
   // Since 0.3.9: the list, its dialog "Manage" (ACCOUNT_LIST, MANAGE_DIALOG), "Invite" and the open invitations
   'account.invite': { kind: 'primary', icon: 'UserPlus' },
-  'account.manage': { kind: 'secondary', icon: 'UserCog' },
+  'account.manage': { kind: 'secondary', icon: 'UserCog', size: 'sm' },
   'account.changeDisplayName': { kind: 'secondary', icon: 'UserPen' },
   'account.changeUsername': { kind: 'secondary', icon: 'Pencil' },
   'account.makeOperator': { kind: 'secondary', icon: 'Crown' },
@@ -329,11 +347,11 @@ export const BUTTONS = {
   'account.restore': { kind: 'secondary', icon: 'RotateCcw' },
   'account.linkMake': { kind: 'primary', icon: 'Link' },
   'account.linkSend': { kind: 'primary', icon: 'Send' },
-  'account.inviteWithdraw': { kind: 'danger', icon: 'Undo2' },
+  'account.inviteWithdraw': { kind: 'danger', icon: 'Undo2', size: 'sm' },
   // The providers (the words of the module oidc)
   'oidc.login.button': { kind: 'secondary', icon: 'KeyRound' },
-  'oidc.account.link': { kind: 'secondary', icon: 'Link' },
-  'oidc.account.unlink': { kind: 'danger', icon: 'Unlink' },
+  'oidc.account.link': { kind: 'secondary', icon: 'Link', size: 'sm' },
+  'oidc.account.unlink': { kind: 'danger', icon: 'Unlink', size: 'sm' },
   // Buttons the app words, by their role
   signIn: { kind: 'primary', icon: 'LogIn' },
   setupSubmit: { kind: 'primary', icon: 'Check' },
@@ -346,7 +364,7 @@ export const BUTTONS = {
   blockAccount: { kind: 'danger', icon: 'Ban' },
   unblockAccount: { kind: 'secondary', icon: 'CircleCheck' },
   removeAccount: { kind: 'danger', icon: 'UserX' },
-  copy: { kind: 'secondary', icon: 'Copy' },
+  copy: { kind: 'secondary', icon: 'Copy', size: 'sm' },
   download: { kind: 'secondary', icon: 'Download' },
   done: { kind: 'primary', icon: 'Check' },
   confirm: { kind: 'primary', icon: 'Check' },
@@ -358,7 +376,23 @@ export const BUTTONS = {
   // Since 1.0.0: taking an own value of the app away again (a storage limit, a quota; nextime and nexnotes borrowed
   // account.emailRemove for it): red, a bin, like every other removing
   removeValue: { kind: 'danger', icon: 'Trash2' },
+  // Since 1.1.0: the operator's functions of every app (the storage limit where the app has it), the profile's box
+  // "Address not confirmed yet", signing out, the operator's sign-in settings (ShieldOff: the second factor no more)
+  'account.storageLimit': { kind: 'secondary', icon: 'HardDrive' },
+  'account.storageLimitRemove': { kind: 'danger', icon: 'Trash2' },
+  'account.emailProveSend': { kind: 'secondary', icon: 'Send', size: 'sm' },
+  'account.signOut': { kind: 'danger', icon: 'LogOut' },
+  'account.waitForChanges': { kind: 'secondary', icon: 'X' },
+  'account.signOutAnyway': { kind: 'danger', icon: 'LogOut' },
+  'account.factorRequiredOff': { kind: 'danger', icon: 'ShieldOff' },
+  'account.cancel': { kind: 'secondary', icon: 'X' },
 } as const satisfies Record<string, ButtonSpec>
+
+/** Since 1.1.0: the size of a button (``ui`` ``Button size``): ``sm`` where ``BUTTONS`` says so, else ``md``. */
+export function buttonSize(name: ButtonName): ButtonSize {
+  const spec: ButtonSpec = BUTTONS[name]
+  return spec.size ?? 'md'
+}
 
 export type ButtonName = keyof typeof BUTTONS
 
@@ -599,6 +633,11 @@ export interface ListedAccount {
   /** Since 0.3.10: the app's colour of this person (a CSS colour, ``#4a6491``); null or left out: the hue from the
    * name (``avatarPlaceholder``), as before. */
   color?: string | null
+  /** Since 1.1.0, apps with the feature ``storage_limit``: the account's limit in bytes (null: none) and what it uses. */
+  storageLimit?: number | null
+  storageUsed?: number | null
+  /** Since 1.1.0: the rights the account has (``ai``, ``immich``); only the app's features show (``FEATURES``). */
+  rights?: readonly string[]
 }
 
 /** Since 0.3.9: the badges of a row, in this order, each with its words and tone. ``provider`` is one badge per
@@ -790,7 +829,14 @@ export const MANAGE_DIALOG = {
     change: {
       title: 'account.groupChange',
       layout: 'buttons',
-      buttons: ['account.changeDisplayName', 'account.changeUsername', 'account.makeOperator', 'account.makeMember', 'account.emailRemove'],
+      buttons: [
+        'account.changeDisplayName',
+        'account.changeUsername',
+        'account.makeOperator',
+        'account.makeMember',
+        'account.storageLimit',
+        'account.emailRemove',
+      ],
     },
     rights: { title: 'account.groupRights', layout: 'list', buttons: [] },
     access: {
@@ -820,7 +866,22 @@ export type ManageButton =
  * ``remove``: delete; ``restore``: bring a deleted account back while its days run. ``inviteRole`` (since 0.3.10): the
  * field "Role" in the dialog "Invite"; left out it follows ``roles`` as before (nextasks changes roles but invites
  * members only: ``inviteRole: false``). */
-export const ACCOUNT_CAPS = ['rename', 'roles', 'emailRemove', 'resetLink', 'factorReset', 'signOut', 'unlink', 'blocking', 'remove', 'restore', 'inviteRole'] as const
+export const ACCOUNT_CAPS = [
+  'rename',
+  'roles',
+  'emailRemove',
+  'resetLink',
+  'factorReset',
+  'signOut',
+  'unlink',
+  'blocking',
+  'remove',
+  'restore',
+  'inviteRole',
+  'storageLimit',
+  'ai',
+  'immich',
+] as const
 
 export type AccountCap = (typeof ACCOUNT_CAPS)[number]
 
@@ -832,6 +893,7 @@ export const MANAGE_CAP: Record<ManageButton, AccountCap> = {
   'account.changeUsername': 'rename',
   'account.makeOperator': 'roles',
   'account.makeMember': 'roles',
+  'account.storageLimit': 'storageLimit',
   'account.emailRemove': 'emailRemove',
   'account.resetLink': 'resetLink',
   'account.factorReset': 'factorReset',
@@ -876,6 +938,7 @@ export const MANAGE_CONFIRM = {
   'account.changeUsername': { confirm: 'password', text: 'account.askChangeUsername' },
   'account.makeOperator': { confirm: 'password', text: 'account.askMakeOperator' },
   'account.makeMember': { confirm: 'password', text: 'account.askMakeMember' },
+  'account.storageLimit': { confirm: 'password', text: '' },
   'account.emailRemove': { confirm: 'password', text: 'account.askEmailRemove' },
   'account.resetLink': { confirm: 'password', text: 'account.askResetLink' },
   'account.factorReset': { confirm: 'password', text: 'account.factorResetHint' },
@@ -954,7 +1017,18 @@ export type AccountAction =
       values?: Readonly<Record<string, string>>
       provider?: ListedProvider
     }
-  | { type: 'check'; name: string; label: string; group: 'rights'; checked: boolean; confirm: 'none'; own: true; hint?: string }
+  | {
+      type: 'check'
+      name: string
+      label: string
+      group: 'rights'
+      checked: boolean
+      confirm: 'none'
+      own: boolean
+      hint?: string
+      /** Since 1.1.0: a right of the module (``ai``, ``immich``); the app saves it through ``manage.set_right``. */
+      right?: Right
+    }
 
 type ButtonAction = Extract<AccountAction, { type: 'button' }>
 
@@ -1006,6 +1080,10 @@ export function accountActions(row: ListedAccount, caps: AccountCaps, own: reado
   for (const group of MANAGE_GROUPS) {
     if (group === 'rights') {
       if (row.deletedAt) continue
+      for (const right of RIGHTS) {
+        if (!caps[right]) continue
+        shown.push({ type: 'check', name: RIGHT_TEXT[right], label: RIGHT_TEXT[right], group: 'rights', checked: (row.rights ?? []).includes(right), confirm: 'none', own: false, right })
+      }
       for (const entry of own) {
         if (entry.group !== 'rights' || (row.self && entry.notSelf)) continue
         const check: AccountAction = { type: 'check', name: entry.name, label: entry.label, group: 'rights', checked: entry.checked, confirm: 'none', own: true }
@@ -1164,4 +1242,231 @@ export function inviteRow(
       : { badge: 'invite', text: OPEN_INVITES.valid.text, tone: OPEN_INVITES.valid.tone, date: invite.expiresAt },
   )
   return { name: named || email, nameText: named || email ? '' : OPEN_INVITES.noName, sub: named ? email : '', badges, expired }
+}
+
+// --- Since 1.1.0: the settings (plan "Einstellungen") ------------------------------------------------------------------
+
+/** Since 1.1.0: what the operator's functions offer beyond what every app has, by feature, the apps that have it (the
+ * same table as ``config.FEATURES`` on the server): a storage limit per account where accounts keep files, "AI allowed"
+ * where the app has AI built in, "Immich allowed" where Immich is connected (decided 25.11.2026). */
+export const FEATURES = {
+  storageLimit: ['nexnotes', 'nexpaper', 'nexdiary', 'nexlore'],
+  ai: ['nexmail', 'nexpaper', 'nexdiary', 'nexlore'],
+  immich: ['nexdiary'],
+} as const satisfies Record<string, readonly string[]>
+
+export type Feature = keyof typeof FEATURES
+
+/** Since 1.1.0: the features of an app by its name. */
+export function featuresOf(app: string): Feature[] {
+  const name = app.trim().toLowerCase()
+  return (Object.keys(FEATURES) as Feature[]).filter((feature) => (FEATURES[feature] as readonly string[]).includes(name))
+}
+
+/** Since 1.1.0: the rights of an account, boxes to tick in "Rights" of the dialog "Manage", saved at once (the server's
+ * ``manage.set_right`` with these names). */
+export const RIGHTS = ['ai', 'immich'] as const
+
+export type Right = (typeof RIGHTS)[number]
+
+export const RIGHT_TEXT: Record<Right, string> = { ai: 'account.rightAi', immich: 'account.rightImmich' }
+
+/** Since 1.1.0: the account functions every app has (several operators, block, delete with 30 days to bring back,
+ * decided 25.11.2026). */
+export const STANDARD_CAPS = { roles: true, blocking: true, remove: true, restore: true } as const satisfies AccountCaps
+
+/** Since 1.1.0: the switches of the dialog "Manage" for an app: what it has of its own (``rename``, ``resetLink`` …,
+ * as before), the standard ones, and its features from ``FEATURES``. The standard ones and the features are not the
+ * app's to switch off. */
+export function capsOf(app: string, own: AccountCaps = {}): AccountCaps {
+  const features = featuresOf(app)
+  return {
+    ...own,
+    ...STANDARD_CAPS,
+    storageLimit: features.includes('storageLimit'),
+    ai: features.includes('ai'),
+    immich: features.includes('immich'),
+  }
+}
+
+/** Since 1.1.0: how long a deleted account can be brought back (``manage.DELETE_DAYS``), ``count`` of
+ * ``account.askRemoveDays``. */
+export const DELETE_DAYS = 30
+
+/** Since 1.1.0: the storage limit's field takes GB (the server takes bytes). */
+export const STORAGE_LIMIT_UNIT = 1024 ** 3
+
+/** Since 1.1.0: the dialog of the storage limit (``account.storageLimit``): title with ``{{name}}``, the field in GB
+ * with what the account uses under it, "Remove limit" while it has one, and the app's sentence of what the limit stops
+ * (its own text) after ``text``. */
+export const STORAGE_LIMIT_DIALOG = {
+  title: 'account.storageLimitTitle',
+  field: 'account.storageLimitField',
+  used: 'account.storageUsed',
+  remove: 'account.storageLimitRemove',
+  save: 'account.save',
+} as const
+
+/** Since 1.1.0: the fact "Storage" of an account in the dialog "Manage" (``FactShown``): used of the limit, or used
+ * without one. ``size`` writes a number of bytes the app's way. */
+export function storageFact(
+  row: Pick<ListedAccount, 'storageLimit' | 'storageUsed'>,
+  size: (bytes: number) => string,
+): FactShown {
+  const used = size(row.storageUsed ?? 0)
+  return row.storageLimit
+    ? { fact: 'storage', label: 'account.storage', text: 'account.storageUsedOf', values: { used, limit: size(row.storageLimit) } }
+    : { fact: 'storage', label: 'account.storage', text: 'account.storageUsedNoLimit', values: { used } }
+}
+
+// --- Appearance ---
+
+/** Since 1.1.0: light, dark, as the device says (ui ``ThemeSegment``), kept at the account on every device (E5, E17;
+ * ``profiles.change_theme``). */
+export const THEMES = ['light', 'dark', 'system'] as const
+
+export type Theme = (typeof THEMES)[number]
+
+export const THEME_DEFAULT: Theme = 'system'
+
+/** Since 1.1.0: the account's theme, ``system`` while it has chosen none. */
+export function themeOf(value: string | null | undefined): Theme {
+  return (THEMES as readonly string[]).includes(value ?? '') ? (value as Theme) : THEME_DEFAULT
+}
+
+/** Since 1.1.0: the value a browser kept before 1.1.0 (``nexnotes.theme`` = ``dark``, nexmail's JSON ``"dark"``), as a
+ * theme, else '' (nothing to hand the server, ``profiles.adopt_theme``). The app names its own key. */
+export function browserTheme(raw: string | null | undefined): Theme | '' {
+  const value = (raw ?? '').trim().replace(/^"|"$/g, '').trim().toLowerCase()
+  return (THEMES as readonly string[]).includes(value) ? (value as Theme) : ''
+}
+
+/** Since 1.1.0: the card "Appearance", first on the page Appearance of every app (``AppearanceCard``): id, symbol, the
+ * title from ui (``appearance``, "Aussehen"), the ``ThemeSegment`` with its hint. */
+export const APPEARANCE_CARD = { id: 'appearance', icon: 'Palette' } as const
+
+// --- Profile ---
+
+/** Since 1.1.0: the box "Address not confirmed yet" in the profile of every app (``UnconfirmedEmailBox``; nexpaper had
+ * it as a line): for an address that counts but no link has proven yet (``profiles.prove_email``), while a mail server
+ * can send the link. "Send link" (``account.emailProveSend``, ``sm``), then ``account.emailProveSent``. The same as
+ * ``profiles.needs_proof`` on the server. Addresses of before the update count as proven (E23: the migration to 1.1.0
+ * marks them; nexpaper keeps its unproven ones), so the box shows only for one entered from now on. */
+export function showUnconfirmed(
+  me: { email?: string | null; emailConfirmed?: boolean; emailProven?: boolean; pendingEmail?: string | null },
+  mailServer: boolean,
+): boolean {
+  return Boolean(me.email) && me.emailConfirmed !== false && me.emailProven === false && !me.pendingEmail && mailServer
+}
+
+export const UNCONFIRMED_BOX = {
+  title: 'account.emailUnconfirmed',
+  hint: 'account.emailUnconfirmedHint',
+  button: 'account.emailProveSend',
+  sent: 'account.emailProveSent',
+} as const
+
+/** Since 1.1.0: the card "Sign out" of every profile (``SignOutCard``): the module's sentence with the app's word for
+ * its things (``{{things}}``: Notizen, Mails …), with a provider the sentence that it stays signed in there, the button
+ * ``account.signOut``. Where the app knows changes that still wait (nexnotes, nextime, nexfolk), it asks first. */
+export const SIGN_OUT_CARD = {
+  id: 'sign-out',
+  icon: 'LogOut',
+  title: 'account.signOut',
+  text: 'account.signOutText',
+  provider: 'account.signOutProvider',
+  button: 'account.signOut',
+  pending: 'account.signOutPending',
+  wait: 'account.waitForChanges',
+  anyway: 'account.signOutAnyway',
+} as const
+
+// --- Accounts ---
+
+/** Since 1.1.0: the card "What you see" under Server, Accounts in all eight apps (ShieldCheck): the app's sentence
+ * (its own text key, "Als Betreiber siehst du …, aber nie …"). */
+export const WHAT_YOU_SEE_CARD = { id: 'accounts-what-you-see', icon: 'ShieldCheck', title: 'account.whatYouSee' } as const
+
+// --- Server, Sign-in ---
+
+/** Since 1.1.0: the page Server, Sign-in of every app, top to bottom (``SignInPage``): the emergency hammer's notice
+ * (only while it is down), "Ready for the internet?", the card "Sign-in", then the module oidc's cards "Sign-in
+ * providers" and "authentik in one step". */
+export const SIGN_IN_PAGE = ['secondFactorOff', 'readiness', 'signIn', 'providers', 'authentik'] as const
+
+/** Since 1.1.0: the card "Sign-in", its parts top to bottom: password sign-in, the public address (field with
+ * "Save" beside it), the second factor for everybody (on only with a factor of one's own, off only with the password),
+ * passkeys allowed with its hint. */
+export const SIGN_IN_CARD = {
+  id: 'sign-in',
+  icon: 'ShieldCheck',
+  title: 'oidc.admin.signInTitle',
+  parts: ['passwordLogin', 'publicUrl', 'factorRequired', 'passkeysAllowed'],
+  passwordLogin: { label: 'oidc.admin.password', hint: 'oidc.admin.passwordHint' },
+  publicUrl: { label: 'oidc.admin.address', hint: 'oidc.admin.addressHint', button: 'account.save' },
+  factorRequired: {
+    label: 'account.factorRequiredSwitch',
+    hint: 'account.factorRequiredSwitchHint',
+    locked: 'account.ownSecondFactorFirst',
+    offTitle: 'account.factorRequiredOffTitle',
+    offText: 'account.factorRequiredOffText',
+    offButton: 'account.factorRequiredOff',
+  },
+  passkeysAllowed: { label: 'account.passkeysAllowed', hint: 'account.passkeysAllowedHint' },
+} as const
+
+/** Since 1.1.0: the placeholder of the public address per app (nexlore showed nexnotes'). */
+export const PUBLIC_URL_PLACEHOLDERS = {
+  nexnotes: 'https://notes.example.com',
+  nexmail: 'https://mail.example.com',
+  nextasks: 'https://tasks.example.com',
+  nextime: 'https://time.example.com',
+  nexpaper: 'https://paper.example.com',
+  nexdiary: 'https://diary.example.com',
+  nexlore: 'https://lore.example.com',
+  nexfolk: 'https://folk.example.com',
+} as const satisfies Record<string, string>
+
+export function publicUrlPlaceholder(app: string): string {
+  const name = app.trim().toLowerCase()
+  return (PUBLIC_URL_PLACEHOLDERS as Record<string, string>)[name] ?? `https://${name.replace(/^nex/, '') || 'app'}.example.com`
+}
+
+/** Since 1.1.0: "Ready for the internet?" (``readiness`` on the server): the common points in their order, the states,
+ * the card. */
+export const READY_POINTS = ['address', 'factorForAll', 'ownAccount', 'brake', 'cookies', 'proxy'] as const
+
+export const READY_STATES = ['ok', 'warn', 'bad'] as const
+
+export type ReadyState = (typeof READY_STATES)[number]
+
+export interface ReadyPoint {
+  key: string
+  state: ReadyState
+  /** Text keys: the module's ``account.ready.<key>.title`` and ``…<variant>``, or the app's own. */
+  title: string
+  text: string
+  values: Record<string, unknown>
+}
+
+export interface Readiness {
+  state: ReadyState
+  open: number
+  points: ReadyPoint[]
+}
+
+export const READY_CARD = {
+  id: 'sign-in-ready',
+  icon: 'ShieldCheck',
+  title: 'account.ready.title',
+  text: 'account.ready.text',
+  open: 'account.ready.open',
+  allGood: 'account.ready.allGood',
+  /** What a point's symbol says to a reader. */
+  state: { ok: 'account.ready.state.ok', warn: 'account.ready.state.warn', bad: 'account.ready.state.bad' },
+} as const satisfies { state: Record<ReadyState, string> } & Record<string, unknown>
+
+/** Since 1.1.0: the worst state of the points (the colour of the card's symbol), as the server says it. */
+export function readyState(points: readonly Pick<ReadyPoint, 'state'>[]): ReadyState {
+  return points.some((point) => point.state === 'bad') ? 'bad' : points.some((point) => point.state === 'warn') ? 'warn' : 'ok'
 }

@@ -1,0 +1,122 @@
+{
+  "apiKeys": {
+    "title": "API-Schlüssel",
+    "hint": "Ein API-Schlüssel lässt ein Programm mit deinen {things} arbeiten, etwa n8n, Home Assistant oder ein Skript. Er darf nie mehr als dein Konto.",
+    "new": "Neuer API-Schlüssel",
+    "empty": "Noch kein API-Schlüssel.",
+    "count": "{count} von {max} Schlüsseln",
+    "off": "Der Betreiber hat die Programmschnittstelle abgeschaltet. Bestehende Schlüssel funktionieren erst wieder, wenn er sie einschaltet.",
+    "offOperator": "Einschalten unter Server › Allgemein › Schnittstellen.",
+    "address": "Adresse für Programme",
+    "addressHint": "Programme schicken den Schlüssel als „Authorization: Bearer …“.",
+    "docs": "Beschreibung der Schnittstelle"
+  },
+  "tools": {
+    "title": "KI-Werkzeuge (MCP)",
+    "hint": "Programme, die sich mit deiner Zustimmung verbunden haben, und MCP-Schlüssel. Sie arbeiten als du, nie mit mehr.",
+    "programs": "Verbundene Programme",
+    "programsHint": "Ein KI-Werkzeug fragt beim Verbinden im Browser nach deiner Zustimmung.",
+    "programsEmpty": "Noch kein Programm verbunden.",
+    "keys": "MCP-Schlüssel",
+    "keysEmpty": "Noch kein MCP-Schlüssel.",
+    "new": "Neuer MCP-Schlüssel",
+    "address": "Adresse für KI-Werkzeuge",
+    "off": "Der Betreiber hat den MCP-Zugang abgeschaltet. Verbundene Programme und Schlüssel arbeiten erst wieder, wenn er ihn einschaltet.",
+    "none": "{app} hat noch keinen MCP-Zugang.",
+    "viaApiKey": "Ein API-Schlüssel mit „Auch für KI-Werkzeuge (MCP)“ gilt auch für KI-Werkzeuge. Du legst ihn unter „API-Schlüssel“ an."
+  },
+  "interfaces": {
+    "title": "Schnittstellen",
+    "api": "Programmschnittstelle (API) für Mitglieder",
+    "apiHint": "Mitglieder legen API-Schlüssel an, Programme arbeiten damit. Aus: jede Anfrage an die Schnittstelle wird abgewiesen, die Schlüssel bleiben.",
+    "mcp": "MCP-Zugang",
+    "mcpHint": "Mitglieder verbinden KI-Werkzeuge und legen Schlüssel für sie an. Aus: kein KI-Werkzeug kommt herein, die Zugänge bleiben.",
+    "app": "iPhone-App erlauben",
+    "appHint": "Aus: keine App kommt mehr herein, auch keine schon verbundene. Die Geräte bleiben in der Liste.",
+    "pairing": "Neue Geräte verbinden",
+    "pairingHint": "Aus: kein neues Gerät lässt sich verbinden; verbundene arbeiten weiter.",
+    "docs": "Beschreibung der Schnittstelle"
+  },
+  "allKeys": {
+    "title": "API-Schlüssel aller Konten",
+    "hint": "Je Schlüssel Konto, Name, Recht und letzte Nutzung. Nie der Schlüssel selbst, nie Inhalte.",
+    "empty": "Noch kein Konto hat einen API-Schlüssel.",
+    "block": "Sperren",
+    "unblock": "Entsperren",
+    "askBlock": "„{name}“ von {account} sperren?",
+    "askBlockText": "Der Schlüssel funktioniert sofort nicht mehr. Das Konto sieht ihn als „Vom Betreiber gesperrt“, du kannst ihn wieder entsperren.",
+    "hidden": "Name nur für das Konto"
+  },
+  "columns": {
+    "account": "Konto",
+    "name": "Name",
+    "right": "Recht",
+    "expires": "Ablauf",
+    "used": "Zuletzt benutzt",
+    "action": "Aktion"
+  },
+  "key": {
+    "made": "„{name}“ angelegt",
+    "madeText": "Kopiere den Schlüssel jetzt. Er wird nur dieses eine Mal angezeigt; {app} speichert nur eine Prüfsumme.",
+    "secret": "Schlüssel",
+    "header": "Kopfzeile für das Programm",
+    "done": "Fertig",
+    "newTitle": "Neuer API-Schlüssel",
+    "newMcpTitle": "Neuer MCP-Schlüssel",
+    "editTitle": "Schlüssel bearbeiten",
+    "name": "Name",
+    "nameHint": "Nur zum Wiedererkennen, z. B. „n8n Wetterbericht“.",
+    "right": "Recht",
+    "areas": "Was der Schlüssel erreicht",
+    "areasAll": "Alles, auch was später dazukommt",
+    "areasSome": "Nur diese",
+    "areasNone": "Du hast noch nichts, was ein Schlüssel erreichen könnte.",
+    "expiry": "Ablauf",
+    "days": "{days} Tage",
+    "year": "1 Jahr",
+    "never": "Nie",
+    "create": "Anlegen",
+    "save": "Speichern",
+    "edit": "Bearbeiten",
+    "revoke": "Widerrufen",
+    "askRevoke": "„{name}“ widerrufen?",
+    "askRevokeText": "Das Programm kommt sofort nicht mehr herein. Was es geschrieben hat, bleibt.",
+    "cancel": "Abbrechen",
+    "expires": "Läuft am {date} ab",
+    "expired": "Abgelaufen",
+    "neverExpires": "Läuft nie ab",
+    "blocked": "Vom Betreiber gesperrt",
+    "neverUsed": "noch nie",
+    "allAreas": "alles",
+    "someAreas": "{count} ausgewählt",
+    "program": "verbundenes Programm",
+    "mcp": "MCP",
+    "wait": "Wirkt erst, wenn du einen zweiten Faktor einrichtest.",
+    "waitLink": "Zweiten Faktor einrichten",
+    "failed": "Das ging gerade nicht. Gleich noch einmal versuchen."
+  },
+  "rights": {
+    "read": "Nur lesen",
+    "write": "Lesen und schreiben",
+    "upload": "Nur hochladen"
+  },
+  "options": {
+    "mcp": "Auch für KI-Werkzeuge (MCP)",
+    "mcpHint": "Der Schlüssel gilt dann auch für KI-Werkzeuge."
+  },
+  "legacy": {
+    "card": "nur nexdeck-Karte (älterer Schlüssel)"
+  },
+  "errors": {
+    "name_missing": "Gib dem Schlüssel einen Namen.",
+    "name_too_long": "Der Name ist zu lang.",
+    "right_invalid": "Dieses Recht gibt es hier nicht.",
+    "option_invalid": "Das gibt es hier nicht.",
+    "choose_areas": "Wähle mindestens eins aus.",
+    "areas_invalid": "Eins davon gehört nicht zu deinem Konto.",
+    "days_invalid": "Diesen Ablauf gibt es hier nicht.",
+    "too_many_keys": "Du hast schon {max} Schlüssel. Widerrufe einen, bevor du einen neuen anlegst.",
+    "api_off": "Der Betreiber hat die Programmschnittstelle abgeschaltet.",
+    "mcp_off": "Der Betreiber hat den MCP-Zugang abgeschaltet."
+  }
+}

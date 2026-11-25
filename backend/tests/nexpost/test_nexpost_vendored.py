@@ -1,5 +1,5 @@
 """The copied module is the module: every file as ``MANIFEST.json`` names it, and it needs nothing beyond the
-standard library. Runs in the app's own test run and CI, which see only the app's repository. Red means: a file was
+standard library (since 1.1.0 FastAPI for its routes, which every app has). Runs in the app's own test run and CI, which see only the app's repository. Red means: a file was
 changed in the app. Change it in the module's source and copy it again; never here."""
 
 from __future__ import annotations
@@ -43,6 +43,6 @@ def test_the_copied_package_carries_the_version_of_the_manifest(app: Any) -> Non
     assert package.__version__ == manifest["version"]
 
 
-def test_the_module_needs_nothing_beyond_the_standard_library(app: Any) -> None:
+def test_the_module_needs_nothing_beyond_the_standard_library_but_fastapi_for_its_routes(app: Any) -> None:
     _, manifest = _manifest(app)
-    assert manifest["requires"] == {}
+    assert set(manifest["requires"]) <= {"fastapi"}

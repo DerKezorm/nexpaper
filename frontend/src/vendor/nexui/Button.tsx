@@ -1,8 +1,10 @@
 /**
  * The one button of the nex apps, in three kinds: `primary` filled in the accent colour (at most one per box),
  * `secondary` light with a fine edge, `danger` light red with red symbol and words for everything that ends or removes
- * something. Always with a symbol in front, always 40 px high with 9 px corners and 14 px semibold words (nexnotes'
- * buttons). `data-kind` and `data-icon` say kind and symbol, for the apps' tests.
+ * something. Always with a symbol in front and words, 9 px corners and semibold words (nexnotes' buttons). Since 1.1.0
+ * in two sizes: `md` (the default, 40 px high, 14 px words, as in 1.0.0) and `sm` (32 px, 13 px words, a 14 px symbol)
+ * for rows, lists, tables and narrow cards. `data-kind`, `data-size` and `data-icon` say kind, size and symbol, for the
+ * apps' tests.
  *
  * Three forms with the same look: a `button` (default), a link (`href`), and a file picker (`onFile`: a label around a
  * hidden file field, so the button opens the file dialog).
@@ -10,12 +12,14 @@
 import { useId, type ButtonHTMLAttributes, type ReactNode } from 'react'
 
 import { iconOf, type IconLike } from './icons'
-import { BUTTON_BASE, BUTTON_ICON, BUTTON_KIND, type ButtonKind } from './styles'
+import { BUTTON_BASE, BUTTON_ICON_SIZE, BUTTON_KIND, BUTTON_SIZE, ICON_BUTTON, type ButtonKind, type ButtonSize } from './styles'
 
 export type ButtonProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'className' | 'style' | 'children'> & {
   kind: ButtonKind
   icon: IconLike
   children: ReactNode
+  /** Since 1.1.0: `md` (default, 40 px) or `sm` (32 px: in rows, lists, tables and narrow cards). */
+  size?: ButtonSize
   /** Shows a spinner in place of the symbol and locks the button. */
   busy?: boolean
   /** As wide as its place (the sign-in screens). */
@@ -30,24 +34,25 @@ export type ButtonProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'classNa
   testId?: string
 }
 
-export function Button({ kind, icon, children, busy = false, wide = false, href, onFile, accept, testId, disabled, type = 'button', ...rest }: ButtonProps) {
+export function Button({ kind, icon, children, size = 'md', busy = false, wide = false, href, onFile, accept, testId, disabled, type = 'button', ...rest }: ButtonProps) {
   const { Icon, name } = iconOf(icon)
   const fileId = useId()
   const locked = Boolean(disabled || busy)
-  const className = `${BUTTON_BASE} ${BUTTON_KIND[kind]}${wide ? ' w-full' : ''}`
+  const className = `${BUTTON_BASE} ${BUTTON_SIZE[size]} ${BUTTON_KIND[kind]}${wide ? ' w-full' : ''}`
+  const spinner = size === 'sm' ? 'h-3.5 w-3.5' : 'h-4 w-4'
   const inside = (
     <>
       {busy ? (
-        <span aria-hidden className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-solid border-current border-t-transparent" />
+        <span aria-hidden className={`${spinner} shrink-0 animate-spin rounded-full border-2 border-solid border-current border-t-transparent`} />
       ) : (
-        <Icon aria-hidden className={BUTTON_ICON} strokeWidth={2} />
+        <Icon aria-hidden className={BUTTON_ICON_SIZE[size]} strokeWidth={2} />
       )}
       <span className="min-w-0">{children}</span>
     </>
   )
   if (onFile) {
     return (
-      <label htmlFor={fileId} className={className} data-kind={kind} data-icon={name} aria-disabled={locked || undefined} data-testid={testId}>
+      <label htmlFor={fileId} className={className} data-kind={kind} data-size={size} data-icon={name} aria-disabled={locked || undefined} data-testid={testId}>
         {inside}
         <input
           id={fileId}
@@ -71,6 +76,7 @@ export function Button({ kind, icon, children, busy = false, wide = false, href,
         href={locked ? undefined : href}
         className={className}
         data-kind={kind}
+        data-size={size}
         data-icon={name}
         aria-disabled={locked || undefined}
         aria-label={rest['aria-label']}
@@ -81,8 +87,39 @@ export function Button({ kind, icon, children, busy = false, wide = false, href,
     )
   }
   return (
-    <button {...rest} {...(testId ? { 'data-testid': testId } : {})} type={type} disabled={locked} aria-busy={busy || undefined} className={className} data-kind={kind} data-icon={name}>
+    <button {...rest} {...(testId ? { 'data-testid': testId } : {})} type={type} disabled={locked} aria-busy={busy || undefined} className={className} data-kind={kind} data-size={size} data-icon={name}>
       {inside}
+    </button>
+  )
+}
+
+/** Since 1.1.0: the only symbols that may stand on a button without words: moving up, moving down, the grip to drag. */
+export type IconButtonIcon = 'ArrowUp' | 'ArrowDown' | 'GripVertical'
+
+export type IconButtonProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'className' | 'style' | 'children' | 'aria-label'> & {
+  icon: IconButtonIcon
+  /** What it does, for readers and as the tooltip ("Move Pocket ID up"); a button without words never goes without. */
+  'aria-label': string
+  testId?: string
+}
+
+/**
+ * Since 1.1.0: a button of a symbol alone, 32 px square, quiet (grey, no frame), only for moving a row up or down and
+ * for the grip that drags it (`GripVertical`, with the grab hand). Every other button has words (`Button`).
+ */
+export function IconButton({ icon, testId, type = 'button', ...rest }: IconButtonProps) {
+  const { Icon } = iconOf(icon)
+  return (
+    <button
+      {...rest}
+      {...(testId ? { 'data-testid': testId } : {})}
+      type={type}
+      title={rest.title ?? rest['aria-label']}
+      className={`${ICON_BUTTON}${icon === 'GripVertical' ? ' cursor-grab active:cursor-grabbing' : ''}`}
+      data-icon={icon}
+      data-size="sm"
+    >
+      <Icon aria-hidden className="h-4 w-4 shrink-0" strokeWidth={2} />
     </button>
   )
 }

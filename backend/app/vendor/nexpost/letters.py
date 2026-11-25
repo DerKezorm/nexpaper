@@ -9,6 +9,9 @@ Since 1.0.0 the mail "New sign-in" names the browser on its system **and the mom
 (``moment``), never a network address, and carries the button "See signed-in devices" when the app gives the address
 of its page Security as ``link``. An invitation into a space has a second wording for somebody who has an account
 already (``member``).
+
+Since 1.1.0 every letter names its language (``Content-Language``), and the frame takes the app's own HTML below the
+paragraphs and an unsubscribe link (``app_letters``, the letters of the app itself).
 """
 
 from __future__ import annotations
@@ -108,13 +111,33 @@ def validity(language: str, *, hours: int = 0, days: int = 0) -> str:
     return _fill(_text(language, "hours_one" if hours == 1 else "hours_other"), {"count": str(hours)})
 
 
-def _html(language: str, heading: str, paragraphs: list[str], link: str, action: str, footer: str) -> str:
+def _html(
+    language: str,
+    heading: str,
+    paragraphs: list[str],
+    link: str,
+    action: str,
+    footer: str,
+    *,
+    body_html: str = "",
+    unsubscribe: tuple[str, str] = ("", ""),
+) -> str:
+    """The module's frame: the logo, the heading, the paragraphs (escaped), since 1.1.0 the app's own HTML below them
+    (``body_html``, made and escaped by the app), the button, the footer and an unsubscribe link (words, address)."""
     logo = (
         '<img src="cid:logo" alt="" width="40" height="40" style="display:block;margin:0 0 16px 0">'
         if (config.current().logo)
         else ""
     )
     body = "".join(f'<p style="margin:0 0 14px 0">{html.escape(text)}</p>' for text in paragraphs if text)
+    body += body_html
+    if unsubscribe[1]:
+        footer_link = (
+            f'<br><a href="{html.escape(unsubscribe[1], quote=True)}" style="color:#6b7280">'
+            f"{html.escape(unsubscribe[0])}</a>"
+        )
+    else:
+        footer_link = ""
     button = ""
     if link:
         button = (
@@ -129,7 +152,7 @@ def _html(language: str, heading: str, paragraphs: list[str], link: str, action:
         '<table role="presentation" width="100%" style="max-width:560px;margin:0 auto;background:#ffffff;'
         'border-radius:12px"><tr><td style="padding:28px">'
         f'{logo}<h1 style="font-size:18px;margin:0 0 16px 0">{html.escape(heading)}</h1>{body}{button}'
-        f'<p style="margin:24px 0 0 0;font-size:12px;color:#6b7280">{html.escape(footer)}</p>'
+        f'<p style="margin:24px 0 0 0;font-size:12px;color:#6b7280">{html.escape(footer)}{footer_link}</p>'
         "</td></tr></table></body></html>"
     )
 
@@ -227,7 +250,8 @@ def compose(kind: str, to: str, *, language: str, values: dict[str, object], lin
     lines = [line for line in (greeting, body) if line]
     text = "\n\n".join([*lines, *([link] if link else []), footer]) + "\n"
     markup = _html(language, subject, lines, link if kind in WITH_LINK or link else "", action, footer)
-    return Letter(recipient, subject, text, markup, kind)
+    # Since 1.1.0 every letter names its language (``Content-Language``), as nextasks' own mails did.
+    return Letter(recipient, subject, text, markup, kind, headers=(("Content-Language", language),))
 
 
 def from_account_mail(

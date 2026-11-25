@@ -44,7 +44,12 @@
       "trustsSecondFactorHint": "Off: whoever has a second factor here is asked for the code after signing in through the provider.",
       "scopes": "Scopes",
       "issuerChangeConfirm_one": "Another issuer is another provider. {{count}} account will have to link again afterwards.",
-      "issuerChangeConfirm_other": "Another issuer is another provider. {{count}} accounts will have to link again afterwards."
+      "issuerChangeConfirm_other": "Another issuer is another provider. {{count}} accounts will have to link again afterwards.",
+      "order": "Move {{name}}: drag it or use the arrow keys",
+      "more": "More",
+      "save": "Save",
+      "cancel": "Cancel",
+      "failed": "That did not work. Try again."
     },
     "authentik": {
       "title": "authentik in one step",

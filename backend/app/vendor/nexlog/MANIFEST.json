@@ -1,0 +1,29 @@
+{
+  "files": {
+    "backend/app/vendor/nexlog/__init__.py": "sha256-zNS+gmXYd/j6k1HPUYI0pAdwqNPRWAxNySKJzKIDurU=",
+    "backend/app/vendor/nexlog/api.py": "sha256-OaIG1yv/U09BKkxdG+3HN1wGCbjz4dz0XtNxJVDLaNU=",
+    "backend/app/vendor/nexlog/config.py": "sha256-uTqa9pwGQUIlA8kovPbKUYNYXtmBc2JT0QPw9S+OrFQ=",
+    "backend/app/vendor/nexlog/context.py": "sha256-q81xHQKMODCXQ5NKwF35+X8nB3xyP8Chek3hZ2lpUfg=",
+    "backend/app/vendor/nexlog/files.py": "sha256-I+oQB8nRgufi2hxmq/GfqVXeFJ4JdqXF7lqkbKllTbQ=",
+    "backend/app/vendor/nexlog/handlers.py": "sha256-ZATsTptUhW4k7uvl8LC0Nn6O/W4ElyWIglh9oKhoNzQ=",
+    "backend/app/vendor/nexlog/masking.py": "sha256-mI3XKv1yVb2rwDBzppzjgr6h+UR+pt4sUte8bp/jD04=",
+    "backend/app/vendor/nexlog/modes.py": "sha256-wXhxqaZvP85gTLQ1zKSQljSdRoyUBVY0izOBaBE3B0A=",
+    "backend/tests/nexlog/conftest.py": "sha256-0F3M8shuRnk0rPzCENt9BFsUgjb4dlHezZaUVCW3gIo=",
+    "backend/tests/nexlog/log_contract.py": "sha256-xiq1AvPuNYzRV73yvz+L9hTqLg2+dWtDK9XIrONxD68=",
+    "backend/tests/nexlog/test_nexlog_existing.py": "sha256-MJnLR6mJB4EM/z4vbXGGhBFf01T1nJT0FZi/wY6As+I=",
+    "backend/tests/nexlog/test_nexlog_routes.py": "sha256-LHcD9eCiw/pUIrAxN1g1tGXLF+MKPD+5cKKLWv1tGRY=",
+    "backend/tests/nexlog/test_nexlog_vendored.py": "sha256-rRMWWQdYK4ouVBjor0qYaoB65MrxWiQ+bz1fl4LuwQ0=",
+    "backend/tests/nexlog/test_nexlog_writing.py": "sha256-w4RvFZvSlGTkSEPy4fGGNZRnxPcd0zNwi4yQfuuBCFY=",
+    "frontend/src/vendor/nexlog/LogCard.tsx": "sha256-1WKmafD04YK9osg2QYO4/ynYhGfWGWB1+BRZ8whyyTw=",
+    "frontend/src/vendor/nexlog/log.de.json": "sha256-dLTK+FRvGYyNRkZSDL+JhzsxahTcNgZxdCjTEmiDXsc=",
+    "frontend/src/vendor/nexlog/log.en.json": "sha256-tUrmSWstkrqrlXvFBP8ffTblnIPk9naddRClGWtZaNg=",
+    "frontend/src/vendor/nexlog/log.fr.json": "sha256-zF6Urojn7tiTnlUZtTL8bp4mGFrv7EuB/ZPIrmyWGWE=",
+    "frontend/src/vendor/nexlog/log.ts": "sha256-1KuRY175fETbCICnEmQ8jbQd2R+KuXMfsjwZQaS5xvY="
+  },
+  "module": "log",
+  "requires": {
+    "fastapi": ">=0.121.0"
+  },
+  "vendor_path": "backend/app/vendor/nexlog",
+  "version": "1.0.0"
+}

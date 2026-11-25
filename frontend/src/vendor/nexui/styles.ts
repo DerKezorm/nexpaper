@@ -15,9 +15,10 @@ export const MUTED = 'text-[var(--nexui-text-muted)]'
 export const FOCUS =
   'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--nexui-accent)] focus-visible:shadow-none'
 
+/** What both sizes share; the height, the sides, the words and the symbol come from `BUTTON_SIZE` (since 1.1.0). */
 export const BUTTON_BASE =
-  'inline-flex h-10 min-w-0 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-[9px] border border-solid px-4 ' +
-  'text-center text-sm leading-5 font-semibold tracking-normal no-underline [font-family:inherit] transition-colors ' +
+  'inline-flex min-w-0 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-[9px] border border-solid ' +
+  'text-center font-semibold tracking-normal no-underline [font-family:inherit] transition-colors ' +
   'disabled:cursor-not-allowed disabled:border-[var(--nexui-line)] disabled:bg-[var(--nexui-disabled-bg)] ' +
   'disabled:text-[var(--nexui-disabled-text)] aria-disabled:cursor-not-allowed aria-disabled:border-[var(--nexui-line)] ' +
   'aria-disabled:bg-[var(--nexui-disabled-bg)] aria-disabled:text-[var(--nexui-disabled-text)] ' +
@@ -37,7 +38,22 @@ export const BUTTON_KIND = {
 
 export type ButtonKind = keyof typeof BUTTON_KIND
 
-export const BUTTON_ICON = 'h-4 w-4 shrink-0'
+/** Since 1.1.0 two sizes: `md` (the default, 40 px, as before) and `sm` (32 px, 12 px at the sides, 13 px words, a 14 px
+ * symbol) for rows, lists, tables and narrow cards. */
+export const BUTTON_SIZE = {
+  md: 'h-10 px-4 text-sm leading-5',
+  sm: 'h-8 px-3 text-[13px] leading-[18px]',
+} as const
+
+export type ButtonSize = keyof typeof BUTTON_SIZE
+
+export const BUTTON_ICON_SIZE = {
+  md: 'h-4 w-4 shrink-0',
+  sm: 'h-3.5 w-3.5 shrink-0',
+} as const
+
+/** The symbol of a `md` button (kept for 1.0.0). */
+export const BUTTON_ICON = BUTTON_ICON_SIZE.md
 
 export const BADGE_BASE =
   'inline-flex h-6 shrink-0 items-center gap-1 rounded-full border border-solid px-2.5 text-xs leading-4 font-medium tracking-normal whitespace-nowrap'
@@ -102,3 +118,23 @@ export const SUB = `${PLAIN} block text-xs leading-4 ${MUTED} [overflow-wrap:any
 
 /** Since 0.1.1: the heading over a group of buttons in a dialog ("Change", "Access", "End"). */
 export const GROUP_TITLE = `${PLAIN} text-xs leading-4 font-semibold ${MUTED}`
+
+/** Since 1.1.0: a choice in a `Segment`, 32 px like a `sm` button; the chosen one in the accent at 14 %. */
+export const SEGMENT_ITEM =
+  'inline-flex h-8 min-w-0 cursor-pointer items-center justify-center gap-1.5 rounded-[9px] border border-solid px-3 ' +
+  'text-[13px] leading-[18px] font-medium tracking-normal [font-family:inherit] transition-colors ' +
+  'disabled:cursor-not-allowed disabled:opacity-50 ' +
+  FOCUS
+
+export const SEGMENT_STATE = {
+  chosen:
+    'border-[color-mix(in_srgb,var(--nexui-accent)_40%,transparent)] bg-[color-mix(in_srgb,var(--nexui-accent)_14%,transparent)] text-[var(--nexui-accent-text)]',
+  open: 'border-[var(--nexui-line)] bg-transparent text-[var(--nexui-text-muted)] not-disabled:hover:bg-[var(--nexui-surface-hover)] not-disabled:hover:text-[var(--nexui-text)]',
+} as const
+
+/** Since 1.1.0: the symbol-only button for moving and dragging, 32 px square, quiet. */
+export const ICON_BUTTON =
+  'inline-flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-[9px] border-0 bg-transparent p-0 ' +
+  'text-[var(--nexui-text-muted)] not-disabled:hover:bg-[var(--nexui-surface-hover)] not-disabled:hover:text-[var(--nexui-text)] ' +
+  'disabled:cursor-not-allowed disabled:opacity-40 ' +
+  FOCUS

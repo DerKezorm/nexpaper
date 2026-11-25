@@ -1,0 +1,148 @@
+{
+  "sicherung": {
+    "storage": {
+      "title": "Speicher",
+      "uses": "{app} belegt",
+      "part": "{name} {size}",
+      "parts": {
+        "database": "Datenbank",
+        "attachments": "Anhänge",
+        "documents": "Dokumente",
+        "media": "Fotos und Dateien",
+        "files": "Dateien",
+        "vault": "Notizen und Dateien",
+        "index": "Suchindex",
+        "cache": "Zwischenspeicher",
+        "exports": "Exporte",
+        "backups": "Sicherungen",
+        "other": "Log und Sonstiges"
+      },
+      "within": "davon {name} {size}",
+      "bar": "{app} belegt {own}, auf dem Datenträger sind {used} von {total} belegt",
+      "free": "{free} frei von {total}",
+      "partial": "Noch nicht alles gezählt: die Zahlen sind zu klein.",
+      "network": "Der Datenordner liegt auf einer Netzfreigabe (NFS oder SMB). Das kann {things} beschädigen. Besser ein lokaler Datenträger.",
+      "networkPlace": "Auf einer Netzfreigabe: {places}.",
+      "places": {
+        "data": "Datenordner",
+        "database": "Datenbank",
+        "documents": "Dokumente",
+        "media": "Fotos und Dateien",
+        "vault": "Notizen"
+      }
+    },
+    "backup": {
+      "title": "Sicherung",
+      "schedule": "Automatisch",
+      "every": {
+        "off": "Aus",
+        "daily": "Jede Nacht",
+        "weekly": "Jede Woche",
+        "monthly": "Jeden Monat"
+      },
+      "time": "Uhrzeit",
+      "timeHint": "In der Zeitzone des Servers ({zone}).",
+      "keep": "Behalten (Stück)",
+      "keepHint": "So viele automatische Sicherungen bleiben liegen, ältere gehen. Von Hand gemachte und hochgeladene bleiben, bis du sie löschst.",
+      "save": "Speichern",
+      "saved": "Gespeichert.",
+      "last": "Zuletzt: {when}, {size}",
+      "never": "Noch keine Sicherung.",
+      "running": "Sicherung läuft …",
+      "failed": "Die Sicherung am {when} ist gescheitert: {reason}. Die älteren Sicherungen bleiben.",
+      "reasons": {
+        "disk_full": "Der Datenträger ist voll",
+        "write_failed": "Sie ließ sich nicht schreiben",
+        "backup_disk_full": "Der Datenträger ist voll",
+        "backup_write_failed": "Sie ließ sich nicht schreiben"
+      },
+      "restoreFailed": "Das Wiederherstellen am {when} ist gescheitert. {app} läuft mit den Daten von vorher weiter.",
+      "restoreFailedSeen": "Verstanden",
+      "now": "Jetzt sichern",
+      "made": "Sicherung erstellt.",
+      "upload": "Sicherung hochladen",
+      "uploadedHint": "Hochgeladen. Sie steht jetzt in der Liste: erst prüfen, dann wiederherstellen.",
+      "list": "Sicherungen",
+      "kinds": {
+        "manual": "von Hand",
+        "scheduled": "geplant",
+        "update": "vor einer Änderung"
+      },
+      "uploaded": "hochgeladen",
+      "locked": "verschlüsselt",
+      "unreadable": "nicht lesbar",
+      "check": "Prüfen",
+      "download": "Herunterladen",
+      "restore": "Wiederherstellen",
+      "delete": "Löschen",
+      "forBackup": "{action}: Sicherung vom {when}",
+      "brief": "Prüfung der Sicherung vom {when}",
+      "briefOk": "Vollständig",
+      "briefBad": "Beschädigt",
+      "checkOk": "Die Sicherung ist vollständig und lesbar.",
+      "checkBad": "Beschädigt: Diese Sicherung lässt sich nicht wiederherstellen.",
+      "checkDamaged": "Beschädigt: {names}",
+      "checkNewer": "Diese Sicherung stammt aus {app} {version}, neuer als diese. Erst {app} aktualisieren, dann wiederherstellen.",
+      "restoreChanges": "Beim Wiederherstellen kommen {add} dazu, {change} ändern sich, {remove} fallen weg.",
+      "files": "{count} Dateien",
+      "restarting": "{app} startet mit der Sicherung neu. Die Seite lädt gleich neu.",
+      "restoredNow": "Wiederhergestellt. Alle melden sich neu an.",
+      "password": "Dein Passwort",
+      "archivePassword": "Passwort der Sicherung",
+      "archivePasswordHint": "Das Passwort, mit dem diese Sicherung verschlüsselt wurde.",
+      "cancel": "Abbrechen",
+      "close": "Schließen",
+      "confirm": {
+        "restore": {
+          "title": "Diese Sicherung wiederherstellen?",
+          "text": "Erst wird der jetzige Stand gesichert, dann startet {app} neu und stellt die Sicherung wieder her. Alle melden sich danach neu an.",
+          "textNow": "Erst wird der jetzige Stand gesichert, dann stellt {app} die Sicherung wieder her. Alle melden sich danach neu an.",
+          "button": "Wiederherstellen"
+        },
+        "download": {
+          "title": "Diese Sicherung herunterladen?",
+          "text": "Sie enthält alles, was {app} kennt, samt Konten und dem Schlüssel des Servers. Sie ist nicht verschlüsselt.",
+          "button": "Herunterladen"
+        },
+        "delete": {
+          "title": "Diese Sicherung löschen?",
+          "text": "Sie lässt sich nicht zurückholen.",
+          "button": "Löschen"
+        },
+        "upload": {
+          "title": "Sicherung hochladen?",
+          "text": "Die Datei kommt in die Liste der Sicherungen. Wiederhergestellt wird erst, wenn du es dort bestätigst.",
+          "button": "Hochladen"
+        },
+        "check": {
+          "title": "Verschlüsselte Sicherung prüfen",
+          "button": "Prüfen"
+        }
+      },
+      "timeHintMonthly": "Am 1. des Monats, in der Zeitzone des Servers ({zone}).",
+      "downloadPassword": "Passwort für die Datei",
+      "downloadPasswordHint": "Mindestens 8 Zeichen. Ohne dieses Passwort lässt sich die Datei nicht öffnen, auch nicht von uns.",
+      "downloadPasswordAgain": "Passwort wiederholen",
+      "downloadPasswordMismatch": "Die beiden Passwörter sind verschieden."
+    },
+    "error": {
+      "not_found": "Diese Sicherung gibt es nicht mehr.",
+      "empty": "Die Datei ist leer.",
+      "backup_invalid": "Das ist keine Sicherung von {app}.",
+      "backup_damaged": "Die Sicherung ist beschädigt. Nichts wurde geändert.",
+      "backup_too_new": "Die Sicherung stammt aus einer neueren Version von {app}. Nichts wurde geändert.",
+      "backup_too_large": "Die Datei ist größer als erlaubt.",
+      "backup_running": "Es läuft schon eine Sicherung.",
+      "backup_disk_full": "Der Datenträger ist voll. Die älteren Sicherungen bleiben.",
+      "backup_write_failed": "Die Sicherung ließ sich nicht schreiben. Die älteren Sicherungen bleiben.",
+      "archive_password_needed": "Diese Sicherung ist verschlüsselt. Gib ihr Passwort ein.",
+      "archive_password_wrong": "Das Passwort der Sicherung stimmt nicht.",
+      "schedule_invalid": "Aus, jede Nacht, jede Woche oder jeden Monat.",
+      "time_invalid": "Bitte eine Uhrzeit wie 03:00.",
+      "keep_invalid": "Zwischen 1 und 365.",
+      "wrong_password": "Das Passwort stimmt nicht.",
+      "unknown": "Das hat nicht geklappt.",
+      "archive_password_short": "Das Passwort der Datei braucht mindestens 8 Zeichen."
+    }
+  }
+}

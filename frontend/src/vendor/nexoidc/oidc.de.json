@@ -44,7 +44,12 @@
       "trustsSecondFactorHint": "Aus: Wer hier einen zweiten Faktor hat, wird nach der Anmeldung über den Anbieter noch nach dem Code gefragt.",
       "scopes": "Bereiche (Scopes)",
       "issuerChangeConfirm_one": "Ein anderer Aussteller ist ein anderer Anbieter. {{count}} Konto muss sich danach neu verknüpfen.",
-      "issuerChangeConfirm_other": "Ein anderer Aussteller ist ein anderer Anbieter. {{count}} Konten müssen sich danach neu verknüpfen."
+      "issuerChangeConfirm_other": "Ein anderer Aussteller ist ein anderer Anbieter. {{count}} Konten müssen sich danach neu verknüpfen.",
+      "order": "{{name}} verschieben: ziehen oder die Pfeiltasten",
+      "more": "Mehr",
+      "save": "Speichern",
+      "cancel": "Abbrechen",
+      "failed": "Das hat nicht geklappt. Versuch es noch einmal."
     },
     "authentik": {
       "title": "authentik in einem Schritt",

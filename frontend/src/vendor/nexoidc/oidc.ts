@@ -255,3 +255,46 @@ export function slugFromLabel(label: string): string {
     .replace(/^-+|-+$/g, '')
   return slug.slice(0, SLUG_MAX).replace(/-+$/, '')
 }
+
+// --- Since 1.2.0: the cards "Sign-in providers" and "authentik in one step" (``SignInProviders.tsx``) ----------------
+
+/** Since 1.2.0: the buttons of the two cards with kind, symbol and size (ui 1.1.0): small in a row ("Edit" secondary,
+ * "Remove" danger), "Add provider" primary with Plus; ``issuerChange`` is the confirming button of a changed issuer
+ * (it ends links: danger). */
+export const OIDC_BUTTONS = {
+  'oidc.admin.add': { kind: 'primary', icon: 'Plus' },
+  'oidc.admin.edit': { kind: 'secondary', icon: 'Pencil', size: 'sm' },
+  'oidc.admin.remove': { kind: 'danger', icon: 'Trash2', size: 'sm' },
+  'oidc.admin.save': { kind: 'primary', icon: 'Check' },
+  'oidc.admin.cancel': { kind: 'secondary', icon: 'X' },
+  'oidc.authentik.run': { kind: 'primary', icon: 'Sparkles' },
+  'oidc.authentik.adopt': { kind: 'primary', icon: 'Sparkles' },
+  'oidc.authentik.adoptOnly': { kind: 'secondary', icon: 'Check' },
+  removeConfirm: { kind: 'danger', icon: 'Trash2' },
+  issuerChange: { kind: 'danger', icon: 'Check' },
+} as const satisfies Record<string, { kind: 'primary' | 'secondary' | 'danger'; icon: string; size?: 'sm' }>
+
+export type OidcButton = keyof typeof OIDC_BUTTONS
+
+/** Since 1.2.0: the issuer's placeholder in the provider form, with the app's slug (authentik's form). */
+export function issuerPlaceholder(app: string): string {
+  return `https://auth.example.com/application/o/${slugFromLabel(app) || 'app'}/`
+}
+
+/** Since 1.2.0: the redirect address of a new provider before it is saved, as the server will give it:
+ * ``<public address or this page's origin><api prefix>/oidc/<slug>/callback`` (``…`` while the slug is empty). */
+export function redirectPreview(publicUrl: string, origin: string, apiPrefix: string, slug: string): string {
+  const base = (publicUrl || origin).replace(/\/+$/, '')
+  return `${base}${apiPrefix.replace(/\/+$/, '')}/oidc/${slug || '…'}/callback`
+}
+
+/** Since 1.2.0: a new order of the providers after moving one from ``from`` to ``to`` (ids), or null when nothing
+ * moves (the same place, or past either end). */
+export function movedOrder<T>(ids: readonly T[], from: number, to: number): T[] | null {
+  if (from === to || from < 0 || to < 0 || from >= ids.length || to >= ids.length) return null
+  const order = [...ids]
+  const [taken] = order.splice(from, 1)
+  if (taken === undefined) return null
+  order.splice(to, 0, taken)
+  return order
+}

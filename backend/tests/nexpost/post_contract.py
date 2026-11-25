@@ -32,6 +32,10 @@ def password() -> str:
     return secrets.token_urlsafe(12)
 
 
+#: The first bytes of a PNG and a little more: a logo for the tests of the module (an app gives its own).
+LOGO = b"\x89PNG\r\n\x1a\n" + b"logo of the tests"
+
+
 @dataclass
 class FakeServer:
     """The mail server of the tests. ``fail`` holds exceptions of ``smtplib`` the next steps raise, in turn: an
@@ -104,9 +108,22 @@ class StandardAdapter:
         moment, links the app's page Security (the button "See signed-in devices"), and never names ``sender``."""
         raise NotImplementedError("APP: new_sign_in_letter")
 
+    #: Since 1.1.0: where the app mounts ``nexpost.api.router``.
+    mail_prefix = "/api/server/mail"
+
+    def account(self, address: str, *, language: str, name: str, confirmed: bool) -> Any:
+        """APP (since 1.1.0): a new account of the app with this address (confirmed or not), language and name,
+        committed; its id as ``Store.recipient`` takes it."""
+        raise NotImplementedError("APP: account")
+
+    def client(self, role: str) -> Any:
+        """APP (since 1.1.0): a test client of the app (``fastapi.testclient.TestClient``) with ``nexpost.api.router``
+        mounted at ``mail_prefix``, signed in as ``role``: ``anonymous`` (no session), ``member``, ``operator``."""
+        raise NotImplementedError("APP: client")
+
 
 def post_package(adapter: Any) -> ModuleType:
     package = importlib.import_module(adapter.package)
-    for name in ("letters", "settings", "send", "outbox"):
+    for name in ("letters", "settings", "send", "outbox", "app_letters"):
         importlib.import_module(f"{adapter.package}.{name}")
     return package

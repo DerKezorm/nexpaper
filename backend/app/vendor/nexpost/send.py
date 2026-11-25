@@ -20,7 +20,7 @@ from . import config
 from .common import log
 from .errors import MailError
 from .letters import check_address, one_line
-from .model import NONE, TLS, Letter, MailSettings
+from .model import EXTRA_HEADERS, NONE, TLS, Letter, MailSettings
 
 TIMEOUT = 15
 #: An address in the server's sentence (``<kim@example.org>: Recipient address rejected``): never kept.
@@ -42,9 +42,24 @@ def message(settings: MailSettings, letter: Letter) -> EmailMessage:
     mail.set_content(letter.text)
     if letter.html:
         mail.add_alternative(letter.html, subtype="html")
-        if cfg.logo:
+        # Since 1.1.0 only when the HTML shows it (an app's own document may not), named and inline, so that no mail
+        # program lists it as a nameless attachment.
+        if cfg.logo and "cid:logo" in letter.html:
             html_part = mail.get_payload()[-1]
-            html_part.add_related(cfg.logo, maintype="image", subtype="png", cid="<logo>")
+            html_part.add_related(
+                cfg.logo,
+                maintype="image",
+                subtype="png",
+                cid="<logo>",
+                filename=f"{cfg.app_name}.png",
+                disposition="inline",
+            )
+    # Since 1.1.0: the letter's own headers, only those ``model.EXTRA_HEADERS`` allows, each in one line. Last, since
+    # ``set_content`` and ``add_alternative`` move or drop every ``Content-*`` header set before them.
+    for name, value in letter.headers:
+        if name in EXTRA_HEADERS:
+            del mail[name]
+            mail[name] = one_line(value, 900)
     return mail
 
 

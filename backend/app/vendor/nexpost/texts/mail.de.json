@@ -57,6 +57,7 @@
   },
   "browser_on": "{{browser}} auf {{system}}",
   "browser_unknown": "ein unbekannter Browser",
+  "unsubscribe": "Diese Mails abbestellen",
   "date": "{{d}}.{{m}}.{{y}}",
   "moment": "{{day}} um {{time}} Uhr ({{zone}})"
 }

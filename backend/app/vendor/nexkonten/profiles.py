@@ -421,3 +421,63 @@ def dismiss_offered_email(store: Store, account_id: AccountId) -> None:
         store.set_offered_email(account.id, "")
         store.commit()
         log().info("Provider address declined name=%s", account.username)
+
+
+# --- Since 1.1.0: the box "Address not confirmed yet" (E23) ---------------------------------------------------------
+
+
+def needs_proof(account: Account, *, mail_server: bool) -> bool:
+    """Whether the profile shows "Address not confirmed yet" with "Send link" (``prove_email``): an address that counts
+    but was never proven by link, while a mail server can send one. Decided 25.11.2026 (E23): addresses of before the
+    update count as proven (the app's migration to 1.1.0 marks them, ``proven`` for every address that counts; nexpaper
+    keeps its unproven ones), so the box only shows for an address entered from now on and not yet proven."""
+    waiting = bool(account.pending_email)
+    return bool(account.email) and account.email_confirmed and not account.email_proven and not waiting and mail_server
+
+
+# --- Since 1.1.0: light or dark, for the account on every device ------------------------------------------------------
+
+#: The values of ``ThemeSegment`` (ui): light, dark, as the device says. The order of the segment.
+THEMES = ("light", "dark", "system")
+#: What an account that never chose shows: as the device says (plan "Einstellungen", Darstellung).
+THEME_DEFAULT = "system"
+
+
+def theme_of(account: Account) -> str:
+    """The account's choice, ``THEME_DEFAULT`` while it has none."""
+    return account.theme if account.theme in THEMES else THEME_DEFAULT
+
+
+def browser_theme(raw: object) -> str:
+    """A value a browser kept before 1.1.0 (``nexnotes.theme`` = ``dark``; nexmail's JSON ``"dark"``; nextime's
+    ``system``), as one of ``THEMES``, else "" (nothing to take)."""
+    if not isinstance(raw, str):
+        return ""
+    value = raw.strip().strip('"').strip().lower()
+    return value if value in THEMES else ""
+
+
+def change_theme(store: Store, account_id: AccountId, theme: str) -> Account:
+    """Light, dark or as the device says, for the account on every device (decided 25.11.2026, E5): the person sets
+    it in Appearance; no password."""
+    if theme not in THEMES:
+        raise AccountError("theme_invalid", "The theme is light, dark or system.", 422)
+    account = common.account_or_404(store, account_id)
+    store.set_theme(account.id, theme)  # type: ignore[attr-defined]
+    store.commit()
+    return reload(store, account.id)
+
+
+def adopt_theme(store: Store, account_id: AccountId, browser_value: object) -> str:
+    """At the first load after 1.1.0: an account that has chosen nothing yet takes the value its browser kept
+    (``browser_theme``) once; one that has a choice keeps it. Returns the theme in effect."""
+    account = common.account_or_404(store, account_id)
+    if account.theme in THEMES:
+        return account.theme
+    taken = browser_theme(browser_value)
+    if not taken:
+        return THEME_DEFAULT
+    store.set_theme(account.id, taken)  # type: ignore[attr-defined]
+    store.commit()
+    log().info("Theme taken from the browser name=%s theme=%s", account.username, taken)
+    return taken

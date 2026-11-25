@@ -32,11 +32,12 @@ export function Card({
   testId,
 }: {
   icon: IconLike
-  /** An app's own mark in place of the symbol (e.g. nextasks' in nexnotes). */
+  /** An app's own mark in place of the symbol (e.g. nextasks' in nexnotes, the connections to other nex apps). */
   logo?: string
   title: string
   subtitle?: ReactNode
   children?: ReactNode
+  /** Names the card; since 1.1.0 also as `data-card`, for the comparison of the settings across the apps. */
   id?: string
   testId?: string
 }) {
@@ -44,7 +45,7 @@ export function Card({
   const titleId = `${id ?? own}-title`
   const { Icon } = iconOf(icon)
   return (
-    <section id={id} aria-labelledby={titleId} className={CARD} data-testid={testId}>
+    <section id={id} aria-labelledby={titleId} className={CARD} data-card={id} data-testid={testId}>
       <div className={`flex gap-3${filled(children) ? ' mb-4' : ''}`}>
         {logo ? (
           <img src={logo} alt="" className="h-9 w-9 shrink-0 rounded-[12px]" />

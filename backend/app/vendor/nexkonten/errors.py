@@ -62,6 +62,16 @@ CODES = (
     "public_url_needed",
     # since 0.3.10: an address that counts is proven by link (profiles.prove_email)
     "nothing_to_prove",
+    # since 1.1.0: the operator's functions (manage), the theme (profiles), the sign-in settings (signin)
+    "cannot_demote_self",
+    "cannot_block_self",
+    "cannot_delete_self",
+    "last_operator",
+    "feature_off",
+    "invalid_limit",
+    "theme_invalid",
+    "provider_first",
+    "own_second_factor_first",
 )
 
 

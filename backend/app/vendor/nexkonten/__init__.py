@@ -18,7 +18,10 @@ What lives here:
 - ``pictures``: a provider's picture, fetched with care;
 - since 0.3.0: ``factor`` (time-based code, recovery codes, the waiting sign-in), ``passkeys`` (imported on its own,
   it needs ``webauthn``), ``sessions`` (list, everywhere, stay signed in, known browser), ``brake`` (in memory, the
-  sender behind a proxy), ``avatars`` (upload, deliver, who sees), with their stores in ``model2``.
+  sender behind a proxy), ``avatars`` (upload, deliver, who sees), with their stores in ``model2``;
+- since 1.1.0: ``manage`` (several operators, block, delete with 30 days to bring back, storage limit and rights per
+  app), ``signin`` (the operator's sign-in switches), ``readiness`` ("Ready for the internet?"), the theme in
+  ``profiles``, with their stores in ``model3``.
 
 Only httpx and Pillow are needed (for a provider's picture); nothing from an app is imported.
 """
@@ -32,13 +35,17 @@ from . import (
     factor,
     invites,
     login,
+    manage,
     model2,
+    model3,
     names,
     pictures,
     profiles,
+    readiness,
     resets,
     sessions,
     setup,
+    signin,
     visible,
 )
 from .config import AppConfig, configure, current, use_transport
@@ -52,12 +59,18 @@ from .model import (
     ACCESS_PASSKEY,
     EMAIL_OWN,
     EMAIL_PROVIDER,
+    EVENT_BLOCKED,
     EVENT_CREATED,
+    EVENT_DELETED,
     EVENT_EMAIL_CHANGED,
     EVENT_EMAIL_PROVEN,
     EVENT_JOINED,
     EVENT_PASSWORD_SET,
+    EVENT_PURGED,
     EVENT_RENAMED,
+    EVENT_RESTORED,
+    EVENT_ROLE_CHANGED,
+    EVENT_UNBLOCKED,
     MAIL_CONFIRM_EMAIL,
     MAIL_EMAIL_CHANGED,
     MAIL_FACTOR_RESET,
@@ -94,7 +107,7 @@ from .model import (
     Taken,
 )
 
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 
 __all__ = [
     "ACCESS_API_KEY",
@@ -106,12 +119,18 @@ __all__ = [
     "CODES",
     "EMAIL_OWN",
     "EMAIL_PROVIDER",
+    "EVENT_BLOCKED",
     "EVENT_CREATED",
+    "EVENT_DELETED",
     "EVENT_EMAIL_CHANGED",
     "EVENT_EMAIL_PROVEN",
     "EVENT_JOINED",
     "EVENT_PASSWORD_SET",
+    "EVENT_PURGED",
     "EVENT_RENAMED",
+    "EVENT_RESTORED",
+    "EVENT_ROLE_CHANGED",
+    "EVENT_UNBLOCKED",
     "MAIL_CONFIRM_EMAIL",
     "MAIL_EMAIL_CHANGED",
     "MAIL_FACTOR_RESET",
@@ -158,13 +177,17 @@ __all__ = [
     "factor",
     "invites",
     "login",
+    "manage",
     "model2",
+    "model3",
     "names",
     "pictures",
     "profiles",
+    "readiness",
     "resets",
     "sessions",
     "setup",
+    "signin",
     "use_transport",
     "visible",
 ]

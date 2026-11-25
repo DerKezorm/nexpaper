@@ -2,7 +2,12 @@
  * Fields: the label written normally above (joined by `htmlFor`, so the field's name is exactly the label), the field
  * 40 px high with 9 px corners, every hint below in its own line and joined by `aria-describedby`; a problem in red under
  * them, the field marked `aria-invalid`. Boxes to tick: inline (`Checkbox`, "Stay signed in") or as a framed row with a
- * line of explanation and the box on the right (`CheckboxRow`, as nexnotes' switches).
+ * line of explanation and the box on the right (`CheckboxRow`, as nexnotes' switches). On and off is always such a box,
+ * never a sliding switch.
+ *
+ * Since 1.1.0 a field may carry its own button (`action`, a `Button`): right of the field and level with its top (not
+ * with the label), the hints below over the whole width. For every field with a save of its own: the public address,
+ * "test mail to", the largest file, how many to keep, a language code.
  */
 import { useId, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes } from 'react'
 
@@ -44,23 +49,35 @@ export type FieldProps = Described &
   Omit<InputHTMLAttributes<HTMLInputElement>, 'className' | 'style' | 'size'> & {
     /** Fixed-width letters (codes, keys). */
     mono?: boolean
+    /** Since 1.1.0: the field's own button (a `Button`, `md` or `sm`), right of the field and level with its top. */
+    action?: ReactNode
   }
 
-export function Field({ label, hints = [], error, mono = false, id, ...rest }: FieldProps) {
+export function Field({ label, hints = [], error, mono = false, action, id, ...rest }: FieldProps) {
   const own = useId()
   const base = id ?? own
+  const input = (
+    <input
+      {...rest}
+      id={base}
+      aria-invalid={error ? true : rest['aria-invalid']}
+      aria-describedby={described(base, hints, error, rest['aria-describedby'])}
+      className={`${FIELD}${mono ? ' font-mono' : ''}`}
+    />
+  )
   return (
     <div className="flex min-w-0 flex-col gap-1">
       <label htmlFor={base} className={LABEL}>
         {label}
       </label>
-      <input
-        {...rest}
-        id={base}
-        aria-invalid={error ? true : rest['aria-invalid']}
-        aria-describedby={described(base, hints, error, rest['aria-describedby'])}
-        className={`${FIELD}${mono ? ' font-mono' : ''}`}
-      />
+      {action ? (
+        <div className="flex min-w-0 items-start gap-2" data-part="field-action">
+          <div className="min-w-0 flex-1">{input}</div>
+          {action}
+        </div>
+      ) : (
+        input
+      )}
       <Below base={base} hints={hints} error={error} />
     </div>
   )

@@ -1,0 +1,334 @@
+// @vitest-environment jsdom
+/**
+ * The page's own test, run in every app's vitest (it comes with the module, unchanged): the cards "Speicher" and
+ * "Sicherung" as the plan draws them (data-card, Segment, Field with its button, `sm` buttons with symbols in every row,
+ * Löschen danger, the result of a check as a box), the password asked before download, restore, delete and upload, the
+ * trial run before a restore, a locked archive asked for its own password, and the calls to the module's routes.
+ * Needs react-dom and @testing-library/dom, both in every app.
+ */
+import { fireEvent, getByLabelText, getByRole, getByText, queryByRole, waitFor } from '@testing-library/dom'
+import { act, type ReactNode } from 'react'
+import { createRoot } from 'react-dom/client'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+
+import { NexuiLanguage } from '../nexui'
+import { SICHERUNG_TEXTS, StorageArea, makeSicherungApi, passwordHeader, shares, bytes, type Backups, type Brief, type Entry, type Overview, type SicherungApi } from './index'
+
+;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
+
+let shown: { root: HTMLElement; unmount: () => void } | null = null
+
+async function show(element: ReactNode, language = 'de'): Promise<HTMLElement> {
+  const root = document.createElement('div')
+  document.body.append(root)
+  const react = createRoot(root)
+  await act(async () => react.render(<NexuiLanguage language={language}>{element}</NexuiLanguage>))
+  shown = {
+    root,
+    unmount: () => {
+      act(() => react.unmount())
+      root.remove()
+    },
+  }
+  return root
+}
+
+afterEach(() => {
+  shown?.unmount()
+  shown = null
+})
+
+const OVERVIEW: Overview = {
+  app: 'nexnotes',
+  used: 3 * 1024 * 1024,
+  parts: [
+    { key: 'database', bytes: 1024 * 1024, within: '', complete: true },
+    { key: 'attachments', bytes: 2 * 1024 * 1024, within: '', complete: true },
+  ],
+  complete: true,
+  total: 100 * 1024 ** 3,
+  disk_used: 95 * 1024 ** 3,
+  free: 5 * 1024 ** 3,
+  nearly_full: true,
+  where: { data: { kind: 'network', fstype: 'nfs4' } },
+  network: ['data'],
+}
+
+function entry(name: string, more: Partial<Entry> = {}): Entry {
+  return { name, size: 2048, created: '2026-11-25T03:00:00+00:00', kind: 'scheduled', note: '', version: '1.4.0', uploaded: false, locked: false, readable: true, facts: { notes: 12, files: 3 }, ...more }
+}
+
+const BACKUPS: Backups = {
+  schedule: { every: 'daily', time: '03:00', keep: 7 },
+  zone: 'Europe/Berlin',
+  last: { created: '2026-11-25T03:00:00+00:00', size: 2048, kind: 'scheduled' },
+  count: 2,
+  kept: 1,
+  failure: null,
+  running: false,
+  restore_failure: null,
+  restored: null,
+  restore: 'restart',
+  download_password: false,
+  backups: [entry('nexnotes-2026-11-25-030000.zip'), entry('nexnotes-2026-11-24-120000-upload.zip', { uploaded: true, locked: true, kind: 'manual' })],
+}
+
+function brief(usable = true): Brief {
+  return { name: 'nexnotes-2026-11-25-030000.zip', created: '2026-11-25T03:00:00+00:00', kind: 'scheduled', note: '', version: '1.4.0', uploaded: false, database_ok: usable, files_ok: true, damaged: usable ? [] : ['database'], too_new: false, blocked: '', blocked_text: '', usable, facts: {}, details: { would_add: 1, would_change: 0, would_remove: 2 } }
+}
+
+function fakeApi(): SicherungApi & { calls: string[] } {
+  const calls: string[] = []
+  const note = (call: string) => calls.push(call)
+  return {
+    calls,
+    overview: vi.fn(async () => OVERVIEW),
+    backups: vi.fn(async () => BACKUPS),
+    saveSchedule: vi.fn(async (schedule) => (note(`schedule ${schedule.every} ${schedule.time} ${schedule.keep}`), schedule)),
+    make: vi.fn(async () => (note('make'), { name: 'x' })),
+    upload: vi.fn(async (_file, password) => (note(`upload ${password}`), { name: 'y' })),
+    check: vi.fn(async (name, archivePassword) => (note(`check ${name} ${archivePassword ?? '-'}`), brief())),
+    download: vi.fn(async (name, password, archivePassword) => (note(`download ${name} ${password} ${archivePassword ?? '-'}`), new Blob(['zip']))),
+    restore: vi.fn(async (name, password, archivePassword) => (note(`restore ${name} ${password} ${archivePassword ?? '-'}`), { ...brief(), result: {}, restarting: true })),
+    remove: vi.fn(async (name, password) => void note(`remove ${name} ${password}`)),
+    dismissFailed: vi.fn(async () => void note('dismiss')),
+  }
+}
+
+async function area(api: SicherungApi, password = true, language = 'de'): Promise<HTMLElement> {
+  const root = await show(
+    <StorageArea
+      app="nexnotes"
+      things="Notizen"
+      holds="Eine Sicherung enthält alle Notizen."
+      api={api}
+      password={password}
+      language={language === 'fr' ? 'fr' : 'de'}
+      facts={(item) => `${String(item.facts.notes)} Notizen`}
+      details={(found) => <p data-testid="details">{String(found.details.would_remove)} fallen weg</p>}
+      onRestarting={() => undefined}
+    >
+      <section data-card="app-own">eigene Karte</section>
+    </StorageArea>,
+    language,
+  )
+  await waitFor(() => expect(root.querySelector('[data-testid="backup-list"]')).not.toBeNull())
+  return root
+}
+
+describe('the area "Speicher und Sicherung"', () => {
+  it('shows the cards in their order, the app\'s own after them', async () => {
+    const root = await area(fakeApi())
+    const cards = Array.from(root.querySelectorAll('[data-card]')).map((card) => card.getAttribute('data-card'))
+    expect(cards).toEqual(['storage', 'backups', 'app-own'])
+    expect(getByRole(root, 'heading', { name: 'Speicher' })).not.toBeNull()
+    expect(getByRole(root, 'heading', { name: 'Sicherung' })).not.toBeNull()
+    expect(getByText(root, 'Eine Sicherung enthält alle Notizen.')).not.toBeNull()
+  })
+
+  it('names what the app takes, the free space and a network share', async () => {
+    const root = await area(fakeApi())
+    expect(getByText(root, 'nexnotes belegt')).not.toBeNull()
+    expect(root.querySelector('[data-testid="storage-parts"]')?.textContent).toBe('Datenbank 1,0 MB · Anhänge 2,0 MB')
+    expect(root.querySelector('[data-testid="storage-free"]')?.textContent).toBe('5,0 GB frei von 100 GB')
+    expect(root.querySelector('[data-testid="storage-network"]')?.textContent).toContain('Das kann Notizen beschädigen')
+    expect(root.querySelector('[data-nearly-full]')).not.toBeNull()
+  })
+
+  it('chooses the schedule in a segment and saves time and number with the field\'s own button', async () => {
+    const api = fakeApi()
+    const root = await area(api)
+    const group = getByRole(root, 'radiogroup', { name: 'Automatisch' })
+    const choices = Array.from(group.querySelectorAll('[role="radio"]')).map((item) => item.textContent)
+    expect(choices).toEqual(['Aus', 'Jede Nacht', 'Jede Woche', 'Jeden Monat'])
+    await act(async () => fireEvent.click(getByRole(group, 'radio', { name: 'Jede Woche' })))
+    expect(api.calls).toContain('schedule weekly 03:00 7')
+    await act(async () => fireEvent.click(getByRole(group, 'radio', { name: 'Jeden Monat' })))
+    expect(api.calls).toContain('schedule monthly 03:00 7')
+    const keep = getByLabelText(root, 'Behalten (Stück)') as HTMLInputElement
+    const row = keep.closest('[data-part="field-action"]') as HTMLElement
+    const save = getByRole(row, 'button', { name: 'Speichern' })
+    expect(save.dataset.icon).toBe('Check')
+    fireEvent.change(getByLabelText(root, 'Uhrzeit'), { target: { value: '04:30' } })
+    fireEvent.change(keep, { target: { value: '3' } })
+    await act(async () => fireEvent.click(save))
+    expect(api.calls).toContain('schedule daily 04:30 3')
+  })
+
+  it('has "Jetzt sichern" primary and "Sicherung hochladen" secondary, and small buttons with symbols in every row', async () => {
+    const api = fakeApi()
+    const root = await area(api)
+    const now = root.querySelector('[data-testid="backup-now"]') as HTMLElement
+    expect([now.dataset.kind, now.dataset.icon, now.dataset.size]).toEqual(['primary', 'Archive', 'md'])
+    const upload = root.querySelector('[data-testid="backup-upload"]') as HTMLElement
+    expect([upload.dataset.kind, upload.dataset.icon]).toEqual(['secondary', 'Upload'])
+    const row = root.querySelector('[data-testid="backup-nexnotes-2026-11-25-030000.zip"]') as HTMLElement
+    const buttons = Array.from(row.querySelectorAll('button'))
+    expect(buttons.map((button) => [button.textContent, button.dataset.icon, button.dataset.kind, button.dataset.size])).toEqual([
+      ['Prüfen', 'ShieldCheck', 'secondary', 'sm'],
+      ['Herunterladen', 'Download', 'secondary', 'sm'],
+      ['Wiederherstellen', 'RotateCcw', 'secondary', 'sm'],
+      ['Löschen', 'Trash2', 'danger', 'sm'],
+    ])
+    expect(row.textContent).toContain('12 Notizen')
+    await act(async () => fireEvent.click(now))
+    expect(api.calls).toContain('make')
+  })
+
+  it('shows the result of a check as a box', async () => {
+    const root = await area(fakeApi())
+    const row = root.querySelector('[data-testid="backup-nexnotes-2026-11-25-030000.zip"]') as HTMLElement
+    await act(async () => fireEvent.click(getByRole(row, 'button', { name: /^Prüfen/ })))
+    const box = root.querySelector('[data-testid="backup-brief"]') as HTMLElement
+    expect(box.textContent).toContain('Die Sicherung ist vollständig und lesbar.')
+    expect(box.querySelector('[data-tone="on"]')?.textContent).toBe('Vollständig')
+    expect(box.querySelector('[data-testid="details"]')?.textContent).toBe('2 fallen weg')
+  })
+
+  it('checks before a restore, then asks for the password', async () => {
+    const api = fakeApi()
+    const root = await area(api)
+    const row = root.querySelector('[data-testid="backup-nexnotes-2026-11-25-030000.zip"]') as HTMLElement
+    await act(async () => fireEvent.click(getByRole(row, 'button', { name: /^Wiederherstellen/ })))
+    expect(api.calls[0]).toBe('check nexnotes-2026-11-25-030000.zip -')
+    const dialog = getByRole(document.body, 'dialog', { name: 'Diese Sicherung wiederherstellen?' })
+    const confirm = getByRole(dialog, 'button', { name: 'Wiederherstellen' }) as HTMLButtonElement
+    expect(confirm.dataset.kind).toBe('danger')
+    expect(confirm.disabled).toBe(true)
+    fireEvent.change(getByLabelText(dialog, 'Dein Passwort'), { target: { value: 'geheim' } })
+    await act(async () => fireEvent.click(confirm))
+    expect(api.calls).toContain('restore nexnotes-2026-11-25-030000.zip geheim -')
+    expect(root.querySelector('[data-testid="backup-restarting"]')?.textContent).toContain('nexnotes startet mit der Sicherung neu')
+  })
+
+  it('never asks to restore a damaged backup, and says why', async () => {
+    const api = fakeApi()
+    api.check = vi.fn(async () => brief(false))
+    const root = await area(api)
+    const row = root.querySelector('[data-testid="backup-nexnotes-2026-11-25-030000.zip"]') as HTMLElement
+    await act(async () => fireEvent.click(getByRole(row, 'button', { name: /^Wiederherstellen/ })))
+    expect(queryByRole(document.body, 'dialog')).toBeNull()
+    const box = root.querySelector('[data-testid="backup-brief"]') as HTMLElement
+    expect(box.textContent).toContain('Beschädigt: Diese Sicherung lässt sich nicht wiederherstellen.')
+    expect(box.querySelector('[data-tone="danger"]')?.textContent).toBe('Beschädigt')
+    expect(api.restore).not.toHaveBeenCalled()
+  })
+
+  it('asks a locked backup for its own password', async () => {
+    const api = fakeApi()
+    const root = await area(api)
+    const row = root.querySelector('[data-testid="backup-nexnotes-2026-11-24-120000-upload.zip"]') as HTMLElement
+    expect(row.textContent).toContain('verschlüsselt')
+    await act(async () => fireEvent.click(getByRole(row, 'button', { name: /^Prüfen/ })))
+    const dialog = getByRole(document.body, 'dialog')
+    fireEvent.change(getByLabelText(dialog, 'Passwort der Sicherung'), { target: { value: 'sesam' } })
+    await act(async () => fireEvent.click(getByRole(dialog, 'button', { name: 'Prüfen' })))
+    expect(api.calls).toContain('check nexnotes-2026-11-24-120000-upload.zip sesam')
+  })
+
+  it('deletes and downloads only with the password; without one when the operator has none', async () => {
+    const api = fakeApi()
+    URL.createObjectURL = vi.fn(() => 'blob:x')
+    URL.revokeObjectURL = vi.fn()
+    const root = await area(api, false)
+    const row = root.querySelector('[data-testid="backup-nexnotes-2026-11-25-030000.zip"]') as HTMLElement
+    await act(async () => fireEvent.click(getByRole(row, 'button', { name: /^Löschen/ })))
+    const dialog = getByRole(document.body, 'dialog', { name: 'Diese Sicherung löschen?' })
+    expect(queryByRole(dialog, 'textbox')).toBeNull()
+    await act(async () => fireEvent.click(getByRole(dialog, 'button', { name: 'Löschen' })))
+    expect(api.calls).toContain('remove nexnotes-2026-11-25-030000.zip ')
+  })
+})
+
+describe('an app that encrypts its downloads (nexmail)', () => {
+  it('asks for the file\'s password twice, at least 8 characters, and sends it', async () => {
+    const api = fakeApi()
+    api.backups = vi.fn(async () => ({ ...BACKUPS, download_password: true }))
+    URL.createObjectURL = vi.fn(() => 'blob:x')
+    URL.revokeObjectURL = vi.fn()
+    const root = await area(api)
+    const row = root.querySelector('[data-testid="backup-nexnotes-2026-11-25-030000.zip"]') as HTMLElement
+    await act(async () => fireEvent.click(getByRole(row, 'button', { name: /^Herunterladen/ })))
+    const dialog = getByRole(document.body, 'dialog', { name: 'Diese Sicherung herunterladen?' })
+    const confirm = getByRole(dialog, 'button', { name: 'Herunterladen' }) as HTMLButtonElement
+    fireEvent.change(getByLabelText(dialog, 'Dein Passwort'), { target: { value: 'geheim' } })
+    fireEvent.change(getByLabelText(dialog, 'Passwort für die Datei'), { target: { value: 'kurz' } })
+    fireEvent.change(getByLabelText(dialog, 'Passwort wiederholen'), { target: { value: 'kurz' } })
+    expect(confirm.disabled).toBe(true)
+    fireEvent.change(getByLabelText(dialog, 'Passwort für die Datei'), { target: { value: 'lang genug' } })
+    fireEvent.change(getByLabelText(dialog, 'Passwort wiederholen'), { target: { value: 'lang genau' } })
+    expect(confirm.disabled).toBe(true)
+    expect(getByText(dialog, 'Die beiden Passwörter sind verschieden.')).not.toBeNull()
+    fireEvent.change(getByLabelText(dialog, 'Passwort wiederholen'), { target: { value: 'lang genug' } })
+    expect(confirm.disabled).toBe(false)
+    await act(async () => fireEvent.click(confirm))
+    expect(api.calls).toContain('download nexnotes-2026-11-25-030000.zip geheim lang genug')
+  })
+
+  it('downloads without a password of its own in every other app', async () => {
+    const api = fakeApi()
+    URL.createObjectURL = vi.fn(() => 'blob:x')
+    URL.revokeObjectURL = vi.fn()
+    const root = await area(api)
+    const row = root.querySelector('[data-testid="backup-nexnotes-2026-11-25-030000.zip"]') as HTMLElement
+    await act(async () => fireEvent.click(getByRole(row, 'button', { name: /^Herunterladen/ })))
+    const dialog = getByRole(document.body, 'dialog')
+    expect(queryByRole(dialog, 'textbox', { name: 'Passwort für die Datei' })).toBeNull()
+    expect(dialog.querySelectorAll('input[type="password"]').length).toBe(1)
+    fireEvent.change(getByLabelText(dialog, 'Dein Passwort'), { target: { value: 'geheim' } })
+    await act(async () => fireEvent.click(getByRole(dialog, 'button', { name: 'Herunterladen' })))
+    expect(api.calls).toContain('download nexnotes-2026-11-25-030000.zip geheim -')
+  })
+})
+
+describe('the words', () => {
+  it('come in French too', async () => {
+    const root = await area(fakeApi(), true, 'fr')
+    expect(getByRole(root, 'heading', { name: 'Stockage' })).not.toBeNull()
+    const group = getByRole(root, 'radiogroup', { name: 'Automatiquement' })
+    expect(Array.from(group.querySelectorAll('[role="radio"]')).map((item) => item.textContent)).toEqual(['Désactivée', 'Chaque nuit', 'Chaque semaine', 'Chaque mois'])
+    expect(getByRole(root, 'button', { name: 'Sauvegarder maintenant' })).not.toBeNull()
+  })
+
+  it('have the same keys in every language', () => {
+    const keys = (tree: unknown, prefix = ''): string[] =>
+      typeof tree === 'object' && tree !== null ? Object.entries(tree).flatMap(([key, value]) => keys(value, `${prefix}${key}.`)) : [prefix]
+    expect(keys(SICHERUNG_TEXTS.en).sort()).toEqual(keys(SICHERUNG_TEXTS.de).sort())
+    expect(keys(SICHERUNG_TEXTS.fr).sort()).toEqual(keys(SICHERUNG_TEXTS.de).sort())
+  })
+})
+
+describe('the calls', () => {
+  it('go to the module\'s routes with the password where it belongs', async () => {
+    const seen: [string, RequestInit][] = []
+    const fetcher = vi.fn(async (path: string, init: RequestInit) => {
+      seen.push([path, init])
+      return new Response(JSON.stringify({ name: 'n' }), { status: 200, headers: { 'Content-Type': 'application/json' } })
+    })
+    const api = makeSicherungApi(fetcher, '/api/v1/server/storage')
+    await api.make('hand')
+    await api.upload(new Blob(['zip']), 'Grüße')
+    await api.restore('a b.zip', 'pw')
+    expect(seen.map(([path, init]) => `${init.method} ${path}`)).toEqual([
+      'POST /api/v1/server/storage/backups',
+      'POST /api/v1/server/storage/backups/upload',
+      'POST /api/v1/server/storage/backups/a%20b.zip/restore',
+    ])
+    expect((seen[1]?.[1].headers as Record<string, string>)['X-Backup-Password']).toBe(passwordHeader('Grüße'))
+    expect(JSON.parse(String(seen[2]?.[1].body))).toEqual({ password: 'pw' })
+  })
+
+  it('turn a refusal into its code', async () => {
+    const api = makeSicherungApi(async () => new Response(JSON.stringify({ detail: { code: 'backup_running', message: 'busy' } }), { status: 409 }))
+    await expect(api.make()).rejects.toMatchObject({ code: 'backup_running', status: 409 })
+  })
+
+  it('reckon bars and sizes', () => {
+    expect(shares({ used: 10, disk_used: 50, total: 100 })).toEqual({ own: 10, other: 40 })
+    expect(shares({ used: 1, disk_used: 1, total: 0 })).toEqual({ own: 0, other: 0 })
+    expect(bytes(1536, 'de')).toBe('1,5 KB')
+    expect(bytes(1536, 'en')).toBe('1.5 KB')
+    expect(bytes(1536, 'fr')).toBe('1,5 KB')
+    expect(passwordHeader('Grüße')).toBe('R3LDvMOfZQ==')
+  })
+})

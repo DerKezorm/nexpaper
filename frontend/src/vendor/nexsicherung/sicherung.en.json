@@ -1,0 +1,148 @@
+{
+  "sicherung": {
+    "storage": {
+      "title": "Storage",
+      "uses": "{app} uses",
+      "part": "{name} {size}",
+      "parts": {
+        "database": "Database",
+        "attachments": "Attachments",
+        "documents": "Documents",
+        "media": "Photos and files",
+        "files": "Files",
+        "vault": "Notes and files",
+        "index": "Search index",
+        "cache": "Cache",
+        "exports": "Exports",
+        "backups": "Backups",
+        "other": "Log and other"
+      },
+      "within": "of which {name} {size}",
+      "bar": "{app} uses {own}; {used} of {total} on the disk are in use",
+      "free": "{free} free of {total}",
+      "partial": "Not everything counted yet: the numbers are too small.",
+      "network": "The data folder lies on a network share (NFS or SMB). That can damage {things}. A local disk is better.",
+      "networkPlace": "On a network share: {places}.",
+      "places": {
+        "data": "data folder",
+        "database": "database",
+        "documents": "documents",
+        "media": "photos and files",
+        "vault": "notes"
+      }
+    },
+    "backup": {
+      "title": "Backup",
+      "schedule": "Automatically",
+      "every": {
+        "off": "Off",
+        "daily": "Every night",
+        "weekly": "Every week",
+        "monthly": "Every month"
+      },
+      "time": "Time",
+      "timeHint": "In the server's time zone ({zone}).",
+      "keep": "Keep (count)",
+      "keepHint": "This many automatic backups stay, older ones go. Backups made by hand or uploaded stay until you delete them.",
+      "save": "Save",
+      "saved": "Saved.",
+      "last": "Last: {when}, {size}",
+      "never": "No backup yet.",
+      "running": "Backing up …",
+      "failed": "The backup on {when} failed: {reason}. The older backups stay.",
+      "reasons": {
+        "disk_full": "the disk is full",
+        "write_failed": "it could not be written",
+        "backup_disk_full": "the disk is full",
+        "backup_write_failed": "it could not be written"
+      },
+      "restoreFailed": "Restoring on {when} failed. {app} keeps running with the data from before.",
+      "restoreFailedSeen": "Got it",
+      "now": "Back up now",
+      "made": "Backup created.",
+      "upload": "Upload a backup",
+      "uploadedHint": "Uploaded. It is in the list now: check it first, then restore.",
+      "list": "Backups",
+      "kinds": {
+        "manual": "by hand",
+        "scheduled": "scheduled",
+        "update": "before a change"
+      },
+      "uploaded": "uploaded",
+      "locked": "encrypted",
+      "unreadable": "unreadable",
+      "check": "Check",
+      "download": "Download",
+      "restore": "Restore",
+      "delete": "Delete",
+      "forBackup": "{action}: backup of {when}",
+      "brief": "Check of the backup of {when}",
+      "briefOk": "Complete",
+      "briefBad": "Damaged",
+      "checkOk": "The backup is complete and readable.",
+      "checkBad": "Damaged: this backup cannot be restored.",
+      "checkDamaged": "Damaged: {names}",
+      "checkNewer": "This backup comes from {app} {version}, newer than this one. Update {app} first, then restore.",
+      "restoreChanges": "Restoring adds {add}, changes {change} and removes {remove}.",
+      "files": "{count} files",
+      "restarting": "{app} restarts with the backup. The page reloads in a moment.",
+      "restoredNow": "Restored. Everybody signs in again.",
+      "password": "Your password",
+      "archivePassword": "Password of the backup",
+      "archivePasswordHint": "The password this backup was encrypted with.",
+      "cancel": "Cancel",
+      "close": "Close",
+      "confirm": {
+        "restore": {
+          "title": "Restore this backup?",
+          "text": "First the current state is backed up, then {app} restarts and restores the backup. Everybody signs in again afterwards.",
+          "textNow": "First the current state is backed up, then {app} restores the backup. Everybody signs in again afterwards.",
+          "button": "Restore"
+        },
+        "download": {
+          "title": "Download this backup?",
+          "text": "It contains everything {app} knows, with the accounts and the server's key. It is not encrypted.",
+          "button": "Download"
+        },
+        "delete": {
+          "title": "Delete this backup?",
+          "text": "It cannot be brought back.",
+          "button": "Delete"
+        },
+        "upload": {
+          "title": "Upload a backup?",
+          "text": "The file joins the list of backups. Nothing is restored until you confirm it there.",
+          "button": "Upload"
+        },
+        "check": {
+          "title": "Check an encrypted backup",
+          "button": "Check"
+        }
+      },
+      "timeHintMonthly": "On the 1st of the month, in the server's time zone ({zone}).",
+      "downloadPassword": "Password for the file",
+      "downloadPasswordHint": "At least 8 characters. Without this password the file cannot be opened, not even by us.",
+      "downloadPasswordAgain": "Repeat the password",
+      "downloadPasswordMismatch": "The two passwords differ."
+    },
+    "error": {
+      "not_found": "This backup is gone.",
+      "empty": "The file is empty.",
+      "backup_invalid": "This is not a backup of {app}.",
+      "backup_damaged": "The backup is damaged. Nothing was changed.",
+      "backup_too_new": "The backup comes from a newer version of {app}. Nothing was changed.",
+      "backup_too_large": "The file is larger than allowed.",
+      "backup_running": "A backup is running already.",
+      "backup_disk_full": "The disk is full. The older backups stay.",
+      "backup_write_failed": "The backup could not be written. The older backups stay.",
+      "archive_password_needed": "This backup is encrypted. Enter its password.",
+      "archive_password_wrong": "The backup's password is wrong.",
+      "schedule_invalid": "Off, every night, every week or every month.",
+      "time_invalid": "Enter a time such as 03:00.",
+      "keep_invalid": "Between 1 and 365.",
+      "wrong_password": "The password is wrong.",
+      "unknown": "That did not work.",
+      "archive_password_short": "The file's password needs at least 8 characters."
+    }
+  }
+}

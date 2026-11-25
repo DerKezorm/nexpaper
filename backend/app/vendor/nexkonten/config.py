@@ -22,6 +22,27 @@ _APP_NAME = re.compile(r"[a-z][a-z0-9-]{1,30}")
 #: Values of an environment variable that switch something on.
 _ON = frozenset({"1", "true", "yes", "on"})
 
+#: Since 1.1.0: what the operator's account functions offer beyond what every app has (several operators, block,
+#: delete with 30 days to bring back), by feature, the apps that have it (plan "Einstellungen", decided 25.11.2026):
+#: a storage limit per account only where accounts keep files, "AI allowed" where the app has AI built in, "Immich
+#: allowed" where Immich is connected. Changed only here, after the owner of the apps decided; the contract tests hold
+#: every app to its row.
+FEATURE_STORAGE_LIMIT = "storage_limit"
+FEATURE_AI = "ai"
+FEATURE_IMMICH = "immich"
+FEATURES: Mapping[str, frozenset[str]] = {
+    FEATURE_STORAGE_LIMIT: frozenset({"nexnotes", "nexpaper", "nexdiary", "nexlore"}),
+    FEATURE_AI: frozenset({"nexmail", "nexpaper", "nexdiary", "nexlore"}),
+    FEATURE_IMMICH: frozenset({"nexdiary"}),
+}
+#: The features that are rights of an account (a box to tick in the dialog "Manage"), in their order.
+RIGHTS = (FEATURE_AI, FEATURE_IMMICH)
+
+
+def features_of(app_name: str) -> frozenset[str]:
+    """The features the table gives an app by its name."""
+    return frozenset(feature for feature, apps in FEATURES.items() if app_name in apps)
+
 
 @dataclass(frozen=True)
 class AppConfig:
@@ -43,6 +64,9 @@ class AppConfig:
     #: Since 0.3.3, the emergency hammer: True switches the second factor off for everybody (an older variable of the
     #: app, ``NEXMAIL_ZWEI_FAKTOR_AUS``). ``<APP>_SECOND_FACTOR_OFF`` counts always, with or without this.
     second_factor_off: Callable[[], bool] | None = None
+    #: Since 1.1.0: the features of ``FEATURES`` this app has; None (the default) takes the app's row of the table.
+    #: Only the module's own tests name them by hand (an app called ``nexapp`` has none).
+    features: frozenset[str] | None = None
 
     def __post_init__(self) -> None:
         if not _APP_NAME.fullmatch(self.app_name):
@@ -52,6 +76,17 @@ class AppConfig:
         unknown = sorted(set(self.error_codes) - set(CODES))
         if unknown:
             raise ValueError(f"error_codes names codes the module does not have: {unknown}")
+        strange = sorted(set(self.features or ()) - set(FEATURES))
+        if strange:
+            raise ValueError(f"features names features the module does not have: {strange}")
+
+    @property
+    def feature_set(self) -> frozenset[str]:
+        """The features this app has (``FEATURES``)."""
+        return features_of(self.app_name) if self.features is None else frozenset(self.features)
+
+    def has(self, feature: str) -> bool:
+        return feature in self.feature_set
 
     @property
     def log_name(self) -> str:

@@ -1,0 +1,148 @@
+{
+  "sicherung": {
+    "storage": {
+      "title": "Stockage",
+      "uses": "{app} occupe",
+      "part": "{name} {size}",
+      "parts": {
+        "database": "Base de données",
+        "attachments": "Pièces jointes",
+        "documents": "Documents",
+        "media": "Photos et fichiers",
+        "files": "Fichiers",
+        "vault": "Notes et fichiers",
+        "index": "Index de recherche",
+        "cache": "Cache",
+        "exports": "Exports",
+        "backups": "Sauvegardes",
+        "other": "Journal et divers"
+      },
+      "within": "dont {name} {size}",
+      "bar": "{app} occupe {own} ; {used} sur {total} sont utilisés sur le disque",
+      "free": "{free} libres sur {total}",
+      "partial": "Tout n’est pas encore compté : les chiffres sont trop petits.",
+      "network": "Le dossier de données se trouve sur un partage réseau (NFS ou SMB). Cela peut endommager {things}. Un disque local est préférable.",
+      "networkPlace": "Sur un partage réseau : {places}.",
+      "places": {
+        "data": "dossier de données",
+        "database": "base de données",
+        "documents": "documents",
+        "media": "photos et fichiers",
+        "vault": "notes"
+      }
+    },
+    "backup": {
+      "title": "Sauvegarde",
+      "schedule": "Automatiquement",
+      "every": {
+        "off": "Désactivée",
+        "daily": "Chaque nuit",
+        "weekly": "Chaque semaine",
+        "monthly": "Chaque mois"
+      },
+      "time": "Heure",
+      "timeHint": "Dans le fuseau horaire du serveur ({zone}).",
+      "timeHintMonthly": "Le 1er du mois, dans le fuseau horaire du serveur ({zone}).",
+      "keep": "Conserver (nombre)",
+      "keepHint": "Ce nombre de sauvegardes automatiques est conservé, les plus anciennes partent. Celles faites à la main ou téléversées restent jusqu’à ce que vous les supprimiez.",
+      "save": "Enregistrer",
+      "saved": "Enregistré.",
+      "last": "Dernière : {when}, {size}",
+      "never": "Pas encore de sauvegarde.",
+      "running": "Sauvegarde en cours …",
+      "failed": "La sauvegarde du {when} a échoué : {reason}. Les sauvegardes plus anciennes restent.",
+      "reasons": {
+        "disk_full": "le disque est plein",
+        "write_failed": "elle n’a pas pu être écrite",
+        "backup_disk_full": "le disque est plein",
+        "backup_write_failed": "elle n’a pas pu être écrite"
+      },
+      "restoreFailed": "La restauration du {when} a échoué. {app} continue avec les données d’avant.",
+      "restoreFailedSeen": "Compris",
+      "now": "Sauvegarder maintenant",
+      "made": "Sauvegarde créée.",
+      "upload": "Téléverser une sauvegarde",
+      "uploadedHint": "Téléversée. Elle est maintenant dans la liste : d’abord vérifier, puis restaurer.",
+      "list": "Sauvegardes",
+      "kinds": {
+        "manual": "à la main",
+        "scheduled": "planifiée",
+        "update": "avant une modification"
+      },
+      "uploaded": "téléversée",
+      "locked": "chiffrée",
+      "unreadable": "illisible",
+      "check": "Vérifier",
+      "download": "Télécharger",
+      "restore": "Restaurer",
+      "delete": "Supprimer",
+      "forBackup": "{action} : sauvegarde du {when}",
+      "brief": "Vérification de la sauvegarde du {when}",
+      "briefOk": "Complète",
+      "briefBad": "Endommagée",
+      "checkOk": "La sauvegarde est complète et lisible.",
+      "checkBad": "Endommagée : cette sauvegarde ne peut pas être restaurée.",
+      "checkDamaged": "Endommagé : {names}",
+      "checkNewer": "Cette sauvegarde provient de {app} {version}, plus récent que celui-ci. Mettez d’abord {app} à jour, puis restaurez.",
+      "restoreChanges": "La restauration ajoute {add}, modifie {change} et retire {remove}.",
+      "files": "{count} fichiers",
+      "restarting": "{app} redémarre avec la sauvegarde. La page se recharge dans un instant.",
+      "restoredNow": "Restaurée. Tout le monde se reconnecte.",
+      "password": "Votre mot de passe",
+      "archivePassword": "Mot de passe de la sauvegarde",
+      "archivePasswordHint": "Le mot de passe avec lequel cette sauvegarde a été chiffrée.",
+      "downloadPassword": "Mot de passe du fichier",
+      "downloadPasswordHint": "Au moins 8 caractères. Sans ce mot de passe, le fichier ne peut pas être ouvert, pas même par nous.",
+      "downloadPasswordAgain": "Répéter le mot de passe",
+      "downloadPasswordMismatch": "Les deux mots de passe sont différents.",
+      "cancel": "Annuler",
+      "close": "Fermer",
+      "confirm": {
+        "restore": {
+          "title": "Restaurer cette sauvegarde ?",
+          "text": "L’état actuel est d’abord sauvegardé, puis {app} redémarre et restaure la sauvegarde. Tout le monde se reconnecte ensuite.",
+          "textNow": "L’état actuel est d’abord sauvegardé, puis {app} restaure la sauvegarde. Tout le monde se reconnecte ensuite.",
+          "button": "Restaurer"
+        },
+        "download": {
+          "title": "Télécharger cette sauvegarde ?",
+          "text": "Elle contient tout ce que {app} connaît, avec les comptes et la clé du serveur. Elle n’est pas chiffrée.",
+          "button": "Télécharger"
+        },
+        "delete": {
+          "title": "Supprimer cette sauvegarde ?",
+          "text": "Elle ne pourra pas être récupérée.",
+          "button": "Supprimer"
+        },
+        "upload": {
+          "title": "Téléverser une sauvegarde ?",
+          "text": "Le fichier rejoint la liste des sauvegardes. Rien n’est restauré avant que vous le confirmiez là.",
+          "button": "Téléverser"
+        },
+        "check": {
+          "title": "Vérifier une sauvegarde chiffrée",
+          "button": "Vérifier"
+        }
+      }
+    },
+    "error": {
+      "not_found": "Cette sauvegarde n’existe plus.",
+      "empty": "Le fichier est vide.",
+      "backup_invalid": "Ce n’est pas une sauvegarde de {app}.",
+      "backup_damaged": "La sauvegarde est endommagée. Rien n’a été modifié.",
+      "backup_too_new": "La sauvegarde provient d’une version plus récente de {app}. Rien n’a été modifié.",
+      "backup_too_large": "Le fichier est plus grand que permis.",
+      "backup_running": "Une sauvegarde est déjà en cours.",
+      "backup_disk_full": "Le disque est plein. Les sauvegardes plus anciennes restent.",
+      "backup_write_failed": "La sauvegarde n’a pas pu être écrite. Les sauvegardes plus anciennes restent.",
+      "archive_password_needed": "Cette sauvegarde est chiffrée. Saisissez son mot de passe.",
+      "archive_password_wrong": "Le mot de passe de la sauvegarde est incorrect.",
+      "archive_password_short": "Le mot de passe du fichier doit comporter au moins 8 caractères.",
+      "schedule_invalid": "Désactivée, chaque nuit, chaque semaine ou chaque mois.",
+      "time_invalid": "Saisissez une heure comme 03:00.",
+      "keep_invalid": "Entre 1 et 365.",
+      "wrong_password": "Le mot de passe est incorrect.",
+      "unknown": "Cela n’a pas fonctionné."
+    }
+  }
+}

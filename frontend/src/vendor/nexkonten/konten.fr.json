@@ -227,7 +227,95 @@
       "avatars_busy": "Trop de photos en même temps. Réessayez dans un instant.",
       "public_url_needed": "Le lien a besoin de l'adresse publique de {{app}}. Saisissez-la dans les réglages du serveur.",
       "nothing_to_prove": "Il n'y a aucune adresse à confirmer par lien.",
-      "unknown": "Cela n'a pas fonctionné. Réessayez."
-    }
+      "unknown": "Cela n'a pas fonctionné. Réessayez.",
+      "cannot_demote_self": "Tu ne changes pas ton propre rôle ici.",
+      "cannot_block_self": "Tu ne bloques pas ton propre compte.",
+      "cannot_delete_self": "Tu ne supprimes pas ton propre compte ici.",
+      "last_operator": "{{app}} a besoin d’au moins un opérateur qui peut se connecter.",
+      "feature_off": "{{app}} n’a pas cela.",
+      "invalid_limit": "La limite est un nombre à partir de 0, au plus 10 To.",
+      "theme_invalid": "Choisis Clair, Sombre ou Comme le système.",
+      "provider_first": "Sans fournisseur de connexion actif, la connexion par mot de passe reste active.",
+      "own_second_factor_first": "Configure d’abord ton propre second facteur."
+    },
+    "ownSecondFactorFirst": "Configure d’abord ton propre second facteur (Mon compte, Sécurité), sinon tu serais le premier bloqué.",
+    "factorRequiredOffTitle": "Ne plus exiger de second facteur ?",
+    "factorRequiredOffText": "Un mot de passe suffit alors de nouveau pour entrer dans un compte. Qui a déjà un second facteur le garde.",
+    "factorRequiredOff": "Ne plus exiger",
+    "passkeysAllowedHint": "Se connecter avec une empreinte, le visage ou le code de l’appareil, sans mot de passe.",
+    "emailUnconfirmed": "Adresse pas encore confirmée",
+    "emailUnconfirmedHint": "Un lien à {{email}} montre que l’adresse est à toi.",
+    "emailProveSend": "Envoyer le lien",
+    "signOut": "Se déconnecter",
+    "signOutText": "Termine ta session dans ce navigateur. Tes {{things}} restent comme ils sont.",
+    "signOutProvider": "Tu restes connecté chez ton fournisseur de connexion ; seul {{app}} te déconnecte.",
+    "signOutPending_one": "{{count}} modification n’est pas encore enregistrée. Si tu te déconnectes maintenant, elle est perdue.",
+    "signOutPending_other": "{{count}} modifications ne sont pas encore enregistrées. Si tu te déconnectes maintenant, elles sont perdues.",
+    "waitForChanges": "Attendre",
+    "signOutAnyway": "Se déconnecter quand même",
+    "whatYouSee": "Ce que tu vois",
+    "storage": "Stockage",
+    "storageUsedOf": "{{used}} sur {{limit}}",
+    "storageUsedNoLimit": "{{used}}, sans limite",
+    "storageLimit": "Limite de stockage",
+    "storageLimitTitle": "Limite de stockage pour {{name}}",
+    "storageLimitField": "Limite en Go",
+    "storageUsed": "Utilisé : {{used}}",
+    "storageLimitRemove": "Retirer la limite",
+    "rightAi": "IA autorisée",
+    "rightImmich": "Immich autorisé",
+    "ready": {
+      "title": "Prêt pour Internet ?",
+      "text": "Beaucoup accèdent à {{app}} aussi en déplacement. {{app}} vérifie cela lui-même, chaque fois que tu ouvres la page.",
+      "open_one": "{{count}} point ouvert",
+      "open_other": "{{count}} points ouverts",
+      "allGood": "Tout est fait",
+      "state": {
+        "ok": "fait",
+        "warn": "à vérifier",
+        "bad": "ouvert"
+      },
+      "address": {
+        "title": "Adresse publique en https",
+        "ok": "{{app}} est joignable à {{address}} ; mots de passe et cookies passent chiffrés sur le réseau.",
+        "warn": "{{address}} a https, mais cette requête est venue sans. Ouvre {{app}} par cette adresse, ou fais envoyer X-Forwarded-Proto par le proxy et inscris-le dans {{variable}}.",
+        "bad": "Sans https, les mots de passe passent en clair sur le réseau, et Web Push et les passkeys ne marchent pas du tout. Saisis l’adresse publique en https ci-dessous.",
+        "missing": "Pas encore d’adresse publique. Saisis ci-dessous l’adresse en https à laquelle on joint {{app}}."
+      },
+      "factorForAll": {
+        "title": "Second facteur pour tous",
+        "ok": "Qui se connecte avec un mot de passe a besoin en plus d’un code ou d’une passkey.",
+        "bad": "Désactivé : un mot de passe deviné ou volé suffit pour entrer dans un compte. Active « Exiger un second facteur de tous » ci-dessous.",
+        "warn": "Obligatoire pour les comptes avec mot de passe. Chez {{providers}}, le fournisseur vérifie lui-même le second facteur, {{app}} n’en demande pas. Vérifie que le fournisseur l’exige vraiment.",
+        "off": "{{variable}} est défini : personne n’est invité à donner un second facteur. Retire la variable et redémarre {{app}}."
+      },
+      "ownAccount": {
+        "title": "Ton propre compte",
+        "ok": "A un second facteur.",
+        "bad": "N’a pas encore de second facteur, et il peut tout régler. Configure-le sous Mon compte, Sécurité."
+      },
+      "brake": {
+        "title": "Protection contre les essais",
+        "ok": "5 essais sont libres, ensuite chaque essai attend plus longtemps. Après 10 mauvais mots de passe, le compte est bloqué 15 minutes. Chaque essai figure dans le journal.",
+        "warn": "Tous les visiteurs passent par un proxy que {{app}} ne connaît pas : la pause vaut par compte, mais par adresse seulement grossièrement. Voir « Derrière le proxy ».",
+        "bad": "La liste des proxys de confiance contient des réseaux publics ({{networks}}). N’importe qui pourrait alors inventer l’adresse de l’expéditeur, et la pause après de mauvais essais ne tient plus. N’inscris que l’adresse de ton proxy.",
+        "broken": "La protection contre les essais échoue à son propre test. Redémarre {{app}} ; si cela n’aide pas, signale-le."
+      },
+      "cookies": {
+        "title": "Sessions et cookies",
+        "ok_one": "Cookies seulement en https et illisibles pour les scripts ; une connexion expire après {{count}} jour sans usage.",
+        "ok_other": "Cookies seulement en https et illisibles pour les scripts ; une connexion expire après {{count}} jours sans usage.",
+        "warn": "Sans https, les cookies de connexion voyagent en clair. En https, {{app}} les protège de lui-même.",
+        "bad": "{{variable}} vaut off : les cookies passent sans protection même en https. Mets la valeur sur auto."
+      },
+      "proxy": {
+        "title": "Derrière le proxy",
+        "ok": "La vraie adresse des visiteurs arrive (proxy {{proxies}} inscrit comme de confiance). Sans cela, la protection contre les essais verrait tout le monde comme un seul.",
+        "direct": "Les visiteurs arrivent directement, sans proxy entre les deux.",
+        "warn": "Les requêtes passent par un proxy ({{proxy}}) qui n’est pas inscrit comme de confiance : la protection contre les essais voit tout le monde comme un seul. Mets {{variable}} sur son adresse.",
+        "bad": "Des réseaux publics sont inscrits comme de confiance ({{networks}}). Mets {{variable}} sur l’adresse de ton proxy, pas sur tout Internet."
+      }
+    },
+    "cancel": "Annuler"
   }
 }
