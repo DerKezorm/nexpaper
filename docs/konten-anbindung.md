@@ -1,8 +1,8 @@
 # Anbindung der gemeinsamen Konto-Module an nexpaper
 
 Stand 25.11.2026, Zweig `konten` (auf `main` nach „Delete a shared vault from the web app“, nexpaper 1.12.0, Schema 20).
-**Gebaut, Stand in Abschnitt 0.** Zielstand der Module (aus `bauplaene`, Zweig `konten`): **konten 0.3.9, oidc 1.1.0,
-post 0.1.1, ui 0.1.1**. Maßgeblich sind der Entwurf in nexlore (`Development/nexapps/Baupläne/Entwurf Konten,
+**Gebaut, Stand in Abschnitt 0.** Zielstand der Module (aus `bauplaene`, Zweig `konten`): **konten 0.3.10, oidc 1.1.1,
+post 0.1.2, ui 0.1.2** (gebaut zuerst auf 0.3.9, dann nachgezogen). Maßgeblich sind der Entwurf in nexlore (`Development/nexapps/Baupläne/Entwurf Konten,
 Einrichtung und Anmeldung.md`, Tabellen „Entscheidungen“, „Teil 2“, „Beim Bauen entschieden“),
 `bauplaene/konten/SCHNITTSTELLE.md` und `README.md` („Was ist neu“ bis 0.3.9), `bauplaene/ui/README.md`,
 `bauplaene/post/SCHNITTSTELLE.md`, im Baukasten-Plan der Abschnitt „Begleit-Apps“. Vorlage ist nexnotes
@@ -22,7 +22,8 @@ dort weiter); und **die iPhone-App hängt am Benutzernamen** (Abschnitt 12). Umb
 
 ## 0. Stand (gebaut 25.11.2026, Zweig `konten`)
 
-**Gebaut** auf konten 0.3.9, oidc 1.1.0, post 0.1.1, ui 0.1.1 (Kopien aus `bauplaene-0.3.9`, `sync.py check` grün).
+**Gebaut** auf konten 0.3.9, oidc 1.1.0, post 0.1.1, ui 0.1.1, am selben Tag nachgezogen auf **konten 0.3.10, oidc
+1.1.1, post 0.1.2, ui 0.1.2** (Kopien aus `bauplaene`, Zweig `konten`, `sync.py check` grün).
 Die Abschnitte ab 1 sind die Bestandsaufnahme und der Plan von vorher; was davon abweicht, steht hier.
 
 **Backend**
@@ -38,8 +39,16 @@ Die Abschnitte ab 1 sind die Bestandsaufnahme und der Plan von vorher; was davon
   bewiesen; wartende Adresse in `email_confirmations`; Sitzungen in `auth_sessions` (wartende Anmeldung des Moduls als
   Stufe `waiting`), gekoppelte Geräte in `devices` (Abmelden widerruft); Wiederherstellungscodes mit dem Schlüssel von
   1.12.0 (`h1:` gilt weiter); `user_handle` = Bytes des Hex-Handles von 1.12.0. Sperre **nach 10** (`MAX_FAILURES`).
+  `password_changed_at` in `get_account` (Bestand leer: „unbekannt“). Haken `provider_checks_factor`: ein Konto nur
+  über Anbieter bekommt bei „Zweiter Faktor für alle“ keinen eigenen (wie 1.12.0); eine Sitzung über einen Anbieter,
+  der den Faktor prüft, bleibt Sache der Anmeldung (`second_factor_by_provider`).
+- Anmelden über `login.sign_in` (0.3.10): Bremse des Moduls, fünf frei heißt genau fünf; wartet nur der Topf des
+  Kontos, antwortet die Anmeldung 401 `wrong_credentials`, 429 nur bei vollem Absendertopf. Antworten mit alter
+  Kennung tragen `account_code` (die des Moduls) mit.
 - Routen: Anmelden, Einrichtung, Einladung, Passwort vergessen (1 Stunde, über `mailer.send_reset`), Links,
-  Profil (`PUT /me/profile` mit `name`, `email`, `password`), Adresse (`PUT /me/email`, `POST /me/email/resend`),
+  Profil (`PUT /me/profile` mit `name`, `email`, `password`), Adresse (`PUT /me/email`, `POST /me/email/resend`,
+  `POST /me/email/prove` = „Per Link bestätigen“ über `profiles.prove_email`; dieselbe Adresse noch einmal per
+  `PUT /me/email` mit Passwort tut dasselbe wie in 1.12.0),
   Faktor (`factor` des Moduls, Seed wartet versiegelt), Sitzungsliste des Moduls, `GET/POST /auth/access…`, Betreiber
   (`PUT /accounts/{id}/name`, `/display-name`, `DELETE /accounts/{id}/email`, Link 1/7/30 Tage, Faktor-Übersicht).
   Passkeys bleiben nexpapers Routen und Dienst (gleiche Tabelle), neu mit Schalter „Passkeys erlaubt“.
@@ -53,8 +62,11 @@ Die Abschnitte ab 1 sind die Bestandsaufnahme und der Plan von vorher; was davon
 
 **Frontend**: `--nexui-*` in Kraftpapier hell/dunkel, Wortlaute `account`/`mail` DE/EN/FR (nexpapers eigene alte
 Schlüssel `account` und `mail` umbenannt: `mailAddress`), Anmeldeseiten mit den Feldern von `SCREENS`, Profil nach
-`PAGES.profile` (ein Speichern, Passwort-Rückfrage), Sicherheit mit „Diese Geräte haben noch Zugriff“ und „zuletzt
-geändert“, Kontenliste `pages/settings/AccountsTab.tsx` (Haken „KI erlaubt“, Angabe „Dokumente“, eigener Lösch-Dialog,
+`PAGES.profile` (ein Speichern, Passwort-Rückfrage, Knopf `account.emailProve`), Sicherheit ganz aus `PAGES.security`
+(je Teil eine Karte mit Titel, Hinweis und Knöpfen des Moduls in seiner Reihenfolge: Passwort mit `passwordChanged`,
+zweiter Faktor, Wiederherstellungscodes, Passkeys, angemeldete Geräte mit „Überall sonst abmelden“, Mail bei neuer
+Anmeldung; danach nexpapers eigene Anbieter) und „Diese Geräte haben noch Zugriff“; Fehlertexte über
+`accountErrorKeyOf`; unter `account.*` keine eigenen Schlüssel. Kontenliste `pages/settings/AccountsTab.tsx` (Haken „KI erlaubt“, Angabe „Dokumente“, eigener Lösch-Dialog,
 Karte „Schlüssel aller Konten“ darunter), Schalter „Passkeys erlaubt“, Absendername.
 
 **Bewusst anders als der Plan oben**
@@ -62,7 +74,9 @@ Karte „Schlüssel aller Konten“ darunter), Schalter „Passkeys erlaubt“, 
 - Sperre nach **10** (Entscheidung 25.11.2026); Hinweis an jede alte Adresse, die zählte (Entscheidung 25.11.2026).
 - Ein Passkey ohne Authenticator ist nur bei „Zweiter Faktor für alle“ ein zweiter Schritt (Modul); 1.12.0 fragte ihn
   immer nach dem Passwort.
-- Die Bremse des Moduls 0.3.9 lässt je Topf sechs durch (erst die sechste Fehlanmeldung setzt die Wartezeit).
+- Seit 0.3.10 lässt die Bremse je Topf genau fünf durch (0.3.9: sechs).
+- „Passwort vergessen“ geht sofort über `mailer.send_reset` (`nexpost.send.deliver`), nie über die Outbox.
+- `avatar_too_large` zeigt nexpapers eigenen Satz, weil er die MB-Grenze nennt (der des Moduls nicht).
 - Die Mail „Neue Anmeldung“ nennt nur Browser und System (Modul), nicht mehr Netz und Uhrzeit.
 
 ## 1. Bestand heute (1.12.0, Schema 20)
