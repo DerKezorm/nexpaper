@@ -457,7 +457,6 @@ def test_a_shared_address_never_signs_in(bestand: Any) -> None:
 AFTER_THE_CHANGE = pytest.mark.xfail(strict=True, reason="comes with the account module (nexkonten)")
 
 
-@AFTER_THE_CHANGE
 @pytest.mark.parametrize("account", UNIQUE_CONFIRMED, ids=_name)
 def test_after_the_change_a_unique_confirmed_address_signs_in(bestand: Any, account: dict[str, Any]) -> None:
     client = browser()
@@ -465,7 +464,6 @@ def test_after_the_change_a_unique_confirmed_address_signs_in(bestand: Any, acco
     assert (me(client) or {}).get("name") == _name(account)
 
 
-@AFTER_THE_CHANGE
 def test_after_the_change_a_shared_address_finds_no_account_for_a_link(bestand: Any, post: list[dict]) -> None:
     forgot(SHARED_ADDRESS[0]["email"])
     assert post == []
