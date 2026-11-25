@@ -125,6 +125,31 @@ class Account(Base):
     #: What the operator allows this person (on from the start; the operator takes single accounts out): the AI
     #: (``services/ai.py``). It comes on top of the operator's switch for the whole server and the person's own switch.
     ai_allowed: Mapped[bool] = mapped_column(Boolean, default=True, server_default=text("1"))
+    # --- Since the shared account module (``services/konten_store.py``); added at a start without a new schema
+    # version (``db._additions_konten``), so they stand last and 1.12.0 still opens the table.
+    #: The address **counts** (signing in with it, "Forgot your password?", notices). True for every address of 1.12.0
+    #: (the decision on the Bestand). Whether it is **proven** by a link stays ``email_confirmed_at``: only a proven
+    #: address lets mail into a vault through the intake.
+    email_counts: Mapped[bool] = mapped_column(Boolean, default=True, server_default=text("1"))
+    #: "" for a picture the person set (and every picture of 1.12.0), ``provider`` for one taken from a provider.
+    avatar_source: Mapped[str] = mapped_column(String(16), default="", server_default=text("''"))
+    #: The address a sign-in provider knows the account by, only offered to an account with a password ("Use the
+    #: address from <provider>?"), with the provider's name; the address the person said "No, thanks" to, for good.
+    offered_email: Mapped[str] = mapped_column(String(255), default="", server_default=text("''"))
+    offered_email_provider: Mapped[str] = mapped_column(String(80), default="", server_default=text("''"))
+    declined_email: Mapped[str] = mapped_column(String(255), default="", server_default=text("''"))
+    #: What the marks of known browsers are signed with: random per account, drawn anew on a new password, a block or a
+    #: deletion; empty until the first sign-in after the update.
+    device_key: Mapped[str] = mapped_column(String(64), default="", server_default=text("''"))
+    #: An authenticator being set up: its seed sealed in a context of its own, waiting ten minutes for its first code
+    #: (it survives a restart between the QR code and that code). Never a factor yet.
+    totp_pending: Mapped[str] = mapped_column(Text, default="", server_default=text("''"))
+    totp_pending_until: Mapped[datetime | None] = mapped_column(UtcDateTime, nullable=True)
+    #: The password was set through a link: where it came from (``self``, ``operator``, ``server``), "" for none. The
+    #: account page lists the ways in that stayed ("These devices still have access") until put away.
+    new_password_origin: Mapped[str] = mapped_column(String(16), default="", server_default=text("''"))
+    #: When the password was last set (Security, "last changed"); empty for passwords of 1.12.0.
+    password_changed_at: Mapped[datetime | None] = mapped_column(UtcDateTime, nullable=True)
     #: Not a column: whether the session that asks came in through a provider that checks the second factor itself
     #: (``AuthSession.second_factor_by_provider``), set by ``deps.require_account`` for ``totp.setup_required``.
     second_factor_by_provider: ClassVar[bool] = False
@@ -255,6 +280,10 @@ class Invite(Base):
     created_by: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     created_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utcnow)
     expires_at: Mapped[datetime] = mapped_column(UtcDateTime)
+    #: What the operator gives as the display name (the form shows it); invitations of 1.12.0 have none.
+    display_name: Mapped[str] = mapped_column(String(80), default="", server_default=text("''"))
+    #: The link went by mail to ``email``: whoever comes through it with that address proved it.
+    mailed: Mapped[bool] = mapped_column(Boolean, default=False, server_default=text("0"))
 
 
 class PasswordReset(Base):
@@ -270,6 +299,9 @@ class PasswordReset(Base):
     created_by: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     created_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utcnow)
     expires_at: Mapped[datetime] = mapped_column(UtcDateTime)
+    #: ``self`` ("Forgot your password?"), ``operator`` (under Accounts) or ``server`` (the emergency command). Links of
+    #: 1.12.0: ``operator`` where an operator made them, else ``self``.
+    origin: Mapped[str] = mapped_column(String(16), default="self", server_default=text("'self'"))
 
 
 class EmailConfirmation(Base):
@@ -1393,3 +1425,7 @@ class UploadRequest(Base):
 
 
 __all__ += ["UploadRequest"]
+
+
+# The tables of the shared account and post modules belong to every schema (``models_accounts``).
+from . import models_accounts  # noqa: E402, F401

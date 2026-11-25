@@ -22,9 +22,13 @@ DEFAULTS: dict[str, Any] = {
     "public_url": "",
     #: Members may sign in with a password. The operator always may: the emergency exit when OIDC fails.
     "password_login": True,
-    #: Every account needs a second factor (a code from an app or a passkey), on from the start: right after the
-    #: password, an account without one sets it up before it gets anywhere. Turning it off asks for the password.
-    "two_factor_required": True,
+    #: Every account needs a second factor (a code from an app or a passkey): right after the password, an account
+    #: without one sets it up before it gets anywhere. Off in a new installation (the shared account module: nowhere
+    #: required from the start); an installation of 1.12.0 keeps its setting (``db._additions_konten`` writes the row
+    #: it went by). Turning it off asks for the password.
+    "two_factor_required": False,
+    #: Passkeys may be added and used to sign in (the shared account module): on from the start.
+    "passkeys_allowed": True,
     #: The single provider of 1.0.1, kept for the way back for one version (``services/oidc_store.py``): read once by
     #: the migration to the provider list, then written from the entry ``oidc`` after every change, so that 1.0.1
     #: started on this database finds what the list holds. ``oidc_second_factor_by_provider`` was 1.0.1's switch "the
@@ -56,6 +60,12 @@ DEFAULTS: dict[str, Any] = {
     "smtp_user": "",
     "smtp_password_enc": "",
     "smtp_from": "",
+    #: The name system mail goes out under; empty: "nexpaper" (the shared post module).
+    "smtp_sender_name": "",
+    #: The last mail the server took and the last failure (an error code), as ISO times: shown at the mail server.
+    "mail_last_ok_at": None,
+    "mail_last_error": "",
+    "mail_last_error_at": None,
     #: The AI that proposes title, sender, kind, date and amount for a document (``services/ai.py``), one for
     #: everybody, set up by the operator only: none | local | openai | messages. None from the start: text leaves the
     #: server only when the operator wants it.

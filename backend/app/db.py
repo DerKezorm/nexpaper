@@ -553,7 +553,8 @@ MIGRATIONS: dict[int, Callable[[Connection], None]] = {
 }
 
 def _has_column(connection: Connection, table: str, column: str) -> bool:
-    return any(row[1] == column for row in connection.exec_driver_sql(f'PRAGMA table_info("{table}")'))
+    # Read to the end: a statement left open would hold the file after the commit.
+    return column in [row[1] for row in connection.exec_driver_sql(f'PRAGMA table_info("{table}")').all()]
 
 
 def _additions_signin(connection: Connection) -> None:
@@ -592,8 +593,81 @@ def _additions_signin(connection: Connection) -> None:
         )
 
 
+#: The columns the shared account module added to tables of 1.12.0, in the order the models hold them (last in each
+#: table), each with the default that describes 1.12.0: every address of 1.12.0 counts, nothing else is set.
+KONTEN_COLUMNS: tuple[tuple[str, str, str], ...] = (
+    ("users", "email_counts", "BOOLEAN DEFAULT 1 NOT NULL"),
+    ("users", "avatar_source", "VARCHAR(16) DEFAULT '' NOT NULL"),
+    ("users", "offered_email", "VARCHAR(255) DEFAULT '' NOT NULL"),
+    ("users", "offered_email_provider", "VARCHAR(80) DEFAULT '' NOT NULL"),
+    ("users", "declined_email", "VARCHAR(255) DEFAULT '' NOT NULL"),
+    ("users", "device_key", "VARCHAR(64) DEFAULT '' NOT NULL"),
+    ("users", "totp_pending", "TEXT DEFAULT '' NOT NULL"),
+    ("users", "totp_pending_until", "DATETIME"),
+    ("users", "new_password_origin", "VARCHAR(16) DEFAULT '' NOT NULL"),
+    ("users", "password_changed_at", "DATETIME"),
+    ("invites", "display_name", "VARCHAR(80) DEFAULT '' NOT NULL"),
+    ("invites", "mailed", "BOOLEAN DEFAULT 0 NOT NULL"),
+    ("password_resets", "origin", "VARCHAR(16) DEFAULT 'self' NOT NULL"),
+)
+
+
+def _additions_konten(connection: Connection) -> None:
+    """1.13.0, the shared account module (``services/konten_store.py``) and the shared post module: former names,
+    the claim of the setup, the counter of failures without an account, the outbox of system mail, and columns with a
+    default at the accounts, invitations and links. 1.12.0 reads none of it and keeps working on the database.
+
+    Written out as the tables stood in 1.13.0, like a step. A database that does not have them yet got a backup first
+    (``_init``, the update's way back). Then what only adds: the indexes without regard to case (usernames unique,
+    addresses not: 1.12.0 let two accounts hold one address), the links of 1.12.0 marked ``operator`` where an
+    operator made them, and the operator's "Require a second factor" kept as it worked before: 1.12.0 asked it of
+    everybody without a row in the settings; from now on a missing row means off, so a database with accounts and
+    without the row gets it."""
+    for statement in (
+        (
+            "CREATE TABLE IF NOT EXISTS former_names ( id INTEGER NOT NULL, account_id INTEGER, name VARCHAR(64) NOT "
+            "NULL, created_at DATETIME NOT NULL, PRIMARY KEY (id), FOREIGN KEY(account_id) REFERENCES users (id) ON "
+            "DELETE SET NULL )"
+        ),
+        "CREATE INDEX IF NOT EXISTS ix_former_names_account_id ON former_names (account_id)",
+        ("CREATE TABLE IF NOT EXISTS setup_claims ( id INTEGER NOT NULL, created_at DATETIME NOT NULL, "
+         "PRIMARY KEY (id) )"),
+        "CREATE TABLE IF NOT EXISTS failed_unknown ( id INTEGER NOT NULL, count INTEGER NOT NULL, PRIMARY KEY (id) )",
+        (
+            "CREATE TABLE IF NOT EXISTS mail_outbox ( id INTEGER NOT NULL, letter TEXT NOT NULL, "
+            "created_at DATETIME NOT NULL, next_at DATETIME, attempts INTEGER NOT NULL, sent_at DATETIME, "
+            "error VARCHAR(500) NOT NULL, PRIMARY KEY (id) )"
+        ),
+        "CREATE INDEX IF NOT EXISTS ix_mail_outbox_next_at ON mail_outbox (next_at)",
+    ):
+        connection.exec_driver_sql(statement)
+    first = not _has_column(connection, "users", "email_counts")
+    for table, column, kind in KONTEN_COLUMNS:
+        if not _has_column(connection, table, column):
+            connection.exec_driver_sql(f'ALTER TABLE "{table}" ADD COLUMN {column} {kind}')
+            if (table, column) == ("password_resets", "origin"):
+                connection.exec_driver_sql(
+                    "UPDATE password_resets SET origin = 'operator' WHERE created_by IS NOT NULL")
+    # Expression indexes here, not in the models: SQLAlchemy cannot read them back and would make them twice.
+    doubles = connection.exec_driver_sql(
+        "SELECT lower(name) FROM users GROUP BY lower(name) HAVING count(*) > 1").first()
+    if doubles is None:
+        connection.exec_driver_sql("CREATE UNIQUE INDEX IF NOT EXISTS uq_users_name_lower ON users (lower(name))")
+    else:
+        logger.warning("Two accounts have names that differ only in case; the unique index waits until one is renamed")
+    connection.exec_driver_sql("CREATE INDEX IF NOT EXISTS ix_users_email_lower ON users (lower(email))")
+    connection.exec_driver_sql("CREATE INDEX IF NOT EXISTS ix_former_names_lower ON former_names (lower(name))")
+    if not first:
+        return
+    accounts = connection.exec_driver_sql("SELECT count(*) FROM users").scalar() or 0
+    row = connection.exec_driver_sql("SELECT 1 FROM settings WHERE key = 'two_factor_required'").first()
+    if accounts and row is None:
+        connection.exec_driver_sql("INSERT INTO settings (key, value) VALUES ('two_factor_required', 'true')")
+        logger.info("The second factor stays required as before: the setting is written down")
+
+
 #: Made at every start when missing, without a new version (see the top of this file). Each is idempotent.
-ADDITIONS: list[Callable[[Connection], None]] = [_additions_signin]
+ADDITIONS: list[Callable[[Connection], None]] = [_additions_signin, _additions_konten]
 
 #: The schema the additions are made on: the one of 1.0.1. From there on they run before every step too, so that a
 #: step of a later version finds their tables on a database 1.0.1 made (it would stop with "no such table" else).
@@ -712,6 +786,8 @@ def _init(schema: Engine, *, backup: bool = True) -> None:
             _set_version(connection, SCHEMA_VERSION)
     if fresh:
         logger.info("Database created schema=%s", SCHEMA_VERSION)
+        # The indexes the models cannot hold (``_additions_konten``), on a new database as on an updated one.
+        _run_additions(schema)
         return
     check_version(current)
     if current >= 6:
@@ -742,7 +818,18 @@ def _init(schema: Engine, *, backup: bool = True) -> None:
                 step(connection)
                 _set_version(connection, target)
             logger.info("Database migrated schema=%s", target)
+    elif backup and _konten_missing(schema):
+        # The first start with the shared account module: its additions change a database of 1.12.0 (only adding);
+        # the backup is the way back to how it stood.
+        from .services import backups
+
+        backups.create(kind=backups.UPDATE, note="before the shared account module")
     _run_additions(schema)
+
+
+def _konten_missing(schema: Engine) -> bool:
+    with schema.connect() as connection:
+        return not _has_column(connection, "users", "email_counts")
 
 
 def _run_additions(schema: Engine) -> None:
