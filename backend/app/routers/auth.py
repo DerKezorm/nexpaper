@@ -660,7 +660,7 @@ def end_one(uid: SessionUid, request: Request, account: BrowserAccount, db: DbSe
 
 
 @router.get("/auth/access", summary="What still has access after a password set through a link")
-def remaining_access(account: Account, db: DbSession) -> dict[str, Any]:
+def remaining_access(account: BrowserAccount, db: DbSession) -> dict[str, Any]:
     row = db.get(AccountRow, account.id)
     assert row is not None
     return {
@@ -691,7 +691,7 @@ def disconnect_all(request: Request, account: BrowserAccount, db: DbSession) -> 
 
 
 @router.post("/auth/access/seen", summary="The list of what still has access is put away")
-def remaining_access_seen(account: Account, db: DbSession) -> dict[str, Any]:
+def remaining_access_seen(account: BrowserAccount, db: DbSession) -> dict[str, Any]:
     row = db.get(AccountRow, account.id)
     assert row is not None
     row.new_password_origin = ""

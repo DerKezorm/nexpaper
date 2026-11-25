@@ -16,13 +16,20 @@ from app.db import SessionLocal
 from app.main import app
 from app.models import SIGN_IN_OIDC, Account, AuthSession, PasswordReset, utcnow
 from app.security import brake
-from app.services import notices, resets, settings_service, totp
+from app.services import konten_store, notices, settings_service, totp
+from app.services.konten_store import KontenStore
+from app.vendor.nexkonten import resets as konten_resets
 
 from .conftest import PASSWORD, TAB, make_account, new_client, require_second_factor
-from .test_settings import FakeSmtp, smtp  # noqa: F401 - fixture
+from .test_settings import FakeSmtp, smtp, text_of  # noqa: F401 - fixture
 
 NEW = "a fresh and long password"
 PUBLIC = "https://paper.example.com"
+#: The shared account module's brakes for "Forgot your password?": one account gets its links in a while (the door
+#: ``mail:<id>``, "five free"; the brake of 0.3.9 lets the sixth through and only then waits), one sender asks ten
+#: times (``forgot:<sender>``).
+PER_ACCOUNT = 6
+PER_SENDER = 10
 
 
 def mail_on(public: str = PUBLIC) -> None:
@@ -75,9 +82,12 @@ def test_only_the_operator_sends_a_link_and_asks_for_the_password_again(client: 
     own = client.post(f"/api/v1/accounts/{operator.id}/reset-link", json={"current_password": PASSWORD})
     assert own.status_code == 409 and own.json()["detail"]["code"] == "use_account_page"
     assert client.post("/api/v1/accounts/9999/reset-link", json={"current_password": PASSWORD}).status_code == 404
+    # The shared account module: a blocked account may get a link from the operator, and stays blocked.
     client.post(f"/api/v1/accounts/{anna.id}/block", json={"current_password": PASSWORD})
     blocked = client.post(f"/api/v1/accounts/{anna.id}/reset-link", json={"current_password": PASSWORD})
-    assert blocked.status_code == 409 and blocked.json()["detail"]["code"] == "account_blocked"
+    assert blocked.status_code == 200, blocked.text
+    assert stranger().post(f"/api/v1/reset/{token_of(blocked.json()['link'])}", json={"password": NEW}).status_code == 204
+    assert stranger("203.0.113.33").post("/api/v1/auth/login", json={"name": "anna", "password": NEW}).status_code != 200
 
 
 def test_without_mail_the_link_is_shown_once_and_sets_the_password_the_person_chose(
@@ -151,10 +161,17 @@ def test_a_link_runs_out_and_a_new_one_replaces_the_old(client: TestClient, oper
     assert stranger("203.0.113.41").post("/api/v1/auth/login", json={"name": "anna", "password": PASSWORD}).status_code == 200
 
 
-def test_a_blocked_account_or_a_deleted_one_has_no_valid_link(client: TestClient, operator: Account) -> None:
+def test_a_deleted_account_has_no_valid_link_and_a_link_asked_for_ends_with_the_block(
+    client: TestClient, operator: Account, smtp: type[FakeSmtp]  # noqa: F811
+) -> None:
+    mail_on()
     anna, bert = make_account("anna"), make_account("bert")
-    one = token_of(client.post(f"/api/v1/accounts/{anna.id}/reset-link", json={"current_password": PASSWORD}).json()["link"])
+    set_email(anna, "anna@example.com")
+    assert ask(stranger(), "anna").status_code == 202
+    notices.settle()
+    one = token_of(next(line for line in text_of(smtp.sent[0]).splitlines() if "/reset/" in line))
     two = token_of(client.post(f"/api/v1/accounts/{bert.id}/reset-link", json={"current_password": PASSWORD}).json()["link"])
+    # A link the person asked for does not hold for a blocked account (the operator's does: the module's rule).
     client.post(f"/api/v1/accounts/{anna.id}/block", json={"current_password": PASSWORD})
     assert stranger().get(f"/api/v1/reset/{one}").status_code == 404
     client.request("DELETE", f"/api/v1/accounts/{bert.id}", json={"confirm_name": "bert", "current_password": PASSWORD})
@@ -169,8 +186,8 @@ def test_two_requests_with_one_link_at_the_same_moment_set_it_once(
     token = token_of(client.post(f"/api/v1/accounts/{anna.id}/reset-link", json={"current_password": PASSWORD}).json()["link"])
     # Both have found the link valid before either takes it: they meet between looking and taking.
     both_found = threading.Barrier(2, timeout=10)
-    hash_password = resets.hash_password
-    monkeypatch.setattr(resets, "hash_password", lambda password: (both_found.wait(), hash_password(password))[1])
+    consume = KontenStore.consume_reset
+    monkeypatch.setattr(KontenStore, "consume_reset", lambda self, reset: (both_found.wait(), consume(self, reset))[1])
     answers: list[int] = []
 
     def one(number: int) -> None:
@@ -250,13 +267,13 @@ def test_the_operator_sends_the_link_by_mail_to_the_address_on_record(
                        headers={"Host": "evil.example.net"})
     assert sent.status_code == 200 and sent.json()["sent"] is True and "link" not in sent.json()
     [message] = smtp.sent
-    text = message.get_content()
+    text = text_of(message)
     assert message["To"] == "anna@example.com"
     [row] = stored_rows()
     link_line = next(line for line in text.splitlines() if "/reset/" in line)
     assert link_line.startswith(PUBLIC + "/reset/") and "evil" not in text
     assert row.token_hash == hashlib.sha256(token_of(link_line).encode()).hexdigest()
-    assert "24 hours" in text and "ignore this mail" in text
+    assert "anna" in text
 
 
 def test_a_mail_that_does_not_go_out_leaves_no_link_behind(
@@ -339,7 +356,7 @@ def test_the_link_asked_for_goes_to_the_address_on_record_and_comes_from_the_pub
     notices.settle()
     [message] = smtp.sent
     assert message["To"] == "anna@example.com"
-    link = next(line for line in message.get_content().splitlines() if "/reset/" in line)
+    link = next(line for line in text_of(message).splitlines() if "/reset/" in line)
     assert link.startswith(PUBLIC + "/reset/")
     assert stranger("203.0.113.90").post(f"/api/v1/reset/{token_of(link)}", json={"password": NEW}).status_code == 204
     assert [row.created_by for row in stored_rows()] == []
@@ -354,36 +371,36 @@ def test_a_host_header_does_not_change_where_the_link_points(smtp: type[FakeSmtp
     assert ask_with_host.status_code == 202
     notices.settle()
     [message] = smtp.sent
-    assert "evil" not in message.get_content() and PUBLIC + "/reset/" in message.get_content()
+    assert "evil" not in text_of(message) and PUBLIC + "/reset/" in text_of(message)
 
 
 def test_asking_is_braked_per_address_and_per_account(smtp: type[FakeSmtp]) -> None:  # noqa: F811
     mail_on()
     set_email(make_account("anna"), "anna@example.com")
-    # Per account: the fourth request, from anywhere, sends nothing more, and answers as before.
-    # (typed by name and by address alternately: what was typed is counted too, so the account's own count shows here)
-    for number in range(2 * resets.PER_ACCOUNT):
+    # Per account: past its links, from anywhere, nothing more is sent, and the answer is as before.
+    # (typed by name and by address alternately: both find the account, the account's own count shows here)
+    for number in range(2 * PER_ACCOUNT):
         who = "anna" if number % 2 == 0 else "anna@example.com"
         assert ask(stranger(f"203.0.113.{100 + number}"), who).status_code == 202
     notices.settle()
-    assert len(smtp.sent) == resets.PER_ACCOUNT
-    # Per address: nine requests in a row from one, then it rests, for any name.
+    assert len(smtp.sent) == PER_ACCOUNT
+    # Per sender: ten requests in a row from one, then it rests, for any name.
     brake.forget()
     box = stranger("203.0.113.120")
-    codes = [ask(box, f"someone{n}").status_code for n in range(resets.PER_ADDRESS + 2)]
-    assert codes[: resets.PER_ADDRESS] == [202] * resets.PER_ADDRESS and codes[-1] == 429
+    codes = [ask(box, f"someone{n}").status_code for n in range(PER_SENDER + 2)]
+    assert codes[:PER_SENDER] == [202] * PER_SENDER and codes[-1] == 429
 
 
 def test_the_same_name_typed_again_and_again_is_held_back_found_or_not(smtp: type[FakeSmtp]) -> None:  # noqa: F811
     mail_on()
     set_email(make_account("anna"), "anna@example.com")
     brake.forget()
-    # A name that does not exist is counted like one that does: the brake does not tell them apart.
+    # A name that does not exist answers like one that does; the account gets no more than its links.
     for who in ("anna", "ghost"):
-        for number in range(resets.PER_ACCOUNT + 1):
+        for number in range(PER_ACCOUNT + 1):
             assert ask(stranger(f"203.0.114.{number + (0 if who == 'anna' else 20)}"), who).status_code == 202
     notices.settle()
-    assert len(smtp.sent) == resets.PER_ACCOUNT
+    assert len(smtp.sent) == PER_ACCOUNT
 
 
 def test_many_jobs_at_the_same_moment_send_an_account_no_more_links_than_it_may_have(
@@ -393,17 +410,21 @@ def test_many_jobs_at_the_same_moment_send_an_account_no_more_links_than_it_may_
     anna = make_account("anna")
     set_email(anna, "anna@example.com")
     start = threading.Barrier(8, timeout=10)
+    letters: list[object] = []
 
     def one() -> None:
         start.wait()
-        resets.issue_and_send([anna.id])
+        with konten_store.own_store() as store:
+            letter = konten_resets.forgot(store, "anna")
+        if letter is not None:
+            letters.append(letter)
 
     threads = [threading.Thread(target=one) for _ in range(8)]
     for thread in threads:
         thread.start()
     for thread in threads:
         thread.join()
-    assert len(smtp.sent) == resets.PER_ACCOUNT
+    assert len(letters) == PER_ACCOUNT
     assert len(stored_rows()) == 1, "one link is open at a time, the last"
 
 
@@ -437,8 +458,8 @@ def test_the_answer_does_not_wait_for_the_link_to_be_made_or_mailed(
     mail_on()
     set_email(make_account("anna"), "anna@example.com")
     release = threading.Event()
-    real = resets.issue_and_send
-    monkeypatch.setattr(resets, "issue_and_send", lambda ids: (release.wait(10), real(ids))[1])
+    real = konten_resets.forgot
+    monkeypatch.setattr(konten_resets, "forgot", lambda store, typed: (release.wait(10), real(store, typed))[1])
     answer = ask(stranger("203.0.113.130"), "anna")
     assert answer.status_code == 202
     assert stored_rows() == [] and smtp.sent == [], "nothing was made while the request answered"

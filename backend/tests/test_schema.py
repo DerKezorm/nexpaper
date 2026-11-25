@@ -40,6 +40,22 @@ def schema_of(connection: sqlite3.Connection) -> dict[str, list[tuple[str, str, 
     }
 
 
+#: What the shared account module adds without a version (``db._additions_konten``): its tables, and its columns at
+#: tables that were there. ``tests/test_konten.py`` checks them; a test of one step looks past them.
+KONTEN_TABLES = {"former_names", "setup_claims", "failed_unknown", "mail_outbox"}
+
+
+def without_konten(schema: dict[str, list[tuple[str, str, int, object, int]]]) -> dict[str, list[tuple]]:
+    """``schema`` without what the shared account module adds at every start: what one step of the schema made."""
+    from app.db import KONTEN_COLUMNS
+
+    added = {(table, column) for table, column, _ in KONTEN_COLUMNS}
+    return {
+        table: [column for column in columns if (table, column[0]) not in added]
+        for table, columns in schema.items() if table not in KONTEN_TABLES
+    }
+
+
 def fresh_schema_sql() -> str:
     """The schema the models make, as SQL, one statement per line: what the records hold."""
     engine = create_engine("sqlite://")

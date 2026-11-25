@@ -198,8 +198,10 @@ signs in only through a provider gets a password this way and becomes an account
 operator sends.
 
 ```sh
-docker exec -it -u nexpaper nexpaper python -m app.reset_link <username or email>
+docker exec -it -u nexpaper nexpaper python -m app.reset_link <account>
 ```
+
+`<account>` is the username or the address of the account.
 
 `-u nexpaper` runs it as the user the server runs as (with the ids of `PUID` and `PGID`); as root it refuses, because a
 file root makes in `/data` the server could not open any more. Where the compose file starts the container with a

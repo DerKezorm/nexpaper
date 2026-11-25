@@ -323,8 +323,9 @@ def test_wrong_link_tokens_never_keep_the_address_from_signing_in(client: TestCl
         assert signed.status_code == 200, signed.text
     with public() as outside:
         brake_forget()
-        for _ in range(6):
-            outside.post("/api/v1/auth/login", json={"name": "tom", "password": "wrong password here"},
+        # The sender's pot of the shared account module: thirty wrong sign-ins from one address, the next one waits.
+        for number in range(31):
+            outside.post("/api/v1/auth/login", json={"name": f"nobody{number}", "password": "wrong password here"},
                          headers={"X-Nexpaper-Client": "tab-tests000"})
         assert outside.post("/api/v1/auth/login", json={"name": "lea", "password": PASSWORD},
                             headers={"X-Nexpaper-Client": "tab-tests000"}).status_code == 429

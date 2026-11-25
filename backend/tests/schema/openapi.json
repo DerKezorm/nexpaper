@@ -3,6 +3,30 @@
     "schemas": {
       "AcceptIn": {
         "properties": {
+          "display_name": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Name"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "maxLength": 255,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
           "name": {
             "maxLength": 64,
             "title": "Name",
@@ -12,6 +36,18 @@
             "maxLength": 200,
             "title": "Password",
             "type": "string"
+          },
+          "password_confirm": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Password Confirm"
           }
         },
         "required": [
@@ -543,6 +579,10 @@
             "title": "Account",
             "type": "string"
           },
+          "account_id": {
+            "title": "Account Id",
+            "type": "integer"
+          },
           "device": {
             "$ref": "#/components/schemas/DeviceOut"
           },
@@ -554,7 +594,8 @@
         "required": [
           "device",
           "token",
-          "account"
+          "account",
+          "account_id"
         ],
         "title": "BroughtOut",
         "type": "object"
@@ -2736,6 +2777,28 @@
         "title": "ExportPreviewOut",
         "type": "object"
       },
+      "FactorResetIn": {
+        "properties": {
+          "current_password": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Current Password",
+            "type": "string"
+          },
+          "disconnect_devices": {
+            "default": true,
+            "title": "Disconnect Devices",
+            "type": "boolean"
+          },
+          "remove_passkeys": {
+            "default": true,
+            "title": "Remove Passkeys",
+            "type": "boolean"
+          }
+        },
+        "title": "FactorResetIn",
+        "type": "object"
+      },
       "FetchOut": {
         "properties": {
           "after": {
@@ -3502,6 +3565,12 @@
             "default": 7,
             "title": "Days",
             "type": "integer"
+          },
+          "display_name": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Display Name",
+            "type": "string"
           },
           "email": {
             "default": "",
@@ -4545,7 +4614,7 @@
       "LoginIn": {
         "properties": {
           "name": {
-            "maxLength": 64,
+            "maxLength": 254,
             "title": "Name",
             "type": "string"
           },
@@ -5065,6 +5134,14 @@
             "title": "Folder On",
             "type": "boolean"
           },
+          "former": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Former",
+            "type": "array"
+          },
           "mail_address": {
             "title": "Mail Address",
             "type": "string"
@@ -5289,6 +5366,18 @@
             "maxLength": 200,
             "title": "Password",
             "type": "string"
+          },
+          "password_confirm": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Password Confirm"
           }
         },
         "required": [
@@ -5884,6 +5973,33 @@
         "title": "PairIn",
         "type": "object"
       },
+      "PairedOut": {
+        "properties": {
+          "account": {
+            "title": "Account",
+            "type": "string"
+          },
+          "account_id": {
+            "title": "Account Id",
+            "type": "integer"
+          },
+          "device": {
+            "$ref": "#/components/schemas/DeviceOut"
+          },
+          "token": {
+            "title": "Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "device",
+          "token",
+          "account",
+          "account_id"
+        ],
+        "title": "PairedOut",
+        "type": "object"
+      },
       "PairingOut": {
         "properties": {
           "code": {
@@ -6410,6 +6526,18 @@
             "maxLength": 200,
             "title": "New",
             "type": "string"
+          },
+          "password_confirm": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Password Confirm"
           }
         },
         "required": [
@@ -6610,14 +6738,48 @@
       "ProfileIn": {
         "properties": {
           "display_name": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Name"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "maxLength": 255,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "password": {
+            "default": "",
             "maxLength": 200,
-            "title": "Display Name",
+            "title": "Password",
             "type": "string"
           }
         },
-        "required": [
-          "display_name"
-        ],
         "title": "ProfileIn",
         "type": "object"
       },
@@ -7547,6 +7709,26 @@
         "title": "RemindersOut",
         "type": "object"
       },
+      "RenameIn": {
+        "properties": {
+          "current_password": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Current Password",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 200,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "RenameIn",
+        "type": "object"
+      },
       "RequestAddress": {
         "properties": {
           "url": {
@@ -7777,6 +7959,28 @@
           "people"
         ],
         "title": "RequestsOverview",
+        "type": "object"
+      },
+      "ResetLinkIn": {
+        "properties": {
+          "current_password": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Current Password",
+            "type": "string"
+          },
+          "days": {
+            "default": 1,
+            "title": "Days",
+            "type": "integer"
+          },
+          "send": {
+            "default": true,
+            "title": "Send",
+            "type": "boolean"
+          }
+        },
+        "title": "ResetLinkIn",
         "type": "object"
       },
       "RestoreIn": {
@@ -8472,6 +8676,17 @@
             ],
             "title": "Links Allowed"
           },
+          "passkeys_allowed": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Passkeys Allowed"
+          },
           "password_login": {
             "anyOf": [
               {
@@ -8599,6 +8814,18 @@
               }
             ],
             "title": "Smtp Security"
+          },
+          "smtp_sender_name": {
+            "anyOf": [
+              {
+                "maxLength": 80,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Smtp Sender Name"
           },
           "smtp_user": {
             "anyOf": [
@@ -8740,6 +8967,38 @@
             "title": "Links Allowed",
             "type": "boolean"
           },
+          "mail_last_error": {
+            "default": "",
+            "title": "Mail Last Error",
+            "type": "string"
+          },
+          "mail_last_error_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mail Last Error At"
+          },
+          "mail_last_ok_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mail Last Ok At"
+          },
+          "passkeys_allowed": {
+            "default": true,
+            "title": "Passkeys Allowed",
+            "type": "boolean"
+          },
           "password_login": {
             "title": "Password Login",
             "type": "boolean"
@@ -8760,6 +9019,11 @@
             "title": "Public Url",
             "type": "string"
           },
+          "second_factor_off": {
+            "default": false,
+            "title": "Second Factor Off",
+            "type": "boolean"
+          },
           "smtp_from": {
             "title": "Smtp From",
             "type": "string"
@@ -8778,6 +9042,11 @@
           },
           "smtp_security": {
             "title": "Smtp Security",
+            "type": "string"
+          },
+          "smtp_sender_name": {
+            "default": "",
+            "title": "Smtp Sender Name",
             "type": "string"
           },
           "smtp_user": {
@@ -9540,16 +9809,19 @@
       },
       "TakeAddressIn": {
         "properties": {
+          "password": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Password",
+            "type": "string"
+          },
           "slug": {
+            "default": "",
             "maxLength": 40,
-            "minLength": 1,
             "title": "Slug",
             "type": "string"
           }
         },
-        "required": [
-          "slug"
-        ],
         "title": "TakeAddressIn",
         "type": "object"
       },
@@ -10438,6 +10710,24 @@
             "title": "Code",
             "type": "string"
           },
+          "display_name": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Name"
+          },
+          "email": {
+            "default": "",
+            "maxLength": 255,
+            "title": "Email",
+            "type": "string"
+          },
           "language": {
             "default": "",
             "maxLength": 16,
@@ -10445,18 +10735,36 @@
             "type": "string"
           },
           "name": {
-            "maxLength": 64,
-            "title": "Name",
-            "type": "string"
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
           },
           "password": {
             "maxLength": 200,
             "title": "Password",
             "type": "string"
+          },
+          "password_confirm": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Password Confirm"
           }
         },
         "required": [
-          "name",
           "password"
         ],
         "title": "SetupIn",
@@ -10712,23 +11020,6 @@
         "title": "DeviceIn",
         "type": "object"
       },
-      "app__routers__devices__PairedOut": {
-        "properties": {
-          "device": {
-            "$ref": "#/components/schemas/DeviceOut"
-          },
-          "token": {
-            "title": "Token",
-            "type": "string"
-          }
-        },
-        "required": [
-          "device",
-          "token"
-        ],
-        "title": "PairedOut",
-        "type": "object"
-      },
       "app__routers__keeping__MergeIn": {
         "additionalProperties": false,
         "properties": {
@@ -10815,28 +11106,6 @@
           "others"
         ],
         "title": "MergeIn",
-        "type": "object"
-      },
-      "app__routers__pairing__PairedOut": {
-        "properties": {
-          "account": {
-            "title": "Account",
-            "type": "string"
-          },
-          "device": {
-            "$ref": "#/components/schemas/DeviceOut"
-          },
-          "token": {
-            "title": "Token",
-            "type": "string"
-          }
-        },
-        "required": [
-          "device",
-          "token",
-          "account"
-        ],
-        "title": "PairedOut",
         "type": "object"
       },
       "app__routers__passkeys__PasswordIn": {
@@ -11166,6 +11435,7 @@
     },
     "/api/v1/accounts": {
       "get": {
+        "description": "Every account as the operator's list of the shared module needs it (``ListedAccount``): besides the fields of\n1.12.0 whether the address is shared with another account, whether the row is the operator's own, when it was\nblocked, and the number of documents in its own vault (the trash included, as ``/leaving`` counts them).",
         "operationId": "list_accounts_api_v1_accounts_get",
         "responses": {
           "200": {
@@ -11297,6 +11567,130 @@
         ]
       }
     },
+    "/api/v1/accounts/{account_id}/display-name": {
+      "put": {
+        "description": "With the operator's own password, as everything the operator changes at an account.",
+        "operationId": "rename_display_api_v1_accounts__account_id__display_name_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "account_id",
+            "required": true,
+            "schema": {
+              "maximum": 2147483647,
+              "minimum": 1,
+              "title": "Account Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RenameIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Rename Display Api V1 Accounts  Account Id  Display Name Put",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Operator: give an account another display name",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/v1/accounts/{account_id}/email": {
+      "delete": {
+        "description": "The operator may only take an address away (``profiles.remove_email``): setting one would send a link for a\nnew password to an address of the operator's choice. The old address hears of it where a mail can go.",
+        "operationId": "remove_account_email_api_v1_accounts__account_id__email_delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "account_id",
+            "required": true,
+            "schema": {
+              "maximum": 2147483647,
+              "minimum": 1,
+              "title": "Account Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OperatorConfirmIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Remove Account Email Api V1 Accounts  Account Id  Email Delete",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Operator: take an account's address away (never set one)",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
     "/api/v1/accounts/{account_id}/leaving": {
       "get": {
         "description": "A number, never what the documents are: the operator decides where they go without reading them, and is told\nwhere they would see them afterwards.",
@@ -11340,6 +11734,68 @@
           }
         ],
         "summary": "What deleting an account would take along: the number of documents in its own vault",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/v1/accounts/{account_id}/name": {
+      "put": {
+        "description": "Through the shared module (``profiles.change_username``) with the operator's own password. The old name stays\nthe account's former name: its intake folder and plus address still reach it, and nobody else ever gets it.",
+        "operationId": "rename_account_api_v1_accounts__account_id__name_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "account_id",
+            "required": true,
+            "schema": {
+              "maximum": 2147483647,
+              "minimum": 1,
+              "title": "Account Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RenameIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Rename Account Api V1 Accounts  Account Id  Name Put",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Operator: give an account another username",
         "tags": [
           "auth"
         ]
@@ -11407,7 +11863,7 @@
     },
     "/api/v1/accounts/{account_id}/reset-link": {
       "post": {
-        "description": "By mail where a server is set up, the public address is known and the account has an address; otherwise the\nlink comes back once, for the operator to pass on.",
+        "description": "With the operator's own password. By mail to the account's address that counts where a mail server is there\n(and ``send`` is not False); otherwise the link comes back once, for the operator to pass on (built from the\npublic address, else from the address the operator opened nexpaper under). Also for a blocked account: it stays\nblocked. For an account through a provider only it is its first password, while signing in with one is on.",
         "operationId": "send_link_api_v1_accounts__account_id__reset_link_post",
         "parameters": [
           {
@@ -11425,7 +11881,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/OperatorConfirmIn"
+                "$ref": "#/components/schemas/ResetLinkIn"
               }
             }
           },
@@ -11460,7 +11916,7 @@
             "HTTPBearer": []
           }
         ],
-        "summary": "Send an account a link to set a new password (operator)",
+        "summary": "Make an account a link to set a new password (operator)",
         "tags": [
           "password reset"
         ]
@@ -11527,6 +11983,7 @@
     },
     "/api/v1/accounts/{account_id}/sign-out": {
       "post": {
+        "description": "Every browser and paired device of the account; API keys and passkeys stay (the shared module's rule). Not at\nthe own account: \"Sign out everywhere else\" under Security is for that.",
         "operationId": "sign_out_account_api_v1_accounts__account_id__sign_out_post",
         "parameters": [
           {
@@ -11566,7 +12023,57 @@
       }
     },
     "/api/v1/accounts/{account_id}/totp/reset": {
+      "get": {
+        "description": "``factor.reset_overview``: the authenticator, the recovery codes left, the passkeys by name and the paired\ndevices, for the dialog before the reset.",
+        "operationId": "operator_reset_overview_api_v1_accounts__account_id__totp_reset_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "account_id",
+            "required": true,
+            "schema": {
+              "minimum": 1,
+              "title": "Account Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Operator Reset Overview Api V1 Accounts  Account Id  Totp Reset Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Operator: what a reset of the second factor takes away",
+        "tags": [
+          "second factor"
+        ]
+      },
       "post": {
+        "description": "Through the shared account module (``factor.operator_reset``): the code from the app, the recovery codes and,\nwith ``remove_passkeys``, the passkeys go, every browser session and waiting sign-in ends, with\n``disconnect_devices`` the paired devices too; the address hears of it, the devices by a push.",
         "operationId": "operator_reset_api_v1_accounts__account_id__totp_reset_post",
         "parameters": [
           {
@@ -11584,7 +12091,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/OperatorConfirmIn"
+                "$ref": "#/components/schemas/FactorResetIn"
               }
             }
           },
@@ -11892,6 +12399,91 @@
         ]
       }
     },
+    "/api/v1/auth/access": {
+      "get": {
+        "operationId": "remaining_access_api_v1_auth_access_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Remaining Access Api V1 Auth Access Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "What still has access after a password set through a link",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/v1/auth/access/disconnect": {
+      "post": {
+        "description": "Only right after signing in (the shared module's five minutes): whoever set the new password a moment ago.",
+        "operationId": "disconnect_all_api_v1_auth_access_disconnect_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Disconnect All Api V1 Auth Access Disconnect Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Disconnect all: every paired device, API key and passkey",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/v1/auth/access/seen": {
+      "post": {
+        "operationId": "remaining_access_seen_api_v1_auth_access_seen_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Remaining Access Seen Api V1 Auth Access Seen Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "The list of what still has access is put away",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
     "/api/v1/auth/avatar": {
       "delete": {
         "operationId": "remove_avatar_api_v1_auth_avatar_delete",
@@ -11948,7 +12540,7 @@
     },
     "/api/v1/auth/forgot": {
       "post": {
-        "description": "The answer is the same whether the account exists or not, and so is the time it takes: the mail goes out in the\nbackground, and only to the address on record.",
+        "description": "The answer is the same whether the account exists or not, and so is the time it takes: the search, the link and\nthe mail run in the background (``resets.forgot_in_background``), and the link goes only to the address of the\naccount that counts. One sender may ask ten times (the module's brake ``forgot:<sender>``), one account gets five\nlinks in a while.",
         "operationId": "forgot_api_v1_auth_forgot_post",
         "requestBody": {
           "content": {
@@ -11994,6 +12586,7 @@
     },
     "/api/v1/auth/login": {
       "post": {
+        "description": "The shared account module checks (``login.authenticate``): one answer for everything wrong, as long for an\nunknown name as for a wrong password, failures counted at the account and its lock after ten (a browser that\nsigned in as the account before passes the lock).\n\nThe brake counts in the module's two pots, the sender (30 free) and the account it names (or what was typed, five\nfree); a browser that knows the account counts in a pot of its own. A full sender's pot answers 429 with\n``Retry-After``. A full pot of the account answers like a wrong password, ``wrong_credentials`` (as for a name that\nis none): nothing tells that the account exists, and an installation of 1.12.0 knows that answer for an account\nunder attack (test \"Bestand\").",
         "operationId": "login_api_v1_auth_login_post",
         "requestBody": {
           "content": {
@@ -12029,7 +12622,7 @@
             "description": "Validation Error"
           }
         },
-        "summary": "Sign in with name and password",
+        "summary": "Sign in with username or email and password",
         "tags": [
           "auth"
         ]
@@ -12108,6 +12701,7 @@
     },
     "/api/v1/auth/logout-all": {
       "post": {
+        "description": "\"Sign out everywhere else\": every other browser and every paired device; API keys and passkeys stay (the list\nunder Security says so).",
         "operationId": "logout_everywhere_api_v1_auth_logout_all_post",
         "responses": {
           "204": {
@@ -12119,7 +12713,7 @@
             "HTTPBearer": []
           }
         ],
-        "summary": "Sign out every other browser of the own account",
+        "summary": "Sign out every other browser and paired device",
         "tags": [
           "auth"
         ]
@@ -12450,6 +13044,7 @@
     },
     "/api/v1/auth/sessions": {
       "get": {
+        "description": "The shared module's list (\"Firefox on Linux\", never the stored browser text, paired devices by their name):\nthis browser first, then the others. The fields of 1.12.0 stay beside (``device``, ``network``, ``here``).",
         "operationId": "sessions_api_v1_auth_sessions_get",
         "responses": {
           "200": {
@@ -12473,7 +13068,7 @@
             "HTTPBearer": []
           }
         ],
-        "summary": "Where the own account is signed in: device, network, last use",
+        "summary": "Where the own account is signed in: browsers and paired devices",
         "tags": [
           "auth"
         ]
@@ -12488,9 +13083,9 @@
             "name": "uid",
             "required": true,
             "schema": {
-              "maxLength": 32,
-              "minLength": 32,
-              "pattern": "^[0-9a-f]{32}$",
+              "maxLength": 48,
+              "minLength": 1,
+              "pattern": "^[0-9a-zA-Z_-]+$",
               "title": "Uid",
               "type": "string"
             }
@@ -12516,7 +13111,7 @@
             "HTTPBearer": []
           }
         ],
-        "summary": "Sign out one of the own devices",
+        "summary": "Sign out one of the own browsers or devices",
         "tags": [
           "auth"
         ]
@@ -12657,6 +13252,7 @@
     },
     "/api/v1/auth/totp/disable": {
       "post": {
+        "description": "Through the shared module only (``factor.disable_totp``): the password counts at its brake, a required factor\nstays (``second_factor_required``), a setup that waits ends too.",
         "operationId": "disable_api_v1_auth_totp_disable_post",
         "requestBody": {
           "content": {
@@ -12746,6 +13342,35 @@
           }
         ],
         "summary": "New recovery codes; the old ones stop working",
+        "tags": [
+          "second factor"
+        ]
+      }
+    },
+    "/api/v1/auth/totp/setup": {
+      "get": {
+        "description": "The same QR code and secret as ``begin`` gave while the setup waits (the page was reloaded, another tab),\n``{\"waiting\": false}`` when nothing waits. Reading it changes nothing.",
+        "operationId": "waiting_setup_api_v1_auth_totp_setup_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Waiting Setup Api V1 Auth Totp Setup Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "The authenticator that waits for its first code, once more",
         "tags": [
           "second factor"
         ]
@@ -13413,7 +14038,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/app__routers__devices__PairedOut"
+                  "$ref": "#/components/schemas/PairedOut"
                 }
               }
             },
@@ -13459,7 +14084,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/app__routers__pairing__PairedOut"
+                  "$ref": "#/components/schemas/PairedOut"
                 }
               }
             },
@@ -17038,6 +17663,7 @@
         ]
       },
       "post": {
+        "description": "The address counts and is proven from now on. The old address hears of the change where it counted (the\nshared module's rule, decided for every app).",
         "operationId": "confirm_api_v1_email_confirm__token__post",
         "parameters": [
           {
@@ -18149,7 +18775,7 @@
             "description": "Validation Error"
           }
         },
-        "summary": "Whether an invitation holds (no sign-in needed)",
+        "summary": "Whether an invitation holds, and what the form starts with (no sign-in needed)",
         "tags": [
           "invitations"
         ]
@@ -18235,12 +18861,13 @@
             "HTTPBearer": []
           }
         ],
-        "summary": "Open invitations (operator)",
+        "summary": "Open invitations, also those that ran out (operator)",
         "tags": [
           "invitations"
         ]
       },
       "post": {
+        "description": "Address and display name are what the shared module takes (``invites.invite_values``: an address another account\nhas is refused, a display name another shows too); no username is set here, the person chooses it.",
         "operationId": "invite_api_v1_invites_post",
         "requestBody": {
           "content": {
@@ -19947,7 +20574,7 @@
             "HTTPBearer": []
           }
         ],
-        "summary": "Give a new mail address; it counts once the link mailed to it is opened",
+        "summary": "Give a new mail address; with a mail server it counts once its link is opened",
         "tags": [
           "mail address"
         ]
@@ -19967,6 +20594,34 @@
           }
         ],
         "summary": "Withdraw the address that waits for its link",
+        "tags": [
+          "mail address"
+        ]
+      }
+    },
+    "/api/v1/me/email/resend": {
+      "post": {
+        "operationId": "resend_api_v1_me_email_resend_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Resend Api V1 Me Email Resend Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Send the link for the address that waits once more",
         "tags": [
           "mail address"
         ]
@@ -20184,6 +20839,7 @@
     },
     "/api/v1/me/profile": {
       "put": {
+        "description": "Field by field, through the shared module: the display name without a password (it may be empty: then the\nusername shows), a new username and a new address with the own password (an account without one: a fresh\nsign-in at its provider), one \"Save\" for all. A paired device changes the display name only.",
         "operationId": "set_profile_api_v1_me_profile_put",
         "requestBody": {
           "content": {
@@ -20224,7 +20880,7 @@
             "HTTPBearer": []
           }
         ],
-        "summary": "The own display name; empty shows the name",
+        "summary": "The own display name, username and address",
         "tags": [
           "auth"
         ]
@@ -20565,7 +21221,12 @@
                       "type": "string"
                     },
                     "account": {
+                      "description": "the account's first username, stable across renames; the current one is in /api/v1/auth/me",
                       "type": "string"
+                    },
+                    "account_id": {
+                      "description": "the id of the account",
+                      "type": "integer"
                     },
                     "device_id": {
                       "type": "string"
@@ -21186,8 +21847,26 @@
       }
     },
     "/api/v1/oidc/me/address": {
+      "delete": {
+        "description": "\"No, thanks\", for good and for exactly this address (``profiles.dismiss_offered_email``).",
+        "operationId": "decline_provider_address_api_v1_oidc_me_address_delete",
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Do not offer the provider's address any more",
+        "tags": [
+          "oidc"
+        ]
+      },
       "post": {
-        "description": "Offered on the account page when the provider knows the account by another address. It is the\naccount's address from then on, but not confirmed: the mail intake counts it only once the person opened the link\nnexpaper sends (a provider's word is not the person's). It goes again with the last link.",
+        "description": "Offered on the account page (\"Use the address from <provider>?\") when the provider knows the account by\nanother address. A change of address like any other (the shared account module, ``profiles.change_email``): with\nthe own password, and with a mail server it waits for the link mailed to it; without, it counts at once but is\nnot proven, so the mail intake does not trust it yet (a provider's word is not the person's).",
         "operationId": "take_provider_address_api_v1_oidc_me_address_post",
         "requestBody": {
           "content": {
@@ -21228,7 +21907,7 @@
             "HTTPBearer": []
           }
         ],
-        "summary": "Take the address the provider knows as the own one (unconfirmed)",
+        "summary": "Take the address the provider knows as the own one",
         "tags": [
           "oidc"
         ]
@@ -22293,6 +22972,7 @@
     },
     "/api/v1/reset/{token}": {
       "get": {
+        "description": "A link that does not hold counts as a failure of the sender: these links are no way to guess at.",
         "operationId": "reset_state_api_v1_reset__token__get",
         "parameters": [
           {
@@ -22338,6 +23018,7 @@
         ]
       },
       "post": {
+        "description": "Browser sessions and sign-ins waiting for a code end; paired devices, API keys and passkeys stay, and the account\npage lists them at the next sign-in with \"Disconnect all\" (``GET /api/v1/auth/access``).",
         "operationId": "reset_password_api_v1_reset__token__post",
         "parameters": [
           {
@@ -22378,7 +23059,7 @@
             "description": "Validation Error"
           }
         },
-        "summary": "Set the new password; every session of the account ends",
+        "summary": "Set the new password; browser sessions of the account end",
         "tags": [
           "password reset"
         ]
@@ -24976,6 +25657,7 @@
         ]
       },
       "post": {
+        "description": "Through the shared module (``setup.setup``): the code first, then display name, username, address, password.\nA page of 1.12.0 sends ``name`` and no display name: the username stands in for it.",
         "operationId": "setup_api_v1_setup_post",
         "requestBody": {
           "content": {

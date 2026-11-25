@@ -11,7 +11,13 @@ import pytest
 
 from app import db as database
 
-from .test_schema import RECORDS, schema_of, scratch, version_of  # noqa: F401 - the fixture is used by name
+from .test_schema import (  # noqa: F401 - the fixture is used by name
+    RECORDS,
+    schema_of,
+    scratch,
+    version_of,
+    without_konten,
+)
 
 
 def test_every_kind_there_was_gets_the_switch_off(scratch: Path, monkeypatch: pytest.MonkeyPatch) -> None:  # noqa: F811
@@ -29,7 +35,7 @@ def test_every_kind_there_was_gets_the_switch_off(scratch: Path, monkeypatch: py
     database.init_db()
     assert version_of(scratch) == database.SCHEMA_VERSION >= 14
     with closing(sqlite3.connect(scratch)) as connection:
-        after = schema_of(connection)
+        after = without_konten(schema_of(connection))
         assert {name: columns[: len(before[name])] for name, columns in after.items() if name in before} == before
         assert [column[0] for column in after["kinds"][len(before["kinds"]):]] == ["auto_trash"]
         # Later steps add tables of their own (15: goes with, 16: the saved searches); step 14 adds none.

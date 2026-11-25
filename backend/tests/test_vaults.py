@@ -14,7 +14,7 @@ from app.main import app
 from app.models import MANAGE, OPERATOR, Account, Vault, VaultMember
 from app.security import hash_password
 
-from .conftest import PASSWORD, TAB, make_account, new_client, person, require_second_factor
+from .conftest import PASSWORD, SETUP_CODE, TAB, make_account, new_client, person, require_second_factor
 from .papers import add_document, own_vault
 
 
@@ -29,7 +29,7 @@ def vault_count(owner: Account) -> int:
 def test_every_account_has_exactly_one_vault_of_its_own_whichever_way_it_was_made(client: TestClient) -> None:
     require_second_factor(False)
     # The first account, through the setup.
-    setup = client.post("/api/v1/setup", json={"name": "first", "password": PASSWORD, "code": "test-setup-code"})
+    setup = client.post("/api/v1/setup", json={"name": "first", "password": PASSWORD, "code": SETUP_CODE})
     assert setup.status_code in (200, 201), setup.text
     # By invitation.
     invite = client.post("/api/v1/invites", json={"days": 7})

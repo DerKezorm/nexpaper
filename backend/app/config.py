@@ -58,6 +58,9 @@ class Settings(BaseSettings):
     #: The code the first account must bring. Empty: nexpaper makes one at every start until set up and writes it to
     #: the log, so that whoever reaches a fresh instance first does not become its operator.
     setup_token: str = ""
+    #: The emergency switch of the shared account module: on, nobody is asked for a second factor until it is off
+    #: again (the module reads it from the environment itself; it stands here so that it is a named setting).
+    second_factor_off: bool = False
     #: Addresses or networks the operator's settings may be changed from, comma separated (e.g. 192.168.0.0/16).
     #: Empty: from anywhere. Behind a reverse proxy only with ``trusted_proxies`` set.
     operator_networks: str = ""

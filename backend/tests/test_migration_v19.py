@@ -11,7 +11,13 @@ import pytest
 
 from app import db as database
 
-from .test_schema import RECORDS, schema_of, scratch, version_of  # noqa: F401 - the fixture is used by name
+from .test_schema import (  # noqa: F401 - the fixture is used by name
+    RECORDS,
+    schema_of,
+    scratch,
+    version_of,
+    without_konten,
+)
 
 
 def test_the_table_and_the_column_come_and_nothing_else_changes(scratch: Path, monkeypatch: pytest.MonkeyPatch) -> None:  # noqa: F811
@@ -37,7 +43,7 @@ def test_the_table_and_the_column_come_and_nothing_else_changes(scratch: Path, m
     database.init_db()
     assert version_of(scratch) == 19
     with closing(sqlite3.connect(scratch)) as connection:
-        after = schema_of(connection)
+        after = without_konten(schema_of(connection))
         assert set(after) - set(before) == {"pdf_passwords"}
         changed = {name for name in before if after[name] != before[name]}
         assert changed == {"versions"}

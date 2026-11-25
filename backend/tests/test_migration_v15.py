@@ -12,7 +12,13 @@ import pytest
 
 from app import db as database
 
-from .test_schema import RECORDS, schema_of, scratch, version_of  # noqa: F401 - the fixture is used by name
+from .test_schema import (  # noqa: F401 - the fixture is used by name
+    RECORDS,
+    schema_of,
+    scratch,
+    version_of,
+    without_konten,
+)
 
 NEW = {"document_numbers", "numbers_read", "related", "related_dismissed"}
 
@@ -27,7 +33,7 @@ def test_the_tables_come_and_one_job_reads_the_numbers(scratch: Path, monkeypatc
     database.init_db()
     assert version_of(scratch) == 15
     with closing(sqlite3.connect(scratch)) as connection:
-        after = schema_of(connection)
+        after = without_konten(schema_of(connection))
         assert {name: columns for name, columns in after.items() if name in before} == before
         assert set(after) - set(before) == NEW
         jobs = connection.execute("SELECT kind, ref, payload, state FROM jobs").fetchall()

@@ -21,7 +21,13 @@ from app.services import backups
 
 from .conftest import make_account
 from .papers import add_document, own_vault
-from .test_schema import RECORDS, schema_of, scratch, version_of  # noqa: F401 - the fixture is used by name
+from .test_schema import (  # noqa: F401 - the fixture is used by name
+    RECORDS,
+    schema_of,
+    scratch,
+    version_of,
+    without_konten,
+)
 
 
 def test_the_table_comes_and_nothing_else_changes(scratch: Path, monkeypatch: pytest.MonkeyPatch) -> None:  # noqa: F811
@@ -34,7 +40,7 @@ def test_the_table_comes_and_nothing_else_changes(scratch: Path, monkeypatch: py
     database.init_db()
     assert version_of(scratch) == 18
     with closing(sqlite3.connect(scratch)) as connection:
-        after = schema_of(connection)
+        after = without_konten(schema_of(connection))
         assert {name: columns for name, columns in after.items() if name in before} == before
         assert set(after) - set(before) == {"link_documents"}
         indexes = {row[0] for row in connection.execute("SELECT name FROM sqlite_master WHERE type = 'index'")}

@@ -42,9 +42,11 @@ from app.services import (  # noqa: E402
     brakes,
     devices,
     jobs,
+    konten_store,
     notices,
     oidc_store,
     passkeys,
+    post_store,  # noqa: F401  (configures the shared post module)
     push,
     saved,
     settings_service,
@@ -52,8 +54,6 @@ from app.services import (  # noqa: E402
     totp,
     updates,
 )
-from app.services import konten_store  # noqa: E402
-from app.services import post_store  # noqa: E402, F401  (configures the shared post module)
 from app.vendor.nexkonten import factor as konten_factor  # noqa: E402
 from app.vendor.nexkonten import passkeys as konten_passkeys  # noqa: E402
 from app.vendor.nexkonten import setup as konten_setup  # noqa: E402
