@@ -1206,7 +1206,14 @@
     "nameLabel": "Nom",
     "namePlaceholder": "Voiture",
     "createButton": "Créer",
-    "loadFailed": "Les coffres n'ont pas pu être chargés."
+    "loadFailed": "Les coffres n'ont pas pu être chargés.",
+    "delete": "Supprimer le coffre",
+    "deleteTitle": "Supprimer « {{name}} » ?",
+    "deleteText": "Le coffre disparaît pour tous ceux qui y ont accès. Impossible d'annuler.",
+    "deleteMove": "Les documents qu'il contient, corbeille comprise, vont dans ce coffre :",
+    "deleteNowhere": "Il n'y a aucun autre coffre où vous pouvez déposer des documents. Déplacez-les d'abord, puis le coffre pourra être supprimé.",
+    "deleteConfirm": "Supprimer",
+    "deleted": "Coffre « {{name}} » supprimé."
   },
   "share": {
     "title": "Partager",

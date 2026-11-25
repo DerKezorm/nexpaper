@@ -1206,7 +1206,14 @@
     "nameLabel": "Name",
     "namePlaceholder": "Car",
     "createButton": "Create",
-    "loadFailed": "The vaults could not be loaded."
+    "loadFailed": "The vaults could not be loaded.",
+    "delete": "Delete vault",
+    "deleteTitle": "Delete “{{name}}”?",
+    "deleteText": "The vault disappears for everybody in it. This cannot be undone.",
+    "deleteMove": "The documents in it, including those in the trash, go to this vault:",
+    "deleteNowhere": "There is no other vault you may add documents to. Move them first, then the vault can be deleted.",
+    "deleteConfirm": "Delete",
+    "deleted": "Vault “{{name}}” deleted."
   },
   "share": {
     "title": "Share",

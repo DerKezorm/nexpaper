@@ -600,6 +600,8 @@ export const vaultsApi = {
   /** Everybody in the vault at once, in one write: a refusal changes nothing. */
   setMembers: (vault: number, members: { user_id: number; right: VaultRight }[]) => api<Vault>(`/api/v1/vaults/${vault}/members`, { method: 'PUT', body: { members } }),
   removeMember: (vault: number, user: number) => api<void>(`/api/v1/vaults/${vault}/members/${user}`, { method: 'DELETE' }),
+  /** A shared vault goes; the documents in it (the trash included) to ``moveTo``, which an empty vault does not need. */
+  remove: (vault: number, moveTo: number | null) => api<void>(`/api/v1/vaults/${vault}${moveTo ? `?move_to=${moveTo}` : ''}`, { method: 'DELETE' }),
   people: () => api<Person[]>('/api/v1/people'),
 }
 

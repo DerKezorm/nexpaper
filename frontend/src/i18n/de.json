@@ -1206,7 +1206,14 @@
     "nameLabel": "Name",
     "namePlaceholder": "Auto",
     "createButton": "Anlegen",
-    "loadFailed": "Die Tresore ließen sich nicht laden."
+    "loadFailed": "Die Tresore ließen sich nicht laden.",
+    "delete": "Tresor löschen",
+    "deleteTitle": "„{{name}}“ löschen?",
+    "deleteText": "Der Tresor verschwindet für alle, die darin sind. Das lässt sich nicht rückgängig machen.",
+    "deleteMove": "Die Dokumente darin, auch die im Papierkorb, gehen in diesen Tresor:",
+    "deleteNowhere": "Es gibt keinen anderen Tresor, in den du Dokumente legen darfst. Verschiebe sie erst, dann lässt sich der Tresor löschen.",
+    "deleteConfirm": "Löschen",
+    "deleted": "Tresor „{{name}}“ gelöscht."
   },
   "share": {
     "title": "Teilen",

@@ -205,6 +205,64 @@ describe('a shared vault', () => {
     await page.show(<VaultsPage />, '/tresore')
     expect(page.button('Gemeinsamen Tresor anlegen')).toBeUndefined()
   })
+
+  it('is deleted from its dialog after asking, and an empty one needs no place for documents', async () => {
+    server.answers['GET /api/v1/vaults'] = [mineVault, toms, { ...house, documents: 0 }]
+    server.answers['DELETE /api/v1/vaults/9'] = 204
+    await page.show(<VaultsPage />, '/tresore')
+    await page.click(page.button('Freigaben ändern: Haushalt'))
+    await page.inDialog('Tresor löschen')
+    expect(page.dialog!.textContent).toContain('„Haushalt“ löschen?')
+    expect(page.dialog!.querySelector('select')).toBeNull()
+    // Abbrechen sends nothing and goes back to who is in.
+    await page.inDialog('Abbrechen')
+    expect(server.changes()).toEqual([])
+    expect(page.text).toContain('Haushalt: wer darf was')
+    await page.inDialog('Tresor löschen')
+    await page.inDialog('Löschen')
+    expect(server.changes()).toEqual(['DELETE /api/v1/vaults/9'])
+    expect(page.dialog).toBeNull()
+  })
+
+  it('sends the documents in it to a vault the person may add to, their own first, never one they only read', async () => {
+    server.answers['DELETE /api/v1/vaults/9?move_to=7'] = 204
+    await page.show(<VaultsPage />, '/tresore')
+    await page.click(page.button('Freigaben ändern: Haushalt'))
+    await page.inDialog('Tresor löschen')
+    const choice = page.dialog!.querySelector('select')!
+    // Tom's vault (read only) is no place for them.
+    expect([...choice.options].map((o) => o.textContent)).toEqual(['Mein Tresor'])
+    await page.inDialog('Löschen')
+    expect(server.changes()).toEqual(['DELETE /api/v1/vaults/9?move_to=7'])
+  })
+
+  it('asks where the documents go when only its trash holds some', async () => {
+    server.answers['GET /api/v1/vaults'] = [mineVault, toms, { ...house, documents: 0 }]
+    server.fails['DELETE /api/v1/vaults/9'] = { status: 409, code: 'vault_not_empty' }
+    server.answers['DELETE /api/v1/vaults/9?move_to=7'] = 204
+    await page.show(<VaultsPage />, '/tresore')
+    await page.click(page.button('Freigaben ändern: Haushalt'))
+    await page.inDialog('Tresor löschen')
+    await page.inDialog('Löschen')
+    expect(page.dialog!.querySelector('select')).toBeTruthy()
+    await page.inDialog('Löschen')
+    expect(server.changes()).toEqual(['DELETE /api/v1/vaults/9', 'DELETE /api/v1/vaults/9?move_to=7'])
+  })
+
+  it('cannot be deleted while there is nowhere for its documents to go', async () => {
+    server.answers['GET /api/v1/vaults'] = [{ ...toms }, house]
+    await page.show(<VaultsPage />, '/tresore')
+    await page.click(page.button('Freigaben ändern: Haushalt'))
+    await page.inDialog('Tresor löschen')
+    expect(page.dialog!.textContent).toContain('Es gibt keinen anderen Tresor, in den du Dokumente legen darfst.')
+    expect(page.button('Löschen', page.dialog!)!.disabled).toBe(true)
+  })
+
+  it('is the only kind that offers it: a personal vault goes with its person', async () => {
+    await page.show(<VaultsPage />, '/tresore')
+    await page.click(page.button('Freigaben ändern: Mein Tresor'))
+    expect(page.button('Tresor löschen')).toBeUndefined()
+  })
 })
 
 describe('the switches for all accounts (links to the outside, upload requests, API keys)', () => {

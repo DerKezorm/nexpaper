@@ -2,7 +2,7 @@
  * Vaults: one personal vault per person, shared vaults from the operator. Each card shows who may do what; the rights are
  * changed right there. Below: what others shared one by one, and the open links the person made.
  */
-import { FileText, FolderLock, Link2, ListTree, Plus, Settings2, Users, X } from 'lucide-react'
+import { FileText, FolderLock, Link2, ListTree, Plus, Settings2, Trash2, Users, X } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
@@ -41,6 +41,7 @@ export function VaultsPage() {
   const [problem, setProblem] = useState<string | null>(null)
   const [editing, setEditing] = useState<Vault | null>(null)
   const [creating, setCreating] = useState(false)
+  const [removing, setRemoving] = useState<Vault | null>(null)
   const { ask, dialog } = useConfirm()
   // "+" beside "Tresore" in the sidebar (the operator's): this page with its dialog for a new shared vault open.
   const arrived = useLocation()
@@ -214,7 +215,7 @@ export function VaultsPage() {
       </Link>
       {dialog}
 
-      {editing && (
+      {editing && !removing && (
         <Members
           vault={editing}
           people={people}
@@ -223,6 +224,21 @@ export function VaultsPage() {
           onSaved={() => {
             setEditing(null)
             say(t('vaults.saved'))
+            void load()
+          }}
+          onDelete={editing.personal_of === null ? () => setRemoving(editing) : undefined}
+        />
+      )}
+      {removing && (
+        <Remove
+          vault={removing}
+          vaults={vaults ?? []}
+          mineId={mineId}
+          onClose={() => setRemoving(null)}
+          onRemoved={() => {
+            setRemoving(null)
+            setEditing(null)
+            say(t('vaults.deleted', { name: removing.name }))
             void load()
           }}
         />
@@ -257,7 +273,7 @@ async function sharedOneByOne(): Promise<DocumentInfo[]> {
 type Row = { user_id: number; right: VaultRight }
 
 /** Who is in a vault and with which right. Changes are collected and sent on "Save"; the owner of a personal vault stays. */
-function Members({ vault, people, mineId, onClose, onSaved }: { vault: Vault; people: Person[]; mineId: number; onClose: () => void; onSaved: () => void }) {
+function Members({ vault, people, mineId, onClose, onSaved, onDelete }: { vault: Vault; people: Person[]; mineId: number; onClose: () => void; onSaved: () => void; onDelete?: () => void }) {
   const { t } = useTranslation()
   const [rows, setRows] = useState<Row[]>(vault.members.map((m) => ({ user_id: m.user_id, right: m.right })))
   const [problem, setProblem] = useState<string | null>(null)
@@ -354,7 +370,13 @@ function Members({ vault, people, mineId, onClose, onSaved }: { vault: Vault; pe
         <Feedback problem={problem} values={values} />
       </div>
       {dialog}
-      <div className="mt-5 flex justify-end gap-2">
+      <div className="mt-5 flex flex-wrap items-center justify-end gap-2">
+        {/* Only a shared vault goes; a personal one goes with its person. */}
+        {onDelete && (
+          <button type="button" onClick={onDelete} className="btn btn-ghost mr-auto text-bad">
+            <Trash2 size={15} aria-hidden /> {t('vaults.delete')}
+          </button>
+        )}
         <Button variant="line" onClick={onClose}>
           {t('common.cancel')}
         </Button>
@@ -362,6 +384,73 @@ function Members({ vault, people, mineId, onClose, onSaved }: { vault: Vault; pe
           {t('common.save')}
         </Button>
       </div>
+    </Dialog>
+  )
+}
+
+/** Deletes a shared vault, after asking. Documents in it (the trash included) go to another vault the person may add to;
+ * the card counts only those outside the trash, so a 409 ``vault_not_empty`` shows the choice as well. */
+function Remove({ vault, vaults, mineId, onClose, onRemoved }: { vault: Vault; vaults: Vault[]; mineId: number; onClose: () => void; onRemoved: () => void }) {
+  const { t } = useTranslation()
+  // Where documents may go: any other vault the person may add to, their own first (the list comes in that order).
+  const targets = vaults.filter((v) => v.id !== vault.id && v.my_right !== 'read')
+  const [holds, setHolds] = useState(vault.documents > 0)
+  const [target, setTarget] = useState<number | null>(targets[0]?.id ?? null)
+  const [problem, setProblem] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+  const stuck = holds && target === null
+  const go = async () => {
+    if (busy || stuck) return
+    setBusy(true)
+    setProblem(null)
+    try {
+      await vaultsApi.remove(vault.id, holds ? target : null)
+      onRemoved()
+    } catch (error) {
+      const code = error instanceof ApiError ? error.code : 'internal_error'
+      // Only documents in its trash: now the choice where they go.
+      if (code === 'vault_not_empty' && !holds) setHolds(true)
+      else setProblem(code)
+      setBusy(false)
+    }
+  }
+  return (
+    <Dialog title={t('vaults.deleteTitle', { name: vault.name })} onClose={onClose}>
+      <form
+        className="space-y-4"
+        onSubmit={(e) => {
+          e.preventDefault()
+          void go()
+        }}
+      >
+        <p className="text-sm text-ink-2">{t('vaults.deleteText')}</p>
+        {holds &&
+          (targets.length > 0 ? (
+            <label className="block text-sm">
+              <span className="font-semibold">{t('vaults.deleteMove')}</span>
+              <select value={target ?? ''} onChange={(e) => setTarget(Number(e.target.value))} className="input mt-1">
+                {targets.map((v) => (
+                  <option key={v.id} value={v.id}>
+                    {v.personal_of === mineId ? t('vaults.mine') : v.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : (
+            <p role="alert" className="text-sm text-bad">
+              {t('vaults.deleteNowhere')}
+            </p>
+          ))}
+        <Feedback problem={problem} />
+        <div className="flex justify-end gap-2">
+          <button type="button" data-autofocus="" onClick={onClose} className="btn btn-ghost">
+            {t('common.cancel')}
+          </button>
+          <button type="submit" disabled={busy || stuck} className="btn btn-danger">
+            {busy ? '…' : t('vaults.deleteConfirm')}
+          </button>
+        </div>
+      </form>
     </Dialog>
   )
 }
