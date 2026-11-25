@@ -53,6 +53,12 @@ class StandardAdapter:
         the app's start (``apply_pending`` before the database opens). For ``restore = "now"`` nothing."""
         raise NotImplementedError("APP: restart")
 
+    def start_again(self) -> None:
+        """The app's start on the same data folder, as in production (``configure``, ``archives.tidy_at_start``,
+        ``apply_pending``, the database). By default ``restart``; an app whose ``restart`` does nothing
+        (``restore = "now"``, nexmail) writes its own."""
+        self.restart()
+
     def add_content(self, label: str) -> None:
         """APP: add something the app keeps, with a file where the app keeps files (a note with an attachment, an
         event, a document), named by ``label``."""

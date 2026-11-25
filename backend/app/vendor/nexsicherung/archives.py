@@ -3,8 +3,10 @@
 * **Names:** ``<app>-YYYY-MM-DD-HHMMSS.zip`` (UTC), ``-2`` … for a second copy in the same second, ``-upload`` for
   one brought in. Only names of this pattern (and the app's ``legacy_names``) are ever opened, listed or deleted; a
   name is never joined to a path before it matched.
-* **A copy is written under a hidden name** (``.<name>.part``) and moved to its name when whole; a failed one is
-  thrown away, the older ones stay. A full disk says so (``backup_disk_full``, 507).
+* **A copy is written under a hidden name** (``.<app>-<stamp>-….zip.part``, never listed) and takes its name only
+  when whole (``tools.settle``: no name is reserved before, none overwritten); a failed one is thrown away, the older
+  ones stay. A full disk says so (``backup_disk_full``, 507). What a stopped process left goes at the next start
+  (``tidy_at_start``, called by the app's start).
 * **Only automatic copies are pruned** (``scheduled`` and ``update``), the newest ``keep`` stay; one made by hand or
   brought in from elsewhere stays until deleted.
 * **One at a time:** while a copy is made, another one is refused (``backup_running``, 409); the schedule waits.
@@ -75,7 +77,7 @@ def describe(path: Path) -> Described | None:
             described.kind = MANUAL
     except BackupError:
         described = None
-    except (OSError, ValueError, KeyError, TypeError) as exc:
+    except (OSError, KeyError, TypeError, *tools.DAMAGE) as exc:
         current().logger.info("A backup could not be read name=%s: %s", path.name, exc.__class__.__name__)
         described = None
     with _described_lock:
@@ -128,7 +130,8 @@ def entries() -> list[Entry]:
             continue
         try:
             if path.stat().st_size == 0 and running():
-                # The name a copy under way reserved; it is filled when the copy is whole.
+                # Empty under one of the app's names: not a copy of this version (those take their name when
+                # whole), one an older version left; ``tidy_at_start`` removes it.
                 continue
         except OSError:
             continue
@@ -175,17 +178,16 @@ def create(*, kind: str = MANUAL, note: str = "", wait: bool = True) -> Path:
     try:
         base = tools.private_folder(folder())
         moment = datetime.now(UTC)
-        final = tools.reserve(base, f"{config.app_name}-{tools.stamp(moment)}", ".zip")
-        work = base / f".{final.name}.part"
+        stem = f"{config.app_name}-{tools.stamp(moment)}"
+        # Hidden and never one of the app's names: a process stopped while it packs leaves no archive in the list.
+        work = base / f".{stem}-{os.getpid()}-{time.time_ns()}.zip.part"
         try:
             tools.new_file(work)
             config.hooks.pack(work, kind=kind, note=note[:200], created=moment.isoformat(timespec="seconds"))
-            os.replace(work, final)
+            final = tools.settle(work, base, stem, ".zip")
         except BackupError:
-            final.unlink(missing_ok=True)
             raise
         except Exception as exc:
-            final.unlink(missing_ok=True)
             config.logger.exception("A backup could not be written")
             raise _write_failed(exc) from exc
         finally:
@@ -226,7 +228,7 @@ def prune(keep: int) -> int:
 
 
 def tidy_leftovers() -> None:
-    """Hidden work files a stopped process left (``.<name>.part``, ``.upload-…``, ``.check-…``), older than six
+    """Hidden work files a stopped process left (``.<app>-….zip.part``, ``.upload-…``, ``.check-…``), older than six
     hours."""
     base = folder()
     if not base.is_dir():
@@ -237,6 +239,39 @@ def tidy_leftovers() -> None:
                 leftover.unlink()
         except OSError:
             continue
+
+
+def tidy_at_start() -> bool:
+    """**The app calls it at its start**, right after ``configure`` (every app, ``restore="now"`` too; nexmail):
+    the hidden work files of a copy or an upload a stopped process left (``.….part``), whatever their age, and an
+    archive under one of the module's names that is empty. Versions before 1.0.1 took the name before ``pack`` wrote
+    the copy; a process stopped in between (the container stopped mid-backup) left that name empty, listed as not
+    readable for good. ``restore.apply_pending`` calls it as well; calling it again is harmless. While a copy, a
+    staging or an upload of this process is under way it leaves everything as it is (their work files are theirs)
+    and returns False."""
+    if not lock.acquire(blocking=False):
+        return False
+    try:
+        base = folder()
+        if not base.is_dir():
+            return True
+        pattern = current().name_pattern
+        for path in base.iterdir():
+            try:
+                if path.is_symlink() or not path.is_file():
+                    continue
+                if path.name.startswith(".") and path.name.endswith(".part"):
+                    path.unlink()
+                elif pattern.fullmatch(path.name) and path.stat().st_size == 0:
+                    path.unlink()
+                    forget(path.name)
+                    current().logger.warning("An empty backup left by a stopped process was removed name=%s",
+                                             path.name)
+            except OSError:
+                continue
+        return True
+    finally:
+        lock.release()
 
 
 # --- Bringing one in from elsewhere ---------------------------------------------------------------------------------
@@ -275,8 +310,7 @@ def receive(received: Path) -> str:
             pass
     with lock:
         base = tools.private_folder(folder())
-        final = tools.reserve(base, f"{config.app_name}-{tools.stamp(moment)}", UPLOADED)
-        os.replace(received, final)
+        final = tools.settle(received, base, f"{config.app_name}-{tools.stamp(moment)}", UPLOADED)
         space.forget()
     config.logger.warning("Backup received name=%s version=%s", final.name, described.version)
     return final.name

@@ -26,8 +26,8 @@ function leaves(tree: Tree, prefix = ''): [string, string][] {
   })
 }
 
-const values = { email: 'kim@example.com', when: 'today', error: 'mail_unreachable' }
-const fill: Record<string, string> = { ...postVariables(APP_NAME), ...values }
+const values = { email: 'kim@example.com', when: 'today', error: 'mail_unreachable', count: 3 }
+const fill: Record<string, string | number> = { ...postVariables(APP_NAME), ...values }
 
 describe('the post texts', () => {
   for (const [language, tree] of [['de', de], ['en', en]] as const) {

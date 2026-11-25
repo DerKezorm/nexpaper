@@ -23,13 +23,14 @@ import shutil
 import signal
 import threading
 import time
+import zlib
 from pathlib import Path
 from typing import Any
 
 from . import archives, state, tools
 from .config import NOW, RESTART, current
 from .errors import BackupError
-from .model import UPDATE, Brief
+from .model import UPDATE, Brief, Checked
 
 MARKER = "nexsicherung-pending.json"
 
@@ -42,7 +43,12 @@ def check(name: str, *, viewer: Any = None, archive_password: str | None = None)
     if described is None:
         return Brief(name, "", "manual", "", "", name.endswith(archives.UPLOADED), False, False, [], False, "", {}, {})
     too_new = bool(described.version) and tools.newer(described.version, config.version)
-    checked = config.hooks.check(path, viewer=viewer, archive_password=archive_password)
+    try:
+        checked = config.hooks.check(path, viewer=viewer, archive_password=archive_password)
+    except zlib.error as exc:
+        # A deflated member the app's check read without ``tools.DAMAGE``: damaged, never a 500.
+        config.logger.info("A backup could not be inflated name=%s: %s", name, exc)
+        checked = Checked(database_ok=False, files_ok=False)
     return Brief(
         name=name, created=described.created or "", kind=described.kind, note=described.note,
         version=described.version, uploaded=name.endswith(archives.UPLOADED), database_ok=checked.database_ok,
@@ -116,6 +122,11 @@ def apply_pending() -> bool:
     """At the start, before anything opens the database: swap in a staged restore. Returns whether one was. A failed
     one is set aside and the start goes on with the data from before (never half of both)."""
     config = current()
+    try:
+        # The app calls it at its start as well (restore = "now" has no apply_pending to rely on); twice is harmless.
+        archives.tidy_at_start()
+    except Exception:
+        config.logger.exception("Tidying the backups folder at the start failed")
     try:
         config.hooks.tidy()
     except Exception:

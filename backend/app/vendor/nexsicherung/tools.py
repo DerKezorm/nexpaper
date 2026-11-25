@@ -14,6 +14,7 @@ import shutil
 import sqlite3
 import time
 import zipfile
+import zlib
 from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
@@ -25,8 +26,10 @@ FILE_MODE = 0o600
 FOLDER_MODE = 0o700
 SQLITE_HEADER = b"SQLite format 3\x00"
 CHUNK = 1024 * 1024
-#: What zipfile raises for a member it cannot read (a flipped byte, a cut-off file, an unknown method).
-DAMAGE = (zipfile.BadZipFile, zipfile.LargeZipFile, EOFError, NotImplementedError, RuntimeError, ValueError)
+#: What zipfile raises for a member it cannot read (a flipped byte, a cut-off file, an unknown method). A flipped
+#: byte in a deflated member often reaches zlib before the CRC check: zipfile hands on ``zlib.error`` as it is.
+DAMAGE = (zipfile.BadZipFile, zipfile.LargeZipFile, EOFError, NotImplementedError, RuntimeError, ValueError,
+          zlib.error)
 
 
 # --- Files only the owner may read ----------------------------------------------------------------------------------
@@ -67,6 +70,33 @@ def reserve(folder: Path, stem: str, end: str) -> Path:
         os.close(descriptor)
         tighten(folder / name)
         return folder / name
+
+
+def settle(work: Path, folder: Path, stem: str, end: str) -> Path:
+    """Move the whole file ``work`` to the first free name ``<stem><end>``, ``<stem>-2<end>`` … in ``folder`` and
+    return it. No name is taken before the file is whole, and none is ever overwritten: a hard link, which fails on a
+    name that is taken (then ``work`` goes), on Windows a rename, which refuses one. Where the file system has no hard
+    links (some shares, FAT), a rename onto a name that is free."""
+    number = 1
+    while True:
+        final = folder / (f"{stem}{end}" if number == 1 else f"{stem}-{number}{end}")
+        try:
+            if os.name == "nt":
+                os.rename(work, final)
+                return final
+            try:
+                os.link(work, final)
+            except FileExistsError:
+                raise
+            except OSError:
+                if final.exists():
+                    raise FileExistsError(final) from None
+                os.replace(work, final)
+                return final
+            work.unlink()
+            return final
+        except FileExistsError:
+            number += 1
 
 
 def stamp(moment: datetime) -> str:
