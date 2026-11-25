@@ -49,6 +49,43 @@
   --edge: #7d6e5f;
 }
 
+/* The colours of the shared kit (bauplaene/ui, `src/vendor/nexui`): nexpaper's tones by name, kraft as the accent, so
+   dark mode follows by itself. The kit has no colour of its own; every nex app sets the same names to its tones. */
+:root {
+  --nexui-accent: var(--accent);
+  --nexui-accent-hover: color-mix(in srgb, var(--accent) 85%, var(--ink));
+  --nexui-on-accent: var(--accent-ink);
+  --nexui-accent-text: var(--accent);
+  --nexui-surface: var(--sheet);
+  --nexui-surface-raised: var(--sheet);
+  --nexui-surface-hover: var(--sheet-2);
+  --nexui-field: var(--sheet);
+  --nexui-line: var(--line);
+  --nexui-edge: var(--edge);
+  --nexui-text: var(--ink);
+  --nexui-text-muted: var(--muted);
+  --nexui-danger: var(--bad);
+  --nexui-ok: var(--ok);
+  --nexui-warn: var(--warn);
+  --nexui-disabled-bg: var(--sheet-2);
+  --nexui-disabled-text: var(--muted);
+  --nexui-scrim: var(--scrim);
+  /* A picture without a photo (ui 0.1.1, `Avatar`): the letter on the hue from the name (the same on the server and
+     on the iPhone), here saturation and lightness of that ground and the letter's colour, on paper. */
+  --nexui-avatar-saturation: 42%;
+  --nexui-avatar-lightness: 44%;
+  --nexui-avatar-text: #fffaf3;
+}
+
+:root[data-theme='dark'] {
+  --nexui-accent-hover: color-mix(in srgb, var(--accent) 85%, #ffffff);
+  --nexui-surface-raised: var(--sheet-2);
+  --nexui-field: var(--paper);
+  --nexui-avatar-saturation: 34%;
+  --nexui-avatar-lightness: 38%;
+  --nexui-avatar-text: #f1e8dc;
+}
+
 @theme inline {
   /* Wide screens (issue #7): `3xl:` is SPLIT_FROM in lib/wide.ts (1600 px). */
   --breakpoint-3xl: 100rem;

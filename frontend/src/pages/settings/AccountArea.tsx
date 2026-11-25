@@ -10,14 +10,17 @@ import { useEffect, useRef, useState } from 'react'
 import { Trans, useTranslation } from 'react-i18next'
 import { Link, useNavigate } from 'react-router-dom'
 
-import { api, authApi, type Me } from '../../api/client'
+import { api, authApi, type Me, type ProfileChange } from '../../api/client'
+import { AccountButton } from '../../components/AccountButton'
+import { confirmOf } from '../../lib/accountButton'
+import { PAGES, screenFields } from '../../vendor/nexkonten/konten'
+import { ConfirmDialog, Field, Notice, SelectField } from '../../vendor/nexui'
 import { ApiKeys } from '../../components/ApiKeys'
 import { Avatar } from '../../components/Avatar'
 import { KeysWait } from '../../components/KeysWait'
 import { MyProviders } from '../../components/MyProviders'
 import { PairedDevices } from '../../components/PairedDevices'
 import { useConfirm } from '../../components/useConfirm'
-import { iso } from '../../lib/say'
 import { changeLanguage, languageOptions, type LanguageOption } from '../../i18n'
 import { ShortcutCard, UploadVaultCard } from '../../components/PhoneCards'
 import { providerName } from '../../lib/aiProviders'
@@ -30,7 +33,7 @@ import { PdfPasswordsCard } from './PdfPasswordsCard'
 import { PushDevicesCard } from './PushCards'
 import { RemindersPart } from './RemindersCards'
 import { DevicesCard, PasskeysCard, SecondFactorCard, SESSIONS_CHANGED } from './SecurityCards'
-import { Button, Card, Feedback, Input, Toggle, useAction } from './ui'
+import { Card, Feedback, Input, Toggle, useAction } from './ui'
 
 export type AccountPart = 'profile' | 'security' | 'appearance' | 'connections' | 'upload' | 'reminders' | 'ai'
 
@@ -85,7 +88,8 @@ function SignOutCard({ viaProvider }: { viaProvider: boolean }) {
     <Card id="sign-out" icon={LogOut} title={t('me.signOut.title')} text={t('me.signOut.text')}>
       <div data-testid="sign-out-card" className="space-y-3">
         {viaProvider && <p className="text-xs text-muted">{t('me.signOut.provider')}</p>}
-        <Button
+        <AccountButton
+          name="signOut"
           busy={busy}
           onClick={() => {
             setBusy(true)
@@ -93,7 +97,7 @@ function SignOutCard({ viaProvider }: { viaProvider: boolean }) {
           }}
         >
           {t('me.signOut.button')}
-        </Button>
+        </AccountButton>
       </div>
     </Card>
   )
@@ -156,20 +160,19 @@ function AiPart({ me }: { me: Me }) {
 }
 
 /**
- * "Profil" as in nexnotes (`AccountTab.tsx` there, part `profile`): one card with the picture, then name and mail address
- * side by side with "Speichern", the role below, and the language at the end. nexpaper's own on top of it, so nothing is
- * lost: the login name stands beside the role (an empty name shows it); a new address counts only after the link mailed
- * to it is opened, and asks for the password first (the address is the way back into the account), its state and a
- * link waiting stand below the fields; an emptied address is removed after a question.
+ * "Profil" as the shared account module lays it out (`PAGES.profile`, konten 0.3.9), the same in every nex app: the
+ * picture, then display name, username and address one under the other, one "Save" for all (a new username or address
+ * asks for the password once, `confirmOnSave`), the address a provider offers, the language, the role small at the end.
+ * nexpaper's own beside it, so nothing is lost: under the address whether it is proven by a link (only then does the
+ * intake trust it) with "Send link" for one that only counts; a new address waiting for its link with "Send again" and
+ * "Withdraw"; the former username under the field after a change.
  */
 function ProfileCard({ me }: { me: Me }) {
   const { t, i18n } = useTranslation()
   const { setMe } = useAuth()
-  const [name, setName] = useState(me.display_name ?? '')
-  const [email, setEmail] = useState(me.email ?? '')
+  const [values, setValues] = useState({ displayName: me.display_name ?? '', username: me.name, email: me.email ?? '' })
   const [password, setPassword] = useState('')
-  /** "Bestätigung schicken" for the address there is, which also asks for the password. */
-  const [resend, setResend] = useState(false)
+  const [asking, setAsking] = useState(false)
   const [languages, setLanguages] = useState<LanguageOption[]>([])
   const picker = useRef<HTMLInputElement>(null)
   const action = useAction()
@@ -181,50 +184,47 @@ function ProfileCard({ me }: { me: Me }) {
       alive = false
     }
   }, [])
-  const withPassword = me.sign_in === 'password'
-  const nameChanged = name.trim() !== (me.display_name ?? '')
-  const emailChanged = !me.email_pending && email.trim() !== (me.email ?? '')
-  const asksPassword = withPassword && (emailChanged || resend)
-  const sendMail = (address: string) =>
-    api<Me>('/api/v1/me/email', { method: 'PUT', body: { email: address, password } }).then((saved) => {
-      setMe(saved)
-      setEmail(saved.email ?? address)
-      setPassword('')
-      setResend(false)
-    })
-  const save = () => {
-    if (resend && !emailChanged) return void action.run(() => sendMail(me.email), t('mail.sent'))
-    const work = async () => {
-      if (nameChanged) {
-        const saved = await authApi.profile(name.trim())
-        setName(saved.display_name)
-        setMe(saved)
-      }
-      if (emailChanged) await sendMail(email.trim())
-    }
-    const done = emailChanged ? (email.trim() ? t('mail.sent') : t('mail.removed')) : t('me.profile.displaySaved')
-    if (emailChanged && !email.trim())
-      return ask({
-        title: t('confirm.mailAddress.title'),
-        text: t('confirm.mailAddress.text', { address: iso(me.email) }),
-        confirm: t('confirm.mailAddress.confirm'),
-        run: async () => {
-          await action.run(work, done)
-        },
-      })
-    void action.run(work, done)
+  useEffect(() => {
+    setValues({ displayName: me.display_name ?? '', username: me.name, email: me.email ?? '' })
+  }, [me.display_name, me.name, me.email])
+  const withPassword = me.has_password ?? me.sign_in === 'password'
+  const changed = {
+    displayName: values.displayName.trim() !== (me.display_name ?? ''),
+    username: values.username.trim().toLowerCase() !== me.name.toLowerCase(),
+    email: values.email.trim().toLowerCase() !== (me.email ?? '').toLowerCase(),
   }
+  const confirms = PAGES.profile.confirmOnSave.some((field) => changed[field])
+  const any = changed.displayName || changed.username || changed.email
+  const save = (own: string) =>
+    void action.run(async () => {
+      const change: ProfileChange = {}
+      if (changed.displayName) change.display_name = values.displayName.trim()
+      if (changed.username) change.name = values.username.trim()
+      if (changed.email) change.email = values.email.trim()
+      if (confirms) change.password = own
+      setMe(await authApi.profile(change))
+      setAsking(false)
+      setPassword('')
+    }, t('me.profile.saved'))
+  /** "Send link" to the address there is, which counts but is not proven yet: the intake trusts it once opened. */
+  const prove = (own: string) =>
+    void action.run(async () => {
+      setMe(await api<Me>('/api/v1/me/email', { method: 'PUT', body: { email: me.email, password: own } }))
+      setAsking(false)
+      setPassword('')
+    }, t('mailAddress.sent'))
+  const [proving, setProving] = useState(false)
+  const fields = screenFields('profile')
+  const field = (name: 'displayName' | 'username' | 'email') => fields.find((entry) => entry.field === name)!
   return (
-    <Card id="profile" icon={User} title={t('me.tabs.profile')}>
+    <Card id="profile" icon={User} title={t(PAGES.profile.title)}>
       <div className="flex items-center gap-3" data-testid="profile-picture">
         <Avatar person={me} size={56} />
         <div className="flex flex-wrap gap-2">
-          <Button busy={action.busy} onClick={() => picker.current?.click()}>
-            {me.avatar ? t('me.profile.change') : t('me.profile.upload')}
-          </Button>
+          <AccountButton name="account.pictureUpload" busy={action.busy} onClick={() => picker.current?.click()} />
           {me.avatar && (
-            <Button
-              small
+            <AccountButton
+              name="account.pictureRemove"
               busy={action.busy}
               onClick={() =>
                 ask({
@@ -236,16 +236,14 @@ function ProfileCard({ me }: { me: Me }) {
                   },
                 })
               }
-            >
-              {t('me.profile.remove')}
-            </Button>
+            />
           )}
         </div>
         <input
           ref={picker}
           type="file"
           accept="image/jpeg,image/png,image/webp,image/gif,image/bmp,image/heic,image/heif,image/avif,.heic,.heif"
-          aria-label={t('me.profile.upload')}
+          aria-label={t('account.pictureUpload')}
           className="hidden"
           onChange={(event) => {
             const file = event.target.files?.[0]
@@ -255,89 +253,138 @@ function ProfileCard({ me }: { me: Me }) {
         />
       </div>
       <form
-        className="grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end"
+        className="flex flex-col gap-3"
         onSubmit={(event) => {
           event.preventDefault()
-          save()
+          if (!any) return
+          if (confirms && withPassword) return setAsking(true)
+          save('')
         }}
       >
-        <Input label={t('me.profile.name')} value={name} onChange={setName} autoComplete="name" placeholder={me.name} maxLength={80} />
-        <Input label={t('me.profile.email')} type="email" value={me.email_pending ? me.email : email} onChange={setEmail} autoComplete="email" placeholder="name@example.com" />
-        <Button type="submit" primary busy={action.busy} disabled={(!nameChanged && !emailChanged && !resend) || (asksPassword && !password)}>
-          {t('common.save')}
-        </Button>
-        {asksPassword && (
-          <Input
-            label={t('auth.password')}
-            type="password"
-            value={password}
-            onChange={setPassword}
-            autoComplete="current-password"
-            hint={t('mail.passwordHint')}
-            className="sm:col-span-2"
-          />
-        )}
-      </form>
-      <p className="text-xs text-muted" data-testid="account-facts">
-        {t('me.profile.roleLine', { role: t(`me.role.${me.role}`), name: me.name })}
+        {(['displayName', 'username', 'email'] as const).map((name) => {
+          const spec = field(name)
+          const hints = spec.hints.map((hint) => t(hint))
+          if (name === 'username' && me.former_name) hints.push(t('account.formerUsername'))
+          return (
+            <Field
+              key={name}
+              label={t(spec.label)}
+              type={spec.type === 'email' ? 'email' : 'text'}
+              autoComplete={spec.autoComplete}
+              maxLength={spec.maxLength || undefined}
+              placeholder={name === 'displayName' ? me.name : undefined}
+              hints={hints}
+              value={values[name]}
+              onChange={(event) => setValues({ ...values, [name]: event.target.value })}
+            />
+          )
+        })}
         {me.email && !me.email_pending && (
-          <>
-            {' · '}
-            <span className={me.email_confirmed ? 'text-ok' : 'text-warn'} data-testid="mail-state">
-              {me.email_confirmed ? t('mail.confirmedLine') : t('mail.unconfirmedLine')}
+          <p className="m-0 text-xs text-muted" data-testid="mail-state">
+            <span className={me.email_confirmed ? 'text-ok' : 'text-warn'}>
+              {me.email_confirmed ? t('mailAddress.confirmedLine') : t('mailAddress.unconfirmedLine')}
             </span>
-            {!me.email_confirmed && !resend && me.mail !== false && (
+            {!me.email_confirmed && me.mail_links && (
               <>
                 {' · '}
-                <button type="button" className="font-semibold text-accent hover:underline" onClick={() => (withPassword ? setResend(true) : void action.run(() => sendMail(me.email), t('mail.sent')))}>
-                  {t('mail.confirmNow')}
+                <button type="button" className="font-semibold text-accent hover:underline" onClick={() => (withPassword ? setProving(true) : prove(''))}>
+                  {t('mailAddress.confirmNow')}
                 </button>
               </>
             )}
-          </>
+          </p>
         )}
-      </p>
-      {me.email_pending && (
-        <div className="rounded-[12px] border border-accent/40 bg-accent-soft/50 px-3.5 py-3 text-sm" data-testid="mail-pending">
-          {t('mail.pending', { address: me.email_pending })} {me.email ? t('mail.stays', { address: me.email }) : ''}
-          <div className="mt-2 flex gap-2">
-            <Button
-              small
+        {me.email_pending && (
+          <Notice tone="ok" testId="mail-pending">
+            {t('account.emailPending', { email: me.email_pending })}
+            <span className="mt-2 flex flex-wrap gap-2">
+              <AccountButton name="account.emailResend" busy={action.busy} onClick={() => void action.run(async () => setMe(await authApi.emailResend()), t('mailAddress.sent'))} />
+              <AccountButton
+                name="account.emailWithdraw"
+                busy={action.busy}
+                onClick={() =>
+                  void action.run(async () => {
+                    await authApi.emailWithdraw()
+                    setMe(await authApi.me())
+                  })
+                }
+              />
+            </span>
+          </Notice>
+        )}
+        {!me.email_pending && me.email && !me.email_confirmed && !me.mail_links && <p className="m-0 text-xs text-muted">{t('mailAddress.off')}</p>}
+        <div>
+          <AccountButton name="account.save" type="submit" busy={action.busy} disabled={!any} testId="profile-save" />
+        </div>
+      </form>
+      {me.offered_email && (
+        <Notice tone="ok" testId="provider-email-offer">
+          {t('account.providerEmailOffer', { provider: me.offered_email_provider || '' })} {me.offered_email}
+          <span className="mt-2 flex flex-wrap gap-2">
+            <AccountButton
+              name="account.providerEmailTake"
+              busy={action.busy}
+              onClick={() => (withPassword ? setValues({ ...values, email: me.offered_email ?? '' }) : void action.run(async () => setMe(await authApi.takeOffered(''))))}
+            />
+            <AccountButton
+              name="account.providerEmailDismiss"
               busy={action.busy}
               onClick={() =>
                 void action.run(async () => {
-                  await api('/api/v1/me/email/pending', { method: 'DELETE' })
+                  await authApi.declineOffered()
                   setMe(await authApi.me())
                 })
               }
-            >
-              {t('mail.withdraw')}
-            </Button>
-          </div>
-        </div>
+            />
+          </span>
+        </Notice>
       )}
-      {!me.email_pending && !me.email_confirmed && me.mail === false && <p className="text-xs text-muted">{t('mail.off')}</p>}
-      <label className="block text-sm">
-        <span className="font-medium">{t('settings.language.title')}</span> <span className="text-xs text-muted">{t('settings.language.hint')}</span>
-        <select
-          className="input mt-1"
-          value={i18n.language}
-          data-testid="language-select"
-          onChange={(event) => {
-            const code = event.target.value
-            void changeLanguage(code)
-            // Kept with the account, so the next browser speaks it too.
-            void authApi.language(code).then(setMe, () => undefined)
+      <SelectField
+        label={t('account.language')}
+        hints={[t('settings.language.hint')]}
+        value={i18n.language}
+        data-testid="language-select"
+        onChange={(event) => {
+          const code = event.target.value
+          void changeLanguage(code)
+          // Kept with the account, so the next browser speaks it too.
+          void authApi.language(code).then(setMe, () => undefined)
+        }}
+        options={languages.map((option) => ({ value: option.code, label: option.name }))}
+      />
+      <p className="m-0 text-xs text-muted" data-testid="account-role">
+        {t('account.role')}: {t(me.role === 'operator' ? 'account.roleOperator' : 'account.roleMember')}
+      </p>
+      <Feedback problem={action.problem} done={action.done} values={action.values} />
+      {(asking || proving) && (
+        <ConfirmDialog
+          title={t('account.save')}
+          text={
+            changed.email && !values.email.trim() && !proving
+              ? `${t('confirm.mailAddress.text', { address: me.email })} ${t('account.confirmWithPassword')}`
+              : t('account.confirmWithPassword')
+          }
+          confirm={confirmOf('account.save', t('account.save'))}
+          cancel={t('common.cancel')}
+          closeLabel={t('common.close')}
+          busy={action.busy}
+          confirmDisabled={!password}
+          onCancel={() => {
+            setAsking(false)
+            setProving(false)
+            setPassword('')
+          }}
+          onConfirm={() => {
+            if (proving) {
+              setProving(false)
+              prove(password)
+            } else save(password)
           }}
         >
-          {languages.map((option) => (
-            <option key={option.code} value={option.code}>
-              {option.name}
-            </option>
-          ))}
-        </select>
-      </label>
-      <Feedback problem={action.problem} done={action.done} values={action.values} />
+          <Field label={t('account.currentPassword')} type="password" autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} />
+          <Feedback problem={action.problem} values={action.values} />
+        </ConfirmDialog>
+      )}
       {dialog}
     </Card>
   )
@@ -405,9 +452,9 @@ function PasswordRow() {
         <Input label={t('me.password.current')} type="password" value={pw.current} onChange={(current) => setPw({ ...pw, current })} autoComplete="current-password" />
         <Input label={t('me.password.new')} type="password" value={pw.next} onChange={(next) => setPw({ ...pw, next })} autoComplete="new-password" />
         <Input label={t('me.password.again')} type="password" value={pw.again} onChange={(again) => setPw({ ...pw, again })} autoComplete="new-password" />
-        <Button type="submit" primary busy={password.busy}>
+        <AccountButton name="account.passwordChange" type="submit" busy={password.busy}>
           {t('me.password.submit')}
-        </Button>
+        </AccountButton>
         <Feedback problem={unsent ?? password.problem} done={password.done} />
       </form>
     </details>
@@ -425,8 +472,8 @@ function EverywhereElseRow() {
         <Lock className="h-4 w-4 text-muted" aria-hidden />
         {/* At least 12rem wide: on a phone the button goes to the next line instead of squeezing the text. */}
         <span className="min-w-0 grow basis-48 text-ink-2">{t('me.sessions.text')}</span>
-        <Button
-          small
+        <AccountButton
+          name="account.signOutEverywhere"
           busy={action.busy}
           onClick={() =>
             ask({
@@ -441,9 +488,7 @@ function EverywhereElseRow() {
               },
             })
           }
-        >
-          {t('me.devices.everywhereElse')}
-        </Button>
+        />
       </div>
       <Feedback problem={action.problem} done={action.done} />
       {dialog}

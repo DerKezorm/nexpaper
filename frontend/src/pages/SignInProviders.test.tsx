@@ -11,7 +11,8 @@ import i18n, { changeLanguage } from '../i18n'
 import { Page, Server, plain } from '../test/harness'
 import { SettingsRoutes } from '../test/settings'
 import { InvitePage, LoginPage } from './AuthPages'
-import { AccountsCard, useServerSettings } from './settings/ServerCards'
+import { AccountsTab } from './settings/AccountsTab'
+import { useServerSettings } from './settings/ServerCards'
 import { SignInPart } from './settings/SignInCards'
 
 const me: Me = {
@@ -83,8 +84,10 @@ describe('the sign-in page', () => {
     expect(links().map((link) => link.textContent)).toEqual(['Mit authentik anmelden', 'Mit Microsoft anmelden'])
     expect(await target(links()[0])).toBe('/api/v1/oidc/authentik/start?next=%2Foauth%2Fauthorize%3Fx%3D1')
     const text = page.text
-    expect(text.indexOf('Passwort')).toBeLessThan(text.indexOf('oder'))
-    expect(text.indexOf('oder')).toBeLessThan(text.indexOf('Mit authentik anmelden'))
+    // "Benutzername oder E-Mail" says "oder" too: the line "oder" is the one after the password.
+    const line = text.indexOf('oder', text.indexOf('Passwort'))
+    expect(text.indexOf('Passwort')).toBeLessThan(line)
+    expect(line).toBeLessThan(text.indexOf('Mit authentik anmelden'))
   })
 
   it('says a refusal of the provider in a sentence of the module, never the code', async () => {
@@ -284,13 +287,14 @@ describe('the account list', () => {
     server.answers['GET /api/v1/invites'] = []
     server.answers['GET /api/v1/oidc/admin/links'] = [{ account_id: 7, provider_id: 3, slug: 'authentik', label: 'authentik' }]
     server.answers['DELETE /api/v1/oidc/admin/accounts/7/links/3'] = 204
-    await page.show(<AccountsCard />)
-    expect(document.querySelector('[data-testid="account-providers"]')?.textContent).toBe('authentik')
-    await page.click(page.button('Aktionen für tom'))
-    await page.click(page.button('Verknüpfung mit authentik lösen'))
-    expect(plain(page.dialog?.textContent)).toContain('tom meldet sich danach nicht mehr über authentik an und bekommt Bescheid.')
+    await page.show(<AccountsTab />)
+    // The provider is a badge of the row (the shared account module's list).
+    expect(document.querySelector('[data-testid="account-row-tom"]')?.textContent).toContain('authentik')
+    await page.click(page.button('Verwalten', document.querySelector<HTMLElement>('[data-testid="account-row-tom"]')!))
+    await page.click(page.button('Verknüpfung mit authentik lösen', page.dialog!))
+    expect(plain(page.dialog?.textContent)).toContain('über authentik')
     await page.type(page.dialog!.querySelector<HTMLInputElement>('input[type="password"]'), 'geheimwort')
-    await page.inDialog('Lösen')
+    await page.inDialog('Verknüpfung mit authentik lösen')
     expect(server.called('DELETE', '/api/v1/oidc/admin/accounts/7/links/3')?.body).toEqual({ current_password: 'geheimwort' })
   })
 })

@@ -14,6 +14,7 @@ import { useTranslation } from 'react-i18next'
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 
 import { ApiError, api, authApi, intakeApi, passkeyApi, type Me, type Methods } from '../api/client'
+import { AccountButton } from '../components/AccountButton'
 import { Wordmark } from '../components/Logo'
 import { OrLine, ProviderButtons } from '../components/ProviderButtons'
 import { KeepCodes, RecoveryCodes } from '../components/RecoveryCodes'
@@ -22,6 +23,8 @@ import i18n from '../i18n'
 import { errorText } from '../lib/errors'
 import { answerWithPasskey, passkeysAvailable } from '../lib/webauthn'
 import { safeNext, useAuth } from '../state/auth'
+import { followUsername, newPasswordProblem, screenFields, SETUP_PAGE, setupNotes, type AccountField, type AccountScreen, type ButtonName } from '../vendor/nexkonten/konten'
+import { Field } from '../vendor/nexui'
 import { Input } from './settings/ui'
 
 function AuthFrame({ title, text, children, wide = false }: { title: string; text?: string; children: ReactNode; wide?: boolean }) {
@@ -42,11 +45,12 @@ function AuthFrame({ title, text, children, wide = false }: { title: string; tex
   )
 }
 
-function Primary({ children, busy = false }: { children: ReactNode; busy?: boolean }) {
+/** The main button of a sign-in page: kind and symbol from the shared account module (`BUTTONS`), the words nexpaper's. */
+function Primary({ name = 'confirm', children, busy = false }: { name?: ButtonName; children: ReactNode; busy?: boolean }) {
   return (
-    <button type="submit" disabled={busy} className="btn btn-accent h-11 w-full">
+    <AccountButton name={name} type="submit" wide busy={busy}>
       {children}
-    </button>
+    </AccountButton>
   )
 }
 
@@ -63,27 +67,80 @@ const OUTLINE = 'btn btn-ghost h-11 w-full'
 
 const codeOf = (error: unknown) => (error instanceof ApiError ? error.code : 'internal_error')
 
+type Values = Partial<Record<AccountField, string>>
+
+/**
+ * The fields of a screen of the shared account module (`SCREENS`: setup, invitation, sign-in, forgotten and new
+ * password), in its order, with its labels, hints, types and lengths, each label joined to its field. The username
+ * follows the display name until somebody types in it (`followUsername`).
+ */
+function AccountFields({ screen, values, onChange, first = true }: { screen: AccountScreen; values: Values; onChange: (next: Values) => void; first?: boolean }) {
+  const { t } = useTranslation()
+  const [touched, setTouched] = useState(false)
+  return (
+    <>
+      {screenFields(screen, { autoComplete: { login: 'username webauthn' } }).map((spec, index) => (
+        <Field
+          key={spec.field}
+          label={t(spec.label)}
+          hints={spec.hints.map((hint) => t(hint))}
+          type={spec.type === 'select' ? 'text' : spec.type}
+          autoComplete={spec.autoComplete}
+          maxLength={spec.maxLength || undefined}
+          autoFocus={first && index === 0}
+          value={values[spec.field] ?? ''}
+          onChange={(event) => {
+            const value = event.target.value
+            const next: Values = { ...values, [spec.field]: value }
+            if (spec.field === 'username') setTouched(true)
+            if (spec.field === 'displayName' && (SCREEN_FOLLOWS as readonly string[]).includes(screen)) {
+              next.username = followUsername({ touched, username: values.username ?? '' }, value)
+            }
+            onChange(next)
+          }}
+        />
+      ))}
+    </>
+  )
+}
+
+/** The screens where the username follows the display name. */
+const SCREEN_FOLLOWS = ['setup', 'invite'] as const
+
 export function SetupPage() {
   const { t } = useTranslation()
   const { status, setMe } = useAuth()
-  const [name, setName] = useState('')
-  const [password, setPassword] = useState('')
-  const [code, setCode] = useState('')
+  const [values, setValues] = useState<Values>({})
   const [busy, setBusy] = useState(false)
   const [problem, setProblem] = useState<string | null>(null)
+  const [factorRequired, setFactorRequired] = useState(false)
+  useEffect(() => {
+    void authApi.setupState().then((state) => setFactorRequired(Boolean(state.factor_required)), () => undefined)
+  }, [])
   if (status === 'loading') return null
   if (status !== 'setup') return <Navigate to="/" replace />
   return (
-    <AuthFrame title={t('auth.setup.title')} text={t('auth.setup.text')}>
+    <AuthFrame title={t(SETUP_PAGE.title)} text={t(SETUP_PAGE.subtitle)}>
       <form
         className="space-y-4"
         onSubmit={async (event) => {
           event.preventDefault()
-          if (!name.trim()) return setProblem('name_missing')
+          const wrong = newPasswordProblem(values.newPassword ?? '', values.passwordRepeat ?? '')
+          if (wrong) return setProblem(wrong === 'account.passwordMismatch' ? 'password_mismatch' : 'password_too_short')
           setBusy(true)
           setProblem(null)
           try {
-            setMe(await authApi.setup(name.trim(), password, code.trim(), i18n.language))
+            setMe(
+              await authApi.setup({
+                code: (values.setupCode ?? '').trim(),
+                display_name: (values.displayName ?? '').trim(),
+                name: (values.username ?? '').trim(),
+                email: (values.email ?? '').trim(),
+                password: values.newPassword ?? '',
+                password_confirm: values.passwordRepeat ?? '',
+                language: i18n.language,
+              }),
+            )
           } catch (error) {
             setProblem(codeOf(error))
           } finally {
@@ -92,10 +149,13 @@ export function SetupPage() {
         }}
       >
         <Problem code={problem} />
-        <Input label={t('auth.setup.code')} value={code} onChange={setCode} autoFocus hint={t('auth.setup.codeHint')} />
-        <Input label={t('auth.name')} value={name} onChange={setName} autoComplete="username" />
-        <Input label={t('auth.password')} value={password} onChange={setPassword} type="password" autoComplete="new-password" hint={t('auth.passwordHint')} />
-        <Primary busy={busy}>{t('auth.setup.submit')}</Primary>
+        <AccountFields screen="setup" values={values} onChange={setValues} />
+        {setupNotes({ factorRequired }).map((note) => (
+          <p key={note} className="text-xs text-muted">
+            {t(note)}
+          </p>
+        ))}
+        <Primary name="setupSubmit" busy={busy}>{t('auth.setup.submit')}</Primary>
       </form>
     </AuthFrame>
   )
@@ -233,7 +293,7 @@ export function LoginPage() {
             hint={onlyPasskey ? undefined : t('auth.code.hint')}
           />
           <Remember on={remember} onChange={setRemember} days={methods?.session_days} />
-          <Primary busy={busy}>{t('auth.login.submit')}</Primary>
+          <Primary name="signIn" busy={busy}>{t('auth.login.submit')}</Primary>
           {waiting.passkey && passkeys && passkeyButton}
           <button
             type="button"
@@ -267,10 +327,10 @@ export function LoginPage() {
           }}
         >
           <Problem code={problem} />
-          <Input label={t('auth.name')} value={name} onChange={setName} autoComplete="username webauthn" autoFocus />
-          <Input label={t('auth.password')} value={password} onChange={setPassword} type="password" autoComplete="current-password" />
+          <Field label={t('account.login')} value={name} onChange={(event) => setName(event.target.value)} autoComplete="username webauthn" maxLength={254} autoFocus />
+          <Field label={t('account.password')} value={password} onChange={(event) => setPassword(event.target.value)} type="password" autoComplete="current-password" />
           <Remember on={remember} onChange={setRemember} days={methods?.session_days} />
-          <Primary busy={busy}>{t('auth.login.submit')}</Primary>
+          <Primary name="signIn" busy={busy}>{t('auth.login.submit')}</Primary>
           {methods?.forgot && (
             <Link to="/forgot" className="block text-center text-xs text-muted hover:text-ink">
               {t('auth.login.forgot')}
@@ -389,7 +449,7 @@ function SecondFactorSetup({ me, next }: { me: Me; next: string }) {
             {enrolment ? enrolment.secret.replace(/(.{4})/g, '$1 ').trim() : '…'}
           </p>
           <Input label={t('auth.code.label')} value={code} onChange={setCode} autoFocus autoComplete="one-time-code" />
-          <Primary busy={busy}>{t('twofactor.confirm')}</Primary>
+          <Primary name="codeSubmit" busy={busy}>{t('twofactor.confirm')}</Primary>
         </form>
       </div>
       <p className="mt-5 border-t border-line pt-4 text-xs text-muted">{t('auth.setup2fa.passkeyLater')}</p>
@@ -398,7 +458,7 @@ function SecondFactorSetup({ me, next }: { me: Me; next: string }) {
   )
 }
 
-type InviteState = { min_password: number; signed_in_as: string | null }
+type InviteState = { min_password: number; signed_in_as: string | null; display_name?: string; name?: string; email?: string }
 
 export function InvitePage() {
   const { t } = useTranslation()
@@ -407,14 +467,17 @@ export function InvitePage() {
   const navigate = useNavigate()
   const [state, setState] = useState<InviteState | null>(null)
   const [invalid, setInvalid] = useState(false)
-  const [name, setName] = useState('')
-  const [password, setPassword] = useState('')
+  const [values, setValues] = useState<Values>({})
   const [busy, setBusy] = useState(false)
   const [problem, setProblem] = useState<string | null>(null)
   const [methods, setMethods] = useState<Methods | null>(null)
 
   useEffect(() => {
-    api<InviteState>(`/api/v1/invite/${encodeURIComponent(token)}`).then(setState, () => setInvalid(true))
+    api<InviteState>(`/api/v1/invite/${encodeURIComponent(token)}`).then((found) => {
+      setState(found)
+      // The form starts with what the invitation brings: the display name, a username suggested from it, the address.
+      setValues({ displayName: found.display_name ?? '', username: found.name ?? '', email: found.email ?? '' })
+    }, () => setInvalid(true))
     authApi.methods().then(setMethods, () => undefined)
   }, [token])
 
@@ -449,11 +512,20 @@ export function InvitePage() {
           className="space-y-4"
           onSubmit={async (event) => {
             event.preventDefault()
-            if (!name.trim()) return setProblem('name_missing')
+            const wrong = newPasswordProblem(values.newPassword ?? '', values.passwordRepeat ?? '')
+            if (wrong) return setProblem(wrong === 'account.passwordMismatch' ? 'password_mismatch' : 'password_too_short')
             setBusy(true)
             setProblem(null)
             try {
-              setMe(await api<Me>(`/api/v1/invite/${encodeURIComponent(token)}`, { method: 'POST', body: { name: name.trim(), password } }))
+              setMe(
+                await authApi.acceptInvite(token, {
+                  display_name: (values.displayName ?? '').trim(),
+                  name: (values.username ?? '').trim(),
+                  email: (values.email ?? '').trim(),
+                  password: values.newPassword ?? '',
+                  password_confirm: values.passwordRepeat ?? '',
+                }),
+              )
               navigate('/', { replace: true })
             } catch (error) {
               setProblem(codeOf(error))
@@ -463,9 +535,8 @@ export function InvitePage() {
           }}
         >
           <Problem code={problem} />
-          <Input label={t('auth.name')} value={name} onChange={setName} autoComplete="username" autoFocus hint={t('auth.nameHint')} />
-          <Input label={t('auth.password')} value={password} onChange={setPassword} type="password" autoComplete="new-password" hint={t('auth.passwordHint')} />
-          <Primary busy={busy}>{t('auth.invite.submit')}</Primary>
+          <AccountFields screen="invite" values={values} onChange={setValues} />
+          <Primary name="inviteSubmit" busy={busy}>{t('auth.invite.submit')}</Primary>
         </form>
       )}
       {/* Through a sign-in provider: the invitation is the permission for the new account. */}
@@ -499,7 +570,7 @@ export function ForgotPage() {
     return (
       <AuthFrame title={t('auth.forgot.title')}>
         <p role="status" className="text-sm text-ink-2">
-          {errorText('reset_off')}
+          {t('account.forgotNoMail')}
         </p>
         <Link to="/login" className={OUTLINE + ' mt-5'}>
           {t('auth.backToLogin')}
@@ -511,7 +582,7 @@ export function ForgotPage() {
     return (
       <AuthFrame title={t('auth.forgot.title')}>
         <p role="status" className="text-sm text-ink-2">
-          {t('auth.forgot.sent')}
+          {t('account.forgotSent')}
         </p>
         <Link to="/login" className={OUTLINE + ' mt-5'}>
           {t('auth.backToLogin')}
@@ -539,8 +610,8 @@ export function ForgotPage() {
         }}
       >
         <Problem code={problem} />
-        <Input label={t('auth.forgot.label')} value={name} onChange={setName} autoComplete="username" autoFocus />
-        <Primary busy={busy}>{t('auth.forgot.submit')}</Primary>
+        <Field label={t('account.login')} value={name} onChange={(event) => setName(event.target.value)} autoComplete="username" maxLength={254} autoFocus />
+        <Primary name="account.forgotSubmit" busy={busy}>{t('account.forgotSubmit')}</Primary>
         <Link to="/login" className="block text-center text-xs text-muted hover:text-ink">
           {t('auth.backToLogin')}
         </Link>
@@ -600,7 +671,7 @@ export function ResetPage() {
           setBusy(true)
           setProblem(null)
           try {
-            await api<void>(`/api/v1/reset/${encodeURIComponent(token)}`, { method: 'POST', body: { password } })
+            await api<void>(`/api/v1/reset/${encodeURIComponent(token)}`, { method: 'POST', body: { password, password_confirm: again } })
             setDone(true)
           } catch (error) {
             const found = codeOf(error)
@@ -612,9 +683,9 @@ export function ResetPage() {
         }}
       >
         <Problem code={problem} />
-        <Input label={t('auth.reset.password')} value={password} onChange={setPassword} type="password" autoComplete="new-password" autoFocus hint={t('auth.passwordHint')} />
-        <Input label={t('auth.reset.again')} value={again} onChange={setAgain} type="password" autoComplete="new-password" />
-        <Primary busy={busy}>{t('auth.reset.submit')}</Primary>
+        <Field label={t('account.newPassword')} value={password} onChange={(event) => setPassword(event.target.value)} type="password" autoComplete="new-password" autoFocus hints={[t('account.passwordRules')]} />
+        <Field label={t('account.passwordRepeat')} value={again} onChange={(event) => setAgain(event.target.value)} type="password" autoComplete="new-password" />
+        <Primary name="resetSubmit" busy={busy}>{t('auth.reset.submit')}</Primary>
       </form>
     </AuthFrame>
   )

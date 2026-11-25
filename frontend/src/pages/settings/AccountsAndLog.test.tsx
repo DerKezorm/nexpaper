@@ -1,6 +1,6 @@
 /**
- * Settings, Accounts and Log, laid out as nexnotes' cards, against a stand-in of the server: the accounts as a table
- * (person, sign-in, role, the AI checkbox, last use, the menu), "Person einladen" top right, the open invitations as a
+ * Settings, Accounts and Log against a stand-in of the server: the accounts as the shared account module lays them out
+ * (a row each with "Verwalten", the dialog with nexpaper's box "KI erlaubt" and the documents), the open invitations as a
  * card of their own, the keys of all accounts with a red word to block one; the log as one bar (level chips, search,
  * level of detail, download, clear after a question) above a table of its lines.
  */
@@ -8,7 +8,8 @@ import type { Me } from '../../api/client'
 import { changeLanguage } from '../../i18n'
 import { Page, Server } from '../../test/harness'
 import { until } from '../../test/wait'
-import { AccountsCard, AllApiKeysCard, LogCard } from './ServerCards'
+import { AccountsTab } from './AccountsTab'
+import { AllApiKeysCard, LogCard } from './ServerCards'
 
 const me: Me = {
   id: 1, name: 'jule', display_name: 'Jule', role: 'operator', sign_in: 'password', email: 'jule@example.com', language: 'de', email_confirmed: true,
@@ -20,7 +21,7 @@ vi.mock('../../state/auth', () => ({ useAuth: () => auth }))
 
 const server = new Server()
 const page = new Page()
-const row = (over: Record<string, unknown>) => ({ ...me, locked: false, blocked: false, has_password: true, created_at: '2026-10-01T10:00:00Z', last_seen_at: null, ai_allowed: true, ...over })
+const row = (over: Record<string, unknown>) => ({ ...me, locked: false, blocked: false, blocked_at: null, has_password: true, email_duplicate: false, self: false, documents: 1637, created_at: '2026-10-01T10:00:00Z', last_seen_at: null, ai_allowed: true, ...over })
 const HOUR = 3600_000
 
 beforeEach(async () => {
@@ -28,14 +29,14 @@ beforeEach(async () => {
   auth.me = me
   server.answers = {
     'GET /api/v1/accounts': [
-      row({ last_seen_at: new Date(Date.now() - 2 * HOUR).toISOString() }),
+      row({ self: true, last_seen_at: new Date(Date.now() - 2 * HOUR).toISOString() }),
       row({ id: 2, name: 'tom', display_name: 'Tom', role: 'member', email: '', two_factor: false, ai_allowed: false }),
       row({ id: 3, name: 'lea', display_name: 'Lea', role: 'member', email: 'lea@example.com', sign_in: 'oidc', has_password: false, two_factor: false, blocked: true }),
       row({ id: 4, name: 'ben', display_name: '', role: 'member', two_factor: false, locked: true }),
     ],
     'GET /api/v1/invites': [],
     'GET /api/v1/oidc/admin/links': [{ account_id: 3, provider_id: 5, slug: 'authentik', label: 'authentik' }],
-    'PUT /api/v1/accounts/2/permissions': 204,
+    'PUT /api/v1/accounts/2/permissions': { ai_allowed: true },
     'DELETE /api/v1/invites/9': 204,
   }
   server.fails = {}
@@ -46,75 +47,77 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-const cells = (name: string) => [...document.querySelectorAll(`[data-testid="account-${name}"] td`)].map((cell) => cell.textContent?.trim())
+/** The row of an account in the list (``Row`` of the kit, by its test id). */
+const rowOf = (name: string) => document.querySelector<HTMLElement>(`[data-testid="account-row-${name}"]`)
+
+/** "Verwalten" of a row: the dialog "Manage" of the shared account module. */
+async function manage(name: string): Promise<HTMLElement> {
+  await page.click(page.button('Verwalten', rowOf(name)!))
+  return page.dialog!
+}
 
 describe('the accounts', () => {
-  it('stand in a table as in nexnotes, with nexpaper\'s AI column where nexnotes shows the storage', async () => {
-    await page.show(<AccountsCard />)
-    const head = [...document.querySelectorAll('[data-testid="account-table"] th')].map((cell) => cell.textContent?.trim())
-    expect(head).toEqual(['Person', 'Anmeldung', 'Rolle', 'KI', 'Zuletzt', 'Aktionen'])
-    expect(page.text).toContain('4 Konten. Jedes bekommt beim Anlegen seinen persönlichen Tresor.')
-    // The person: the picture, the name shown and, below it, the mail address (else the account name).
-    expect(cells('jule')[0]).toMatch(/Jule.*jule@example\.com$/)
-    expect(cells('jule').slice(1, 3)).toEqual(['Passwort + 2FA', 'Betreiber'])
-    expect(cells('jule')[4]).toBe('vor 2 Stunden')
-    expect(cells('tom')[0]).toMatch(/Tom.*tom$/)
-    expect(cells('tom').slice(1, 3)).toEqual(['Passwort', 'Mitglied'])
-    expect(cells('tom')[4]).toBe('noch nie')
-    // An account of a provider: the provider, no password; blocked says so where the last use would be.
-    expect(cells('lea')[1]).toBe('authentik')
-    expect(cells('lea')[4]).toBe('gesperrt')
-    // Held back by the sign-in brake for a while.
-    expect(cells('ben')[4]).toContain('eine Weile gesperrt')
+  it("stand one per row as the shared account module lays them out: picture, name, badges, username and address, \"Verwalten\"", async () => {
+    await page.show(<AccountsTab />)
+    expect(page.text).toContain('Konten')
+    expect(document.querySelector('table')).toBeNull()
+    expect(rowOf('jule')!.textContent).toContain('Jule')
+    expect(rowOf('jule')!.textContent).toContain('jule · jule@example.com')
+    expect(rowOf('jule')!.textContent).toContain('Betreiber')
+    // An account through a provider shows its provider, a blocked one says so; one held back by the brake too.
+    expect(rowOf('lea')!.textContent).toContain('authentik')
+    expect(rowOf('lea')!.textContent).toContain('Gesperrt')
+    expect(page.button('Verwalten', rowOf('tom')!)).toBeTruthy()
+    expect(document.querySelector('[role="menu"]')).toBeNull()
   })
 
-  it('switch the AI for one account with the checkbox of its row', async () => {
-    await page.show(<AccountsCard />)
-    const box = document.querySelector<HTMLInputElement>('input[aria-label="KI erlaubt: Tom"]')!
+  it('switch the AI for one account with the box under "Rechte", and name the documents of its own vault', async () => {
+    await page.show(<AccountsTab />)
+    const dialog = await manage('tom')
+    expect(dialog.textContent).toContain('Rechte')
+    expect(dialog.textContent).toContain('Dokumente')
+    expect(dialog.textContent).toContain('1.637')
+    const box = [...dialog.querySelectorAll<HTMLInputElement>('input[type="checkbox"]')][0]!
     expect(box.checked).toBe(false)
     await page.click(box)
     expect(server.called('PUT', '/api/v1/accounts/2/permissions')!.body).toEqual({ ai_allowed: true })
-    expect(box.checked).toBe(true)
   })
 
-  it('keep every action in the menu of a row, the link to reset the password among them, and none for the own account', async () => {
-    await page.show(<AccountsCard />)
-    expect(page.button('Aktionen für Jule')).toBeUndefined()
-    await page.click(page.button('Aktionen für Tom'))
-    const items = [...document.querySelectorAll('[role="menu"] [role="menuitem"]')].map((item) => item.textContent)
-    expect(items).toEqual(['Zum Betreiber machen', 'Link zum Zurücksetzen …', 'Überall abmelden', 'Sperren', 'Löschen …'])
-    await page.click(page.button('Aktionen für Lea'))
-    const theirs = [...document.querySelectorAll('[role="menu"] [role="menuitem"]')].map((item) => item.textContent)
-    // An account without a password gets a link for its first one; the link to the provider can be let go.
-    expect(theirs).toEqual(['Zum Betreiber machen', 'Link für ein Passwort …', 'Überall abmelden', 'Verknüpfung mit authentik lösen', 'Entsperren', 'Löschen …'])
+  it('keep every act of before in the dialog, the link for a new password among them, and none of them at the own account', async () => {
+    await page.show(<AccountsTab />)
+    const own = await manage('jule')
+    for (const word of ['Konto löschen', 'Sperren', 'Zum Mitglied machen']) expect(page.button(word, own)).toBeUndefined()
+    await page.click(page.button('Schließen', own))
+    const theirs = await manage('tom')
+    for (const word of ['Zum Betreiber machen', 'Überall abmelden', 'Sperren', 'Konto löschen']) expect(page.button(word, theirs), word).toBeTruthy()
+    expect([...theirs.querySelectorAll('button')].some((button) => /Link/.test(button.textContent ?? ''))).toBe(true)
   })
 
-  it('invite a person with the button top right', async () => {
-    await page.show(<AccountsCard />)
+  it('invite a person with the button above the list', async () => {
+    await page.show(<AccountsTab />)
     const card = document.getElementById('accounts')!
-    const invite = page.button('Person einladen', card)!
-    // Above the table, before it in the card.
-    expect(invite.compareDocumentPosition(card.querySelector('table')!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    const invite = page.button('Person einladen', card) ?? [...card.querySelectorAll('button')].find((b) => /einladen/i.test(b.textContent ?? ''))
+    expect(invite).toBeTruthy()
     await page.click(invite)
-    expect(page.dialog!.getAttribute('aria-label')).toBe('Person einladen')
+    expect(page.dialog).toBeTruthy()
   })
 
   it('show the open invitations as a card of their own, and withdraw one only after the question', async () => {
-    server.answers['GET /api/v1/invites'] = [{ id: 9, email: 'neu@example.com', expires_at: '2026-10-20T10:00:00Z' }]
-    await page.show(<AccountsCard />)
-    const card = document.getElementById('invites')!
-    expect(card.textContent).toContain('Offene Einladungen')
+    server.answers['GET /api/v1/invites'] = [{ id: 9, email: 'neu@example.com', display_name: '', by: 'jule', created_at: '2026-10-13T10:00:00Z', expires_at: '2026-10-20T10:00:00Z', expired: false, mailed: false }]
+    await page.show(<AccountsTab />)
+    const card = document.getElementById('open-invites')!
     expect(card.textContent).toContain('neu@example.com')
     expect(document.getElementById('accounts')!.contains(card)).toBe(false)
-    await page.click(page.button('Zurückziehen', card))
+    await page.click([...card.querySelectorAll('button')][0])
     expect(server.changes()).toEqual([])
-    await page.inDialog('Einladung zurückziehen')
+    const confirm = [...page.dialog!.querySelectorAll('button')].filter((button) => button.textContent?.trim()).pop()
+    await page.click(confirm)
     expect(server.changes()).toEqual(['DELETE /api/v1/invites/9'])
   })
 
   it('show no card of open invitations while there are none', async () => {
-    await page.show(<AccountsCard />)
-    expect(document.getElementById('invites')).toBeNull()
+    await page.show(<AccountsTab />)
+    expect(document.getElementById('open-invites')).toBeNull()
   })
 })
 

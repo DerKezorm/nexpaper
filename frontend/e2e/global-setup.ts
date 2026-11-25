@@ -31,14 +31,17 @@ async function ok(answer: Awaited<ReturnType<APIRequestContext['post']>>, what: 
 export default async function globalSetup(config: FullConfig): Promise<void> {
   const baseURL = config.projects[0].use.baseURL!
   const context = await request.newContext({ baseURL, extraHTTPHeaders: TAB })
-  const made = await context.post('/api/v1/setup', { data: { name: OPERATOR.name, password: OPERATOR.password, language: 'en', code: 'e2e-setup-code' } })
+  // The setup of the shared account module: display name, username, password twice, the code (16 characters at least).
+  const made = await context.post('/api/v1/setup', {
+    data: { display_name: 'Tester', name: OPERATOR.name, password: OPERATOR.password, password_confirm: OPERATOR.password, language: 'en', code: 'e2e-setup-code-of-the-run' },
+  })
   await ok(made, 'setup')
-  // Right after the password the session may only set up the second factor: a code from an app, then the codes kept.
+  // A new installation asks no second factor (the shared account module); the operator sets one up all the same, from
+  // the profile with the own password, as before.
   const begun = await context.post('/api/v1/auth/totp/begin')
   await ok(begun, 'totp begin')
   const { secret } = (await begun.json()) as { secret: string }
-  await ok(await context.post('/api/v1/auth/totp/confirm', { data: { code: totp(secret) } }), 'totp confirm')
-  await ok(await context.post('/api/v1/auth/setup/done'), 'setup done')
+  await ok(await context.post('/api/v1/auth/totp/confirm', { data: { code: totp(secret), password: OPERATOR.password } }), 'totp confirm')
   // The accounts the tests make sign in with a password alone.
   await ok(await context.put('/api/v1/settings', { data: { two_factor_required: false, current_password: OPERATOR.password } }), 'settings')
   await context.storageState({ path: process.env.E2E_STATE! })

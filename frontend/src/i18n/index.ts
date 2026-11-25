@@ -13,6 +13,14 @@
 import i18n from 'i18next'
 import { initReactI18next } from 'react-i18next'
 
+import { kontenVariables } from '../vendor/nexkonten/konten'
+import kontenDe from '../vendor/nexkonten/konten.de.json'
+import kontenEn from '../vendor/nexkonten/konten.en.json'
+import kontenFr from '../vendor/nexkonten/konten.fr.json'
+import { postVariables } from '../vendor/nexpost/post'
+import postDe from '../vendor/nexpost/post.de.json'
+import postEn from '../vendor/nexpost/post.en.json'
+import postFr from '../vendor/nexpost/post.fr.json'
 import oidcDe from '../vendor/nexoidc/oidc.de.json'
 import oidcEn from '../vendor/nexoidc/oidc.en.json'
 import { oidcVariables, oidcWording } from '../vendor/nexoidc/oidc'
@@ -28,15 +36,16 @@ type Texts = Record<string, unknown>
 export const APP_NAME = 'nexpaper'
 /**
  * The texts of sign-in through providers (`oidc.…`) come with the shared module `vendor/nexoidc`, the same words in
- * every nex app; nexpaper has invitations and more than one account.
+ * every nex app; nexpaper has invitations and more than one account. So do those of accounts (`account.…`, the shared
+ * module `vendor/nexkonten`) and of system mail (`mail.…`, `vendor/nexpost`), in German, English and French.
  */
-const en: Texts = { ...ownEn, ...oidcWording(oidcEn, { singleAccount: false, invitations: true }) }
-const de: Texts = { ...ownDe, ...oidcWording(oidcDe, { singleAccount: false, invitations: true }) }
+const en: Texts = { ...ownEn, ...oidcWording(oidcEn, { singleAccount: false, invitations: true }), ...kontenEn, ...postEn }
+const de: Texts = { ...ownDe, ...oidcWording(oidcDe, { singleAccount: false, invitations: true }), ...kontenDe, ...postDe }
 /**
  * The shared module has no French yet, so nexpaper keeps the French words of the module next to its own, in the same
  * shape as `oidc.en.json`. When the module brings `oidc.fr.json` itself, this file goes to the module.
  */
-const fr: Texts = { ...ownFr, ...oidcWording(oidcFr, { singleAccount: false, invitations: true }) }
+const fr: Texts = { ...ownFr, ...oidcWording(oidcFr, { singleAccount: false, invitations: true }), ...kontenFr, ...postFr }
 
 export const SHIPPED: Record<string, { name: string; texts: Texts }> = {
   en: { name: 'English', texts: en },
@@ -136,7 +145,13 @@ i18n.use(initReactI18next).init({
   resources: { en: { translation: en }, de: { translation: de }, fr: { translation: fr } },
   lng: first in SHIPPED ? first : FALLBACK,
   fallbackLng: FALLBACK,
-  interpolation: { escapeValue: false, defaultVariables: oidcVariables(APP_NAME) },
+  // A value a sentence is asked without (a title before the name is known) stays empty: the page never shows a raw
+  // placeholder such as {{day}}.
+  interpolation: {
+    escapeValue: false,
+    defaultVariables: { ...oidcVariables(APP_NAME), ...postVariables(APP_NAME), ...kontenVariables(APP_NAME) },
+  },
+  missingInterpolationHandler: () => '',
   returnNull: false,
 })
 document.documentElement.lang = i18n.language

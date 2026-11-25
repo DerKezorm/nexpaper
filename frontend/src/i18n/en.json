@@ -20,11 +20,6 @@
     "save": "Save",
     "done": "Done"
   },
-  "account": {
-    "menu": "Account menu of {{name}}",
-    "mine": "My account",
-    "signOut": "Sign out"
-  },
   "settings": {
     "title": "Settings",
     "saved": "Saved.",
@@ -757,7 +752,8 @@
     "logSource": "Source",
     "logRequest": "No. / account",
     "logMessage": "Message",
-    "logRequestHint": "Show only this request"
+    "logRequestHint": "Show only this request",
+    "documentsFact": "Documents"
   },
   "errors": {
     "ai_not_allowed": "Your operator has not allowed the AI for your account.",
@@ -1059,7 +1055,7 @@
     "empty": "Everything is filed",
     "emptyText": "New things arrive from the phone, the mailbox, the inbox folder or through \"Upload\"."
   },
-  "mail": {
+  "mailAddress": {
     "title": "Mail address",
     "text": "For \"Forgot your password?\" and notices such as a new sign-in. A new address counts only after you open the link in the mail sent to it.",
     "confirmed": "confirmed",

@@ -4,6 +4,7 @@
  */
 import { AboutArea } from './AboutArea'
 import { AccountArea } from './AccountArea'
+import { AccountsTab } from './AccountsTab'
 import { AiCard } from './AiCard'
 import type { AreaSlug } from './areas'
 import { FeaturesCard } from './FeaturesCard'
@@ -13,7 +14,7 @@ import { IntakeCards } from './IntakeCards'
 import { OcrCard } from './OcrCard'
 import { PushServerCard } from './PushCards'
 import { ReadinessCard } from './ReadinessCards'
-import { AccountsCard, AllApiKeysCard, BackupsCard, InterfaceCard, LanguagesCard, LogCard, MailCard, useServerSettings } from './ServerCards'
+import { AllApiKeysCard, BackupsCard, InterfaceCard, LanguagesCard, LogCard, MailCard, useServerSettings } from './ServerCards'
 import { ShortcutLinkCard } from './ShortcutLinkCard'
 import { SignInPart } from './SignInCards'
 import { KindsCard, RulesCard } from './SortingCards'
@@ -76,7 +77,7 @@ function ServerArea({ area }: { area: Exclude<AreaSlug, 'profile' | 'security' |
       )}
       {area === 'accounts' && (
         <>
-          <AccountsCard />
+          <AccountsTab />
           <AllApiKeysCard />
         </>
       )}

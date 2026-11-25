@@ -20,11 +20,6 @@
     "save": "Enregistrer",
     "done": "Terminé"
   },
-  "account": {
-    "menu": "Menu du compte de {{name}}",
-    "mine": "Mon compte",
-    "signOut": "Se déconnecter"
-  },
   "settings": {
     "title": "Paramètres",
     "saved": "Enregistré.",
@@ -757,7 +752,8 @@
     "logSource": "Source",
     "logRequest": "N° / compte",
     "logMessage": "Message",
-    "logRequestHint": "Afficher seulement cette requête"
+    "logRequestHint": "Afficher seulement cette requête",
+    "documentsFact": "Documents"
   },
   "errors": {
     "ai_not_allowed": "Votre administrateur n'a pas autorisé l'IA pour votre compte.",
@@ -1059,7 +1055,7 @@
     "empty": "Tout est classé",
     "emptyText": "Les nouveautés arrivent depuis le téléphone, la boîte aux lettres, le dossier d'entrée ou via « Téléverser »."
   },
-  "mail": {
+  "mailAddress": {
     "title": "Adresse courriel",
     "text": "Pour « Mot de passe oublié ? » et les avis comme une nouvelle connexion. Une nouvelle adresse ne compte qu'après l'ouverture du lien contenu dans le courriel qui lui est envoyé.",
     "confirmed": "confirmée",

@@ -59,7 +59,7 @@ test('33: sign-in through the provider button ends in a session', async ({ page,
   const own = await browser.newContext({ storageState: { cookies: [], origins: [] } })
   const ossie = await own.newPage()
   await ossie.goto('/login')
-  await ossie.getByLabel('Name').fill('ossie')
+  await ossie.getByLabel('Username or email').fill('ossie')
   await ossie.getByLabel('Password').fill(PASSWORD)
   await ossie.getByRole('button', { name: 'Sign in', exact: true }).click()
   await ossie.waitForURL((url) => !url.pathname.startsWith('/login'))

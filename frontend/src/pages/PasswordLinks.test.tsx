@@ -14,7 +14,8 @@ import { changeLanguage } from '../i18n'
 import { ForgotPage, LoginPage, MailConfirmPage, ResetPage } from './AuthPages'
 import { ReadinessCard } from './settings/ReadinessCards'
 import { PasskeysCard } from './settings/SecurityCards'
-import { AccountsCard, AllApiKeysCard, BackupsCard, type ServerSettings } from './settings/ServerCards'
+import { AccountsTab } from './settings/AccountsTab'
+import { AllApiKeysCard, BackupsCard, type ServerSettings } from './settings/ServerCards'
 import { idle } from '../test/wait'
 
 const me: Me = {
@@ -90,9 +91,11 @@ async function type(input: HTMLInputElement | null | undefined, value: string): 
   await idle()
 }
 
+/** A field by the start of its label; the kit's fields are joined to their label by an id. */
 function field(label: string, within: ParentNode = box): HTMLInputElement | null {
   const found = [...within.querySelectorAll('label')].find((item) => item.textContent?.startsWith(label))
-  return found?.querySelector('input') ?? null
+  if (!found) return null
+  return found.querySelector('input') ?? (found.htmlFor ? (document.getElementById(found.htmlFor) as HTMLInputElement | null) : null)
 }
 
 async function submit(form: HTMLFormElement | null): Promise<void> {
@@ -133,16 +136,17 @@ describe('"Passwort vergessen?" on the sign-in page', () => {
     answers['POST /api/v1/auth/forgot'] = { ok: true }
     await show(<ForgotPage />, '/forgot')
     expect(box.querySelector('h1')!.textContent).toBe('Passwort vergessen')
-    await type(field('Name oder Mailadresse'), '  ghost ')
+    await type(field('Benutzername oder E-Mail'), '  ghost ')
     await submit(box.querySelector('form'))
     expect(calls.find((call) => call.url === '/api/v1/auth/forgot')!.body).toEqual({ name: 'ghost' })
-    expect(box.textContent).toContain('Wenn es dazu ein Konto gibt, ist ein Link unterwegs.')
+    expect(box.textContent).toContain('Wenn es dazu ein Konto mit Adresse gibt, ist ein Link unterwegs.')
     expect(box.textContent).not.toContain('nicht gefunden')
   })
 
   it('says at once that nothing is sent when the server has no mail set up, and asks nothing of it', async () => {
     await show(<ForgotPage />, '/forgot')
-    expect(box.textContent).toContain('Das ist auf diesem Server nicht eingerichtet.')
+    // The shared account module's sentence: the operator makes the link under Accounts.
+    expect(box.textContent).toContain('Der Betreiber kann dir unter Konten einen Link erstellen')
     expect(box.querySelector('form')).toBeNull()
     expect(calls.some((call) => call.url === '/api/v1/auth/forgot')).toBe(false)
   })
@@ -151,7 +155,7 @@ describe('"Passwort vergessen?" on the sign-in page', () => {
     answers['GET /api/v1/auth/methods'] = { password: true, providers: [], passkeys: false, forgot: true }
     answers['POST /api/v1/auth/forgot'] = { refused: 'reset_off' }
     await show(<ForgotPage />, '/forgot')
-    await type(field('Name oder Mailadresse'), 'anna')
+    await type(field('Benutzername oder E-Mail'), 'anna')
     await submit(box.querySelector('form'))
     expect(box.textContent).toContain('Das ist auf diesem Server nicht eingerichtet.')
   })
@@ -165,14 +169,14 @@ describe('the page of the link', () => {
     answers[`POST /api/v1/reset/${'a'.repeat(30)}`] = 204
     await show(<ResetPage />, at, '/reset/:token')
     expect(box.textContent).toContain('Wähle ein neues Passwort für anna.')
-    await type(field('Neues Passwort'), 'a long enough password')
-    await type(field('Noch einmal'), 'another long password')
+    await type(field('Passwort'), 'a long enough password')
+    await type(field('Passwort wiederholen'), 'another long password')
     await submit(box.querySelector('form'))
     expect(calls.some((call) => call.method === 'POST')).toBe(false)
     expect(box.textContent).toContain('Die beiden neuen Passwörter sind nicht gleich.')
-    await type(field('Noch einmal'), 'a long enough password')
+    await type(field('Passwort wiederholen'), 'a long enough password')
     await submit(box.querySelector('form'))
-    expect(calls.find((call) => call.method === 'POST')!.body).toEqual({ password: 'a long enough password' })
+    expect(calls.find((call) => call.method === 'POST')!.body).toEqual({ password: 'a long enough password', password_confirm: 'a long enough password' })
     expect(box.querySelector('h1')!.textContent).toBe('Passwort gespeichert')
   })
 
@@ -185,8 +189,8 @@ describe('the page of the link', () => {
     answers[`GET /api/v1/reset/${'a'.repeat(30)}`] = { name: 'anna', min_password: 12 }
     answers[`POST /api/v1/reset/${'a'.repeat(30)}`] = { refused: 'reset_invalid' }
     await show(<ResetPage />, at, '/reset/:token')
-    await type(field('Neues Passwort'), 'a long enough password')
-    await type(field('Noch einmal'), 'a long enough password')
+    await type(field('Passwort'), 'a long enough password')
+    await type(field('Passwort wiederholen'), 'a long enough password')
     await submit(box.querySelector('form'))
     expect(box.querySelector('h1')!.textContent).toBe('Link nicht gültig')
   })
@@ -194,21 +198,22 @@ describe('the page of the link', () => {
 
 describe("the operator sends a link instead of setting a password", () => {
   const rows = [
-    { ...me, locked: false, has_password: true, created_at: '2026-10-01T10:00:00Z', last_seen_at: null },
-    { ...me, id: 2, name: 'anna', display_name: 'Anna', role: 'member', locked: false, has_password: true, created_at: '2026-10-01T10:00:00Z', last_seen_at: null },
+    { ...me, locked: false, blocked: false, blocked_at: null, has_password: true, email_duplicate: false, self: true, documents: 0, created_at: '2026-10-01T10:00:00Z', last_seen_at: null },
+    { ...me, id: 2, name: 'anna', display_name: 'Anna', role: 'member', email: 'anna@example.com', locked: false, blocked: false, blocked_at: null, has_password: true, email_duplicate: false, self: false, documents: 0, created_at: '2026-10-01T10:00:00Z', last_seen_at: null },
   ]
 
   async function ask(): Promise<void> {
     answers['GET /api/v1/accounts'] = rows
     answers['GET /api/v1/invites'] = []
-    await show(<AccountsCard />, '/einstellungen')
+    answers['GET /api/v1/oidc/admin/links'] = []
+    await show(<AccountsTab />, '/einstellungen')
     expect(box.textContent).not.toContain('Passwort geben')
-    // As in nexnotes, the link sits in the menu of the row, not as a button of its own.
-    expect(button('Link zum Zurücksetzen …', box)).toBeUndefined()
-    await click(button('Aktionen für Anna', box))
-    await click(button('Link zum Zurücksetzen …', box))
-    const dialog = document.querySelector('[role="dialog"]')!
-    expect(dialog.textContent).toContain('Die Person wählt ihr Passwort selbst.')
+    // As in every nex app, the link sits in the dialog "Verwalten" of the row, not as a button of the list.
+    expect(button('Link für ein neues Passwort', box)).toBeUndefined()
+    await click(button('Verwalten', document.querySelector<HTMLElement>('[data-testid="account-row-anna"]')!))
+    await click(button('Link für ein neues Passwort', document.body))
+    const dialogs = document.querySelectorAll('[role="dialog"]')
+    const dialog = dialogs[dialogs.length - 1]!
     await type(dialog.querySelector<HTMLInputElement>('input[type="password"]'), 'the own password')
     await submit(dialog.querySelector('form'))
   }
@@ -216,17 +221,17 @@ describe("the operator sends a link instead of setting a password", () => {
   it('sends it by mail where that works, and the interface says where it went', async () => {
     answers['POST /api/v1/accounts/2/reset-link'] = { sent: true, email: 'anna@example.com', expires_at: '2026-10-08T10:00:00Z' }
     await ask()
-    expect(calls.find((call) => call.url === '/api/v1/accounts/2/reset-link')!.body).toEqual({ current_password: 'the own password' })
-    expect(box.textContent).toContain('Der Link für anna ging an anna@example.com.')
+    expect(calls.find((call) => call.url === '/api/v1/accounts/2/reset-link')!.body).toEqual({ days: 1, current_password: 'the own password', send: false })
+    expect(document.body.textContent).toContain('Der Link ist an anna@example.com unterwegs.')
     expect(calls.some((call) => call.url.endsWith('/password'))).toBe(false)
   })
 
   it('shows the link once where mail does not work, and never a password', async () => {
     answers['POST /api/v1/accounts/2/reset-link'] = { sent: false, link: 'https://paper.example.com/reset/abc', expires_at: '2026-10-08T10:00:00Z' }
     await ask()
-    expect(box.textContent).toContain('Der Link für anna, nur jetzt zu sehen')
-    expect(box.querySelector<HTMLInputElement>('input[readonly]')?.value ?? box.textContent).toContain('https://paper.example.com/reset/abc')
-    expect(box.textContent).not.toContain('Das neue Passwort für')
+    expect(document.body.textContent).toContain('Gib diesen Link weiter. Er gilt nur einmal.')
+    expect(document.body.querySelector<HTMLInputElement>('input[readonly]')?.value).toContain('https://paper.example.com/reset/abc')
+    expect(document.body.textContent).not.toContain('Das neue Passwort für')
   })
 })
 

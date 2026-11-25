@@ -62,7 +62,7 @@ export default defineConfig({
         // Never GitHub from a test: port 9 refuses at once.
         NEXPAPER_UPDATE_URL: 'http://127.0.0.1:9/releases/latest',
         // The code the first account brings; global-setup.ts sends it.
-        NEXPAPER_SETUP_TOKEN: 'e2e-setup-code',
+        NEXPAPER_SETUP_TOKEN: 'e2e-setup-code-of-the-run',
         NEXPAPER_COOKIE_SUFFIX: '_e2e',
       },
     },

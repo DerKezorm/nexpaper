@@ -20,11 +20,6 @@
     "save": "Speichern",
     "done": "Fertig"
   },
-  "account": {
-    "menu": "Kontomenü von {{name}}",
-    "mine": "Mein Konto",
-    "signOut": "Abmelden"
-  },
   "settings": {
     "title": "Einstellungen",
     "saved": "Gespeichert.",
@@ -757,7 +752,8 @@
     "logSource": "Quelle",
     "logRequest": "Nr. / Konto",
     "logMessage": "Meldung",
-    "logRequestHint": "Nur diese Anfrage zeigen"
+    "logRequestHint": "Nur diese Anfrage zeigen",
+    "documentsFact": "Dokumente"
   },
   "errors": {
     "ai_not_allowed": "Dein Betreiber hat die KI für dein Konto nicht freigegeben.",
@@ -1059,7 +1055,7 @@
     "empty": "Alles abgelegt",
     "emptyText": "Neues kommt vom Handy, aus dem Postfach, dem Eingangsordner oder über „Hochladen“."
   },
-  "mail": {
+  "mailAddress": {
     "title": "Mailadresse",
     "text": "Für „Passwort vergessen?“ und Bescheide wie eine neue Anmeldung. Eine neue Adresse gilt erst, wenn du den Link in der Mail an sie geöffnet hast.",
     "confirmed": "bestätigt",

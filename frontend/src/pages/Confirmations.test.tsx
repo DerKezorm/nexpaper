@@ -10,7 +10,8 @@ import { changeLanguage } from '../i18n'
 import { INBOX, Page, Server, inboxOf, plain } from '../test/harness'
 import { SettingsRoutes } from '../test/settings'
 import { InboxPage } from './InboxPage'
-import { AccountsCard, LanguagesCard, useServerSettings } from './settings/ServerCards'
+import { AccountsTab } from './settings/AccountsTab'
+import { LanguagesCard, useServerSettings } from './settings/ServerCards'
 import { SignInPart } from './settings/SignInCards'
 import { Route, Routes } from 'react-router-dom'
 
@@ -79,9 +80,8 @@ describe('my account', () => {
 
   it('asks before the mail address goes, and names it', async () => {
     await page.show(<SettingsRoutes />, '/konto')
-    // An emptied address is removed; the password is asked again for a change of the address.
+    // An emptied address is removed; the one question asks the password (the shared account module) and names it.
     await page.type(document.querySelector<HTMLInputElement>('input[type="email"]'), '')
-    await page.type(document.querySelector<HTMLInputElement>('input[type="password"]'), 'geheimwort')
     await page.click(page.button('Speichern'))
     expect(plain(page.dialog!.textContent)).toContain('Die Adresse jule@example.com wird gelöscht.')
     await page.inDialog('Abbrechen')
@@ -113,9 +113,10 @@ describe('the operator', () => {
 
   it('asks before an invitation is withdrawn', async () => {
     server.answers['GET /api/v1/accounts'] = []
-    server.answers['GET /api/v1/invites'] = [{ id: 9, email: 'neu@example.com', expires_at: '2026-10-20T10:00:00Z' }]
-    await page.show(<AccountsCard />)
-    await asksFirst(() => page.button('Zurückziehen'), 'Einladung zurückziehen', 'DELETE /api/v1/invites/9')
+    server.answers['GET /api/v1/invites'] = [{ id: 9, email: 'neu@example.com', display_name: '', by: 'jule', created_at: '2026-10-13T10:00:00Z', expires_at: '2026-10-20T10:00:00Z', expired: false, mailed: false }]
+    server.answers['GET /api/v1/oidc/admin/links'] = []
+    await page.show(<AccountsTab />)
+    await asksFirst(() => page.button('Zurücknehmen', document.getElementById('open-invites')!), 'Zurücknehmen', 'DELETE /api/v1/invites/9')
   })
 
   it('asks before a sign-in provider is removed, with the number of accounts that lose their link', async () => {

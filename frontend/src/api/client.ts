@@ -183,17 +183,71 @@ export type Me = {
    * of its own: its device tokens and API keys wait until it sets one up. Making one stays possible.
    */
   keys_wait_for_second_factor?: boolean
+  // --- Since the shared account module (konten 0.3.9) ---
+  /** The account has a password of its own (else it signs in through providers only). */
+  has_password?: boolean
+  /** The address counts: signing in with it, "Forgot your password?". `email_confirmed` says it is proven by a link
+   * (only then does the intake trust it). */
+  email_counts?: boolean
+  email_source?: '' | 'provider'
+  /** The username before the last change ("formerly …" under the field). */
+  former_name?: string
+  /** The address a sign-in provider knows the account by, offered in the profile, with the provider's name. */
+  offered_email?: string
+  offered_email_provider?: string
+  /** `none`, `active`, `required` or `passkey` (the module's `SECOND_FACTOR_STATE`). */
+  factor_state?: string
+  /** NEXPAPER_SECOND_FACTOR_OFF holds. */
+  second_factor_off?: boolean
+  password_changed_at?: string | null
+  /** A password set through a link (`self`, `operator`, `server`): the ways in that stayed are listed until put away. */
+  new_password_origin?: string
+  /** A link for a new address can be mailed (a mail server and the public address). */
+  mail_links?: boolean
+  passkeys_allowed?: boolean
+  min_password?: number
+  /** Signed in within the last minutes (an account without a password confirms with that). */
+  fresh_sign_in?: boolean
+  created_at?: string
+  last_seen_at?: string | null
 }
+
+/** A row of the operator's list of accounts (`GET /api/v1/accounts`). */
+export type AccountRow = Me & {
+  locked: boolean
+  blocked: boolean
+  blocked_at: string | null
+  has_password: boolean
+  email_duplicate: boolean
+  self: boolean
+  /** Documents in the account's own vault, the trash included. */
+  documents: number
+  created_at: string
+  last_seen_at: string | null
+  ai_allowed: boolean
+}
+/** An invitation not used yet, also one that ran out (`expired`). */
+export type Invite = { id: number; email: string; display_name: string; by: string | null; created_at: string; expires_at: string; expired: boolean; mailed: boolean }
+/** What a reset of the second factor would take, for the operator's dialog. */
+export type FactorResetOverview = { authenticator: boolean; recovery_codes: number; passkeys: { uid: string; name: string }[]; devices: { uid: string; label: string }[]; parts: string[] }
+/** What still has access after a password set through a link ("These devices still have access"). */
+export type RemainingAccess = { origin: string; access: { id: string; kind: string; label: string; last_used_at: string | null }[] }
+/** The form of an invitation as it starts. */
+export type InviteForm = { min_password: number; signed_in_as: string | null; display_name: string; name: string; email: string }
+/** The setup: display name, username, address, the password twice and the code. */
+export type SetupForm = { display_name: string; name: string; email: string; password: string; password_confirm: string; code: string; language: string }
+/** The profile's one "Save": what changed, with the own password for a new username or address. */
+export type ProfileChange = { display_name?: string; name?: string; email?: string; password?: string }
 
 export type SessionStage = 'full' | 'setup' | 'codes'
 /** The first step went through and the account has a second factor: which kinds it may give. */
 export type SecondFactorWaiting = { second_factor: true; totp: boolean; passkey: boolean }
 
-export type SetupState = { needs_setup: boolean; code_required: boolean; signed_in: boolean; version: string; min_password: number }
+export type SetupState = { needs_setup: boolean; code_required: boolean; signed_in: boolean; version: string; min_password: number; factor_required?: boolean }
 /** A button on the sign-in and invitation page: one per active provider, in the order of the operator's list. */
 export type ProviderButton = { slug: string; label: string }
-export type Methods = { password: boolean; providers: ProviderButton[]; passkeys?: boolean; forgot?: boolean; session_days?: number }
-export type SignedSession = { id: string; device: string; phone: boolean; network: string; created_at: string; last_seen_at: string; remember: boolean; here: boolean }
+export type Methods = { password: boolean; providers: ProviderButton[]; passkeys?: boolean; forgot?: boolean; session_days?: number; second_factor_off?: boolean }
+export type SignedSession = { id: string; device: string; label?: string; kind?: string; phone?: boolean; network?: string; created_at: string; last_seen_at: string | null; remember?: boolean; here: boolean; current?: boolean }
 export type Passkey = { id: string; name: string; created_at: string; last_used_at: string | null; credential: string }
 export type Readiness = { points: { key: string; state: 'ok' | 'warn' | 'bad'; values: Record<string, unknown> }[]; open: number }
 
@@ -201,8 +255,7 @@ export type Readiness = { points: { key: string; state: 'ok' | 'warn' | 'bad'; v
 
 export const authApi = {
   setupState: () => api<SetupState>('/api/v1/setup'),
-  setup: (name: string, password: string, code: string, language: string) =>
-    api<Me>('/api/v1/setup', { method: 'POST', body: { name, password, code, language } }),
+  setup: (form: SetupForm) => api<Me>('/api/v1/setup', { method: 'POST', body: form }),
   methods: () => api<Methods>('/api/v1/auth/methods'),
   login: (name: string, password: string, remember = true) => api<Me | SecondFactorWaiting>('/api/v1/auth/login', { method: 'POST', body: { name, password, remember } }),
   code: (code: string, remember?: boolean) => api<Me>('/api/v1/auth/login/totp', { method: 'POST', body: { code, remember } }),
@@ -218,8 +271,23 @@ export const authApi = {
   me: () => api<Me>('/api/v1/auth/me'),
   language: (language: string) => api<Me>('/api/v1/me/language', { method: 'PUT', body: { language } }),
   preferences: (change: Partial<Profile>) => api<Profile>('/api/v1/me/preferences', { method: 'PUT', body: change }),
-  profile: (display_name: string) => api<Me>('/api/v1/me/profile', { method: 'PUT', body: { display_name } }),
-  password: (current: string, next: string) => api<void>('/api/v1/auth/password', { method: 'PUT', body: { current, new: next } }),
+  profile: (change: ProfileChange) => api<Me>('/api/v1/me/profile', { method: 'PUT', body: change }),
+  password: (current: string, next: string, confirm?: string) =>
+    api<void>('/api/v1/auth/password', { method: 'PUT', body: { current, new: next, ...(confirm !== undefined ? { password_confirm: confirm } : {}) } }),
+  /** The link for the address that waits, once more. */
+  emailResend: () => api<Me>('/api/v1/me/email/resend', { method: 'POST' }),
+  emailWithdraw: () => api<void>('/api/v1/me/email/pending', { method: 'DELETE' }),
+  /** What still has access after a password set through a link; "Disconnect all"; put the list away. */
+  access: () => api<RemainingAccess>('/api/v1/auth/access'),
+  disconnectAll: () => api<{ disconnected: number }>('/api/v1/auth/access/disconnect', { method: 'POST' }),
+  accessSeen: () => api<Me>('/api/v1/auth/access/seen', { method: 'POST' }),
+  /** The address a provider offers: take it ("Use the address from …") or not ("No, thanks", for good). */
+  takeOffered: (password: string) => api<Me>('/api/v1/oidc/me/address', { method: 'POST', body: { password } }),
+  declineOffered: () => api<void>('/api/v1/oidc/me/address', { method: 'DELETE' }),
+  /** The form of an invitation, and accepting it. */
+  invite: (token: string) => api<InviteForm>(`/api/v1/invite/${encodeURIComponent(token)}`),
+  acceptInvite: (token: string, form: { display_name: string; name: string; email: string; password: string; password_confirm: string }) =>
+    api<Me>(`/api/v1/invite/${encodeURIComponent(token)}`, { method: 'POST', body: form }),
   /** "Forgot your password?": a link to the address on record, if there is one; the answer is the same either way. */
   forgot: (name: string) => api<{ ok: true }>('/api/v1/auth/forgot', { method: 'POST', body: { name } }),
   whatsNewSeen: () => api<Me>('/api/v1/me/whats-new/seen', { method: 'POST' }),
@@ -302,7 +370,7 @@ export const oidcApi = {
   link: (slug: string, password: string) => api<{ url: string }>(`/api/v1/oidc/${encodeURIComponent(slug)}/link`, { method: 'POST', body: { password } }),
   unlink: (slug: string) => api<void>(`/api/v1/oidc/${encodeURIComponent(slug)}/link`, { method: 'DELETE' }),
   /** The address the provider knows becomes the own one (not confirmed: the link that confirms it is a step of its own). */
-  takeAddress: (slug: string) => api<{ email: string; email_confirmed: boolean }>('/api/v1/oidc/me/address', { method: 'POST', body: { slug } }),
+  takeAddress: (slug: string, password = '') => api<Me>('/api/v1/oidc/me/address', { method: 'POST', body: { slug, password } }),
 }
 
 /** The address a provider's button leads to (a full page load: the browser leaves for the provider). */
@@ -712,10 +780,34 @@ export const sharingApi = {
 }
 
 export const accountsApi = {
+  list: () => api<AccountRow[]>('/api/v1/accounts'),
+  rename: (id: number, name: string, current_password: string) =>
+    api<Me>(`/api/v1/accounts/${id}/name`, { method: 'PUT', body: { name, current_password } }),
+  displayName: (id: number, name: string, current_password: string) =>
+    api<Me>(`/api/v1/accounts/${id}/display-name`, { method: 'PUT', body: { name, current_password } }),
+  removeEmail: (id: number, current_password: string) => api<Me>(`/api/v1/accounts/${id}/email`, { method: 'DELETE', body: { current_password } }),
+  role: (id: number, role: 'operator' | 'member', current_password: string) =>
+    api<Me>(`/api/v1/accounts/${id}/role`, { method: 'PUT', body: { role, current_password } }),
+  block: (id: number, current_password: string) => api<void>(`/api/v1/accounts/${id}/block`, { method: 'POST', body: { current_password } }),
+  unblock: (id: number, current_password: string) => api<void>(`/api/v1/accounts/${id}/unblock`, { method: 'POST', body: { current_password } }),
+  signOut: (id: number) => api<void>(`/api/v1/accounts/${id}/sign-out`, { method: 'POST' }),
+  permissions: (id: number, ai_allowed: boolean) => api<{ ai_allowed: boolean }>(`/api/v1/accounts/${id}/permissions`, { method: 'PUT', body: { ai_allowed } }),
+  resetLink: (id: number, days: number, current_password: string, send = true) =>
+    api<{ sent: boolean; email?: string; link?: string; expires_at: string }>(`/api/v1/accounts/${id}/reset-link`, { method: 'POST', body: { days, current_password, send } }),
+  resetOverview: (id: number) => api<FactorResetOverview>(`/api/v1/accounts/${id}/totp/reset`),
+  resetSecondFactor: (id: number, current_password: string, disconnect_devices: boolean, remove_passkeys: boolean) =>
+    api<Me>(`/api/v1/accounts/${id}/totp/reset`, { method: 'POST', body: { current_password, disconnect_devices, remove_passkeys } }),
   /** How many documents the account's own vault holds, and what would keep it from being deleted. */
   leaving: (id: number) => api<AccountLeaving>(`/api/v1/accounts/${id}/leaving`),
   remove: (id: number, body: { current_password: string; confirm_name: string; documents?: DocumentsChoice; target_user_id?: number; target_vault_id?: number }) =>
     api<void>(`/api/v1/accounts/${id}`, { method: 'DELETE', body }),
+}
+
+export const invitesApi = {
+  list: () => api<Invite[]>('/api/v1/invites'),
+  make: (body: { email: string; display_name: string; days: number; send: boolean }) =>
+    api<Invite & { link: string; sent: boolean }>('/api/v1/invites', { method: 'POST', body }),
+  withdraw: (id: number) => api<void>(`/api/v1/invites/${id}`, { method: 'DELETE' }),
 }
 
 // --- Inputs: the intake folder and the mailbox ---------------------------------------------------------------
@@ -769,6 +861,8 @@ export type MyIntake = {
   folder_on: boolean
   folder: string
   can_confirm: boolean
+  /** After a rename: the plus addresses and subfolders of the former names, which still reach the account. */
+  former?: string[]
 }
 export type DocumentOrigin = { source: string; unknown: boolean; sender: string; subject: string; folder: string; file: string; at: string | null }
 

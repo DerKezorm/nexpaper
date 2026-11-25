@@ -362,14 +362,14 @@ export function DevicesCard({ me }: { me: Me }) {
       {list && (
         <ul className="space-y-2" data-testid="sessions">
           {list.map((row) => {
-            const Icon = row.phone ? Smartphone : Laptop
+            const Icon = row.phone || row.kind === 'device' ? Smartphone : Laptop
             return (
               <li key={row.id} className="flex flex-wrap items-center gap-3 rounded-xl border border-line bg-sheet-2/50 px-4 py-3 text-sm">
                 <Icon size={18} className="shrink-0 text-accent" aria-hidden />
                 <span className="min-w-0 flex-1">
                   <span className="font-semibold">{row.device}</span>
                   {row.here && <span className="ml-2 rounded-full bg-accent-soft px-2 py-0.5 text-xs font-bold text-accent">{t('me.devices.here')}</span>}
-                  <span className="block text-xs text-muted">{t('me.devices.meta', { where: row.network, when: ago(row.last_seen_at, i18n.language, t('me.justNow')) })}</span>
+                  <span className="block text-xs text-muted">{t('me.devices.meta', { where: row.network ?? '', when: ago(row.last_seen_at ?? row.created_at, i18n.language, t('me.justNow')) })}</span>
                 </span>
                 {!row.here && (
                   <Button
