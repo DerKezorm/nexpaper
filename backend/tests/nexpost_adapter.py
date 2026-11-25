@@ -76,3 +76,24 @@ class Adapter(StandardAdapter):
             ),
             queued=0,
         )
+
+    def new_sign_in_letter(self, where: str, sender: str) -> Any:
+        """The letter nexpaper writes for "New sign-in" (``notices.sign_in_letter``, the same the background mail
+        sends): an account with an address that counts, the public address set, the User-Agent ``where``. ``sender``
+        is not handed to the letter at all (nexpaper's notice keeps it for nothing but the push to the own devices)."""
+        del sender
+        from app import clock
+        from app.db import SessionLocal
+        from app.models import Account
+        from app.security import hash_password
+        from app.services import notices, settings_service
+
+        with SessionLocal() as db:
+            settings_service.save(db, {"public_url": "https://paper.example.com"})
+            account = Account(name="alex", display_name="Alex", role="member", sign_in="password",
+                              password_hash=hash_password(password()), email="alex@example.com", email_counts=True)
+            db.add(account)
+            db.commit()
+            db.refresh(account)
+            return notices.sign_in_letter(db, account, account.email, where, clock.now(),
+                                          settings_service.public_url(db))

@@ -14,6 +14,7 @@ Two ways out, as in 1.12.0 for what somebody waits for:
 from __future__ import annotations
 
 import logging
+from datetime import tzinfo
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -65,12 +66,14 @@ def language_for(db: Session, account: Account | None) -> str:
 
 
 def letter_of(db: Session, mail: nexkonten.Mail, *, by: str = "", where: str = "", days: int = 0,
-              base: str = "", link: str = "") -> nexpost.Letter:
+              base: str = "", link: str = "", time_zone: tzinfo | None = None) -> nexpost.Letter:
     """The letter of a mail of the account module; ``ValueError``/``MailError`` for an address it refuses. ``link``:
-    a page of nexpaper the letter points to where the mail has no link of its own (the notice of a new sign-in)."""
+    a page of nexpaper the letter points to where the mail has no link of its own (the notice of a new sign-in);
+    ``time_zone`` the person's, for the moment of a new sign-in."""
     account = db.get(Account, int(mail.account_id)) if str(mail.account_id).isdigit() else None
     return nexpost.letters.from_account_mail(mail, language=language_for(db, account),
-                                             link=link_for(db, mail, base) or link, by=by, where=where, days=days)
+                                             link=link_for(db, mail, base) or link, by=by, where=where, days=days,
+                                             time_zone=time_zone)
 
 
 def queue(db: Session, mail: nexkonten.Mail | None, *, by: str = "", where: str = "", days: int = 0) -> bool:

@@ -745,7 +745,6 @@
     "already_set_up": "nexpaper est déjà configuré.",
     "api_off": "L'administrateur n'a pas activé les jetons API.",
     "avatar_not_a_picture": "Ce n'est pas une image que nexpaper accepte (JPEG, PNG, WebP, GIF, HEIC ou AVIF).",
-    "avatar_too_large": "L'image est trop grande, au plus {{max_mb}} Mo.",
     "backup_damaged": "La sauvegarde est endommagée. Rien n'a été modifié.",
     "backup_invalid": "Ce n'est pas une sauvegarde nexpaper.",
     "backup_too_large": "La sauvegarde se décompresse en plus que ce qu'une sauvegarde peut contenir. Rien n'a été modifié.",

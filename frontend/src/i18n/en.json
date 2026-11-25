@@ -745,7 +745,6 @@
     "already_set_up": "nexpaper is set up already.",
     "api_off": "The operator has not switched API tokens on.",
     "avatar_not_a_picture": "This is not a picture nexpaper takes (JPEG, PNG, WebP, GIF, HEIC or AVIF).",
-    "avatar_too_large": "The picture is too large, at most {{max_mb}} MB.",
     "backup_damaged": "The backup is damaged. Nothing was changed.",
     "backup_invalid": "This is not a nexpaper backup.",
     "backup_too_large": "The backup unpacks to more than a backup may hold. Nothing was changed.",

@@ -378,3 +378,43 @@ class Adapter(StandardAdapter):
         with SessionLocal() as db:
             return [{"email": row["email"], "expired": bool(row["expired"])}
                     for row in list_invites(None, db)]  # type: ignore[arg-type]
+
+    def forgot_through_route(self, typed: str, *, mail_fails: bool) -> tuple[list[str], int]:
+        """``POST /api/v1/auth/forgot`` with a mail server and the public address set; the work after the answer runs
+        in nexpaper's background pool (``notices.later``), waited for here. The mail goes through
+        ``nexpost.send.deliver`` (``mailer.send_letter``), caught by ``nexpost.testing.catch_mail``."""
+        from fastapi.testclient import TestClient
+        from sqlalchemy import func, select
+
+        from app.db import SessionLocal
+        from app.main import app
+        from app.models_accounts import MailOutbox
+        from app.security import brake
+        from app.services import notices, settings_service
+        from app.vendor.nexpost import testing
+
+        brake.forget()
+        with SessionLocal() as db:
+            settings_service.save(db, {"smtp_host": "mail.example.com", "smtp_from": "paper@example.com",
+                                       "public_url": "https://paper.example.com"})
+            before = int(db.scalar(select(func.count()).select_from(MailOutbox)) or 0)
+        with testing.catch_mail(fail=mail_fails) as caught:
+            browser = TestClient(app, base_url="http://testserver", headers=TAB)
+            answer = browser.post("/api/v1/auth/forgot", json={"name": typed})
+            assert answer.status_code == 202, answer.text
+            notices.settle()
+        with SessionLocal() as db:
+            after = int(db.scalar(select(func.count()).select_from(MailOutbox)) or 0)
+        return [letter.to for letter in caught.sent], after - before
+
+    def picture_status(self, owner: Any, viewer: Any | None) -> int:
+        """``GET /api/v1/avatars/{id}`` from a browser signed in as ``viewer`` (a real session), or from none."""
+        from fastapi.testclient import TestClient
+
+        from app.main import app
+        from app.security import SESSION_COOKIE
+
+        browser = TestClient(app, base_url="http://testserver", headers=TAB)
+        if viewer is not None:
+            browser.cookies.set(SESSION_COOKIE, self.open_session(viewer)[1])
+        return browser.get(f"/api/v1/avatars/{owner}").status_code

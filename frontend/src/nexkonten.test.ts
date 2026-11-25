@@ -7,7 +7,8 @@
  * app really loads them (merged into its resources, `{{app}}`, `{{setupTokenEnv}}` and `{{minimum}}` filled in
  * through kontenVariables) and that nothing in the app overrides them. Since 0.3.7 it shows the app's screens
  * (APP_RENDER) and checks that every field is found by exactly its label and that the profile saves with one button;
- * this needs `@testing-library/dom` among the app's devDependencies and vitest's `environment: 'jsdom'`.
+ * this needs `@testing-library/dom` among the app's devDependencies and vitest's `environment: 'jsdom'`. Since 1.0.0
+ * all helpers stand in one section before the first block: a block taken over later needs only that section.
  *
  * nexpaper shows its screens with a stand-in of the signed-in state (`state/auth`) and of the server (a stubbed
  * `fetch` answering by `METHOD /path`), the page at its address.
@@ -170,6 +171,11 @@ const APP_ACCOUNTS_RENDER: { list?: () => Promise<Shown> } = {
   list: () => show(createElement(AccountsTab), '/settings/accounts', '*', 'signedIn'),
 }
 
+// --- Helpers (since 1.0.0 all here, before the first block) ---------------------------------------------------------
+// Every block below uses only what stands above it: the APP_ places, the imports and these helpers. An app that takes
+// over a block of a newer version later copies this whole section with it (and the imports the block names), never a
+// part of another block (nexmail missed `said`, which stood in the block of 0.3.8 until 0.3.10).
+
 type Tree = { [key: string]: string | Tree }
 
 function leaves(tree: Tree, prefix = ''): [string, string][] {
@@ -185,6 +191,77 @@ const fill: Record<string, string | number> = { ...kontenVariables(APP_NAME), ..
 /** Plural keys (``days_one``, ``recoveryLeft_other``) are asked by their base with a count that picks them. */
 const PLURAL = /_(one|other)$/
 const COUNTS: Record<string, number> = { one: 1, other: 5 }
+
+/** The texts of the elements ``aria-describedby`` names, one after the other. */
+function description(field: HTMLElement): string {
+  const ids = (field.getAttribute('aria-describedby') ?? '').split(/\s+/).filter(Boolean)
+  return ids.map((id) => field.ownerDocument.getElementById(id)?.textContent ?? '').join(' ')
+}
+
+/** The field of a screen, found by exactly its label (getByLabelText fails on none and on more than one). */
+function labelled(root: HTMLElement, field: AccountField): HTMLElement {
+  return getByLabelText(root, i18n.t(FIELDS[field].label))
+}
+
+async function shown(screen: keyof typeof SCREENS): Promise<Shown> {
+  await i18n.changeLanguage('de')
+  const render = APP_RENDER[screen]
+  if (!render) throw new Error(`APP_RENDER.${screen} is missing`)
+  return render()
+}
+
+/** What a button says: its text without the symbol (an `svg` has no text). */
+function said(element: Element): string {
+  return (element.textContent ?? '').replace(/\s+/g, ' ').trim()
+}
+
+/** Every account the tests ask accountActions about: the operator's own, another with everything, blocked, deleted. */
+function sample(change: Partial<ListedAccount> = {}): ListedAccount {
+  return {
+    id: 2,
+    username: 'kim',
+    displayName: 'Kim',
+    email: 'kim@example.com',
+    emailConfirmed: true,
+    operator: false,
+    self: false,
+    hasPassword: true,
+    authenticator: true,
+    passkeys: 1,
+    providers: [{ id: 7, label: 'Pocket ID' }],
+    blocked: false,
+    lastSeenAt: null,
+    ...change,
+  }
+}
+
+/** The words of every button of BUTTONS as the app says them (the provider named 'Pocket ID'), the app's own too. */
+function buttonWords(): Map<string, keyof typeof BUTTONS> {
+  const words = new Map<string, keyof typeof BUTTONS>()
+  for (const name of Object.keys(BUTTONS) as (keyof typeof BUTTONS)[]) {
+    const own = APP_BUTTON_WORDS[name]
+    const text = name.includes('.') ? i18n.t(name, { name: 'Pocket ID', provider: 'Pocket ID' }) : own && i18n.t(own)
+    if (text && !words.has(text)) words.set(text, name)
+  }
+  for (const entry of APP_OWN) {
+    if (entry.group !== 'rights' && !words.has(i18n.t(entry.label))) words.set(i18n.t(entry.label), entry.button)
+  }
+  return words
+}
+
+/** Checks kind and symbol of every button in an element whose words are a button of BUTTONS; gives how many. */
+function checkButtons(root: HTMLElement, where: string): number {
+  const words = buttonWords()
+  let found = 0
+  for (const element of Array.from(root.querySelectorAll<HTMLElement>('button, [role="button"], [data-kind]'))) {
+    const name = words.get(said(element))
+    if (!name) continue
+    found += 1
+    expect(element.getAttribute('data-kind'), `${where}: ${said(element)}`).toBe(BUTTONS[name].kind)
+    expect(element.getAttribute('data-icon'), `${where}: ${said(element)}`).toBe(BUTTONS[name].icon)
+  }
+  return found
+}
 
 describe('the konten texts', () => {
   for (const [language, tree] of [['de', de], ['en', en]] as const) {
@@ -251,24 +328,6 @@ describe('the konten pages (since 0.3.6)', () => {
   })
 })
 
-/** The texts of the elements ``aria-describedby`` names, one after the other. */
-function description(field: HTMLElement): string {
-  const ids = (field.getAttribute('aria-describedby') ?? '').split(/\s+/).filter(Boolean)
-  return ids.map((id) => field.ownerDocument.getElementById(id)?.textContent ?? '').join(' ')
-}
-
-/** The field of a screen, found by exactly its label (getByLabelText fails on none and on more than one). */
-function labelled(root: HTMLElement, field: AccountField): HTMLElement {
-  return getByLabelText(root, i18n.t(FIELDS[field].label))
-}
-
-async function shown(screen: keyof typeof SCREENS): Promise<Shown> {
-  await i18n.changeLanguage('de')
-  const render = APP_RENDER[screen]
-  if (!render) throw new Error(`APP_RENDER.${screen} is missing`)
-  return render()
-}
-
 describe('the konten fields (since 0.3.7)', () => {
   for (const screen of Object.keys(APP_SCREENS) as (keyof typeof SCREENS)[]) {
     it(`${screen}: every field is found by exactly its label, its hints by aria-describedby`, async () => {
@@ -327,11 +386,6 @@ describe('the profile saves with one button (since 0.3.7)', () => {
   })
 })
 
-/** What a button says: its text without the symbol (an `svg` has no text). */
-function said(element: Element): string {
-  return (element.textContent ?? '').replace(/\s+/g, ' ').trim()
-}
-
 describe('every button of the account pages has its kind and symbol (since 0.3.8)', () => {
   const screens: [string, (() => Promise<Shown>) | undefined][] = [
     ...(Object.keys(APP_SCREENS) as (keyof typeof SCREENS)[]).map((screen) => [screen, APP_RENDER[screen]] as [string, (() => Promise<Shown>) | undefined]),
@@ -365,54 +419,6 @@ describe('every button of the account pages has its kind and symbol (since 0.3.8
     })
   }
 })
-
-/** Every account the tests ask accountActions about: the operator's own, another with everything, blocked, deleted. */
-function sample(change: Partial<ListedAccount> = {}): ListedAccount {
-  return {
-    id: 2,
-    username: 'kim',
-    displayName: 'Kim',
-    email: 'kim@example.com',
-    emailConfirmed: true,
-    operator: false,
-    self: false,
-    hasPassword: true,
-    authenticator: true,
-    passkeys: 1,
-    providers: [{ id: 7, label: 'Pocket ID' }],
-    blocked: false,
-    lastSeenAt: null,
-    ...change,
-  }
-}
-
-/** The words of every button of BUTTONS as the app says them (the provider named 'Pocket ID'), the app's own too. */
-function buttonWords(): Map<string, keyof typeof BUTTONS> {
-  const words = new Map<string, keyof typeof BUTTONS>()
-  for (const name of Object.keys(BUTTONS) as (keyof typeof BUTTONS)[]) {
-    const own = APP_BUTTON_WORDS[name]
-    const text = name.includes('.') ? i18n.t(name, { name: 'Pocket ID', provider: 'Pocket ID' }) : own && i18n.t(own)
-    if (text && !words.has(text)) words.set(text, name)
-  }
-  for (const entry of APP_OWN) {
-    if (entry.group !== 'rights' && !words.has(i18n.t(entry.label))) words.set(i18n.t(entry.label), entry.button)
-  }
-  return words
-}
-
-/** Checks kind and symbol of every button in an element whose words are a button of BUTTONS; gives how many. */
-function checkButtons(root: HTMLElement, where: string): number {
-  const words = buttonWords()
-  let found = 0
-  for (const element of Array.from(root.querySelectorAll<HTMLElement>('button, [role="button"], [data-kind]'))) {
-    const name = words.get(said(element))
-    if (!name) continue
-    found += 1
-    expect(element.getAttribute('data-kind'), `${where}: ${said(element)}`).toBe(BUTTONS[name].kind)
-    expect(element.getAttribute('data-icon'), `${where}: ${said(element)}`).toBe(BUTTONS[name].icon)
-  }
-  return found
-}
 
 describe('the box Password says when it was changed last (since 0.3.10)', () => {
   it('shows "Last changed on …" or that it is not known, on the page "Security"', async () => {

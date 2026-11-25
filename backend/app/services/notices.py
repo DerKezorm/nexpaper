@@ -224,22 +224,29 @@ def _send(account_id: int, address: str, agent: str, moment: datetime) -> None:
         logger.exception("A sign-in notice failed")
 
 
-def _mail(account: Account, to: str, base: str, agent: str, address: str, moment: datetime) -> None:
-    """The mail of the shared post module ("New sign-in", with the browser and its system, nothing more), at once as
-    in 1.12.0 (this runs in the background already; a server that does not take it leaves it in the outbox for another
-    try): in the account's language, with the logo."""
-    del address, moment
-    from ..db import SessionLocal
+def sign_in_letter(db: Any, account: Account, to: str, agent: str, moment: datetime, base: str) -> Any:
+    """The letter "New sign-in" of the shared post module (1.0.0, decided 25.11.2026): the browser on its system and the
+    moment in the person's time zone and language, the button to the page Security, never a network address. The page
+    only under the public address the operator set: an address taken from the request could be one a stranger chose.
+    ``ValueError``/``MailError`` for an address the post module refuses."""
     from ..vendor import nexkonten
     from . import kontenpost
 
     mail = nexkonten.Mail(kind=nexkonten.MAIL_NEW_SIGN_IN, to=to, account_id=account.id, username=account.name,
-                          display_name=account.display_name or "")
+                          display_name=account.display_name or "", at=moment)
+    return kontenpost.letter_of(db, mail, where=agent, link=f"{base}{SECURITY_PATH}" if base else "",
+                                time_zone=timezones.zone_of(account))
+
+
+def _mail(account: Account, to: str, base: str, agent: str, address: str, moment: datetime) -> None:
+    """The mail "New sign-in" (``sign_in_letter``), at once as in 1.12.0 (this runs in the background already; a
+    server that does not take it leaves it in the outbox for another try)."""
+    del address
+    from ..db import SessionLocal
+
     with SessionLocal() as db:
         try:
-            # The page Security, only under the public address the operator set: an address taken from the request
-            # could be one a stranger chose.
-            letter = kontenpost.letter_of(db, mail, where=agent, link=f"{base}{SECURITY_PATH}" if base else "")
+            letter = sign_in_letter(db, account, to, agent, moment, base)
         except Exception:  # noqa: BLE001 (an address the post module refuses: no mail, the sign-in stands)
             logger.warning("Sign-in notice not mailed name=%s", account.name)
             return

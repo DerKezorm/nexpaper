@@ -208,7 +208,7 @@ function ProfileCard({ me }: { me: Me }) {
     }, t('me.profile.saved'))
   /** "Per Link bestätigen" (the module's `account.emailProve`, `profiles.prove_email`): a link to the address there
    * is, which counts but is not proven yet; the intake trusts it once the link is opened. */
-  const prove = () => void action.run(async () => setMe(await authApi.emailProve()), t('mailAddress.sent'))
+  const prove = () => void action.run(async () => setMe(await authApi.emailProve()), t('account.emailProveSent'))
   const fields = screenFields('profile')
   const field = (name: 'displayName' | 'username' | 'email') => fields.find((entry) => entry.field === name)!
   return (

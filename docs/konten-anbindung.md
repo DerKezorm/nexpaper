@@ -1,8 +1,8 @@
 # Anbindung der gemeinsamen Konto-Module an nexpaper
 
 Stand 25.11.2026, Zweig `konten` (auf `main` nach „Delete a shared vault from the web app“, nexpaper 1.12.0, Schema 20).
-**Gebaut, Stand in Abschnitt 0.** Zielstand der Module (aus `bauplaene`, Zweig `konten`): **konten 0.3.10, oidc 1.1.1,
-post 0.1.2, ui 0.1.2** (gebaut zuerst auf 0.3.9, dann nachgezogen). Maßgeblich sind der Entwurf in nexlore (`Development/nexapps/Baupläne/Entwurf Konten,
+**Gebaut, Stand in Abschnitt 0.** Zielstand der Module (aus `bauplaene`, Zweig `konten`): **auf den Modulen 1.0.0**
+(konten 1.0.0, ui 1.0.0, post 1.0.0, oidc 1.1.2, eingefroren; gebaut zuerst auf 0.3.9, dann über 0.3.10 nachgezogen). Maßgeblich sind der Entwurf in nexlore (`Development/nexapps/Baupläne/Entwurf Konten,
 Einrichtung und Anmeldung.md`, Tabellen „Entscheidungen“, „Teil 2“, „Beim Bauen entschieden“),
 `bauplaene/konten/SCHNITTSTELLE.md` und `README.md` („Was ist neu“ bis 0.3.9), `bauplaene/ui/README.md`,
 `bauplaene/post/SCHNITTSTELLE.md`, im Baukasten-Plan der Abschnitt „Begleit-Apps“. Vorlage ist nexnotes
@@ -22,8 +22,9 @@ dort weiter); und **die iPhone-App hängt am Benutzernamen** (Abschnitt 12). Umb
 
 ## 0. Stand (gebaut 25.11.2026, Zweig `konten`)
 
-**Gebaut** auf konten 0.3.9, oidc 1.1.0, post 0.1.1, ui 0.1.1, am selben Tag nachgezogen auf **konten 0.3.10, oidc
-1.1.1, post 0.1.2, ui 0.1.2** (Kopien aus `bauplaene`, Zweig `konten`, `sync.py check` grün).
+**Gebaut** auf konten 0.3.9, oidc 1.1.0, post 0.1.1, ui 0.1.1, am selben Tag nachgezogen über 0.3.10 **auf den Modulen
+1.0.0** (konten 1.0.0, ui 1.0.0, post 1.0.0, oidc 1.1.2; Kopien aus `bauplaene`, Zweig `konten` `3c55402`, `sync.py check`
+grün).
 Die Abschnitte ab 1 sind die Bestandsaufnahme und der Plan von vorher; was davon abweicht, steht hier.
 
 **Backend**
@@ -58,6 +59,11 @@ Die Abschnitte ab 1 sind die Bestandsaufnahme und der Plan von vorher; was davon
   `names_by_account`), gelöschte Namen an niemanden; `GET /me/intake` hat `former`. Nur bewiesene Adressen ziehen Post.
 - Mail: Systemmails über `post` (Logo `app/assets/mail-logo.png`, DE/EN/FR); Bescheide über die Outbox (Minutenrunde),
   „Neue Anmeldung“ sofort (wie 1.12.0, mit Link auf Sicherheit nur unter der öffentlichen Adresse).
+- Mail „Neue Anmeldung“ (1.0.0): `notices.sign_in_letter` mit Browser auf System, Uhrzeit in der Zeitzone des
+  Kontos (`timezones.zone_of`), Knopf zur Seite Sicherheit unter der öffentlichen Adresse, nie eine Netzadresse. Die
+  Push-Mitteilung an die eigenen Geräte nennt das Netz weiter wie 1.12.0.
+- Vertrags-Adapter: `sign_in_from`, `listed_invites`, `forgot_through_route`, `picture_status` (nexkonten),
+  `new_sign_in_letter` (nexpost), alle über die echten Routen.
 - Notfallbefehl `python -m app.reset_link <name oder adresse> [--days]` über `server_reset_link`.
 
 **Frontend**: `--nexui-*` in Kraftpapier hell/dunkel, Wortlaute `account`/`mail` DE/EN/FR (nexpapers eigene alte
@@ -76,7 +82,7 @@ Karte „Schlüssel aller Konten“ darunter), Schalter „Passkeys erlaubt“, 
   immer nach dem Passwort.
 - Seit 0.3.10 lässt die Bremse je Topf genau fünf durch (0.3.9: sechs).
 - „Passwort vergessen“ geht sofort über `mailer.send_reset` (`nexpost.send.deliver`), nie über die Outbox.
-- `avatar_too_large` zeigt nexpapers eigenen Satz, weil er die MB-Grenze nennt (der des Moduls nicht).
+- `avatar_too_large`: seit 1.0.0 der Satz des Moduls mit `{{mb}}` (nexpapers eigener Satz ist weg).
 - Die Mail „Neue Anmeldung“ nennt nur Browser und System (Modul), nicht mehr Netz und Uhrzeit.
 
 ## 1. Bestand heute (1.12.0, Schema 20)
