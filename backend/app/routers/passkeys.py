@@ -2,8 +2,13 @@
 
 A passkey signs in on its own, without password and code: the device checked finger, face or PIN, and the key is
 bound to nexpaper's address. Adding one needs the password (or, right after signing in, the session that sets up the
-second factor); removing one needs the password. A failed answer counts like a wrong password: per address, and
-against the account the passkey belongs to.
+second factor); removing one needs the password (an account without one: a fresh sign-in at its provider). A
+failed answer counts like a wrong password: per address, and against the account the passkey belongs to.
+
+The operator's switch "Passkeys allowed" (the shared account module, on from the start) closes adding and signing in
+with one. The table, the user handle and the checks are 1.12.0's (``services/passkeys.py``); the shared module reads and
+writes the same table through ``services/konten_store.py`` (its contract tests run against it), so a passkey made here
+signs in there and the other way round.
 """
 
 from __future__ import annotations
@@ -13,6 +18,7 @@ from typing import Annotated, Any
 
 from fastapi import APIRouter, Path, Request, Response
 from pydantic import BaseModel, Field
+from sqlalchemy import update
 
 from ..deps import (
     BrowserAccount,
@@ -25,12 +31,13 @@ from ..deps import (
     too_many,
 )
 from ..errors import error
-from ..models import STAGE_SETUP
+from ..models import STAGE_CODES, STAGE_SETUP, AuthSession
 from ..models import Account as AccountRow
-from ..security import DEVICE_COOKIE, brake, devices_of
-from ..services import accounts, passkeys, totp
-from .auth import PENDING_COOKIE, account_view, secure_cookie, sign_in
-from .totp import enrolled, last_factor_guard
+from ..security import SESSION_COOKIE, brake, hash_token
+from ..services import accounts, passkeys, settings_service, totp
+from ..services.konten_store import KontenStore
+from ..vendor.nexkonten import factor
+from .auth import PENDING_COOKIE, account_view, browser_mark, secure_cookie, sign_in
 
 logger = logging.getLogger("nexpaper.auth")
 
@@ -70,6 +77,37 @@ def _fail(exc: passkeys.PasskeyError) -> Exception:
     return error(exc.code, exc.message, exc.status)
 
 
+def _allowed(db: DbSession) -> None:
+    """The operator's switch "Passkeys allowed" (on from the start)."""
+    if not settings_service.get(db, "passkeys_allowed"):
+        raise error("passkeys_off", "Passkeys are switched off on this server.", 403)
+
+
+def _last_factor_guard(db: DbSession, row: AccountRow) -> None:
+    """The operator asks for a second factor: the last one cannot go."""
+    if factor.state(KontenStore(db), row.id) != "none" and settings_service.get(db, "two_factor_required") \
+            and not totp.provider_checks(db, row):
+        raise error("second_factor_required", "The operator requires a second factor; it cannot be turned off.", 409)
+
+
+def _enrolled(request: Request, db: DbSession, row: AccountRow) -> list[str] | None:
+    """After a first second factor: new recovery codes (the module's ten), and a session that was setting up moves on
+    to showing them. Gives the codes, or None when the old ones stay."""
+    codes = None
+    setting_up = session_of(request).stage == STAGE_SETUP
+    if not totp.load_recovery(row.totp_recovery) or setting_up:
+        codes = factor.new_codes(KontenStore(db), row.id, actor_confirmed=True)
+    if setting_up:
+        db.execute(
+            update(AuthSession)
+            .where(AuthSession.token_hash == hash_token(request.cookies.get(SESSION_COOKIE) or ""),
+                   AuthSession.stage == STAGE_SETUP)
+            .values(stage=STAGE_CODES)
+        )
+        db.commit()
+    return codes
+
+
 Uid = Annotated[str, Path(min_length=32, max_length=32, pattern=r"^[0-9a-f]{32}$")]
 
 
@@ -80,6 +118,7 @@ def listing(account: BrowserAccount, db: DbSession) -> list[dict[str, Any]]:
 
 @router.post("/auth/passkeys/begin", summary="Start adding a passkey; the browser gets the options")
 def begin(request: Request, account: BrowserAccount, db: DbSession) -> dict[str, Any]:
+    _allowed(db)
     row = db.get(AccountRow, account.id)
     assert row is not None
     try:
@@ -90,6 +129,7 @@ def begin(request: Request, account: BrowserAccount, db: DbSession) -> dict[str,
 
 @router.post("/auth/passkeys", status_code=201, summary="Finish adding a passkey: the browser's answer, the password")
 def add(payload: AddIn, request: Request, account: BrowserAccount, db: DbSession) -> dict[str, Any]:
+    _allowed(db)
     row = db.get(AccountRow, account.id)
     assert row is not None
     if session_of(request).stage != STAGE_SETUP:
@@ -99,7 +139,9 @@ def add(payload: AddIn, request: Request, account: BrowserAccount, db: DbSession
                                            payload.name)
     except passkeys.PasskeyError as exc:
         raise _fail(exc) from exc
-    codes = enrolled(request, db, row)
+    db.refresh(row)
+    codes = _enrolled(request, db, row)
+    db.refresh(row)
     return {"passkey": passkeys.view(key), "recovery_codes": codes, "account": account_view(row)}
 
 
@@ -112,7 +154,7 @@ def remove(uid: Uid, payload: PasswordIn, request: Request, account: BrowserAcco
     if not any(key.uid == uid for key in keys):
         raise error("not_found", "No such passkey.", 404)
     if len(keys) == 1 and not row.totp_secret_enc:
-        last_factor_guard(db, row)
+        _last_factor_guard(db, row)
     gone = passkeys.remove(db, row.id, uid)
     if gone is None:
         raise error("not_found", "No such passkey.", 404)
@@ -128,6 +170,7 @@ def remove(uid: Uid, payload: PasswordIn, request: Request, account: BrowserAcco
 
 @router.post("/auth/passkey/begin", summary="Sign in with a passkey: the browser gets a challenge (no sign-in needed)")
 def sign_in_begin(request: Request, response: Response, db: DbSession) -> dict[str, Any]:
+    _allowed(db)
     address_guard(request)
     # Every "begin" counts for the sender, whether anything follows or not: asking for challenges is no way to fill
     # the server's memory. A sender has room for ``BEGINS_PER_ADDRESS`` before it rests like after a failed password.
@@ -147,6 +190,7 @@ def sign_in_begin(request: Request, response: Response, db: DbSession) -> dict[s
 
 @router.post("/auth/passkey", summary="Sign in with a passkey: the browser's signed answer")
 def sign_in_finish(payload: AnswerIn, request: Request, response: Response, db: DbSession) -> dict[str, Any]:
+    _allowed(db)
     address_guard(request)
     token = request.cookies.get(CHALLENGE_COOKIE)
     response.delete_cookie(CHALLENGE_COOKIE, path="/api/v1/auth/passkey")
@@ -159,11 +203,11 @@ def sign_in_finish(payload: AnswerIn, request: Request, response: Response, db: 
             address_failed(request)
             if refused.account is not None:
                 row = db.get(AccountRow, refused.account.id)
-                if row is not None and row.id not in devices_of(request.cookies.get(DEVICE_COOKIE)):
+                if row is not None and not browser_mark(db, request, row.id):
                     accounts.note_failure(db, row)
         raise error("passkey_refused", "The passkey was not accepted.", 401) from None
     row = db.get(AccountRow, account.id)
-    known = row is not None and row.id in devices_of(request.cookies.get(DEVICE_COOKIE))
+    known = row is not None and bool(browser_mark(db, request, row.id))
     if row is None or row.blocked_at is not None or (accounts.is_locked(row) and not known):
         # Like an unknown passkey: a blocked or locked account says nothing more.
         logger.warning("Passkey sign-in refused, account blocked or locked")

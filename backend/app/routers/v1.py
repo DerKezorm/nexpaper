@@ -64,6 +64,8 @@ Reader = Annotated[Caller, Depends(caller)]
 @router.get("/me", summary="Who the API key speaks for, and what it may")
 def me(found: Reader) -> dict[str, Any]:
     return {
+        # The id stays the same across renames (since the shared account module); ``name`` is the current username.
+        "id": found.account.id,
         "name": found.account.name,
         "display_name": found.account.display_name,
         "scope": found.scope,

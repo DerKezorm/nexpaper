@@ -18,6 +18,7 @@ from ..deps import Account, BrowserAccount, DbSession
 from ..errors import error
 from ..models import Device
 from ..services import devices
+from ..services.konten_store import oldest_name
 
 router = APIRouter(prefix="/api/v1/devices", tags=["devices"])
 
@@ -43,6 +44,11 @@ class PairedOut(BaseModel):
     device: DeviceOut
     #: The token of the device, shown once and never again.
     token: str
+    #: The account the device now speaks for: its first username, the same across renames (an app up to
+    #: nexpaper-ios 1.3 keeps the connection by it). The current name is in ``GET /api/v1/auth/me``.
+    account: str
+    #: The id of the account (a JSON number): what an app keeps a connection by from now on.
+    account_id: int
 
 
 def _out(row: Device) -> DeviceOut:
@@ -58,14 +64,18 @@ def listing(account: BrowserAccount, db: DbSession) -> list[DeviceOut]:
 @router.post("", response_model=PairedOut, status_code=201, summary="Pair a device; its token is shown once")
 def pair(body: DeviceIn, account: BrowserAccount, db: DbSession) -> PairedOut:
     row, token = devices.make(db, account, body.name)
-    return PairedOut(device=_out(row), token=token)
+    return PairedOut(device=_out(row), token=token, account=oldest_name(db, account), account_id=account.id)
 
 
 class BroughtOut(BaseModel):
     """The answer of ``POST /devices/pair``: the new device, its token (shown once) and the account."""
     device: DeviceOut
     token: str
+    #: The account the device now speaks for: its first username, the same across renames (an app up to
+    #: nexpaper-ios 1.3 keeps the connection by it). The current name is in ``GET /api/v1/auth/me``.
     account: str
+    #: The id of the account (a JSON number): what an app keeps a connection by from now on.
+    account_id: int
 
 
 @router.post("/sibling", response_model=BroughtOut, status_code=201,
@@ -76,7 +86,7 @@ def bring_in(body: DeviceIn, request: Request, account: Account, db: DbSession) 
         # A browser pairs with ``POST /devices`` or a code; this way is for a device that hands its connection on.
         raise error("device_only", "This needs a device token.", 403)
     row, token = devices.sibling(db, account, parent, body.name)
-    return BroughtOut(device=_out(row), token=token, account=account.name)
+    return BroughtOut(device=_out(row), token=token, account=oldest_name(db, account), account_id=account.id)
 
 
 @router.delete("/{uid}", status_code=204, summary="Revoke a device: its token stops working at once")

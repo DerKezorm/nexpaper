@@ -22,6 +22,7 @@ from ..deps import (
 from ..errors import error
 from ..security import encrypt_secret
 from ..services import accounts, limits, mailer, processing, readiness, settings_service, totp
+from ..vendor.nexkonten import factor
 
 logger = logging.getLogger("nexpaper.settings")
 
@@ -40,6 +41,16 @@ class SettingsOut(BaseModel):
     smtp_user: str
     smtp_password_set: bool
     smtp_from: str
+    #: The name system mail goes out under (the shared post module); empty: "nexpaper".
+    smtp_sender_name: str = ""
+    #: The last mail the server took and the last failure (an error code), as ISO times.
+    mail_last_ok_at: str | None = None
+    mail_last_error: str = ""
+    mail_last_error_at: str | None = None
+    #: The operator's switch of the shared account module: passkeys may be added and used (on from the start).
+    passkeys_allowed: bool = True
+    #: NEXPAPER_SECOND_FACTOR_OFF holds: no second factor is asked of anybody (the page says so plainly).
+    second_factor_off: bool = False
     api_keys_allowed: bool
     update_check: bool
     links_allowed: bool
@@ -81,6 +92,8 @@ class SettingsIn(BaseModel):
     #: Empty removes the password; left out keeps it.
     smtp_password: str | None = Field(default=None, max_length=500)
     smtp_from: str | None = Field(default=None, max_length=255)
+    smtp_sender_name: str | None = Field(default=None, max_length=80)
+    passkeys_allowed: bool | None = None
     api_keys_allowed: bool | None = None
     update_check: bool | None = None
     #: Links to documents for people without an account. Off ends every link at once.
@@ -118,6 +131,12 @@ def _view(db: DbSession) -> SettingsOut:
         smtp_user=values["smtp_user"],
         smtp_password_set=bool(values["smtp_password_enc"]),
         smtp_from=values["smtp_from"],
+        smtp_sender_name=str(values.get("smtp_sender_name") or ""),
+        mail_last_ok_at=values.get("mail_last_ok_at") or None,
+        mail_last_error=str(values.get("mail_last_error") or ""),
+        mail_last_error_at=values.get("mail_last_error_at") or None,
+        passkeys_allowed=bool(values["passkeys_allowed"]),
+        second_factor_off=factor.switched_off(),
         api_keys_allowed=bool(values["api_keys_allowed"]),
         update_check=bool(values["update_check"]),
         links_allowed=bool(values["links_allowed"]),

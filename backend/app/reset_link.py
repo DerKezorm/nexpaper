@@ -5,10 +5,11 @@ mail server is set up. An operator who forgot their own password, on a server wi
 Whoever can run a command in the container holds the database and the server's secrets anyway, so this gives them
 nothing they did not have::
 
-    docker exec -it -u nexpaper nexpaper python -m app.reset_link <account>
+    docker exec -it -u nexpaper nexpaper python -m app.reset_link <username or email> [--days 1|7|30]
 
-It makes the link the interface makes (``services/resets.py``: the same table, once, 24 hours, one open link per
-account, the same checks when it is used) and prints it, and it writes a line to the server's log without the link.
+It makes the link through the shared account module (``resets.server_reset_link``: the same table, once, one day from
+the start, one open link per account, the same checks when it is used) and prints it, and it writes a line to the
+server's log without the link. At the next sign-in the account hears that the server made it.
 Using the link lifts the lock after failed sign-ins; the second factor stays, the recovery codes still work. An account
 that signs in only through a provider gets a password this way and becomes an account with a password (the operator's
 link does the same).
@@ -27,7 +28,10 @@ from sqlalchemy.orm import Session
 from .config import get_settings
 from .db import SCHEMA_VERSION, SessionLocal, engine, schema_version
 from .models import OPERATOR, SIGN_IN_PASSWORD, Account
-from .services import logs, resets, settings_service
+from .services import logs, settings_service
+from .services.konten_store import KontenStore
+from .vendor import nexkonten
+from .vendor.nexkonten import resets as konten_resets
 
 COMMAND = "python -m app.reset_link"
 ROOT_REFUSED = (
@@ -38,7 +42,7 @@ ROOT_REFUSED = (
 )
 
 
-def _make(db: Session, account: Account) -> str:
+def _make(db: Session, who: str, days: int) -> tuple[str, str]:
     """The link, with a line in the server's log, appended: the rotating handler belongs to the server's process."""
     handler = logging.FileHandler(logs.log_file(), encoding="utf-8")
     handler.setFormatter(logging.Formatter(logs.LOG_FORMAT, logs.DATE_FORMAT))
@@ -48,22 +52,24 @@ def _make(db: Session, account: Account) -> str:
     root.addHandler(handler)
     root.setLevel(logging.INFO)
     try:
-        _row, token = resets.make(db, account, origin=f"the command {COMMAND} on the server")
+        made = konten_resets.server_reset_link(KontenStore(db), who, days=days)
     finally:
         root.removeHandler(handler)
         root.setLevel(level)
         handler.close()
-    return token
+    return made.token, made.expires_at.isoformat(timespec="minutes")
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog=COMMAND,
-        description="Print a link to set a new password for an account. It works once and for 24 hours.",
+        description="Print a link to set a new password for an account. It works once, one day from the start.",
     )
     parser.add_argument(
-        "name", nargs="?", help="the name the account signs in with; without it, the accounts are listed",
+        "name", nargs="?", help="the username or the email address; without it, the accounts are listed",
     )
+    parser.add_argument("--days", type=int, default=konten_resets.OPERATOR_DAYS_DEFAULT,
+                        choices=konten_resets.OPERATOR_DAYS, help="how long the link holds (1, 7 or 30 days)")
     args = parser.parse_args(argv)
 
     if hasattr(os, "getuid") and os.getuid() == 0:
@@ -87,8 +93,8 @@ def main(argv: list[str] | None = None) -> int:
                 state = ", blocked" if row.blocked_at is not None else ""
                 print(f"{row.name}  ({role}{state})")
             return 0
-        wanted = args.name.strip().lower()
-        account = next((row for row in accounts if row.name == wanted), None)
+        found = nexkonten.login.resolve_login(KontenStore(db), args.name)
+        account = db.get(Account, int(found.id)) if found is not None else None
         if account is None:
             names = ", ".join(row.name for row in accounts) or "none"
             print(f"No account named '{args.name}'. Accounts: {names}", file=sys.stderr)
@@ -104,8 +110,9 @@ def main(argv: list[str] | None = None) -> int:
 
         by_provider = account.sign_in != SIGN_IN_PASSWORD
         name = account.name
-        token = _make(db, account)
-        link = resets.link_to(db, token)
+        token, until = _make(db, name, args.days)
+        base = settings_service.public_url(db)
+        link = f"{base}/reset/{token}" if base else ""
 
     if link:
         print(link)
@@ -116,7 +123,7 @@ def main(argv: list[str] | None = None) -> int:
     if by_provider:
         print(f"'{name}' signs in through a provider so far. Using the link gives the account a password and makes it "
               "an account with a password.", file=sys.stderr)
-    print(f"The link works once and for {resets.HOURS} hours. Your second factor stays: sign in with the new password, "
+    print(f"The link works once, until {until} (UTC). Your second factor stays: sign in with the new password, "
           "then with the code from your app, a passkey or one of your recovery codes.", file=sys.stderr)
     return 0
 

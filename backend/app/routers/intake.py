@@ -18,7 +18,17 @@ from ..deps import BrowserAccount, DbSession, OperatorAccount, Reader, address_f
 from ..errors import error
 from ..models import MANAGE, Account
 from ..security import brake, encrypt_secret
-from ..services import accounts, intake, intake_folder, intake_mail, mail_senders, mailer, rights, settings_service
+from ..services import (
+    accounts,
+    intake,
+    intake_folder,
+    intake_mail,
+    konten_store,
+    mail_senders,
+    mailer,
+    rights,
+    settings_service,
+)
 
 logger = logging.getLogger("nexpaper.intake")
 
@@ -293,6 +303,8 @@ class MyIntakeOut(BaseModel):
     folder: str
     #: A link can be mailed (a mail server and the public address are set up).
     can_confirm: bool
+    #: After a rename: the plus addresses and subfolders of the former names, which still reach the account.
+    former: list[str] = []
 
 
 def _sender_out(row: Any) -> SenderOut:
@@ -316,12 +328,18 @@ def my_intake(account: Caller, db: DbSession) -> MyIntakeOut:
     row = db.get(Account, account.id)
     assert row is not None
     own = row.email if row.email and row.email_confirmed_at is not None else ""
+    former: list[str] = []
+    for name in konten_store.former_names(db, row.id):
+        if address:
+            former.append(_plus(address, name))
+        if folder_on and intake_folder.folder_name(name):
+            former.append(f"{used.rstrip('/')}/{name}/")
     return MyIntakeOut(
         mail_on=mail_on, mail_address=address, plus_address=_plus(address, row.name) if address else "",
         account_address=own, senders=[_sender_out(s) for s in mail_senders.of_account(db, row.id)],
         folder_on=folder_on,
         folder=f"{used.rstrip('/')}/{row.name}/" if folder_on and intake_folder.folder_name(row.name) else "",
-        can_confirm=mail_senders.available(db),
+        can_confirm=mail_senders.available(db), former=former,
     )
 
 

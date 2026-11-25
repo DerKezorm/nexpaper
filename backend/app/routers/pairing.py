@@ -23,6 +23,7 @@ from pydantic import BaseModel, Field
 from ..deps import BrowserAccount, DbSession, from_a_web_page, pairing_failed, pairing_guard
 from ..errors import error
 from ..services import pairing, settings_service, totp
+from ..services.konten_store import oldest_name
 from ..services.pairing import OAuthProblem
 from .devices import DeviceOut, _out
 
@@ -90,8 +91,11 @@ class PairedOut(BaseModel):
     device: DeviceOut
     #: The device token, shown once: ``Authorization: Bearer npd_...``.
     token: str
-    #: The account the device now speaks for.
+    #: The account the device now speaks for: its first username, the same across renames (an app up to
+    #: nexpaper-ios 1.3 keeps the connection by it). The current name is in ``GET /api/v1/auth/me``.
     account: str
+    #: The id of the account (a JSON number): what an app keeps a connection by from now on.
+    account_id: int
 
 
 @router.post("/api/v1/devices/pair", response_model=PairedOut, status_code=201,
@@ -105,7 +109,7 @@ def pair(payload: PairIn, request: Request, db: DbSession) -> PairedOut:
         pairing_failed(request)
         raise error("pairing_code_invalid", "This code is not valid (wrong, used or run out).", 400)
     device, token, account = found
-    return PairedOut(device=_out(device), token=token, account=account.name)
+    return PairedOut(device=_out(device), token=token, account=oldest_name(db, account), account_id=account.id)
 
 
 # --- OAuth 2 with PKCE ------------------------------------------------------------------------------------------------
@@ -183,7 +187,10 @@ _TOKEN_BODY = {
         "type": "object", "properties": {
             "access_token": {"type": "string", "description": "npd_..., for Authorization: Bearer"},
             "token_type": {"type": "string", "enum": ["Bearer"]},
-            "device_id": {"type": "string"}, "account": {"type": "string"}}}}}},
+            "device_id": {"type": "string"},
+            "account": {"type": "string", "description": "the account's first username, stable across renames; the "
+                        "current one is in /api/v1/auth/me"},
+            "account_id": {"type": "integer", "description": "the id of the account"}}}}}},
         "400": {"description": "error: invalid_request, unsupported_grant_type or invalid_grant (RFC 6749, 5.2)"}},
 }
 #: The largest body of a token request; it holds five short fields.
@@ -228,5 +235,5 @@ async def token(request: Request, db: DbSession) -> JSONResponse:
         return _oauth_error("invalid_grant", "The code is not valid (wrong, used, run out, or another verifier).")
     device, secret, account = found
     return JSONResponse(content={"access_token": secret, "token_type": "Bearer", "device_id": device.uid,
-                                 "account": account.name},
+                                 "account": oldest_name(db, account), "account_id": int(account.id)},
                         headers={"Cache-Control": "no-store", "Pragma": "no-cache"})

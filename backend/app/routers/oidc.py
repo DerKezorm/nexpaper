@@ -54,6 +54,7 @@ from ..deps import (
     OperatorAccount,
     client_ip,
     confirm_operator,
+    confirmed_without_password,
     reauth_failed,
     reauth_guard,
     reauth_succeeded,
@@ -63,7 +64,10 @@ from ..models import SIGN_IN_PASSWORD, STAGE_FULL, STAGE_SETUP, OidcLink
 from ..models import Account as AccountRow
 from ..security import SESSION_COOKIE, brake, current_session
 from ..services import accounts, landing, logs, tell
-from ..services.oidc_store import SqlStore, take_address
+from ..services.konten_store import KontenStore
+from ..services.oidc_store import SqlStore
+from ..vendor import nexkonten
+from ..vendor.nexkonten import profiles
 from ..vendor.nexoidc import OidcError, ProviderInvalid, attempt, authentik, flow, providers
 from ..vendor.nexoidc import accounts as oidc_accounts
 from ..vendor.nexoidc.config import current
@@ -114,7 +118,10 @@ class AddressIn(BaseModel):
 
 
 class TakeAddressIn(BaseModel):
-    slug: str = Field(min_length=1, max_length=40)
+    #: The provider whose address to take (1.12.0); left out, the address on offer (the shared account module).
+    slug: str = Field(default="", max_length=40)
+    #: The own password (an account without one: a fresh sign-in at its provider).
+    password: str = Field(default="", max_length=200)
 
 
 class OrderIn(BaseModel):
@@ -464,22 +471,46 @@ def unlink(slug: Annotated[str, Path(max_length=40)], account: BrowserAccount) -
 
 # Under ``/me`` with the slug in the body: ``/{slug}/address`` would be taken by the operator's ``/authentik/address``
 # for the entry the authentik button makes (its slug is ``authentik``).
-@router.post("/me/address", summary="Take the address the provider knows as the own one (unconfirmed)")
-def take_provider_address(payload: TakeAddressIn, account: BrowserAccount) -> dict[str, Any]:
-    """Offered on the account page when the provider knows the account by another address. It is the
-    account's address from then on, but not confirmed: the mail intake counts it only once the person opened the link
-    nexpaper sends (a provider's word is not the person's). It goes again with the last link."""
+@router.post("/me/address", summary="Take the address the provider knows as the own one")
+def take_provider_address(payload: TakeAddressIn, request: Request, account: BrowserAccount) -> dict[str, Any]:
+    """Offered on the account page ("Use the address from <provider>?") when the provider knows the account by
+    another address. A change of address like any other (the shared account module, ``profiles.change_email``): with
+    the own password, and with a mail server it waits for the link mailed to it; without, it counts at once but is
+    not proven, so the mail intake does not trust it yet (a provider's word is not the person's)."""
     with store() as s:
-        entry = s.provider_by_slug(payload.slug)
-        link = next((item for item in s.links_of_account(account.id) if entry and item.provider_id == entry.id), None)
         row = s.db.get(AccountRow, account.id)
-        if entry is None or link is None or not link.email or row is None:
+        if row is None:
             raise error("not_found", "Not found.", 404)
-        if not take_address(s.db, row, link.email):
-            raise error("email_taken", "Another account has this address already.", 409)
-        s.commit()
-        logger.info("Account took the address of provider %s name=%s", entry.slug, row.name)
-        return {"email": row.email, "email_confirmed": row.email_confirmed_at is not None}
+        if payload.slug:
+            entry = s.provider_by_slug(payload.slug)
+            link = next((item for item in s.links_of_account(account.id)
+                         if entry and item.provider_id == entry.id), None)
+            if entry is None or link is None or not link.email:
+                raise error("not_found", "Not found.", 404)
+            offer = link.email
+        else:
+            offer = KontenStore.offered(row)
+            if not offer:
+                raise error("no_offer", "There is no address to take.", 409)
+        try:
+            fresh = confirmed_without_password(request, row)
+            auth_router.change_address(s.db, row, offer, password=payload.password, fresh=fresh)
+            KontenStore(s.db).set_offered_email(row.id, "")
+            s.db.commit()
+        except nexkonten.AccountError as exc:
+            s.db.rollback()
+            raise auth_router.fail(exc) from exc
+        s.db.refresh(row)
+        logger.info("Account took its provider's address name=%s", row.name)
+        return {**auth_router.account_view(row), "email": row.email,
+                "email_confirmed": row.email_confirmed_at is not None}
+
+
+@router.delete("/me/address", status_code=204, summary="Do not offer the provider's address any more")
+def decline_provider_address(account: BrowserAccount) -> None:
+    """"No, thanks", for good and for exactly this address (``profiles.dismiss_offered_email``)."""
+    with store() as s:
+        profiles.dismiss_offered_email(KontenStore(s.db), account.id)
 
 
 def _unlinked_notice(provider: str, by: str) -> tell.Notice:
