@@ -1,0 +1,49 @@
+{
+  "greeting": "Hello {{name}},",
+  "footer": "This mail comes from {{app}}.",
+  "hours_one": "1 hour",
+  "hours_other": "{{count}} hours",
+  "days_one": "1 day",
+  "days_other": "{{count}} days",
+  "invite": {
+    "subject": "{{by}} invites you to {{app}}",
+    "body": "{{by}} invites you to {{app}}. The button below makes your account. The invitation holds for {{valid}}.",
+    "action": "Accept the invitation"
+  },
+  "reset": {
+    "subject": "A new password for {{app}}",
+    "body": "A link for a new password was made for your account {{username}}. It holds for {{valid}} and works once. If that was not you, just leave this mail.",
+    "action": "Set a new password"
+  },
+  "confirm_email": {
+    "subject": "Confirm your address for {{app}}",
+    "body": "Confirm with the button that this address belongs to your account {{username}}. The link holds for {{valid}}.",
+    "action": "Confirm the address"
+  },
+  "email_changed": {
+    "subject": "Your address at {{app}} was changed",
+    "body": "The address of your account {{username}} is now {{hint}}. If that was not you, ask the operator."
+  },
+  "email_removed": {
+    "subject": "Your address at {{app}} was removed",
+    "body": "Your account {{username}} has no address any more. If that was not you, ask the operator."
+  },
+  "username_changed": {
+    "subject": "Your username at {{app}}",
+    "body": "Your username is now {{username}}. You sign in with it from now on."
+  },
+  "factor_reset": {
+    "subject": "Your second factor at {{app}} was reset",
+    "body": "The operator removed the second factor of your account {{username}}. Set up a new one after your next sign-in. If you did not ask for this, ask the operator."
+  },
+  "new_sign_in": {
+    "subject": "New sign-in at {{app}}",
+    "body": "Your account {{username}} was just signed in from a new browser: {{where}}. If that was you, all is well. Otherwise change your password and sign out everywhere."
+  },
+  "test": {
+    "subject": "Test mail from {{app}}",
+    "body": "If you read this, {{app}} can send mail."
+  },
+  "browser_on": "{{browser}} on {{system}}",
+  "browser_unknown": "an unknown browser"
+}

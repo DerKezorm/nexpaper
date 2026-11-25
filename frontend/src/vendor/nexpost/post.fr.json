@@ -1,0 +1,35 @@
+{
+  "mail": {
+    "server": "Serveur de courriel",
+    "port": "Port",
+    "security": "Chiffrement",
+    "securityStarttls": "STARTTLS (souvent port 587)",
+    "securityTls": "TLS (souvent port 465)",
+    "securityNone": "Aucun",
+    "user": "Utilisateur",
+    "password": "Mot de passe",
+    "passwordKept": "Laissez vide pour garder le mot de passe enregistré.",
+    "sender": "Adresse d'expéditeur",
+    "senderName": "Nom de l'expéditeur",
+    "senderNameHint": "Vide : {{app}}.",
+    "warningUnencrypted": "Sans chiffrement, le mot de passe et les courriels traversent le réseau en clair. À n'utiliser que sur votre propre réseau.",
+    "test": "Envoyer un courriel de test",
+    "testSent": "Le courriel de test est parti vers {{email}}.",
+    "noServer": "Aucun serveur de courriel configuré. Les liens sont affichés pour être copiés.",
+    "lastOk": "Dernier envoi : {{when}}",
+    "lastError": "Dernière erreur ({{when}}) : {{error}}",
+    "error": {
+      "mail_off": "Aucun serveur de courriel n'est configuré.",
+      "mail_unreachable": "Le serveur de courriel est injoignable.",
+      "mail_tls_failed": "La connexion chiffrée au serveur de courriel a échoué.",
+      "mail_auth_refused": "Le serveur de courriel a refusé l'utilisateur ou le mot de passe.",
+      "mail_sender_refused": "Le serveur de courriel a refusé l'adresse d'expéditeur.",
+      "mail_recipient_refused": "Le serveur de courriel a refusé l'adresse du destinataire.",
+      "mail_refused": "Le serveur de courriel a refusé le courriel.",
+      "mail_failed": "Le courriel n'est pas parti.",
+      "mail_address_invalid": "Ce n'est pas une adresse de courriel.",
+      "mail_settings_invalid": "Ces réglages ne vont pas ensemble.",
+      "unknown": "Cela n'a pas fonctionné. Réessayez."
+    }
+  }
+}

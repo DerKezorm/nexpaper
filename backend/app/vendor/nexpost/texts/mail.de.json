@@ -1,0 +1,49 @@
+{
+  "greeting": "Hallo {{name}},",
+  "footer": "Diese Mail kommt von {{app}}.",
+  "hours_one": "1 Stunde",
+  "hours_other": "{{count}} Stunden",
+  "days_one": "1 Tag",
+  "days_other": "{{count}} Tage",
+  "invite": {
+    "subject": "{{by}} lädt dich zu {{app}} ein",
+    "body": "{{by}} lädt dich zu {{app}} ein. Mit dem Knopf legst du dein Konto an. Die Einladung gilt {{valid}}.",
+    "action": "Einladung annehmen"
+  },
+  "reset": {
+    "subject": "Neues Passwort für {{app}}",
+    "body": "Für dein Konto {{username}} wurde ein Link für ein neues Passwort erstellt. Er gilt {{valid}} und nur einmal. Wenn du das nicht warst, lass die Mail einfach liegen.",
+    "action": "Neues Passwort setzen"
+  },
+  "confirm_email": {
+    "subject": "Bestätige deine Adresse für {{app}}",
+    "body": "Bestätige mit dem Knopf, dass diese Adresse zu deinem Konto {{username}} gehört. Der Link gilt {{valid}}.",
+    "action": "Adresse bestätigen"
+  },
+  "email_changed": {
+    "subject": "Deine Adresse bei {{app}} wurde geändert",
+    "body": "Die Adresse deines Kontos {{username}} ist jetzt {{hint}}. Wenn du das nicht warst, wende dich an den Betreiber."
+  },
+  "email_removed": {
+    "subject": "Deine Adresse bei {{app}} wurde entfernt",
+    "body": "Dein Konto {{username}} hat keine Adresse mehr. Wenn du das nicht warst, wende dich an den Betreiber."
+  },
+  "username_changed": {
+    "subject": "Dein Benutzername bei {{app}}",
+    "body": "Dein Benutzername ist jetzt {{username}}. Damit meldest du dich ab sofort an."
+  },
+  "factor_reset": {
+    "subject": "Dein zweiter Faktor bei {{app}} wurde zurückgesetzt",
+    "body": "Der Betreiber hat den zweiten Faktor deines Kontos {{username}} entfernt. Richte nach der nächsten Anmeldung einen neuen ein. Wenn du darum nicht gebeten hast, wende dich an den Betreiber."
+  },
+  "new_sign_in": {
+    "subject": "Neue Anmeldung bei {{app}}",
+    "body": "Dein Konto {{username}} wurde gerade in einem neuen Browser angemeldet: {{where}}. Warst du das, ist alles gut. Sonst ändere dein Passwort und melde dich überall ab."
+  },
+  "test": {
+    "subject": "Testmail von {{app}}",
+    "body": "Wenn du das liest, kann {{app}} Mails verschicken."
+  },
+  "browser_on": "{{browser}} auf {{system}}",
+  "browser_unknown": "ein unbekannter Browser"
+}

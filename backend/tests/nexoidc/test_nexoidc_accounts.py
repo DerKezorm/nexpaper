@@ -9,6 +9,7 @@ without a password through ``auto_create`` instead.
 
 from __future__ import annotations
 
+import inspect
 import threading
 from typing import Any
 
@@ -25,6 +26,18 @@ from oidc_contract import (
     round_trip,
     start,
 )
+
+
+def test_the_store_takes_the_providers_display_name_and_hears_of_the_picture(adapter: Any) -> None:
+    """Since 1.1.0: ``create_account`` takes ``display_name`` and ``picture``, and ``provider_picture(account_id,
+    picture, issuer)`` is there (an app with one account creates none, but hears of the picture)."""
+    with adapter.store() as store:
+        hears = getattr(store, "provider_picture", None)
+        assert callable(hears), "the store needs provider_picture(account_id, picture, issuer)"
+        assert list(inspect.signature(hears).parameters) == ["account_id", "picture", "issuer"]
+        if not adapter.single_account:
+            takes = inspect.signature(store.create_account).parameters
+            assert "display_name" in takes and "picture" in takes
 
 
 def links_of(adapter: Any, name: str) -> list[Any]:

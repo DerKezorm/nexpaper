@@ -1,0 +1,49 @@
+{
+  "greeting": "Bonjour {{name}},",
+  "footer": "Ce courriel vient de {{app}}.",
+  "hours_one": "1 heure",
+  "hours_other": "{{count}} heures",
+  "days_one": "1 jour",
+  "days_other": "{{count}} jours",
+  "invite": {
+    "subject": "{{by}} vous invite à {{app}}",
+    "body": "{{by}} vous invite à {{app}}. Le bouton ci-dessous crée votre compte. L'invitation est valable {{valid}}.",
+    "action": "Accepter l'invitation"
+  },
+  "reset": {
+    "subject": "Nouveau mot de passe pour {{app}}",
+    "body": "Un lien pour un nouveau mot de passe a été créé pour votre compte {{username}}. Il est valable {{valid}} et une seule fois. Si ce n'était pas vous, ignorez ce courriel.",
+    "action": "Définir un nouveau mot de passe"
+  },
+  "confirm_email": {
+    "subject": "Confirmez votre adresse pour {{app}}",
+    "body": "Confirmez avec le bouton que cette adresse appartient à votre compte {{username}}. Le lien est valable {{valid}}.",
+    "action": "Confirmer l'adresse"
+  },
+  "email_changed": {
+    "subject": "Votre adresse sur {{app}} a été modifiée",
+    "body": "L'adresse de votre compte {{username}} est maintenant {{hint}}. Si ce n'était pas vous, adressez-vous à l'administrateur."
+  },
+  "email_removed": {
+    "subject": "Votre adresse sur {{app}} a été supprimée",
+    "body": "Votre compte {{username}} n'a plus d'adresse. Si ce n'était pas vous, adressez-vous à l'administrateur."
+  },
+  "username_changed": {
+    "subject": "Votre nom d'utilisateur sur {{app}}",
+    "body": "Votre nom d'utilisateur est maintenant {{username}}. Vous vous connectez désormais avec."
+  },
+  "factor_reset": {
+    "subject": "Votre second facteur sur {{app}} a été réinitialisé",
+    "body": "L'administrateur a supprimé le second facteur de votre compte {{username}}. Configurez-en un nouveau après votre prochaine connexion. Si vous ne l'avez pas demandé, adressez-vous à l'administrateur."
+  },
+  "new_sign_in": {
+    "subject": "Nouvelle connexion sur {{app}}",
+    "body": "Votre compte {{username}} vient d'être connecté depuis un nouveau navigateur : {{where}}. Si c'était vous, tout va bien. Sinon, changez votre mot de passe et déconnectez-vous partout."
+  },
+  "test": {
+    "subject": "Courriel de test de {{app}}",
+    "body": "Si vous lisez ceci, {{app}} peut envoyer des courriels."
+  },
+  "browser_on": "{{browser}} sous {{system}}",
+  "browser_unknown": "un navigateur inconnu"
+}

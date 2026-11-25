@@ -1,0 +1,30 @@
+{
+  "files": {
+    "backend/app/vendor/nexpost/__init__.py": "sha256-dLUzMm0Lln5tzSyEL8igQcFjrva7v9YBrUerCydaEHM=",
+    "backend/app/vendor/nexpost/common.py": "sha256-jzdIvoos7ytL25avFuKepuKBeQ1ANcm1LCgN5zsWKS8=",
+    "backend/app/vendor/nexpost/config.py": "sha256-oSTOKnQecdDXUV3IUMz9xpNIJ85eCIUkumBE85hBU1g=",
+    "backend/app/vendor/nexpost/errors.py": "sha256-At29rWVLLHyPYPtb2dPOKKr2RliqSTu++vZLC8n35jY=",
+    "backend/app/vendor/nexpost/letters.py": "sha256-4c2A+UoStxcWHjcBMtXVeWPmpHk1SDNbUBgLUYiXgGo=",
+    "backend/app/vendor/nexpost/model.py": "sha256-I9S5xu6sINxjPdZYNb3+hcCM48yu+N57ZuVWYLYW9U8=",
+    "backend/app/vendor/nexpost/outbox.py": "sha256-FZyH8iPyeqzlqxZiLcQgf2xpqiwchxhEzenI3Vbuht0=",
+    "backend/app/vendor/nexpost/send.py": "sha256-hOfNcEZ35jzWt+3JAckVN1ef1BhiZ/jP+zjhx57wZAI=",
+    "backend/app/vendor/nexpost/settings.py": "sha256-4hbN6wgyWHrOPBJ0Zh/bBxoUPLNBwzRO74UG6i/pX8k=",
+    "backend/app/vendor/nexpost/texts/mail.de.json": "sha256-i8+QUAjfFVGhI0ipCSMdlMQCUQ+ncvI6Zatrxu5Y+Fw=",
+    "backend/app/vendor/nexpost/texts/mail.en.json": "sha256-Tg+RaozDty/lJnYfS3hhj55szlRccOZ9mH5S4NoSM50=",
+    "backend/app/vendor/nexpost/texts/mail.fr.json": "sha256-PA1IBnIjHUZw8LhlwZ7PlwWEQJohqdq3FbY/sDnfSuc=",
+    "backend/tests/nexpost/conftest.py": "sha256-lQApaasIy+B3m8CpcG27Z6gNk8suOoYYBq16rp/01Y8=",
+    "backend/tests/nexpost/post_contract.py": "sha256-11cVxqtag46ZVsoH6cXhUmtOH9MGz2NgMMj/cv7Q7qI=",
+    "backend/tests/nexpost/test_nexpost_existing.py": "sha256-0t7rpb5OhAYMQU5n1Zvkj9D00EIawY5x3axI9ap7EQY=",
+    "backend/tests/nexpost/test_nexpost_outbox.py": "sha256-butLQ8E8coyy9t0D0KeNIA/KjGa8SPf9Y2WfVB/GDbM=",
+    "backend/tests/nexpost/test_nexpost_settings.py": "sha256-AkTTf0y8b9o7Ri04szIiHG3IBJ5b9+0pdEa++O09id4=",
+    "backend/tests/nexpost/test_nexpost_vendored.py": "sha256-j885s5jarT/l1ceSKgQYGzKVVjNbBCIZ3mXXyPW20J4=",
+    "frontend/src/vendor/nexpost/post.de.json": "sha256-2JO8nLBRc+VC+ADsdyPSQ3F/Y/v5U1z6DhwtQrIKu0c=",
+    "frontend/src/vendor/nexpost/post.en.json": "sha256-+OJPOTUWlZOQeEncI7CnA0mikQadBzZYQ+bPLj8ArFk=",
+    "frontend/src/vendor/nexpost/post.fr.json": "sha256-d2QvS8jTGjqZ954fynPGVLidUn67u1oWs2sm6kNUFMI=",
+    "frontend/src/vendor/nexpost/post.ts": "sha256-jzryeYaAnAqG2+t1xfzeTm3N8VH4goUwzREBXH1YHU8="
+  },
+  "module": "post",
+  "requires": {},
+  "vendor_path": "backend/app/vendor/nexpost",
+  "version": "0.1.1"
+}

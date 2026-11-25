@@ -1,0 +1,35 @@
+{
+  "mail": {
+    "server": "Mailserver",
+    "port": "Port",
+    "security": "Verschlüsselung",
+    "securityStarttls": "STARTTLS (meist Port 587)",
+    "securityTls": "TLS (meist Port 465)",
+    "securityNone": "Keine",
+    "user": "Benutzer",
+    "password": "Passwort",
+    "passwordKept": "Leer lassen, um das gespeicherte Passwort zu behalten.",
+    "sender": "Absenderadresse",
+    "senderName": "Absendername",
+    "senderNameHint": "Leer: {{app}}.",
+    "warningUnencrypted": "Ohne Verschlüsselung gehen Passwort und Mails lesbar durchs Netz. Nur im eigenen Netz verwenden.",
+    "test": "Testmail schicken",
+    "testSent": "Die Testmail ist an {{email}} raus.",
+    "noServer": "Kein Mailserver eingetragen. Links werden zum Kopieren angezeigt.",
+    "lastOk": "Zuletzt verschickt: {{when}}",
+    "lastError": "Letzter Fehler ({{when}}): {{error}}",
+    "error": {
+      "mail_off": "Es ist kein Mailserver eingetragen.",
+      "mail_unreachable": "Der Mailserver ist nicht erreichbar.",
+      "mail_tls_failed": "Die verschlüsselte Verbindung zum Mailserver kam nicht zustande.",
+      "mail_auth_refused": "Der Mailserver hat Benutzer oder Passwort abgelehnt.",
+      "mail_sender_refused": "Der Mailserver hat die Absenderadresse abgelehnt.",
+      "mail_recipient_refused": "Der Mailserver hat die Empfängeradresse abgelehnt.",
+      "mail_refused": "Der Mailserver hat die Mail abgelehnt.",
+      "mail_failed": "Die Mail ging nicht raus.",
+      "mail_address_invalid": "Das ist keine E-Mail-Adresse.",
+      "mail_settings_invalid": "Diese Einstellungen passen nicht zusammen.",
+      "unknown": "Das hat nicht geklappt. Versuch es noch einmal."
+    }
+  }
+}

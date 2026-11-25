@@ -102,6 +102,8 @@ class Identity:
     email: str | None = None
     preferred_username: str | None = None
     name: str | None = None
+    #: The claim ``picture`` (since 1.1.0): the address of the person's picture at the provider, for display only.
+    picture: str | None = None
 
 
 @dataclass(frozen=True)
@@ -195,10 +197,23 @@ class Store(Protocol):
 
     def name_taken(self, name: str) -> bool: ...
 
-    def create_account(self, name: str, *, invite: Invite | None, email: str | None) -> int:
+    def create_account(
+        self, name: str, *, invite: Invite | None, email: str | None, display_name: str = "", picture: str = ""
+    ) -> int:
         """A new account that signs in through a provider only (no password). With ``invite`` it gets the rights
         of the invitation, without one it is a plain member. ``email`` is the provider's address; whether the account
-        takes it as its own is the app's rule. Single account: unused."""
+        takes it as its own is the app's rule. Since 1.1.0: ``display_name`` is the claim ``name`` ("" when the
+        provider sends none; the app may take the invitation's then), ``picture`` the claim ``picture`` ("" for
+        none), for an app that keeps the address; the picture itself comes through ``provider_picture``. Single
+        account: unused."""
+        ...
+
+    def provider_picture(self, account_id: int, picture: str, issuer: str) -> None:
+        """Since 1.1.0, after every sign-in through a provider that sends a picture (a new account and a known one),
+        once the sign-in is committed: an account without any picture of its own gets the provider's; one the person
+        set is never replaced. The store hands this to a worker (the fetch may take seconds, never in the request or
+        the event loop), there with a store of its own, e.g. ``nexkonten.take_provider_picture(store, account_id,
+        picture, issuer)``. Whatever fails, the sign-in goes on."""
         ...
 
     # --- Invitations (single account: unused) ---------------------------------------------------------------------

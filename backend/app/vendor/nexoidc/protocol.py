@@ -596,4 +596,12 @@ async def verify_id_token(
     email = str(claims.get("email") or "").strip() or None
     preferred = str(claims.get("preferred_username") or "").strip() or None
     name = str(claims.get("name") or "").strip() or None
-    return Identity(issuer=str(claims["iss"]), subject=subject, email=email, preferred_username=preferred, name=name)
+    picture = str(claims.get("picture") or "").strip() or None
+    return Identity(
+        issuer=str(claims["iss"]),
+        subject=subject,
+        email=email,
+        preferred_username=preferred,
+        name=name,
+        picture=picture,
+    )

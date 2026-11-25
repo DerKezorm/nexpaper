@@ -1,0 +1,35 @@
+{
+  "mail": {
+    "server": "Mail server",
+    "port": "Port",
+    "security": "Encryption",
+    "securityStarttls": "STARTTLS (usually port 587)",
+    "securityTls": "TLS (usually port 465)",
+    "securityNone": "None",
+    "user": "User",
+    "password": "Password",
+    "passwordKept": "Leave empty to keep the stored password.",
+    "sender": "Sender address",
+    "senderName": "Sender name",
+    "senderNameHint": "Empty: {{app}}.",
+    "warningUnencrypted": "Without encryption the password and the mails cross the network in the clear. Use it only in your own network.",
+    "test": "Send a test mail",
+    "testSent": "The test mail went to {{email}}.",
+    "noServer": "No mail server set up. Links are shown to copy.",
+    "lastOk": "Last sent: {{when}}",
+    "lastError": "Last error ({{when}}): {{error}}",
+    "error": {
+      "mail_off": "No mail server is set up.",
+      "mail_unreachable": "The mail server cannot be reached.",
+      "mail_tls_failed": "The encrypted connection to the mail server failed.",
+      "mail_auth_refused": "The mail server refused the user or password.",
+      "mail_sender_refused": "The mail server refused the sender address.",
+      "mail_recipient_refused": "The mail server refused the recipient address.",
+      "mail_refused": "The mail server refused the mail.",
+      "mail_failed": "The mail did not go out.",
+      "mail_address_invalid": "This is not an email address.",
+      "mail_settings_invalid": "These settings do not fit.",
+      "unknown": "That did not work. Try again."
+    }
+  }
+}

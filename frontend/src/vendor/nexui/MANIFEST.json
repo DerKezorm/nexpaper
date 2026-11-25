@@ -1,0 +1,24 @@
+{
+  "files": {
+    "frontend/src/vendor/nexui/Avatar.tsx": "sha256-xs/2K5iYvSIkI/LwJ2gcGrQoMy6fNZXliYGvgg0FaFY=",
+    "frontend/src/vendor/nexui/Button.tsx": "sha256-CoubnHTKQOgJZThSRT46eV9NagXXyFZW14tEbQjcIYg=",
+    "frontend/src/vendor/nexui/Card.tsx": "sha256-9VjNP6nBy2XUjKvF1K7glGCR2cqUhSupQm6VF+lHc80=",
+    "frontend/src/vendor/nexui/Dialog.tsx": "sha256-xSIzWJv20susiIlQMPxj2MJiF6OaG6EIxre/sXWG2WA=",
+    "frontend/src/vendor/nexui/Facts.tsx": "sha256-IAzTIrYxh9UULDaMUWOuazZ6DQ+EhA/EHJdq1PE547o=",
+    "frontend/src/vendor/nexui/Field.tsx": "sha256-/B4hAANlwb0oUcUHwfSRDyrk4HNVUpZJO3WXOGGIU1M=",
+    "frontend/src/vendor/nexui/Notice.tsx": "sha256-pMXKJd4oisKcV02aj4GpuXezGXzj7GywqH8rsHcyUMc=",
+    "frontend/src/vendor/nexui/icons.ts": "sha256-08zBKAWXynfI21ZJhCUabVDyqsanXBTsGvONU4xwtEU=",
+    "frontend/src/vendor/nexui/index.ts": "sha256-n+B3VgJCsx6uFqQAxn42GIHq/NRBBxHQF5U3TCOJKMI=",
+    "frontend/src/vendor/nexui/nexui.test.tsx": "sha256-5hc0TcsR4Q5bC2WXP0ZFYBEqI0eRrGu33yyyNFNpbck=",
+    "frontend/src/vendor/nexui/styles.ts": "sha256-MJMZGWjIUUQ+N4WO/DRtjhJpixV9bVSyYwy+afJxfD4="
+  },
+  "module": "ui",
+  "requires": {
+    "@testing-library/dom": ">=10.4.0",
+    "lucide-react": ">=0.545.0",
+    "react": ">=19.0.0",
+    "tailwindcss": ">=4.1.0"
+  },
+  "vendor_path": "frontend/src/vendor/nexui",
+  "version": "0.1.1"
+}

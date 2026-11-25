@@ -13,6 +13,10 @@ The order on a return, and nothing else:
 
 Never by the address, not even with ``email_verified: true``: authentik sends ``false`` by default, Entra sends none,
 and in authentik everybody changes their own address. The address from the provider is kept at the link for display.
+
+Since 1.1.0 a new account gets the provider's display name (claim ``name``) and picture address (claim ``picture``),
+and after every committed sign-in with a picture the store hears ``provider_picture`` (an account without a picture
+of its own takes it; nothing about that can stop a sign-in).
 """
 
 from __future__ import annotations
@@ -76,6 +80,17 @@ def name_for(identity: Identity, clean: Callable[[str], str], taken: Callable[[s
     raise RuntimeError(f"no free account name from {base!r}")
 
 
+def _offer_picture(store: Store, account_id: int, identity: Identity) -> None:
+    """The provider's picture for the store, after the sign-in is committed. Never raises: a picture is no reason to
+    refuse anybody."""
+    if not identity.picture:
+        return
+    try:
+        store.provider_picture(account_id, identity.picture, identity.issuer)
+    except Exception as error:  # noqa: BLE001 (whatever the store does with a picture, the sign-in goes on)
+        _log().warning("OIDC: the provider's picture was not handed on for account %s: %r", account_id, error)
+
+
 def second_factor_due(trusts_second_factor: bool, state: AccountState) -> bool:
     """The code is asked after the provider only when the provider is not trusted to
     check one itself and the account has one in the app."""
@@ -111,6 +126,7 @@ def sign_in(store: Store, arrival: Arrival) -> SignedIn:
             store.rollback()
             raise
         store.commit()
+        _offer_picture(store, state.id, identity)
         _log().info("Signed in via OIDC name=%s provider=%s", state.name, provider.slug)
         if invitation == INVITATION_ACCEPTED:
             _log().info("Invitation accepted via OIDC name=%s provider=%s", state.name, provider.slug)
@@ -131,7 +147,13 @@ def sign_in(store: Store, arrival: Arrival) -> SignedIn:
     for attempt in range(CREATE_ATTEMPTS):
         try:
             name = name_for(identity, store.clean_name, store.name_taken)
-            account_id = store.create_account(name, invite=invite, email=identity.email)
+            account_id = store.create_account(
+                name,
+                invite=invite,
+                email=identity.email,
+                display_name=identity.name or "",
+                picture=identity.picture or "",
+            )
             store.add_link(
                 Link(
                     provider_id=provider.id,
@@ -153,6 +175,7 @@ def sign_in(store: Store, arrival: Arrival) -> SignedIn:
             continue
         break
     store.commit()
+    _offer_picture(store, account_id, identity)
     _log().info(
         "Account created via OIDC provider=%s (%s) name=%s",
         provider.slug,
