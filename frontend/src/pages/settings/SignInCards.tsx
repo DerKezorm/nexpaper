@@ -110,6 +110,8 @@ function SignInCard({ server, anyActive }: { server: Server; anyActive: boolean 
         disabled={ownFirst}
         onChange={(on) => (on ? void server.save({ two_factor_required: true }) : setWeaker(true))}
       />
+      {/* The shared account module's switch: passkeys may be added and used to sign in (on from the start). */}
+      <Toggle label={t('account.passkeysAllowed')} checked={s.passkeys_allowed !== false} onChange={(on) => void server.save({ passkeys_allowed: on })} />
       <Feedback problem={server.problem} done={server.done ?? saved} />
       {asking && (
         <Confirm

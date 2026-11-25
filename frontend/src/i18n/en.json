@@ -299,7 +299,8 @@
       "again": "Once more",
       "submit": "Change password",
       "done": "Password changed. Every other device is signed out.",
-      "change": "Change"
+      "change": "Change",
+      "lastChanged": "Last changed on {{when}}"
     },
     "role": {
       "operator": "Operator",
@@ -1590,7 +1591,8 @@
       "noMailServer": "Without a mail server no address can be confirmed. The operator sets that up.",
       "plus": "From any other address it works with your own mailbox address:",
       "folderTitle": "Intake folder",
-      "folderText": "Your subfolder for the scanner in the network. What lands there comes into your inbox and is then taken out of the folder."
+      "folderText": "Your subfolder for the scanner in the network. What lands there comes into your inbox and is then taken out of the folder.",
+      "former": "Former names still work here: {{list}}"
     },
     "confirm": {
       "title": "Confirm the sender address",

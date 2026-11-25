@@ -391,14 +391,29 @@ export function MyIntakeCards() {
               {t('intake.mine.plus')} <span className="font-mono text-ink">{mine.plus_address}</span>
             </p>
           )}
+          <Former mine={mine} kind="@" />
         </Card>
       )}
       {mine.folder_on && mine.folder && (
         <Card icon={FolderInput} title={t('intake.mine.folderTitle')} text={t('intake.mine.folderText')}>
           <p className="rounded-xl bg-sheet-2 px-4 py-3 font-mono text-sm">{mine.folder}</p>
+          <Former mine={mine} kind="/" />
         </Card>
       )}
       {dialog}
     </>
+  )
+}
+
+
+/** After a rename: the plus addresses (``@``) or subfolders (``/``) of the former names, which still reach the account. */
+function Former({ mine, kind }: { mine: MyIntake; kind: '@' | '/' }) {
+  const { t } = useTranslation()
+  const shown = (mine.former ?? []).filter((entry) => (kind === '@' ? entry.includes('@') : entry.endsWith('/')))
+  if (shown.length === 0) return null
+  return (
+    <p className="mt-2 text-xs text-muted" data-testid={kind === '@' ? 'former-plus' : 'former-folder'}>
+      {t('intake.mine.former', { list: shown.join(', ') })}
+    </p>
   )
 }

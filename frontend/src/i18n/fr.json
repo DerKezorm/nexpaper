@@ -299,7 +299,8 @@
       "again": "Encore une fois",
       "submit": "Changer le mot de passe",
       "done": "Mot de passe changé. Tous les autres appareils sont déconnectés.",
-      "change": "Modifier"
+      "change": "Modifier",
+      "lastChanged": "Modifié le {{when}}"
     },
     "role": {
       "operator": "Administrateur",
@@ -1590,7 +1591,8 @@
       "noMailServer": "Sans serveur de courriel, aucune adresse ne peut être confirmée. L'administrateur le configure.",
       "plus": "Depuis n'importe quelle autre adresse, cela fonctionne avec votre propre adresse de boîte aux lettres :",
       "folderTitle": "Dossier d'entrée",
-      "folderText": "Votre sous-dossier pour le numériseur réseau. Ce qui y arrive va dans votre boîte de réception, puis est retiré du dossier."
+      "folderText": "Votre sous-dossier pour le numériseur réseau. Ce qui y arrive va dans votre boîte de réception, puis est retiré du dossier.",
+      "former": "Les anciens noms restent valables ici : {{list}}"
     },
     "confirm": {
       "title": "Confirmer l'adresse d'expéditeur",

@@ -30,6 +30,10 @@ export type ServerSettings = {
   smtp_user: string
   smtp_password_set: boolean
   smtp_from: string
+  /** The name system mail goes out under (the shared post module); empty: "nexpaper". */
+  smtp_sender_name?: string
+  /** The shared account module's switch: passkeys may be added and used (on from the start). */
+  passkeys_allowed?: boolean
   api_keys_allowed: boolean
   update_check: boolean
   links_allowed: boolean
@@ -234,6 +238,7 @@ export function MailCard({ server }: { server: Server }) {
         <Input label={t('server.smtpUser')} value={value.smtp_user} onChange={(smtp_user) => setDraft({ ...draft, smtp_user })} />
         <Input label={t('auth.password')} type="password" autoComplete="new-password" value={draft.smtp_password ?? ''} onChange={(smtp_password) => setDraft({ ...draft, smtp_password })} placeholder={s.smtp_password_set ? t('server.secretKept') : ''} />
         <Input label={t('server.smtpFrom')} value={value.smtp_from} onChange={(smtp_from) => setDraft({ ...draft, smtp_from })} placeholder="paper@example.com" />
+        <Input label={t('mail.senderName')} hint={t('mail.senderNameHint')} value={value.smtp_sender_name ?? ''} onChange={(smtp_sender_name) => setDraft({ ...draft, smtp_sender_name })} maxLength={80} />
         <div className="sm:col-span-2">
           <Button type="submit" primary busy={server.busy}>
             {t('common.save')}

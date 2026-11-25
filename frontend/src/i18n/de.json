@@ -299,7 +299,8 @@
       "again": "Noch einmal",
       "submit": "Passwort ändern",
       "done": "Passwort geändert. Alle anderen Geräte sind abgemeldet.",
-      "change": "Ändern"
+      "change": "Ändern",
+      "lastChanged": "Zuletzt geändert am {{when}}"
     },
     "role": {
       "operator": "Betreiber",
@@ -1590,7 +1591,8 @@
       "noMailServer": "Ohne Mailserver lässt sich keine Adresse bestätigen. Das richtet der Betreiber ein.",
       "plus": "Von irgendeiner anderen Adresse geht es mit deiner eigenen Postfach-Adresse:",
       "folderTitle": "Eingangsordner",
-      "folderText": "Dein Unterordner für den Scanner im Netz. Was dort landet, kommt in deinen Eingang und wird danach aus dem Ordner genommen."
+      "folderText": "Dein Unterordner für den Scanner im Netz. Was dort landet, kommt in deinen Eingang und wird danach aus dem Ordner genommen.",
+      "former": "Frühere Namen gelten hier weiter: {{list}}"
     },
     "confirm": {
       "title": "Absenderadresse bestätigen",

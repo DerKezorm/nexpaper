@@ -10,7 +10,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Trans, useTranslation } from 'react-i18next'
 import { Link, useNavigate } from 'react-router-dom'
 
-import { api, authApi, type Me, type ProfileChange } from '../../api/client'
+import { api, authApi, type Me, type ProfileChange, type RemainingAccess } from '../../api/client'
 import { AccountButton } from '../../components/AccountButton'
 import { confirmOf } from '../../lib/accountButton'
 import { PAGES, screenFields } from '../../vendor/nexkonten/konten'
@@ -401,6 +401,7 @@ function Security({ me }: { me: Me }) {
   const restricted = Boolean(me.second_factor_setup_required)
   return (
     <>
+      {!restricted && me.new_password_origin && <RemainingAccessNotice />}
       <Card id="security" icon={ShieldCheck} title={t('me.security.title')}>
         {restricted && (
           <p role="note" className="rounded-[9px] border border-warn/40 bg-warn/10 px-4 py-3 text-sm text-warn">
@@ -408,7 +409,7 @@ function Security({ me }: { me: Me }) {
           </p>
         )}
         {!restricted && <MyProviders me={me} bare />}
-        {!restricted && me.sign_in === 'password' && <PasswordRow />}
+        {!restricted && me.sign_in === 'password' && <PasswordRow changedAt={me.password_changed_at ?? null} />}
         <div className="rounded-[12px] border border-line px-3 py-2.5" data-testid="second-factor-row">
           <h3 className="mb-2 text-sm font-medium">{t('twofactor.title')}</h3>
           <SecondFactorCard me={me} bare />
@@ -421,9 +422,54 @@ function Security({ me }: { me: Me }) {
   )
 }
 
-/** The password as a row that opens, as in nexnotes: the three fields and the button inside. */
-function PasswordRow() {
+/**
+ * "These devices still have access" (the shared account module): after a password set through a link, the paired
+ * devices, API keys and passkeys that stayed, with "Disconnect all" and putting the list away. After the operator's
+ * or the server's link it says so first.
+ */
+function RemainingAccessNotice() {
   const { t } = useTranslation()
+  const { setMe } = useAuth()
+  const [list, setList] = useState<RemainingAccess | null>(null)
+  const action = useAction()
+  useEffect(() => {
+    authApi.access().then(setList, () => undefined)
+  }, [])
+  if (!list) return null
+  return (
+    <Notice tone="warn" testId="remaining-access">
+      {list.origin !== 'self' && <span className="mb-1 block">{t('account.resetByOperator')}</span>}
+      {list.access.length > 0 && (
+        <>
+          <span className="block">{t('account.remainingAccess')}</span>
+          <span className="mb-2 block">{list.access.map((item) => item.label).join(', ')}</span>
+        </>
+      )}
+      <span className="flex flex-wrap gap-2">
+        {list.access.length > 0 && (
+          <AccountButton
+            name="account.disconnectAll"
+            busy={action.busy}
+            onClick={() =>
+              void action.run(async () => {
+                await authApi.disconnectAll()
+                setMe(await authApi.me())
+              })
+            }
+          />
+        )}
+        <AccountButton name="done" busy={action.busy} onClick={() => void action.run(async () => setMe(await authApi.accessSeen()))}>
+          {t('common.done')}
+        </AccountButton>
+      </span>
+      <Feedback problem={action.problem} values={action.values} />
+    </Notice>
+  )
+}
+
+/** The password as a row that opens, as in nexnotes: the three fields and the button inside; when it was last set. */
+function PasswordRow({ changedAt }: { changedAt: string | null }) {
+  const { t, i18n } = useTranslation()
   const [pw, setPw] = useState({ current: '', next: '', again: '' })
   const password = useAction()
   const [unsent, setUnsent] = useState<string | null>(null)
@@ -432,7 +478,9 @@ function PasswordRow() {
       <summary className="flex cursor-pointer list-none items-center gap-3">
         <KeyRound className="h-4 w-4 text-muted" aria-hidden />
         <span className="flex-1 font-medium">{t('me.password.title')}</span>
-        <span className="text-xs text-muted">{t('me.password.text')}</span>
+        <span className="text-xs text-muted">
+          {changedAt ? t('me.password.lastChanged', { when: new Date(changedAt).toLocaleDateString(i18n.language) }) : t('me.password.text')}
+        </span>
         <span className="btn btn-ghost h-8 px-3 text-xs font-medium">{t('me.password.change')}</span>
       </summary>
       <form
@@ -444,7 +492,7 @@ function PasswordRow() {
           setUnsent(missing)
           if (missing) return
           void password.run(async () => {
-            await authApi.password(pw.current, pw.next)
+            await authApi.password(pw.current, pw.next, pw.again)
             setPw({ current: '', next: '', again: '' })
           }, t('me.password.done'))
         }}
