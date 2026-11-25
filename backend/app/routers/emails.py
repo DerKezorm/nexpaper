@@ -3,7 +3,8 @@ more (an account without one: a fresh sign-in at its provider), because the addr
 
 With a mail server and the public address the new address waits for the link mailed to it, and counts and is proven
 once it is opened; without, it counts at once but is not proven (the intake trusts only a proven address). The same
-address again, while it is not proven, sends a link to it (``routers/auth.prove_address``). The old address hears of a
+address again, while it is not proven, sends a link to it, and so does "Confirm by link" (``POST /me/email/prove``,
+the module's ``profiles.prove_email``). The old address hears of a
 change where it counted. A link that does not hold counts as a failure of the sender, as the links for a new password
 do.
 """
@@ -23,7 +24,7 @@ from ..services import kontenpost, mailer
 from ..services.konten_store import KontenStore
 from ..vendor import nexkonten
 from ..vendor.nexkonten import profiles
-from .auth import account_view, change_address, fail
+from .auth import account_view, change_address, fail, prove_address
 
 logger = logging.getLogger("nexpaper.auth")
 
@@ -67,6 +68,21 @@ def resend(account: BrowserAccount, db: DbSession) -> dict[str, Any]:
         raise error(exc.code, "The mail server did not take the mail.", 502) from exc
     row = db.get(AccountRow, account.id)
     assert row is not None
+    return account_view(row)
+
+
+@router.post("/me/email/prove", summary="Send a link that proves the address there is (the intake trusts it then)")
+def prove(account: BrowserAccount, db: DbSession) -> dict[str, Any]:
+    """"Confirm by link" (the module's ``profiles.prove_email``): for an address that counts and is not proven yet.
+    Nothing changes until the link is opened; then the address is proven and the intake takes mail from it."""
+    row = db.get(AccountRow, account.id)
+    assert row is not None
+    try:
+        prove_address(db, row)
+    except nexkonten.AccountError as exc:
+        db.rollback()
+        raise fail(exc) from exc
+    db.refresh(row)
     return account_view(row)
 
 

@@ -133,8 +133,8 @@ def test_a_device_cookie_of_another_account_or_forged_does_not_open_a_lock(clien
 def test_sixty_wrong_passwords_at_once_count_no_more_than_the_lock_allows(
     client: TestClient, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Thirty guesses at once from thirty addresses: the shared module's pot of the account lets six through (five
-    free, the sixth makes it wait), and only those are checked and counted at the account."""
+    """Thirty guesses at once from thirty addresses: the shared module's pot of the account lets five through (five
+    free, then it waits), and only those are checked and counted at the account."""
     from app.services.konten_store import KontenStore
 
     make_account("anna")
@@ -160,7 +160,7 @@ def test_sixty_wrong_passwords_at_once_count_no_more_than_the_lock_allows(
     for thread in threads:
         thread.join()
     brake.forget()
-    assert 1 <= len(counted) <= 6 < security.MAX_FAILURES
+    assert 1 <= len(counted) <= 5 < security.MAX_FAILURES
 
 
 def test_behind_a_proxy_nexpaper_was_not_told_about_a_stranger_does_not_freeze_everybody(client: TestClient) -> None:
@@ -466,7 +466,7 @@ def test_five_failures_from_one_address_make_it_rest_a_quarter_of_an_hour(later:
     from app.vendor.nexkonten.brake import FREE
 
     make_account("anna")
-    for number in range(FREE["sender"] + 1):
+    for number in range(FREE["sender"]):
         assert fresh("203.0.113.60").post("/api/v1/auth/login",
                                           json={"name": f"x{number}", "password": "no"}).status_code == 401
     resting = fresh("203.0.113.60").post("/api/v1/auth/login", json={"name": "anna", "password": PASSWORD})
@@ -494,7 +494,7 @@ def test_a_forwarded_header_from_a_sender_nexpaper_does_not_trust_buys_nothing_m
     sender = fresh("203.0.113.80")
     answers = [sender.post("/api/v1/auth/login", json={"name": f"n{n}", "password": "no"},
                            headers={"X-Forwarded-For": f"6.6.{n}.1"}).status_code for n in range(FREE["sender"] + 3)]
-    assert answers.count(401) == FREE["sender"] + 1 and answers[-1] == 429
+    assert answers.count(401) == FREE["sender"] and answers[-1] == 429
 
 
 def test_an_unknown_name_and_a_wrong_password_answer_alike(monkeypatch: pytest.MonkeyPatch) -> None:

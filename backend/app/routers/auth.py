@@ -15,7 +15,6 @@ from __future__ import annotations
 
 import logging
 import unicodedata
-from datetime import timedelta
 from typing import Annotated, Any, Literal
 
 from fastapi import APIRouter, HTTPException, Path, Request, Response
@@ -43,7 +42,6 @@ from ..deps import (
     reauth_guard,
     reauth_succeeded,
     session_of,
-    too_many,
 )
 from ..errors import detail, error
 from ..models import (
@@ -89,13 +87,10 @@ from ..services import vaults as vaults_service
 from ..services.accounts import AccountError
 from ..services.konten_store import KontenStore, counts, pending_of, proven
 from ..vendor import nexkonten
-from ..vendor.nexkonten import brake as konten_brake
 from ..vendor.nexkonten import login as konten_login
 from ..vendor.nexkonten import profiles
 from ..vendor.nexkonten import sessions as konten_sessions
 from ..vendor.nexkonten import setup as konten_setup
-from ..vendor.nexkonten.brake import BRAKE
-from ..vendor.nexkonten.profiles import CONFIRM_HOURS
 
 logger = logging.getLogger("nexpaper.auth")
 
@@ -208,6 +203,10 @@ def fail(exc: AccountError | nexkonten.AccountError) -> HTTPException:
     under the names 1.12.0 used where it had others (``public_code``); a brake answers 429 with ``Retry-After``."""
     code = getattr(exc, "public_code", exc.code)
     values = dict(getattr(exc, "extra", {}) or {})
+    if code != exc.code:
+        # The module's own code too where 1.12.0's name answers (``AccountError.as_dict``, konten 0.3.10): the pages
+        # say "expired" even where the answer says ``invite_invalid``.
+        values.setdefault("account_code", exc.code)
     if exc.code == "too_many_attempts":
         wait = int(values.get("retry_after") or 1)
         values["retry_after"] = wait
@@ -495,34 +494,25 @@ def park(request: Request, response: Response, db: DbSession, account: AccountRo
 
 @router.post("/auth/login", summary="Sign in with username or email and password")
 def login(payload: LoginIn, request: Request, response: Response, db: DbSession) -> dict[str, Any]:
-    """The shared account module checks (``login.authenticate``): one answer for everything wrong, as long for an
-    unknown name as for a wrong password, failures counted at the account and its lock after ten (a browser that
-    signed in as the account before passes the lock).
+    """The shared account module signs in (``login.sign_in``, konten 0.3.10): its brake, then its check. One answer
+    for everything wrong, as long for an unknown name as for a wrong password, failures counted at the account and its
+    lock after ten (a browser that signed in as the account before passes the lock and counts in a pot of its own).
 
     The brake counts in the module's two pots, the sender (30 free) and the account it names (or what was typed, five
-    free); a browser that knows the account counts in a pot of its own. A full sender's pot answers 429 with
-    ``Retry-After``. A full pot of the account answers like a wrong password, ``wrong_credentials`` (as for a name that
-    is none): nothing tells that the account exists, and an installation of 1.12.0 knows that answer for an account
-    under attack (test "Bestand")."""
+    free). A full sender's pot answers 429 with ``Retry-After``; a full pot of the account answers like a wrong
+    password, ``wrong_credentials`` (as for a name that is none): nothing tells that the account exists, and an
+    installation of 1.12.0 knows that answer for an account under attack (test "Bestand")."""
     behind_unknown_proxy(request)
-    sender = client_ip(request)
     store = KontenStore(db)
     meant = konten_login.resolve_login(store, payload.name)
     mark = browser_mark(db, request, int(meant.id)) if meant is not None else ""
-    known = meant.id if mark and meant is not None else None
-    keys = konten_login.attempt_key(store, payload.name, sender)
-    wait = BRAKE.claim(keys, browser=mark)
-    if wait:
-        if not mark and BRAKE.wait(keys[:1]) <= 0:
-            # Only the pot of the account (or of what was typed) waits: as long as a refusal, nothing counted.
-            store.check_password(None, payload.password)
-            raise fail(konten_login.wrong_credentials())
-        raise too_many(max(1, int(wait + 0.999)))
     try:
-        konto = konten_login.authenticate(store, payload.name, payload.password, known_browser=known)
+        konto = konten_login.sign_in(
+            store, payload.name, payload.password, sender=client_ip(request), browser=mark,
+            known_browser=meant.id if mark and meant is not None else None,
+        )
     except nexkonten.AccountError as exc:
         raise fail(exc) from exc
-    BRAKE.succeeded(keys, browser=mark)
     account = db.get(AccountRow, int(konto.id))
     assert account is not None
     if not settings_service.get(db, "password_login") and account.role != OPERATOR:
@@ -734,13 +724,18 @@ def change_address(db: Session, row: AccountRow, address: str, *, password: str,
     nothing waiting, 502); without, it counts at once but is not proven (the intake does not trust it). "" takes the
     address away. The address that now waits for its link, "" for none.
 
-    nexpaper's own part: the same address again while it is not proven sends a link to it (``prove_address``)."""
+    As in 1.12.0 the same address again while it is not proven sends a link to it, with the password as well
+    (``prove_address``, the module's ``profiles.prove_email``)."""
     mail = kontenpost.can_mail(db)
     clean = address.strip()
     if clean and (row.email or "").strip().lower() == clean.lower() and not proven(row):
         if not mail:
             raise error("email_same", "This is your address already.", 409)
-        return prove_address(db, row, password=password, fresh=fresh)
+        store = KontenStore(db)
+        konto = store.get_account(row.id)
+        assert konto is not None
+        nexkonten.common.confirm(store, konto, password, fresh, without_password=True)
+        return prove_address(db, row)
     changed = profiles.change_email(KontenStore(db), row.id, address, password=password, actor_confirmed=fresh,
                                     mail=mail)
     if changed.mail is not None:
@@ -754,22 +749,15 @@ def change_address(db: Session, row: AccountRow, address: str, *, password: str,
     return changed.pending
 
 
-def prove_address(db: Session, row: AccountRow, *, password: str, fresh: bool) -> str:
+def prove_address(db: Session, row: AccountRow) -> str:
     """A link to the address the account has, which counts but is not proven yet (an invitation's, one set without a
-    mail server): opened, it is proven, and the intake trusts it. With the own password, counted at the module's brake
-    (``mail:<id>``). The module has no call for this (``prove_email`` would be its place); it waits like a change of
-    address and is confirmed by ``profiles.confirm_email``."""
-    store = KontenStore(db)
-    konto = store.get_account(row.id)
-    assert konto is not None
-    nexkonten.common.confirm(store, konto, password, fresh, without_password=True)
-    nexkonten.common.counted((konten_brake.door_key(konten_brake.DOOR_MAIL, row.id),))
-    token = nexkonten.common.new_token()
-    address = row.email.strip()
-    store.start_email_change(row.id, address, token, utcnow() + timedelta(hours=CONFIRM_HOURS))
-    db.commit()
-    letter = nexkonten.Mail(nexkonten.MAIL_CONFIRM_EMAIL, address, row.id, row.name, row.display_name or "", token,
-                            CONFIRM_HOURS)
+    mail server): opened, it is proven, and the intake trusts it (the module's ``profiles.prove_email``, counted at
+    its brake ``mail:<id>``, confirmed by ``profiles.confirm_email``). A mail the server does not take leaves nothing
+    waiting (502). The address that waits for its link."""
+    if not kontenpost.can_mail(db):
+        raise error("mail_off", "There is no mail server set up.", 409)
+    letter = profiles.prove_email(KontenStore(db), row.id)
+    address = letter.to
     try:
         kontenpost.send_now(db, letter, keep=False)
     except mailer.MailError as exc:

@@ -25,10 +25,9 @@ from .test_settings import FakeSmtp, smtp, text_of  # noqa: F401 - fixture
 
 NEW = "a fresh and long password"
 PUBLIC = "https://paper.example.com"
-#: The shared account module's brakes for "Forgot your password?": one account gets its links in a while (the door
-#: ``mail:<id>``, "five free"; the brake of 0.3.9 lets the sixth through and only then waits), one sender asks ten
-#: times (``forgot:<sender>``).
-PER_ACCOUNT = 6
+#: The shared account module's brakes for "Forgot your password?": one account gets five links in a while (the door
+#: ``mail:<id>``), one sender asks ten times (``forgot:<sender>``).
+PER_ACCOUNT = 5
 PER_SENDER = 10
 
 

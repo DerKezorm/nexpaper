@@ -295,3 +295,57 @@ def test_the_profile_names_the_former_username(client: TestClient, operator: Acc
             assert row is not None
         sign_in(browser, row)
         assert browser.get("/api/v1/auth/me").json()["former_name"] == "tester"
+
+
+# --- konten 0.3.10 ------------------------------------------------------------------------------------------------------
+
+
+def test_the_password_s_last_change_is_kept_and_shown(client: TestClient, operator: Account) -> None:
+    """``password_changed_at`` for "Zuletzt geändert am …" under Security: unknown for a password of 1.12.0, set by a
+    change of the password."""
+    with SessionLocal() as db:
+        row = db.get(Account, operator.id)
+        assert row is not None
+        row.password_changed_at = None
+        db.commit()
+        assert KontenStore(db).get_account(operator.id).password_changed_at is None  # type: ignore[union-attr]
+    assert client.get("/api/v1/auth/me").json()["password_changed_at"] is None
+    changed = client.put("/api/v1/auth/password", json={"current": PASSWORD, "new": PASSWORD + " new",
+                                                         "password_confirm": PASSWORD + " new"})
+    assert changed.status_code in (200, 204), changed.text
+    with SessionLocal() as db:
+        assert KontenStore(db).get_account(operator.id).password_changed_at is not None  # type: ignore[union-attr]
+    assert client.get("/api/v1/auth/me").json()["password_changed_at"]
+
+
+def test_an_account_through_a_provider_only_is_asked_no_second_factor_of_its_own() -> None:
+    """The store's hook ``provider_checks_factor`` (konten 0.3.10): "Require a second factor" does not reach an account
+    without a password here; its provider brings the factor (as in 1.12.0). One with a password is asked."""
+    from app.models import SIGN_IN_OIDC
+    from app.vendor import nexkonten
+
+    with SessionLocal() as db:
+        settings_service.save(db, {"two_factor_required": True})
+    member = make_account("anna")
+    provider = make_account("pia")
+    with SessionLocal() as db:
+        row = db.get(Account, provider.id)
+        assert row is not None
+        row.sign_in, row.password_hash = SIGN_IN_OIDC, ""
+        db.commit()
+        store = KontenStore(db)
+        assert store.provider_checks_factor(provider.id) is True
+        assert store.provider_checks_factor(member.id) is False
+        assert store.second_factor(provider.id) == nexkonten.SECOND_FACTOR_NONE
+        assert store.second_factor(member.id) == nexkonten.SECOND_FACTOR_REQUIRED
+
+
+def test_a_refusal_under_1_12_0_s_code_names_the_module_s_too(client: TestClient, operator: Account) -> None:
+    """``account_code`` beside the old code (``AccountError.as_dict``, konten 0.3.10): the pages say the module's
+    sentence where the answer keeps 1.12.0's name."""
+    taken = make_account("anna")
+    assert taken.id
+    answer = client.put("/api/v1/me/profile", json={"name": "anna", "password": PASSWORD})
+    detail = answer.json()["detail"]
+    assert (answer.status_code, detail["code"], detail["account_code"]) == (409, "name_taken", "username_taken")
+

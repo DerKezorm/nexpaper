@@ -236,6 +236,7 @@ class KontenStore:
             offered_email=offered,
             offered_email_provider=(row.offered_email_provider or "") if offered else "",
             declined_email=row.declined_email or "",
+            password_changed_at=_aware(row.password_changed_at) if row.password_changed_at else None,
         )
 
     @staticmethod
@@ -480,11 +481,16 @@ class KontenStore:
         if row.totp_secret_enc:
             # Also a seed that does not open any more: the second factor fails closed.
             return nexkonten.SECOND_FACTOR_ACTIVE
-        state = nexkonten.factor.state(self, account_id)
-        if state == nexkonten.SECOND_FACTOR_REQUIRED and not (row.sign_in == SIGN_IN_PASSWORD and row.password_hash):
-            # An account through a provider only brings the provider's second factor (as in 1.12.0).
-            return nexkonten.SECOND_FACTOR_NONE
-        return state
+        return nexkonten.factor.state(self, account_id)
+
+    def provider_checks_factor(self, account_id: AccountId) -> bool:
+        """The module's hook (konten 0.3.10): an account through a provider only brings the provider's second factor,
+        "Require a second factor" asks it none of its own here (as in 1.12.0, ``totp.provider_only``). A session through
+        a provider whose entry checks it is the sign-in's (``provider_checked``, ``totp.provider_checks``)."""
+        from . import totp
+
+        row = self._row(account_id)
+        return row is not None and totp.provider_only(row)
 
     # --- Pictures ------------------------------------------------------------------------------------------------
     def set_provider_picture(self, account_id: AccountId, picture: Picture) -> bool:

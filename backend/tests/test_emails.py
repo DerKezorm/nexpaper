@@ -188,6 +188,37 @@ def test_an_address_the_operator_typed_can_be_confirmed(client: TestClient, oper
     assert client.get("/api/v1/auth/me").json()["email_confirmed"] is True
 
 
+def test_confirm_by_link_proves_the_address_there_is(client: TestClient, operator: Account,
+                                                     smtp: type[FakeSmtp]) -> None:  # noqa: F811
+    """"Per Link bestätigen" (the module's ``profiles.prove_email``, konten 0.3.10): a link to the address that counts
+    and is not proven; opened, it is proven and nothing else changes. Nothing to prove answers ``nothing_to_prove``."""
+    mail_on()
+    with SessionLocal() as db:
+        row = db.get(Account, operator.id)
+        assert row is not None
+        row.email = "tester@example.com"
+        db.commit()
+    sent = client.post("/api/v1/me/email/prove")
+    assert sent.status_code == 200, sent.text
+    assert sent.json()["email"] == "tester@example.com" and sent.json()["email_confirmed"] is False
+    assert sent.json()["email_pending"] == "tester@example.com"
+    assert new_client().post(f"/api/v1/email/confirm/{token_of(smtp)}").status_code in (200, 204)
+    me = client.get("/api/v1/auth/me").json()
+    assert me["email"] == "tester@example.com" and me["email_confirmed"] is True and me["email_pending"] == ""
+    again = client.post("/api/v1/me/email/prove")
+    assert (again.status_code, again.json()["detail"]["code"]) == (409, "nothing_to_prove")
+
+
+def test_confirm_by_link_needs_a_mail_server(client: TestClient, operator: Account) -> None:
+    with SessionLocal() as db:
+        row = db.get(Account, operator.id)
+        assert row is not None
+        row.email = "tester@example.com"
+        db.commit()
+    refused = client.post("/api/v1/me/email/prove")
+    assert (refused.status_code, refused.json()["detail"]["code"]) == (409, "mail_off")
+
+
 def test_the_address_can_be_taken_away_and_a_waiting_one_withdrawn(client: TestClient, operator: Account,
                                                                     smtp: type[FakeSmtp]) -> None:  # noqa: F811
     mail_on()
@@ -247,13 +278,13 @@ def test_links_that_do_not_hold_count_against_the_sender(client: TestClient, ope
 
 
 def test_the_number_of_mails_is_limited(client: TestClient, operator: Account, smtp: type[FakeSmtp]) -> None:  # noqa: F811
-    """Every link written counts at the shared module's door ``mail:<account>``: five pass, the sixth makes it wait."""
+    """Every link written counts at the shared module's door ``mail:<account>``: five pass, then it waits."""
     mail_on()
-    for number in range(6):
+    for number in range(5):
         assert asks(client, f"a{number}@example.com").status_code == 200
     held = asks(client, "c@example.com")
     assert held.status_code == 429
-    assert len(smtp.sent) == 6
+    assert len(smtp.sent) == 5
 
 
 def test_the_token_and_the_address_stay_out_of_the_log(client: TestClient, operator: Account, smtp: type[FakeSmtp],  # noqa: F811

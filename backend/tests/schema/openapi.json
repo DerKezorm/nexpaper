@@ -12586,7 +12586,7 @@
     },
     "/api/v1/auth/login": {
       "post": {
-        "description": "The shared account module checks (``login.authenticate``): one answer for everything wrong, as long for an\nunknown name as for a wrong password, failures counted at the account and its lock after ten (a browser that\nsigned in as the account before passes the lock).\n\nThe brake counts in the module's two pots, the sender (30 free) and the account it names (or what was typed, five\nfree); a browser that knows the account counts in a pot of its own. A full sender's pot answers 429 with\n``Retry-After``. A full pot of the account answers like a wrong password, ``wrong_credentials`` (as for a name that\nis none): nothing tells that the account exists, and an installation of 1.12.0 knows that answer for an account\nunder attack (test \"Bestand\").",
+        "description": "The shared account module signs in (``login.sign_in``, konten 0.3.10): its brake, then its check. One answer\nfor everything wrong, as long for an unknown name as for a wrong password, failures counted at the account and its\nlock after ten (a browser that signed in as the account before passes the lock and counts in a pot of its own).\n\nThe brake counts in the module's two pots, the sender (30 free) and the account it names (or what was typed, five\nfree). A full sender's pot answers 429 with ``Retry-After``; a full pot of the account answers like a wrong\npassword, ``wrong_credentials`` (as for a name that is none): nothing tells that the account exists, and an\ninstallation of 1.12.0 knows that answer for an account under attack (test \"Bestand\").",
         "operationId": "login_api_v1_auth_login_post",
         "requestBody": {
           "content": {
@@ -20594,6 +20594,35 @@
           }
         ],
         "summary": "Withdraw the address that waits for its link",
+        "tags": [
+          "mail address"
+        ]
+      }
+    },
+    "/api/v1/me/email/prove": {
+      "post": {
+        "description": "\"Confirm by link\" (the module's ``profiles.prove_email``): for an address that counts and is not proven yet.\nNothing changes until the link is opened; then the address is proven and the intake takes mail from it.",
+        "operationId": "prove_api_v1_me_email_prove_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Prove Api V1 Me Email Prove Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Send a link that proves the address there is (the intake trusts it then)",
         "tags": [
           "mail address"
         ]

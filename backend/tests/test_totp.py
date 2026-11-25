@@ -257,8 +257,8 @@ def test_five_wrong_codes_end_the_pending_sign_in(client: TestClient, operator: 
 
 
 def test_the_brake_slows_a_guessing_sender(client: TestClient, operator: Account, clock: Clock) -> None:
-    """Every code counts at the shared module's door ``code:<account>``, across waiting sign-ins: five pass, the sixth
-    makes it wait, and the next code answers 429 with ``Retry-After``."""
+    """Every code counts at the shared module's door ``code:<account>``, across waiting sign-ins: five pass, then it
+    waits, and the next code answers 429 with ``Retry-After``."""
     enrol(client)
     sign_out(client)
     password_step(client)

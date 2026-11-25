@@ -353,3 +353,28 @@ class Adapter(StandardAdapter):
         with self.store() as store:
             account = package.login.resolve_login(store, typed)
         return account.id if account is not None else None
+
+    def sign_in_from(self, typed: str, password: str, sender: str) -> tuple[int, Any]:
+        """Through ``POST /api/v1/auth/login`` from the address ``sender`` (nexpaper reads the client's address; no
+        proxy is trusted in the tests), as ``(status, account id)``. The brake is not emptied: it is what is tested."""
+        from fastapi.testclient import TestClient
+
+        from app.main import app
+
+        browser = TestClient(app, base_url="http://testserver", headers=TAB, client=(sender, 50000))
+        answer = browser.post("/api/v1/auth/login", json={"name": typed, "password": password})
+        if answer.status_code != 200:
+            return answer.status_code, None
+        package = __import__(self.package, fromlist=["login"])
+        with self.store() as store:
+            account = package.login.resolve_login(store, typed)
+        return 200, account.id if account is not None else None
+
+    def listed_invites(self) -> list[dict[str, Any]]:
+        """``GET /api/v1/invites`` as the operator's list gets it: expired invitations stay until withdrawn."""
+        from app.db import SessionLocal
+        from app.routers.invites import list_invites
+
+        with SessionLocal() as db:
+            return [{"email": row["email"], "expired": bool(row["expired"])}
+                    for row in list_invites(None, db)]  # type: ignore[arg-type]
