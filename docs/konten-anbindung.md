@@ -1,301 +1,484 @@
-# Anbindung des Kontenmoduls (`nexkonten`) an nexpaper
+# Anbindung der gemeinsamen Konto-Module an nexpaper
 
-Stand 24.11.2026, Zweig `konten`. Vorbereitung, noch nichts angebunden. Maßgeblich sind der Entwurf in nexlore
-(`Development/nexapps/Baupläne/Entwurf Konten, Einrichtung und Anmeldung.md`) und die Schnittstelle des Moduls
-(`bauplaene/konten/SCHNITTSTELLE.md`, Zweig `konten`, Fassung 0.1.0, dazu `oidc` 1.1.0). Wo dieser Plan von beiden
-abweicht oder etwas offen lässt, steht es unter „Passt das Modul?“ und „Offene Fragen“.
+Stand 25.11.2026, Zweig `konten` (auf `main` nach „Delete a shared vault from the web app“, nexpaper 1.12.0, Schema 20).
+**Plan, noch nichts gebaut.** Zielstand der Module (aus `bauplaene`, Zweig `konten`): **konten 0.3.9, oidc 1.1.0,
+post 0.1.1, ui 0.1.1**. Maßgeblich sind der Entwurf in nexlore (`Development/nexapps/Baupläne/Entwurf Konten,
+Einrichtung und Anmeldung.md`, Tabellen „Entscheidungen“, „Teil 2“, „Beim Bauen entschieden“),
+`bauplaene/konten/SCHNITTSTELLE.md` und `README.md` („Was ist neu“ bis 0.3.9), `bauplaene/ui/README.md`,
+`bauplaene/post/SCHNITTSTELLE.md`, im Baukasten-Plan der Abschnitt „Begleit-Apps“. Vorlage ist nexnotes
+(`nexapps/nexnotes`, `main`, 1.1.0): `backend/app/services/konten_store.py`, `konten_wanderung.py`, `kontenpost.py`,
+`post_store.py`, `backend/tests/nexkonten_adapter.py`, `frontend/src/pages/settings/*`, `pages/AuthPages.tsx`. Im Zweifel
+die Lösung von nexnotes nehmen.
 
-Grundsatz: **Für niemanden, der nexpaper 1.12.0 benutzt, fällt ein Weg hinein weg.** Der Test „Bestand“ beweist das
-(Abschnitt 10). nexpaper ist die App, die dem Entwurf schon am nächsten ist (Einrichtungscode, beide Wege für ein
-vergessenes Passwort, Adresse mit Bestätigungslink, Namensregeln wie im Modul). Die Reibung liegt woanders: **Eine
-bestätigte Adresse entscheidet in nexpaper, wessen Tresor eine Mail an den Posteingang erreicht**, und **der
-Benutzername ist Ordnername und Plus-Adresse des Eingangs**.
+Die Fassung vom 24.11. war gegen konten 0.2.x geschrieben; was sich seitdem geändert hat, steht in Abschnitt 14. Alle
+Stellen im Code sind am 25.11.2026 auf diesem Zweig nachgesehen, die iPhone-App in `nexapps/nexpaper-ios` (`d7be6bf`,
+1.3.1).
+
+**Kurz:** nexpaper ist dem Entwurf am nächsten (Einrichtungscode, beide Wege für ein vergessenes Passwort, Adresse mit
+Bestätigungslink, Namensregeln wie im Modul, Teil 2 fast vollständig). Drei Dinge sind eigen: **„bestätigt“ heißt in
+nexpaper „per Link bewiesen“** und entscheidet, wessen Tresor eine Mail an den Posteingang erreicht (dafür hat das Modul
+seit 0.2.0 die zweite Angabe `proven`); **der Benutzername ist Eingangsordner und Plus-Adresse** (alte Namen gelten
+dort weiter); und **die iPhone-App hängt am Benutzernamen** (Abschnitt 12). Umbenennen kommt gleich mit dem Umbau.
+
+## 0. Das Wichtigste für den Umbau-Agenten
+
+1. **Der Test „Bestand“ hängt an Namen der App.** `tests/test_bestand.py` importiert `app.security.MAX_FAILURES` und
+   `SESSION_COOKIE`, `app.services.mailer`, `notices`, `settings_service`, `totp`, ruft `totp.code_at(...)` und
+   `notices.settle()` und fängt die Mail von „Passwort vergessen“ über
+   `monkeypatch.setattr(mailer, "send_reset", …)` mit der Unterschrift `send_reset(db, to, link, *, name, hours)`;
+   `name` muss der Benutzername sein, `link` endet mit dem Token. Also: `resets.forgot_in_background(..., later=
+   notices.later, send=…)`, und `send` ruft **`mailer.send_reset`** (das darf innen `post` nehmen, aber sofort, nicht
+   über die Outbox). `tests/conftest.py` leert vor jedem Test zusätzlich `nexkonten.brake.BRAKE` und die wartenden
+   Anmeldungen des Moduls.
+2. **Sperre nach Fehlversuchen bleibt bei 5** (`security.MAX_FAILURES`), solange der Besitzer nichts anderes entscheidet (Frage 1):
+   `test_the_lock_after_wrong_passwords_still_holds_per_account` tippt `MAX_FAILURES`-mal falsch und dann richtig und
+   erwartet jedes Mal 401. Mit 10 bremst der Topf `account:<id>` des Moduls ab dem siebten Versuch mit 429, der Test
+   wird rot.
+3. **Zwei Angaben zur Adresse:** `Account.email_confirmed` (zählt) = neue Spalte `users.email_counts` (Bestand: 1 für
+   jede Adresse), `Account.email_proven` (bewiesen) = `users.email_confirmed_at IS NOT NULL` wie heute. Posteingang
+   (`mail_senders.owners`), Erinnerungen, Bescheide und Exporte lesen weiter nur `email_confirmed_at`. Der Start schreibt
+   **keine Zeile in `settings`** (der Test zählt sie); neue Einstellungen gelten über `DEFAULTS`.
+4. **Umbenennen jetzt:** Tabelle `former_names`; Eingangsordner und Plus-Adresse nehmen aktuelle **und frühere** Namen
+   des Kontos (Abschnitt 2); Koppel-Antworten bekommen `account_id`, und `account` nennt den **ältesten** Namen des
+   Kontos, damit iPhone-Apps vor dem Update beim Neukoppeln nichts leeren (Abschnitt 12).
+5. **Kontenliste neu aus konten 0.3.9 und ui 0.1.1**, nichts geht verloren: Haken „KI erlaubt“, Angabe „Dokumente“,
+   der eigene Lösch-Dialog (Übergabe an Person, Tresor oder mitlöschen, Sperre bei alleinigem Tresorverwalter, Kontoname
+   eintippen) an der Stelle der Lösch-Rückfrage, Karte „Schlüssel aller Konten“ darunter (Abschnitt 9).
 
 ## 1. Bestand heute (1.12.0, Schema 20)
 
-### Datenmodell
+### Datenmodell (`backend/app/models.py`)
 
 | Tabelle | Was zum Konto gehört |
 |---|---|
-| `users` | `id` (Integer, an ihm hängt alles), `name` (String 64, `unique`, **immer klein**, Muster `^[a-z0-9][a-z0-9._-]{1,63}$`, gleich den Regeln des Moduls), `display_name` (80, leer: der Name wird gezeigt), `role` (`operator`/`member`, mehrere Betreiber möglich), `sign_in` (`password`/`oidc`), `password_hash` (Argon2id, leer: nur Anbieter), `email` (255, **nicht eindeutig**), `email_confirmed_at` (gesetzt nur durch den Bestätigungslink), `email_from_provider`, `language` (am Konto, leer: Browser), `failed_logins`/`locked_until` (Sperre nach 5 Fehlversuchen für 15 Minuten), `blocked_at` (gesperrt), `totp_*`, `avatar`/`avatar_at` (WebP), `passkey_handle`, `ai_allowed`, `profile` (JSON) |
-| `invites` | `token_hash`, `email` (frei), `created_by`, `expires_at` (Betreiber wählt **1, 7 oder 30 Tage**). Kein Anzeigename, kein Name |
-| `password_resets` | `token_hash`, `account_id`, `created_by` (leer: selbst angefordert), `expires_at` (**24 Stunden**, beide Wege) |
+| `users` | `id`; `name` (64, `unique`, immer klein, `^[a-z0-9][a-z0-9._-]{1,63}$`); `display_name` (80); `whats_new_seen`; `role` (`operator`/`member`, mehrere Betreiber); `sign_in`; `password_hash` (Argon2id, leer: nur Anbieter); `email` (255, nicht eindeutig); **`email_confirmed_at`** (gesetzt nur durch einen eingelösten Bestätigungslink); `email_from_provider`; `oidc_subject` (Rückweg auf 1.0.1); `language`; `profile` (JSON, darin `notify_login`); `created_at`, `last_seen_at`; `failed_logins`, `locked_until` (5 Fehlversuche, 15 Minuten); `blocked_at`; `totp_secret_enc`, `totp_recovery` (`h1:` + HMAC), `totp_last_step`; `avatar` (WebP), `avatar_at`; `signed_in_before`; `passkey_handle`; `ai_allowed` |
+| `auth_sessions` | `token_hash`, `account_id`, `created_at`, `expires_at`, `last_seen_at`, `ip`, `user_agent`, `uid`, `remember`, `stage` (`full`/`setup`/`codes`), `second_factor_by_provider` |
+| `invites` | `token_hash`, `email`, `created_by`, `created_at`, `expires_at` (1, 7, 30 Tage) |
+| `password_resets` | `account_id`, `token_hash`, `created_by` (NULL: selbst angefordert oder Befehl auf dem Server), `expires_at` (24 Stunden, beide Wege) |
 | `email_confirmations` | wartende Adresse: `account_id` (eindeutig), `address`, `token_hash`, `expires_at` (24 Stunden) |
 | `mail_senders` | weitere bestätigte Absenderadressen je Person (nur Posteingang, eigener Link), nicht Teil des Kontos |
-| `auth_sessions`, `devices` (`npd_…`), `api_keys` (`npk_…`), `passkeys`, `push_devices`, `pairings`, `oidc_links` | alle an `account_id`/`user_id` |
-| `vaults` | je Konto ein persönlicher Tresor (`personal_of`), angelegt im selben Schreibvorgang wie das Konto (`models._make_personal_vault`): `name` = Anzeigename oder Name, `folder` = Ordner auf der Platte, **einmal vergeben, nie umbenannt** |
+| `devices` (`npd_…`), `pairings`, `api_keys` (`npk_…`), `passkeys`, `push_devices`, `oidc_links` | an der Konto-ID |
+| `vaults`, `vault_members` | je Konto ein persönlicher Tresor (`personal_of`, angelegt in `models._make_personal_vault` im selben Schreibvorgang), `folder` einmal vergeben, nie umbenannt; gemeinsame Tresore mit Verwaltern |
+| `settings` | `two_factor_required` (Vorgabe `True`), `password_login`, `public_url`, `smtp_*`, `api_keys_allowed` …; ohne Zeile gilt `DEFAULTS` |
 
-Es gibt keinen Zustand „gelöscht“: Löschen entfernt die Zeile (Dokumente gehen nach Wahl an andere), der Name wird frei.
+Kein Zustand „gelöscht“: Löschen entfernt die Zeile (Dokumente gehen nach Wahl an andere), der Name wird heute frei.
 
-### Dienste und Router
+**Wanderung:** nummerierte Schritte (`db.py`, `SCHEMA_VERSION = 20`, Sicherung vor dem ersten Schritt) **und
+`ADDITIONS`**: neue Tabellen und Spalten mit Vorgabe, die bei jedem Start ergänzt werden, ohne die Nummer zu heben; so
+startet die Vorfassung weiter auf der Datenbank (Rückweg eine Fassung lang, so gebaut für die Anbieterliste in 1.1.0).
+
+### Dienste und Router (Präfix `/api/v1`)
 
 | Ort | Was |
 |---|---|
-| `routers/auth.py` | `GET/POST /api/v1/setup` (`name`, `password`, `language`, `code`; Code aus `NEXPAPER_SETUP_TOKEN` oder Log), `POST /auth/login` (`name` ≤ 64, `password`, `remember`), `/auth/me` (`name`, `display_name`, `email`, `email_confirmed`, `email_pending`, `language` …), `PUT /me/profile` (`display_name`), `PUT /me/language`, Betreiber: `/accounts`, Sperren, Rolle, Löschen (mit `confirm_name`) |
-| `services/accounts.py` | `by_name` (klein), `check_name`, `authenticate` (Blindhash, Sperre je Konto, bekannte Browser ausgenommen, eine Prüfung je Konto zugleich), Einladungen |
-| `routers/invites.py` | `POST /invites` (`days`, `email`, `send`), `GET/POST /invite/{token}` (`name`, `password`) |
-| `routers/resets.py`, `services/resets.py` | `POST /auth/forgot` (`name`: Name **oder Adresse**), `GET/POST /reset/{token}`, `POST /accounts/{id}/reset-link` (Betreiber, eigenes Passwort; mit Mail an die Adresse, sonst einmal gezeigt) |
-| `routers/emails.py`, `services/emails.py` | `PUT /me/email` (`email`, `password`; **ohne Mailserver abgelehnt**, `mail_off`), `DELETE /me/email/pending`, `GET/POST /email/confirm/{token}`; Bescheid an die alte bestätigte Adresse |
-| `routers/oidc.py`, `services/oidc_store.py`, `vendor/nexoidc` 1.0.14 | Anbieter; Adresse vom Anbieter **unbestätigt**, folgt dem Anbieter, bis die Person eine eigene setzt |
-| `routers/intake.py`, `services/intake.py`, `intake_folder.py`, `intake_mail.py`, `mail_senders.py` | Posteingang: Unterordner `<eingang>/<name>/`, Plus-Adresse `<postfach>+<name>@…`, sonst eine **bestätigte** Absenderadresse genau einer Person |
-| `app/reset_link.py` | Kommandozeile: Link für ein Konto nach Name |
+| `routers/auth.py` | `GET/POST /setup` (`name`, `password`, `language`, `code`), `POST /auth/login` (`name` ≤ 64, `password`, `remember`), `/auth/setup/done`, `/auth/setup/codes`, `/auth/logout(-all)`, `/auth/me`, `/auth/sessions`, `PUT /auth/password`, `PUT /me/profile` (`display_name`), `/me/language`, `/me/preferences`; Betreiber: `GET /accounts`, `GET /accounts/{id}/leaving`, `DELETE /accounts/{id}` (`current_password`, `confirm_name`, `documents`, `target_user_id`, `target_vault_id`), `sign-out`, `block`, `unblock`, `permissions` (`ai_allowed`), `role` |
+| `services/accounts.py` | `by_name`, `check_name`, `authenticate` (Blindhash, Sperre am Konto, bekannter Browser ausgenommen, eine Prüfung je Konto), Einrichtungscode, Einladungen |
+| `routers/invites.py` | `GET/POST /invites` (`days`, `email`, `send`), `DELETE /invites/{id}`, `GET/POST /invite/{token}` (`name`, `password`) |
+| `routers/resets.py`, `services/resets.py` | `POST /auth/forgot` (`name`: Name oder Adresse, jede Adresse auf dem Konto, bis 5 Konten, 24 h, im Hintergrund über `notices.later`), `GET/POST /reset/{token}`, `POST /accounts/{id}/reset-link` (eigenes Passwort; Mail an die Adresse, sonst einmal gezeigt; nicht für gesperrte) |
+| `routers/emails.py`, `services/emails.py` | `PUT /me/email` (`email`, `password`; **ohne Mailserver 409 `mail_off`**; dieselbe noch nicht bewiesene Adresse noch einmal: neuer Link), `DELETE /me/email/pending`, `GET/POST /email/confirm/{token}`; **Bescheid an die alte Adresse**, wenn sie bewiesen war (Ändern per Link, Entfernen) |
+| `routers/oidc.py`, `services/oidc_store.py`, `vendor/nexoidc` 1.0.14 | Anbieter; Adresse vom Anbieter unbewiesen, folgt dem Anbieter, bis die Person eine eigene setzt |
+| `routers/intake.py`, `services/intake.py`, `intake_folder.py`, `intake_mail.py`, `mail_senders.py` | Posteingang: Unterordner `<eingang>/<name>/`, Plus-Adresse `<postfach>+<name>@…`, sonst eine **bewiesene** Absenderadresse genau einer Person, sonst Betreiber als „unbekannt“ |
+| `routers/pairing.py`, `routers/devices.py` | Koppeln per QR-Code und OAuth 2 mit PKCE; Antworten mit `account` = Benutzername; `POST /devices/sibling` für das iPad |
+| `security.py` | Sitzung (Cookie `nexpaper_session` + Suffix), `end_all_sessions` (Browser **und gekoppelte Geräte**), Gerätecookie mit Konto-ID, Bremse je Absender, `MAX_FAILURES = 5`, `LOCK_MINUTES = 15` |
+| `services/notices.py`, `mailer.py` | Mail und Web Push bei neuer Anmeldung (`profile.notify_login`); Mails **nur englisch** |
+| `app/reset_link.py` | `python -m app.reset_link <account>` |
 
-### iPhone-App (nexpaper-ios, im App Store)
+### Frontend
 
-Kein eigenes Anmeldeformular: Koppeln per QR-Code oder Browser-Anmeldung (`ASWebAuthenticationSession`, OAuth2 mit
-PKCE). Der Server antwortet beim Koppeln mit `account` = **Benutzername** (`routers/pairing.py:108, 231`,
-`routers/devices.py:79`). Die App speichert ihn in `Connection.account` und nutzt ihn **als Schlüssel**
-(Abschnitt 2).
+Seit 1.11.0 Einstellungen wie nexnotes (`pages/settings/areas.ts`: Mein Konto mit Profil, Sicherheit, …; Server mit
+Allgemein, Anmeldung, Mail, …, Konten, Log). `pages/AuthPages.tsx` (Einrichtung, Anmelden, Code, Einladung, Passwort
+vergessen, neues Passwort, Adresse bestätigen), `pages/settings/AccountArea.tsx` (`ProfileCard`: Bild, „Name“ =
+Anzeigename, E-Mail mit Bestätigungszeile und „Link schicken“, Zeile „Rolle · Anmeldename“, Sprache; `Security`),
+`pages/settings/ServerCards.tsx` (`AccountsCard` als Tabelle mit Drei-Punkte-Menü, `DeleteAccount`, `InviteDialog`,
+`AllApiKeysCard`), `SignInCards.tsx`. Eigene Bausteine nach nexnotes (`AuthFrame`, `Input`, `Primary`, `Card`,
+`Dialog`, `useConfirm`, `CopyLink`). Wortlaute DE/EN/**FR**. Akzent Kraftpapier `#9a6a3a`, hell und dunkel.
 
-### Tests
+## 2. Wo der Benutzername mehr ist als Anzeige (im Code geprüft)
 
-`cd backend && .venv/Scripts/python.exe -m pytest` (pytest-xdist ist nicht installiert). Konten:
-`test_accounts.py`, `test_invites.py`, `test_password_links.py`, `test_reset_link.py`, `test_emails.py`,
-`test_profile.py`, `test_hardening_auth.py`, `test_oidc_*.py`, Vertrag `tests/nexoidc/`, Wächter
-`test_no_attribution.py`, `test_nothing_real_in_the_repo.py`. Frontend `cd frontend && npx vitest run
---maxWorkers=2`.
+**bricht** = ein Umbenennen machte etwas kaputt; **lösen** = mit dem Umbau anfassen; **harmlos** = Anzeige, Protokoll,
+Momentaufnahme.
 
-## 2. Wo der Benutzername mehr ist als Anzeige
-
-**bricht** = ein Umbenennen machte etwas kaputt; **lösen** = vor dem Ändern-Knopf anfassen; **harmlos** = Anzeige,
-Protokoll, Momentaufnahme.
-
-| Stelle | Rolle des Namens | Bewertung |
+| Stelle | Rolle des Namens | Bewertung und Lösung |
 |---|---|---|
-| `services/intake_folder.py:191, 203, 429`, `routers/intake.py:121, 323` | **Eingangsordner**: `<eingang>/<name>/` gehört dem Konto mit diesem Namen; Scanner und Kopierer legen dort ab | **bricht**: Nach dem Umbenennen landet alles im alten Ordner beim Betreiber („unbekannt“); nimmt später jemand den alten Namen, landen die Dokumente **in dessen Eingang**. Lösung: alte Namen bleiben dem Konto als Ordner-Name erhalten (Tabelle früherer Namen, die auch nie neu vergeben werden) oder der Ordner hängt an der ID; neuer Ordner wird angelegt, alter bleibt gültig |
-| `services/intake_mail.py:695-708`, `services/intake.py:50-59`, `routers/intake.py:303-305, 320` | **Plus-Adresse** `<postfach>+<name>@…` ordnet Mails dem Konto zu | **bricht** wie oben: alte Plus-Adresse liefe zum Betreiber oder zum neuen Träger des Namens (fremde Dokumente im falschen Tresor). Gleiche Lösung: frühere Namen gelten weiter und sind gesperrt |
-| `users.name unique` (`models.py:85`), `accounts.by_name` | eindeutig; Namen sind immer klein, also auch ohne Groß/Klein eindeutig | harmlos; Index auf `lower(name)` kommt trotzdem (Vertrag des Moduls), ein Doppel ist im Bestand unmöglich |
-| `routers/pairing.py:108, 231`, `routers/devices.py:79` → **nexpaper-ios** `Connection.account` | Schlüssel in der App: `AppModel.swift:170` (anderer `account` beim Koppeln = **lokaler Speicher, Warteschlange und Katalog werden geleert**), `SharedSetup.swift:23-43` (iCloud-Abgleich iPhone ↔ iPad über `address + account`), `AppModel.swift:191` | **bricht (mittel)**: Wer umbenennt und dann ein Gerät neu koppelt (etwa nach „Passwort vergessen“, das alle Geräte abmeldet), verliert noch nicht hochgeladene Scans der Warteschlange; iPad und iPhone gleichen ihre Einrichtung nicht mehr ab. Lösung: Server schickt zusätzlich `account_id` (nur ergänzend), App vergleicht über die ID und frischt den Namen aus `/auth/me` auf. Muss **vor** dem Ändern-Knopf in den Store |
-| `models.py:847` persönlicher Tresor `name = display_name or name` | Name des Tresors = Kopie beim Anlegen | harmlos: bleibt wie er ist (Tresore sind umbenennbar). `folder` ändert sich nie |
-| `routers/v1.py:67` `/api/v1/me` `name` → **nextime** (`services/nexpaper.py:274`, nimmt `display_name or name` als Beschriftung beim Verbinden), **nexdeck** (`adapters/nexpaper.py:129`, Text des Verbindungstests) | Antwortfeld | harmlos: Momentaufnahme. Die Fristen (`/api/v1/deadlines`) tragen keinen Namen |
-| `routers/schemas.py:175` `PersonRef(name, display_name)` in Dokumenten, Teilen, Verlauf | Anzeige | harmlos (live aus der Zeile) |
-| `services/passkeys.py:235` `user_name` | Name im Passwortmanager | harmlos: alte Passkeys zeigen den alten Namen, gelten weiter (`passkey_handle` ist zufällig) |
-| `routers/totp.py:103` `provisioning_uri(name)` | Beschriftung im Authenticator | harmlos |
-| `services/paperless.py:642` | Import aus Paperless: Besitzer nach Name/Anzeigename zuordnen | harmlos (einmaliger Vorgang, Vorschlag) |
-| `app/reset_link.py:83-106` | Kommandozeile sucht nach Name | harmlos: nimmt dann den neuen |
-| `routers/auth.py:744` Löschen mit `confirm_name` | Abtippen zur Sicherheit | harmlos |
-| `services/notices.py:237, 297`, Mails in `mailer.py` (Name im Text), `routers/apikeys.py:130` (`account` in der Schlüsselliste) | Text, Anzeige | harmlos |
-| `deps.py:178, 217, 245`, `logs.set_actor` und alle `name=%s` im Log | Protokoll | harmlos: alte Zeilen behalten den alten Namen; die neue Zeile „Username changed“ nennt beide |
-| Sitzungen, Geräte, API-Schlüssel, Passkeys, Push, OIDC-Verknüpfung, Rücksetz- und Bestätigungslinks, Sicherungen, Verlauf (`events.user_id`), Freigaben | alle an der ID | harmlos |
+| `services/intake_folder.py` `scan` (`people`, `blocked` aus `Account.name`), `prepare`, `folder_name`; `routers/intake.py` `my_intake`, Betreiberliste `FolderPerson`, `put_intake` | **Eingangsordner** `<eingang>/<name>/` gehört dem Konto mit diesem Namen | **bricht** ohne Lösung (Dokumente landeten als „unbekannt“ beim Betreiber). **Lösung:** `people` und `blocked` nehmen auch die früheren Namen des Kontos (`former_names` mit `account_id`); `prepare` legt nur den Ordner des aktuellen Namens an, ein alter Ordner wird weiter gelesen; der Ordner eines gelöschten Kontos bleibt „unbekannt“ wie heute. Nach dem Umbenennen (`notify(renamed)`) legt die App den neuen Ordner sofort an |
+| `services/intake.py` `account_named`, `services/intake_mail.py` `assign` | **Plus-Adresse** `<postfach>+<name>@…` | **bricht** ohne Lösung. **Lösung:** `account_named` sucht aktuellen Namen, dann `find_by_former_name` (nur Konten, nicht gesperrt); ein früherer Name eines gelöschten Kontos findet niemanden. Frühere Namen sind für immer reserviert (Entwurf), also landet nie fremde Post beim Falschen |
+| `routers/intake.py` `MyIntakeOut` (`plus_address`, `folder`) | Anzeige in „Mein Posteingang“ | zeigt den aktuellen Namen; neu `former` (Liste der früheren Ordner und Plus-Adressen, die weiter gelten), Hinweis darunter |
+| `routers/pairing.py` `pair`, `token`; `routers/devices.py` `bring_in` → **nexpaper-ios** `Connection.account` | Schlüssel in der App | **bricht (mittel)**: Abschnitt 12 |
+| `services/accounts.py` `by_name`, `authenticate`; `LoginIn.name` `max_length=64` | Anmelden | ersetzen durch `login.authenticate` (Feld bis 254) |
+| `services/resets.py` `accounts_for` | Name oder Adresse, bis 5 Konten | ersetzen durch `forgot_in_background` (Regel 3) |
+| `app/reset_link.py` | Kommandozeile nach Name | über `server_reset_link` (aktueller Name oder Adresse, die zählt) |
+| `routers/auth.py` `delete_account` (`confirm_name` gegen `row.name`) | Abtippen zur Sicherheit | harmlos: verglichen wird mit dem aktuellen Benutzernamen; beim Löschen kommt der Name als früherer Name ohne Konto in `former_names` (für immer reserviert) |
+| `models._make_personal_vault` (`name = display_name or name`, `folder`) | Kopie beim Anlegen | harmlos: Tresor und Ordner bleiben, wie sie sind |
+| `routers/v1.py` `/api/v1/me` (`name`) → nextime (Beschriftung beim Verbinden), nexdeck (Verbindungstest) | Antwortfeld | harmlos: Momentaufnahme; bekommt zusätzlich `id` |
+| `routers/schemas.py` `PersonRef(name, display_name)`, `routers/apikeys.py` (`account`), `services/paperless.py` (Import: Besitzer nach Name vorschlagen) | Anzeige, einmaliger Vorschlag | harmlos |
+| `services/passkeys.py` `user_name`, `routers/totp.py` `provisioning_uri` | Beschriftung im Passwortmanager bzw. Authenticator | harmlos (`passkey_handle` zufällig) |
+| `deps.py`, `logs.set_actor`, alle `name=%s`, `notices.py`, `mailer.py` | Protokoll, Text | harmlos; die neue Logzeile „Username changed“ nennt beide |
+| Sitzungen, Geräte, API-Schlüssel, Passkeys, Push, OIDC, Links, Sicherungen, Verlauf (`events.user_id`), Freigaben | an der ID | harmlos |
 
-Ergebnis: **Zwei Stellen brechen beim Umbenennen**, beide im Posteingang (Ordner und Plus-Adresse), und eine dritte in
-der iPhone-App (Warteschlange). Bis sie gelöst sind, bekommt nexpaper keinen Knopf „Benutzername ändern“.
+## 3. Store-Adapter: was er abbildet
 
-## 3. Zuordnung nexpaper ↔ Modul
+Neue Datei `services/konten_store.py` (Vorlage nexnotes), eine Instanz je Anfrage.
+`nexkonten.configure(AppConfig(app_name="nexpaper", setup_token=lambda: get_settings().setup_token,
+logger_name="nexpaper.auth", error_codes=OLD_CODES, second_factor_off=…))`, `nexpost.configure(AppConfig(app_name=
+"nexpaper", logo=<PNG>))`.
+
+### `Store`
 
 | Modul | nexpaper |
 |---|---|
-| `id` (`int`) | `users.id` |
-| `username` | `users.name` |
-| `display_name` | `users.display_name` |
+| `Account.id`, `username`, `display_name`, `language` | `users.id`, `users.name` (Feldname der Schnittstellen bleibt `name`), `display_name`, `language` |
 | `email` | `users.email` |
-| `email_confirmed` | **nicht** `email_confirmed_at`. Für das Modul (Anmelden, Passwort vergessen) gilt eine Adresse, wenn sie **eigen** ist (`email_from_provider = 0`) oder per Link bestätigt wurde. Siehe unten und „Passt das Modul?“ 1 |
-| `email_source` | `provider`, wenn `email_from_provider`, sonst `""` |
+| `email_confirmed` (zählt) | neu `users.email_counts` |
+| `email_proven` (bewiesen) | `users.email_confirmed_at IS NOT NULL` (unverändert in Bedeutung und Spalte) |
+| `email_source` | `"provider"` wenn `email_from_provider`, sonst `""` |
 | `pending_email` | `email_confirmations.address` |
-| `has_password` | `sign_in == 'password' and password_hash != ''` |
-| `blocked` | `blocked_at IS NOT NULL` |
-| `operator` | `role == 'operator'` |
-| `picture` | `avatar` leer → `""`, sonst neu `avatar_source or "own"` |
-| `language` | `users.language` |
-| `Invite` | `invites` (Rechte: keine, `rights` = Zeile), neu `display_name` |
-| `Reset` | `password_resets` |
-| `EmailChange` | `email_confirmations` |
+| `offered_email`, `offered_email_provider`, `declined_email` | neue Spalten |
+| `has_password`, `blocked`, `operator`, `picture` | `sign_in == 'password' and password_hash != ''`; `blocked_at IS NOT NULL`; `role == 'operator'`; `avatar` leer → `""`, sonst `avatar_source or "own"` |
+| `find_by_username`, `find_by_email` | ohne Groß/Klein, alle Treffer, gesperrte eingeschlossen |
+| `name_reserved`, `find_by_former_name` | neue Tabelle `former_names` (`name` klein eindeutig, `account_id` NULL für gelöschte, `until`) |
+| `display_name_taken` | über `names.display_key` |
+| `add_account` | über das ORM wie heute (der persönliche Tresor entsteht im selben Schreibvorgang), `whats_new_seen` |
+| `set_username` | Name setzen, alten in `former_names`; **in derselben Transaktion** nichts weiter nötig (Ordner und Plus-Adresse lesen `former_names`) |
+| `set_email(id, address, *, confirmed, proven, source)` | `email`, `email_counts = confirmed`, `email_confirmed_at = now if proven else NULL`, `email_from_provider = (source == "provider")` |
+| `check_password`, `set_password` | Argon2 der App, Blindhash `accounts._dummy_hash`; `set_password`: Hash, `sign_in = password`, Sperre weg |
+| `is_locked`, `note_failure`, `note_success` | `failed_logins`/`locked_until` (5, 15 Minuten, Frage 1); `note_failure(None)` in neue Tabelle `failed_unknown` |
+| `end_sessions` | Browser-Sitzungen aller Stufen, wartende Anmeldungen, neuer `device_key`; **gekoppelte Geräte bleiben** (Entwurf; heute widerruft ein neues Passwort sie) |
+| `list_access`, `revoke_access` | gekoppelte Geräte (`devices`, nicht widerrufen), API-Schlüssel, Passkeys |
+| `second_factor` | `factor.state`, aber `none` für Konten ohne eigenes Passwort |
+| Einladungen, wartende Adressen, Links | `invites` (+ `display_name`, `mailed`), `email_confirmations`, `password_resets` (+ `origin`) |
+| `claim_setup` | neue Tabelle `setup_claims` |
+| `notify` | `renamed`: Eingangsordner für den neuen Namen anlegen, Logzeile; `email_changed`: nichts Eigenes |
 
-**Zwei Bedeutungen von „bestätigt“.** Heute heißt `email_confirmed_at` nur: *die Person hat einen Link an diese
-Adresse geöffnet*. Daran hängen Posteingang (`mail_senders.owners`), Erinnerungsmails, Bescheide und der Versand von
-Exporten. Das Modul meint mit `email_confirmed`: *die Adresse zählt zum Anmelden und für „Passwort vergessen“*, und es
-setzt sie auch ohne Link als bestätigt (Einladung, Ersteinrichtung, Änderung ohne Mailserver, Bestand). Würde der Store
-beides auf `email_confirmed_at` legen, könnte jede selbst getippte Adresse ohne Mailserver fremde Mails in den eigenen
-Tresor ziehen. Deshalb:
+### Teil 2 (`FactorStore`, `PasskeyStore`, `SessionStore`, `PictureStore`)
 
-- `email_confirmed_at` bleibt „per Link bewiesen“ und wird nur gesetzt, wenn das Modul einen Bestätigungslink
-  einlöst (`confirm_email`) oder die Adresse aus dem Bestand schon so war.
-- Neue Spalte `email_counts` (Boolean, Vorgabe **wahr**): die Adresse zählt für das Modul. Bestand: eigene Adressen
-  zählen (sonst verlören Konten mit der Adresse ihrer Einladung „Passwort vergessen“, was 1.12.0 kann), Adressen vom
-  Anbieter nicht (`email_from_provider = 1` → falsch).
-- `Account.email_confirmed = email_counts`. `set_email(confirmed=…)` schreibt `email_counts`; ob der Aufruf aus einem
-  eingelösten Link kommt, merkt sich der Store in `consume_email_change` (dieselbe Transaktion) und setzt dann auch
-  `email_confirmed_at`. Sauberer wäre ein Feld im Protokoll („Passt das Modul?“ 1).
+Wie nexdiary (gleiche Herkunft): `totp_secret_enc` (versiegelt wie heute), `claim_step` über **`totp_last_step`**,
+`totp_recovery`, `recovery_key` = `sha256(b"nexpaper-recovery-codes:" + server_key()).digest()` (der Schlüssel, mit
+dem `totp.hash_recovery` heute `h1:` bildet; dann gelten die Codes von 1.12.0 unverändert); neue Spalten `totp_pending`, `totp_pending_until`, `device_key`, `avatar_source`; `factor_required` =
+Einstellung `two_factor_required`; neu `passkeys_allowed` (Vorgabe an); `passkeys` und `passkey_handle` unverändert;
+Sitzungen aus `auth_sessions` (`address` = `ip`, Bezeichnung aus `user_agent`) und **gekoppelte Geräte aus `devices`**
+(Art `device`, Name `name`); Mail bei neuer Anmeldung je Person = `profile.notify_login`.
 
-Store `services/konten_store.py` (neu), eine Instanz je Anfrage wie `oidc_store.SqlStore`. `check_password(None, …)`
-mit `accounts._dummy_hash`; `set_password` hasht, setzt `sign_in = 'password'`, hebt `failed_logins`/`locked_until`
-auf, löscht alle offenen Links; `end_sessions` = `security.end_all_sessions` (Browser **und** Geräte, wie heute) plus
-`totp.forget_account`. `add_account` legt wie heute über das ORM an (der persönliche Tresor entsteht im selben
-Schreibvorgang), setzt `whats_new_seen`. Mails baut nexpaper aus `Mail` mit `mailer.send_reset`/`send_confirm`
-(Vorlagen und Sprache wie heute) und neu `send_username_changed`.
+### `post`
 
-`nexoidc` 1.1.0 im selben Zug: `clean_name` → `nexkonten.clean_username`, `name_taken` →
-`nexkonten.username_taken`, `create_account(…, display_name, picture)` setzt den Anzeigenamen aus dem Claim `name`
-(heute bleibt er leer), `provider_picture` im Hintergrund über `services/avatars.py` (WebP, quadratisch) mit
-`UPDATE users SET avatar=…, avatar_source='provider' WHERE id=? AND avatar IS NULL`.
+`services/post_store.py` über `smtp_*` (dazu `smtp_sender_name`, `mail_last_*` als Vorgaben, keine Zeile beim Start),
+Tabelle `mail_outbox`, Arbeiter jede Minute neben dem vorhandenen. Was nur nexpaper mailt (Erinnerungen, Fristen,
+Exporte, Upload-Bitten, Absenderadressen des Posteingangs, Bescheide) bleibt in `mailer.py`.
 
-## 4. Wanderung (nur ergänzend, Schema 21)
+## 4. Wanderung (nur ergänzend, als `ADDITIONS`)
 
-Ein Schritt `_step_accounts` in `db.py` (`SCHEMA_VERSION = 21`); davor macht `_init` schon heute eine Sicherung
-(`backups.create(kind=UPDATE)`).
+Alles als neue `ADDITIONS` (`_additions_konten`) **ohne neue Schemanummer**: 1.12.0 startet dann weiter auf der
+Datenbank (Rückweg eine Fassung lang, Bestand Regel 10), Aufzeichnung wie in `tests/schema/released/`. Davor wie immer
+`backups.create(kind=UPDATE)`.
 
-| Neu | Typ, Vorgabe | Bedeutung |
+| Neu | Vorgabe für den Bestand | Bedeutung |
 |---|---|---|
-| `users.email_counts` | Boolean, `server_default 1`; im Schritt `UPDATE users SET email_counts = 0 WHERE email_from_provider = 1` | eigene Bestandsadressen zählen (Regel 2), Adressen vom Anbieter nicht |
-| `users.avatar_source` | String(16), `server_default ''` | vorhandene Bilder gelten als eigene |
-| `invites.display_name` | String(80), `server_default ''` | Anzeigename, den der Betreiber vorgibt |
-| `account_names` (neu) | `name` (eindeutig, klein), `account_id`, `until` | frühere Benutzernamen: bleiben dem Konto für Eingangsordner und Plus-Adresse und werden nie neu vergeben (Abschnitt 2). Leer im Bestand |
-| Index `uq_users_name_lower` auf `lower(name)` | eindeutig | erst nach Zählen (`GROUP BY lower(name) HAVING count(*) > 1`); im Bestand kann es kein Doppel geben, die Zählung bleibt trotzdem, ein Doppel bricht den Start nie ab |
-| Index auf `lower(email)` | **nicht** eindeutig | doppelte Adressen gibt es im Bestand (Familien, Test „Bestand“) |
+| `users.email_counts` | `1` für **jede** Bestandsadresse, auch die vom Anbieter (Entwurf „Bestand: Anbieteradresse“) | zählt fürs Anmelden und „Passwort vergessen“; so behalten Konten mit der Adresse ihrer Einladung (`ben`, `carla`) „Passwort vergessen“ per Adresse |
+| `users.avatar_source`, `offered_email`, `offered_email_provider`, `declined_email` | `''` | |
+| `users.device_key` | zufällig, beim Start für jede Zeile ohne Wert | bekannter Browser |
+| `users.totp_pending`, `totp_pending_until` | `''`, NULL | |
+| `users.new_password_origin` (wie nexnotes) | `''` | Hinweise nach einem Link |
+| `invites.display_name`, `invites.mailed` | `''`, `0` | |
+| `password_resets.origin` | `'self'` ohne `created_by`, sonst `'operator'` | |
+| Tabellen `former_names`, `setup_claims`, `failed_unknown`, `mail_outbox` | leer | |
+| Index `lower(name)` eindeutig | erst nach Zählen; im Bestand unmöglich doppelt, ein Doppel bricht den Start nie ab | |
+| Index `lower(email)` | nicht eindeutig | Doppel gibt es (`carla`/`dora`) |
+| Einstellung `two_factor_required` | nur auf einer Datenbank **mit Konten und ohne Zeile**: Zeile mit `true`; danach Vorgabe `False` | laufende Installationen behalten ihre Einstellung. Die Fixture hat die Zeile (`false`), dort kommt nichts dazu |
 
-Rückweg auf 1.12.0 eine Fassung lang: 1.12.0 verweigert Schema 21 (`check_version`); Rückweg also nur über die
-Sicherung vor der Wanderung, wie bei jedem Schemaschritt in nexpaper. Alternative ohne Schemaschritt gibt es nicht,
-weil neue Spalten in nexpaper immer einen Schritt brauchen.
+Folgen für 1.12.0 auf der neuen Datenbank (Rückweg): umbenannte Konten melden sich mit dem neuen Namen an, alte Ordner
+und Plus-Adressen gehen an den Betreiber als „unbekannt“, Anmelden mit E-Mail geht nicht. In den Hinweis zur Fassung.
 
 ## 5. Routen
 
-**Feldnamen bleiben** (`name`, `password`, `email`, `display_name`, `code`, `days`). Antworten bekommen nur Felder dazu.
+**Feldnamen und Fehlerkennungen bleiben**, Antworten bekommen nur Felder dazu. **Keine Route fällt weg**, also keine
+410: der Betreiber setzt in nexpaper schon heute kein Passwort selbst.
 
 | Route | Heute | Künftig |
 |---|---|---|
-| `GET /api/v1/setup` | `needs_setup`, `code_required`, `min_password` | gleich |
-| `POST /api/v1/setup` | `name`, `password`, `language`, `code` | dazu `display_name` (Pflicht laut Entwurf; fehlt er, nimmt die Route `name`, damit Skripte nicht brechen), `email` (frei) → `nexkonten.setup`. Code über `nexkonten.setup_code` (gleiche Variable `NEXPAPER_SETUP_TOKEN`) |
-| Sicherung einspielen vor der Einrichtung | gibt es nicht (Wiederherstellen nur als Betreiber) | nichts zu tun; kommt es, ruft es `check_code` |
-| `POST /api/v1/auth/login` | `name` ≤ 64 | `name` ≤ **254** (Adresse), Inhalt „Benutzername oder E-Mail“. **Nicht** `nexkonten.authenticate` allein: nexpaper behält die Sperre je Konto mit Ausnahme bekannter Browser und die eine Prüfung je Konto zugleich (`accounts.authenticate`); es ersetzt nur `by_name` durch `nexkonten.resolve_login`. Gesperrte Konten antworten wie heute wie ein falsches Passwort (offene Frage 3) |
-| `POST /api/v1/auth/forgot` | `name`: Name oder Adresse; an jede Adresse auf dem Konto, bis zu 5 Konten je Adresse, Link 24 h | Feldname bleibt; `nexkonten.forgot` **im Hintergrundauftrag** (`notices.later`, wie heute, damit die Zeit nichts verrät), eigene Bremse je Konto bleibt; Link **1 Stunde**; eine geteilte Adresse findet kein Konto mehr |
-| `GET/POST /api/v1/reset/{token}` | 24 h | `reset_state`/`use_reset`; offene Links der Vorfassung gelten (gleiche Tabelle, gleicher Hash) |
-| `POST /api/v1/accounts/{id}/reset-link` | `current_password`; Mail an jede Adresse | `reset_link`; Mail nur an eine Adresse, die zählt, sonst angezeigt; 24 h |
-| `PUT /api/v1/me/email` | `email`, `password`; ohne Mailserver 409 | `change_email`; ohne Mailserver gilt die Adresse sofort (zählt fürs Anmelden, **nicht** für den Posteingang, Abschnitt 3); Bescheid an die alte bestätigte Adresse bleibt (App) |
-| `DELETE /api/v1/me/email/pending`, `GET/POST /api/v1/email/confirm/{token}` | | `withdraw_email_change`, `email_change_state`, `confirm_email` |
-| `PUT /api/v1/me/profile` | `display_name` | gleich, `change_display_name` |
-| neu `PUT /api/v1/me/username` | – | `name`, `password` → `change_username`; **erst nach** Abschnitt 2 |
-| `POST /api/v1/invites` | `days`, `email`, `send` | dazu `display_name`; `days` bleibt (offene Frage 2) |
-| `GET /api/v1/invite/{token}` | `min_password`, `signed_in_as` | dazu `display_name`, `name` (Vorschlag), `email` aus `invite_form` |
-| `POST /api/v1/invite/{token}` | `name`, `password` | dazu `display_name`, `email` (frei). Fehlt `display_name` (Anfrage von 1.12.0), nimmt die Route den Namen; der Test „Bestand“ prüft das |
-| `GET /api/v1/auth/me`, `GET /api/v1/accounts` | `name`, `display_name`, `email`, `email_confirmed` | `email_confirmed` bleibt „per Link“; dazu `email_counts`, `email_duplicate` (Betreiber) |
-| neu `PUT /api/v1/accounts/{id}/username`, `/display-name`, `DELETE /api/v1/accounts/{id}/email` | – | Betreiber, eigenes Passwort |
-| Koppeln (`/devices/pair`, `/oauth/token`, `/devices`, `/devices/sibling`) | `account` (Name) | dazu `account_id` (für nexpaper-ios) |
+| `GET /setup` | `needs_setup`, `code_required`, `min_password` … | gleich |
+| `POST /setup` | `name`, `password`, `language`, `code` | `setup.setup`; dazu `display_name` (fehlt er, nimmt die Route `name`), `email`, `password_confirm` (nur geprüft, wenn geschickt); `language` gilt als Sprache des Browsers |
+| `POST /auth/login` | `name` ≤ 64 | `name` bis 254, `login.authenticate` mit Bremse und `known_browser`; Antworten gleich; gesperrt nach richtigem Passwort `403 account_blocked` (der Test „Bestand“ nimmt 401 oder 403); `password_login_off` bleibt Sache der Route |
+| `POST /auth/login/totp`, `/cancel`, `/auth/setup/done`, `/auth/setup/codes` | | über `factor`; Pfade und Felder bleiben |
+| Passkey-Routen | | über `nexkonten.passkeys`, Hinzufügen mit Passwort bzw. frischer Anmeldung |
+| `POST /auth/forgot` | `name`, 202 | `forgot_in_background` (Abschnitt 0, Punkt 1); Link **1 Stunde**; `reset_off` ohne Mailserver bleibt |
+| `GET /reset/{token}` | `name`, `min_password` | `reset_state`, Felder bleiben |
+| `POST /reset/{token}` | 204 | `use_reset`, **bleibt 204**; Geräte bleiben; was noch Zugriff hat, zeigt `GET /auth/access` bei der nächsten Anmeldung |
+| `POST /accounts/{id}/reset-link` | `current_password` | dazu `days` (1/7/30, ab Werk 1) und `send`; **auch für gesperrte Konten**; Mail nur an eine Adresse, die zählt; ohne öffentliche Adresse Link über `request_base` |
+| `PUT /me/profile` | `display_name` | dazu `name`, `email`, `password` (ein Knopf Speichern wie nexnotes) |
+| `PUT /me/email` | `email`, `password`; ohne Mailserver 409 `mail_off` | `profiles.change_email`; **ohne Mailserver gilt die Adresse sofort** (zählt, ist aber nicht bewiesen: der Posteingang traut ihr nicht); dieselbe, noch nicht bewiesene Adresse noch einmal schickt weiter einen Link (nexpaper legt dafür selbst eine wartende Adresse an, Abschnitt 15, Fund 3) |
+| `DELETE /me/email/pending`, `GET/POST /email/confirm/{token}` | | `withdraw_email_change`, `email_change_state`, `confirm_email` (setzt `email_confirmed_at`); Felder `name`, `address` bleiben |
+| neu `POST /me/email/resend` | – | `resend_email_link` |
+| neu `POST /oidc/me/address`, `DELETE /oidc/me/address` (wie nexnotes) | – | angebotene Anbieteradresse |
+| `GET /auth/me` | `email_confirmed` (= bewiesen), `email_pending`, `oidc_linked` … | `email_confirmed` behält seine Bedeutung; dazu `email_counts`, `offered_email`, `offered_email_provider`, `factor_state`, `second_factor_off`, `former_name` |
+| neu `GET /auth/access`, `POST /auth/access/disconnect`, `POST /auth/access/seen` | – | „Diese Geräte haben noch Zugriff“, „Alle trennen“ |
+| `POST /invites` | `days`, `email`, `send` | dazu `display_name`; `GET /invites` auch abgelaufene (`expired`) |
+| `GET /invite/{token}` | `min_password`, `signed_in_as` | dazu `display_name`, `name` (Vorschlag), `email` |
+| `POST /invite/{token}` | `name`, `password` | dazu `display_name`, `email`, `password_confirm`; ohne `display_name` `older_request=True`, Adresse aus der Einladung (der Test „Bestand“ prüft beides) |
+| `GET /accounts` | Konto, `locked`, `blocked`, `has_password` | dazu `email_counts`, `email_duplicate`, `self`, `documents` (Zahl, wie `/leaving`) |
+| neu `PUT /accounts/{id}/name`, `/display-name`, `DELETE /accounts/{id}/email` | – | Betreiber, eigenes Passwort |
+| `DELETE /accounts/{id}`, `GET /accounts/{id}/leaving` | | **bleiben unverändert** (Übergabe-Dialog) |
+| `block`, `unblock`, `role`, `totp/reset`, `sign-out`, `permissions` | | bleiben; Faktor-Rücksetzen über `reset_overview`/`operator_reset` (`GET /accounts/{id}/totp/reset` neu wie nexnotes) |
+| Koppeln: `POST /devices/pair`, `POST /oauth/token`, `POST /devices/sibling`, `POST /devices` | `account` (Name) | dazu **`account_id`** (Zahl); `account` = ältester Name des Kontos (Abschnitt 12) |
+| `GET /me/intake` | `plus_address`, `folder` | dazu `former` |
+| `GET /api/v1/me` | `name`, `display_name`, `scope`, `version` | dazu `id` |
+| `GET/PUT /settings` | | dazu `passkeys_allowed`, `smtp_sender_name`, `mail_last_*` |
+| `python -m app.reset_link <account>` | Name | bleibt, über `server_reset_link`; Benutzername oder E-Mail; `--days` |
 
-## 6. Oberfläche
+**Alte Fehlerkennungen** (`OLD_CODES`): `username_invalid` → `invalid_account_name`, `username_taken` → `name_taken`,
+`email_invalid` → `invalid_email`, `fresh_sign_in_needed` → `sign_in_again`. Bleiben: `wrong_credentials`,
+`wrong_password`, `setup_code_wrong`, `already_set_up`, `invite_invalid`, `reset_invalid`, `reset_off`,
+`email_link_invalid`, `email_same`, `invalid_days`, `display_name_taken`, `password_too_short`, `password_login_off`,
+`account_blocked`, `use_account_page`, `name_mismatch`, `too_many_attempts`. `mail_off` kommt bei `PUT /me/email` nicht
+mehr vor (die Adresse gilt dann sofort). Neu vom Modul: `email_taken`, `display_name_empty`, `*_expired`, Teil 2.
 
-Vorgabe: optisch so wenig wie möglich ändern; was sich ändert, überall gleich, Vorbild nexnotes. nexpaper hat seit
-1.11.0 schon die Bausteine von nexnotes (`AuthFrame`, `Input` mit `label`/`hint`, `Primary`, `Problem`, `Card`,
-`Dialog`, `Toggle`, `Select`, `CopyLink`, `useConfirm`). Kein neuer Baustein.
+## 6. Teil 2 gegen den heutigen Stand
+
+| Teil | Heute | Mit dem Modul | Sichtbar anders |
+|---|---|---|---|
+| **Zweiter Faktor** | Pflicht ab Werk (`two_factor_required`, Schalter mit Passwort beim Ausschalten); Konten nur über Anbieter und Anbieter mit „prüft selbst“ ausgenommen | `factor`; **Bestand behält seinen Wert** (Abschnitt 4), neue Installationen aus; Passkey zählt; Codes sofort zeigen (Stufe `codes` bleibt); halb eingerichteter Authenticator in der Datenbank; Betreiber-Rücksetzen mit „Passkeys auch entfernen“, „Geräte auch trennen“ | neue Installationen ohne Pflicht; `NEXPAPER_SECOND_FACTOR_OFF` neu |
+| **Passkeys** | immer erlaubt | Schalter „Passkeys erlaubt“ (an); frische Anmeldung 5 statt 10 Minuten | ein Schalter mehr |
+| **Sitzungen** | Liste mit Abmelden je Eintrag, „Angemeldet bleiben“, „Überall abmelden“ (Browser und Geräte); Geräte zusätzlich unter Verbindungen | `sessions`: „Angemeldete Geräte“ mit Browsern **und** gekoppelten Geräten, „Überall sonst abmelden“ (beide); Kopplungsliste unter Verbindungen bleibt (wie nexnotes) | Wortlaute; Geräte auch in der Liste der Sicherheit |
+| **Neues Passwort** | Browser **und gekoppelte Geräte** enden | Browser und wartende Anmeldungen enden, **Geräte, API-Schlüssel, Passkeys bleiben**; danach „Diese Geräte haben noch Zugriff“ mit „Alle trennen“. Das eigene Passwort ändern (`PUT /auth/password`) bleibt wie heute und wie nexnotes: andere Browser und gekoppelte Geräte enden | ein iPhone bleibt nach „Passwort vergessen“ und nach dem Link des Betreibers gekoppelt |
+| **Bekannter Browser** | Gerätecookie mit Konto-ID | `device_key`, altes Format über `older=` eine Fassung lang | nichts |
+| **Bremse** | je Absender 5, Sperre am Konto nach 5 | `brake.BRAKE` (Absender 30, Konto/Eingabe 5, dann wachsend), Türen `confirm:`, `code:`, `mail:`, `forgot:`; Sperre am Konto **5** (Frage 1); App-Bremsen fürs Koppeln (`pairing_guard`), Einladungsmails und Absenderadressen bleiben | mehr Versuche je Absender |
+| **Mail** | `mailer.py`, englisch | `post` (Outbox mit Wiederholung, Absendername, Warnung ohne Verschlüsselung, Logo, **DE/EN/FR** nach Sprache des Kontos); „Passwort vergessen“ sofort über `mailer.send_reset` | Mails in der Sprache des Kontos, mit Logo |
+| **Bescheid an die alte Adresse** | bei Bestätigung per Link und beim Entfernen, nur an eine bewiesene alte Adresse | `EmailChanged.notice` des Moduls (`email_changed`, `email_removed` über `post`); nexpaper schickt ihn weiter **nur an eine bewiesene** alte Adresse (Frage 2) | nichts |
+| **Mail bei neuer Anmeldung** | Mail und Web Push, Schalter `notify_login` in `PushCards.tsx` (Mitteilungen) | `post`-Mail, Web Push bleibt Zusatz am selben Schalter, Schalter unter Sicherheit | Ort des Schalters |
+| **Profilbilder** | WebP quadratisch, alle Angemeldeten | `avatars` (WebP 256), Bilder von 1.12.0 bleiben, Anbieterbild nur ohne Bild | neue Bilder 256 px |
+| **Notfallbefehl** | `python -m app.reset_link <account>` | gleich, `server_reset_link` | nimmt auch eine E-Mail |
+
+## 7. Oberfläche aus dem Bausatz `ui`
+
+Module nach `frontend/src/vendor/nexui/`, `nexkonten/`, `nexpost/`, `nexoidc/` (`sync.py copy`). `--nexui-*` (auch die
+Avatar-Variablen) aus den Tokens von `index.css`, hell und dunkel. Knöpfe nur über einen Helfer aus `BUTTONS`. i18next
+mit `kontenVariables('nexpaper')`, `oidcVariables`, `postVariables`. vitest-Vorlagen `nexkonten.test.ts`,
+`nexpost.test.ts`, `nexui.test.tsx` (`APP_RENDER`, `APP_PAGES`, `APP_CAPS`, `APP_OWN`).
 
 | Bildschirm | Heute | Künftig | Sichtbar anders |
 |---|---|---|---|
-| **Anmelden** (`AuthPages.tsx` `LoginPage`) | „Name“, „Passwort“, „Angemeldet bleiben“, „Passwort vergessen?“, Passkey, Anbieter | gleich | Beschriftung „Benutzername oder E-Mail“, Fehlertext `account.wrong` |
-| **Einrichtung** (`SetupPage`) | Einrichtungscode, Name, Passwort | Einrichtungscode, Anzeigename, Benutzername (folgt dem Anzeigenamen), E-Mail, Passwort, Passwort wiederholen, Sprache | vier Felder mehr, Reihenfolge nach `SCREENS.setup` |
-| **Einladung** (`InvitePage`) | Name (mit Regelhinweis), Passwort, darunter Anbieter | Anzeigename (aus der Einladung), Benutzername (Vorschlag), E-Mail (aus der Einladung), Passwort, Passwort wiederholen, „oder“, Anbieter | drei Felder mehr |
-| **Passwort vergessen** (`ForgotPage`) | „Name oder Mailadresse“, Satz „… 24 Stunden“; ohne Mailserver Hinweis `reset_off` | „Benutzername oder E-Mail“, `account.forgotSent`; ohne Mailserver `account.forgotNoMail` | Wortlaute; Link gilt eine Stunde |
-| **Neues Passwort** (`ResetPage`) | zwei Felder, Satz mit Name | gleich | nichts |
-| **Profil** (Einstellungen › Mein Konto › Profil) | Karte: Bild, „Name“ (= Anzeigename), E-Mail mit Bestätigungszeile, Zeile „Rolle · Anmeldename“, Sprache | Bild, Anzeigename, **Benutzername** (Feld mit Passwortabfrage im `Dialog`), E-Mail, Sprache, Rolle klein | Benutzername sichtbar und änderbar (erst nach Abschnitt 2); „Anmeldename“ verschwindet; Zeile „Mailadresse nicht bestätigt“ bleibt für den Posteingang |
-| **Konten** (Server › Konten) | Zeile: Anzeigename, klein Adresse oder Name; Menü: Link, Sperren, Rolle, KI, Löschen | klein „Benutzername · E-Mail“, Hinweis bei doppelter Adresse; Menü dazu Anzeigename/Benutzername ändern, Adresse entfernen | neue Menüpunkte, eine Plakette |
-| **Person einladen** (Dialog) | Gültig für (1/7/30 Tage), Mailadresse, Senden | dazu Anzeigename (frei) | ein Feld mehr |
-| **Mein Posteingang** (Hochladen) | Ordner `<eingang>/<name>/`, Plus-Adresse | zeigt den aktuellen Namen; frühere gelten weiter (Hinweis) | Hinweiszeile nach einer Umbenennung |
+| **Einrichtung** | Code, Name, Passwort | `SETUP_PAGE`: Code, Anzeigename, Benutzername (folgt), E-Mail, Passwort, Passwort wiederholen | vier Felder mehr |
+| **Anmelden** | „Name“, Passwort, Angemeldet bleiben, Passwort vergessen?, Passkey, Anbieter | „Benutzername oder E-Mail“, sonst gleich; `account.wrong` | Beschriftung |
+| **Passwort vergessen** | „Name oder Mailadresse“, „… 24 Stunden“ | „Benutzername oder E-Mail“, `account.forgotSent`; ohne Mailserver `account.forgotNoMail` | Wortlaute, 1 Stunde |
+| **Neues Passwort**, **Adresse bestätigen** | | gleich, Wortlaute aus dem Modul | kaum |
+| **Einladung** | Name, Passwort, Anbieter | Anzeigename, Benutzername (Vorschlag), E-Mail, Passwort zweimal, „oder“, Anbieter | drei Felder mehr |
+| **Profil** | Bild, „Name“ (= Anzeigename), E-Mail mit „bestätigt/nicht bestätigt“ und „Link schicken“, „Rolle · Anmeldename“, Sprache | `PAGES.profile`: Bild, Anzeigename, **Benutzername**, E-Mail, angebotene Adresse, Sprache, Rolle klein; ein Knopf Speichern mit Passwort-Rückfrage. Die Zeile „Mailadresse nicht bestätigt“ mit „Link schicken“ bleibt als nexpapers Zusatz unter der E-Mail (sie sagt, ob der Posteingang die Adresse kennt) | „Anmeldename“ verschwindet, Benutzername wird Feld |
+| **Sicherheit** | Passwort, Faktor, Passkeys, Geräte, „Überall sonst abmelden“ | `PAGES.security`, danach nexpapers eigene Teile (`pageOrder`) | Reihenfolge, Wortlaute |
+| **Mein Posteingang** (Hochladen) | Ordner und Plus-Adresse | dazu Zeile „Frühere Namen gelten hier weiter: …“ nach einer Umbenennung (neuer Wortlaut DE/EN/FR) | Hinweis nach Umbenennung |
+| **Kontenliste** | Tabelle mit Menü | Abschnitt 9 | ganz neu |
 
-Wortlaute: Namensraum `account` aus `vendor/nexkonten` in `de.json`/`en.json`/`fr.json` (Französisch fehlt dem Modul,
-wie bei `oidc`: eigene `i18n/konten.fr.json`). Die alten Schlüssel `auth.name`, `auth.nameHint`,
-`auth.forgot.label`, `me.profile.name`, `me.profile.roleLine` fallen weg, sobald nichts sie mehr liest. Vor dem
-Festschreiben wird jede geänderte Ansicht gezeigt und abgenommen.
+**Wortlaute auch französisch:** `konten`, `post` und `oidc` liefern FR; nexpapers eigene neue Sätze (frühere Namen im
+Posteingang, Hinweise der Kontenliste) in `de.json`, `en.json` **und `fr.json`**; `i18n`-Test auf Vollständigkeit
+bleibt grün. Alte Schlüssel (`auth.name*`, `auth.forgot.label`, `me.profile.name`, `me.profile.roleLine`,
+`server.table.*`, `server.confirm.*` der Liste) fallen weg, sobald nichts sie mehr liest.
 
-## 7. Passwort vergessen
+## 8. Posteingang, Bescheid, „bestätigt“
 
-Beide Wege gibt es schon. Was sich ändert: der selbst angeforderte Link gilt **1 statt 24 Stunden**; eine Adresse,
-die mehrere Konten haben, findet keins mehr (per Benutzername geht der Link weiter an die eigene Adresse); eine
-Adresse vom Anbieter zählt nicht. Der Betreiber-Link bleibt 24 Stunden.
+- Wem eine Mail gehört (`intake_mail.assign`): Plus-Adresse mit aktuellem oder früherem Namen, sonst bewiesene
+  Absenderadresse genau einer Person (`mail_senders.owners` liest `email_confirmed_at` und `mail_senders`), sonst
+  Betreiber. Eine Adresse, die nur zählt (ohne Mailserver gesetzt, aus einer nicht gemailten Einladung), zieht nie Post
+  in einen Tresor.
+- Einladung per Mail und Adresse unverändert angenommen: `accept_invite(..., proven=True)` (die Person hat den Link aus
+  diesem Postfach) → `email_confirmed_at` gesetzt. Neu gegenüber heute, aber genau der Beweis, den der Link sonst bringt.
+- Erinnerungen, Fristen, Exporte, Upload-Bitten gehen wie heute nur an eine bewiesene Adresse (strenger als „zählt“,
+  das Modul erlaubt das).
 
-## 8. Einrichtungscode
+## 9. Kontenliste nach konten 0.3.9
 
-Gibt es schon (`NEXPAPER_SETUP_TOKEN`, Code im Log). Er wandert ins Modul (`nexkonten.setup_code`), Wortlaut und
-Variable bleiben gleich. Einen Weg „Sicherung einspielen vor der Einrichtung“ hat nexpaper nicht.
+**Schalter** (`AccountCaps`, nach dem Umbau):
 
-## 9. Einladungen
+| `rename` | `roles` | `emailRemove` | `resetLink` | `factorReset` | `signOut` | `unlink` | `blocking` | `remove` | `restore` |
+|---|---|---|---|---|---|---|---|---|---|
+| ✓ (neu, gleich mit dem Umbau) | ✓ | ✓ (neu) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | – |
 
-Der Betreiber gab nie einen Namen vor; künftig zusätzlich einen Anzeigenamen. Die Dauer wählt er heute (1/7/30 Tage);
-das Modul liest nur `expires_at` und lässt das zu, der Entwurf sagt „7 Tage überall“ (offene Frage 2). Offene
-Einladungen von 1.12.0 gelten weiter und nehmen die Anfrage von 1.12.0 an (nur `name` und `password`).
+**`ListedAccount`** aus `GET /accounts` und `oidcApi.links()`: `username` = `name`, `emailConfirmed` = `email_confirmed`
+(bewiesen: so heißt „bestätigt“ für nexpapers Nutzer), `emailDuplicate`, `operator`, `self`, `hasPassword`,
+`authenticator` = `totp`, `passkeys`, `providers` (Verknüpfungen), `blocked`, `blockedAt`, `locked`, `lastSeenAt`,
+`picture`.
+
+| Heute | Künftig |
+|---|---|
+| Tabelle: Person (Bild, Anzeigename, klein Adresse oder Name), Anmeldung (Anbieter, Passwort mit Faktor), Rolle, KI, Zuletzt (gesperrt, vorübergehend gesperrt) | Zeile: Bild, Anzeigename, Marken (Betreiber, Du, Zweiter Faktor, Gesperrt, Vorübergehend gesperrt, Adresse doppelt, je Anbieter), klein „Benutzername · E-Mail“, „Verwalten“; im Fenster die Angaben Benutzername, E-Mail, Rolle, Anmeldung, Zuletzt angemeldet, Gesperrt seit |
+| Spalte „KI“ (Haken, sofort gespeichert) | `OwnCheck` „KI erlaubt“ in **Rechte**; `server.permissionsHint` als Hinweis darunter |
+| – | eigene Angabe (`FactShown`) **„Dokumente: N“** (Zahl aus `documents`, eigener Wortlaut DE/EN/FR) |
+| Menü: Rolle, Link (neues bzw. erstes Passwort), Faktor zurücksetzen (nur mit Faktor), Überall abmelden, Lösen je Anbieter, Sperren/Entsperren, Konto löschen | Knöpfe aus `accountActions` in Ändern, Zugang, Beenden; dazu neu „Anzeigenamen ändern“, „Benutzernamen ändern“, „Adresse entfernen“ |
+| **Löschen:** eigener Dialog mit Zahl der Dokumente (samt Papierkorb), Übergabe an eine Person (in deren Tresor), in einen gemeinsamen Tresor oder mitlöschen, Hinweis „das siehst du danach“, **Sperre, solange das Konto alleiniger Verwalter eines gemeinsamen Tresors ist**, **Kontoname eintippen**, eigenes Passwort | Knopf „Konto löschen“ aus dem Modul öffnet **nexpapers `DeleteAccount`** statt `ConfirmDialog` (SCHNITTSTELLE „Seit 0.3.9“, Punkt 4); innen aus `ui` gebaut (`Dialog`, `Field`, `SelectField`, `Button` mit `account.remove`), Satz `account.askRemove`, dann die Zahlen, dann `removeLines(CAPS)` („lässt sich nicht rückgängig machen“); Route und Felder unverändert |
+| Am eigenen Konto nichts | `NOT_ON_SELF`; der Haken „KI erlaubt“ darf am eigenen Konto stehen |
+| Offene Einladungen als eigene Karte, „Zurücknehmen“ mit Rückfrage | `OPEN_INVITES` (auch abgelaufene) |
+| Karte „Schlüssel aller Konten“ (`AllApiKeysCard`) | bleibt eigene Karte unter den Karten des Moduls |
 
 ## 10. Test „Bestand“
 
-`backend/tests/test_bestand.py` mit `backend/tests/bestand/bestand-1.12.0.sql.gz`, gebaut von 1.12.0 selbst mit
-`tests/bestand/build.py` (erfundene Konten in `bestand-1.12.0.json`). Start:
+`backend/tests/test_bestand.py` mit `tests/bestand/bestand-1.12.0.sql.gz` (gebaut von 1.12.0, `build.py`, Konten in
+`bestand-1.12.0.json`). Start:
 
     cd backend && .venv/Scripts/python.exe -m pytest tests/test_bestand.py -q
 
-Konten: `betreiber` (eigene bestätigte Adresse, zweiter Faktor, Wiederherstellungscodes), `anna` (bestätigt,
-API-Schlüssel, gekoppeltes iPhone, selbst angeforderter offener Link), `ben` (Adresse der Einladung, **nicht
-bestätigt**, offener Link vom Betreiber), `carla`/`dora` (eine Adresse in zwei Schreibweisen, eine bestätigt, eine
-nicht), `emil` (keine Adresse, wartende neue Adresse, offene Browsersitzung), `fritz` (nur Anbieter, Adresse vom
-Anbieter), `greta` (Passwort und Anbieter), `hans` (gesperrt), `ida` (gelöscht), zwei offene Einladungen (mit und
-ohne Adresse). Geprüft (57 Fälle): Start ergänzt nur (keine Spalte, keine Zeile verloren), Adressen und ihr
-Bestätigt-Zustand bleiben, Tresorordner bleiben, Anmelden mit Name in jeder Schreibweise, zweiter Faktor und
-Wiederherstellungscode, Anbieter, Sitzung, Gerät, API-Schlüssel, offene Einladungen mit der Anfrage von 1.12.0,
-offene Links beider Arten, wartende Adresse per Link, „Passwort vergessen“ per Name (auch mit unbestätigter und mit
-geteilter Adresse) und per eindeutiger Adresse (auch unbestätigt), nichts ohne Weg, Sperre nach fünf Fehlversuchen
-je Konto, „Anmeldung mit Passwort aus“, gesperrt und gelöscht bleiben draußen.
+Prüft (57 Fälle grün heute): Start ergänzt nur (Spalten; Zeilen in `users`, `vaults`, `vault_members`,
+`auth_sessions`, `invites`, `password_resets`, `email_confirmations`, `api_keys`, `devices`, `oidc_providers`,
+`oidc_links`, **`settings`**); Konten mit Name, Adresse, `email_confirmed_at`, Passwort, Faktor, Sperre, Rolle und
+Tresorordner wie vorher; Anmelden mit Name (auch groß und mit Leerzeichen), falsches Passwort 401, Code und
+Wiederherstellungscode; gesperrt 401 oder 403; gelöscht 401; Passwort-Anmeldung aus; **Sperre nach `MAX_FAILURES`**;
+Konten ohne Passwort; Anbieter; Sitzung; gekoppeltes iPhone (`Bearer npd_…` an `/auth/me`); API-Schlüssel; offene
+Einladungen mit `name` und `password`; offene Links beider Arten (204); wartende Adresse per Link; „Passwort vergessen“
+per Name an die eigene Adresse (auch unbewiesen und geteilt), per eindeutiger Adresse (auch unbewiesen), nie an ein
+anderes Konto, nichts ohne Weg (`emil`, `fritz`, `hans`, `ida`, unbekannt).
 
-`xfail(strict=True)` (werden mit der Anbindung grün, dann Marker weg): Anmelden mit eindeutiger bestätigter Adresse;
-eine geteilte Adresse findet bei „Passwort vergessen“ kein Konto mehr.
+Strikte `xfail` (`AFTER_THE_CHANGE`), deren Marker mit dem Umbau gehen: Anmelden mit eindeutiger bewiesener Adresse;
+geteilte Adresse findet bei „Passwort vergessen“ kein Konto. **Nichts sonst in der Datei wird angepasst.**
 
-Gegen Mutationen geprüft (jede Rückgabecode 1): Name mit Groß/Klein verglichen; „vergessen“ nur an per Link bestätigte
-Adressen (so würde ein naiver Store auf `email_confirmed_at` brechen); Start löscht offene Einladungen, beendet
-Sitzungen, löscht Anbieterverknüpfungen, bestätigt alle Adressen, sperrt Geräte; keine Sperre nach Fehlversuchen;
-Einladung verlangt einen Anzeigenamen; Rücksetzlinks mit anderem Hash; Anmelden mit Adresse eingebaut, Marker
-vergessen (strenges xfail wird rot).
+Was er festlegt: `MAX_FAILURES` 5 (Abschnitt 0), `mailer.send_reset` mit dieser Unterschrift, `notices.later`/`settle`,
+`totp.code_at`, keine neue Zeile in `settings`, `email_confirmed_at` unverändert, Tresorordner = Name bei der Anlage.
 
 Vor dem Aufspielen dieselbe Probe auf einer **Kopie** der Live-Datenbank: doppelte Adressen zählen, die Fassung gegen
-die Kopie starten.
+die Kopie starten, prüfen, ob `two_factor_required` eine Zeile hat.
 
-## 11. Risiken
+## 11. Reihenfolge beim Bau
 
-1. **Posteingang vertraut „bestätigt“.** Legt der Store `email_confirmed` auf `email_confirmed_at`, ziehen Adressen
-   ohne Link (Einladung, ohne Mailserver) Mails in fremde Tresore. Abschnitt 3.
-2. **Umbenennen und Eingang**: Ordner und Plus-Adresse hängen am Namen (Abschnitt 2). Ohne Tabelle früherer Namen
-   landen Dokumente beim Falschen.
-3. **iPhone-App** leert ihre Warteschlange, wenn sich der Name beim Neukoppeln ändert. Erst Server mit `account_id`,
-   dann App-Update, dann Ändern-Knopf.
-4. **Sperre je Konto**: `nexkonten.authenticate` hat keine. Wer es naiv einsetzt, verliert die Sperre nach fünf
-   Fehlversuchen (Test „Bestand“ fängt das).
-5. **„Passwort vergessen“ per Adresse** wird enger: geteilte Adressen und Adressen vom Anbieter finden kein Konto mehr.
-   Betroffene merken es nur, wenn sie die Adresse statt des Namens tippen.
-6. **Zeit**: heute wird der Link im Hintergrund gemacht; `nexkonten.forgot` schreibt im Aufruf. Deshalb im Hintergrund
-   aufrufen.
-7. **Schema 21** hat wie jeder Schritt keinen Rückweg außer der Sicherung.
-8. **Einladung nur mit Name und Passwort** (offene Browser-Tabs, Kurzbefehle) braucht den Rückfall in der Route.
-9. **Französisch**: das Modul hat keine französischen Wortlaute.
+1. Module kopieren (`konten`, `oidc`, `post`, `ui`), `requirements.txt`, `check`.
+2. `ADDITIONS` (Abschnitt 4), Store-Adapter, Vertragsadapter (`blocking=True`, `required_second_factor=True`,
+   `reusable_invites=False`, `legacy()` mit der Datenbank von 1.12.0), Vertragstests grün.
+3. Anmelden, Code, Passkey, Einrichtung, Einladung, „Passwort vergessen“, Links, Notfallbefehl über das Modul; Marker
+   für Adresse und Regel 3 weg.
+4. `former_names` im Posteingang (Ordner, Plus-Adresse, „Mein Posteingang“, Betreiberliste), dann Profil mit
+   Benutzername und Adresse, Betreiber-Routen.
+5. Koppel-Antworten mit `account_id` und ältestem Namen (Abschnitt 12, Server-Teil).
+6. `post`, OIDC 1.1.0.
+7. Oberfläche aus `ui` (Abschnitte 7 und 9), Wortlaute DE/EN/FR, Playwright-Texte anpassen (nicht ausführen),
+   `npm run lint`.
+8. `docs/api.md` (`account_id`, `account` = ältester Name, `former`, neue Routen), README (`NEXPAPER_SECOND_FACTOR_OFF`,
+   Setup-Code mindestens 16 Zeichen, Anmelden mit E-Mail, Link 1 Stunde, frühere Namen im Posteingang).
+9. nexpaper-ios nach Abschnitt 12 (eigener Auftrag, eigenes Repo).
 
-## 12. Passt das Modul?
+## 12. Begleit-App nexpaper-ios
 
-Ja, mit Reibung. Namensregeln, Einrichtungscode, Abläufe der Links und die Tabellen passen fast eins zu eins. Lücken:
+**Heute (1.3.1, `d7be6bf`):** Die App koppelt per QR-Code (`POST /devices/pair`) oder Browser-Anmeldung
+(`ASWebAuthenticationSession`, `POST /oauth/token`), ein weiteres Gerät holt sich über iCloud einen eigenen Schlüssel
+(`POST /devices/sibling`). Jede Antwort trägt `account` = Benutzername, die App speichert ihn in `Connection.account`.
 
-1. **Ein einziges `email_confirmed`** für zwei Dinge. Das Modul setzt eine Adresse ohne Link als bestätigt
-   (Einladung, Ersteinrichtung, ohne Mailserver, Bestand) und ruft für den eingelösten Link und die Sofort-Änderung
-   dieselbe `Store.set_email(confirmed=True, source="")`. nexpaper braucht „zählt fürs Anmelden“ getrennt von „per Link
-   bewiesen“ (Posteingang). Vorschlag fürs Modul: `set_email(…, proven: bool)` oder eine eigene Quelle `"link"`.
-2. **`authenticate` ohne Sperre je Konto**: keine Stelle für Fehlversuch zählen/Sperre prüfen/bekannte Browser. nexpaper
-   nimmt `resolve_login` und behält den Rest; das Modul sollte das als vorgesehenen Weg nennen oder Haken anbieten.
-3. **Gesperrt nach richtigem Passwort sagt `account_blocked`**; nexpaper verrät heute nichts. Ob das überall so sein
-   soll, entscheidet der Entwurf nicht.
-4. **Frühere Benutzernamen** kennt das Modul nicht: `username_taken` fragt nur `find_by_username`. Apps mit Namen als
-   Adresse (Eingang hier, CalDAV in nextime) brauchen „alter Name bleibt reserviert“. Geht heute nur, indem der Store
-   frühere Namen in `find_by_username` mitliefert (dehnt den Vertrag).
-5. **Kein Bescheid an die alte Adresse**: `confirm_email`/`change_email`/`remove_email` liefern weder die alte Adresse
-   noch eine `Mail` für sie; nexpaper hat diesen Bescheid heute. Vorschlag: `MAIL_EMAIL_CHANGED` an die alte
-   bestätigte Adresse.
-6. **`forgot` schreibt im Aufruf** (Link anlegen, `commit`): nur im Hintergrund zeitneutral. Doku sagt es, Signatur
-   zwingt es nicht.
-7. **Einladungsdauer fest 7 Tage** im Entwurf; nexpaper lässt 1/7/30 wählen. Das Modul liest nur `expires_at`, die
-   Entscheidung ist also nur eine des Entwurfs.
-8. **Anzeigename Pflicht bei Einladung und Einrichtung**: alte Anfragen ohne ihn scheitern mit `display_name_empty`.
-   Jede App braucht denselben Rückfall in der Route; besser im Modul („leer: Benutzername“) oder als ausdrücklicher
-   Bestandsfall.
-9. **Kein Französisch** in den Wortlauten (nexpaper liefert Französisch fest aus).
-10. **`Picture` als PNG/JPEG**: nexpaper speichert WebP quadratisch; geht über die eigene Bildstrecke, nur ein
-    Hinweis.
+| Datei | Stelle | Rolle des Namens |
+|---|---|---|
+| `app/Shared/APIClient.swift` | `struct Connection { address, token, account, deviceId }`, Schlüsselbund-Eintrag „connection“ (`Shared/Keychain.swift`, JSON über `JSONDecoder()`) | gespeicherte Verbindung, auch für die Teilen-Erweiterung |
+| `app/Shared/Models.swift` | `PairedDevice { token, device, account }`, `OAuthToken { accessToken, tokenType, deviceId, account? }` | Koppel-Antworten |
+| `app/NexPaper/Model/Connecting.swift` | `Connection(..., account: paired.account, ...)` (QR) und `account: answer.account ?? ""` (OAuth) | Übernahme |
+| `app/NexPaper/Model/AppModel.swift` `connected(_:byHand:)` | `Keychain.load()?.account != c.account` → `store.clear()`, `queue.clear()`, `catalog.clear()` | **leert lokalen Speicher, Warteschlange und Katalog**, wenn sich der Name ändert |
+| `app/NexPaper/Model/AppModel.swift` `disconnect()`, `declinedSetup` | `SharedSetup.key(c.address, c.account)` | „von Hand getrennt“, kommt nicht über iCloud zurück |
+| `app/NexPaper/Model/SharedSetup.swift` | `SharedSetup.account`, `key = "<adresse>#<account>"`, `follows(...)` vergleicht den Schlüssel | iCloud-Abgleich iPhone ↔ iPad (Schalter Face ID, Erinnerungen; neues Gerät übernimmt die Verbindung) |
+| `app/NexPaper/Views/ConnectViews.swift` | „Angemeldet als“ = `me.shown ?? connection.account` | Anzeige (frisch aus `/auth/me`, nur offline der gespeicherte Name) |
+| `app/Shared/Models.swift` `struct Me { id, name, displayName, … }` | `GET /api/v1/auth/me` mit dem Geräte-Schlüssel | **hat `id` schon** |
 
-## 13. Offene Fragen
+**Was bricht:** Wer umbenennt und danach neu koppelt (Gerät verloren, App neu installiert, Verbindung von Hand
+getrennt), verliert nicht hochgeladene Scans der Warteschlange, den lokalen Speicher (angeheftet, zuletzt, offline
+behalten) und den Katalog. iPhone und iPad mit unterschiedlichem gespeichertem Namen gleichen ihre Schalter nicht mehr
+ab, und ein von Hand getrenntes Gerät mit dem alten Namen kommt über iCloud zurück. (Nach „Passwort vergessen“ bleibt
+das Gerät mit dem Umbau gekoppelt, Abschnitt 6; der häufigste Anlass zum Neukoppeln fällt damit weg.)
 
-1. **Adressen der Einladung im Bestand** sind in nexpaper nicht bestätigt. Sollen sie zum Anmelden zählen (Vorschlag:
-   ja, `email_counts`; so behalten diese Konten „Passwort vergessen“), oder nur per Link bestätigte?
-2. **Einladungsdauer**: 1/7/30 Tage behalten oder überall 7?
-3. **Gesperrtes Konto**: wie heute „falsches Passwort“ oder nach richtigem Passwort „gesperrt“ (Modul)?
-4. **Benutzername ändern** erst nach Tabelle früherer Namen und iPhone-Update – einverstanden mit dieser Reihenfolge?
-   Und: dürfen frühere Namen für immer reserviert bleiben?
-5. **Anmelden mit Adresse ohne Mailserver**: eine selbst getippte Adresse zählt sofort. Für den Posteingang zählt sie
-   nicht (Abschnitt 3). Reicht das?
+### Vorschlag Server (Teil des nexpaper-Umbaus)
+
+1. `account_id` (Zahl, `users.id`) zusätzlich in `PairedOut` (`routers/pairing.py`, `routers/devices.py` für
+   `POST /devices`), `BroughtOut` (`/devices/sibling`) und in der JSON-Antwort von `/oauth/token` samt `_TOKEN_BODY`.
+2. **Brücke für App-Fassungen vor dem Update:** `account` nennt den **ältesten Benutzernamen** des Kontos (erster
+   Eintrag in `former_names`, sonst der aktuelle). Für nie umbenannte Konten ändert sich nichts. Weil frühere Namen nie
+   neu vergeben werden, ist der Wert eindeutig und fest; eine App 1.3.x vergleicht ihn beim Neukoppeln mit dem
+   gespeicherten und leert nichts, und der iCloud-Schlüssel bleibt gleich. `docs/api.md` beschreibt das Feld so
+   („the account's first username, stable across renames; the current one is in `/auth/me`“).
+3. Tests in nexpaper: Koppeln nach Umbenennen antwortet mit gleicher `account_id` und gleichem `account`; ein Gerät von
+   vor dem Umbenennen spricht weiter für das Konto (`/auth/me` mit `Bearer npd_…` nennt den neuen Namen).
+
+### Vorschlag App (nexpaper-ios, nächste Fassung)
+
+1. `Connection.accountId: Int?` (optional, damit der Schlüsselbund-Eintrag älterer Fassungen ohne das Feld weiter
+   gelesen wird; ein nicht optionales Feld mit Vorgabe würde der synthetisierte Decoder verlangen). `PairedDevice` und
+   `OAuthToken` bekommen `accountId: Int?` (die Antworten werden mit `convertFromSnakeCase` gelesen); `Connecting.swift`
+   und `SharedSetup.connection(_:)` reichen sie durch.
+2. **Nachtragen:** Nach jedem `refreshMeta` gilt `me.id`; fehlt `connection.accountId`, schreibt die App ihn in den
+   Schlüsselbund. Weicht `me.name` vom gespeicherten `account` ab, frischt sie den Namen auf (Schlüsselbund und
+   `SharedSetup`). So kennt jede Verbindung ihre ID, bevor jemand umbenennt.
+3. **Gleiches Konto** an einer Stelle (`Connection.sameAccount(as:)`): gleiche Adresse und, wenn beide eine ID haben,
+   gleiche ID; sonst gleicher `account`. `AppModel.connected` leert Speicher, Warteschlange und Katalog nur, wenn das
+   **nicht** gilt.
+4. **iCloud:** `SharedSetup` bekommt `accountId: Int?`; `follows` und der Vergleich mit `declinedSetup` gehen über
+   dieselbe Regel (ID wenn beide sie haben, sonst Name). `declinedSetup` speichert zusätzlich die ID. So folgen iPhone
+   (neu) und iPad (noch alte Fassung, ohne ID) einander weiter, solange der Name gleich ist, und nach dem Update beider
+   auch über eine Umbenennung hinweg.
+5. Anzeige „Angemeldet als“ bleibt `me.shown`; ein Wortlaut „Benutzername“ ist dort nicht nötig.
+
+### Wie es getestet wird
+
+- **Unit-Tests** (Swift Testing, `app/NexPaperTests`, Lauf auf dem Mac mini mit `tools/mac.sh test`):
+  `SharedSetupTests`: gleiche ID mit neuem Namen folgt; andere ID mit gleichem Namen folgt nicht; Eintrag ohne ID
+  (ältere Fassung) folgt über den Namen; ein JSON ohne `accountId` liest sich. `AppTests`: Neukoppeln mit gleicher ID
+  und neuem Namen behält Warteschlange, Speicher und Katalog; andere ID leert alles; Verbindung ohne ID bekommt sie nach
+  `refreshMeta` aus `/auth/me` (`FakeTransport`); Koppel-Antwort mit und ohne `account_id` (nexpaper vor und nach dem
+  Umbau). Jede Gegenprobe einmal rot (Rückgabecode).
+- **Gegen eine Testinstanz** (nexpaper vom Zweig `konten`, `tools/testinstanz`): koppeln, offline zwei Scans in die
+  Warteschlange, im Browser umbenennen, in der App trennen und neu koppeln, Warteschlange geht hoch; iPad über iCloud
+  übernehmen, Schalter Face ID am iPhone umlegen, iPad folgt. Dasselbe einmal mit der App 1.3.1 aus TestFlight gegen den
+  neuen Server (Brücke `account`).
+- **TestFlight** (Gruppe „Intern“), dann App Store.
+
+## 13. Risiken
+
+1. **Posteingang vertraut „bewiesen“.** Legt der Store `email_confirmed` (zählt) auf `email_confirmed_at`, ziehen
+   Adressen ohne Link fremde Mails in einen Tresor. Mit zwei Spalten ausgeschlossen; Test: Adresse ohne Mailserver
+   gesetzt, Mail von dort landet beim Betreiber als „unbekannt“.
+2. **Frühere Namen im Posteingang:** ohne `former_names` in `scan` und `assign` landen Dokumente nach einer Umbenennung
+   beim Betreiber. Tests für Ordner und Plus-Adresse mit altem Namen, gesperrtem Konto und gelöschtem Konto.
+3. **Sperre 5/10** (Frage 1) und **Bremse** des Moduls: der Test „Bestand“ zeigt, was geht.
+4. **Zweiter Faktor:** Zeile `two_factor_required` beim Bestand ohne Zeile; sonst verliert eine Installation die Pflicht.
+5. **Neue Zeilen in `settings` beim Start** machen den Test „Bestand“ rot.
+6. **Gekoppelte Geräte nach neuem Passwort** bleiben jetzt; wer nach einem Diebstahl „Passwort vergessen“ nimmt, muss
+   „Alle trennen“ drücken. Der Hinweis danach sagt es.
+7. **Rückweg auf 1.12.0** geht mit `ADDITIONS`, aber ohne frühere Namen, ohne Anmelden mit E-Mail.
+8. **Französisch:** jeder neue eigene Satz in drei Sprachen.
+
+## 14. Was sich gegenüber dem Plan vom 24.11. geändert hat
+
+| Damals | Jetzt |
+|---|---|
+| „Passt das Modul?“ 1: ein `email_confirmed` für zwei Dinge | Modul hat `email_confirmed` und `email_proven` (`set_email(..., proven=)`) |
+| Bestand: Adressen vom Anbieter zählen nicht | Entwurf: jede Bestandsadresse zählt; Herkunft getrennt |
+| „Passt das Modul?“ 2: keine Sperre am Konto | im Modul (`is_locked`, `note_failure`) |
+| 3: gesperrt verrät nichts | entschieden: nach richtigem Passwort „gesperrt“ (403) |
+| 4: frühere Namen | im Modul (`name_reserved`, `find_by_former_name`), für immer reserviert, auch gelöschte |
+| 5: kein Bescheid an die alte Adresse | im Modul (`EmailChanged.notice`, `post` `email_changed`/`email_removed`) |
+| 6: `forgot` schreibt im Aufruf | `forgot_in_background` |
+| 7: Einladung fest 7 Tage | entschieden: 1/7/30 wählbar wie heute |
+| 8: Anzeigename Pflicht bricht alte Anfragen | `older_request` |
+| 9: kein Französisch | Modul liefert FR |
+| Umbenennen erst nach iPhone-Update | entschieden: gleich mit dem Umbau; iPhone-App im selben Zug (Abschnitt 12), Brücke über `account` |
+| Wanderung „nur als Schemaschritt“ | als `ADDITIONS`, Rückweg auf 1.12.0 bleibt offen |
+| Neues Passwort beendet Geräte | entschieden: Geräte bleiben, „Alle trennen“ |
+| Teil 2, Kontenliste, `ui` | neu in diesem Plan |
+
+## 15. Funde am Modul (nicht hier behoben)
+
+1. **Bremse am Konto gegen Sperre nach 10:** Der Topf `account:<id>` (5 frei) antwortet ab dem siebten Fehlversuch mit
+   429, bevor die Sperre am Konto nach 10 (Entwurf Teil 2) greift. nexpapers Test „Bestand“ prüft die Sperre mit
+   `MAX_FAILURES` Versuchen und jedem Mal 401; mit 10 wird er rot. Entweder bleibt nexpaper bei 5 (Vorschlag), oder
+   Entwurf und Bremse werden aufeinander abgestimmt.
+2. **Bescheid an die alte Adresse:** Das Modul schickt ihn an eine alte Adresse, die **zählte**. nexpaper schickt ihn
+   heute nur an eine **bewiesene** (eine nie bestätigte Einladungsadresse kann vertippt sein und einem Fremden gehören).
+   Vorschlag: das Modul nimmt `email_proven`, wo die App beweist, oder sagt im `notice`, ob die alte bewiesen war.
+3. **Eine Adresse, die zählt, nachträglich beweisen:** nexpaper schickt auf Wunsch einen Link an die **jetzige**,
+   noch nicht bewiesene Adresse (für den Posteingang). `change_email` mit derselben Adresse ist im Modul `email_same`,
+   `resend_email_link` gilt nur für eine wartende. nexpaper legt die wartende Adresse dafür selbst über den Store an;
+   besser wäre eine Funktion `prove_email` im Modul.
+4. **„Passwort vergessen“ und Outbox:** `forgot_in_background` erwartet, dass `send` bei einem Fehler wirft; über die
+   Outbox von `post` wirft es nie. Die Doku sollte sagen: dieser Weg sendet sofort.
+5. **Anbieter prüft den zweiten Faktor selbst** (`trusts_second_factor`, `second_factor_by_provider`): kennt
+   `factor.state`/`next_step` nicht; die App hält es im OIDC-Weg.
+6. **Gekoppelte Geräte als Begleit-App-Schlüssel:** `Account` hat keine feste Kennung außer der ID; die Brücke
+   „ältester Name“ für alte iPhone-Apps ist App-Sache. Für Stufe 2 (Geräte koppeln) sollte das Modul `account_id` in
+   allen Koppel-Antworten vorschreiben.
+7. **Tabelle der Schalter** in `konten/README.md` zeigt für nexpaper `rename` und `emailRemove` als „–“ (Stand vor dem
+   Umbau).
+
+## 16. Offene Fragen (entscheidet der Besitzer der Apps)
+
+1. **Wie viele falsche Passwörter, bis ein Konto gesperrt wird?** nexpaper sperrt heute nach 5 Versuchen für 15 Minuten.
+   Der Entwurf sagt „10, überall“. Mit dem neuen Modul würde nexpaper bei 10 aber schon ab dem siebten Versuch „zu viele
+   Versuche“ sagen, und der Pflichttest für laufende Installationen schlägt dann an. Soll nexpaper bei 5 bleiben?
+   Vorschlag: ja, bei 5.
+2. **Hinweis an die alte Mailadresse:** Wenn jemand seine Adresse ändert oder entfernt, schickt nexpaper heute nur dann
+   einen Hinweis an die alte Adresse, wenn diese einmal per Link bestätigt wurde (eine nur vom Betreiber eingetippte
+   Adresse kann vertippt sein und einem Fremden gehören). Das neue Modul würde ihn an jede alte Adresse schicken, mit der
+   man sich anmelden konnte. Soll es bei „nur bestätigte“ bleiben? Vorschlag: ja.
