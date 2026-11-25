@@ -4496,6 +4496,17 @@
       },
       "LogEntry": {
         "properties": {
+          "at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "At"
+          },
           "level": {
             "title": "Level",
             "type": "string"
@@ -4579,6 +4590,10 @@
               }
             ],
             "title": "Until"
+          },
+          "variable": {
+            "title": "Variable",
+            "type": "string"
           }
         },
         "required": [
@@ -20297,6 +20312,18 @@
               "maximum": 1000,
               "minimum": 1,
               "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "maximum": 1000000,
+              "minimum": 0,
+              "title": "Offset",
               "type": "integer"
             }
           }

@@ -92,7 +92,7 @@ def test_the_environment_fixes_the_level(client: TestClient, operator: str, monk
 
     monkeypatch.setattr(get_settings(), "log_level", "debug")
     assert client.get("/api/v1/logs/level").json() == {
-        "mode": "detailed", "until": None, "fixed_by_env": True,
+        "mode": "detailed", "until": None, "fixed_by_env": True, "variable": "NEXPAPER_LOG_LEVEL",
         "modes": ["quiet", "normal", "detailed", "trace"], "durations": list(logs.ALLOWED_MINUTES),
     }
     refused = client.put("/api/v1/logs/level", json={"mode": "quiet"})
