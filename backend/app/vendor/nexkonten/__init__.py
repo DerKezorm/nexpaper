@@ -44,10 +44,17 @@ from . import (
 from .config import AppConfig, configure, current, use_transport
 from .errors import CODES, AccountError, PictureRefused
 from .model import (
+    ACCESS_API_KEY,
+    ACCESS_CALENDAR,
+    ACCESS_CONTACTS,
+    ACCESS_DEVICE,
+    ACCESS_KINDS,
+    ACCESS_PASSKEY,
     EMAIL_OWN,
     EMAIL_PROVIDER,
     EVENT_CREATED,
     EVENT_EMAIL_CHANGED,
+    EVENT_EMAIL_PROVEN,
     EVENT_JOINED,
     EVENT_PASSWORD_SET,
     EVENT_RENAMED,
@@ -87,14 +94,21 @@ from .model import (
     Taken,
 )
 
-__version__ = "0.3.9"
+__version__ = "0.3.10"
 
 __all__ = [
+    "ACCESS_API_KEY",
+    "ACCESS_CALENDAR",
+    "ACCESS_CONTACTS",
+    "ACCESS_DEVICE",
+    "ACCESS_KINDS",
+    "ACCESS_PASSKEY",
     "CODES",
     "EMAIL_OWN",
     "EMAIL_PROVIDER",
     "EVENT_CREATED",
     "EVENT_EMAIL_CHANGED",
+    "EVENT_EMAIL_PROVEN",
     "EVENT_JOINED",
     "EVENT_PASSWORD_SET",
     "EVENT_RENAMED",

@@ -230,6 +230,22 @@ describe('Avatar, Row with a picture, Facts, ButtonGroup (since 0.1.1)', () => {
     expect(root.querySelector('[data-testid="picture"]')?.textContent).toBe('K')
   })
 
+  it("paints the letter in the app's colour of the person where it has one (since 0.1.2)", () => {
+    const root = show(
+      <>
+        <Avatar letter="K" hue={200} color="rgb(74, 100, 145)" testId="coloured" />
+        <Avatar letter="M" hue={20} color="  " testId="plain" />
+      </>,
+    )
+    const coloured = root.querySelector<HTMLElement>('[data-testid="coloured"]')
+    expect(coloured?.style.backgroundColor).toBe('rgb(74, 100, 145)')
+    expect(coloured?.dataset.color).toBe('rgb(74, 100, 145)')
+    expect(coloured?.dataset.hue).toBe('200')
+    const plain = root.querySelector<HTMLElement>('[data-testid="plain"]')
+    expect(plain?.style.backgroundColor).toBe('')
+    expect(plain?.dataset.color).toBeUndefined()
+  })
+
   it('a row takes a picture in place of the symbol and a second line, an old row stays as it was', () => {
     const root = show(
       <Rows label="Accounts">

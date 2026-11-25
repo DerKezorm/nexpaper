@@ -10,6 +10,11 @@
     "body": "{{by}} invites you to {{app}}. The button below makes your account. The invitation holds for {{valid}}.",
     "action": "Accept the invitation"
   },
+  "invite_space": {
+    "subject": "{{by}} invites you to {{space}} in {{app}}",
+    "body": "{{by}} invites you to {{space}} in {{app}}. The button below makes your account. The invitation holds for {{valid}}.",
+    "action": "Accept the invitation"
+  },
   "reset": {
     "subject": "A new password for {{app}}",
     "body": "A link for a new password was made for your account {{username}}. It holds for {{valid}} and works once. If that was not you, just leave this mail.",

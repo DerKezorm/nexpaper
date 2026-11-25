@@ -1,6 +1,6 @@
 {
   "files": {
-    "backend/app/vendor/nexoidc/__init__.py": "sha256-AyEIMFdadiENJGeF2gpr4drwI2lIL22Q1R6DmV/XR7A=",
+    "backend/app/vendor/nexoidc/__init__.py": "sha256-pE2sif2ifWqOTsJu7200FDc8c+lTi+7K7drQ6NDJHF4=",
     "backend/app/vendor/nexoidc/accounts.py": "sha256-XWMqWA8nYtikz2SIG4BlwKKSz8lNK0JaOa2YlFv2UWE=",
     "backend/app/vendor/nexoidc/attempt.py": "sha256-vGBQZ30w57nQSwTFusoWizBVrBxwbxf3aFKaTQdmhkQ=",
     "backend/app/vendor/nexoidc/authentik.py": "sha256-3qg8bjfOJEeP1ctqNkI/G9UCSko+A4FTUKYUjog2XRU=",
@@ -35,5 +35,5 @@
     "pyjwt": "2.15.1"
   },
   "vendor_path": "backend/app/vendor/nexoidc",
-  "version": "1.1.0"
+  "version": "1.1.1"
 }

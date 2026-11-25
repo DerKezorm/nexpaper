@@ -1,21 +1,26 @@
 """The brake at every door (since 0.3.4), not only at the sign-in: a password typed to confirm a change (one's own
 address or username, or an operator's action on another account), a code of the second factor, "Forgot your
 password?" and the links for a new address. Each counts through the module's brake, so that no page of the app lets
-somebody guess or flood where the sign-in would not."""
+somebody guess or flood where the sign-in would not.
+
+Since 0.3.10 the brake at the sign-in itself is the module's (``login.sign_in``), checked through the app's own route
+(``sign_in_from`` of the adapter), and "five free" means exactly five: the sixth attempt waits. An app whose own
+tests counted six (``FREE + 1``) changes them to five."""
 
 from __future__ import annotations
 
 import time
 from collections.abc import Callable
+from types import SimpleNamespace
 from typing import Any
 
 import pytest
 from konten_contract import password
 
 ISSUER = "nexapp"
-#: Five failures pass freely; the sixth still runs and starts the wait, so the seventh attempt waits.
+#: Five failures pass freely, exactly five (since 0.3.10; until 0.3.9 the sixth still ran): the sixth attempt waits.
 FREE = 5
-RUN = FREE + 1
+RUN = FREE
 
 
 def _refused(konten: Any, call: Callable[[], Any]) -> str:
@@ -105,7 +110,8 @@ def test_a_right_password_takes_the_count_back(app: Any, konten: Any) -> None:
     secret = password()
     alex = app.seed("alex", password=secret)
     with app.store() as store:
-        for _ in range(FREE):
+        # Four wrong, then the right one, the last of the five free.
+        for _ in range(FREE - 1):
             _refused(konten, lambda: konten.profiles.change_username(store, alex, "x1", actor_id=alex, password="no"))
         konten.profiles.change_username(store, alex, "alex2", actor_id=alex, password=secret)
         for _ in range(RUN):
@@ -144,7 +150,7 @@ def test_forgot_counts_the_sender_and_mails_one_account_only_so_often(app: Any, 
         konten.resets.forgot_in_background(typed, open_store=app.store, send=sent.append, later=jobs.append,
                                            sender=sender)
 
-    for _ in range(11):
+    for _ in range(10):
         ask("alex", "203.0.113.9")
     # The same answer for every input once the sender's count is full: nothing tells a name from no account.
     assert _refused(konten, lambda: ask("alex", "203.0.113.9")) == "too_many_attempts"
@@ -152,9 +158,8 @@ def test_forgot_counts_the_sender_and_mails_one_account_only_so_often(app: Any, 
     ask("alex", "198.51.100.7")
     for job in jobs:
         job()
-    # Twelve requests reached the worker; the account got six links (five free, the sixth starts the wait), the
-    # rest were held back quietly.
-    assert len(jobs) == 12 and len(sent) == RUN
+    # Eleven requests reached the worker; the account got five links (five free), the rest were held back quietly.
+    assert len(jobs) == 11 and len(sent) == RUN
 
 
 def test_links_for_a_new_address_count_at_the_account(app: Any, konten: Any) -> None:
@@ -168,3 +173,64 @@ def test_links_for_a_new_address_count_at_the_account(app: Any, konten: Any) -> 
         assert _refused(
             konten, lambda: konten.profiles.change_email(store, alex, "other@example.com", password=secret, mail=True)
         ) == "too_many_attempts"
+
+
+class _Clock:
+    """The brake's clock, moved by the test (the brake reads ``time.monotonic`` only)."""
+
+    def __init__(self) -> None:
+        self.now = 10_000.0
+
+    def monotonic(self) -> float:
+        return self.now
+
+
+@pytest.fixture
+def clock(konten: Any, monkeypatch: pytest.MonkeyPatch) -> _Clock:
+    held = _Clock()
+    monkeypatch.setattr(konten.brake, "time", SimpleNamespace(monotonic=held.monotonic))
+    return held
+
+
+def test_a_waiting_account_answers_like_a_wrong_password_and_signs_in_after_the_wait(
+    app: Any, konten: Any, clock: _Clock
+) -> None:
+    """Decided for 0.3.10 (found in nexnotes, nextasks, nexpaper): ten wrong passwords from many senders get the
+    answer of a wrong password every time (401, the app's old code), also while the count of the account waits: the
+    brake then checks no password and tells nothing about the account. After the wait the right password signs in:
+    the attempts the brake held back did not count towards the lock."""
+    secret = password()
+    alex = app.seed("alex", email="alex@example.com", password=secret)
+    for number in range(10):
+        typed = "alex" if number % 2 else "ALEX@example.com"
+        assert app.sign_in_from(typed, "not the password", f"203.0.113.{number + 1}") == (401, None), number
+    # While the account's count waits even the right password is answered like a wrong one, and not checked.
+    assert app.sign_in_from("alex", secret, "198.51.100.1") == (401, None)
+    clock.now += 3600 * 2
+    assert app.sign_in_from("alex", secret, "198.51.100.2") == (200, alex)
+
+
+def test_the_lock_after_ten_wrong_passwords_stays_next_to_the_brake(app: Any, konten: Any, clock: _Clock) -> None:
+    """The brake does not replace the lock of the account (ten wrong passwords, a while): ten wrong passwords that
+    the brake let through lock it, and then the right one is answered like a wrong one too."""
+    if not app.lock_after:
+        return
+    secret = password()
+    app.seed("alex", password=secret)
+    for number in range(app.lock_after):
+        clock.now += 3600 * 2
+        assert app.sign_in_from("alex", "not the password", f"203.0.113.{number + 1}") == (401, None), number
+    clock.now += 3600 * 2
+    assert app.sign_in_from("alex", secret, "198.51.100.3") == (401, None)
+
+
+def test_too_many_attempts_only_when_the_senders_count_is_full(app: Any, konten: Any, clock: _Clock) -> None:
+    """429 comes only from the sender's count (thirty free), the same for a name that exists and one that does not;
+    the count of one account or of one typed text never answers 429."""
+    app.seed("alex", password=password())
+    for number in range(30):
+        assert app.sign_in_from(f"nobody{number}", "x", "192.0.2.50") == (401, None), number
+    assert app.sign_in_from("alex", "x", "192.0.2.50")[0] == 429
+    assert app.sign_in_from("nobody-else", "x", "192.0.2.50")[0] == 429
+    for number in range(8):
+        assert app.sign_in_from("nobody", "x", f"198.51.100.{number + 10}") == (401, None), number

@@ -262,8 +262,8 @@ def test_a_known_browser_counts_in_a_pot_of_its_own_not_at_the_sender(app: Any, 
     for _ in range(40):
         held.claim(keys)
     assert held.claim(keys) > 0
-    # Five free failures; the sixth is still tried and starts the wait.
-    for _ in range(6):
+    # Five free failures, exactly five (since 0.3.10): the sixth waits.
+    for _ in range(5):
         assert held.claim(keys, browser=mark) == 0.0
     assert held.claim(keys, browser=mark) > 0
     # Another browser of the owner has a pot of its own; a right password empties the pot.

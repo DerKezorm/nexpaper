@@ -282,6 +282,9 @@ def test_the_waiting_sign_in_takes_the_code_and_ends_after_five_wrong_ones(app: 
     with app.store() as store:
         right = konten.factor.code_at(seed, time.time() + 30)
         _refused(konten, lambda: konten.factor.finish_waiting(store, token, right), "sign_in_expired")
+    # Five wrong codes use up the five free ones of the account (``code:<id>``, since 0.3.10 exactly five): the next
+    # sign-in comes after the brake's wait.
+    konten.brake.BRAKE.forget()
     token = konten.factor.start_waiting(alex, remember=False, provider_checked=True)
     with app.store() as store:
         waited = konten.factor.finish_waiting(store, token, right)
@@ -425,7 +428,27 @@ def test_switching_the_authenticator_off_goes_through_the_module_and_means_off(a
     bob = app.seed("bob", password=secret)
     _set_up(app, konten, bob, secret)
     with app.store() as store:
-        for _ in range(konten.brake.FREE_OTHER + 1):
+        # Five free, exactly five (since 0.3.10): the right password waits after them.
+        for _ in range(konten.brake.FREE_OTHER):
             _refused(konten, lambda: konten.factor.disable_totp(store, bob, password=password()), "wrong_password")
         _refused(konten, lambda: konten.factor.disable_totp(store, bob, password=secret), "too_many_attempts")
         assert store.totp_seed(bob)
+
+
+def test_a_provider_that_checks_the_second_factor_itself_is_not_asked_for_one_again(app: Any, konten: Any) -> None:
+    """Since 0.3.10 (nexdiary, nexpaper): with "second factor for everybody" on, a sign-in through a provider whose
+    entry checks the second factor itself sets none up here and is not sent to its passkey; an authenticator the
+    account set up itself is still asked, and the same account signing in with its password is asked as before."""
+    secret = password()
+    plain = app.seed("plain", password=secret)
+    coded = app.seed("coded", password=secret)
+    _set_up(app, konten, coded, secret)
+    app.switch("factor_required", True)
+    with app.store() as store:
+        account = store.get_account(plain)
+        assert konten.common.next_step(store, account) == konten.NEXT_SECOND_FACTOR_SETUP
+        assert konten.common.next_step(store, account, provider_checked=True) == konten.NEXT_SESSION
+        assert konten.factor.state(store, plain, provider_checked=True) == konten.SECOND_FACTOR_NONE
+        assert konten.factor.state(store, plain) == konten.SECOND_FACTOR_REQUIRED
+        own = store.get_account(coded)
+        assert konten.common.next_step(store, own, provider_checked=True) == konten.NEXT_SECOND_FACTOR

@@ -16,9 +16,16 @@ operator changes it with the operator's own password, an operator without one af
 
 **Address:** changed only with the password (an account without one: a fresh sign-in at the provider). With a mail
 server a new one counts only after its confirmation link, until then the old one; without one at once. The old
-address hears of the change where a mail can go. The link can be sent again. The operator may only take an address
-away, never set one (or a password link could go to an address of the operator's choosing). Whenever the address in
-effect changes, open links a person asked for to the old one stop counting.
+address hears of the change where a mail can go: every old address that counted, not only one proven by link
+(decided 25.11.2026). The link can be sent again. **Taking one's own address away needs the password too** (decided
+for 0.3.10, replacing "removing always works"): without an address "Forgot your password?" reaches nobody, so a
+stranger at an open session must not do it. The operator may only take an address away, never set one (or a
+password link could go to an address of the operator's choosing), with the operator's own password. Whenever the
+address in effect changes, open links a person asked for to the old one stop counting.
+
+**Proving an address that counts already** (since 0.3.10, ``prove_email``): an app that sends things that must reach
+the right person (nexpaper's inbox) needs an address proven by link; one that counts without (an address of an
+older version, one typed without a mail server) gets its link afterwards, the same link and time as a new address.
 
 **Address from a provider:** an account through a provider only follows the provider's address
 (``follow_provider_email``), which never counts at once and never takes an address another account has. An account
@@ -40,6 +47,7 @@ from .model import (
     EMAIL_OWN,
     EMAIL_PROVIDER,
     EVENT_EMAIL_CHANGED,
+    EVENT_EMAIL_PROVEN,
     EVENT_RENAMED,
     MAIL_CONFIRM_EMAIL,
     MAIL_EMAIL_CHANGED,
@@ -167,7 +175,7 @@ def change_email(
     """The account's own address, with its password (``actor_confirmed``: the app confirmed, an account without a
     password by a fresh sign-in at its provider). ``mail``: a mail server and the public address are there, so the
     new address waits for its link and the old one hears of a removal; otherwise it counts at once. "" takes the
-    address away (and what waits)."""
+    address away (and what waits), with the password as well (since 0.3.10 decided, not only done)."""
     target, _ = acting(
         store, account_id, account_id, password, confirm_self=True, self_without_password=True,
         actor_confirmed=actor_confirmed,
@@ -246,11 +254,38 @@ def confirm_email(store: Store, token: str) -> EmailChanged:
         store.rollback()
         raise AccountError("email_taken", "This address belongs to another account already.", 409)
     _set_email(store, account.id, change.address, proven=True)
+    if account.email_confirmed and names.same_address(change.address, account.email):
+        # The address that counted already is proven now (``prove_email``): nothing else changes.
+        store.commit()
+        log().info("Email proven name=%s", account.username)
+        tell(store, Event(EVENT_EMAIL_PROVEN, account.id, old=account.email, new=change.address))
+        return EmailChanged(reload(store, account.id))
     store.drop_resets(account.id, origin=RESET_SELF)
     store.commit()
     log().info("Email confirmed name=%s", account.username)
     tell(store, Event(EVENT_EMAIL_CHANGED, account.id, old=account.email, new=change.address))
     return EmailChanged(reload(store, account.id), notice=_notice(account, change.address))
+
+
+def prove_email(store: Store, account_id: AccountId) -> Mail:
+    """Since 0.3.10: a link that proves the address the account has and that counts already ("Confirm by link", for
+    the nexpaper inbox and the like; ``change_email`` answers ``email_same`` there). Nothing changes until the link is
+    opened (``confirm_email``): then the address is proven, it stays the same and no open link of "Forgot your
+    password?" goes. The same mail and time as for a new address (``MAIL_CONFIRM_EMAIL``, ``CONFIRM_HOURS``), counted at
+    the brake (``mail:<id>``); "Send the link again" and "Withdraw" work as for a new address. ``nothing_to_prove``
+    without an address that counts, or with one proven already; ``email_taken`` while another account has it too."""
+    account = common.account_or_404(store, account_id)
+    if not account.email or not account.email_confirmed or account.email_proven:
+        raise AccountError("nothing_to_prove", "There is no address left to confirm by link.", 409)
+    if names.email_taken(store, account.email, except_id=account.id):
+        raise AccountError("email_taken", "This address belongs to another account already.", 409)
+    common.counted((brake.door_key(brake.DOOR_MAIL, account.id),))
+    token = common.new_token()
+    store.start_email_change(account.id, account.email, token, common.utcnow() + timedelta(hours=CONFIRM_HOURS))
+    store.commit()
+    log().info("Email proof waits for its link name=%s", account.username)
+    return Mail(MAIL_CONFIRM_EMAIL, account.email, account.id, account.username, account.display_name, token,
+                CONFIRM_HOURS)
 
 
 def withdraw_email_change(store: Store, account_id: AccountId) -> None:
@@ -270,7 +305,8 @@ def remove_email(
     mail: bool = False,
 ) -> EmailChanged:
     """Take an account's address away (and what waits for a link). The operator can do this, never set one; the old
-    address hears of it where a mail can go."""
+    address hears of it where a mail can go. One's own only with the password (an account without one: a fresh
+    sign-in at the provider), decided for 0.3.10; the operator with the operator's own."""
     target, actor = acting(
         store, account_id, actor_id, password, confirm_self=True, self_without_password=True,
         actor_confirmed=actor_confirmed,

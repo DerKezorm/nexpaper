@@ -10,6 +10,11 @@
     "body": "{{by}} vous invite à {{app}}. Le bouton ci-dessous crée votre compte. L'invitation est valable {{valid}}.",
     "action": "Accepter l'invitation"
   },
+  "invite_space": {
+    "subject": "{{by}} vous invite à {{space}} dans {{app}}",
+    "body": "{{by}} vous invite à {{space}} dans {{app}}. Le bouton ci-dessous crée votre compte. L'invitation est valable {{valid}}.",
+    "action": "Accepter l'invitation"
+  },
   "reset": {
     "subject": "Nouveau mot de passe pour {{app}}",
     "body": "Un lien pour un nouveau mot de passe a été créé pour votre compte {{username}}. Il est valable {{valid}} et une seule fois. Si ce n'était pas vous, ignorez ce courriel.",

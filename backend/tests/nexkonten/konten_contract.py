@@ -172,6 +172,26 @@ class StandardAdapter:
             except package.AccountError:
                 return None
 
+    def sign_in_from(self, typed: str, password: str, sender: str) -> tuple[int, Any]:
+        """Since 0.3.10: a sign-in from the address ``sender`` behind the module's brake, as ``(status, account id)``:
+        ``(200, id)`` when it gets in (a session, or the step of the second factor), ``(401, None)`` refused like a
+        wrong password (whatever the app's old code is), ``(429, None)`` too many attempts, ``(403, None)`` blocked.
+        APP: through the app's own sign-in route with the sender as the app reads it (``TestClient(app,
+        client=(sender, 50000))``, or ``X-Forwarded-For`` behind a proxy the test trusts); the default asks the module
+        only (``login.sign_in``)."""
+        package = konten_package(self)
+        with self.store() as store:
+            try:
+                return 200, package.login.sign_in(store, typed, password, sender=sender).id
+            except package.AccountError as error:
+                return error.status, None
+
+    def listed_invites(self) -> list[dict[str, Any]]:
+        """APP (since 0.3.10): the open invitations as the operator's list gets them from the app's own route, each a
+        dict with at least ``email`` and ``expired`` (bool, what the app gives the list as ``ListedInvite.expired``).
+        An expired invitation stays in that list until it is withdrawn."""
+        raise NotImplementedError("APP: listed_invites")
+
 
 def konten_package(adapter: Any) -> ModuleType:
     package = importlib.import_module(adapter.package)

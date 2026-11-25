@@ -1,6 +1,6 @@
 {
   "files": {
-    "frontend/src/vendor/nexui/Avatar.tsx": "sha256-xs/2K5iYvSIkI/LwJ2gcGrQoMy6fNZXliYGvgg0FaFY=",
+    "frontend/src/vendor/nexui/Avatar.tsx": "sha256-A7ONEhFXqDCJ4UAxzADYCA+qHi6Dje+T2rgHXDdwA9Y=",
     "frontend/src/vendor/nexui/Button.tsx": "sha256-CoubnHTKQOgJZThSRT46eV9NagXXyFZW14tEbQjcIYg=",
     "frontend/src/vendor/nexui/Card.tsx": "sha256-9VjNP6nBy2XUjKvF1K7glGCR2cqUhSupQm6VF+lHc80=",
     "frontend/src/vendor/nexui/Dialog.tsx": "sha256-xSIzWJv20susiIlQMPxj2MJiF6OaG6EIxre/sXWG2WA=",
@@ -9,7 +9,7 @@
     "frontend/src/vendor/nexui/Notice.tsx": "sha256-pMXKJd4oisKcV02aj4GpuXezGXzj7GywqH8rsHcyUMc=",
     "frontend/src/vendor/nexui/icons.ts": "sha256-08zBKAWXynfI21ZJhCUabVDyqsanXBTsGvONU4xwtEU=",
     "frontend/src/vendor/nexui/index.ts": "sha256-n+B3VgJCsx6uFqQAxn42GIHq/NRBBxHQF5U3TCOJKMI=",
-    "frontend/src/vendor/nexui/nexui.test.tsx": "sha256-5hc0TcsR4Q5bC2WXP0ZFYBEqI0eRrGu33yyyNFNpbck=",
+    "frontend/src/vendor/nexui/nexui.test.tsx": "sha256-rM5kEV/6/Oxdt8C3PfAT6e8QyYugW5APtGBFiWCLIxE=",
     "frontend/src/vendor/nexui/styles.ts": "sha256-MJMZGWjIUUQ+N4WO/DRtjhJpixV9bVSyYwy+afJxfD4="
   },
   "module": "ui",
@@ -20,5 +20,5 @@
     "tailwindcss": ">=4.1.0"
   },
   "vendor_path": "frontend/src/vendor/nexui",
-  "version": "0.1.1"
+  "version": "0.1.2"
 }

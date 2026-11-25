@@ -113,7 +113,12 @@ def forgot_in_background(
     rest in a worker (the app's background tasks): look up, make the link with its own store (``open_store``), mail
     it (``send``); a mail that fails takes its link with it. ``sender`` (since 0.3.4, ``brake.client_address``):
     the requests of one sender count at the brake (``forgot:<sender>``, ten free), ``too_many_attempts`` then, the
-    same for every input; the account counts in the worker (``mail:<id>``, five links, then quietly none)."""
+    same for every input; the account counts in the worker (``mail:<id>``, five links, then quietly none).
+
+    ``send`` sends **at once** and raises when the mail did not go out (since 0.3.10 said plainly): never through an
+    outbox that tries again later (``nexpost.outbox.queue``), but straight with ``nexpost.send.deliver``. A mail
+    that fails takes its link with it (``reset_mail_failed``), so that no link stays behind that nobody got; with an
+    outbox the link would stay and the person would wait for a mail that comes an hour later or never."""
     if sender is not None:
         common.counted((brake.door_key(brake.DOOR_FORGOT, sender),))
 

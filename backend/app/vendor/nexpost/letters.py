@@ -139,21 +139,30 @@ def describe_browser(agent: str, language: str) -> str:
     return _fill(_text(language, "browser_on"), {"browser": browser, "system": system})
 
 
+#: Since 0.1.2: kinds with a wording of their own when a value is given (``invite`` with ``space``: the space, place or
+#: book the person is invited into).
+VARIANTS = {"invite": ("space", "invite_space")}
+
+
 def compose(kind: str, to: str, *, language: str, values: dict[str, object], link: str = "") -> Letter:
     """A letter of one of the module's kinds (``invite``, ``reset``, ``confirm_email``, ``email_changed``,
     ``email_removed``, ``username_changed``, ``factor_reset``, ``new_sign_in``, ``test``). ``values`` fills the
     texts: ``name``, ``username``, ``by``, ``hint``, ``where``, ``valid`` (``validity``); ``app`` comes from the
-    configuration."""
+    configuration. Since 0.1.2 an invitation takes ``space`` too, the name of a space, place or address book the person
+    is invited into ("Alex invites you to Family in nextasks"); without it the letter is the one of 0.1.1."""
     recipient = check_address(to)
     language = language if language in LANGUAGES else "en"
     if not _text(language, f"{kind}.subject"):
         raise ValueError(f"no mail of the kind {kind!r}")
     filled = {key: one_line(value) for key, value in values.items()}
     filled["app"] = one_line(config.current().shown_name)
-    subject = one_line(_fill(_text(language, f"{kind}.subject"), filled))
+    wording = kind
+    if kind in VARIANTS and filled.get(VARIANTS[kind][0]):
+        wording = VARIANTS[kind][1]
+    subject = one_line(_fill(_text(language, f"{wording}.subject"), filled))
     greeting = _fill(_text(language, "greeting"), filled) if filled.get("name") else ""
-    body = _fill(_text(language, f"{kind}.body"), filled)
-    action = _fill(_text(language, f"{kind}.action"), filled)
+    body = _fill(_text(language, f"{wording}.body"), filled)
+    action = _fill(_text(language, f"{wording}.action"), filled)
     footer = _fill(_text(language, "footer"), filled)
     lines = [line for line in (greeting, body) if line]
     text = "\n\n".join([*lines, *([link] if link else []), footer]) + "\n"
@@ -162,12 +171,12 @@ def compose(kind: str, to: str, *, language: str, values: dict[str, object], lin
 
 
 def from_account_mail(
-    mail: object, *, language: str, link: str = "", by: str = "", where: str = "", days: int = 0
+    mail: object, *, language: str, link: str = "", by: str = "", where: str = "", days: int = 0, space: str = ""
 ) -> Letter:
     """A letter for a ``Mail`` of nexkonten (read by its fields, the modules import nothing from each other):
     ``kind``, ``to``, ``username``, ``display_name``, ``hours``, ``new_hint``. ``link`` the app built from the token;
     ``days`` for an invitation; ``where`` the raw User-Agent of a new sign-in (the module names the browser and the
-    system from it, nothing else)."""
+    system from it, nothing else); ``space`` (since 0.1.2) the space an invitation leads into."""
     kind = str(getattr(mail, "kind", ""))
     if kind == "email_changed" and not getattr(mail, "new_hint", ""):
         kind = "email_removed"
@@ -177,6 +186,7 @@ def from_account_mail(
         "username": getattr(mail, "username", ""),
         "hint": getattr(mail, "new_hint", ""),
         "by": by,
+        "space": space,
         "where": describe_browser(where, language) if kind == "new_sign_in" else "",
         "valid": validity(language if language in LANGUAGES else "en", hours=hours, days=days) if hours or days else "",
     }

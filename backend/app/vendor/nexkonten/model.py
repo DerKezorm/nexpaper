@@ -100,6 +100,10 @@ class Account:
     offered_email_provider: str = ""
     #: Since 0.3.4: the address the person said "No, thanks" to; it is never offered again, only another one is.
     declined_email: str = ""
+    #: Since 0.3.10: when the password was set last (setup, invitation, a link, a change), for "Last changed on …" in
+    #: the box Password under Security in every app. None: not known (a password of an older version that kept no
+    #: date, or no password at all); the page then says so.
+    password_changed_at: datetime | None = None
 
 
 @dataclass(frozen=True)
@@ -160,10 +164,22 @@ class Reset:
     origin: str = RESET_SELF
 
 
+#: Since 0.3.10: ``Access.kind``, the same names in every app (``ACCESS_KINDS``; ``ACCESS_KINDS`` in ``konten.ts``
+#: with their words): a paired app (iPhone, iPad), a calendar program with its own password (CalDAV), an address book
+#: program with its own password (CardDAV, nexfolk), an API key, a passkey.
+ACCESS_DEVICE = "device"
+ACCESS_CALENDAR = "calendar"
+ACCESS_CONTACTS = "contacts"
+ACCESS_API_KEY = "api_key"
+ACCESS_PASSKEY = "passkey"
+ACCESS_KINDS = (ACCESS_DEVICE, ACCESS_CALENDAR, ACCESS_CONTACTS, ACCESS_API_KEY, ACCESS_PASSKEY)
+
+
 @dataclass(frozen=True)
 class Access:
     """A way into the account that a new password does not end: a paired device, a calendar or address book program
-    with its own password, an API key, a passkey. For "These devices still have access" with "Disconnect all"."""
+    with its own password, an API key, a passkey. For "These devices still have access" with "Disconnect all".
+    ``kind`` is one of ``ACCESS_KINDS`` (since 0.3.10; the contract tests check it)."""
 
     id: int | str
     kind: str
@@ -218,6 +234,8 @@ EVENT_JOINED = "joined"
 EVENT_RENAMED = "renamed"
 EVENT_EMAIL_CHANGED = "email_changed"
 EVENT_PASSWORD_SET = "password_set"
+#: Since 0.3.10: an address that counted already was proven by its link (``profiles.prove_email``); ``new`` is it.
+EVENT_EMAIL_PROVEN = "email_proven"
 
 
 @dataclass(frozen=True)
@@ -322,7 +340,8 @@ class Store(Protocol):
 
     def set_password(self, account_id: AccountId, password: str) -> None:
         """Hash and store a new password; the account signs in with a password from now on (a provider stays
-        linked), a lock after failed attempts is lifted."""
+        linked), a lock after failed attempts is lifted. Since 0.3.10 the store keeps the moment too
+        (``Account.password_changed_at``), also for the first password of ``add_account``."""
         ...
 
     def is_locked(self, account_id: AccountId) -> bool:

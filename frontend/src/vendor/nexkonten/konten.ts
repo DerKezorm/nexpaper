@@ -56,6 +56,7 @@ export const ACCOUNT_ERROR_CODES = [
   'avatar_not_a_picture',
   'avatars_busy',
   'public_url_needed',
+  'nothing_to_prove',
 ] as const
 
 export type AccountErrorCode = (typeof ACCOUNT_ERROR_CODES)[number]
@@ -68,15 +69,37 @@ const MAIN_TEXT: Partial<Record<AccountErrorCode, string>> = {
   email_taken: 'account.emailTaken',
 }
 
+function isAccountCode(code: string): code is AccountErrorCode {
+  return (ACCOUNT_ERROR_CODES as readonly string[]).includes(code)
+}
+
 /** The text key for an error code from the server; never show the code itself. ``appCodes`` maps the app's own codes
  * of an older version to the module's (the server's AppConfig.error_codes the other way round), e.g.
- * { name_taken: 'username_taken' }. */
-export function accountErrorKey(code: string | null | undefined, appCodes: Readonly<Record<string, string>> = {}): string {
+ * { name_taken: 'username_taken' }.
+ *
+ * Since 0.3.10 ``accountCode``: the module's own code where the server mapped it to an older one (``account_code`` in
+ * the answer, ``AccountError.as_dict``). An app may answer ``invite_invalid`` for ``invite_expired`` too (its clients
+ * know only the old code); its pages still say "expired". The chain, the first that is a code of the module:
+ * ``accountCode``, then ``code`` through ``appCodes``, then ``code`` itself; else ``account.error.unknown``. */
+export function accountErrorKey(
+  code: string | null | undefined,
+  appCodes: Readonly<Record<string, string>> = {},
+  accountCode?: string | null,
+): string {
   const given = code ?? ''
-  const own = Object.hasOwn(appCodes, given) ? (appCodes[given] ?? '') : given
-  const known = (ACCOUNT_ERROR_CODES as readonly string[]).includes(own)
-  if (!known) return 'account.error.unknown'
-  return MAIN_TEXT[own as AccountErrorCode] ?? `account.error.${own}`
+  const mapped = Object.hasOwn(appCodes, given) ? (appCodes[given] ?? '') : given
+  const own = [accountCode ?? '', mapped].find((candidate) => isAccountCode(candidate))
+  if (own === undefined || !isAccountCode(own)) return 'account.error.unknown'
+  return MAIN_TEXT[own] ?? `account.error.${own}`
+}
+
+/** Since 0.3.10: ``accountErrorKey`` for an answer of the server as it came (``code`` and, where the app maps it,
+ * ``account_code``). */
+export function accountErrorKeyOf(
+  answer: { code?: string | null; account_code?: string | null } | null | undefined,
+  appCodes: Readonly<Record<string, string>> = {},
+): string {
+  return accountErrorKey(answer?.code, appCodes, answer?.account_code)
 }
 
 /** Every field the module's screens know. */
@@ -168,6 +191,9 @@ export interface PagePart {
   title: string
   hint: string
   rules?: string
+  /** Since 0.3.10: a line every app shows in this part, whatever the state (the password's last change, see
+   * ``passwordChanged``). */
+  line?: string
   buttons: readonly string[]
 }
 
@@ -212,7 +238,7 @@ export const PAGES = {
     title: 'account.security',
     layout: 'stacked',
     parts: [
-      { part: 'password', title: 'account.password', hint: '', buttons: ['account.passwordChange'] },
+      { part: 'password', title: 'account.password', hint: '', line: 'account.passwordChangedAt', buttons: ['account.passwordChange'] },
       { part: 'secondFactor', title: 'account.secondFactor', hint: 'account.secondFactorHint', buttons: ['account.totpSetup', 'account.totpRemove'] },
       { part: 'recoveryCodes', title: 'account.recoveryCodes', hint: 'account.recoveryCodesHint', buttons: ['account.recoveryCodesNew'] },
       { part: 'passkeys', title: 'account.passkeys', hint: 'account.passkeysHint', buttons: ['account.passkeyAdd'] },
@@ -223,6 +249,17 @@ export const PAGES = {
 } as const satisfies {
   profile: { title: string; layout: 'stacked'; parts: readonly PagePart[] } & PageSave
   security: { title: string; layout: 'stacked'; parts: readonly PagePart[] }
+}
+
+/** Since 0.3.10: the line "Last changed on …" in the box Password under Security, in every app (decided for 0.3.10;
+ * nexmail and nextasks had none). ``at``: the server's ``password_changed_at`` (ISO); null or left out where it is not
+ * known (a password of an older version): then ``account.passwordChangedUnknown``. ``date`` fills ``{{day}}`` the
+ * app's way. An account without a password shows none of this. */
+export function passwordChanged(at: string | null | undefined): {
+  text: 'account.passwordChangedAt' | 'account.passwordChangedUnknown'
+  date?: string
+} {
+  return at ? { text: 'account.passwordChangedAt', date: at } : { text: 'account.passwordChangedUnknown' }
 }
 
 /** Since 0.3.6: the parts a page shows, top to bottom: the module's first in their order, then the app's own. */
@@ -258,6 +295,8 @@ export const BUTTONS = {
   'account.emailResend': { kind: 'secondary', icon: 'Send' },
   'account.emailWithdraw': { kind: 'danger', icon: 'Undo2' },
   'account.emailRemove': { kind: 'danger', icon: 'Trash2' },
+  // Since 0.3.10: "Confirm by link" for an address that counts and is not proven yet (profiles.prove_email)
+  'account.emailProve': { kind: 'secondary', icon: 'Send' },
   // Security
   'account.passwordChange': { kind: 'secondary', icon: 'KeyRound' },
   'account.totpSetup': { kind: 'primary', icon: 'ShieldCheck' },
@@ -511,7 +550,9 @@ export interface ListedProvider {
 }
 
 /** Since 0.3.9: one account as the operator's list knows it. Every app maps its own row to this once (the names of
- * its interfaces stay); what the app does not know it leaves out, and the list shows nothing for it. */
+ * its interfaces stay); what the app does not know it leaves out, and the list shows nothing for it. ``color``
+ * (since 0.3.10): the colour the app gives this person already (nextime, nexfolk), for the letter of a picture-less
+ * account everywhere, the list included. */
 export interface ListedAccount {
   id: number | string
   username: string
@@ -545,6 +586,9 @@ export interface ListedAccount {
   lastSeenAt?: string | null
   /** The address of its own picture; null or left out: the letter (``avatarPlaceholder``). */
   picture?: string | null
+  /** Since 0.3.10: the app's colour of this person (a CSS colour, ``#4a6491``); null or left out: the hue from the
+   * name (``avatarPlaceholder``), as before. */
+  color?: string | null
 }
 
 /** Since 0.3.9: the badges of a row, in this order, each with its words and tone. ``provider`` is one badge per
@@ -618,13 +662,17 @@ export function accountLine(row: Pick<ListedAccount, 'username' | 'email'>): str
 }
 
 /** Since 0.3.9: the picture of a row and of the dialog: the own picture where there is one, the letter and hue in any
- * case (``Avatar`` falls back to them when the picture does not load). */
-export function accountPicture(row: Pick<ListedAccount, 'displayName' | 'username' | 'picture'>): {
+ * case (``Avatar`` falls back to them when the picture does not load). Since 0.3.10 ``color``: the app's colour of the
+ * person (``ListedAccount.color``) where it has one, for ``Avatar``'s ``color``; else null and the hue counts (decided
+ * 25.11.2026: an app with colours of its own for people paints the letter in that colour everywhere). */
+export function accountPicture(row: Pick<ListedAccount, 'displayName' | 'username' | 'picture' | 'color'>): {
   src: string | null
   letter: string
   hue: number
+  color: string | null
 } {
-  return { src: row.picture ?? null, ...avatarPlaceholder(accountName(row)) }
+  const color = row.color?.trim() ?? ''
+  return { src: row.picture ?? null, ...avatarPlaceholder(accountName(row)), color: color || null }
 }
 
 /** Since 0.3.9: how many accounts the subtitle counts: all but the deleted ones. */
@@ -759,8 +807,10 @@ export type ManageButton =
  * buttons do not show. ``rename``: display name and username; ``roles``: operator or member; ``emailRemove``: take an
  * account's address; ``resetLink``: a link for a new password; ``factorReset``: reset the second factor;
  * ``signOut``: sign an account out everywhere; ``unlink``: take a provider's link; ``blocking``: block and unblock;
- * ``remove``: delete; ``restore``: bring a deleted account back while its days run. */
-export const ACCOUNT_CAPS = ['rename', 'roles', 'emailRemove', 'resetLink', 'factorReset', 'signOut', 'unlink', 'blocking', 'remove', 'restore'] as const
+ * ``remove``: delete; ``restore``: bring a deleted account back while its days run. ``inviteRole`` (since 0.3.10): the
+ * field "Role" in the dialog "Invite"; left out it follows ``roles`` as before (nextasks changes roles but invites
+ * members only: ``inviteRole: false``). */
+export const ACCOUNT_CAPS = ['rename', 'roles', 'emailRemove', 'resetLink', 'factorReset', 'signOut', 'unlink', 'blocking', 'remove', 'restore', 'inviteRole'] as const
 
 export type AccountCap = (typeof ACCOUNT_CAPS)[number]
 
@@ -784,7 +834,9 @@ export const MANAGE_CAP: Record<ManageButton, AccountCap> = {
 }
 
 /** Since 0.3.9: what the dialog never offers on the operator's own account: that is changed in the profile and under
- * security (and an operator does not demote, block or delete themself). An app's own button with ``notSelf`` too. */
+ * security (and an operator does not demote, block or delete themself). An app's own button with ``notSelf`` too.
+ * Since 0.3.10 also "Sign out everywhere" (it would sign the operator out of this very page; the own account has
+ * "Sign out everywhere else" under security) and "Unlink" (the own providers are under security). */
 export const NOT_ON_SELF = [
   'account.makeOperator',
   'account.makeMember',
@@ -793,6 +845,8 @@ export const NOT_ON_SELF = [
   'account.remove',
   'account.resetLink',
   'account.factorReset',
+  'account.signOutAccount',
+  'account.unlinkProvider',
 ] as const satisfies readonly ManageButton[]
 
 /** Since 0.3.9: how an act in the dialog is confirmed. ``password``: a dialog with the operator's own password
@@ -1004,10 +1058,11 @@ export const INVITE_DIALOG = {
 
 export type InviteField = (typeof INVITE_DIALOG.fields)[number]
 
-/** Since 0.3.9: the fields the dialog "Invite" shows now. */
+/** Since 0.3.9: the fields the dialog "Invite" shows now. The role since 0.3.10 by ``caps.inviteRole``, left out by
+ * ``caps.roles`` as before. */
 export function inviteFields(caps: AccountCaps, state: { mailServer: boolean; email: string }): InviteField[] {
   return INVITE_DIALOG.fields.filter((field: InviteField) => {
-    if (field === 'role') return Boolean(caps.roles)
+    if (field === 'role') return caps.inviteRole ?? Boolean(caps.roles)
     if (field === 'sendMail') return state.mailServer && state.email.trim().includes('@')
     return true
   })
@@ -1030,7 +1085,31 @@ export const RESET_LINK_DIALOG = {
   shown: 'account.resetLinkShown',
 } as const
 
-/** Since 0.3.9: an invitation still open, as the list knows it. */
+/** Since 0.3.10: the kinds of access that stay after a new password (``Access.kind`` on the server, ``ACCESS_KINDS``),
+ * the same names in every app, each with its words for "These devices still have access". */
+export const ACCESS_KINDS = {
+  device: 'account.accessDevice',
+  calendar: 'account.accessCalendar',
+  contacts: 'account.accessContacts',
+  'api_key': 'account.accessApiKey',
+  passkey: 'account.accessPasskey',
+} as const
+
+export type AccessKind = keyof typeof ACCESS_KINDS
+
+/** Since 0.3.10: the words of an access kind; '' for a kind the module does not know (the label shows alone). */
+export function accessKindText(kind: string): string {
+  return Object.hasOwn(ACCESS_KINDS, kind) ? ACCESS_KINDS[kind as AccessKind] : ''
+}
+
+/** Since 0.3.10: the namespace of the texts belongs to the module. An app keeps no text of its own under ``account``
+ * (nextime had ``account.later``); the vitest template checks that the app's texts there are the module's, word for
+ * word, and nothing else. */
+export const ACCOUNT_NAMESPACE = 'account'
+
+/** Since 0.3.9: an invitation still open, as the list knows it. Since 0.3.10 said plainly: the app's route lists an
+ * expired invitation too, with ``expired: true``, until the operator withdraws it (the contract test
+ * ``test_the_list_route_keeps_expired_invitations`` holds every app to it). */
 export interface ListedInvite {
   id: number | string
   displayName?: string

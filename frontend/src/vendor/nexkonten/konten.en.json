@@ -178,6 +178,15 @@
     "inviteNoName": "Invitation without an address",
     "inviteUntil": "Valid until {{day}}",
     "inviteExpired": "Expired",
+    "passwordChangedAt": "Last changed on {{day}}",
+    "passwordChangedUnknown": "Last changed: not known",
+    "emailProve": "Confirm by link",
+    "emailProveSent": "A link to confirm is on its way to {{email}}.",
+    "accessDevice": "Paired app",
+    "accessCalendar": "Calendar program",
+    "accessContacts": "Address book program",
+    "accessApiKey": "API key",
+    "accessPasskey": "Passkey",
     "error": {
       "setup_code_wrong": "The setup code is wrong. It is in the server's log.",
       "already_set_up": "{{app}} is set up already.",
@@ -217,6 +226,7 @@
       "avatar_not_a_picture": "This is not a picture we can read.",
       "avatars_busy": "Too many pictures at once. Try again in a moment.",
       "public_url_needed": "The link needs the public address of {{app}}. Enter it in the server settings.",
+      "nothing_to_prove": "There is no address left to confirm by link.",
       "unknown": "That did not work. Try again."
     }
   }

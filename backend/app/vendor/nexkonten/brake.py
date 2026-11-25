@@ -5,8 +5,10 @@ wrong passwords is in the database, ``Store.is_locked``). An attempt is checked 
 (``claim``): many attempts at once cannot all pass before the first failure is counted.
 
 Counts as ``login.attempt_key`` gives them, two per attempt: the sender (30 free) and the account or what was typed
-(5 free). After the free ones each further failure waits longer: 5 seconds, doubled each time, at most 15 minutes. A
-count lives one hour from its first failure (also when failures keep coming), unless a wait still runs.
+(5 free). "5 free" means exactly five attempts without a wait (since 0.3.10; until 0.3.9 the sixth still ran and only
+started the wait): the failure that uses up the free ones starts the wait, 5 seconds, doubled with each further
+failure, at most 15 minutes. A count lives one hour from its first failure (also when failures keep coming), unless a
+wait still runs.
 
 A right attempt (``succeeded``) takes back what it counted: the account's count starts anew, and the sender's loses
 the one failure ``claim`` counted for it, so that a family behind one address never fills the sender's count with
@@ -127,7 +129,8 @@ class Brake:
                 count = self.counts[key] = _Count(start=moment)
             count.failures += 1
             count.last = moment
-            over = count.failures - self._free(key)
+            # The failure that uses up the free ones starts the wait: five free means the sixth attempt waits.
+            over = count.failures - self._free(key) + 1
             if over > 0:
                 wait = min(FIRST_WAIT * 2 ** (over - 1), LONGEST_WAIT)
                 count.blocked_until = max(count.blocked_until, moment + wait)
@@ -192,7 +195,7 @@ class Brake:
                 if count is None:
                     continue
                 count.failures = max(0, count.failures - 1)
-                if count.failures <= self._free(key):
+                if count.failures < self._free(key):
                     count.blocked_until = 0.0
                 if count.failures == 0:
                     self.counts.pop(key, None)

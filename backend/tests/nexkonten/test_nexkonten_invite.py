@@ -282,3 +282,14 @@ def test_without_a_public_address_the_link_takes_the_address_the_operator_opened
     assert konten.invites.invite_link("", "invite", "t", request_base="https://h.example/?x=1#y") == (
         "https://h.example/invite/t"
     )
+
+
+def test_the_list_route_keeps_expired_invitations(app: Any, operator: Any) -> None:
+    """Since 0.3.10 said plainly (decided after nextime's rebuild): the operator's list of open invitations, as the
+    app's route answers it, holds an expired invitation too, marked ``expired``, until the operator withdraws it; a
+    valid one is not marked."""
+    app.make_invite(email="late@example.com", display_name="Late", expired=True)
+    app.make_invite(email="soon@example.com", display_name="Soon")
+    listed = {entry["email"]: entry for entry in app.listed_invites()}
+    assert listed["late@example.com"]["expired"] is True
+    assert listed["soon@example.com"]["expired"] is False

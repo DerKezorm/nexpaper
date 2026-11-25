@@ -178,6 +178,15 @@
     "inviteNoName": "Invitation sans adresse",
     "inviteUntil": "Valable jusqu'au {{day}}",
     "inviteExpired": "Expirée",
+    "passwordChangedAt": "Dernière modification le {{day}}",
+    "passwordChangedUnknown": "Dernière modification : inconnue",
+    "emailProve": "Confirmer par lien",
+    "emailProveSent": "Un lien de confirmation est en route vers {{email}}.",
+    "accessDevice": "Application associée",
+    "accessCalendar": "Programme d'agenda",
+    "accessContacts": "Programme de carnet d'adresses",
+    "accessApiKey": "Clé d'API",
+    "accessPasskey": "Clé d'accès",
     "error": {
       "setup_code_wrong": "Le code de configuration est incorrect. Il se trouve dans le journal du serveur.",
       "already_set_up": "{{app}} est déjà configuré.",
@@ -217,6 +226,7 @@
       "avatar_not_a_picture": "Ce n'est pas une image que nous pouvons lire.",
       "avatars_busy": "Trop de photos en même temps. Réessayez dans un instant.",
       "public_url_needed": "Le lien a besoin de l'adresse publique de {{app}}. Saisissez-la dans les réglages du serveur.",
+      "nothing_to_prove": "Il n'y a aucune adresse à confirmer par lien.",
       "unknown": "Cela n'a pas fonctionné. Réessayez."
     }
   }

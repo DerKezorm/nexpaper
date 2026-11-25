@@ -7,6 +7,10 @@ HTTP status the module suggests; an app with another error form maps it, the cod
 An app whose clients know older codes (``name_taken``, ``invalid_email``) keeps them outside: ``AppConfig.error_codes``
 maps a module code to the app's, and ``AccountError.public_code`` and ``as_dict()`` answer with it. Inside, and in
 the frontend helpers, the module's codes stay.
+
+Since 0.3.10 an answer whose code the app maps carries the module's own code as well (``account_code`` in
+``as_dict()``): an app that answers ``invite_invalid`` for ``invite_expired`` too (its clients know only the old code)
+still lets its pages say "expired" (``accountErrorKey(code, appCodes, account_code)`` in ``konten.ts``).
 """
 
 from __future__ import annotations
@@ -56,6 +60,8 @@ CODES = (
     "avatar_not_a_picture",
     "avatars_busy",
     "public_url_needed",
+    # since 0.3.10: an address that counts is proven by link (profiles.prove_email)
+    "nothing_to_prove",
 )
 
 
@@ -86,7 +92,11 @@ class AccountError(Exception):
         return mapping.get(self.code, self.code)
 
     def as_dict(self) -> dict[str, object]:
-        return {"code": self.public_code, "message": self.message, **self.extra}
+        """The answer of an API: ``code`` as the app's clients know it; where the app maps it to an older one, the
+        module's own code too (``account_code``, since 0.3.10), for the app's pages."""
+        public = self.public_code
+        own = {"account_code": self.code} if public != self.code else {}
+        return {"code": public, "message": self.message, **own, **self.extra}
 
 
 class PictureRefused(Exception):

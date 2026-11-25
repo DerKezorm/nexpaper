@@ -129,6 +129,28 @@ def test_a_new_password_counts_and_is_kept_only_as_a_hash(app: Any) -> None:
     assert secret not in app.raw_text()
 
 
+def test_the_store_tells_when_the_password_was_set_last(app: Any, konten: Any) -> None:
+    """Since 0.3.10 (decided: "Last changed on …" in the box Password under Security in every app): the store keeps
+    the moment a password is set, by ``set_password`` and for a new account with one."""
+    account_id = app.seed("alex", password=None)
+    before = datetime.now(UTC) - timedelta(minutes=1)
+    with app.store() as store:
+        store.set_password(account_id, password())
+        store.commit()
+    with app.store() as store:
+        changed = store.get_account(account_id).password_changed_at
+        new_id = konten.common.add_account(store, _new(konten, "kim"))
+        store.commit()
+    assert changed is not None and before <= _aware(changed) <= datetime.now(UTC) + timedelta(minutes=1)
+    with app.store() as store:
+        made = store.get_account(new_id).password_changed_at
+    assert made is not None and before <= _aware(made) <= datetime.now(UTC) + timedelta(minutes=1)
+
+
+def _aware(moment: datetime) -> datetime:
+    return moment if moment.tzinfo else moment.replace(tzinfo=UTC)
+
+
 def test_an_address_is_set_confirmed_or_not_with_its_source_and_taken_away(app: Any, konten: Any) -> None:
     account_id = app.seed("alex", password=password())
     with app.store() as store:
@@ -319,11 +341,12 @@ def test_a_display_name_is_compared_without_case_and_width(app: Any) -> None:
         assert store.display_name_taken("Kim Leee", other) is False
 
 
-def test_a_new_password_ends_browser_and_waiting_sign_ins_and_keeps_devices(app: Any) -> None:
+def test_a_new_password_ends_browser_and_waiting_sign_ins_and_keeps_devices(app: Any, konten: Any) -> None:
     alex = app.seed("alex", password=password())
     browser = app.open_session(alex, "browser")
     waiting = app.open_session(alex, "waiting")
     device = app.open_session(alex, "device")
+    app.open_session(alex, "program")
     with app.store() as store:
         store.end_sessions(alex)
         store.commit()
@@ -331,6 +354,8 @@ def test_a_new_password_ends_browser_and_waiting_sign_ins_and_keeps_devices(app:
     with app.store() as store:
         listed = store.list_access(alex)
         assert len(listed) >= 1 and all(entry.kind for entry in listed)
+        # Since 0.3.10 the kinds have fixed names in every app (device, calendar, contacts, api_key, passkey).
+        assert {entry.kind for entry in listed} <= set(konten.ACCESS_KINDS), [entry.kind for entry in listed]
         assert store.revoke_access(alex) >= 1
         store.commit()
     assert not app.session_alive(device)

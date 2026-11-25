@@ -19,6 +19,14 @@ the sender alone would answer "too many attempts" for unknown names only and tel
 costs one write and one commit, also for an unknown name (``Store.note_failure(None)``): the time of the answer does
 not tell either.
 
+Since 0.3.10 the brake at the sign-in is the module's too (``sign_in``), so that every app answers the same: while
+only the count of the account (or of what was typed) waits, the sign-in answers like a wrong password
+(``wrong_credentials``, 401, the app's old code outside) and checks no password; "too many attempts" (429) only when
+the sender's count is full. The answer never tells that the account exists, and a test of an older version that
+types many wrong passwords sees the same 401 every time. Next to the brake the lock of the account after the app's
+limit (``Store.is_locked``, ten everywhere) stays: attempts the brake holds back check no password and do not count
+towards the lock.
+
 Calendar and address book programs (DAV) sign in with ``background_account``: current name, former name or address,
 and always their own device password, which the app checks.
 """
@@ -28,7 +36,8 @@ from __future__ import annotations
 import hashlib
 import threading
 
-from .common import log
+from . import brake
+from .common import log, too_many_attempts
 from .errors import AccountError
 from .model import Account, AccountId, Store
 from .names import EMAIL_MAX, same_address
@@ -147,6 +156,47 @@ def authenticate(
         error = AccountError("account_blocked", "This account is blocked. Ask the operator.", 403)
         error.account_id = account.id
         raise error
+    return account
+
+
+def sign_in(
+    store: Store,
+    typed: str,
+    password: str,
+    *,
+    sender: str,
+    browser: str = "",
+    known_browser: AccountId | None = None,
+) -> Account:
+    """Since 0.3.10: ``authenticate`` behind the module's brake, the same in every app. ``sender`` the address as
+    ``brake.client_address`` gives it; ``browser`` the mark of a browser that knows the account named
+    (``sessions.known_mark``, "" for none): it counts in a pot of its own and passes the lock (``known_browser`` is
+    then the account it names; an app of 0.3.9 that checks the mark itself may still pass ``known_browser``).
+
+    - The sender's count is full (or the browser's own pot): ``too_many_attempts`` (429, ``retry_after``).
+    - Only the count of the account or of what was typed waits: ``wrong_credentials`` (401) without checking the
+      password, as long as a real check (a hash for show, one write, one commit), counted at the sender only.
+    - Otherwise ``authenticate``; a right password takes the attempt back at the brake (``BRAKE.succeeded``). The
+      app still calls ``succeeded`` once the whole sign-in is done (after the second factor)."""
+    keys = attempt_key(store, typed, sender)
+    known = known_browser
+    if browser and known is None:
+        meant = resolve_login(store, typed)
+        known = meant.id if meant is not None else None
+    wait = brake.BRAKE.claim(keys, browser=browser)
+    if wait > 0:
+        if browser or brake.BRAKE.wait(keys[:1]) > 0:
+            raise too_many_attempts(wait)
+        # Only the account's (or the typed text's) count waits: a refusal like any other, nothing checked.
+        brake.BRAKE.failed(keys[:1])
+        meant = resolve_login(store, typed)
+        store.check_password(None, password or "")
+        store.note_failure(None)
+        store.commit()
+        log().warning("Sign-in held back by the brake, answered as wrong")
+        raise wrong_credentials(meant.id if meant is not None else None)
+    account = authenticate(store, typed, password, known_browser=known)
+    brake.BRAKE.succeeded(keys, browser=browser)
     return account
 
 

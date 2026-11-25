@@ -204,8 +204,23 @@ def tell(store: Store, event: Event) -> None:
 
 
 
-def next_step(store: Store, account: Account) -> str:
-    """What the app starts for an account that just got in (``NEXT_*`` in ``model``)."""
+def provider_checks(store: object, account_id: AccountId, provider_checked: bool = False) -> bool:
+    """Since 0.3.10: the provider checks the second factor itself, so "second factor for everybody" asks none of its
+    own here (nexdiary, nexpaper). ``provider_checked``: this sign-in came through a provider whose entry checks it
+    (the app knows that from its provider's settings); the store's hook ``provider_checks_factor(account_id)`` (off
+    where the store has none) says it for the account as a whole (an account through such providers only). A factor
+    the account set up itself is asked all the same."""
+    if provider_checked:
+        return True
+    hook = getattr(store, "provider_checks_factor", None)
+    return bool(hook is not None and hook(account_id))
+
+
+def next_step(store: Store, account: Account, *, provider_checked: bool = False) -> str:
+    """What the app starts for an account that just got in (``NEXT_*`` in ``model``). ``provider_checked`` (since
+    0.3.10): it came through a provider that checks the second factor itself; then "second factor for everybody"
+    sends it neither to set one up nor to its passkey (``provider_checks``), an authenticator of its own is asked as
+    before."""
     if account.blocked:
         return NEXT_SIGN_IN
     if config.current().second_factor_is_off():
@@ -214,6 +229,11 @@ def next_step(store: Store, account: Account) -> str:
     state = store.second_factor(account.id)
     if state == SECOND_FACTOR_ACTIVE:
         return NEXT_SECOND_FACTOR
+    if state in (SECOND_FACTOR_PASSKEY, SECOND_FACTOR_REQUIRED) and provider_checks(
+        store, account.id, provider_checked
+    ):
+        # Only the switch for everybody asked a factor here, and the provider has checked one.
+        return NEXT_SESSION
     if state == SECOND_FACTOR_PASSKEY:
         return NEXT_PASSKEY
     if state == SECOND_FACTOR_REQUIRED:

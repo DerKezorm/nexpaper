@@ -12,8 +12,9 @@ import re
 import smtplib
 import socket
 import ssl
+from datetime import datetime
 from email.message import EmailMessage
-from email.utils import formataddr, formatdate, make_msgid
+from email.utils import format_datetime, formataddr, make_msgid
 
 from . import config
 from .common import log
@@ -34,7 +35,8 @@ def message(settings: MailSettings, letter: Letter) -> EmailMessage:
     mail["From"] = formataddr((one_line(settings.sender_name or cfg.shown_name, 120), sender))
     mail["To"] = check_address(letter.to)
     mail["Subject"] = one_line(letter.subject)
-    mail["Date"] = formatdate(localtime=False)
+    # The server's own time zone (``+0100``), not ``-0000`` ("zone unknown"), since 0.1.2.
+    mail["Date"] = format_datetime(datetime.now().astimezone())
     mail["Message-ID"] = make_msgid(domain=sender.rpartition("@")[2] or None)
     mail["Auto-Submitted"] = "auto-generated"
     mail.set_content(letter.text)

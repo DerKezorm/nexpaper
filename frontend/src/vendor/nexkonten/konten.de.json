@@ -178,6 +178,15 @@
     "inviteNoName": "Einladung ohne Adresse",
     "inviteUntil": "Gilt bis {{day}}",
     "inviteExpired": "Abgelaufen",
+    "passwordChangedAt": "Zuletzt geändert am {{day}}",
+    "passwordChangedUnknown": "Zuletzt geändert: unbekannt",
+    "emailProve": "Per Link bestätigen",
+    "emailProveSent": "Ein Link zum Bestätigen ist an {{email}} unterwegs.",
+    "accessDevice": "Gekoppelte App",
+    "accessCalendar": "Kalender-Programm",
+    "accessContacts": "Adressbuch-Programm",
+    "accessApiKey": "API-Schlüssel",
+    "accessPasskey": "Passkey",
     "error": {
       "setup_code_wrong": "Der Einrichtungscode stimmt nicht. Er steht im Log des Servers.",
       "already_set_up": "{{app}} ist schon eingerichtet.",
@@ -217,6 +226,7 @@
       "avatar_not_a_picture": "Das ist kein Bild, das wir lesen können.",
       "avatars_busy": "Gerade werden zu viele Bilder verarbeitet. Versuch es gleich noch einmal.",
       "public_url_needed": "Für den Link braucht {{app}} seine öffentliche Adresse. Trag sie in den Einstellungen des Servers ein.",
+      "nothing_to_prove": "Es gibt keine Adresse, die noch per Link zu bestätigen ist.",
       "unknown": "Das hat nicht geklappt. Versuch es noch einmal."
     }
   }

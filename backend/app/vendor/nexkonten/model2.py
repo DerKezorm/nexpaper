@@ -108,6 +108,15 @@ class FactorStore(Protocol):
         """Seal and keep the waiting seed (in another context than a confirmed one), None takes it away."""
         ...
 
+    # Since 0.3.10, optional (a store without it answers False): the provider checks the second factor itself.
+
+    def provider_checks_factor(self, account_id: AccountId) -> bool:
+        """True where "second factor for everybody" asks this account nothing of its own because its provider checks
+        one (nexdiary, nexpaper: an account through providers only, or one whose present session came through a
+        provider whose entry checks it). ``factor.state`` and ``common.next_step`` honour it; an authenticator the
+        account set up itself is asked all the same."""
+        ...
+
 
 class PasskeyStore(Protocol):
     """Passkeys over the app's table (``passkeys`` in nexdiary and nexpaper)."""

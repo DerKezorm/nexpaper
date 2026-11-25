@@ -10,6 +10,11 @@
     "body": "{{by}} lädt dich zu {{app}} ein. Mit dem Knopf legst du dein Konto an. Die Einladung gilt {{valid}}.",
     "action": "Einladung annehmen"
   },
+  "invite_space": {
+    "subject": "{{by}} lädt dich zu {{space}} in {{app}} ein",
+    "body": "{{by}} lädt dich zu {{space}} in {{app}} ein. Mit dem Knopf legst du dein Konto an. Die Einladung gilt {{valid}}.",
+    "action": "Einladung annehmen"
+  },
   "reset": {
     "subject": "Neues Passwort für {{app}}",
     "body": "Für dein Konto {{username}} wurde ein Link für ein neues Passwort erstellt. Er gilt {{valid}} und nur einmal. Wenn du das nicht warst, lass die Mail einfach liegen.",

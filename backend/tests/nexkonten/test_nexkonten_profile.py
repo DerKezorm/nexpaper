@@ -189,17 +189,70 @@ def test_an_address_change_is_refused_without_the_password_or_for_another_accoun
         assert caught.value.code == code, typed
 
 
-def test_an_address_can_always_be_taken_away(app: Any, konten: Any, operator: Any) -> None:
+def test_an_address_can_be_taken_away_with_the_password(app: Any, konten: Any, operator: Any) -> None:
+    """Decided for 0.3.10 (replacing "removing always works"): one's own address goes only with the password, like a
+    change (an account without one: a fresh sign-in at the provider); the operator takes another's with the
+    operator's own password."""
     operator_id, operator_secret = operator
     secret = password()
     alex = app.seed("alex", email="alex@example.com", password=secret)
     kim = app.seed("kim", email="kim@example.com", password=password())
+    only_provider = app.seed("sam", email="sam@example.com", password=None)
+    for call, code in (
+        (lambda store: konten.profiles.change_email(store, alex, ""), "wrong_password"),
+        (lambda store: konten.profiles.remove_email(store, alex, actor_id=alex), "wrong_password"),
+        (
+            lambda store: konten.profiles.remove_email(store, alex, actor_id=alex, password=secret + "x"),
+            "wrong_password",
+        ),
+        (lambda store: konten.profiles.change_email(store, only_provider, ""), "fresh_sign_in_needed"),
+        (lambda store: konten.profiles.remove_email(store, kim, actor_id=operator_id), "wrong_password"),
+    ):
+        with app.store() as store, pytest.raises(konten.AccountError) as caught:
+            call(store)
+        assert caught.value.code == code
     with app.store() as store:
+        assert store.get_account(alex).email == "alex@example.com"
         konten.profiles.change_email(store, alex, "new@example.com", password=secret, mail=True)
         assert konten.profiles.change_email(store, alex, "", password=secret).account.email == ""
         assert store.get_account(alex).pending_email == ""
         removed = konten.profiles.remove_email(store, kim, actor_id=operator_id, password=operator_secret)
         assert removed.account.email == ""
+        gone = konten.profiles.remove_email(store, only_provider, actor_id=only_provider, actor_confirmed=True)
+        assert gone.account.email == ""
+
+
+def test_an_address_that_counts_is_proven_by_link_and_stays_the_same(app: Any, konten: Any) -> None:
+    """Since 0.3.10 (nexpaper's inbox): an address that counts without a link gets one afterwards, the same mail and
+    time as a new address; opening it proves the address and changes nothing else, open links of "Forgot your
+    password?" stay."""
+    secret = password()
+    alex = app.seed("alex", email="alex@example.com", email_proven=False, password=secret)
+    with app.store() as store:
+        forgot = konten.resets.forgot(store, "alex")
+        letter = konten.profiles.prove_email(store, alex)
+    assert (letter.kind, letter.to, letter.hours) == (konten.MAIL_CONFIRM_EMAIL, "alex@example.com", 24)
+    with app.store() as store:
+        account = store.get_account(alex)
+        assert account.email == "alex@example.com" and account.email_confirmed and not account.email_proven
+        assert konten.profiles.email_change_state(store, letter.token).address == "alex@example.com"
+        done = konten.profiles.confirm_email(store, letter.token)
+    assert done.notice is None
+    assert (done.account.email, done.account.email_confirmed, done.account.email_proven) == (
+        "alex@example.com", True, True,
+    )
+    with app.store() as store:
+        assert konten.resets.reset_state(store, forgot.token).id == alex
+        with pytest.raises(konten.AccountError) as caught:
+            konten.profiles.prove_email(store, alex)
+        assert caught.value.code == "nothing_to_prove"
+    for seeded in (
+        app.seed("kim", password=secret),
+        app.seed("sam", email="sam@example.com", email_confirmed=False, password=secret),
+    ):
+        with app.store() as store, pytest.raises(konten.AccountError) as caught:
+            konten.profiles.prove_email(store, seeded)
+        assert caught.value.code == "nothing_to_prove"
 
 
 def test_a_waiting_address_can_be_withdrawn(app: Any, konten: Any) -> None:

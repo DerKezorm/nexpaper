@@ -186,18 +186,22 @@ def has_factor(store: FactorStore | AppStore, account_id: AccountId) -> bool:
     return bool(passkeys and passkeys(account_id))
 
 
-def state(store: AppStore, account_id: AccountId) -> str:
+def state(store: AppStore, account_id: AccountId, *, provider_checked: bool = False) -> str:
     """What ``Store.second_factor`` answers, for an app that lets the module decide.
 
     ``active``: a time-based code (asked after the password). A passkey counts as a second factor: where the operator
     asks one of everybody, an account with a passkey and no authenticator answers ``passkey`` (the passkey is the
     second step, no authenticator is required of it); without the switch a passkey is a way in of its own and the
-    password alone signs in as before (``none``). ``required``: the operator asks one and the account has none."""
+    password alone signs in as before (``none``). ``required``: the operator asks one and the account has none.
+
+    Since 0.3.10: where the provider checks the second factor itself (``provider_checked`` for this sign-in, or the
+    store's hook ``provider_checks_factor``, off by default), the switch for everybody asks nothing here: ``none``. An
+    authenticator of the account's own stays ``active``."""
     if switched_off():
         return SECOND_FACTOR_NONE
     if store.totp_seed(account_id):
         return SECOND_FACTOR_ACTIVE
-    required = _required(store)
+    required = _required(store) and not common.provider_checks(store, account_id, provider_checked)
     passkeys = getattr(store, "passkeys_of", None)
     if passkeys is not None and passkeys(account_id):
         return SECOND_FACTOR_PASSKEY if required else SECOND_FACTOR_NONE
