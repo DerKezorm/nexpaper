@@ -204,6 +204,10 @@ def test_an_identity_with_the_address_of_an_account_never_comes_into_it_nor_into
     if way != "auto_create":
         answer = client.post("/api/v1/invites", json={
             "days": 7, "email": "anna@example.com" if way == "invitation_to_the_address" else "", "send": False})
+        if way == "invitation_to_the_address":
+            # Since the shared account module an invitation to an address an account has is never made.
+            assert answer.status_code == 409 and answer.json()["detail"]["code"] == "email_taken"
+            return
         assert answer.status_code == 201, answer.text
         invite = answer.json()["link"].rsplit("/", 1)[1]
     browser = fresh_browser()
@@ -280,8 +284,10 @@ def test_an_address_from_a_provider_never_decides_whose_vault_a_mail_reaches(
                          email_verified=True)) is None
     offered = member.get("/api/v1/oidc/me").json()
     assert offered == [{"slug": "sso", "label": "SSO", "linked": True, "address": "tom@example.com"}]
-    taken = member.post("/api/v1/oidc/me/address", json={"slug": "sso"})
-    assert taken.status_code == 200 and taken.json() == {"email": "tom@example.com", "email_confirmed": False}
+    # With the own password, as every change of address (the shared account module).
+    taken = member.post("/api/v1/oidc/me/address", json={"slug": "sso", "password": PASSWORD})
+    assert taken.status_code == 200 and taken.json()["email"] == "tom@example.com"
+    assert taken.json()["email_confirmed"] is False
     with SessionLocal() as db:
         assert mail_senders.owners(db, "tom@example.com") == set()
 

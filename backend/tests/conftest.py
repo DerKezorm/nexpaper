@@ -20,10 +20,12 @@ os.environ["NEXPAPER_ARGON2_PARALLELISM"] = "1"
 # Never GitHub from a test: port 9 refuses at once.
 os.environ["NEXPAPER_UPDATE_URL"] = "http://127.0.0.1:9/releases/latest"
 os.environ["NEXPAPER_SECRET_KEY"] = "test-secret-key-for-the-test-run-only"
-SETUP_CODE = "test-setup-code"
+#: At least 16 characters: the shared account module passes over a shorter NEXPAPER_SETUP_TOKEN.
+SETUP_CODE = "test-setup-code-of-the-tests"
 os.environ["NEXPAPER_SETUP_TOKEN"] = SETUP_CODE
 
 import shutil  # noqa: E402
+from pathlib import Path  # noqa: E402
 
 import pytest  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
@@ -50,6 +52,11 @@ from app.services import (  # noqa: E402
     totp,
     updates,
 )
+from app.services import konten_store  # noqa: E402
+from app.services import post_store  # noqa: E402, F401  (configures the shared post module)
+from app.vendor.nexkonten import factor as konten_factor  # noqa: E402
+from app.vendor.nexkonten import passkeys as konten_passkeys  # noqa: E402
+from app.vendor.nexkonten import setup as konten_setup  # noqa: E402
 from app.vendor.nexoidc import attempt as nexoidc_attempt  # noqa: E402
 from app.vendor.nexoidc import protocol as nexoidc_protocol  # noqa: E402
 
@@ -58,6 +65,38 @@ from .oidc_helpers import provider  # noqa: E402, F401
 
 DATA_DIR = _DATA
 TAB = {"X-Nexpaper-Client": "tab-tests000"}
+
+# The contract tests of the shared modules (``tests/nexoidc``, ``tests/nexkonten``, ``tests/nexpost``) bring their own
+# ``conftest.py`` (unchanged from the modules, guarded by checksums). pytest loads them all as ``conftest``; whichever
+# came last stands in ``sys.modules``, and ``from conftest import ...`` of a contract test then found another one's
+# (in a parallel run, depending on the order). While collecting and before every test ``sys.modules["conftest"]``
+# points to the ``conftest.py`` nearest to the test.
+_CONFTESTS: dict[Path, object] = {}
+
+
+def pytest_plugin_registered(plugin: object, manager: object) -> None:
+    path = getattr(plugin, "__file__", None)
+    if path and Path(path).name == "conftest.py":
+        _CONFTESTS[Path(path).resolve().parent] = plugin
+
+
+def _nearest_conftest(path: Path) -> None:
+    import sys
+
+    for folder in [Path(path).resolve(), *Path(path).resolve().parents]:
+        module = _CONFTESTS.get(folder)
+        if module is not None:
+            sys.modules["conftest"] = module  # type: ignore[assignment]
+            return
+
+
+def pytest_collectstart(collector: pytest.Collector) -> None:
+    if isinstance(collector, pytest.Module):
+        _nearest_conftest(collector.path)
+
+
+def pytest_runtest_setup(item: pytest.Item) -> None:
+    _nearest_conftest(item.path)
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -83,6 +122,11 @@ def clean_db(schema: None) -> Iterator[None]:
         shutil.rmtree(os.path.join(_DATA, folder), ignore_errors=True)
     # The shared sign-in module: configured as at start-up, nothing remembered from a test before.
     oidc_store.configure()
+    # The shared account module: configured as at start-up, its brake, waiting sign-ins and challenges empty.
+    konten_store.configure()
+    konten_factor.forget()
+    konten_passkeys.forget()
+    konten_setup.forget_generated_code()
     nexoidc_protocol.clear_caches()
     nexoidc_attempt.forget_used_states()
     brake.forget()

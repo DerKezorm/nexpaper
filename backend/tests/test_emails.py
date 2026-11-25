@@ -1,6 +1,7 @@
-"""The own mail address: changed by a link sent to the new address. The password is asked once more, the old address stays
-until the link is opened, the link works once for 24 hours and is kept as a hash, a wrong link counts against the sender,
-and nothing is sent without a mail server."""
+"""The own mail address, through the shared account module: changed by a link sent to the new address where a mail
+server is set up (without one it counts at once, but the intake does not trust it). The password is asked once more,
+the old address stays until the link is opened, the link works once for 24 hours and is kept as a hash, a wrong link
+counts against the sender, and the old address hears of a change (from the outbox of the shared post module)."""
 
 from __future__ import annotations
 
@@ -15,10 +16,11 @@ from app.db import SessionLocal
 from app.main import app
 from app.models import Account, EmailConfirmation, utcnow
 from app.security import brake
-from app.services import emails, notices, settings_service
+from app.services import notices, post_store, settings_service
+from app.vendor.nexkonten.common import address_hint
 
 from .conftest import PASSWORD, TAB, make_account, new_client
-from .test_settings import FakeSmtp, smtp  # noqa: F401 - fixture
+from .test_settings import FakeSmtp, smtp, text_of  # noqa: F401 - fixture
 
 PUBLIC = "https://paper.example.com"
 
@@ -30,7 +32,7 @@ def mail_on(public: str = PUBLIC) -> None:
 
 
 def token_of(smtp_class: type[FakeSmtp]) -> str:
-    text = smtp_class.sent[-1].get_content()
+    text = text_of(smtp_class.sent[-1])
     link = next(line for line in text.splitlines() if line.startswith(PUBLIC + "/mail/"))
     return link.rsplit("/", 1)[1]
 
@@ -41,6 +43,12 @@ def row_of(account: Account) -> Account:
         assert found is not None
         db.expunge(found)
         return found
+
+
+def outbox() -> None:
+    """The minute's round of the shared post module: the notices to the old address go out."""
+    notices.settle()
+    post_store.run_due()
 
 
 def asks(client: TestClient, email: str, password: str = PASSWORD) -> object:
@@ -109,6 +117,7 @@ def test_a_link_runs_out_after_24_hours(client: TestClient, operator: Account, s
 
 def test_the_password_is_asked_again_and_counted(client: TestClient, operator: Account,
                                                  smtp: type[FakeSmtp]) -> None:  # noqa: F811
+    """Wrong answers count at the shared module's door ``confirm:<account>``: five free, then the account waits."""
     mail_on()
     wrong = asks(client, "tester@example.com", "not the password")
     assert (wrong.status_code, wrong.json()["detail"]["code"]) == (401, "wrong_password")
@@ -116,17 +125,22 @@ def test_the_password_is_asked_again_and_counted(client: TestClient, operator: A
     assert smtp.sent == []
     with SessionLocal() as db:
         assert db.query(EmailConfirmation).count() == 0
-        row = db.get(Account, operator.id)
-        assert row is not None and row.failed_logins == 2, "wrong answers count like wrong passwords at sign-in"
+    for _ in range(4):
+        asks(client, "tester@example.com", "not the password")
+    assert asks(client, "tester@example.com").status_code == 429
 
 
 def test_nothing_is_sent_without_a_mail_server_or_a_public_address(client: TestClient, operator: Account,
                                                                    smtp: type[FakeSmtp]) -> None:  # noqa: F811
+    """Without a mail server (or without the public address a link needs) the new address counts at once, as the
+    shared account module does; it is not proven, so the intake does not trust it."""
     off = asks(client, "tester@example.com")
-    assert (off.status_code, off.json()["detail"]["code"]) == (409, "mail_off")
+    assert off.status_code == 200 and off.json()["email"] == "tester@example.com"
+    assert off.json()["email_counts"] is True and off.json()["email_confirmed"] is False
     with SessionLocal() as db:
         settings_service.save(db, {"smtp_host": "mail.example.com", "smtp_from": "paper@example.com"})
-    assert asks(client, "tester@example.com").json()["detail"]["code"] == "mail_off", "the link needs the public address"
+    other = asks(client, "other@example.com")
+    assert other.status_code == 200 and other.json()["email"] == "other@example.com", "the link needs the public address"
     assert smtp.sent == []
 
 
@@ -232,15 +246,14 @@ def test_links_that_do_not_hold_count_against_the_sender(client: TestClient, ope
         assert rest.status_code == 429
 
 
-def test_the_number_of_mails_is_limited(client: TestClient, operator: Account, smtp: type[FakeSmtp],  # noqa: F811
-                                        monkeypatch: pytest.MonkeyPatch) -> None:
+def test_the_number_of_mails_is_limited(client: TestClient, operator: Account, smtp: type[FakeSmtp]) -> None:  # noqa: F811
+    """Every link written counts at the shared module's door ``mail:<account>``: five pass, the sixth makes it wait."""
     mail_on()
-    monkeypatch.setattr(emails, "PER_ACCOUNT", 2)
-    assert asks(client, "a@example.com").status_code == 200
-    assert asks(client, "b@example.com").status_code == 200
-    third = asks(client, "c@example.com")
-    assert third.status_code == 429
-    assert len(smtp.sent) == 2
+    for number in range(6):
+        assert asks(client, f"a{number}@example.com").status_code == 200
+    held = asks(client, "c@example.com")
+    assert held.status_code == 429
+    assert len(smtp.sent) == 6
 
 
 def test_the_token_and_the_address_stay_out_of_the_log(client: TestClient, operator: Account, smtp: type[FakeSmtp],  # noqa: F811
@@ -282,14 +295,16 @@ def test_two_requests_with_one_link_at_the_same_moment_write_the_address_once(
     token = token_of(smtp)
     # Both have found the link valid before either takes it: they meet between looking and taking.
     both_found = threading.Barrier(2, timeout=10)
-    find = emails.find
+    from app.services.konten_store import KontenStore
 
-    def find_then_wait(db: object, value: str) -> object:
-        result = find(db, value)
+    find = KontenStore.find_email_change
+
+    def find_then_wait(self: KontenStore, value: str) -> object:
+        result = find(self, value)
         both_found.wait()
         return result
 
-    monkeypatch.setattr(emails, "find", find_then_wait)
+    monkeypatch.setattr(KontenStore, "find_email_change", find_then_wait)
     answers: list[int] = []
 
     def one(number: int) -> None:
@@ -302,7 +317,7 @@ def test_two_requests_with_one_link_at_the_same_moment_write_the_address_once(
     for thread in threads:
         thread.join()
     assert sorted(answers) == [200, 404], answers
-    notices.settle()
+    outbox()
     assert row_of(operator).email == "tester@example.com"
     told = [message for message in smtp.sent if message["To"] == "old@example.com"]
     assert len(told) == 1, "the old address hears of the change once"
@@ -329,23 +344,25 @@ def test_the_old_address_is_told_when_the_new_one_is_confirmed(
     assert [message["To"] for message in smtp.sent] == ["tester@example.com"], "nothing goes to the old one before"
     done = new_client().post(f"/api/v1/email/confirm/{token_of(smtp)}")
     assert done.json()["old_told"] is True
-    notices.settle()
+    outbox()
     [notice] = [message for message in smtp.sent if message["To"] == "old@example.com"]
-    text = notice.get_content()
-    assert "changed" in notice["Subject"] and "t***@example.com" in text
+    text = notice.get_body(preferencelist=("plain",)).get_content()
+    assert "t***@example.com" in text
     assert "tester@example.com" not in text, "the new address is not spelled out to the old one"
 
 
-def test_an_old_address_that_was_never_confirmed_is_not_written_to(
+def test_an_old_address_that_counted_hears_of_it_too(
     client: TestClient, operator: Account, smtp: type[FakeSmtp]  # noqa: F811
 ) -> None:
+    """The owner's decision of 25.11.2026: the notice goes to every old address that counted for signing in, not only
+    to one proven by a link (as nexpaper did up to 1.12.0)."""
     mail_on()
     set_confirmed(operator, "typed@example.com", confirmed=False)
     asks(client, "tester@example.com")
     done = new_client().post(f"/api/v1/email/confirm/{token_of(smtp)}")
-    assert done.json()["old_told"] is False
-    notices.settle()
-    assert [message["To"] for message in smtp.sent] == ["tester@example.com"]
+    assert done.json()["old_told"] is True
+    outbox()
+    assert [message["To"] for message in smtp.sent] == ["tester@example.com", "typed@example.com"]
 
 
 def test_a_first_address_has_no_old_one_to_tell(
@@ -354,7 +371,7 @@ def test_a_first_address_has_no_old_one_to_tell(
     mail_on()
     asks(client, "tester@example.com")
     assert new_client().post(f"/api/v1/email/confirm/{token_of(smtp)}").json()["old_told"] is False
-    notices.settle()
+    outbox()
     assert len(smtp.sent) == 1
 
 
@@ -371,16 +388,17 @@ def test_a_mail_server_that_is_gone_by_then_tells_nobody(
     with caplog.at_level(logging.INFO):
         done = new_client().post(f"/api/v1/email/confirm/{token}")
     assert done.status_code == 200 and done.json()["old_told"] is False
-    notices.settle()
+    outbox()
     assert row_of(operator).email == "tester@example.com"
     assert [message["To"] for message in smtp.sent] == ["tester@example.com"]
-    said = [line for line in caplog.messages if "old address was not told" in line]
+    said = [line for line in caplog.messages if "Mail not queued" in line]
     assert len(said) == 1 and "no mail server" in said[0], "not told, and the log says why"
     assert "old@example.com" not in caplog.text and "tester@example.com" not in caplog.text
 
 
 def test_the_address_is_hinted_not_spelled_out() -> None:
-    assert emails._hint("Anna.Example@mail.example.com") == "A***@mail.example.com"
+    hint = address_hint("Anna.Example@mail.example.com")
+    assert hint.startswith("A") and hint.endswith("@mail.example.com") and "Example@" not in hint
 
 
 def test_taking_a_confirmed_address_away_tells_the_old_address(
@@ -390,20 +408,21 @@ def test_taking_a_confirmed_address_away_tells_the_old_address(
     set_confirmed(operator, "old@example.com")
     gone = asks(client, "")
     assert gone.status_code == 200 and gone.json()["email"] == ""
-    notices.settle()
+    outbox()
     [notice] = smtp.sent
-    assert notice["To"] == "old@example.com" and "removed" in notice["Subject"]
-    assert "old@example.com" not in notice.get_content(), "the address is not spelled out in its own notice"
+    assert notice["To"] == "old@example.com"
+    assert "old@example.com" not in notice.get_body(preferencelist=("plain",)).get_content(), "the address is not spelled out in its own notice"
 
 
-def test_taking_an_address_away_that_was_never_confirmed_tells_nobody(
+def test_taking_an_address_away_that_counted_tells_it(
     client: TestClient, operator: Account, smtp: type[FakeSmtp]  # noqa: F811
 ) -> None:
+    """The owner's decision of 25.11.2026: also an address that only counted hears that it was taken away."""
     mail_on()
     set_confirmed(operator, "typed@example.com", confirmed=False)
     assert asks(client, "").status_code == 200
-    notices.settle()
-    assert smtp.sent == []
+    outbox()
+    assert [message["To"] for message in smtp.sent] == ["typed@example.com"]
 
 
 def test_taking_an_address_away_without_a_mail_server_says_so_in_the_log(
@@ -412,7 +431,8 @@ def test_taking_an_address_away_without_a_mail_server_says_so_in_the_log(
     set_confirmed(operator, "old@example.com")
     with caplog.at_level(logging.INFO):
         assert asks(client, "").status_code == 200
-    notices.settle()
+    outbox()
     assert smtp.sent == []
-    said = [line for line in caplog.messages if "old address was not told" in line]
-    assert len(said) == 1 and "old@example.com" not in caplog.text
+    assert "old@example.com" not in caplog.text
+
+

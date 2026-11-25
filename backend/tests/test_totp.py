@@ -47,8 +47,15 @@ class Clock:
 
 @pytest.fixture
 def clock(monkeypatch: pytest.MonkeyPatch) -> Clock:
+    from datetime import UTC, datetime
+
+    from app.vendor.nexkonten import common, factor
+
     fake = Clock()
     monkeypatch.setattr(totp, "time", fake)
+    # The shared account module checks the codes and keeps the authenticator being set up (since 1.13.0).
+    monkeypatch.setattr(factor, "time", fake)
+    monkeypatch.setattr(common, "utcnow", lambda: datetime.fromtimestamp(fake.time(), UTC))
     return fake
 
 
@@ -130,7 +137,7 @@ def test_a_code_is_accepted_in_the_window_and_only_after_the_last_used_step() ->
 
 def test_recovery_codes_are_typed_from_paper() -> None:
     codes = totp.generate_recovery_codes()
-    assert len(codes) == 8 and len(set(codes)) == 8
+    assert len(codes) == 10 and len(set(codes)) == 10
     for code in codes:
         head, tail = code.split("-")
         assert len(head) == 5 and len(tail) == 5
@@ -138,7 +145,7 @@ def test_recovery_codes_are_typed_from_paper() -> None:
     stored = totp.recovery_hashes(codes)
     assert codes[0] not in stored
     remaining = totp.use_recovery(stored, codes[2].upper().replace("-", " "))
-    assert remaining is not None and len(totp.load_recovery(remaining)) == 7
+    assert remaining is not None and len(totp.load_recovery(remaining)) == 9
     assert totp.use_recovery(remaining, codes[2]) is None
 
 
@@ -156,7 +163,7 @@ def test_enrolment_needs_the_password_and_a_matching_code(client: TestClient, op
     confirmed = client.post("/api/v1/auth/totp/confirm", json={"code": current_code(secret), "password": PASSWORD})
     assert confirmed.status_code == 200, confirmed.text
     me = client.get("/api/v1/auth/me").json()
-    assert me["two_factor"] is True and me["two_factor_recovery_left"] == 8
+    assert me["two_factor"] is True and me["two_factor_recovery_left"] == 10
     # On already: a second enrolment is refused until it is turned off.
     assert client.post("/api/v1/auth/totp/begin").status_code == 409
     # The seed is stored sealed, not in the clear.
@@ -167,8 +174,11 @@ def test_enrolment_needs_the_password_and_a_matching_code(client: TestClient, op
 
 
 def test_an_enrolment_runs_out(client: TestClient, operator: Account, monkeypatch: pytest.MonkeyPatch) -> None:
+    from app.vendor.nexkonten import factor
+
     secret = client.post("/api/v1/auth/totp/begin").json()["secret"]
-    monkeypatch.setattr(totp, "ENROLMENT_SECONDS", 0)
+    # The shared account module keeps the authenticator being set up (ten minutes); here none.
+    monkeypatch.setattr(factor, "ENROLMENT_SECONDS", 0)
     client.post("/api/v1/auth/totp/begin")
     late = client.post("/api/v1/auth/totp/confirm", json={"code": current_code(secret), "password": PASSWORD})
     assert late.status_code == 410 and late.json()["detail"]["code"] == "totp_enrolment_expired"
@@ -236,29 +246,29 @@ def test_five_wrong_codes_end_the_pending_sign_in(client: TestClient, operator: 
     code = fresh_code(secret, clock)
     again = code_step(client, code)
     assert again.status_code == 401 and again.json()["detail"]["code"] == "second_factor_expired"
-    # Five wrong codes are five failures: the address rests and the account is locked for a quarter of an hour.
-    # Both lifted here to see the rest.
+    # Five wrong codes are five failures at the account (ten lock it, as wrong passwords do); the brake is lifted here
+    # to see the rest.
     brake.forget()
     with SessionLocal() as db:
         row = db.get(Account, operator.id)
-        assert row is not None and row.locked_until is not None
-        row.locked_until = None
-        db.commit()
+        assert row is not None and row.failed_logins == totp.MAX_ATTEMPTS
     password_step(client)
     assert code_step(client, code).status_code == 200
 
 
 def test_the_brake_slows_a_guessing_sender(client: TestClient, operator: Account, clock: Clock) -> None:
+    """Every code counts at the shared module's door ``code:<account>``, across waiting sign-ins: five pass, the sixth
+    makes it wait, and the next code answers 429 with ``Retry-After``."""
     enrol(client)
     sign_out(client)
     password_step(client)
-    for _ in range(totp.MAX_ATTEMPTS - 1):
+    for _ in range(totp.MAX_ATTEMPTS):
         code_step(client, "000000")
-    # Five failures from one address, of any kind: the fifth wrong code, then even the password waits.
+    password_step(client)
     code_step(client, "000000")
-    braked = client.post("/api/v1/auth/login", json={"name": "tester", "password": PASSWORD})
+    braked = code_step(client, "000000")
     assert braked.status_code == 429 and braked.json()["detail"]["code"] == "too_many_attempts"
-    assert braked.headers["retry-after"] == "900"
+    assert int(braked.headers["retry-after"]) > 0
 
 
 def test_knowing_the_password_is_no_way_around_the_lockout(client: TestClient, operator: Account, clock: Clock) -> None:
@@ -303,7 +313,7 @@ def test_a_recovery_code_signs_in_once(client: TestClient, operator: Account, cl
     password_step(client)
     used = code_step(client, codes[0])
     assert used.status_code == 200, used.text
-    assert used.json()["two_factor_recovery_left"] == 7
+    assert used.json()["two_factor_recovery_left"] == 9
     sign_out(client)
     password_step(client)
     assert code_step(client, codes[0]).status_code == 401
@@ -316,7 +326,7 @@ def test_new_recovery_codes_replace_the_old_ones(client: TestClient, operator: A
     renewed = client.post("/api/v1/auth/totp/recovery", json={"password": PASSWORD})
     assert renewed.status_code == 200
     new = renewed.json()["recovery_codes"]
-    assert len(new) == 8 and not set(new) & set(old)
+    assert len(new) == 10 and not set(new) & set(old)
     sign_out(client)
     password_step(client)
     assert code_step(client, old[0]).status_code == 401
@@ -490,5 +500,5 @@ def test_a_list_made_before_still_signs_in_and_each_code_counts_once(client: Tes
         assert code_step(client, codes[number]).status_code == 401, "once, in either form"
     with SessionLocal() as db:
         row = db.get(Account, operator.id)
-        assert row is not None and len(totp.load_recovery(row.totp_recovery)) == 6
+        assert row is not None and len(totp.load_recovery(row.totp_recovery)) == len(codes) - 2
     assert secret

@@ -41,7 +41,16 @@ def log_in(client: TestClient, name: str = "anna") -> None:
 @pytest.fixture
 def mails(monkeypatch: pytest.MonkeyPatch) -> Iterator[list[EmailMessage]]:
     sent: list[EmailMessage] = []
-    monkeypatch.setattr(mailer, "send_message", lambda _db, message: sent.append(message))
+
+    def letter(_db: object, letter: object) -> None:
+        # System mail is a letter of the shared post module (text and HTML); the test reads its plain text.
+        message = EmailMessage()
+        message["To"] = letter.to  # type: ignore[attr-defined]
+        message["Subject"] = letter.subject  # type: ignore[attr-defined]
+        message.set_content(letter.text)  # type: ignore[attr-defined]
+        sent.append(message)
+
+    monkeypatch.setattr(mailer, "send_letter", letter)
     with SessionLocal() as db:
         settings_service.save(db, {"smtp_host": "mail.example.com", "smtp_from": "paper@example.com"})
     yield sent
@@ -78,9 +87,10 @@ def test_a_new_device_is_told_to_the_others_and_by_mail(anna: Account, push_serv
                                     "Warst du das nicht? Tippe hier.")
     assert came.message["url"] == came.message["desk"] == "/konto?tab=security"
     [mail] = mails
-    assert mail["To"] == "anna@example.com" and mail["Subject"] == "New sign-in to nexpaper"
+    # The shared post module's mail: the browser and its system, nothing more (no address, no network).
+    assert mail["To"] == "anna@example.com" and "nexpaper" in mail["Subject"]
     text = mail.get_content()
-    assert "Safari on iPhone" in text and "network 203.0.113.0/24" in text and "7 October, 21:14" in text
+    assert "Safari on iPhone" in text
     assert "203.0.113.57" not in text and "203.0.113.57" not in str(came.message)
 
 
@@ -152,7 +162,16 @@ def test_a_forged_or_foreign_device_cookie_is_news(anna: Account, push_service: 
 def test_without_a_mail_server_or_address_only_the_push_goes(anna: Account, push_service: FakePushService,
                                                              monkeypatch: pytest.MonkeyPatch) -> None:
     sent: list[EmailMessage] = []
-    monkeypatch.setattr(mailer, "send_message", lambda _db, message: sent.append(message))
+
+    def letter(_db: object, letter: object) -> None:
+        # System mail is a letter of the shared post module (text and HTML); the test reads its plain text.
+        message = EmailMessage()
+        message["To"] = letter.to  # type: ignore[attr-defined]
+        message["Subject"] = letter.subject  # type: ignore[attr-defined]
+        message.set_content(letter.text)  # type: ignore[attr-defined]
+        sent.append(message)
+
+    monkeypatch.setattr(mailer, "send_letter", letter)
     with browser("203.0.113.57") as phone:
         log_in(phone)
     notices.settle()

@@ -29,6 +29,9 @@ class FakeSmtp:
 
     def __init__(self, host: str, port: int, timeout: float = 0, context: Any = None) -> None:
         self.host, self.port = host, port
+        # The shared post module connects without ``with``: a server that says no says it here.
+        if FakeSmtp.fail:
+            raise smtplib.SMTPConnectError(421, b"mail.example.com says no to secret@example.com")
 
     def __enter__(self) -> Self:
         if FakeSmtp.fail:
@@ -46,6 +49,19 @@ class FakeSmtp:
 
     def send_message(self, message: EmailMessage) -> None:
         FakeSmtp.sent.append(message)
+
+    def ehlo(self) -> None:
+        pass
+
+    def quit(self) -> None:
+        pass
+
+
+def text_of(message: EmailMessage) -> str:
+    """The plain text of a mail (system mail is text and HTML since the shared post module)."""
+    part = message.get_body(preferencelist=("plain",))
+    assert part is not None
+    return str(part.get_content())  # type: ignore[attr-defined]
 
 
 @pytest.fixture
@@ -112,8 +128,8 @@ def test_an_invitation_goes_out_by_mail(client: TestClient, operator: Account, s
     made = client.post("/api/v1/invites", json={"email": "dora@example.com", "send": True}).json()
     assert made["sent"] is True
     [message] = smtp.sent
-    assert message["To"] == "dora@example.com" and message["From"] == "paper@example.com"
-    assert made["link"] in message.get_content() and "tester invites you" in message.get_content()
+    assert message["To"] == "dora@example.com" and message["From"] == "nexpaper <paper@example.com>"
+    assert made["link"] in text_of(message) and "tester" in text_of(message)
     assert smtp.logins == [("paper", "mail password")] and smtp.tls == [True]
 
 
@@ -125,7 +141,9 @@ def test_mail_carries_a_date_header(client: TestClient, operator: Account, smtp:
     dates = message.get_all("Date") or []
     assert len(dates) == 1
     sent_at = parsedate_to_datetime(dates[0])
-    assert sent_at.tzinfo is not None and abs((datetime.now(UTC) - sent_at).total_seconds()) < 300
+    # The shared post module writes the time in UTC ("-0000").
+    sent_at = sent_at if sent_at.tzinfo is not None else sent_at.replace(tzinfo=UTC)
+    assert abs((datetime.now(UTC) - sent_at).total_seconds()) < 300
     assert len(message.get_all("Message-ID") or []) == 1
 
 
@@ -137,7 +155,7 @@ def test_a_failing_mail_server_says_so_without_its_answer(
     failed = client.post("/api/v1/settings/mail-test", json={"to": "dora@example.com"})
     assert failed.status_code == 502 and failed.json()["detail"]["code"] == "mail_failed"
     # The server's answer can quote addresses; only its kind goes to the log.
-    assert "secret@example.com" not in caplog.text and "SMTPConnectError" in caplog.text
+    assert "secret@example.com" not in caplog.text and "Mail not sent host=mail.example.com code=" in caplog.text
     smtp.fail = False
     assert client.post("/api/v1/settings/mail-test", json={"to": "dora@example.com"}).status_code == 204
     assert client.post("/api/v1/settings/mail-test", json={"to": "not an address"}).status_code == 422

@@ -133,7 +133,7 @@ def test_adding_a_passkey_needs_the_password_and_asks_for_a_discoverable_verifie
     added = add_key(client, key, "Windows Hello")
     assert added.status_code == 201, added.text
     body = added.json()
-    assert body["passkey"]["name"] == "Windows Hello" and len(body["recovery_codes"]) == 8
+    assert body["passkey"]["name"] == "Windows Hello" and len(body["recovery_codes"]) == 10
     assert body["account"]["two_factor"] is True and body["account"]["passkeys"] == 1 and body["account"]["totp"] is False
     listed = client.get("/api/v1/auth/passkeys").json()
     assert [row["name"] for row in listed] == ["Windows Hello"] and "public_key" not in json.dumps(listed)
@@ -238,6 +238,14 @@ def test_failed_passkeys_count_per_address_and_per_account(client: TestClient, o
     assert guesser.post("/api/v1/auth/passkey/begin").status_code == 429
     with SessionLocal() as db:
         row = db.get(Account, operator.id)
+        # Each counts at the account too: ten lock it (the shared account module's number, nexpaper had five).
+        assert row is not None and row.failed_logins == 5
+        row.failed_logins = 9
+        db.commit()
+    brake.forget()
+    assert passkey_sign_in(browser("203.0.113.11"), key)[0].status_code == 401
+    with SessionLocal() as db:
+        row = db.get(Account, operator.id)
         assert row is not None and row.locked_until is not None
     # A locked account does not open with its passkey from a stranger's browser either.
     brake.forget()
@@ -300,7 +308,7 @@ def test_a_passkey_set_up_right_after_the_password_needs_no_password_again() -> 
     assert first.json()["session_stage"] == "setup"
     key = SoftKey()
     added = add_key(other, key, password="")
-    assert added.status_code == 201 and len(added.json()["recovery_codes"]) == 8
+    assert added.status_code == 201 and len(added.json()["recovery_codes"]) == 10
     assert other.get("/api/v1/auth/me").json()["session_stage"] == "codes"
     assert other.post("/api/v1/auth/setup/done").status_code == 200
     assert other.get("/api/v1/auth/me").json()["session_stage"] == "full"

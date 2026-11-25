@@ -16,7 +16,7 @@ from sqlalchemy import text
 from app import reset_link
 from app.db import SCHEMA_VERSION, SessionLocal, engine
 from app.models import OPERATOR, SIGN_IN_OIDC, SIGN_IN_PASSWORD, Account, PasswordReset, utcnow
-from app.services import logs, resets, settings_service
+from app.services import logs, settings_service
 
 from .conftest import make_account, require_second_factor
 from .test_password_links import NEW, PUBLIC, stranger, token_of
@@ -51,7 +51,7 @@ def test_a_locked_out_operator_gets_a_link_that_works_once(capsys: pytest.Captur
     code, out, err = run(capsys, "Boss")
     assert code == 0, err
     assert out.startswith("/reset/"), "without a public address only the path"
-    assert "recovery codes" in err and "24 hours" in err
+    assert "recovery codes" in err and "works once, until" in err
     token = token_of(out)
     assert stranger().get(f"/api/v1/reset/{token}").json()["name"] == "boss"
     assert stranger().post(f"/api/v1/reset/{token}", json={"password": NEW}).status_code == 204
@@ -62,14 +62,18 @@ def test_a_locked_out_operator_gets_a_link_that_works_once(capsys: pytest.Captur
 
 
 def test_the_link_runs_out_after_24_hours(capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch) -> None:
+    """One day from the start (the shared module's ``OPERATOR_DAYS_DEFAULT``); ``--days`` gives 7 or 30."""
+    from app.vendor.nexkonten import common
+
     make_account("boss", role=OPERATOR)
     _, out, _ = run(capsys, "boss")
     with SessionLocal() as db:
         row = db.query(PasswordReset).one()
         lasts = row.expires_at - row.created_at
+        assert row.origin == "server"
     assert timedelta(hours=23, minutes=59) <= lasts <= timedelta(hours=24)
     later = utcnow() + timedelta(hours=24, minutes=1)
-    monkeypatch.setattr(resets, "utcnow", lambda: later)
+    monkeypatch.setattr(common, "utcnow", lambda: later)
     assert stranger().get(f"/api/v1/reset/{token_of(out)}").status_code == 404
     assert stranger("203.0.113.52").post(f"/api/v1/reset/{token_of(out)}", json={"password": NEW}).status_code == 404
 
@@ -146,8 +150,8 @@ def test_the_log_names_the_command_and_never_the_token(
     _, out, _ = run(capsys, "boss")
     written = logs.log_file().read_text(encoding="utf-8")[len(before):]
     # One line, and it says where the link came from (not "the person", which is who asks on the sign-in page).
-    assert written.count("Password link made") == 1
-    assert "Password link made name=boss by=the command python -m app.reset_link on the server" in written
+    assert written.count("Reset link made") == 1
+    assert "Reset link made name=boss by=the command on the server" in written
     assert "by=the person" not in written
     assert token_of(out) not in written
 

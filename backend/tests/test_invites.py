@@ -62,7 +62,10 @@ def test_the_operator_blocks_an_account_and_lets_it_in_again(client: TestClient,
     with SessionLocal() as db:
         assert db.query(AuthSession).filter_by(account_id=rita.id).count() == 0, "and is gone, not only refused"
     with new_client() as stranger:
-        assert stranger.post("/api/v1/auth/login", json={"name": "rita", "password": PASSWORD}).status_code == 401
+        # With the right password a blocked account hears that it is blocked (the shared account module), never before.
+        blocked = stranger.post("/api/v1/auth/login", json={"name": "rita", "password": PASSWORD})
+        assert blocked.status_code == 403 and blocked.json()["detail"]["code"] == "account_blocked"
+        assert stranger.post("/api/v1/auth/login", json={"name": "rita", "password": "wrong" * 4}).status_code == 401
     assert client.post(f"/api/v1/accounts/{rita.id}/unblock", json={"current_password": PASSWORD}).status_code == 204
     with SessionLocal() as db:
         assert db.get(Account, rita.id).blocked_at is None  # type: ignore[union-attr]
@@ -75,23 +78,23 @@ def test_two_people_on_one_link_at_the_same_moment_make_one_account(
 ) -> None:
     import threading
 
-    from app.services import accounts
+    from app.vendor.nexkonten import invites
 
     token = _token(client.post("/api/v1/invites", json={"days": 7}).json()["link"])
     # Both have found the invitation valid before either takes it: they meet between looking and taking.
     both_found = threading.Barrier(2, timeout=10)
-    check_name = accounts.check_name
+    check_name = invites.check_username
 
     met: set[str] = set()
 
-    def meet_then_check(db: object, name: str) -> str:
-        # The name is checked again when the account is made; only the first check is the meeting point.
+    def meet_then_check(name: str) -> str:
+        # Only the first check of each name is the meeting point.
         if name not in met:
             met.add(name)
             both_found.wait()
-        return check_name(db, name)
+        return check_name(name)
 
-    monkeypatch.setattr(accounts, "check_name", meet_then_check)
+    monkeypatch.setattr(invites, "check_username", meet_then_check)
     answers: list[int] = []
 
     def accept(name: str) -> None:

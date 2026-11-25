@@ -124,12 +124,16 @@ def test_an_expired_session_is_gone(client: TestClient) -> None:
 
 
 def test_the_brake_holds_a_guesser_back(client: TestClient) -> None:
+    """The shared account module's brake: the pot of the account lets five pass, the sixth failure makes it wait
+    (konten 0.3.9). While only that pot waits the answer is the one of a wrong password (decided for every app): no
+    session, and nothing tells the guesser that the account exists or that the guess was right."""
     make_account("anna")
-    for _ in range(5):
+    for _ in range(6):
         assert client.post("/api/v1/auth/login", json={"name": "anna", "password": "wrong password"}).status_code == 401
     held = client.post("/api/v1/auth/login", json={"name": "anna", "password": PASSWORD})
     # Even the right password waits: otherwise the brake would tell when a guess was right.
-    assert held.status_code == 429 and int(held.headers["Retry-After"]) > 0
+    assert held.status_code == 401 and held.json()["detail"]["code"] == "wrong_credentials"
+    assert client.get("/api/v1/auth/me").status_code == 401
 
 
 def test_the_account_locks_after_ten_failures_from_anywhere(client: TestClient) -> None:
@@ -183,7 +187,7 @@ def test_password_sign_in_off_keeps_the_operator_in(client: TestClient) -> None:
     assert client.post("/api/v1/auth/login", json={"name": "boss", "password": PASSWORD}).status_code == 200
     # No passkeys offered: no public address is set, and the test server is not called "localhost".
     assert client.get("/api/v1/auth/methods").json() == {"password": False, "providers": [], "passkeys": False, "forgot": False,
-                                                       "session_days": 30}
+                                                       "session_days": 30, "second_factor_off": False}
 
 
 def test_changing_the_password_ends_the_other_sessions(client: TestClient) -> None:
@@ -205,7 +209,8 @@ def test_changing_the_password_ends_the_other_sessions(client: TestClient) -> No
 def test_a_wrong_current_password_counts_like_a_wrong_sign_in(client: TestClient) -> None:
     anna = make_account("anna")
     sign_in(client, anna)
-    for _ in range(5):
+    # The shared module's door ``confirm:<account>``: five free, the sixth failure makes it wait.
+    for _ in range(6):
         client.put("/api/v1/auth/password", json={"current": "guess guess guess", "new": GOOD})
     held = client.put("/api/v1/auth/password", json={"current": PASSWORD, "new": GOOD})
     assert held.status_code == 429
