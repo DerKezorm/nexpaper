@@ -154,12 +154,15 @@ describe('the areas of my account', () => {
     expect(accountAreas()).toEqual(['Profile', 'Security', 'Appearance', 'Connections', 'Upload', 'Reminders', 'AI'])
   })
 
-  it('put sign-in and security in one card, with the row that signs out everywhere else after a question', async () => {
+  it("lay out Security as the shared account module's parts in its order, and sign out everywhere else after a question", async () => {
+    auth.me = { ...baseMe, password_changed_at: '2026-11-20T08:00:00Z' }
     await show('/settings/security')
-    const card = box.querySelector('#security')!
-    expect(card.textContent).toContain('Anmeldung und Sicherheit')
-    expect(card.querySelector('[data-testid="password-row"]')).toBeTruthy()
-    expect(card.querySelector('[data-testid="second-factor-row"]')).toBeTruthy()
+    // The module's parts (PAGES.security) in its order, nexpaper's own (the providers) after them.
+    const parts = [...box.querySelectorAll('[id^="security-"]')].map((part) => part.id).filter((id) => /^security-[A-Za-z]+$/.test(id))
+    expect(parts).toEqual(['security-password', 'security-secondFactor', 'security-recoveryCodes', 'security-passkeys', 'security-sessions', 'security-newSignInMail'])
+    expect(box.querySelector('#security-password')!.textContent).toContain('Zuletzt geändert am 20.11.2026')
+    const card = box.querySelector<HTMLElement>('#security-sessions')!
+    expect(card.textContent).toContain('Angemeldete Geräte')
     await click(button('Überall sonst abmelden', card))
     expect(calls.some((call) => call.url === '/api/v1/auth/logout-all')).toBe(false)
     await click(button('Überall sonst abmelden', document.body.querySelector<HTMLElement>('[role="dialog"]')!))
@@ -224,15 +227,15 @@ describe('the mail address', () => {
     expect(calls.some((call) => call.method === 'DELETE' && call.url === '/api/v1/me/email/pending')).toBe(true)
   })
 
-  it('marks an address nobody confirmed and offers the link', async () => {
+  it('marks an address nobody confirmed and offers "Per Link bestätigen"', async () => {
     auth.me = { ...baseMe, email: 'typed@example.com', email_confirmed: false, mail_links: true }
+    answers['POST /api/v1/me/email/prove'] = { ...baseMe, email: 'typed@example.com', email_confirmed: false, email_pending: 'typed@example.com' }
     await show()
     expect(box.querySelector('[data-testid="mail-state"]')!.textContent).toContain('Mailadresse nicht bestätigt')
-    // The link again: it asks for the password, then "Speichern" sends it to the address there is.
-    await click(button('Bestätigung schicken'))
-    await type(lastDialog().querySelector<HTMLInputElement>('input[type="password"]'), 'the own password')
-    await click(button('Speichern', lastDialog()))
-    expect(calls.find((call) => call.method === 'PUT' && call.url === '/api/v1/me/email')!.body).toEqual({ email: 'typed@example.com', password: 'the own password' })
+    // The module's button (konten 0.3.10, profiles.prove_email): the link goes to the address there is.
+    await click(button('Per Link bestätigen'))
+    expect(calls.some((call) => call.method === 'POST' && call.url === '/api/v1/me/email/prove')).toBe(true)
+    expect(auth.setMe).toHaveBeenCalled()
   })
 
   it('says what stands in the way, in words', async () => {

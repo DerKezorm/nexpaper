@@ -4,8 +4,8 @@
  * the switch for the notice of a new sign-in. The operator's card under Settings, Web Push: ready and how many
  * devices, the contact for the push services, the key pair, more push services beyond the known ones.
  */
-import { Bell, BellRing, Check, Laptop, MonitorSmartphone, Pencil, Smartphone, Trash2 } from 'lucide-react'
-import { useEffect, useId, useState, type ReactNode } from 'react'
+import { Bell, BellRing, Check, Laptop, Pencil, Smartphone, Trash2 } from 'lucide-react'
+import { useEffect, useId, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { ApiError, authApi, pushApi, type Me, type PushDevice, type PushSettings } from '../../api/client'
@@ -181,25 +181,15 @@ export function PushDevicesCard({ me }: { me: Me }) {
   )
 }
 
-/** Under Security: the switch for the notice of a new sign-in, on from the start, and the browsers signed in. */
-export function SignInNoticeCard({ me, children }: { me: Me; children?: ReactNode }) {
+/** Under Security, the module's part "newSignInMail" (`PAGES.security`): the switch for the mail of a new sign-in, on
+ * from the start. */
+export function SignInNoticeCard({ me }: { me: Me }) {
   const { t } = useTranslation()
   const { setMe } = useAuth()
   const action = useAction()
   const on = me.profile.notify_login !== false
-  // How long a sign-in lasts without use (NEXPAPER_SESSION_DAYS); the sentence waits until the server said it.
-  const [days, setDays] = useState<number | null>(null)
-  useEffect(() => {
-    let alive = true
-    authApi.methods().then((methods) => alive && typeof methods.session_days === 'number' && setDays(methods.session_days), () => undefined)
-    return () => {
-      alive = false
-    }
-  }, [])
-  const text = days && days > 0 ? `${t('me.devices.text')} ${t('me.devices.ends', { count: days })}` : t('me.devices.text')
   return (
-    <Card icon={MonitorSmartphone} title={t('me.devices.title')} text={text}>
-      {children}
+    <Card id="security-newSignInMail" icon={Bell} title={t('account.newSignInMail')} text={t('account.newSignInMailHint')}>
       <Toggle
         label={t('me.devices.notify')}
         hint={t('me.devices.notifyHint')}

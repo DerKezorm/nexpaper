@@ -292,15 +292,11 @@
       "roleLine": "Role: {{role}} · Sign-in name: {{name}}"
     },
     "password": {
-      "title": "Password",
-      "text": "At least 12 characters.",
       "current": "Current password",
       "new": "New password",
       "again": "Once more",
       "submit": "Change password",
-      "done": "Password changed. Every other device is signed out.",
-      "change": "Change",
-      "lastChanged": "Last changed on {{when}}"
+      "done": "Password changed. Every other device is signed out."
     },
     "role": {
       "operator": "Operator",
@@ -346,8 +342,6 @@
       "probedSome": "Test sent to {{sent}} of {{all}} devices."
     },
     "devices": {
-      "title": "Signed-in devices",
-      "text": "Where you are signed in.",
       "ends_one": "A sign-in ends by itself after {{count}} day without use.",
       "ends_other": "A sign-in ends by itself after {{count}} days without use.",
       "notify": "Tell me about a new sign-in",
@@ -361,8 +355,6 @@
     },
     "justNow": "just now",
     "passkeys": {
-      "title": "Passkeys",
-      "text": "Sign in with your fingerprint, face or the device's PIN, without password and without code. A passkey counts as two factors by itself and cannot be phished.",
       "add": "Add a passkey",
       "create": "Add",
       "how": "The browser will ask for your fingerprint, face or PIN. The passkey stays on the device or in your keychain.",
@@ -393,21 +385,11 @@
       "text": "Ends your session in this browser. Your documents stay as they are.",
       "provider": "You stay signed in at your sign-in provider; only nexpaper signs you out.",
       "button": "Sign out"
-    },
-    "security": {
-      "title": "Sign-in and security"
-    },
-    "sessions": {
-      "text": "Signs you out of every other browser, for instance after a lost phone. Paired devices you disconnect one by one under Connections."
     }
   },
   "twofactor": {
-    "title": "Second factor",
-    "lead": "Besides the password, a code from an app on your phone. Recovery codes on paper get you in when the phone is gone.",
     "off": "Off.",
-    "on_one": "On. {{count}} recovery code left.",
-    "on_other": "On. {{count}} recovery codes left.",
-    "enable": "Set up",
+    "onShort": "On.",
     "scan": "Scan this code with the app, or type the key below into it. Then give the code the app shows, and your password.",
     "qr": "QR code for the authenticator app",
     "code": "Code from the app",
@@ -1068,7 +1050,6 @@
     "pending": "Link sent to {{address}}.",
     "stays": "Until you open it, {{address}} stays.",
     "withdraw": "Withdraw",
-    "confirmNow": "Send confirmation",
     "remove": "Remove the address",
     "removed": "Address removed.",
     "off": "The operator has not set up a mail server yet, so no link can be sent.",

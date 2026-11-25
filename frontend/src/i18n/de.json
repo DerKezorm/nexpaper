@@ -292,15 +292,11 @@
       "roleLine": "Rolle: {{role}} · Anmeldename: {{name}}"
     },
     "password": {
-      "title": "Passwort",
-      "text": "Mindestens 12 Zeichen.",
       "current": "Jetziges Passwort",
       "new": "Neues Passwort",
       "again": "Noch einmal",
       "submit": "Passwort ändern",
-      "done": "Passwort geändert. Alle anderen Geräte sind abgemeldet.",
-      "change": "Ändern",
-      "lastChanged": "Zuletzt geändert am {{when}}"
+      "done": "Passwort geändert. Alle anderen Geräte sind abgemeldet."
     },
     "role": {
       "operator": "Betreiber",
@@ -346,8 +342,6 @@
       "probedSome": "Probe an {{sent}} von {{all}} Geräten verschickt."
     },
     "devices": {
-      "title": "Angemeldete Geräte",
-      "text": "Wo du gerade angemeldet bist.",
       "ends_one": "Eine Anmeldung läuft nach {{count}} Tag ohne Nutzung von selbst ab.",
       "ends_other": "Eine Anmeldung läuft nach {{count}} Tagen ohne Nutzung von selbst ab.",
       "notify": "Bei einer neuen Anmeldung Bescheid geben",
@@ -361,8 +355,6 @@
     },
     "justNow": "gerade eben",
     "passkeys": {
-      "title": "Passkeys",
-      "text": "Anmelden mit Fingerabdruck, Gesicht oder der PIN des Geräts, ohne Passwort und ohne Code. Ein Passkey zählt selbst als zwei Faktoren und lässt sich nicht abfischen.",
       "add": "Passkey anlegen",
       "create": "Anlegen",
       "how": "Gleich fragt der Browser nach Fingerabdruck, Gesicht oder PIN. Der Passkey bleibt auf dem Gerät oder in deinem Schlüsselbund.",
@@ -393,21 +385,11 @@
       "text": "Beendet deine Sitzung in diesem Browser. Deine Dokumente bleiben, wie sie sind.",
       "provider": "Bei deinem Anmeldeanbieter bleibst du angemeldet; nur nexpaper meldet dich ab.",
       "button": "Abmelden"
-    },
-    "security": {
-      "title": "Anmeldung und Sicherheit"
-    },
-    "sessions": {
-      "text": "Meldet dich in allen anderen Browsern ab, etwa nach einem verlorenen Handy. Gekoppelte Geräte trennst du einzeln unter Verbindungen."
     }
   },
   "twofactor": {
-    "title": "Zweiter Faktor",
-    "lead": "Neben dem Passwort ein Code aus einer App auf dem Handy. Wiederherstellungscodes auf Papier bringen dich hinein, wenn das Handy weg ist.",
     "off": "Aus.",
-    "on_one": "An. Noch {{count}} Wiederherstellungscode.",
-    "on_other": "An. Noch {{count}} Wiederherstellungscodes.",
-    "enable": "Einrichten",
+    "onShort": "An.",
     "scan": "Scanne diesen Code mit der App oder tippe den Schlüssel darunter ein. Dann gib den Code ein, den die App zeigt, und dein Passwort.",
     "qr": "QR-Code für die Authenticator-App",
     "code": "Code aus der App",
@@ -1068,7 +1050,6 @@
     "pending": "Link an {{address}} verschickt.",
     "stays": "Bis du ihn öffnest, bleibt {{address}}.",
     "withdraw": "Zurückziehen",
-    "confirmNow": "Bestätigung schicken",
     "remove": "Adresse entfernen",
     "removed": "Adresse entfernt.",
     "off": "Der Betreiber hat noch keinen Mailserver eingerichtet, deshalb kann kein Link verschickt werden.",

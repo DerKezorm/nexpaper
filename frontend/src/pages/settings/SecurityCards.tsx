@@ -1,9 +1,10 @@
 /**
- * The own account, Security: the second factor (a code from an app), passkeys, and the signed-in devices
- * with "sign out everywhere else" and the notice of a new sign-in. The server decides; the cards show and ask.
+ * The own account, Security, as the parts of the shared account module (`PAGES.security`, konten 0.3.10): the second
+ * factor (a code from an app), the recovery codes, passkeys, and the signed-in devices with "sign out everywhere else".
+ * Titles, hints and buttons are the module's. The server decides; the cards show and ask.
  */
-import { Fingerprint, Laptop, ShieldCheck, Smartphone, Trash2 } from 'lucide-react'
-import { useCallback, useEffect, useState } from 'react'
+import { Fingerprint, KeyRound, Laptop, MonitorSmartphone, ShieldCheck, Smartphone, Trash2 } from 'lucide-react'
+import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { Trans, useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 
@@ -13,8 +14,8 @@ import { useConfirm } from '../../components/useConfirm'
 import { KeepCodes, RecoveryCodes } from '../../components/RecoveryCodes'
 import { ago, daysAgo } from '../../lib/ago'
 import { createPasskey, passkeysAvailable } from '../../lib/webauthn'
+import { AccountButton } from '../../components/AccountButton'
 import { useAuth } from '../../state/auth'
-import { SignInNoticeCard } from './PushCards'
 import { Button, Card, Confirm, Feedback, Input, useAction } from './ui'
 
 /** Below this many recovery codes the account is told to make new ones. */
@@ -47,8 +48,11 @@ function FreshCodes({ codes, me, onDone }: { codes: string[]; me: Me; onDone: ()
 /** Said after "Überall sonst abmelden" (the row of "Anmeldung und Sicherheit"): the list of devices asks again. */
 export const SESSIONS_CHANGED = 'nexpaper:sessions-changed'
 
-/** `bare`: only its content, for the row "Zweiter Faktor" of "Anmeldung und Sicherheit" (as nexnotes). */
-export function SecondFactorCard({ me, bare = false }: { me: Me; bare?: boolean }) {
+/** The module's part "secondFactor" (`part="factor"`: set up and remove the authenticator) or "recoveryCodes"
+ * (`part="codes"`: how many are left, new ones); without `part` both in one card. */
+export function SecondFactorCard({ me, part }: { me: Me; part?: 'factor' | 'codes' }) {
+  const factorPart = part !== 'codes'
+  const codesPart = part !== 'factor'
   const { t } = useTranslation()
   const { refresh } = useAuth()
   const [enrolment, setEnrolment] = useState<Enrolment | null>(null)
@@ -146,31 +150,32 @@ export function SecondFactorCard({ me, bare = false }: { me: Me; bare?: boolean 
     body = (
       <div className="space-y-3">
         {me.totp ? (
-          <div className="flex flex-wrap items-center gap-3 text-sm">
-            <span className="text-ink-2">{t('twofactor.on', { count: me.two_factor_recovery_left })}</span>
-            <Button onClick={() => setAsking('renew')}>{t('twofactor.renew')}</Button>
-            {!last && (
-              <Button danger onClick={() => setAsking('disable')}>
-                {t('twofactor.disable')}
-              </Button>
-            )}
-            {last && <span className="text-xs text-muted">{t('twofactor.required')}</span>}
-          </div>
+          factorPart && (
+            <div className="flex flex-wrap items-center gap-3 text-sm">
+              <span className="text-ink-2">{t('twofactor.onShort')}</span>
+              {!last && <AccountButton name="account.totpRemove" onClick={() => setAsking('disable')} />}
+              {last && <span className="text-xs text-muted">{t('twofactor.required')}</span>}
+            </div>
+          )
         ) : (
-          <div className="flex flex-wrap items-center gap-3 text-sm">
-            <span className="text-ink-2">{t('twofactor.off')}</span>
-            <Button primary busy={action.busy} onClick={() => void action.run(async () => setEnrolment(await api<Enrolment>('/api/v1/auth/totp/begin', { method: 'POST' })))}>
-              {t('twofactor.enable')}
-            </Button>
-          </div>
+          factorPart && (
+            <div className="flex flex-wrap items-center gap-3 text-sm">
+              <span className="text-ink-2">{t('twofactor.off')}</span>
+              <AccountButton
+                name="account.totpSetup"
+                busy={action.busy}
+                onClick={() => void action.run(async () => setEnrolment(await api<Enrolment>('/api/v1/auth/totp/begin', { method: 'POST' })))}
+              />
+            </div>
+          )
         )}
-        {!me.totp && me.passkeys > 0 && (
+        {codesPart && me.two_factor && (
           <div className="flex flex-wrap items-center gap-3 text-sm">
             <span className="text-ink-2">{t('twofactor.codesLeft', { count: me.two_factor_recovery_left })}</span>
-            <Button onClick={() => setAsking('renew')}>{t('twofactor.renew')}</Button>
+            <AccountButton name="account.recoveryCodesNew" onClick={() => setAsking('renew')} />
           </div>
         )}
-        {me.two_factor && me.two_factor_recovery_left < LOW_CODES && (
+        {codesPart && me.two_factor && me.two_factor_recovery_left < LOW_CODES && (
           <p role="note" className="rounded-xl border border-warn/40 bg-warn/10 px-3 py-2 text-xs text-warn">
             {t('twofactor.lowCodes')}
           </p>
@@ -178,10 +183,15 @@ export function SecondFactorCard({ me, bare = false }: { me: Me; bare?: boolean 
         <Feedback problem={action.problem} />
       </div>
     )
-  if (bare) return <div data-testid="second-factor">{body}</div>
+  if (part === 'codes')
+    return (
+      <Card id="security-recoveryCodes" icon={KeyRound} title={t('account.recoveryCodes')} text={t('account.recoveryCodesHint')}>
+        <div data-testid="recovery-codes-part">{body}</div>
+      </Card>
+    )
   return (
-    <Card icon={ShieldCheck} title={t('twofactor.title')} text={t('twofactor.lead')}>
-      {body}
+    <Card id="security-secondFactor" icon={ShieldCheck} title={t('account.secondFactor')} text={t('account.secondFactorHint')}>
+      <div data-testid="second-factor">{body}</div>
     </Card>
   )
 }
@@ -257,7 +267,7 @@ export function PasskeysCard({ me }: { me: Me }) {
   const inBrowser = passkeysAvailable()
   const available = inBrowser && offered
   return (
-    <Card icon={Fingerprint} title={t('me.passkeys.title')} text={t('me.passkeys.text')}>
+    <Card id="security-passkeys" icon={Fingerprint} title={t('account.passkeys')} text={t('account.passkeysHint')}>
       {list.length > 0 && (
         <ul className="space-y-2" data-testid="passkeys">
           {list.map((key) => (
@@ -290,9 +300,7 @@ export function PasskeysCard({ me }: { me: Me }) {
         />
       ) : (
         <div>
-          <Button primary={list.length === 0} disabled={!available} onClick={() => setAdding(true)}>
-            <Fingerprint size={16} /> {t('me.passkeys.add')}
-          </Button>
+          <AccountButton name="account.passkeyAdd" disabled={!available} onClick={() => setAdding(true)} />
           {!available && (
             <p className="mt-2 text-xs text-muted" data-testid="passkeys-unavailable">
               {/* The browser cannot (no https, no API): that is said first. Otherwise the server has no public address. */}
@@ -342,13 +350,23 @@ export function PasskeysCard({ me }: { me: Me }) {
   )
 }
 
-/** "Angemeldete Geräte": the browsers where the account is signed in, sign out one; and the notice of a new one. The
- * paired devices and apps stand under Connections, "Geräte", as in nexnotes. */
-export function DevicesCard({ me }: { me: Me }) {
+/** The module's part "sessions": the browsers where the account is signed in, sign out one, and "sign out everywhere
+ * else" (`everywhereElse`, the module's button). The paired devices and apps stand under Connections, "Geräte", as in
+ * nexnotes. How long a sign-in lasts without use comes last, once the server said it. */
+export function DevicesCard({ everywhereElse }: { me?: Me; everywhereElse?: ReactNode }) {
   const { t, i18n } = useTranslation()
   const [list, setList] = useState<SignedSession[] | null>(null)
   const action = useAction()
   const { ask, dialog } = useConfirm()
+  // How long a sign-in lasts without use (NEXPAPER_SESSION_DAYS); the sentence waits until the server said it.
+  const [days, setDays] = useState<number | null>(null)
+  useEffect(() => {
+    let alive = true
+    authApi.methods().then((methods) => alive && typeof methods.session_days === 'number' && setDays(methods.session_days), () => undefined)
+    return () => {
+      alive = false
+    }
+  }, [])
   const load = useCallback(() => {
     authApi.sessions().then(setList, () => undefined)
   }, [])
@@ -358,7 +376,7 @@ export function DevicesCard({ me }: { me: Me }) {
     return () => window.removeEventListener(SESSIONS_CHANGED, load)
   }, [load])
   return (
-    <SignInNoticeCard me={me}>
+    <Card id="security-sessions" icon={MonitorSmartphone} title={t('account.sessions')} text={t('account.signOutEverywhereHint')}>
       {list && (
         <ul className="space-y-2" data-testid="sessions">
           {list.map((row) => {
@@ -396,8 +414,14 @@ export function DevicesCard({ me }: { me: Me }) {
           })}
         </ul>
       )}
+      {everywhereElse}
+      {days !== null && days > 0 && (
+        <p className="m-0 text-xs text-muted" data-testid="session-days">
+          {t('me.devices.ends', { count: days })}
+        </p>
+      )}
       <Feedback problem={action.problem} done={action.done} />
       {dialog}
-    </SignInNoticeCard>
+    </Card>
   )
 }

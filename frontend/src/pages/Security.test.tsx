@@ -225,9 +225,10 @@ describe('the own account, Security', () => {
     await click(button('Sitzung beenden', document.body.querySelector<HTMLElement>('[role="dialog"]')!))
     expect(calls.some(sessionCall)).toBe(true)
     expect(box.textContent).toContain('Safari unter iPhone ist abgemeldet.')
-    // "Überall sonst abmelden" is a row of "Anmeldung und Sicherheit" now, as in nexnotes (Account.test.tsx).
-    expect(button('Überall sonst abmelden', box)).toBeUndefined()
-    expect(box.textContent).toContain('Bei einer neuen Anmeldung Bescheid geben')
+    // The module's part "sessions": its title and hint; "Überall sonst abmelden" comes with the page (Account.test.tsx),
+    // the mail of a new sign-in is a part of its own.
+    expect(box.textContent).toContain('Angemeldete Geräte')
+    expect(box.textContent).not.toContain('Bei einer neuen Anmeldung Bescheid geben')
   })
 
   it('lists the passkeys and removes one with the password', async () => {
@@ -244,7 +245,7 @@ describe('the own account, Security', () => {
     expect(calls.find((call) => call.url === `/api/v1/auth/passkeys/${id}/remove`)!.body).toEqual({ password: 'the own password' })
   })
 
-  describe('the hint under "Passkey anlegen"', () => {
+  describe('the hint under "Passkey hinzufügen"', () => {
     const hint = () => box.querySelector('[data-testid="passkeys-unavailable"]')
 
     it('tells the operator where to enter the public address, with a link there, when the server has none', async () => {
@@ -254,7 +255,7 @@ describe('the own account, Security', () => {
       expect(hint()!.textContent).toBe('Trag zuerst die öffentliche Adresse ein (Einstellungen → Anmeldung).')
       expect(hint()!.querySelector('a')!.getAttribute('href')).toBe('/settings/sign-in')
       expect(hint()!.textContent).not.toContain('nur über https')
-      expect(button('Passkey anlegen', box)!.disabled).toBe(true)
+      expect(button('Passkey hinzufügen', box)!.disabled).toBe(true)
     })
 
     it('tells a member that the operator has to enter it, and links nowhere', async () => {
@@ -290,17 +291,17 @@ describe('the own account, Security', () => {
       passkeysInTheBrowser(true)
       await show(<PasskeysCard me={me} />, '/konto')
       expect(hint()).toBeNull()
-      expect(button('Passkey anlegen', box)!.disabled).toBe(false)
+      expect(button('Passkey hinzufügen', box)!.disabled).toBe(false)
     })
   })
 
   it('cannot turn off the last factor where the operator requires one', async () => {
     await show(<SecondFactorCard me={me} />, '/konto')
     expect(box.textContent).toContain('Ausschalten geht nicht: Der Betreiber verlangt ihn für alle.')
-    expect(button('Ausschalten', box)).toBeUndefined()
+    expect(button('Authenticator-App entfernen', box)).toBeUndefined()
     act(() => root.unmount())
     await show(<SecondFactorCard me={{ ...me, passkeys: 1 }} />, '/konto')
-    expect(button('Ausschalten', box)).toBeTruthy()
+    expect(button('Authenticator-App entfernen', box)).toBeTruthy()
   })
 })
 

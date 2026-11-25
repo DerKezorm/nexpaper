@@ -242,12 +242,12 @@ describe('what the server offers', () => {
     answers['GET /api/v1/auth/passkeys'] = []
     answers['GET /api/v1/auth/methods'] = { password: true, providers: [], passkeys: false }
     await show(<PasskeysCard me={me} />, '/konto')
-    expect(button('Passkey anlegen', box)!.disabled).toBe(true)
+    expect(button('Passkey hinzufügen', box)!.disabled).toBe(true)
     act(() => root.unmount())
     box.remove()
     answers['GET /api/v1/auth/methods'] = { password: true, providers: [], passkeys: true }
     await show(<PasskeysCard me={me} />, '/konto')
-    expect(button('Passkey anlegen', box)!.disabled).toBe(false)
+    expect(button('Passkey hinzufügen', box)!.disabled).toBe(false)
   })
 
   it('says why the brake and the proxy are red when public networks are trusted', async () => {

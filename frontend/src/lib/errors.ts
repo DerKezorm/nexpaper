@@ -1,5 +1,5 @@
 import i18n from '../i18n'
-import { accountErrorKey, ACCOUNT_ERROR_CODES } from '../vendor/nexkonten/konten'
+import { accountErrorKeyOf, ACCOUNT_ERROR_CODES } from '../vendor/nexkonten/konten'
 import { oidcErrorKey } from '../vendor/nexoidc/oidc'
 
 /** The codes nexpaper's server answers with in place of the shared account module's (``OLD_CODES`` in
@@ -20,11 +20,13 @@ export function errorText(code: string, values: Record<string, unknown> = {}): s
   // same in every nex app; so do those of accounts (`account.error.*`). They go before nexpaper's own.
   const signIn = oidcErrorKey(code)
   if (signIn) return i18n.t(signIn)
-  const moduleCode = OLD_ACCOUNT_CODES[code] ?? code
+  // The server names the module's own code beside 1.12.0's (`account_code`, konten 0.3.10).
+  const accountCode = typeof values.account_code === 'string' ? values.account_code : null
+  const moduleCode = accountCode ?? OLD_ACCOUNT_CODES[code] ?? code
   // nexpaper's own sentence names the limit the server sends along (`max_mb`); the module's does not (yet).
   const ownFirst = OWN_FIRST.includes(code) && i18n.exists(`errors.${code}`)
   if (!ownFirst && (ACCOUNT_ERROR_CODES as readonly string[]).includes(moduleCode)) {
-    const key = accountErrorKey(code, OLD_ACCOUNT_CODES)
+    const key = accountErrorKeyOf({ code, account_code: accountCode }, OLD_ACCOUNT_CODES)
     if (i18n.exists(key)) return i18n.t(key, values)
   }
   const key = `errors.${code}`

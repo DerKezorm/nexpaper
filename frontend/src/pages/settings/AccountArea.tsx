@@ -5,7 +5,7 @@
  * the paired devices and the API keys, then nexpaper's own: the iPhone shortcut and Web Push on the devices), and nexpaper's own: Upload (where uploads go, where a phone
  * starts), Reminders (of deadlines), AI (the own switch, and what the operator set up).
  */
-import { KeyRound, Lock, LogOut, ShieldCheck, Sparkles, User } from 'lucide-react'
+import { KeyRound, LogOut, Sparkles, User } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { Trans, useTranslation } from 'react-i18next'
 import { Link, useNavigate } from 'react-router-dom'
@@ -13,7 +13,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { api, authApi, type Me, type ProfileChange, type RemainingAccess } from '../../api/client'
 import { AccountButton } from '../../components/AccountButton'
 import { confirmOf } from '../../lib/accountButton'
-import { PAGES, screenFields } from '../../vendor/nexkonten/konten'
+import { pageOrder, PAGES, passwordChanged, screenFields } from '../../vendor/nexkonten/konten'
 import { ConfirmDialog, Field, Notice, SelectField } from '../../vendor/nexui'
 import { ApiKeys } from '../../components/ApiKeys'
 import { Avatar } from '../../components/Avatar'
@@ -30,7 +30,7 @@ import { UploadRequestsCard } from '../../components/UploadRequests'
 import { MyIntakeCards } from './IntakeCards'
 import { LooksCard, PhoneCard } from './PersonalCards'
 import { PdfPasswordsCard } from './PdfPasswordsCard'
-import { PushDevicesCard } from './PushCards'
+import { PushDevicesCard, SignInNoticeCard } from './PushCards'
 import { RemindersPart } from './RemindersCards'
 import { DevicesCard, PasskeysCard, SecondFactorCard, SESSIONS_CHANGED } from './SecurityCards'
 import { Card, Feedback, Input, Toggle, useAction } from './ui'
@@ -206,14 +206,9 @@ function ProfileCard({ me }: { me: Me }) {
       setAsking(false)
       setPassword('')
     }, t('me.profile.saved'))
-  /** "Send link" to the address there is, which counts but is not proven yet: the intake trusts it once opened. */
-  const prove = (own: string) =>
-    void action.run(async () => {
-      setMe(await api<Me>('/api/v1/me/email', { method: 'PUT', body: { email: me.email, password: own } }))
-      setAsking(false)
-      setPassword('')
-    }, t('mailAddress.sent'))
-  const [proving, setProving] = useState(false)
+  /** "Per Link bestätigen" (the module's `account.emailProve`, `profiles.prove_email`): a link to the address there
+   * is, which counts but is not proven yet; the intake trusts it once the link is opened. */
+  const prove = () => void action.run(async () => setMe(await authApi.emailProve()), t('mailAddress.sent'))
   const fields = screenFields('profile')
   const field = (name: 'displayName' | 'username' | 'email') => fields.find((entry) => entry.field === name)!
   return (
@@ -284,15 +279,12 @@ function ProfileCard({ me }: { me: Me }) {
             <span className={me.email_confirmed ? 'text-ok' : 'text-warn'}>
               {me.email_confirmed ? t('mailAddress.confirmedLine') : t('mailAddress.unconfirmedLine')}
             </span>
-            {!me.email_confirmed && me.mail_links && (
-              <>
-                {' · '}
-                <button type="button" className="font-semibold text-accent hover:underline" onClick={() => (withPassword ? setProving(true) : prove(''))}>
-                  {t('mailAddress.confirmNow')}
-                </button>
-              </>
-            )}
           </p>
+        )}
+        {me.email && !me.email_pending && !me.email_confirmed && me.mail_links && (
+          <div>
+            <AccountButton name="account.emailProve" busy={action.busy} onClick={prove} />
+          </div>
         )}
         {me.email_pending && (
           <Notice tone="ok" testId="mail-pending">
@@ -356,11 +348,11 @@ function ProfileCard({ me }: { me: Me }) {
         {t('account.role')}: {t(me.role === 'operator' ? 'account.roleOperator' : 'account.roleMember')}
       </p>
       <Feedback problem={action.problem} done={action.done} values={action.values} />
-      {(asking || proving) && (
+      {asking && (
         <ConfirmDialog
           title={t('account.save')}
           text={
-            changed.email && !values.email.trim() && !proving
+            changed.email && !values.email.trim()
               ? `${t('confirm.mailAddress.text', { address: me.email })} ${t('account.confirmWithPassword')}`
               : t('account.confirmWithPassword')
           }
@@ -371,15 +363,9 @@ function ProfileCard({ me }: { me: Me }) {
           confirmDisabled={!password}
           onCancel={() => {
             setAsking(false)
-            setProving(false)
             setPassword('')
           }}
-          onConfirm={() => {
-            if (proving) {
-              setProving(false)
-              prove(password)
-            } else save(password)
-          }}
+          onConfirm={() => save(password)}
         >
           <Field label={t('account.currentPassword')} type="password" autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} />
           <Feedback problem={action.problem} values={action.values} />
@@ -390,34 +376,55 @@ function ProfileCard({ me }: { me: Me }) {
   )
 }
 
+/** The parts of "Security", top to bottom: the module's (`PAGES.security`) in its order, then nexpaper's own: the
+ * sign-in providers. */
+const SECURITY_PARTS = pageOrder('security', ['providers'])
+
 /**
- * "Sicherheit" as in nexnotes: one card "Anmeldung und Sicherheit" with a row each for the providers, the password (it
- * opens to change it), the second factor and signing out everywhere else. nexpaper's own cards follow it, as nexnotes'
- * own follow there: passkeys, and the signed-in devices with the notice of a new sign-in. Until the second factor is
- * set up the server answers nothing else: only its row and the passkeys are shown.
+ * "Sicherheit" as the shared account module lays it out (`PAGES.security`, konten 0.3.10), the same in every nex app:
+ * one card per part with the module's title, hint and buttons, in the module's order (password with when it was
+ * changed last, second factor, recovery codes, passkeys, signed-in devices with "sign out everywhere else", the mail of
+ * a new sign-in), then nexpaper's own: the sign-in providers. Until the second factor is set up the server answers
+ * nothing else: only its part and the passkeys are shown.
  */
 function Security({ me }: { me: Me }) {
   const { t } = useTranslation()
   const restricted = Boolean(me.second_factor_setup_required)
+  const shown = (part: string): boolean => {
+    if (part === 'secondFactor' || part === 'passkeys') return true
+    if (restricted) return false
+    if (part === 'password') return me.sign_in === 'password'
+    if (part === 'recoveryCodes') return Boolean(me.two_factor)
+    return true
+  }
   return (
     <>
       {!restricted && me.new_password_origin && <RemainingAccessNotice />}
-      <Card id="security" icon={ShieldCheck} title={t('me.security.title')}>
-        {restricted && (
-          <p role="note" className="rounded-[9px] border border-warn/40 bg-warn/10 px-4 py-3 text-sm text-warn">
-            {t('me.setupFirst')}
-          </p>
-        )}
-        {!restricted && <MyProviders me={me} bare />}
-        {!restricted && me.sign_in === 'password' && <PasswordRow changedAt={me.password_changed_at ?? null} />}
-        <div className="rounded-[12px] border border-line px-3 py-2.5" data-testid="second-factor-row">
-          <h3 className="mb-2 text-sm font-medium">{t('twofactor.title')}</h3>
-          <SecondFactorCard me={me} bare />
-        </div>
-        {!restricted && <EverywhereElseRow />}
-      </Card>
-      <PasskeysCard me={me} />
-      {!restricted && <DevicesCard me={me} />}
+      {restricted && (
+        <p role="note" className="rounded-[9px] border border-warn/40 bg-warn/10 px-4 py-3 text-sm text-warn">
+          {t('me.setupFirst')}
+        </p>
+      )}
+      {SECURITY_PARTS.filter(shown).map((part) => {
+        switch (part) {
+          case 'password':
+            return <PasswordPart key={part} changedAt={me.password_changed_at ?? null} />
+          case 'secondFactor':
+            return <SecondFactorCard key={part} me={me} part="factor" />
+          case 'recoveryCodes':
+            return <SecondFactorCard key={part} me={me} part="codes" />
+          case 'passkeys':
+            return <PasskeysCard key={part} me={me} />
+          case 'sessions':
+            return <DevicesCard key={part} me={me} everywhereElse={<EverywhereElse />} />
+          case 'newSignInMail':
+            return <SignInNoticeCard key={part} me={me} />
+          case 'providers':
+            return <MyProviders key={part} me={me} />
+          default:
+            return null
+        }
+      })}
     </>
   )
 }
@@ -467,59 +474,63 @@ function RemainingAccessNotice() {
   )
 }
 
-/** The password as a row that opens, as in nexnotes: the three fields and the button inside; when it was last set. */
-function PasswordRow({ changedAt }: { changedAt: string | null }) {
+/** The module's part "password": when it was changed last (`passwordChanged`, the module's line) and "Change password",
+ * which opens the three fields. */
+function PasswordPart({ changedAt }: { changedAt: string | null }) {
   const { t, i18n } = useTranslation()
+  const [open, setOpen] = useState(false)
   const [pw, setPw] = useState({ current: '', next: '', again: '' })
   const password = useAction()
   const [unsent, setUnsent] = useState<string | null>(null)
+  const line = passwordChanged(changedAt)
   return (
-    <details className="rounded-[12px] border border-line px-3 py-2.5 text-sm" data-testid="password-row">
-      <summary className="flex cursor-pointer list-none items-center gap-3">
-        <KeyRound className="h-4 w-4 text-muted" aria-hidden />
-        <span className="flex-1 font-medium">{t('me.password.title')}</span>
-        <span className="text-xs text-muted">
-          {changedAt ? t('me.password.lastChanged', { when: new Date(changedAt).toLocaleDateString(i18n.language) }) : t('me.password.text')}
-        </span>
-        <span className="btn btn-ghost h-8 px-3 text-xs font-medium">{t('me.password.change')}</span>
-      </summary>
-      <form
-        className="mt-3 space-y-3"
-        onSubmit={(event) => {
-          event.preventDefault()
-          // Said here, before anything goes to the server.
-          const missing = !pw.current ? 'current_password_missing' : !pw.next ? 'password_missing' : pw.next !== pw.again ? 'password_mismatch' : null
-          setUnsent(missing)
-          if (missing) return
-          void password.run(async () => {
-            await authApi.password(pw.current, pw.next, pw.again)
-            setPw({ current: '', next: '', again: '' })
-          }, t('me.password.done'))
-        }}
-      >
-        <Input label={t('me.password.current')} type="password" value={pw.current} onChange={(current) => setPw({ ...pw, current })} autoComplete="current-password" />
-        <Input label={t('me.password.new')} type="password" value={pw.next} onChange={(next) => setPw({ ...pw, next })} autoComplete="new-password" />
-        <Input label={t('me.password.again')} type="password" value={pw.again} onChange={(again) => setPw({ ...pw, again })} autoComplete="new-password" />
-        <AccountButton name="account.passwordChange" type="submit" busy={password.busy}>
-          {t('me.password.submit')}
-        </AccountButton>
-        <Feedback problem={unsent ?? password.problem} done={password.done} />
-      </form>
-    </details>
+    <Card id="security-password" icon={KeyRound} title={t('account.password')}>
+      <p className="m-0 text-sm text-ink-2" data-testid="password-changed">
+        {t(line.text, { day: line.date ? new Date(line.date).toLocaleDateString(i18n.language) : '' })}
+      </p>
+      {!open && (
+        <div>
+          <AccountButton name="account.passwordChange" onClick={() => setOpen(true)} />
+        </div>
+      )}
+      {open && (
+        <form
+          className="space-y-3"
+          data-testid="password-form"
+          onSubmit={(event) => {
+            event.preventDefault()
+            // Said here, before anything goes to the server.
+            const missing = !pw.current ? 'current_password_missing' : !pw.next ? 'password_missing' : pw.next !== pw.again ? 'password_mismatch' : null
+            setUnsent(missing)
+            if (missing) return
+            void password.run(async () => {
+              await authApi.password(pw.current, pw.next, pw.again)
+              setPw({ current: '', next: '', again: '' })
+            }, t('me.password.done'))
+          }}
+        >
+          <Input label={t('me.password.current')} type="password" value={pw.current} onChange={(current) => setPw({ ...pw, current })} autoComplete="current-password" />
+          <Input label={t('me.password.new')} type="password" value={pw.next} onChange={(next) => setPw({ ...pw, next })} autoComplete="new-password" />
+          <Input label={t('me.password.again')} type="password" value={pw.again} onChange={(again) => setPw({ ...pw, again })} autoComplete="new-password" />
+          <AccountButton name="account.passwordChange" type="submit" busy={password.busy}>
+            {t('me.password.submit')}
+          </AccountButton>
+        </form>
+      )}
+      <Feedback problem={unsent ?? password.problem} done={password.done} />
+    </Card>
   )
 }
 
-/** "Überall sonst abmelden" as nexnotes' row: every other browser and paired device, after a question. */
-function EverywhereElseRow() {
+/** "Überall sonst abmelden", the module's button of the part "sessions": every other browser and paired device, after a
+ * question. */
+function EverywhereElse() {
   const { t } = useTranslation()
   const action = useAction()
   const { ask, dialog } = useConfirm()
   return (
-    <div className="space-y-2 rounded-[12px] border border-line px-3 py-2.5 text-sm" data-testid="everywhere-else">
+    <div className="space-y-2 text-sm" data-testid="everywhere-else">
       <div className="flex flex-wrap items-center gap-3">
-        <Lock className="h-4 w-4 text-muted" aria-hidden />
-        {/* At least 12rem wide: on a phone the button goes to the next line instead of squeezing the text. */}
-        <span className="min-w-0 grow basis-48 text-ink-2">{t('me.sessions.text')}</span>
         <AccountButton
           name="account.signOutEverywhere"
           busy={action.busy}

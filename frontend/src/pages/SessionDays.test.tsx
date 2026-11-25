@@ -11,7 +11,7 @@ import type { Me } from '../api/client'
 import '../i18n'
 import { changeLanguage } from '../i18n'
 import { LoginPage } from './AuthPages'
-import { SignInNoticeCard } from './settings/PushCards'
+import { DevicesCard } from './settings/SecurityCards'
 import { ReadinessCard } from './settings/ReadinessCards'
 import { DiskCard } from './settings/StorageCards'
 import { idle } from '../test/wait'
@@ -106,7 +106,8 @@ describe('the length of a sign-in', () => {
       await act(async () => changeLanguage(language, false))
       answers['GET /api/v1/auth/methods'] = methods(1)
       answers['GET /api/v1/settings/readiness'] = { open: 0, points: [{ key: 'cookies', state: 'ok', values: { mode: 'auto', days: 1 } }] }
-      await show(<SignInNoticeCard me={me} />, '/konto')
+      answers['GET /api/v1/auth/sessions'] = []
+      await show(<DevicesCard me={me} />, '/konto')
       expect(box.textContent, language).toContain(devices)
       act(() => root.unmount())
       box.remove()
@@ -126,8 +127,9 @@ describe('the length of a sign-in', () => {
 
   it('under Security, with the signed-in devices', async () => {
     answers['GET /api/v1/auth/methods'] = methods(90)
-    await show(<SignInNoticeCard me={me} />, '/konto')
-    expect(box.textContent).toContain('Wo du gerade angemeldet bist. Eine Anmeldung läuft nach 90 Tagen ohne Nutzung von selbst ab.')
+    answers['GET /api/v1/auth/sessions'] = []
+    await show(<DevicesCard me={me} />, '/konto')
+    expect(box.querySelector('[data-testid="session-days"]')!.textContent).toBe('Eine Anmeldung läuft nach 90 Tagen ohne Nutzung von selbst ab.')
   })
 
   it('in "Ready for the internet?"', async () => {

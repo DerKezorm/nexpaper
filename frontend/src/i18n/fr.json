@@ -292,15 +292,11 @@
       "roleLine": "Rôle : {{role}} · Nom de connexion : {{name}}"
     },
     "password": {
-      "title": "Mot de passe",
-      "text": "Au moins 12 caractères.",
       "current": "Mot de passe actuel",
       "new": "Nouveau mot de passe",
       "again": "Encore une fois",
       "submit": "Changer le mot de passe",
-      "done": "Mot de passe changé. Tous les autres appareils sont déconnectés.",
-      "change": "Modifier",
-      "lastChanged": "Modifié le {{when}}"
+      "done": "Mot de passe changé. Tous les autres appareils sont déconnectés."
     },
     "role": {
       "operator": "Administrateur",
@@ -346,8 +342,6 @@
       "probedSome": "Test envoyé à {{sent}} appareils sur {{all}}."
     },
     "devices": {
-      "title": "Appareils connectés",
-      "text": "Où vous êtes connecté.",
       "ends_one": "Une connexion se termine d'elle-même après {{count}} jour sans utilisation.",
       "ends_other": "Une connexion se termine d'elle-même après {{count}} jours sans utilisation.",
       "notify": "M'avertir d'une nouvelle connexion",
@@ -361,8 +355,6 @@
     },
     "justNow": "à l'instant",
     "passkeys": {
-      "title": "Clés d'accès",
-      "text": "Connectez-vous avec votre empreinte digitale, votre visage ou le NIP de l'appareil, sans mot de passe et sans code. Une clé d'accès compte à elle seule pour deux facteurs et ne peut pas être hameçonnée.",
       "add": "Ajouter une clé d'accès",
       "create": "Ajouter",
       "how": "Le navigateur demandera votre empreinte, votre visage ou votre NIP. La clé d'accès reste sur l'appareil ou dans votre trousseau.",
@@ -393,21 +385,11 @@
       "text": "Termine votre session dans ce navigateur. Vos documents restent tels quels.",
       "provider": "Vous restez connecté chez votre fournisseur de connexion ; seul nexpaper vous déconnecte.",
       "button": "Se déconnecter"
-    },
-    "security": {
-      "title": "Connexion et sécurité"
-    },
-    "sessions": {
-      "text": "Vous déconnecte de tous les autres navigateurs, par exemple après la perte d'un téléphone. Les appareils jumelés se déconnectent un par un sous Appareils et applications."
     }
   },
   "twofactor": {
-    "title": "Second facteur",
-    "lead": "En plus du mot de passe, un code provenant d'une application sur votre téléphone. Des codes de récupération sur papier vous permettent d'entrer si le téléphone est perdu.",
     "off": "Désactivé.",
-    "on_one": "Activé. {{count}} code de récupération restant.",
-    "on_other": "Activé. {{count}} codes de récupération restants.",
-    "enable": "Configurer",
+    "onShort": "Activé.",
     "scan": "Scannez ce code avec l'application, ou saisissez-y la clé ci-dessous. Puis indiquez le code affiché par l'application, et votre mot de passe.",
     "qr": "Code QR pour l'application d'authentification",
     "code": "Code de l'application",
@@ -1068,7 +1050,6 @@
     "pending": "Lien envoyé à {{address}}.",
     "stays": "Tant que vous ne l'ouvrez pas, {{address}} reste.",
     "withdraw": "Retirer",
-    "confirmNow": "Envoyer la confirmation",
     "remove": "Retirer l'adresse",
     "removed": "Adresse retirée.",
     "off": "L'administrateur n'a pas encore configuré de serveur de courriel, donc aucun lien ne peut être envoyé.",

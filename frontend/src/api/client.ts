@@ -277,6 +277,8 @@ export const authApi = {
   /** The link for the address that waits, once more. */
   emailResend: () => api<Me>('/api/v1/me/email/resend', { method: 'POST' }),
   emailWithdraw: () => api<void>('/api/v1/me/email/pending', { method: 'DELETE' }),
+  /** "Per Link bestätigen": a link that proves the address there is (konten 0.3.10, `profiles.prove_email`). */
+  emailProve: () => api<Me>('/api/v1/me/email/prove', { method: 'POST' }),
   /** What still has access after a password set through a link; "Disconnect all"; put the list away. */
   access: () => api<RemainingAccess>('/api/v1/auth/access'),
   disconnectAll: () => api<{ disconnected: number }>('/api/v1/auth/access/disconnect', { method: 'POST' }),
