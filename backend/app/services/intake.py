@@ -49,11 +49,14 @@ def operator_id(db: Session) -> int | None:
 
 
 def account_named(db: Session, name: str) -> Account | None:
-    """The account of this name (as people sign in with it), if it may receive: not blocked."""
-    cleaned = name.strip().casefold()
-    if not cleaned:
+    """The account of this name (as people sign in with it), if it may receive: not blocked. A former name of an
+    account still reaches it after a rename (``konten_store.by_any_name``: former names are reserved for good, so no
+    post goes to anybody else); one of a deleted account reaches nobody."""
+    from .konten_store import by_any_name
+
+    if not name.strip():
         return None
-    row = db.scalar(select(Account).where(Account.name == cleaned))
+    row = by_any_name(db, name)
     if row is None or row.blocked_at is not None:
         return None
     return row

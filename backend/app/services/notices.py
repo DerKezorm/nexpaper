@@ -20,7 +20,6 @@ from collections import deque
 from collections.abc import Callable
 from concurrent.futures import Future, ThreadPoolExecutor, wait
 from datetime import datetime
-from email.message import EmailMessage
 from typing import Any
 
 from .. import clock
@@ -204,7 +203,8 @@ def _send(account_id: int, address: str, agent: str, moment: datetime) -> None:
             if account is None:
                 return
             db.expunge(account)
-            mail_to = account.email if mailer.configured(db) else ""
+            # Only to an address that counts (the shared account module); in the account's language.
+            mail_to = account.email.strip() if mailer.configured(db) and account.email_counts else ""
             base = settings_service.public_url(db)
 
         def for_lang(lang: str) -> push.Message:
@@ -225,29 +225,35 @@ def _send(account_id: int, address: str, agent: str, moment: datetime) -> None:
 
 
 def _mail(account: Account, to: str, base: str, agent: str, address: str, moment: datetime) -> None:
-    """The mail, English like everything nexpaper mails. The link only with the public address the operator set: an
-    address taken from the request could be one a stranger chose."""
+    """The mail of the shared post module ("New sign-in", with the browser and its system, nothing more), at once as
+    in 1.12.0 (this runs in the background already; a server that does not take it leaves it in the outbox for another
+    try): in the account's language, with the logo."""
+    del address, moment
     from ..db import SessionLocal
+    from ..vendor import nexkonten
+    from . import kontenpost
 
-    message = EmailMessage()
-    message["To"] = to
-    message["Subject"] = "New sign-in to nexpaper"
-    where = f"Open {base}{SECURITY_PATH}" if base else "Open nexpaper, then Account, Security,"
-    message.set_content(
-        f"Someone signed in to your nexpaper account {account.name}.\n\n"
-        f"Device: {device_name(agent, 'en')}\n"
-        f"When: {when_of(moment, account, 'en')} ({timezones.zone_of(account)})\n"
-        f"From: {network_of(address, 'en')}\n\n"
-        "If this was you, there is nothing to do.\n"
-        f"If it was not you: {where} and change your password.\n"
-    )
+    mail = nexkonten.Mail(kind=nexkonten.MAIL_NEW_SIGN_IN, to=to, account_id=account.id, username=account.name,
+                          display_name=account.display_name or "")
     with SessionLocal() as db:
         try:
-            mailer.send_message(db, message)
-        except mailer.MailError:
+            # The page Security, only under the public address the operator set: an address taken from the request
+            # could be one a stranger chose.
+            letter = kontenpost.letter_of(db, mail, where=agent, link=f"{base}{SECURITY_PATH}" if base else "")
+        except Exception:  # noqa: BLE001 (an address the post module refuses: no mail, the sign-in stands)
             logger.warning("Sign-in notice not mailed name=%s", account.name)
             return
-    logger.info("Sign-in notice mailed name=%s", account.name)
+        try:
+            mailer.send_letter(db, letter)
+        except mailer.MailError:
+            from ..vendor import nexpost
+            from .post_store import PostStore
+
+            nexpost.outbox.queue(PostStore(db), letter)
+            db.commit()
+            logger.warning("Sign-in notice waits in the outbox name=%s", account.name)
+            return
+        logger.info("Sign-in notice mailed name=%s", account.name)
 
 
 # --- The operator took the second factor --------------------------------------------------------------------------
@@ -263,8 +269,8 @@ RESET_TEXTS = {
 
 
 def factor_reset(account: Account, by: str) -> None:
-    """Tells the person that the operator took their second factor: by push to their devices and by mail. In the
-    background, like the notice of a sign-in; a failure touches nothing."""
+    """Tells the person that the operator took their second factor by push to their devices, in the background like
+    the notice of a sign-in; a failure touches nothing. The mail is the shared account module's (``routers/totp``)."""
     future = _pool.submit(_send_reset, account.id, by)
     with _lock:
         _pending.add(future)
@@ -280,7 +286,6 @@ def _send_reset(account_id: int, by: str) -> None:
             if account is None:
                 return
             db.expunge(account)
-            mail_to = account.email if mailer.configured(db) else ""
 
         def for_lang(lang: str) -> push.Message:
             title, body = RESET_TEXTS[language_of(lang or account.language)]
@@ -289,22 +294,6 @@ def _send_reset(account_id: int, by: str) -> None:
 
         result = push.send_to_person(account_id, for_lang)
         logger.info("Second factor reset notice pushed name=%s devices=%s", account.name, result.sent)
-        if mail_to:
-            message = EmailMessage()
-            message["To"] = mail_to
-            message["Subject"] = "Your second factor in nexpaper was reset"
-            message.set_content(
-                f"The operator ({by}) reset the second factor of your nexpaper account {account.name}.\n\n"
-                "At your next sign-in you set it up again.\n"
-                "If you did not ask for this, tell the operator and change your password.\n"
-            )
-            with SessionLocal() as db:
-                try:
-                    mailer.send_message(db, message)
-                except mailer.MailError:
-                    logger.warning("Second factor reset notice not mailed name=%s", account.name)
-                    return
-            logger.info("Second factor reset notice mailed name=%s", account.name)
     except Exception:
         logger.exception("A notice of a second factor reset failed")
 

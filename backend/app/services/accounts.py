@@ -1,10 +1,9 @@
-"""Accounts: the first is the operator, the others come by invitation or through a sign-in provider
-(``services/oidc_store.py``).
+"""Accounts: what is nexpaper's own beside the shared account module (``vendor/nexkonten``, store
+``services/konten_store.py``), which runs the setup, signing in, invitations and the profile.
 
-An invitation is a link with an end date, made by the operator: whoever follows it makes an account.
-
-After nextrmnl's accounts: the name is checked before the password, and an unknown name costs the same time as a
-wrong password, so that neither answer nor timing tells which names exist.
+Here: counting accounts, the lock after wrong passwords where nexpaper checks a password itself (confirming an act,
+the code step), changing the own password, and the invitations the operator makes (a link with an end date; whoever
+follows it makes an account through the module).
 """
 
 from __future__ import annotations
@@ -12,7 +11,6 @@ from __future__ import annotations
 import logging
 import re
 import secrets
-import threading
 from datetime import timedelta
 from functools import lru_cache
 
@@ -21,8 +19,7 @@ from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 
 from .. import __version__, clock
-from ..config import get_settings
-from ..models import MEMBER, OPERATOR, ROLES, SIGN_IN_PASSWORD, Account, Invite, utcnow
+from ..models import MEMBER, ROLES, SIGN_IN_PASSWORD, Account, Invite, utcnow
 from ..security import LOCK_MINUTES, MAX_FAILURES, hash_password, hash_token, verify_password
 
 logger = logging.getLogger("nexpaper.auth")
@@ -45,23 +42,14 @@ def count(db: Session) -> int:
 
 
 def by_name(db: Session, name: str) -> Account | None:
-    return db.scalar(select(Account).where(Account.name == name.strip().lower()))
-
-
-def check_name(db: Session, name: str) -> str:
-    cleaned = name.strip().lower()
-    if not NAME_PATTERN.match(cleaned):
-        raise AccountError("invalid_account_name", "Use 2 to 64 letters, digits, dots, dashes or underscores.", 422)
-    if by_name(db, cleaned) is not None:
-        raise AccountError("name_taken", "This name is already taken.", 409)
-    return cleaned
+    return db.scalar(select(Account).where(func.lower(Account.name) == name.strip().lower()))
 
 
 def create_with_password(db: Session, name: str, password: str, role: str = MEMBER, *, commit: bool = True) -> Account:
     if role not in ROLES:
         raise ValueError("unknown role")
     account = Account(
-        name=check_name(db, name),
+        name=name.strip().lower(),
         role=role,
         sign_in=SIGN_IN_PASSWORD,
         password_hash=hash_password(password),
@@ -74,42 +62,6 @@ def create_with_password(db: Session, name: str, password: str, role: str = MEMB
         db.flush()
     logger.info("Account created name=%s role=%s sign_in=password", account.name, role)
     return account
-
-
-#: One setup at a time: two at once each counted no account yet and made two operators.
-_setup_lock = threading.Lock()
-_generated_code: str | None = None
-
-
-def setup_code() -> str:
-    """What the first account must bring: ``NEXPAPER_SETUP_TOKEN``, else a code made at start and written to the log.
-    Whoever reaches a fresh instance first would otherwise become its operator."""
-    global _generated_code
-    given = get_settings().setup_token.strip()
-    if given:
-        return given
-    if _generated_code is None:
-        _generated_code = "-".join(secrets.token_hex(2).upper() for _ in range(3))
-    return _generated_code
-
-
-def announce_setup_code(db: Session) -> None:
-    """At start, while nobody has set nexpaper up: the code in the log, where only whoever runs the server reads it."""
-    if count(db) == 0:
-        if get_settings().setup_token.strip():
-            logger.warning("nexpaper is not set up yet. Open it and give NEXPAPER_SETUP_TOKEN as the setup code.")
-        else:
-            logger.warning("nexpaper is not set up yet. The setup code is %s (new at every start until set up).",
-                           setup_code())
-
-
-def create_operator(db: Session, name: str, password: str, code: str) -> Account:
-    with _setup_lock:
-        if count(db) > 0:
-            raise AccountError("already_set_up", "nexpaper is already set up.", 409)
-        if not secrets.compare_digest(code.strip().upper().encode(), setup_code().upper().encode()):
-            raise AccountError("setup_code_wrong", "The setup code is wrong. It is in the server's log.", 403)
-        return create_with_password(db, name, password, OPERATOR)
 
 
 @lru_cache(maxsize=1)
@@ -143,50 +95,6 @@ def note_success(db: Session, account: Account) -> None:
     db.commit()
 
 
-_account_locks: dict[int, threading.Lock] = {}
-_account_locks_guard = threading.Lock()
-
-
-def _one_check_at_a_time(account_id: int) -> threading.Lock:
-    """Checks of one account's password in turn: 60 wrong ones at once all passed the lock test before the first
-    failure was counted, and 46 were checked instead of 10."""
-    with _account_locks_guard:
-        return _account_locks.setdefault(account_id, threading.Lock())
-
-
-def authenticate(db: Session, name: str, password: str, devices: frozenset[int] = frozenset()) -> Account:
-    """Checks name and password; counts failures and locks the account after too many.
-
-    A locked account answers like a wrong password (no hint that the name exists), except to a browser that signed in
-    as it before (``devices``, the accounts its cookie names): a stranger guessing can lock the account against the
-    world, not against its owner.
-    Failures from that browser do not count towards the lock.
-    """
-    account = by_name(db, name)
-    if account is None or account.sign_in != SIGN_IN_PASSWORD or account.blocked_at is not None:
-        verify_password(password, _dummy_hash())
-        logger.warning("Sign-in failed for an unknown account")
-        raise AccountError("wrong_credentials", "Name or password is wrong.", 401)
-    known_device = account.id in devices
-    with _one_check_at_a_time(account.id):
-        db.refresh(account)
-        if is_locked(account) and not known_device:
-            verify_password(password, _dummy_hash())
-            logger.warning("Sign-in refused, account locked name=%s", account.name)
-            raise AccountError("wrong_credentials", "Name or password is wrong.", 401)
-        if not verify_password(password, account.password_hash):
-            if not known_device:
-                note_failure(db, account)
-            raise AccountError("wrong_credentials", "Name or password is wrong.", 401)
-        from . import totp
-
-        if not totp.has_second_factor(db, account):
-            # With a second factor, only the code resets the count of failures: otherwise whoever knows the password
-            # could guess codes forever, a new password step before each lockout.
-            note_success(db, account)
-    return account
-
-
 def check_password(account: Account, password: str) -> bool:
     return account.sign_in == SIGN_IN_PASSWORD and verify_password(password, account.password_hash)
 
@@ -202,13 +110,15 @@ def change_password(db: Session, account: Account, current: str, new: str) -> No
 # --- Invitations ---------------------------------------------------------------------------------------------------
 
 
-def create_invite(db: Session, by: Account, *, days: int, email: str = "") -> tuple[Invite, str]:
+def create_invite(
+    db: Session, by: Account, *, days: int, email: str = "", display_name: str = "", mailed: bool = False,
+) -> tuple[Invite, str]:
     if days not in INVITE_DAYS:
         raise AccountError("invalid_days", "Choose 1, 7 or 30 days.", 422)
     token = secrets.token_urlsafe(24)
     invite = Invite(
         token_hash=hash_token(token), email=email.strip()[:255], created_by=by.id,
-        expires_at=utcnow() + timedelta(days=days),
+        expires_at=utcnow() + timedelta(days=days), display_name=display_name[:80], mailed=mailed,
     )
     db.add(invite)
     db.commit()
@@ -238,27 +148,6 @@ def consume(db: Session, invite: Invite) -> bool:
         return False
 
 
-def accept_invite(db: Session, token: str, name: str, password: str) -> Account:
-    invite = find_invite(db, token)
-    if invite is None:
-        raise AccountError("invite_invalid", "This invitation is not valid any more.", 404)
-    check_name(db, name)
-    # The invitation goes before the account comes, in one transaction: two requests with the same link at the same
-    # moment make one account, not two.
-    if not consume(db, invite):
-        db.rollback()
-        raise AccountError("invite_invalid", "This invitation is not valid any more.", 404)
-    try:
-        account = create_with_password(db, name, password, commit=False)
-    except AccountError:
-        db.rollback()
-        raise
-    if invite.email and not account.email:
-        account.email = invite.email
-    db.commit()
-    logger.info("Invite used name=%s", account.name)
-    return account
-
-
 def open_invites(db: Session) -> list[Invite]:
-    return list(db.scalars(select(Invite).where(Invite.expires_at > utcnow()).order_by(Invite.created_at)))
+    """Every invitation not used yet, also those that ran out (the list says so; the operator withdraws them)."""
+    return list(db.scalars(select(Invite).order_by(Invite.created_at)))

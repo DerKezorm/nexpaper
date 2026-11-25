@@ -50,7 +50,7 @@ ENROLMENT_SECONDS = 600
 PENDING_SECONDS = 300
 #: Wrong codes before a pending sign-in is thrown away and the password has to be given again.
 MAX_ATTEMPTS = 5
-RECOVERY_CODES = 8
+RECOVERY_CODES = 10
 #: No 0, o, 1, l, i: the codes get typed from paper.
 RECOVERY_ALPHABET = "abcdefghjkmnpqrstuvwxyz23456789"
 RECOVERY_LENGTH = 10
@@ -201,6 +201,7 @@ def setup_required(db: Session, account: Account) -> bool:
     checks one (``provider_checks``)."""
     return (
         bool(settings_service.get(db, "two_factor_required"))
+        and not _hammer()
         and not provider_checks(db, account)
         and not has_second_factor(db, account)
     )
@@ -212,9 +213,18 @@ def keys_wait(db: Session, account: Account) -> bool:
     second factor does not free it."""
     return (
         bool(settings_service.get(db, "two_factor_required"))
+        and not _hammer()
         and not provider_only(account)
         and not has_second_factor(db, account)
     )
+
+
+def _hammer() -> bool:
+    """``NEXPAPER_SECOND_FACTOR_OFF``: the emergency hammer of the shared account module holds, nobody is asked for a
+    second factor or to set one up."""
+    from ..vendor.nexkonten import factor
+
+    return factor.switched_off()
 
 
 def claim_step(db: Session, account_id: int, step: int) -> bool:

@@ -1,8 +1,13 @@
-"""Invitation mail through the operator's SMTP server.
+"""Mail through the operator's SMTP server.
 
-Off until the operator enters a server: the link to copy is always enough. The mail
-is English like everything nexpaper sends out; it names who invites and carries the link. The notice of a
-new sign-in (``services/notices.py``) goes the same way.
+Off until the operator enters a server: the link to copy is always enough. Two kinds go out here:
+
+- The system mail about accounts (an invitation, a link for a new password, the link that confirms an address, the
+  notices of a new sign-in, a new username, a changed address, a reset second factor, the test mail) is written by
+  the shared post module (``vendor/nexpost``) in the language of the account (German, English, French) with the logo,
+  and goes out through ``send_letter`` (``services/kontenpost.py`` decides when).
+- nexpaper's own mail (reminders, deadlines, exports, upload requests, the addresses the intake takes documents
+  from) stays English plain text, through ``send_message``.
 """
 
 from __future__ import annotations
@@ -11,11 +16,12 @@ import logging
 import smtplib
 import ssl
 from email.message import EmailMessage
-from email.utils import formataddr, formatdate, make_msgid
+from email.utils import formatdate, make_msgid
 
 from sqlalchemy.orm import Session
 
 from ..security import decrypt_secret
+from ..vendor.nexpost import Letter
 from . import settings_service
 
 logger = logging.getLogger("nexpaper.mail")
@@ -67,30 +73,40 @@ def _send(db: Session, message: EmailMessage) -> None:
     logger.info("Mail sent host=%s", host)
 
 
-def send_invite(db: Session, to: str, link: str, *, by: str, until: str = "") -> None:
-    message = EmailMessage()
-    message["To"] = to
-    message["Subject"] = f"{by} invites you to nexpaper"
-    runs = f"until {until}" if until else "for a few days"
-    message.set_content(
-        f"{by} invites you to nexpaper, a place for the household's papers.\n\n"
-        f"Open this link to accept:\n{link}\n\n"
-        f"The link works once, {runs}. If you did not expect this mail, ignore it.\n"
-    )
-    _send(db, message)
+def _language_of(db: Session, name: str = "") -> str:
+    """The language of a system mail: the account's (by its name), else the first operator's, else English."""
+    from . import kontenpost
+
+    return kontenpost.language_for(db, kontenpost.account_named(db, name) if name else None)
+
+
+def send_invite(db: Session, to: str, link: str, *, by: str, until: str = "", days: int = 0,
+                language: str = "") -> None:
+    """The invitation, at once, as the shared post module writes it (in the operator's language: the person invited
+    has no account yet)."""
+    from ..vendor import nexpost
+
+    lang = language or _language_of(db)
+    valid = nexpost.letters.validity(lang, days=days) if days else (until or "")
+    try:
+        letter = nexpost.letters.compose("invite", to, language=lang, values={"by": by, "valid": valid}, link=link)
+    except nexpost.MailError as exc:
+        raise MailError("invalid_email", "This is not a mail address.") from exc
+    send_letter(db, letter)
 
 
 def send_reset(db: Session, to: str, link: str, *, name: str, hours: int) -> None:
-    message = EmailMessage()
-    message["To"] = to
-    message["Subject"] = "Set a new password for nexpaper"
-    message.set_content(
-        f"A link was asked for to set a new password for your nexpaper account {name}.\n\n"
-        f"Open it to choose the new password:\n{link}\n\n"
-        f"The link works once and for {hours} hours. If you did not ask for it, ignore this mail: your password "
-        "stays as it is.\n"
-    )
-    _send(db, message)
+    """The link for a new password, at once (``resets.forgot_in_background`` hears a failure and drops the link), as
+    the shared post module writes it, in the language of the account ``name``."""
+    from ..vendor import nexkonten, nexpost
+
+    mail = nexkonten.Mail(kind=nexkonten.MAIL_RESET, to=to, account_id=0, username=name, display_name="",
+                          token="", hours=hours)
+    try:
+        letter = nexpost.letters.from_account_mail(mail, language=_language_of(db, name), link=link)
+    except (nexpost.MailError, ValueError) as exc:
+        raise MailError("invalid_email", "This is not a mail address.") from exc
+    send_letter(db, letter)
 
 
 def send_confirm(db: Session, to: str, link: str, *, name: str, hours: int) -> None:
@@ -132,12 +148,51 @@ def send_removed(db: Session, to: str, *, name: str) -> None:
     _send(db, message)
 
 
-def send_test(db: Session, to: str) -> None:
-    message = EmailMessage()
-    message["To"] = formataddr(("", to))
-    message["Subject"] = "nexpaper test mail"
-    message.set_content("The mail server in nexpaper works.\n")
-    _send(db, message)
+def send_test(db: Session, to: str, language: str = "") -> None:
+    """The operator's test mail, at once, as the shared post module writes it."""
+    from ..vendor import nexpost
+
+    try:
+        letter = nexpost.letters.compose("test", to, language=language or _language_of(db), values={})
+    except nexpost.MailError as exc:
+        raise MailError("invalid_email", "This is not a mail address.") from exc
+    send_letter(db, letter)
+
+
+def send_letter(db: Session, letter: Letter) -> None:
+    """A letter of the shared post module, at once: its sender name, its logo, its plain text beside the HTML.
+    ``MailError`` with ``mail_off``, ``invalid_email`` or ``mail_failed``; the operator's page shows the last result."""
+    from ..vendor import nexpost
+    from .post_store import PostStore
+
+    settings = PostStore(db).mail_settings()
+    if not settings.configured:
+        raise MailError("mail_off", "No mail server is set up.")
+    try:
+        nexpost.send.deliver(settings, letter)
+    except nexpost.MailError as exc:
+        # The reason goes to the log by its code only: an SMTP answer can quote the address or the credentials.
+        logger.warning("Mail not sent host=%s code=%s", settings.host, exc.code)
+        _note(db, ok=False, code=exc.code)
+        if exc.code == "mail_address_invalid":
+            raise MailError("invalid_email", "This is not a mail address.") from exc
+        raise MailError("mail_failed", "The mail server did not take the mail.") from exc
+    _note(db, ok=True)
+    logger.info("Mail sent host=%s", settings.host)
+
+
+def _note(db: Session, *, ok: bool, code: str = "") -> None:
+    """The last result for the operator's page (``mail_last_*``); never stops a mail."""
+    from ..models import utcnow
+
+    now = utcnow().isoformat()
+    try:
+        if ok:
+            settings_service.save(db, {"mail_last_ok_at": now})
+        else:
+            settings_service.save(db, {"mail_last_error": code, "mail_last_error_at": now})
+    except Exception:  # noqa: BLE001 (a note about a mail never breaks the mail)
+        db.rollback()
 
 
 def send_message(db: Session, message: EmailMessage) -> None:

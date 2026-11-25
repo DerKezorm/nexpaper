@@ -39,7 +39,7 @@ from ..config import get_settings
 from ..db import SessionLocal
 from ..models import Account, IntakeItem
 from ..names import clean_segment
-from . import filetypes, intake, limits, settings_service, storage
+from . import filetypes, intake, konten_store, limits, settings_service, storage
 
 logger = logging.getLogger("nexpaper.intake")
 
@@ -198,6 +198,21 @@ def folder_name(name: str) -> str | None:
     if os.name == "nt" and _WINDOWS_RESERVED.match(name):
         return None
     return name
+
+
+def renamed(new: str) -> None:
+    """After a rename: the folder of the new name is made at once (the old one stays and is still read)."""
+    if not new:
+        return
+    with SessionLocal() as db:
+        values = settings_service.get_all(db)
+    if not values["folder_on"]:
+        return
+    try:
+        root = usable_root(str(values["folder_path"] or ""), make=False)
+    except FolderProblem:
+        return
+    prepare([new], root)
 
 
 def prepare(db_names: list[str], root: Path) -> None:
@@ -424,10 +439,22 @@ def _scan(result: Round) -> Round:
         for key in [key for key in _said if key.startswith("root:")]:
             _said.discard(key)
         accounts = db.execute(select(Account.id, Account.name, Account.blocked_at)).all()
+        former = konten_store.names_by_account(db)
         operator = intake.operator_id(db)
         max_file = limits.current(db).max_file
-    people = {name.casefold(): uid for uid, name, blocked in accounts if blocked is None and folder_name(name)}
-    blocked = {name.casefold() for _uid, name, blocked_at in accounts if blocked_at is not None}
+    # The folder of a former name still reaches its account after a rename (former names are never given to anybody
+    # else); the current name wins where a name is both.
+    people: dict[str, int] = {}
+    blocked: set[str] = set()
+    for uid, name, blocked_at in accounts:
+        for each in (*former.get(uid, []), name):
+            if not folder_name(each):
+                continue
+            if blocked_at is None:
+                people[each.casefold()] = uid
+            else:
+                blocked.add(each.casefold())
+    blocked -= set(people)
     prepare(sorted(name for _uid, name, blocked_at in accounts if blocked_at is None), root)
     moment = clock.monotonic()
     still: list[Found] = []

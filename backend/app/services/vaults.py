@@ -320,6 +320,18 @@ def leaving(db: Session, account_id: int, operator_id: int) -> Leaving:
     return Leaving(held, _sole_manager_of(db, account_id, own), heirs, shared)
 
 
+def documents_per_account(db: Session) -> dict[int, int]:
+    """Per account the documents of its own vault, the trash included (the number ``leaving`` gives, for the whole
+    list of accounts in one query)."""
+    rows = db.execute(
+        select(Vault.personal_of, func.count(Document.id))
+        .join(Document, Document.vault_id == Vault.id)
+        .where(Vault.personal_of.is_not(None))
+        .group_by(Vault.personal_of)
+    )
+    return {int(owner): int(count) for owner, count in rows}
+
+
 def _sole_manager_of(db: Session, account_id: int, own: int | None) -> list[Vault]:
     found = []
     for vault_id in db.scalars(select(VaultMember.vault_id).where(

@@ -1,8 +1,10 @@
 """Passwords, browser sessions, the brake against guessing, and the secrets the server keeps for itself.
 
 Built after nextrmnl's: Argon2id for passwords, sessions as random tokens of which the database knows only the
-hash, a brake per sender in memory and a lock per account in the database: five failures, then a quarter of an hour
-of rest, per account and per address.
+hash, a brake in memory and a lock per account in the database: ten failures, then a quarter of an hour of rest. The
+brake of signing in, the forgotten password, the setup code and the confirming password is the shared account
+module's (``vendor/nexkonten/brake.py``); the one here holds nexpaper's own doors (links, pairing codes, upload
+requests).
 
 Sessions come in two lengths: with "stay signed in on this device" one lasts until it was not used for
 ``session_days`` (sliding, checked here, not left to the cookie); without, it ends with the browser and after
@@ -34,8 +36,11 @@ logger = logging.getLogger("nexpaper.auth")
 
 SESSION_COOKIE = "nexpaper_session" + get_settings().cookie_name_suffix()
 MIN_PASSWORD = 12
-#: After this many failures an account, and an address, waits a quarter of an hour. Not configurable on purpose.
-MAX_FAILURES = 5
+#: After this many wrong passwords an account waits a quarter of an hour, as in every nex app (the shared account
+#: module's lock; nexpaper locked after five up to 1.12.0). Not configurable on purpose.
+MAX_FAILURES = 10
+#: Failures one sender may cause at nexpaper's own doors before it rests (links, pairing codes, upload requests).
+SENDER_FREE = 5
 LOCK_MINUTES = 15
 #: A session without "stay signed in" ends after this many hours, whatever happens.
 SHORT_HOURS = 12
@@ -202,7 +207,7 @@ class Brake:
     grows: every new address (cheap with IPv6) would otherwise stay in memory for as long as the server runs.
     """
 
-    FREE = MAX_FAILURES
+    FREE = SENDER_FREE
     PAUSE = LOCK_MINUTES * 60
     FORGET_AFTER = 3600
     MAX_KEYS = 50_000
@@ -259,9 +264,13 @@ class Brake:
             self._fails.pop(key, None)
 
     def forget(self) -> None:
-        """For the tests."""
+        """For the tests: this brake and the one of the shared account module (sign-in, forgotten password, setup
+        code, the doors)."""
+        from .vendor.nexkonten.brake import BRAKE
+
         with self._lock:
             self._fails.clear()
+        BRAKE.forget()
 
 
 brake = Brake()

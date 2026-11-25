@@ -29,6 +29,8 @@ from .models import OPERATOR, SIGN_IN_PASSWORD, STAGE_CODES, STAGE_FULL, STAGE_S
 from .models import Account as AccountRow
 from .security import SESSION_COOKIE, brake, current_session
 from .services import accounts, apikeys, devices, logs, totp
+from .vendor.nexkonten.brake import BRAKE, DOOR_CONFIRM, door_key
+from .vendor.nexkonten.common import FRESH_SIGN_IN_MINUTES
 
 DbSession = Annotated[Session, Depends(get_db)]
 
@@ -135,8 +137,9 @@ SETUP_ONLY_PATHS = frozenset({
 CODES_ONLY_PATHS = frozenset({
     "/api/v1/auth/me", "/api/v1/auth/logout", "/api/v1/auth/setup/done", "/api/v1/auth/setup/codes",
 })
-#: How long after a sign-in through the provider an account without a password may change its own second factor.
-FRESH_MINUTES = 10
+#: How long after a sign-in through the provider an account without a password may confirm a change of its own (and an
+#: operator without one an act on others): the shared account module's window, five minutes.
+FRESH_MINUTES = FRESH_SIGN_IN_MINUTES
 
 
 @dataclass(frozen=True)
@@ -326,50 +329,69 @@ OperatorAccount = Annotated[AccountRow, Depends(require_operator)]
 
 # --- The password once more, while signed in ------------------------------------------------------------------------
 #
-# Changing the password or linking the account to a provider asks for the password again, and a wrong answer counts
-# the way it does at sign-in: otherwise a stolen cookie would be a place to guess without limit.
+# Changing the password or the address, or linking the account to a provider asks for the password again, and a wrong
+# answer counts the way it does at sign-in: otherwise a stolen cookie would be a place to guess without limit. The
+# count is the shared account module's (``confirm:<account>``, five free), the same its own doors use: a route of
+# nexpaper's own and one of the module never count apart.
 
 
-def _reauth_key(request: Request) -> str:
-    return "reauth:" + client_ip(request)
+def _reauth_keys(account: AccountRow) -> tuple[str, ...]:
+    return (door_key(DOOR_CONFIRM, account.id),)
 
 
 def reauth_guard(request: Request, account: AccountRow) -> None:
+    """One password typed to confirm: refused while the account is locked or its count waits; counted as a failure
+    until ``reauth_succeeded`` takes it back."""
     if accounts.is_locked(account):
         raise error("account_locked", "Too many failed attempts. Try again later.", 429)
-    wait = brake.wait_seconds(_reauth_key(request))
-    if wait:
-        raise HTTPException(
-            status_code=429,
-            detail=detail("too_many_attempts", "Too many attempts. Try again later.", retry_after=wait),
-            headers={"Retry-After": str(wait)},
-        )
+    wait = BRAKE.claim(_reauth_keys(account))
+    if wait > 0:
+        raise too_many(max(1, int(wait + 0.999)))
 
 
 def reauth_failed(request: Request, db: Session, account: AccountRow) -> None:
-    brake.failed(_reauth_key(request))
     accounts.note_failure(db, account)
 
 
 def reauth_succeeded(request: Request, db: Session, account: AccountRow) -> None:
-    brake.succeeded(_reauth_key(request))
+    BRAKE.succeeded(_reauth_keys(account))
     accounts.note_success(db, account)
+
+
+def has_password(row: AccountRow) -> bool:
+    return row.sign_in == SIGN_IN_PASSWORD and bool(row.password_hash)
+
+
+def fresh_session(request: Request) -> bool:
+    """The session of this request began within ``FRESH_MINUTES`` (a sign-in at a provider confirms for that long),
+    or it is the one right after signing in that still sets up the second factor."""
+    session = session_of(request)
+    return session.stage != STAGE_FULL or clock.now() - session.created_at <= timedelta(minutes=FRESH_MINUTES)
+
+
+def confirmed_without_password(request: Request, row: AccountRow) -> bool:
+    """For the module's ``actor_confirmed``: an account with a password confirms with it (False here, the module
+    checks); one without proves it is still them by a fresh sign-in at its provider (True, or ``sign_in_again``)."""
+    if has_password(row):
+        return False
+    if not fresh_session(request):
+        raise error("sign_in_again", "Sign in again through the provider, then try once more.", 403,
+                    minutes=FRESH_MINUTES)
+    return True
 
 
 def confirm_self(request: Request, db: Session, row: AccountRow, password: str) -> None:
     """The person once more, before a change to their own way in: the password, counted like a sign-in. An account
     without a password (it comes through the provider) shows itself by a sign-in of the last few minutes instead; a
     session right after the sign-in, still setting up its second factor, is that."""
-    if row.sign_in == SIGN_IN_PASSWORD:
+    if has_password(row):
         reauth_guard(request, row)
         if not accounts.check_password(row, password):
             reauth_failed(request, db, row)
             raise error("wrong_password", "The current password is wrong.", 401)
         reauth_succeeded(request, db, row)
         return
-    session = session_of(request)
-    if session.stage == STAGE_FULL and clock.now() - session.created_at > timedelta(minutes=FRESH_MINUTES):
-        raise error("sign_in_again", "Sign in again through the provider, then try once more.", 403)
+    confirmed_without_password(request, row)
 
 
 # --- The brake per address --------------------------------------------------------------------------------------------
@@ -495,10 +517,8 @@ def confirm_operator(
     passed too: else a right password would wipe the count before each guess at the code."""
     row = db.get(AccountRow, operator.id)
     assert row is not None
-    if row.sign_in != SIGN_IN_PASSWORD:
-        session = session_of(request)
-        if session.stage == STAGE_FULL and clock.now() - session.created_at > timedelta(minutes=FRESH_MINUTES):
-            raise error("sign_in_again", "Sign in again through the provider, then try once more.", 403)
+    if not has_password(row):
+        confirmed_without_password(request, row)
         return
     reauth_guard(request, row)
     if not accounts.check_password(row, password):

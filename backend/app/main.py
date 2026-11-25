@@ -75,8 +75,8 @@ from .routers import transfer as transfer_router
 from .routers import upload_requests as upload_requests_router
 from .routers import v1 as v1_router
 from .security import HashingBusy, purge_sessions
+from .services import autotrash as autotrash_service
 from .services import (
-    accounts,
     backups,
     catalog,
     filecheck,
@@ -87,11 +87,11 @@ from .services import (
     notices,
     oidc_store,
     pictures,
+    post_store,
     settings_service,
     storage,
     totp,
 )
-from .services import autotrash as autotrash_service
 from .services import deadlines as deadlines_service
 from .services import intake as intake_service
 from .services import manifest as manifest_service
@@ -99,7 +99,10 @@ from .services import pairing as pairing_service
 from .services import passkeys as passkeys_service
 from .services import reminders as reminders_service
 from .services import uploads as uploads_service
+from .services.konten_store import KontenStore
 from .vendor import nexoidc
+from .vendor.nexkonten import factor as konten_factor
+from .vendor.nexkonten import setup as konten_setup
 
 logger = logging.getLogger("nexpaper")
 
@@ -143,11 +146,16 @@ def _write_log_mode(mode: str, until: datetime | None) -> None:
 
 async def _sweep_forever(stop: asyncio.Event) -> None:
     """Enrolments and sign-ins waiting for their second factor run out; what ran out goes from memory, ended
-    sessions from the database once an hour (they stayed until someone showed them again)."""
+    sessions from the database once an hour (they stayed until someone showed them again). System mail waiting in the
+    outbox of the shared post module goes out (in a thread: SMTP blocks)."""
     rounds = 0
     while not stop.is_set():
         totp.sweep()
         passkeys_service.sweep()
+        try:
+            await asyncio.to_thread(post_store.run_due)
+        except Exception:
+            logger.exception("Outbox round failed")
         if rounds % 60 == 0:
             with SessionLocal() as db:
                 purge_sessions(db)
@@ -204,7 +212,10 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
         tasks.append(asyncio.create_task(autotrash_service.run_forever(stop)))
     logger.info("nexpaper %s started", __version__)
     with SessionLocal() as db:
-        accounts.announce_setup_code(db)
+        # The setup code of the shared account module, in the log while nobody has set nexpaper up.
+        konten_setup.announce_setup(KontenStore(db))
+    # NEXPAPER_SECOND_FACTOR_OFF: a warning in the log while the emergency hammer holds.
+    konten_factor.announce_switched_off()
     try:
         yield
     finally:
