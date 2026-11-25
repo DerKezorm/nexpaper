@@ -18,6 +18,7 @@ from app.config import get_settings
 from app.db import SessionLocal
 from app.models import Account, Document, Job, Version, VersionText
 from app.services import backups, filecheck, jobs, search_index, storage
+from app.vendor.nexsicherung import restore as module_restore
 
 from .conftest import PASSWORD, make_account
 from .papers import PDF, add_document, own_vault
@@ -74,7 +75,7 @@ def test_the_archive_has_no_index_and_the_live_database_keeps_its_own(operator: 
         manifest = json.loads(archive.read(backups.MANIFEST))
     assert manifest["documents"] == 3 and manifest["with_index"] is False
     assert indexed_ids() == set(ids), "making a backup took nothing from the live index"
-    assert [entry.documents for entry in backups.entries()] == [3]
+    assert [entry.facts["documents"] for entry in backups.entries()] == [3]
 
 
 def test_the_archive_is_small_whatever_the_index_holds(operator: Account, tmp_path: Path) -> None:
@@ -119,7 +120,7 @@ def test_a_restore_builds_the_search_anew_and_the_trial_run_says_so(
     assert brief["usable"] and brief["documents"] == 3
     assert brief["missing_documents"] == 0 and brief["changed_documents"] == 0
     assert brief["newer_documents"] == 1 and brief["rebuilds_index"] is True
-    monkeypatch.setattr(backups, "restart_soon", lambda: None)
+    monkeypatch.setattr(module_restore, "restart_soon", lambda: None)
     assert client.post(f"/api/v1/backups/{name}/restore", json={"password": PASSWORD}).status_code == 202
     assert backups.apply_pending() is True
     database.init_db()

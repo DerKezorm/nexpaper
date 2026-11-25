@@ -170,6 +170,8 @@ async def _sweep_forever(stop: asyncio.Event) -> None:
 @asynccontextmanager
 async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     logs.setup()
+    # The shared backup module on this data folder (a test may have moved it since the import).
+    backups.configure()
     backups.apply_pending()
     init_db()
     # A restore that could not be put in place at this start: the operators hear of it once.

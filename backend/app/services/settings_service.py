@@ -14,9 +14,13 @@ from ..models import Setting
 DEFAULTS: dict[str, Any] = {
     "log_mode": "normal",
     "log_mode_until": None,
-    #: off | daily | weekly. Daily in the night unless the operator decides otherwise.
+    #: off | daily | weekly | monthly (the shared module sicherung). Daily, at 03:00, unless the operator decides
+    #: otherwise.
     "backup_schedule": "daily",
     "backup_keep": 7,
+    #: The time of day of the automatic backups (the shared module sicherung), in the server's zone. Before the
+    #: module they were made in the night, between 3 and 6.
+    "backup_time": "03:00",
     #: The address people use to reach nexpaper: invitation links, the redirect address of the sign-in providers.
     #: Empty means ``NEXPAPER_PUBLIC_URL``, and without that the request's own.
     "public_url": "",

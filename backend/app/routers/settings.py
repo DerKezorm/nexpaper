@@ -81,7 +81,7 @@ class SettingsIn(BaseModel):
     confirm_address: bool = False
     #: The operator's password once more: asked when a change makes signing in weaker.
     current_password: str = Field(default="", max_length=200)
-    backup_schedule: Literal["off", "daily", "weekly"] | None = None
+    backup_schedule: Literal["off", "daily", "weekly", "monthly"] | None = None
     backup_keep: int | None = Field(default=None, ge=1, le=365)
     smtp_host: str | None = Field(default=None, max_length=255)
     smtp_port: int | None = Field(default=None, ge=1, le=65535)

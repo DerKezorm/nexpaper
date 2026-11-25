@@ -24,8 +24,9 @@ from app import db as database
 from app.db import SessionLocal
 from app.main import app
 from app.models import ApiKey, Device, Link
-from app.services import backups, filecheck, tell
+from app.services import backup_hooks, backups, filecheck, tell
 from app.services.backups import DATABASE_ENTRY, MANIFEST
+from app.vendor.nexsicherung import restore as module_restore
 
 from .conftest import PASSWORD, make_account
 from .papers import PDF, add_document, own_vault
@@ -251,7 +252,7 @@ def test_a_restore_that_fails_at_the_start_leaves_the_database_and_the_server_st
     def broken(_database: Path) -> None:
         raise RuntimeError("forced for the test")
 
-    monkeypatch.setattr(backups, "_end_restored_sessions", broken)
+    monkeypatch.setattr(backup_hooks, "_end_restored_sessions", broken)
     with TestClient(app) as started:
         assert started.get("/api/v1/health").status_code == 200, "the server started"
     assert not backups.pending_folder().exists()
@@ -272,14 +273,14 @@ def test_a_failed_restore_is_put_aside_by_apply_pending_itself(tmp_path: Path, m
     staged(tmp_path)
     before = accounts_now()
     with monkeypatch.context() as broken:
-        broken.setattr(backups, "_end_restored_sessions", lambda _path: 1 / 0)
+        broken.setattr(backup_hooks, "_end_restored_sessions", lambda _path: 1 / 0)
         assert backups.apply_pending() is False
     assert backups.failed_folder().is_dir() and not backups.pending_folder().exists()
     assert accounts_now() == before
     # An earlier failure is replaced by a later one, not piled up.
     backups.stage_restore(_latest_name())
     with monkeypatch.context() as broken:
-        broken.setattr(backups, "_end_restored_sessions", lambda _path: 1 / 0)
+        broken.setattr(backup_hooks, "_end_restored_sessions", lambda _path: 1 / 0)
         assert backups.apply_pending() is False
     assert [path.name for path in backups.folder().glob("restore-failed*")] == ["restore-failed"]
 
@@ -332,7 +333,14 @@ def test_a_manifest_larger_than_64_kilobytes_is_refused_and_one_at_the_limit_pas
         if ok:
             assert answer.status_code == 200 and answer.json()["usable"] is True
         else:
-            assert answer.status_code == 400 and answer.json()["detail"]["code"] == "backup_invalid", answer.text
+            # The shared module reads the manifest before the trial run: an archive whose manifest is refused is no
+            # backup to use (200 and unusable; before the module nexpaper answered 400 ``backup_invalid``), and it is
+            # never restored.
+            assert answer.status_code == 200, answer.text
+            assert answer.json()["usable"] is False and answer.json()["database_ok"] is False
+            restore = client.post(f"/api/v1/backups/{name}/restore", json={"password": PASSWORD})
+            assert restore.status_code == 400 and restore.json()["detail"]["code"] == "backup_damaged", restore.text
+            assert not backups.pending_folder().exists()
 
 
 def test_an_upload_with_a_manifest_that_is_too_large_is_turned_away(client: TestClient, operator: object) -> None:
@@ -433,8 +441,9 @@ def test_the_restore_compares_what_it_unpacks_with_the_manifest_itself(
         connection.execute("CREATE TABLE addition (id INTEGER)")
         connection.commit()
     name = write_archive({**entries, DATABASE_ENTRY: other.read_bytes()})
-    good = backups.check(write_archive(entries, "nexpaper-2020-07-03-000000.zip"))
-    monkeypatch.setattr(backups, "check", lambda *_args, **_kwargs: good)
+    good = module_restore.check(write_archive(entries, "nexpaper-2020-07-03-000000.zip"))
+    assert good.usable
+    monkeypatch.setattr(module_restore, "check", lambda *_args, **_kwargs: good)
     with pytest.raises(backups.BackupError) as caught:
         backups.stage_restore(name)
     assert caught.value.code == "backup_damaged" and not backups.pending_folder().exists()
@@ -484,7 +493,7 @@ def test_the_copy_of_the_present_state_is_made_before_a_restore_and_named_for_it
 ) -> None:
     """The way back: the state of before the restore is kept as an ``update`` copy, and it is a good archive."""
     name = a_backup(client)
-    monkeypatch.setattr(backups, "restart_soon", lambda: None)
+    monkeypatch.setattr(module_restore, "restart_soon", lambda: None)
     assert client.post(f"/api/v1/backups/{name}/restore", json={"password": PASSWORD}).status_code == 202
     copies = update_copies()
     assert len(copies) == 1 and copies[0].note == f"before restoring {name}"
@@ -540,7 +549,7 @@ def test_the_time_for_comparing_files_runs_out_inside_a_large_file(
     fake = SimpleNamespace(monotonic=lambda: next(clockwork), sleep=real_time.sleep, time=real_time.time,
                            time_ns=real_time.time_ns)
     monkeypatch.setattr(filecheck, "_CHUNK", 1024)
-    monkeypatch.setattr(backups, "time", fake)
+    monkeypatch.setattr(backup_hooks, "time", fake)
     monkeypatch.setattr(filecheck, "time", fake)
     short = backups.check(name, hash_seconds=4.5)
     assert short.documents == 1 and short.not_compared >= 1

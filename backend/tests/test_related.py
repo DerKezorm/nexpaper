@@ -493,6 +493,7 @@ def test_a_backup_keeps_the_pairs_the_proposals_turned_down_and_the_numbers(
     from app import db as database
     from app.models import DocumentNumber
     from app.services import backups
+    from app.vendor.nexsicherung import restore as module_restore
 
     vault = own_vault(operator)
     text = "Bestellnummer B-1234567"
@@ -505,7 +506,7 @@ def test_a_backup_keeps_the_pairs_the_proposals_turned_down_and_the_numbers(
     # After the backup: the pair removed, another set.
     assert client.delete(f"/api/v1/documents/{one}/related/{two}").status_code == 200
     assert client.put(f"/api/v1/documents/{two}/related/{three}").status_code == 200
-    monkeypatch.setattr(backups, "restart_soon", lambda: None)
+    monkeypatch.setattr(module_restore, "restart_soon", lambda: None)
     assert client.post(f"/api/v1/backups/{name}/restore", json={"password": PASSWORD}).status_code == 202
     assert backups.apply_pending() is True
     database.init_db()

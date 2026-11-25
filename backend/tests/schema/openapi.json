@@ -784,6 +784,24 @@
         "title": "ChangesOut",
         "type": "object"
       },
+      "CheckIn": {
+        "properties": {
+          "archive_password": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Archive Password"
+          }
+        },
+        "title": "CheckIn",
+        "type": "object"
+      },
       "ConditionIn": {
         "additionalProperties": false,
         "properties": {
@@ -843,18 +861,6 @@
           "op"
         ],
         "title": "ConditionIn",
-        "type": "object"
-      },
-      "CreateIn": {
-        "properties": {
-          "note": {
-            "default": "",
-            "maxLength": 200,
-            "title": "Note",
-            "type": "string"
-          }
-        },
-        "title": "CreateIn",
         "type": "object"
       },
       "CurrencySum": {
@@ -1811,6 +1817,18 @@
       },
       "DownloadIn": {
         "properties": {
+          "archive_password": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Archive Password"
+          },
           "password": {
             "default": "",
             "maxLength": 200,
@@ -5401,20 +5419,6 @@
         "title": "NewPasswordIn",
         "type": "object"
       },
-      "NoteIn": {
-        "properties": {
-          "text": {
-            "maxLength": 10000,
-            "title": "Text",
-            "type": "string"
-          }
-        },
-        "required": [
-          "text"
-        ],
-        "title": "NoteIn",
-        "type": "object"
-      },
       "NoteOut": {
         "properties": {
           "author": {
@@ -7998,22 +8002,6 @@
         "title": "ResetLinkIn",
         "type": "object"
       },
-      "RestoreIn": {
-        "additionalProperties": false,
-        "properties": {
-          "base_version": {
-            "maximum": 2147483647.0,
-            "minimum": 1.0,
-            "title": "Base Version",
-            "type": "integer"
-          }
-        },
-        "required": [
-          "base_version"
-        ],
-        "title": "RestoreIn",
-        "type": "object"
-      },
       "RoleIn": {
         "properties": {
           "current_password": {
@@ -8297,6 +8285,30 @@
           "name"
         ],
         "title": "SavedRename",
+        "type": "object"
+      },
+      "ScheduleIn": {
+        "properties": {
+          "every": {
+            "maxLength": 16,
+            "title": "Every",
+            "type": "string"
+          },
+          "keep": {
+            "title": "Keep"
+          },
+          "time": {
+            "maxLength": 5,
+            "title": "Time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "every",
+          "time",
+          "keep"
+        ],
+        "title": "ScheduleIn",
         "type": "object"
       },
       "SearchHit": {
@@ -8629,7 +8641,8 @@
                 "enum": [
                   "off",
                   "daily",
-                  "weekly"
+                  "weekly",
+                  "monthly"
                 ],
                 "type": "string"
               },
@@ -10785,18 +10798,6 @@
         "title": "SetupIn",
         "type": "object"
       },
-      "app__routers__backups__PasswordIn": {
-        "properties": {
-          "password": {
-            "default": "",
-            "maxLength": 200,
-            "title": "Password",
-            "type": "string"
-          }
-        },
-        "title": "PasswordIn",
-        "type": "object"
-      },
       "app__routers__catalog__MergeIn": {
         "properties": {
           "into": {
@@ -11035,6 +11036,20 @@
         "title": "DeviceIn",
         "type": "object"
       },
+      "app__routers__documents__NoteIn": {
+        "properties": {
+          "text": {
+            "maxLength": 10000,
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "title": "NoteIn",
+        "type": "object"
+      },
       "app__routers__keeping__MergeIn": {
         "additionalProperties": false,
         "properties": {
@@ -11121,6 +11136,22 @@
           "others"
         ],
         "title": "MergeIn",
+        "type": "object"
+      },
+      "app__routers__pagetools__RestoreIn": {
+        "additionalProperties": false,
+        "properties": {
+          "base_version": {
+            "maximum": 2147483647.0,
+            "minimum": 1.0,
+            "title": "Base Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "base_version"
+        ],
+        "title": "RestoreIn",
         "type": "object"
       },
       "app__routers__passkeys__PasswordIn": {
@@ -11310,6 +11341,54 @@
           "url"
         ],
         "title": "DeadlineOut",
+        "type": "object"
+      },
+      "app__vendor__nexsicherung__routes__NoteIn": {
+        "properties": {
+          "note": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Note",
+            "type": "string"
+          }
+        },
+        "title": "NoteIn",
+        "type": "object"
+      },
+      "app__vendor__nexsicherung__routes__PasswordIn": {
+        "properties": {
+          "password": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Password",
+            "type": "string"
+          }
+        },
+        "title": "PasswordIn",
+        "type": "object"
+      },
+      "app__vendor__nexsicherung__routes__RestoreIn": {
+        "properties": {
+          "archive_password": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Archive Password"
+          },
+          "password": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Password",
+            "type": "string"
+          }
+        },
+        "title": "RestoreIn",
         "type": "object"
       }
     },
@@ -13472,11 +13551,10 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateIn"
+                "$ref": "#/components/schemas/app__vendor__nexsicherung__routes__NoteIn"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "201": {
@@ -13517,7 +13595,6 @@
     },
     "/api/v1/backups/upload": {
       "post": {
-        "description": "For a move to a new server: the archive joins the list, to be checked and restored like any other. Asks for the\npassword first: a restore of it brings back other passwords and keys, and a stolen session must not lay one out.",
         "operationId": "upload_api_v1_backups_upload_post",
         "responses": {
           "201": {
@@ -13540,7 +13617,7 @@
             "HTTPBearer": []
           }
         ],
-        "summary": "Bring in an archive from elsewhere (the body is the ZIP); needs the password again",
+        "summary": "Upload",
         "tags": [
           "backups"
         ]
@@ -13548,7 +13625,6 @@
     },
     "/api/v1/backups/{name}": {
       "delete": {
-        "description": "Asks for the password again: a stolen session must not throw every copy away.",
         "operationId": "delete_api_v1_backups__name__delete",
         "parameters": [
           {
@@ -13556,8 +13632,6 @@
             "name": "name",
             "required": true,
             "schema": {
-              "maxLength": 64,
-              "pattern": "^nexpaper-\\d{4}-\\d{2}-\\d{2}-\\d{6}(-\\d+)?(-upload)?\\.zip$",
               "title": "Name",
               "type": "string"
             }
@@ -13567,7 +13641,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/app__routers__backups__PasswordIn"
+                "$ref": "#/components/schemas/app__vendor__nexsicherung__routes__PasswordIn"
               }
             }
           },
@@ -13608,8 +13682,6 @@
             "name": "name",
             "required": true,
             "schema": {
-              "maxLength": 64,
-              "pattern": "^nexpaper-\\d{4}-\\d{2}-\\d{2}-\\d{6}(-\\d+)?(-upload)?\\.zip$",
               "title": "Name",
               "type": "string"
             }
@@ -13652,7 +13724,6 @@
     },
     "/api/v1/backups/{name}/download": {
       "post": {
-        "description": "The archive holds the database and ``secret.key``. A stolen session alone must not be\nenough to carry it away, so the password is asked again and counted like a sign-in.",
         "operationId": "download_api_v1_backups__name__download_post",
         "parameters": [
           {
@@ -13660,8 +13731,6 @@
             "name": "name",
             "required": true,
             "schema": {
-              "maxLength": 64,
-              "pattern": "^nexpaper-\\d{4}-\\d{2}-\\d{2}-\\d{6}(-\\d+)?(-upload)?\\.zip$",
               "title": "Name",
               "type": "string"
             }
@@ -13702,7 +13771,7 @@
             "HTTPBearer": []
           }
         ],
-        "summary": "The archive itself, to keep a copy elsewhere; needs the password again",
+        "summary": "Download",
         "tags": [
           "backups"
         ]
@@ -13710,16 +13779,13 @@
     },
     "/api/v1/backups/{name}/restore": {
       "post": {
-        "description": "Checks, keeps the current state as a backup, and restarts; the restore happens at the next start. Asks for\nthe password again: going back brings back old passwords and keys.",
-        "operationId": "restore_api_v1_backups__name__restore_post",
+        "operationId": "restore_route_api_v1_backups__name__restore_post",
         "parameters": [
           {
             "in": "path",
             "name": "name",
             "required": true,
             "schema": {
-              "maxLength": 64,
-              "pattern": "^nexpaper-\\d{4}-\\d{2}-\\d{2}-\\d{6}(-\\d+)?(-upload)?\\.zip$",
               "title": "Name",
               "type": "string"
             }
@@ -13729,7 +13795,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/app__routers__backups__PasswordIn"
+                "$ref": "#/components/schemas/app__vendor__nexsicherung__routes__RestoreIn"
               }
             }
           },
@@ -13740,9 +13806,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": true,
-                  "title": "Response Restore Api V1 Backups  Name  Restore Post",
-                  "type": "object"
+                  "title": "Response Restore Route Api V1 Backups  Name  Restore Post"
                 }
               }
             },
@@ -13764,7 +13828,7 @@
             "HTTPBearer": []
           }
         ],
-        "summary": "Restore",
+        "summary": "Restore Route",
         "tags": [
           "backups"
         ]
@@ -15521,7 +15585,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/NoteIn"
+                "$ref": "#/components/schemas/app__routers__documents__NoteIn"
               }
             }
           },
@@ -15634,7 +15698,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/NoteIn"
+                "$ref": "#/components/schemas/app__routers__documents__NoteIn"
               }
             }
           },
@@ -17528,7 +17592,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/RestoreIn"
+                "$ref": "#/components/schemas/app__routers__pagetools__RestoreIn"
               }
             }
           },
@@ -24592,6 +24656,424 @@
         "summary": "Move all documents of a sender to another sender of the same vault, and delete it (manage)",
         "tags": [
           "catalog"
+        ]
+      }
+    },
+    "/api/v1/server/storage": {
+      "get": {
+        "operationId": "storage_api_v1_server_storage_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Storage Api V1 Server Storage Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "What the app takes on the disk, how full it is, network shares (operator)",
+        "tags": [
+          "storage"
+        ]
+      }
+    },
+    "/api/v1/server/storage/backups": {
+      "get": {
+        "operationId": "backups_api_v1_server_storage_backups_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Backups Api V1 Server Storage Backups Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "The schedule, the last backup, a failure, and the list (operator)",
+        "tags": [
+          "storage"
+        ]
+      },
+      "post": {
+        "operationId": "make_api_v1_server_storage_backups_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/app__vendor__nexsicherung__routes__NoteIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Make Api V1 Server Storage Backups Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Make a backup now",
+        "tags": [
+          "storage"
+        ]
+      }
+    },
+    "/api/v1/server/storage/backups/restore-failed": {
+      "delete": {
+        "operationId": "dismiss_api_v1_server_storage_backups_restore_failed_delete",
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "The failed restore was seen",
+        "tags": [
+          "storage"
+        ]
+      }
+    },
+    "/api/v1/server/storage/backups/schedule": {
+      "put": {
+        "operationId": "schedule_api_v1_server_storage_backups_schedule_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScheduleIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Schedule Api V1 Server Storage Backups Schedule Put",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Automatic backups: off, daily, weekly, monthly; the time; how many",
+        "tags": [
+          "storage"
+        ]
+      }
+    },
+    "/api/v1/server/storage/backups/upload": {
+      "post": {
+        "operationId": "upload_api_v1_server_storage_backups_upload_post",
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Upload Api V1 Server Storage Backups Upload Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Bring in a backup from elsewhere (the body is the archive); needs the password again, in the header",
+        "tags": [
+          "storage"
+        ]
+      }
+    },
+    "/api/v1/server/storage/backups/{name}": {
+      "delete": {
+        "operationId": "delete_api_v1_server_storage_backups__name__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "title": "Name",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/app__vendor__nexsicherung__routes__PasswordIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Delete a backup; needs the password again",
+        "tags": [
+          "storage"
+        ]
+      }
+    },
+    "/api/v1/server/storage/backups/{name}/check": {
+      "post": {
+        "operationId": "check_api_v1_server_storage_backups__name__check_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "title": "Name",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CheckIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Check Api V1 Server Storage Backups  Name  Check Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "The trial run: whole or not, what a restore would change",
+        "tags": [
+          "storage"
+        ]
+      }
+    },
+    "/api/v1/server/storage/backups/{name}/download": {
+      "post": {
+        "operationId": "download_api_v1_server_storage_backups__name__download_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "title": "Name",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DownloadIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "The archive itself; needs the password again",
+        "tags": [
+          "storage"
+        ]
+      }
+    },
+    "/api/v1/server/storage/backups/{name}/restore": {
+      "post": {
+        "operationId": "restore_route_api_v1_server_storage_backups__name__restore_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "title": "Name",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/app__vendor__nexsicherung__routes__RestoreIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "Response Restore Route Api V1 Server Storage Backups  Name  Restore Post"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Keep the current state, then restore; needs the password again",
+        "tags": [
+          "storage"
         ]
       }
     },

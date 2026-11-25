@@ -89,11 +89,17 @@ def concrete(path: str) -> str:
 
 
 def every_route() -> list[Any]:
-    """The routes of the app, the included routers opened (this FastAPI keeps them as a router inside a router)."""
+    """The routes of the app, the included routers opened (this FastAPI keeps them as a router inside a router, and a
+    router of nexpaper may hold routers itself: ``routers/backups.py`` holds the two of the shared backup module)."""
     found: list[Any] = []
-    for route in app.routes:
+    pending = list(app.routes)
+    while pending:
+        route = pending.pop(0)
         inner = getattr(route, "original_router", None)
-        found.extend(inner.routes if inner is not None else [route])
+        if inner is not None:
+            pending[:0] = inner.routes
+        else:
+            found.append(route)
     return found
 
 

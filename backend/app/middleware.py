@@ -34,7 +34,7 @@ def _database_busy(exc: BaseException) -> bool:
 QUIET_PATHS = ("/api/v1/health", "/api/v1/logs")
 SLOW_MS = 3000
 #: What takes long by nature: backups grow with the diaries.
-SLOW_EXPECTED = ("/api/v1/backups",)
+SLOW_EXPECTED = ("/api/v1/backups", "/api/v1/server/storage")
 
 #: The interface sets inline styles, hence 'unsafe-inline' for styles only. Scripts stay strict.
 #: ``blob:`` for images: a picture is shown before it is uploaded. The service worker (``/sw.js``, Web Push) and the
@@ -165,6 +165,8 @@ MAX_BODY = 16 * 1024 * 1024
 #: a picture, whose decoder says the same number (``pictures.MAX_BYTES``).
 LARGE_BODIES = {
     "/api/v1/backups/upload": 64 * 1024**3,
+    # The same upload on the way of the shared module sicherung (Settings, Storage and backups).
+    "/api/v1/server/storage/backups/upload": 64 * 1024**3,
     "/api/v1/auth/avatar": pictures.MAX_BYTES,
 }
 #: The upload of documents: the browser's multipart request (a few files, each at most the operator's limit, read anew

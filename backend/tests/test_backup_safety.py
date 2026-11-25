@@ -15,7 +15,8 @@ from sqlalchemy import Connection, create_engine, text
 from app import db as database
 from app.config import get_settings
 from app.models import Account
-from app.services import backups
+from app.services import backup_hooks, backups
+from app.vendor.nexsicherung import tools
 
 from .conftest import PASSWORD
 
@@ -91,13 +92,32 @@ def test_an_archive_holds_the_database_the_manifest_and_the_secret_and_no_docume
 
 
 def test_a_backup_from_a_newer_nexpaper_is_not_restored(client: TestClient, operator: Account, tmp_path: Path) -> None:
+    """A newer nexpaper names its version in the manifest and has a newer schema: the shared module refuses it by the
+    version, nexpaper's trial run by the schema."""
+    entries = made_here()
+    entries[backups.DATABASE_ENTRY] = with_schema(entries[backups.DATABASE_ENTRY], database.SCHEMA_VERSION + 98,
+                                                  tmp_path)
+    name = write_archive(with_manifest(agreeing(entries), version="99.0.0"))
+    brief = client.post(f"/api/v1/backups/{name}/check").json()
+    assert brief["schema"] == database.SCHEMA_VERSION + 98
+    assert brief["database_ok"] is False and brief["usable"] is False and brief["too_new"] is True
+    refused = client.post(f"/api/v1/backups/{name}/restore", json={"password": PASSWORD})
+    assert refused.status_code == 400 and refused.json()["detail"]["code"] == "backup_too_new"
+    assert not backups.pending_folder().exists(), "nothing laid out for the next start"
+
+
+def test_a_database_of_a_newer_schema_is_refused_although_the_manifest_names_this_version(
+    client: TestClient, operator: Account, tmp_path: Path
+) -> None:
+    """The schema decides too, not only the version in the manifest: with the same code as before the module."""
     entries = made_here()
     entries[backups.DATABASE_ENTRY] = with_schema(entries[backups.DATABASE_ENTRY], database.SCHEMA_VERSION + 98,
                                                   tmp_path)
     name = write_archive(agreeing(entries))
     brief = client.post(f"/api/v1/backups/{name}/check").json()
-    assert brief["schema"] == database.SCHEMA_VERSION + 98
-    assert brief["database_ok"] is False and brief["usable"] is False and brief["too_new"] is True
+    assert brief["schema"] == database.SCHEMA_VERSION + 98 and brief["blocked"] == "backup_too_new"
+    assert brief["database_ok"] is False and brief["usable"] is False
+    assert backups.check(name).too_new is True
     refused = client.post(f"/api/v1/backups/{name}/restore", json={"password": PASSWORD})
     assert refused.status_code == 400 and refused.json()["detail"]["code"] == "backup_too_new"
     assert not backups.pending_folder().exists(), "nothing laid out for the next start"
@@ -155,7 +175,7 @@ def test_an_archive_that_unpacks_to_more_than_a_backup_may_hold_is_refused(
     client: TestClient, operator: Account, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Zeros pack to almost nothing: a few hundred bytes in the archive, kilobytes when read."""
-    monkeypatch.setattr(backups, "SECRET_MAX", 64)
+    monkeypatch.setattr(backup_hooks, "SECRET_MAX", 64)
     entries = made_here()
     entries[backups.SECRET_ENTRY] = b"\0" * 4096
     name = write_archive(entries)
@@ -165,7 +185,7 @@ def test_an_archive_that_unpacks_to_more_than_a_backup_may_hold_is_refused(
     assert refused.value.code == "backup_too_large"
     assert not backups.pending_folder().exists()
 
-    monkeypatch.setattr(backups, "DATABASE_MAX", 1000)
+    monkeypatch.setattr(backup_hooks, "DATABASE_MAX", 1000)
     name = write_archive(made_here())
     with pytest.raises(backups.BackupError) as refused:
         backups.check(name)
@@ -175,7 +195,7 @@ def test_an_archive_that_unpacks_to_more_than_a_backup_may_hold_is_refused(
 def test_the_whole_counts_too(client: TestClient, operator: Account, monkeypatch: pytest.MonkeyPatch) -> None:
     entries = made_here()
     entries[backups.SECRET_ENTRY] = b"x" * 200
-    monkeypatch.setattr(backups, "RESTORE_MAX", len(entries[backups.DATABASE_ENTRY]) + 50)
+    monkeypatch.setattr(backup_hooks, "RESTORE_MAX", len(entries[backups.DATABASE_ENTRY]) + 50)
     name = write_archive(entries)
     with pytest.raises(backups.BackupError) as refused:
         backups.stage_restore(name)
@@ -185,7 +205,7 @@ def test_the_whole_counts_too(client: TestClient, operator: Account, monkeypatch
 def test_two_backups_in_the_same_second_get_names_of_their_own(monkeypatch: pytest.MonkeyPatch) -> None:
     import threading
 
-    monkeypatch.setattr(backups, "_stamp", lambda _moment: "2020-01-01-000000")
+    monkeypatch.setattr(tools, "stamp", lambda _moment: "2020-01-01-000000")
     start = threading.Barrier(2)
     made: list[Path] = []
     failed: list[BaseException] = []
