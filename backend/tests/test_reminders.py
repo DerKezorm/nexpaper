@@ -15,7 +15,6 @@ import zipfile
 from collections.abc import Iterator
 from contextlib import closing
 from datetime import UTC, datetime, timedelta
-from email.message import EmailMessage
 from pathlib import Path
 from typing import Any
 
@@ -34,11 +33,12 @@ from app.services import (
     deadlines,
     devices,
     documents,
-    mailer,
     push,
     reminders,
     settings_service,
 )
+from app.vendor import nexpost
+from app.vendor.nexpost import testing as post_testing
 
 from .conftest import make_account, new_client
 from .fake_push import FakePushService
@@ -126,14 +126,63 @@ def town(operator: Account, push_service: FakePushService, monkeypatch: pytest.M
     return Town(operator, push_service, monkeypatch)
 
 
+class Mail:
+    """A mail as it would go out (``nexpost.send.message``), read the way these tests read mails: its headers, its
+    plain text (``get_content``), its parts and the whole of it."""
+
+    SETTINGS = nexpost.MailSettings(host="mail.example.com", port=587, security="starttls", user="", password="",
+                                    sender="paper@example.com", sender_name="")
+
+    def __init__(self, letter: nexpost.Letter) -> None:
+        self.letter = letter
+        self.message = nexpost.send.message(self.SETTINGS, letter)
+
+    def __getitem__(self, name: str) -> Any:
+        return self.message[name]
+
+    def get_content(self) -> str:
+        return self.letter.text
+
+    def get_body(self, preferencelist: tuple[str, ...]) -> Any:
+        return self.message.get_body(preferencelist)
+
+    def as_string(self) -> str:
+        return self.message.as_string()
+
+
+class Mails:
+    """Every mail the shared post module was handed (sent at once or queued), in order, as ``Mail``."""
+
+    def __init__(self, caught: Any) -> None:
+        self.caught = caught
+
+    def _all(self) -> list[Mail]:
+        return [Mail(letter) for letter in self.caught.letters]
+
+    def __len__(self) -> int:
+        return len(self.caught.letters)
+
+    def __iter__(self) -> Iterator[Mail]:
+        return iter(self._all())
+
+    def __getitem__(self, index: int) -> Mail:
+        return self._all()[index]
+
+    def __eq__(self, other: object) -> bool:
+        return isinstance(other, list) and self._all() == other
+
+    __hash__ = None  # type: ignore[assignment]
+
+
 @pytest.fixture
-def mails(monkeypatch: pytest.MonkeyPatch) -> Iterator[list[EmailMessage]]:
-    sent: list[EmailMessage] = []
-    monkeypatch.setattr(mailer, "send_message", lambda _db, message: sent.append(message))
+def mails() -> Iterator[Mails]:
+    """Mail is set up (the tests have none) and caught (``nexpost.testing.catch_mail``): the mails of the reminders go
+    into the outbox, the test message at once."""
     with SessionLocal() as db:
         settings_service.save(db, {"smtp_host": "mail.example.com", "smtp_from": "paper@example.com",
                                    "public_url": "https://paper.example.com"})
-    yield sent
+    with post_testing.catch_mail() as caught:
+        yield Mails(caught)
 
 
 def run(moment: datetime) -> reminders.Summary:
@@ -319,7 +368,7 @@ def test_a_share_with_edit_reminds_and_can_be_muted(town: Town) -> None:
     assert "lea" not in {person for person, _title in town.got()}
 
 
-def test_a_muted_vault_is_quiet_and_the_own_one_is_not(town: Town, mails: list[EmailMessage]) -> None:
+def test_a_muted_vault_is_quiet_and_the_own_one_is_not(town: Town, mails: Mails) -> None:
     town.add("Kurtaxe", town.house, town.tom, dates=[("due", TODAY + DAY)])
     town.add("Eigenes", town.mine, town.jule, dates=[("due", TODAY + DAY)])
     choose(town.jule, muted=[town.house], rhythm="both")
@@ -396,7 +445,7 @@ def test_at_most_twenty_a_day_and_one_message_for_the_rest(town: Town) -> None:
 
 
 def test_a_message_names_kind_day_and_title_never_amount_text_notes_or_tags(town: Town,
-                                                                           mails: list[EmailMessage]) -> None:
+                                                                           mails: Mails) -> None:
     choose(town.jule, mail=True, rhythm="both")
     # Two days ahead: the sentence counts the days ("Noch 2 Tage."), the place an amount would most likely slip into.
     doc = town.add("Zahnarzt", town.mine, town.jule, dates=[("due", TODAY + 2 * DAY)], amount=987654,
@@ -439,7 +488,7 @@ def test_an_english_person_gets_english_words(town: Town) -> None:
     assert message["body"] == "14 days to go. After that the contract renews until Jan 22, 2028."
 
 
-def test_the_weekly_mail_goes_on_monday_only_when_something_comes_up(town: Town, mails: list[EmailMessage]) -> None:
+def test_the_weekly_mail_goes_on_monday_only_when_something_comes_up(town: Town, mails: Mails) -> None:
     choose(town.jule, rhythm="weekly")
     monday = Date(2026, 10, 12)
     run(at(monday, 8))
@@ -462,7 +511,7 @@ def test_the_weekly_mail_goes_on_monday_only_when_something_comes_up(town: Town,
     assert len(mails) == 1
 
 
-def test_a_muted_vault_does_not_count_in_the_documents_that_may_go(town: Town, mails: list[EmailMessage]) -> None:
+def test_a_muted_vault_does_not_count_in_the_documents_that_may_go(town: Town, mails: Mails) -> None:
     choose(town.jule, rhythm="weekly")
     monday = Date(2026, 10, 12)
     for n in range(2):
@@ -484,7 +533,7 @@ def test_a_muted_vault_does_not_count_in_the_documents_that_may_go(town: Town, m
     assert "Bei 3 " not in plain and "Bei 6 " not in plain and "Bei 5 " not in plain
 
 
-def test_the_preview_counts_what_may_go_like_the_weekly_mail(town: Town, mails: list[EmailMessage],
+def test_the_preview_counts_what_may_go_like_the_weekly_mail(town: Town, mails: Mails,
                                                               monkeypatch: pytest.MonkeyPatch) -> None:
     """``may_go`` of the own choices is the number the mail would say: the muted vaults left out, nothing for somebody
     who may only read, nothing of what is not over yet."""
@@ -503,7 +552,7 @@ def test_the_preview_counts_what_may_go_like_the_weekly_mail(town: Town, mails: 
         assert jule.put("/api/v1/me/reminders", json={"muted": [town.house, town.mine]}).json()["may_go"] == 0
 
 
-def test_with_every_vault_muted_the_weekly_mail_does_not_mention_what_may_go(town: Town, mails: list[EmailMessage]) -> None:
+def test_with_every_vault_muted_the_weekly_mail_does_not_mention_what_may_go(town: Town, mails: Mails) -> None:
     choose(town.jule, rhythm="weekly", muted=[town.house, town.mine])
     monday = Date(2026, 10, 12)
     town.add("Alt", town.house, town.jule, dates=[("keep_until", monday - 30 * DAY)])
@@ -512,7 +561,7 @@ def test_with_every_vault_muted_the_weekly_mail_does_not_mention_what_may_go(tow
     assert mails == []
 
 
-def test_the_weekly_mail_missed_on_monday_comes_until_wednesday(town: Town, mails: list[EmailMessage]) -> None:
+def test_the_weekly_mail_missed_on_monday_comes_until_wednesday(town: Town, mails: Mails) -> None:
     choose(town.jule, rhythm="weekly")
     town.add("Offen", town.mine, town.jule, dates=[("due", TODAY + 6 * DAY)])
     run(at(Date(2026, 10, 15), 8))  # Thursday: three days after Monday
@@ -521,7 +570,7 @@ def test_the_weekly_mail_missed_on_monday_comes_until_wednesday(town: Town, mail
     assert len(mails) == 1 and mails[0]["Subject"] == "Diese Woche: keine Fristen, 1 überfällig"
 
 
-def test_without_a_confirmed_address_nothing_goes_by_mail(town: Town, mails: list[EmailMessage]) -> None:
+def test_without_a_confirmed_address_nothing_goes_by_mail(town: Town, mails: Mails) -> None:
     choose(town.jule, mail=True, rhythm="both")
     with SessionLocal() as db:
         row = db.get(Account, town.jule.id)
@@ -536,7 +585,7 @@ def test_without_a_confirmed_address_nothing_goes_by_mail(town: Town, mails: lis
 # --- The routes -------------------------------------------------------------------------------------------------------
 
 
-def test_the_own_choices_are_read_and_changed_only_by_their_owner(town: Town, mails: list[EmailMessage]) -> None:
+def test_the_own_choices_are_read_and_changed_only_by_their_owner(town: Town, mails: Mails) -> None:
     with new_client(town.lea) as lea:
         found = lea.get("/api/v1/me/reminders").json()
         assert found["rhythm"] == "single" and found["push"] is True and found["mail"] is False
@@ -595,7 +644,7 @@ def test_a_device_reaches_the_own_choices_and_a_key_does_not(town: Town) -> None
     apikeys.forget()
 
 
-def test_the_test_message_goes_where_the_reminders_go(town: Town, mails: list[EmailMessage]) -> None:
+def test_the_test_message_goes_where_the_reminders_go(town: Town, mails: Mails) -> None:
     with new_client(town.jule) as jule:
         answer = jule.post("/api/v1/me/reminders/test")
         assert answer.status_code == 200 and answer.json()["push"]["sent"] == 1 and answer.json()["mail"] is False
@@ -771,7 +820,7 @@ def test_without_a_mark_nothing_is_held_back(town: Town) -> None:
 # --- Gaps the check found ---------------------------------------------------------------------------------------------
 
 
-def test_the_weekly_mail_shows_a_title_and_a_name_as_text_not_as_markup(town: Town, mails: list[EmailMessage]) -> None:
+def test_the_weekly_mail_shows_a_title_and_a_name_as_text_not_as_markup(town: Town, mails: Mails) -> None:
     choose(town.jule, rhythm="weekly")
     with SessionLocal() as db:
         row = db.get(Account, town.jule.id)
@@ -784,7 +833,9 @@ def test_the_weekly_mail_shows_a_title_and_a_name_as_text_not_as_markup(town: To
     run(at(monday, 8))
     assert len(mails) == 1
     markup = mails[0].get_body(("html",)).get_content()  # type: ignore[union-attr]
-    assert "<img" not in markup and "<b>" not in markup and "<i>" not in markup
+    # The one picture is nexpaper's logo in the frame of the shared post module; nothing of the titles is markup.
+    assert markup.count("<img") == markup.count('<img src="cid:logo"') == 1
+    assert "<b>" not in markup and "<i>" not in markup
     assert "&lt;img src=x onerror=&quot;alert(1)&quot;&gt;" in markup
     assert "&lt;b&gt;fett&lt;/b&gt; &amp; &quot;quote&quot;" in markup
     assert "&lt;i&gt;Jule&lt;/i&gt; &amp; Co" in markup
@@ -931,7 +982,7 @@ def trash_day(day: Date) -> int:
         return autotrash.run(db, day)
 
 
-def test_the_weekly_mail_says_what_nexpaper_put_in_the_trash(town: Town, mails: list[EmailMessage],
+def test_the_weekly_mail_says_what_nexpaper_put_in_the_trash(town: Town, mails: Mails,
                                                               monkeypatch: pytest.MonkeyPatch) -> None:
     choose(town.jule, rhythm="weekly")
     monday = Date(2026, 10, 12)
@@ -954,7 +1005,7 @@ def test_the_weekly_mail_says_what_nexpaper_put_in_the_trash(town: Town, mails: 
     assert len(mails) == 1, "the week was looked at on Monday"
 
 
-def test_the_trash_line_in_english_and_for_one_document(town: Town, mails: list[EmailMessage],
+def test_the_trash_line_in_english_and_for_one_document(town: Town, mails: Mails,
                                                          monkeypatch: pytest.MonkeyPatch) -> None:
     set_profile(town.jule, mail="jule@example.com", language="en")
     choose(town.jule, rhythm="weekly")
@@ -969,7 +1020,7 @@ def test_the_trash_line_in_english_and_for_one_document(town: Town, mails: list[
     assert "TRASH" in plain and "nexpaper put one document in the trash" in plain
 
 
-def test_a_muted_vault_and_a_reader_hear_nothing_about_the_trash(town: Town, mails: list[EmailMessage],
+def test_a_muted_vault_and_a_reader_hear_nothing_about_the_trash(town: Town, mails: Mails,
                                                                   monkeypatch: pytest.MonkeyPatch) -> None:
     monday = Date(2026, 10, 12)
     kind = trash_kind(town.house)
@@ -988,7 +1039,7 @@ def test_a_muted_vault_and_a_reader_hear_nothing_about_the_trash(town: Town, mai
         assert jule.get("/api/v1/me/reminders").json()["trashed"] == 0
 
 
-def test_what_was_put_in_the_trash_over_a_week_ago_is_not_mentioned(town: Town, mails: list[EmailMessage],
+def test_what_was_put_in_the_trash_over_a_week_ago_is_not_mentioned(town: Town, mails: Mails,
                                                                      monkeypatch: pytest.MonkeyPatch) -> None:
     monday = Date(2026, 10, 12)
     kind = trash_kind(town.house)
@@ -1054,7 +1105,7 @@ def test_somebody_who_switched_deadlines_off_gets_no_number_and_no_reminder(town
     assert "tom" in {person for person, _title in town.got()}
 
 
-def test_somebody_who_switched_deadlines_off_gets_no_weekly_mail(town: Town, mails: list[EmailMessage]) -> None:
+def test_somebody_who_switched_deadlines_off_gets_no_weekly_mail(town: Town, mails: Mails) -> None:
     monday = Date(2026, 10, 12)
     for person in (town.jule, town.tom):
         choose(person, rhythm="weekly")

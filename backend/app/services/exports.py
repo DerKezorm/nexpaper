@@ -911,10 +911,9 @@ def _tell(export_id: int) -> None:
 
 
 def _send(export_id: int) -> None:
-    from email.message import EmailMessage
-
     from ..db import SessionLocal
-    from . import mailer, notices, push
+    from ..vendor import nexpost
+    from . import notices, post_store, push
 
     with SessionLocal() as db:
         export = db.get(Export, export_id)
@@ -922,7 +921,7 @@ def _send(export_id: int) -> None:
         if export is None or account is None:
             return
         state, count, uid = export.state, export.documents, account.id
-        mail_to = account.email if account.email and account.email_confirmed_at and mailer.configured(db) else ""
+        mail_to = account.email if account.email and account.email_confirmed_at and post_store.configured(db) else ""
         base = sharing_base(db)
         language = notices.language_of(account.language)
     what = "ready" if state == READY else "failed"
@@ -934,19 +933,20 @@ def _send(export_id: int) -> None:
 
     push.send_to_person(uid, message_for)
     if mail_to:
-        message = EmailMessage()
-        message["To"] = mail_to
-        message["Subject"] = "Your nexpaper export is ready" if what == "ready" else "Your nexpaper export failed"
+        subject = "Your nexpaper export is ready" if what == "ready" else "Your nexpaper export failed"
         where = f"{base}{EXPORTS_PATH}" if base else "nexpaper, Archive, Export"
-        message.set_content(
+        text = (
             (f"The ZIP with {count} documents you asked for is ready.\n\nDownload it here: {where}\n"
              f"It is kept for {KEEP_DAYS} days.\n") if what == "ready"
             else f"The ZIP you asked for could not be packed. Try again in nexpaper: {where}\n"
         )
+        # The words as before (English), through the outbox of the shared post module with nexpaper's logo; once per
+        # export.
         with SessionLocal() as db:
             try:
-                mailer.send_message(db, message)
-            except mailer.MailError:
+                post_store.queue(db, post_store.plain(mail_to, kind="export", subject=subject, text=text, language="en",
+                                                      key=f"export:{export_id}:{what}"))
+            except (nexpost.MailError, ValueError):  # an address the module refuses: the export stands all the same
                 logger.warning("Export notice not mailed export_id=%s", export_id)
 
 

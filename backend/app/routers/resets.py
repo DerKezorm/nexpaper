@@ -27,9 +27,9 @@ from ..deps import (
 from ..errors import error
 from ..models import Account as AccountRow
 from ..security import MIN_PASSWORD
-from ..services import kontenpost, mailer, notices, resets, settings_service
+from ..services import kontenpost, notices, post_store, resets, settings_service
 from ..services.konten_store import KontenStore, own_store
-from ..vendor import nexkonten
+from ..vendor import nexkonten, nexpost
 from ..vendor.nexkonten import resets as konten_resets
 from .auth import OperatorConfirmIn, check_confirm, check_password, fail
 
@@ -63,14 +63,14 @@ class ResetLinkIn(OperatorConfirmIn):
 
 def _send(mail: nexkonten.Mail) -> None:
     """The link of "Forgot your password?", at once (the module drops the link when this raises): through
-    ``mailer.send_reset``, the way 1.12.0 sent it, written by the shared post module in the account's language."""
+    ``kontenpost.send_reset``, the way 1.12.0 sent it, written by the shared post module in the account's language."""
     from ..db import SessionLocal
 
     with SessionLocal() as db:
         link = kontenpost.link_for(db, mail)
         if not link:
-            raise mailer.MailError("public_url_missing", "No public address for the link.")
-        mailer.send_reset(db, mail.to, link, name=mail.username, hours=mail.hours)
+            raise ValueError("No public address for the link.")
+        kontenpost.send_reset(db, mail.to, link, name=mail.username, hours=mail.hours)
         logger.info("Password link mailed name=%s", mail.username)
 
 
@@ -148,7 +148,7 @@ def send_link(
     actor = db.get(AccountRow, operator.id)
     assert actor is not None
     store = KontenStore(db)
-    can_mail = mailer.configured(db) and payload.send
+    can_mail = post_store.configured(db) and payload.send
     try:
         fresh = confirmed_without_password(request, actor)
         made = konten_resets.reset_link(
@@ -161,9 +161,9 @@ def send_link(
     if made.mail is not None:
         try:
             kontenpost.send_now(db, made.mail, keep=False, base=base)
-        except mailer.MailError as exc:
+        except nexpost.MailError as exc:
             # Mail was the way: kept, the link would stand without anybody holding it.
             konten_resets.reset_mail_failed(KontenStore(db), account_id)
-            raise error(exc.code, str(exc), 502) from exc
+            raise error(post_store.app_code(exc), str(exc), 502) from exc
         return {"sent": True, "email": made.mail.to, "expires_at": made.expires_at.isoformat()}
     return {"sent": False, "link": f"{base}/reset/{made.token}", "expires_at": made.expires_at.isoformat()}

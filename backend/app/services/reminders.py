@@ -52,7 +52,6 @@ import os
 from dataclasses import dataclass, field
 from datetime import date as Date
 from datetime import datetime, timedelta
-from email.message import EmailMessage
 from typing import Any
 
 from sqlalchemy import ColumnElement, and_, delete, func, or_, select
@@ -75,7 +74,9 @@ from ..models import (
     Share,
     VaultMember,
 )
-from . import autotrash, changes, deadlines, keeping, mailer, notices, push, settings_service, timezones, vaults
+from ..vendor import nexpost
+from ..vendor.nexpost import Letter
+from . import autotrash, changes, deadlines, keeping, notices, post_store, push, settings_service, timezones, vaults
 
 logger = logging.getLogger("nexpaper.reminders")
 
@@ -144,7 +145,7 @@ def preferences_of(db: Session, uid: int) -> Preferences:
 
 def mail_problem(db: Session, account: Account) -> str | None:
     """Why a reminder cannot go by mail: no mail server, no address, an address not yet confirmed; None when it can."""
-    if not mailer.configured(db):
+    if not post_store.configured(db):
         return "no_server"
     if not account.email:
         return "no_address"
@@ -416,7 +417,7 @@ class Out:
     texts: dict[str, tuple[str, str]]
     url: str
     tag: str
-    mail: EmailMessage | None = None
+    mail: Letter | None = None
 
 
 def _push(account: Account, out: Out) -> push.Result:
@@ -427,23 +428,20 @@ def _push(account: Account, out: Out) -> push.Result:
     return push.send_to_person(account.id, message_for)
 
 
-def _mail(to: str, subject: str, text: str, markup: str | None = None) -> EmailMessage:
-    message = EmailMessage()
-    message["To"] = to
-    message["Subject"] = " ".join(subject.split())
-    message.set_content(text)
-    if markup is not None:
-        message.add_alternative(markup, subtype="html")
-    return message
-
-
-def _single_mail(to: str, base: str, title: str, body: str, url: str, lang: str) -> EmailMessage:
+def _single_mail(to: str, base: str, title: str, body: str, url: str, lang: str, key: str = "") -> Letter:
+    """A reminder by mail (one deadline, or "+N"), through the shared post module: the plain text as before, the HTML
+    in the module's frame with nexpaper's logo, the link as its button, why the mail comes as its last line."""
     words = WORDS[lang]
     lines = [title, body, ""]
-    if base:
-        lines += [words["open"].format(link=f"{base}{url}"), ""]
+    link = f"{base}{url}" if base else ""
+    if link:
+        lines += [words["open"].format(link=link), ""]
     lines.append(words["single_why"])
-    return _mail(to, title, "\n".join(lines) + "\n")
+    return nexpost.app_letters.write(
+        to, kind="deadline", subject=" ".join(title.split()), language=lang, paragraphs=[body], text="\n".join(lines)
+        + "\n", link=link, action=words["open"].split("{link}")[0].rstrip(" :\u00a0"), footer=words["single_why"],
+        key=key,
+    )
 
 
 def _deliver(db_factory: Any, account: Account, outs: list[Out], *, by_push: bool) -> None:
@@ -454,11 +452,12 @@ def _deliver(db_factory: Any, account: Account, outs: list[Out], *, by_push: boo
             except Exception:  # one message must never stop the others
                 logger.exception("A reminder was not pushed")
         if out.mail is not None:
+            # Into the outbox of the shared post module: out at once (nudged), else again after 1, 5, 15 minutes …
             with db_factory() as db:
                 try:
-                    mailer.send_message(db, out.mail)
-                except mailer.MailError:
-                    logger.warning("A reminder was not mailed tag=%s", out.tag)
+                    post_store.queue(db, out.mail)
+                except Exception:  # one message must never stop the others
+                    logger.exception("A reminder was not mailed tag=%s", out.tag)
 
 
 # --- Which reminders are due ------------------------------------------------------------------------------------------
@@ -590,7 +589,7 @@ def week_of(db: Session, uid: int, prefs: Preferences, today: Date, now: datetim
                 may_go=may_go_count(db, uid, prefs, today), trashed=trashed_count(db, uid, prefs, now))
 
 
-def week_mail(account: Account, week: Week, lang: str, base: str, today: Date) -> EmailMessage:
+def week_mail(account: Account, week: Week, lang: str, base: str, today: Date) -> Letter:
     words = WORDS[lang]
     count = len(week.week)
     subject = words["week_none"] if not count else words["week_subject"].format(
@@ -637,10 +636,13 @@ def week_mail(account: Account, week: Week, lang: str, base: str, today: Date) -
                      f'font-weight:bold">{esc(words["all"])}</a></p>')
     else:
         parts.append(f'<p style="margin-top:18px;font-weight:bold;color:#9a6a3a">{esc(words["all"])}</p>')
-    parts.append(f'<p style="font-size:12px;color:#7a6f66">{esc(words["week_why"])}</p>')
-    markup = ('<!doctype html><html><body style="font-family:Inter,Arial,sans-serif;font-size:14px;color:#1c1814">'
-              + "".join(parts) + "</body></html>")
-    return _mail(account.email, subject, "\n".join(text) + "\n", markup)
+    # The list inside the module's frame (nexpaper's logo, the subject as heading), why it comes as its last line.
+    monday = today - timedelta(days=today.weekday())
+    return nexpost.app_letters.write(
+        account.email, kind="deadlines_week", subject=" ".join(subject.split()), language=lang,
+        text="\n".join(text) + "\n", body_html="".join(parts), footer=words["week_why"],
+        key=f"{TAG}-week:{account.id}:{monday.isoformat()}",
+    )
 
 
 # --- One run ----------------------------------------------------------------------------------------------------------
@@ -730,7 +732,9 @@ def _singles(db: Session, account: Account, prefs: Preferences, today: Date, bas
         url = place_of(item.deadline.document)
         title, body = texts[lang]
         outs.append(Out(texts=texts, url=url, tag=f"{TAG}-{item.deadline.row.id}",
-                        mail=_single_mail(account.email, base, title, body, url, lang) if by_mail else None))
+                        mail=_single_mail(account.email, base, title, body, url, lang,
+                                          key=f"{TAG}-{item.deadline.row.id}:{uid}:{today.isoformat()}")
+                        if by_mail else None))
         summary.messages += 1
     rest = [item for item in rest if not _is_claimed(db, uid, item.keys, item.deadline.row.id)]
     if rest and _claim(db, uid, None, [(BATCH, today)], today):
@@ -739,7 +743,8 @@ def _singles(db: Session, account: Account, prefs: Preferences, today: Date, bas
                         WORDS[code]["more_body"].format(limit=PER_DAY)) for code in WORDS}
         title, body = texts[lang]
         outs.append(Out(texts=texts, url=DEADLINES_PATH, tag=f"{TAG}-more",
-                        mail=_single_mail(account.email, base, title, body, DEADLINES_PATH, lang) if by_mail
+                        mail=_single_mail(account.email, base, title, body, DEADLINES_PATH, lang,
+                                          key=f"{TAG}-more:{uid}:{today.isoformat()}") if by_mail
                         else None))
         summary.gathered += gathered
     return outs
@@ -798,10 +803,11 @@ def send_test(db: Session, account: Account) -> dict[str, Any]:
     if by_mail:
         title, body = texts[lang]
         try:
-            mailer.send_message(db, _single_mail(account.email, settings_service.public_url(db), title, body,
+            # At once: the person waits for the answer "mail went" (``mail``).
+            post_store.send_now(db, _single_mail(account.email, settings_service.public_url(db), title, body,
                                                  DEADLINES_PATH, lang))
             mailed = True
-        except mailer.MailError:
+        except (nexpost.MailError, ValueError):
             logger.warning("The test reminder was not mailed")
     return {"push": result.as_dict(), "mail": mailed, "by_push": by_push, "by_mail": by_mail}
 

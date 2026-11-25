@@ -108,7 +108,9 @@ AVOIDED = (
     ("Holds", re.compile(r"(?<![\w/.-])Holds?(?![\w/-])(?!\.\w)")),
 )
 SPOKEN_KEYWORDS = {"summary", "description", "detail"}
-MAIL_FILES = {"mailer.py", "email_change.py", "notify.py"}
+#: Modules that hold the words of a mail (nexpaper's own mailer is gone with the shared post module 1.1.0; its last
+#: own text, the confirmation of a sender address, lives in ``mail_senders.py``).
+MAIL_FILES = {"mail_senders.py", "post_store.py", "email_change.py", "notify.py"}
 #: The app speaks in at least this many places; fewer means the scan looked in the wrong place.
 SPOKEN_FLOOR = 300
 

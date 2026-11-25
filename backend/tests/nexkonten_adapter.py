@@ -382,7 +382,7 @@ class Adapter(StandardAdapter):
     def forgot_through_route(self, typed: str, *, mail_fails: bool) -> tuple[list[str], int]:
         """``POST /api/v1/auth/forgot`` with a mail server and the public address set; the work after the answer runs
         in nexpaper's background pool (``notices.later``), waited for here. The mail goes through
-        ``nexpost.send.deliver`` (``mailer.send_letter``), caught by ``nexpost.testing.catch_mail``."""
+        ``nexpost.send.deliver`` (``post_store.send_now``), caught by ``nexpost.testing.catch_mail``."""
         from fastapi.testclient import TestClient
         from sqlalchemy import func, select
 

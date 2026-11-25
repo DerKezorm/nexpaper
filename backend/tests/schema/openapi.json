@@ -4701,6 +4701,59 @@
         "title": "MadeOut",
         "type": "object"
       },
+      "MailChange": {
+        "properties": {
+          "host": {
+            "default": "",
+            "maxLength": 253,
+            "title": "Host",
+            "type": "string"
+          },
+          "password": {
+            "anyOf": [
+              {
+                "maxLength": 512,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Password"
+          },
+          "port": {
+            "default": 587,
+            "title": "Port",
+            "type": "integer"
+          },
+          "security": {
+            "default": "starttls",
+            "maxLength": 16,
+            "title": "Security",
+            "type": "string"
+          },
+          "sender": {
+            "default": "",
+            "maxLength": 254,
+            "title": "Sender",
+            "type": "string"
+          },
+          "sender_name": {
+            "default": "",
+            "maxLength": 120,
+            "title": "Sender Name",
+            "type": "string"
+          },
+          "user": {
+            "default": "",
+            "maxLength": 254,
+            "title": "User",
+            "type": "string"
+          }
+        },
+        "title": "MailChange",
+        "type": "object"
+      },
       "MailLast": {
         "properties": {
           "at": {
@@ -4849,6 +4902,109 @@
           "last"
         ],
         "title": "MailOut",
+        "type": "object"
+      },
+      "MailView": {
+        "properties": {
+          "ca_file": {
+            "default": "",
+            "title": "Ca File",
+            "type": "string"
+          },
+          "configured": {
+            "title": "Configured",
+            "type": "boolean"
+          },
+          "host": {
+            "title": "Host",
+            "type": "string"
+          },
+          "last_error": {
+            "default": "",
+            "title": "Last Error",
+            "type": "string"
+          },
+          "last_error_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Error At"
+          },
+          "last_ok_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Ok At"
+          },
+          "password_set": {
+            "title": "Password Set",
+            "type": "boolean"
+          },
+          "port": {
+            "title": "Port",
+            "type": "integer"
+          },
+          "security": {
+            "title": "Security",
+            "type": "string"
+          },
+          "sender": {
+            "title": "Sender",
+            "type": "string"
+          },
+          "sender_name": {
+            "title": "Sender Name",
+            "type": "string"
+          },
+          "sender_name_default": {
+            "title": "Sender Name Default",
+            "type": "string"
+          },
+          "user": {
+            "title": "User",
+            "type": "string"
+          },
+          "waiting": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Waiting"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "host",
+          "port",
+          "security",
+          "user",
+          "password_set",
+          "sender",
+          "sender_name",
+          "sender_name_default",
+          "configured"
+        ],
+        "title": "MailView",
         "type": "object"
       },
       "MayGoPage": {
@@ -9851,6 +10007,26 @@
           }
         },
         "title": "TakeAddressIn",
+        "type": "object"
+      },
+      "TestMail": {
+        "properties": {
+          "language": {
+            "default": "",
+            "maxLength": 16,
+            "title": "Language",
+            "type": "string"
+          },
+          "to": {
+            "maxLength": 254,
+            "title": "To",
+            "type": "string"
+          }
+        },
+        "required": [
+          "to"
+        ],
+        "title": "TestMail",
         "type": "object"
       },
       "TestMailIn": {
@@ -24656,6 +24832,115 @@
         "summary": "Move all documents of a sender to another sender of the same vault, and delete it (manage)",
         "tags": [
           "catalog"
+        ]
+      }
+    },
+    "/api/v1/server/mail": {
+      "get": {
+        "operationId": "read_mail_api_v1_server_mail_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MailView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "The mail server",
+        "tags": [
+          "mail"
+        ]
+      },
+      "put": {
+        "operationId": "save_mail_api_v1_server_mail_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MailChange"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MailView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Save the mail server",
+        "tags": [
+          "mail"
+        ]
+      }
+    },
+    "/api/v1/server/mail/test": {
+      "post": {
+        "operationId": "send_test_api_v1_server_mail_test_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TestMail"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Send the test mail now",
+        "tags": [
+          "mail"
         ]
       }
     },

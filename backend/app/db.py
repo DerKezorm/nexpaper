@@ -609,6 +609,8 @@ KONTEN_COLUMNS: tuple[tuple[str, str, str], ...] = (
     ("invites", "display_name", "VARCHAR(80) DEFAULT '' NOT NULL"),
     ("invites", "mailed", "BOOLEAN DEFAULT 0 NOT NULL"),
     ("password_resets", "origin", "VARCHAR(16) DEFAULT 'self' NOT NULL"),
+    # The shared post module 1.1.0: the app's name for one mail (``Letter.key``), taken into the outbox only once.
+    ("mail_outbox", "letter_key", "VARCHAR(120)"),
 )
 
 
@@ -657,6 +659,9 @@ def _additions_konten(connection: Connection) -> None:
         logger.warning("Two accounts have names that differ only in case; the unique index waits until one is renamed")
     connection.exec_driver_sql("CREATE INDEX IF NOT EXISTS ix_users_email_lower ON users (lower(email))")
     connection.exec_driver_sql("CREATE INDEX IF NOT EXISTS ix_former_names_lower ON former_names (lower(name))")
+    # Unique where set: two mails with the same key cannot both wait (several without a key can).
+    connection.exec_driver_sql(
+        "CREATE UNIQUE INDEX IF NOT EXISTS uq_mail_outbox_letter_key ON mail_outbox (letter_key)")
     if not first:
         return
     accounts = connection.exec_driver_sql("SELECT count(*) FROM users").scalar() or 0

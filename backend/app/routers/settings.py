@@ -21,7 +21,8 @@ from ..deps import (
 )
 from ..errors import error
 from ..security import encrypt_secret
-from ..services import accounts, limits, mailer, processing, readiness, settings_service, totp
+from ..services import accounts, limits, post_store, processing, readiness, settings_service, totp
+from ..vendor import nexpost
 from ..vendor.nexkonten import factor
 
 logger = logging.getLogger("nexpaper.settings")
@@ -238,9 +239,10 @@ def mail_test(payload: TestMailIn, _operator: OperatorAccount, db: DbSession) ->
     if not accounts.EMAIL_PATTERN.match(to):
         raise error("invalid_email", "This is not a mail address.", 422)
     try:
-        mailer.send_test(db, to)
-    except mailer.MailError as exc:
-        raise error(exc.code, str(exc), 502) from exc
+        # The test mail of the shared post module, with nexpaper's logo, in the operator's language (as before).
+        post_store.test_mail(db, to)
+    except nexpost.MailError as exc:
+        raise error(post_store.app_code(exc), str(exc), 502) from exc
 
 
 @router.get("/readiness", summary="Ready for the internet? What nexpaper checks about itself")

@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from email.message import EmailMessage
 
 from sqlalchemy import select
 
@@ -54,14 +53,15 @@ def operator(notice: Notice) -> None:
 
 def _send(account_id: int, notice: Notice) -> None:
     from ..db import SessionLocal
-    from . import mailer, push, settings_service
+    from ..vendor import nexpost
+    from . import post_store, push, settings_service
 
     with SessionLocal() as db:
         account = db.get(Account, account_id)
         if account is None or account.blocked_at is not None:
             return
         language = notices.language_of(account.language)
-        mail_to = account.email if account.email and account.email_confirmed_at and mailer.configured(db) else ""
+        mail_to = account.email if account.email and account.email_confirmed_at and post_store.configured(db) else ""
         base = settings_service.public_url(db)
 
     def message_for(lang: str) -> push.Message:
@@ -71,18 +71,18 @@ def _send(account_id: int, notice: Notice) -> None:
     push.send_to_person(account_id, message_for)
     if not mail_to:
         return
-    message = EmailMessage()
-    message["To"] = mail_to
-    message["Subject"] = notice.mail_subject
     # ``{where}`` is put in as text, never by ``str.format``, and only its last place (every body ends with it): a body
     # holds names people chose (an upload request "Firma {GmbH}", a provider's label, a display name), and braces there
     # must neither break the mail nor be read as a format (``{where:>99999999}`` would make a mail of 100 MB), nor a
     # name "{where}" become an address.
     head, mark, tail = notice.mail_body.rpartition("{where}")
     where = f"{base}{notice.url}" if base else "nexpaper"
-    message.set_content(head + where + tail if mark else notice.mail_body)
+    # The words as before (English), through the outbox of the shared post module with nexpaper's logo: out at once
+    # (nudged), else again after 1, 5, 15 minutes …
     with SessionLocal() as db:
         try:
-            mailer.send_message(db, message)
-        except mailer.MailError:
+            post_store.queue(db, post_store.plain(mail_to, kind="notice", subject=notice.mail_subject,
+                                                  text=head + where + tail if mark else notice.mail_body,
+                                                  language="en"))
+        except (nexpost.MailError, ValueError):  # an address the module refuses: the notice is pushed all the same
             logger.warning("A notice was not mailed tag=%s", notice.tag)

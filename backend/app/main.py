@@ -58,6 +58,7 @@ from .routers import intake as intake_router
 from .routers import keeping as keeping_router
 from .routers import locales as locales_router
 from .routers import logs as logs_router
+from .routers import mail as mail_router
 from .routers import ocr as ocr_router
 from .routers import pagetools as pagetools_router
 from .routers import paperless as paperless_router
@@ -107,7 +108,7 @@ from .vendor.nexkonten import setup as konten_setup
 logger = logging.getLogger("nexpaper")
 
 ROUTERS = [
-    health, about, docs, locales_router, logs_router, auth, totp_router, oidc, invites, settings_router,
+    health, about, docs, locales_router, logs_router, mail_router, auth, totp_router, oidc, invites, settings_router,
     backups_router, avatars_router, emails, apikeys, devices, v1_router, ai, push, passkeys, resets,
     vaults, documents_router, catalog_router, sharing, changes, public, uploads, files,
     pairing, phone, intake_router, search_router, ocr_router,

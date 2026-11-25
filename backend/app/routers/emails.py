@@ -20,9 +20,9 @@ from pydantic import BaseModel, Field
 from ..deps import BrowserAccount, DbSession, address_failed, address_guard, confirmed_without_password
 from ..errors import error
 from ..models import Account as AccountRow
-from ..services import kontenpost, mailer
+from ..services import kontenpost, post_store
 from ..services.konten_store import KontenStore
-from ..vendor import nexkonten
+from ..vendor import nexkonten, nexpost
 from ..vendor.nexkonten import profiles
 from .auth import account_view, change_address, fail, prove_address
 
@@ -64,8 +64,8 @@ def resend(account: BrowserAccount, db: DbSession) -> dict[str, Any]:
         raise fail(exc) from exc
     try:
         kontenpost.send_now(db, mail, keep=False)
-    except mailer.MailError as exc:
-        raise error(exc.code, "The mail server did not take the mail.", 502) from exc
+    except nexpost.MailError as exc:
+        raise error(post_store.app_code(exc), "The mail server did not take the mail.", 502) from exc
     row = db.get(AccountRow, account.id)
     assert row is not None
     return account_view(row)

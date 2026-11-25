@@ -52,8 +52,8 @@ class FailedUnknown(Base):
 
 class MailOutbox(Base):
     """System mail waiting to go out (``vendor/nexpost``): the letter as JSON, tries and the next one, the last error.
-    A mail that went out or was given up stays a while for the operator's page (``services/post_store.py``).
-    nexpaper's own mail (reminders, deadlines, exports, upload requests) goes through ``services/mailer.py``."""
+    A mail that went out or was given up stays a while for the operator's page (``services/post_store.py``). Every
+    system mail of nexpaper goes through it (post 1.1.0): the mails about accounts and nexpaper's own letters."""
 
     __tablename__ = "mail_outbox"
 
@@ -64,3 +64,6 @@ class MailOutbox(Base):
     attempts: Mapped[int] = mapped_column(Integer, default=0)
     sent_at: Mapped[datetime | None] = mapped_column(UtcDateTime, nullable=True)
     error: Mapped[str] = mapped_column(String(500), default="")
+    #: The app's name for this one mail (``Letter.key``, post 1.1.0, ``daily:42:2026-11-25``): a letter with a key the
+    #: outbox holds already goes in only once. Unique where set (the index is one of ``db.ADDITIONS``).
+    letter_key: Mapped[str | None] = mapped_column(String(120), nullable=True, default=None)

@@ -18,7 +18,7 @@ from app.db import SessionLocal
 from app.main import app
 from app.models import Account
 from app.security import DEVICE_COOKIE
-from app.services import mailer, notices, settings_service
+from app.services import notices, post_store, settings_service
 
 from .conftest import PASSWORD, make_account
 from .fake_push import FakePushService
@@ -51,7 +51,7 @@ def mails(monkeypatch: pytest.MonkeyPatch) -> Iterator[list[EmailMessage]]:
         message.set_content(letter.text)  # type: ignore[attr-defined]
         sent.append(message)
 
-    monkeypatch.setattr(mailer, "send_letter", letter)
+    monkeypatch.setattr(post_store, "send_now", letter)
     with SessionLocal() as db:
         settings_service.save(db, {"smtp_host": "mail.example.com", "smtp_from": "paper@example.com"})
     yield sent
@@ -171,7 +171,7 @@ def test_without_a_mail_server_or_address_only_the_push_goes(anna: Account, push
         message.set_content(letter.text)  # type: ignore[attr-defined]
         sent.append(message)
 
-    monkeypatch.setattr(mailer, "send_letter", letter)
+    monkeypatch.setattr(post_store, "send_now", letter)
     with browser("203.0.113.57") as phone:
         log_in(phone)
     notices.settle()

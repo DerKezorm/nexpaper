@@ -23,10 +23,10 @@ from ..errors import error
 from ..models import Account as AccountRow
 from ..models import Invite
 from ..security import MIN_PASSWORD, SESSION_COOKIE, brake, session_account
-from ..services import accounts, kontenpost, mailer, settings_service
+from ..services import accounts, kontenpost, post_store, settings_service
 from ..services.accounts import AccountError
 from ..services.konten_store import KontenStore
-from ..vendor import nexkonten
+from ..vendor import nexkonten, nexpost
 from ..vendor.nexkonten import invites as konten_invites
 from .auth import check_confirm, check_password, fail, interface_language, sign_in
 
@@ -120,14 +120,15 @@ def invite(payload: InviteIn, request: Request, operator: OperatorAccount, db: D
     sent = False
     if payload.send:
         try:
-            mailer.send_invite(db, email, link, by=operator.display_name or operator.name,
-                               until=row.expires_at.date().isoformat(), days=payload.days)
+            post_store.send_now(db, kontenpost.invite_letter(
+                db, email, link, by=operator.display_name or operator.name,
+                until=row.expires_at.date().isoformat(), days=payload.days))
             sent = True
-        except mailer.MailError as exc:
+        except nexpost.MailError as exc:
             # The link was to go by mail only: kept, the invitation would stand without anybody holding its link.
             db.delete(row)
             db.commit()
-            raise error(exc.code, str(exc), 502) from exc
+            raise error(post_store.app_code(exc), str(exc), 502) from exc
     return {**_invite_view(row, db), "link": link, "sent": sent}
 
 

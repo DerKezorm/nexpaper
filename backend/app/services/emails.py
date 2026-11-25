@@ -11,10 +11,10 @@ from __future__ import annotations
 
 from sqlalchemy.orm import Session
 
-from . import mailer, settings_service
+from . import post_store, settings_service
 
 
 def available(db: Session) -> bool:
     """A link can be sent: a mail server is set up and the public address is known (the link comes from nothing
     else)."""
-    return bool(mailer.configured(db) and settings_service.public_url(db))
+    return bool(post_store.configured(db) and settings_service.public_url(db))

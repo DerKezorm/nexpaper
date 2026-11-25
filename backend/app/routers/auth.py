@@ -75,9 +75,9 @@ from ..services import (
     catalog,
     kontenpost,
     locales,
-    mailer,
     notices,
     oidc_store,
+    post_store,
     settings_service,
     timezones,
     totp,
@@ -86,7 +86,7 @@ from ..services import (
 from ..services import vaults as vaults_service
 from ..services.accounts import AccountError
 from ..services.konten_store import KontenStore, counts, pending_of, proven
-from ..vendor import nexkonten
+from ..vendor import nexkonten, nexpost
 from ..vendor.nexkonten import login as konten_login
 from ..vendor.nexkonten import profiles
 from ..vendor.nexkonten import sessions as konten_sessions
@@ -588,7 +588,7 @@ def me(request: Request, account: Account, db: DbSession) -> dict[str, Any]:
     stage = session_of(request).stage
     return {
         **account_view(account),
-        "mail": mailer.configured(db),
+        "mail": post_store.configured(db),
         # A link for a new address can go out (a mail server and the public address); without, an address counts at
         # once (and is not proven: the intake does not trust it).
         "mail_links": kontenpost.can_mail(db),
@@ -741,9 +741,9 @@ def change_address(db: Session, row: AccountRow, address: str, *, password: str,
     if changed.mail is not None:
         try:
             kontenpost.send_now(db, changed.mail, keep=False)
-        except mailer.MailError as exc:
+        except nexpost.MailError as exc:
             profiles.withdraw_email_change(KontenStore(db), row.id)
-            raise error(exc.code, "The mail server did not take the mail.", 502) from exc
+            raise error(post_store.app_code(exc), "The mail server did not take the mail.", 502) from exc
         logger.info("Address confirmation sent name=%s", row.name)
     kontenpost.queue(db, changed.notice)
     return changed.pending
@@ -760,9 +760,9 @@ def prove_address(db: Session, row: AccountRow) -> str:
     address = letter.to
     try:
         kontenpost.send_now(db, letter, keep=False)
-    except mailer.MailError as exc:
+    except nexpost.MailError as exc:
         profiles.withdraw_email_change(KontenStore(db), row.id)
-        raise error(exc.code, "The mail server did not take the mail.", 502) from exc
+        raise error(post_store.app_code(exc), "The mail server did not take the mail.", 502) from exc
     logger.info("Link to prove the address sent name=%s", row.name)
     return address
 
@@ -1039,7 +1039,7 @@ def remove_account_email(
         changed = profiles.remove_email(KontenStore(db), row.id, actor_id=operator.id,
                                         password=payload.current_password,
                                         actor_confirmed=_operator_confirmed(request, db, operator),
-                                        mail=mailer.configured(db))
+                                        mail=post_store.configured(db))
     except nexkonten.AccountError as exc:
         db.rollback()
         raise fail(exc) from exc

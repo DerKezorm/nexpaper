@@ -25,10 +25,11 @@ from ..services import (
     intake_mail,
     konten_store,
     mail_senders,
-    mailer,
+    post_store,
     rights,
     settings_service,
 )
+from ..vendor import nexpost
 
 logger = logging.getLogger("nexpaper.intake")
 
@@ -372,14 +373,14 @@ def add_sender(payload: SenderIn, account: BrowserAccount, db: DbSession) -> Sen
     brake.failed(brake_key, mail_senders.PER_ACCOUNT)
     made, token = mail_senders.start(db, row, address)
     try:
-        mailer.send_sender_confirm(
-            db, address, mail_senders.link_to(db, token), name=row.name, hours=mail_senders.HOURS,
+        post_store.send_now(db, mail_senders.confirm_letter(
+            address, mail_senders.link_to(db, token), name=row.name, hours=mail_senders.HOURS,
             mailbox=str(settings_service.get(db, "mail_address") or ""),
-        )
-    except mailer.MailError as exc:
+        ))
+    except nexpost.MailError as exc:
         db.delete(made)
         db.commit()
-        raise error(exc.code, str(exc), 502) from exc
+        raise error(post_store.app_code(exc), str(exc), 502) from exc
     return _sender_out(made)
 
 

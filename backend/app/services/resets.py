@@ -10,12 +10,12 @@ from __future__ import annotations
 
 from sqlalchemy.orm import Session
 
-from . import mailer, settings_service
+from . import post_store, settings_service
 
 
 def available(db: Session) -> bool:
     """"Forgot your password?" is offered: mail works, the public address is known (the link comes from nothing
     else) and signing in with a password is on."""
     return bool(
-        mailer.configured(db) and settings_service.public_url(db) and settings_service.get(db, "password_login")
+        post_store.configured(db) and settings_service.public_url(db) and settings_service.get(db, "password_login")
     )

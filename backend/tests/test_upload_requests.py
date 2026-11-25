@@ -920,7 +920,7 @@ def test_a_token_too_long_answers_like_any_wrong_one_and_counts_on_the_brake(jul
 @pytest.mark.parametrize("name", ["Firma {GmbH}", "{where:>99999999}", "{0}{1} }{", "{where}"])
 def test_braces_in_the_name_never_break_the_notice(jule: Account, monkeypatch: pytest.MonkeyPatch, name: str) -> None:
     """The notice goes all the way to the mail: braces in the name stay text and are never read as a format."""
-    from app.services import mailer, push
+    from app.services import post_store, push
 
     told: list[tell.Notice] = []
     monkeypatch.setattr(tell, "person", lambda account_id, notice: told.append(notice))
@@ -935,8 +935,8 @@ def test_braces_in_the_name_never_break_the_notice(jule: Account, monkeypatch: p
         assert send(outside, token).status_code == 201
     (notice,) = told
     mails: list[str] = []
-    monkeypatch.setattr(mailer, "configured", lambda db: True)
-    monkeypatch.setattr(mailer, "send_message", lambda db, message: mails.append(message.get_content()))
+    monkeypatch.setattr(post_store, "configured", lambda db: True)
+    monkeypatch.setattr(post_store, "queue", lambda db, letter: mails.append(letter.text))
     monkeypatch.setattr(push, "send_to_person", lambda account_id, make_message: None)
     tell._send(jule.id, notice)
     (mail,) = mails

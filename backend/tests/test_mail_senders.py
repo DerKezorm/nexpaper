@@ -16,11 +16,11 @@ from app.services import mail_senders, settings_service
 
 from .conftest import TAB, make_account, new_client
 from .test_emails import PUBLIC, mail_on
-from .test_settings import FakeSmtp, smtp  # noqa: F401 - fixture
+from .test_settings import FakeSmtp, smtp, text_of  # noqa: F401 - fixture
 
 
 def link_of(smtp_class: type[FakeSmtp]) -> str:
-    text = smtp_class.sent[-1].get_content()
+    text = text_of(smtp_class.sent[-1])
     line = next(line for line in text.splitlines() if line.startswith(PUBLIC + "/absender/"))
     return line.rsplit("/", 1)[1]
 
@@ -42,7 +42,7 @@ def test_an_address_counts_once_its_link_was_opened(client: TestClient, operator
     assert answer.status_code == 201, answer.text
     assert answer.json()["confirmed"] is False and answer.json()["until"]
     [sent] = smtp.sent
-    assert sent["To"] == "Tester.Privat@example.com" and "paper@example.com" in sent.get_content()
+    assert sent["To"] == "Tester.Privat@example.com" and "paper@example.com" in text_of(sent)
     with SessionLocal() as db:
         assert mail_senders.owners(db, "tester.privat@example.com") == set(), "not before the link"
     token = link_of(smtp)

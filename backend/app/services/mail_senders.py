@@ -13,6 +13,7 @@ from __future__ import annotations
 import logging
 import secrets
 from datetime import timedelta
+from typing import Any
 
 from sqlalchemy import delete, func, select, update
 from sqlalchemy.orm import Session
@@ -66,6 +67,22 @@ def start(db: Session, account: Account, address: str) -> tuple[MailSender, str]
 def link_to(db: Session, token: str) -> str:
     base = settings_service.public_url(db)
     return f"{base}/absender/{token}" if base else ""
+
+
+def confirm_letter(to: str, link: str, *, name: str, hours: int, mailbox: str) -> Any:
+    """The link that makes an address count as one the account forwards documents from: the words of before the shared
+    post module (English), now with nexpaper's logo. ``nexpost.MailError`` for an address the module refuses."""
+    from . import post_store
+
+    target = f" to {mailbox}" if mailbox else ""
+    text = (
+        f"The nexpaper account {name} wants to forward documents{target} from this address.\n\n"
+        f"Open this link to confirm it:\n{link}\n\n"
+        f"The link works once and for {hours} hours. If you did not ask for it, ignore this mail: nothing "
+        "changes.\n"
+    )
+    return post_store.plain(to, kind="sender_confirm", subject="Confirm the address you forward documents from",
+                            text=text, language="en", link=link)
 
 
 def available(db: Session) -> bool:

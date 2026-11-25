@@ -97,3 +97,38 @@ class Adapter(StandardAdapter):
             db.refresh(account)
             return notices.sign_in_letter(db, account, account.email, where, clock.now(),
                                           settings_service.public_url(db))
+
+    #: The page Server › Mail (``routers/mail.py``).
+    mail_prefix = "/api/v1/server/mail"
+
+    def account(self, address: str, *, language: str, name: str, confirmed: bool) -> Any:
+        """An account of nexpaper with this address, its language and display name; confirmed or not."""
+        import secrets
+
+        from app import clock
+        from app.db import SessionLocal
+        from app.models import Account
+        from app.security import hash_password
+
+        with SessionLocal() as db:
+            row = Account(name=f"p{secrets.token_hex(4)}", display_name=name, role="member", sign_in="password",
+                          password_hash=hash_password(password()), email=address, email_counts=True,
+                          language=language, email_confirmed_at=clock.now() if confirmed else None)
+            db.add(row)
+            db.commit()
+            return row.id
+
+    def client(self, role: str) -> Any:
+        """nexpaper's own app (``routers/mail.py`` mounts ``nexpost.api.router``), signed in as ``role``."""
+        from app.db import SessionLocal
+        from app.models import MEMBER, OPERATOR, Account
+        from tests.conftest import make_account, new_client
+
+        if role == "anonymous":
+            return new_client()
+        name = "olli" if role == "operator" else "mika"
+        with SessionLocal() as db:
+            row = db.query(Account).filter_by(name=name).one_or_none()
+            if row is not None:
+                db.expunge(row)
+        return new_client(row or make_account(name, OPERATOR if role == "operator" else MEMBER))

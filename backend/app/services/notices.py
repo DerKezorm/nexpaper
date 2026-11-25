@@ -24,7 +24,7 @@ from typing import Any
 
 from .. import clock
 from ..models import Account
-from . import mailer, push, settings_service, timezones
+from . import post_store, push, settings_service, timezones
 
 logger = logging.getLogger("nexpaper.notices")
 
@@ -204,7 +204,7 @@ def _send(account_id: int, agent: str, moment: datetime) -> None:
                 return
             db.expunge(account)
             # Only to an address that counts (the shared account module); in the account's language.
-            mail_to = account.email.strip() if mailer.configured(db) and account.email_counts else ""
+            mail_to = account.email.strip() if post_store.configured(db) and account.email_counts else ""
             base = settings_service.public_url(db)
 
         def for_lang(lang: str) -> push.Message:
@@ -249,14 +249,12 @@ def _mail(account: Account, to: str, base: str, agent: str, moment: datetime) ->
         except Exception:  # noqa: BLE001 (an address the post module refuses: no mail, the sign-in stands)
             logger.warning("Sign-in notice not mailed name=%s", account.name)
             return
-        try:
-            mailer.send_letter(db, letter)
-        except mailer.MailError:
-            from ..vendor import nexpost
-            from .post_store import PostStore
+        from ..vendor import nexpost
 
-            nexpost.outbox.queue(PostStore(db), letter)
-            db.commit()
+        try:
+            post_store.send_now(db, letter)
+        except nexpost.MailError:
+            post_store.queue(db, letter)
             logger.warning("Sign-in notice waits in the outbox name=%s", account.name)
             return
         logger.info("Sign-in notice mailed name=%s", account.name)
