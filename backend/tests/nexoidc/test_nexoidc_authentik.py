@@ -12,7 +12,7 @@ from typing import Any
 
 import oidc_fakes as fakes
 import pytest
-from oidc_contract import entry, form_of, link_person
+from oidc_contract import entry, form_of, link_person, oidc_package
 
 
 @pytest.fixture
@@ -267,9 +267,7 @@ def test_the_blueprint_makes_the_same_objects_with_grant_types_and_the_callback(
 
 
 def adapter_app(adapter: Any) -> str:
-    import conftest
-
-    return conftest.oidc_package(adapter).current().app_name
+    return oidc_package(adapter).current().app_name
 
 
 def _link_through_authentik(adapter: Any, ak: fakes.FakeAuthentik) -> None:

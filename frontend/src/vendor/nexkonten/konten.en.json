@@ -222,7 +222,7 @@
       "passkey_exists": "This passkey is registered already.",
       "too_many_passkeys": "No more passkeys fit. Remove one first.",
       "too_many_attempts": "Too many attempts. Wait a moment.",
-      "avatar_too_large": "The picture is too large.",
+      "avatar_too_large": "The picture is larger than {{mb}} MB.",
       "avatar_not_a_picture": "This is not a picture we can read.",
       "avatars_busy": "Too many pictures at once. Try again in a moment.",
       "public_url_needed": "The link needs the public address of {{app}}. Enter it in the server settings.",

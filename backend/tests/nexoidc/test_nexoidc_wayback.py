@@ -15,8 +15,7 @@ from typing import Any
 
 import oidc_contract
 import oidc_fakes as fakes
-from conftest import add_in_store
-from oidc_contract import location, start
+from oidc_contract import add_in_store, location, start
 
 
 def _one_provider(adapter: Any) -> bool:

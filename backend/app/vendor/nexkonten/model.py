@@ -216,7 +216,8 @@ MAIL_NEW_SIGN_IN = "new_sign_in"
 class Mail:
     """A mail the app is to send. ``token`` is the plain token of a link (``MAIL_RESET``: the page that sets a new
     password; ``MAIL_CONFIRM_EMAIL``: the page that confirms ``to``), "" for a plain notice. ``hours``: how long the
-    link holds."""
+    link holds. ``at`` (since 1.0.0): when it happened, for the mail "New sign-in" (the moment it names, in the
+    person's time zone, ``nexpost.letters.from_account_mail``); None elsewhere."""
 
     kind: str
     to: str
@@ -226,6 +227,7 @@ class Mail:
     token: str = ""
     hours: int = 0
     new_hint: str = ""
+    at: datetime | None = None
 
 
 #: ``Event.kind``: what the store hears after a commit (``Store.notify``).

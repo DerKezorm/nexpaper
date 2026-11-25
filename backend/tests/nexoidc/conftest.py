@@ -20,6 +20,11 @@ sys.path.insert(0, str(HERE))
 # Imported by name after the path is set: a plain import statement here would sit below code, which some apps
 # flag (E402) and others would flag a suppression for (RUF100).
 fakes = importlib.import_module("oidc_fakes")
+# Since 1.1.2 the helpers live in ``oidc_contract`` (a name of its own): the tests never import ``conftest`` by name,
+# which in an app with the contract folders of konten and post too found another module's conftest.
+contract = importlib.import_module("oidc_contract")
+oidc_package = contract.oidc_package
+add_in_store = contract.add_in_store
 
 
 def _adapter_module() -> ModuleType:
@@ -55,13 +60,6 @@ def adapter() -> Iterator[Any]:
         adapter.stop()
 
 
-def oidc_package(adapter: Any) -> ModuleType:
-    package = importlib.import_module(adapter.package)
-    for name in ("protocol", "attempt", "flow", "accounts", "providers", "authentik", "migrate", "coupling"):
-        importlib.import_module(f"{adapter.package}.{name}")
-    return package
-
-
 @pytest.fixture
 def oidc(adapter: Any) -> ModuleType:
     return oidc_package(adapter)
@@ -88,27 +86,3 @@ def with_sso(adapter: Any, sso: fakes.FakeProvider) -> dict[str, Any]:
     response = adapter.add_provider(sso, slug="sso")
     assert response.status_code in (200, 201), response.text
     return response.json()
-
-
-def add_in_store(app: Any, fake: fakes.FakeProvider, slug: str, **values: Any) -> dict[str, Any]:
-    """An entry written straight into the store (for apps whose form takes no second entry)."""
-    package = oidc_package(app)
-    with app.store() as store:
-        position = len(store.list_providers())
-        created = store.insert_provider(
-            package.ProviderValues(
-                slug=slug,
-                label=values.get("label", "SSO"),
-                issuer=str(values.get("issuer", fake.issuer)).rstrip("/"),
-                client_id=fake.client_id,
-                client_secret=fake.client_secret,
-                scopes=package.DEFAULT_SCOPES,
-                enabled=True,
-                auto_create=values.get("auto_create", False),
-                trusts_second_factor=values.get("trusts_second_factor", True),
-                managed=values.get("managed", ""),
-                position=position,
-            )
-        )
-        store.commit()
-    return {"id": created.id, "slug": created.slug}

@@ -8,13 +8,14 @@ from typing import Any
 
 import oidc_fakes as fakes
 import pytest
-from conftest import add_in_store, oidc_package
 from oidc_contract import (
+    add_in_store,
     come_back,
     entry,
     error_in,
     link_person,
     location,
+    oidc_package,
     round_trip,
     start,
 )
@@ -122,8 +123,6 @@ def test_a_discovery_naming_another_issuer_is_not_saved(adapter: Any, net: fakes
 
 
 def test_an_issuer_with_a_slash_at_the_end_takes_exactly_that_issuer(adapter: Any, net: fakes.Network) -> None:
-    from conftest import add_in_store
-
     slashed = net.add(fakes.FakeProvider("https://auth.example.com/application/o/app/"))
     if adapter.only_authentik:
         add_in_store(adapter, slashed, "slash")

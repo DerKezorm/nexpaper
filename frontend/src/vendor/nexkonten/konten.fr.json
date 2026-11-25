@@ -222,7 +222,7 @@
       "passkey_exists": "Cette clé d'accès est déjà enregistrée.",
       "too_many_passkeys": "Impossible d'ajouter d'autres clés d'accès. Retirez-en d'abord une.",
       "too_many_attempts": "Trop de tentatives. Patientez un instant.",
-      "avatar_too_large": "La photo est trop grande.",
+      "avatar_too_large": "La photo dépasse {{mb}} Mo.",
       "avatar_not_a_picture": "Ce n'est pas une image que nous pouvons lire.",
       "avatars_busy": "Trop de photos en même temps. Réessayez dans un instant.",
       "public_url_needed": "Le lien a besoin de l'adresse publique de {{app}}. Saisissez-la dans les réglages du serveur.",

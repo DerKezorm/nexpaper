@@ -25,6 +25,15 @@ def _set_up(app: Any, konten: Any, account_id: Any, secret: str) -> tuple[str, l
     return enrolment.seed, done.codes
 
 
+def _legacy_factors(app: Any) -> tuple[Any, list[tuple[str, str, list[str]]]]:
+    """The older version and its second factors; skipped with the reason where it set up none (since 1.0.0: a lean
+    older version, nexfolk, had no second factor; before, the first test failed with an IndexError)."""
+    legacy = app.legacy()
+    if not legacy.factors:
+        pytest.skip("the older version set up no second factor (Legacy.factors is empty)")
+    return legacy, legacy.factors
+
+
 def _refused(konten: Any, call: Any, code: str) -> None:
     with pytest.raises(konten.AccountError) as caught:
         call()
@@ -125,8 +134,8 @@ def test_setting_up_shows_the_same_qr_code_again_while_it_waits(
 def test_a_setup_started_over_an_authenticator_of_the_older_version_keeps_it_counting(app: Any, konten: Any) -> None:
     """Moving an app's own setup routes onto the module (0.3.4): the authenticators and codes the older version set
     up keep counting while a new one waits, and after it was given up."""
-    legacy = app.legacy()
-    username, seed, codes = legacy.factors[0]
+    _, factors = _legacy_factors(app)
+    username, seed, codes = factors[0]
     with app.store() as store:
         account = store.find_by_username(username)[0]
         konten.factor.begin_totp(store, account.id, issuer=ISSUER)
@@ -307,9 +316,8 @@ def test_a_blocked_account_gets_no_further_with_its_code(app: Any, konten: Any) 
 
 
 def test_the_authenticator_apps_and_codes_of_the_older_version_keep_working(app: Any, konten: Any) -> None:
-    legacy = app.legacy()
-    assert legacy.factors, "Legacy.factors: the second factors the older version set up"
-    for username, seed, codes in legacy.factors:
+    _, factors = _legacy_factors(app)
+    for username, seed, codes in factors:
         with app.store() as store:
             account = store.find_by_username(username)[0]
             assert konten.factor.has_factor(store, account.id)

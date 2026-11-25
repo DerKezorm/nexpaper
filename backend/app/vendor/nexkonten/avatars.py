@@ -30,7 +30,10 @@ from .model2 import PictureStore
 
 SIZE = 256
 QUALITY = 85
-MAX_BYTES = 20 * 1024 * 1024
+#: Since 1.0.0 by name: the largest picture in MB, in the sentence ``account.error.avatar_too_large`` (``{{mb}}``,
+#: ``AVATAR_MAX_MB`` and ``kontenVariables`` in ``konten.ts``) and in the answer (``mb``).
+MAX_MB = 20
+MAX_BYTES = MAX_MB * 1024 * 1024
 MAX_PIXELS = 36_000_000
 DECODERS = 2
 BUSY_WAIT_SECONDS = 2
@@ -64,7 +67,7 @@ def kind_of(head: bytes) -> str | None:
 
 
 def too_large() -> AccountError:
-    return AccountError("avatar_too_large", f"The picture is larger than {MAX_BYTES // (1024 * 1024)} MB.", 422)
+    return AccountError("avatar_too_large", f"The picture is larger than {MAX_MB} MB.", 422, mb=MAX_MB)
 
 
 def not_a_picture() -> AccountError:

@@ -128,6 +128,25 @@ describe('Card, Box, Row, Badge', () => {
     expect(getByRole(list, 'listitem').textContent).toContain('Firefox')
     expect(getByRole(box, 'button', { name: 'Sign out' }).dataset.kind).toBe('danger')
   })
+
+  it('lets a long title of a box wrap instead of cutting it, the badge moves under it (since 1.0.0, 360 px)', () => {
+    // nexmail at 360 px: "Wiederherstellungscodes" needs 172 px and had 162 next to its badge. jsdom draws nothing,
+    // so the test holds the classes that make it right: the title never shrinks below its longest word, the row wraps.
+    const root = show(
+      <div style={{ width: '360px' }}>
+        <Box title="Wiederherstellungscodes" badge={<Badge tone="warn">3 übrig</Badge>} hint="Für den Notfall" />
+      </div>,
+    )
+    const heading = getByRole(root, 'heading', { level: 3, name: 'Wiederherstellungscodes' })
+    const classes = heading.className.split(/\s+/)
+    for (const cutting of ['truncate', 'min-w-0', 'whitespace-nowrap', 'overflow-hidden', 'text-ellipsis']) {
+      expect(classes, cutting).not.toContain(cutting)
+    }
+    expect(classes).toContain('[overflow-wrap:break-word]')
+    expect(heading.parentElement?.className.split(/\s+/)).toContain('flex-wrap')
+    expect(heading.parentElement?.contains(getByText(root, '3 übrig'))).toBe(true)
+    expect(heading.textContent).toBe('Wiederherstellungscodes')
+  })
 })
 
 describe('fields', () => {

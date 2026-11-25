@@ -93,3 +93,15 @@ def test_a_picture_of_the_older_version_is_delivered_in_its_own_type(app: Any, k
         assert found is not None
         delivered = konten.avatars.deliver(store, store.get_account(alex), store.get_account(alex))
     assert delivered.data == found[0] and delivered.headers["Content-Type"] == "image/png"
+
+
+def test_every_signed_in_account_sees_a_picture_through_the_apps_route_and_nobody_else(
+    app: Any, konten: Any
+) -> None:
+    """Since 1.0.0: the rule of every app (24.11.2026) through the app's own route, so that no app keeps an older rule
+    in its own tests (nextasks showed pictures only within a shared space)."""
+    alex = app.seed("alex", password=password(), picture=True)
+    kim = app.seed("kim", password=password())
+    assert app.picture_status(alex, kim) in (200, 304)
+    assert app.picture_status(alex, alex) in (200, 304)
+    assert app.picture_status(alex, None) in (401, 403, 404)

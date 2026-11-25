@@ -54,7 +54,7 @@ export function Card({
           </span>
         )}
         <div className="min-w-0 flex-1">
-          <h2 id={titleId} className={`${PLAIN} text-base leading-6 font-semibold text-[var(--nexui-text)]`}>
+          <h2 id={titleId} className={`${PLAIN} text-base leading-6 font-semibold text-[var(--nexui-text)] [overflow-wrap:break-word]`}>
             {title}
           </h2>
           {subtitle && <p className={`${PLAIN} text-sm leading-5 ${MUTED}`}>{subtitle}</p>}
@@ -88,8 +88,10 @@ export function Box({
   const hintId = useId()
   return (
     <section aria-labelledby={titleId} aria-describedby={hint ? hintId : undefined} className={BOX} data-testid={testId}>
-      <div className="flex min-h-6 flex-wrap items-center gap-2">
-        <h3 id={titleId} className={`${PLAIN} min-w-0 flex-1 text-sm leading-5 font-medium text-[var(--nexui-text)]`}>
+      {/* Since 1.0.0 the title never shrinks below its longest word ("Wiederherstellungscodes" next to a badge at
+          360 px was cut): no min-w-0, the badge wraps under it instead; only a word wider than the whole box breaks. */}
+      <div className="flex min-h-6 flex-wrap items-center gap-x-2 gap-y-1" data-part="box-head">
+        <h3 id={titleId} className={`${PLAIN} flex-1 text-sm leading-5 font-medium text-[var(--nexui-text)] [overflow-wrap:break-word]`}>
           {title}
         </h3>
         {badge}

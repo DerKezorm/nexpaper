@@ -96,6 +96,14 @@ class StandardAdapter:
         app's own start; see ``Legacy``. Replaces what ``start`` made."""
         raise NotImplementedError("APP: legacy")
 
+    def new_sign_in_letter(self, where: str, sender: str) -> Any:
+        """APP (since 1.0.0): the letter the app writes for the mail "New sign-in" (``nexkonten.sessions.new_sign_in``
+        turned into a ``Letter`` the way the app does it, e.g. its ``letter_of``/``queue`` caught with
+        ``nexpost.testing.catch_mail``): an account with a confirmed address signs in from a browser it does not know,
+        with the User-Agent ``where``, from the address ``sender``. The letter names the browser on its system and the
+        moment, links the app's page Security (the button "See signed-in devices"), and never names ``sender``."""
+        raise NotImplementedError("APP: new_sign_in_letter")
+
 
 def post_package(adapter: Any) -> ModuleType:
     package = importlib.import_module(adapter.package)

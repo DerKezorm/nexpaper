@@ -9,9 +9,11 @@ Everything marked "APP:" below must be written there; everything else has a defa
 
 from __future__ import annotations
 
+import importlib
 import secrets
 from collections.abc import Iterator
 from contextlib import AbstractContextManager
+from types import ModuleType
 from typing import Any
 from urllib.parse import urlencode, urlsplit
 
@@ -381,3 +383,40 @@ def form_of(item: dict[str, Any], **changes: Any) -> dict[str, Any]:
 
 def iterate(value: Any) -> Iterator[Any]:
     yield from value
+
+
+# --- since 1.1.2: what the conftest offered, here under a name no other module's contract folder has ----------------
+# The contract folders of oidc, konten and post each have a ``conftest.py``; run in one pytest run, ``import conftest``
+# found whichever was loaded last (nexdiary, 25.11.2026). The tests import these from ``oidc_contract`` now.
+
+
+def oidc_package(adapter: Any) -> ModuleType:
+    """The vendored package with every part the tests touch loaded."""
+    package = importlib.import_module(adapter.package)
+    for name in ("protocol", "attempt", "flow", "accounts", "providers", "authentik", "migrate", "coupling"):
+        importlib.import_module(f"{adapter.package}.{name}")
+    return package
+
+
+def add_in_store(app: Any, fake: fakes.FakeProvider, slug: str, **values: Any) -> dict[str, Any]:
+    """An entry written straight into the store (for apps whose form takes no second entry)."""
+    package = oidc_package(app)
+    with app.store() as store:
+        position = len(store.list_providers())
+        created = store.insert_provider(
+            package.ProviderValues(
+                slug=slug,
+                label=values.get("label", "SSO"),
+                issuer=str(values.get("issuer", fake.issuer)).rstrip("/"),
+                client_id=fake.client_id,
+                client_secret=fake.client_secret,
+                scopes=package.DEFAULT_SCOPES,
+                enabled=True,
+                auto_create=values.get("auto_create", False),
+                trusts_second_factor=values.get("trusts_second_factor", True),
+                managed=values.get("managed", ""),
+                position=position,
+            )
+        )
+        store.commit()
+    return {"id": created.id, "slug": created.slug}

@@ -355,6 +355,9 @@ export const BUTTONS = {
   // Since 0.3.9: the app's own buttons in the dialog "Manage", at their fixed places (OwnButton)
   storageLimit: { kind: 'secondary', icon: 'HardDrive' },
   handOver: { kind: 'secondary', icon: 'ArrowRightLeft' },
+  // Since 1.0.0: taking an own value of the app away again (a storage limit, a quota; nextime and nexnotes borrowed
+  // account.emailRemove for it): red, a bin, like every other removing
+  removeValue: { kind: 'danger', icon: 'Trash2' },
 } as const satisfies Record<string, ButtonSpec>
 
 export type ButtonName = keyof typeof BUTTONS
@@ -489,13 +492,19 @@ export function usernameProblem(raw: string): string {
   return usernameValid(normalizeUsername(raw)) ? '' : 'account.usernameRules'
 }
 
+/** Since 1.0.0: the largest profile picture in MB (``avatars.MAX_MB`` on the server), ``{{mb}}`` in
+ * ``account.error.avatar_too_large``. */
+export const AVATAR_MAX_MB = 20
+
 /** The default variables of i18next for the texts of this module: the app's name as its container is called, the
- * environment variables of the setup code and of the emergency hammer (since 0.3.3). */
+ * environment variables of the setup code and of the emergency hammer (since 0.3.3), since 1.0.0 the largest picture
+ * (``mb``). */
 export function kontenVariables(app: string): {
   app: string
   setupTokenEnv: string
   secondFactorOffEnv: string
   minimum: number
+  mb: number
 } {
   const name = app.trim().toLowerCase()
   const env = name.toUpperCase().replace(/-/g, '_')
@@ -504,6 +513,7 @@ export function kontenVariables(app: string): {
     setupTokenEnv: `${env}_SETUP_TOKEN`,
     secondFactorOffEnv: `${env}_SECOND_FACTOR_OFF`,
     minimum: PASSWORD_MIN,
+    mb: AVATAR_MAX_MB,
   }
 }
 

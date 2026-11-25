@@ -15,6 +15,11 @@
     "body": "{{by}} invites you to {{space}} in {{app}}. The button below makes your account. The invitation holds for {{valid}}.",
     "action": "Accept the invitation"
   },
+  "invite_space_member": {
+    "subject": "{{by}} invites you to {{space}} in {{app}}",
+    "body": "{{by}} invites you to {{space}} in {{app}}. The button below lets you join with your account. The invitation holds for {{valid}}.",
+    "action": "Accept the invitation"
+  },
   "reset": {
     "subject": "A new password for {{app}}",
     "body": "A link for a new password was made for your account {{username}}. It holds for {{valid}} and works once. If that was not you, just leave this mail.",
@@ -43,12 +48,15 @@
   },
   "new_sign_in": {
     "subject": "New sign-in at {{app}}",
-    "body": "Your account {{username}} was just signed in from a new browser: {{where}}. If that was you, all is well. Otherwise change your password and sign out everywhere."
+    "body": "Your account {{username}} was signed in from a new browser on {{when}}: {{where}}. If that was you, all is well. Otherwise change your password and sign out everywhere.",
+    "action": "See signed-in devices"
   },
   "test": {
     "subject": "Test mail from {{app}}",
     "body": "If you read this, {{app}} can send mail."
   },
   "browser_on": "{{browser}} on {{system}}",
-  "browser_unknown": "an unknown browser"
+  "browser_unknown": "an unknown browser",
+  "date": "{{y}}-{{m}}-{{d}}",
+  "moment": "{{day}} at {{time}} ({{zone}})"
 }

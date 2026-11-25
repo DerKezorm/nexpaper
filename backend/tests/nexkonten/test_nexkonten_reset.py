@@ -337,3 +337,15 @@ def test_devices_stay_connected_after_the_operators_link_too(
         done = konten.resets.use_reset(store, token, password())
     assert done.origin == konten.RESET_OPERATOR
     assert not app.session_alive(browser) and app.session_alive(device) and len(done.remaining) >= 1
+
+
+def test_forgot_mails_at_once_through_the_route_and_a_failed_mail_never_waits_in_the_outbox(
+    app: Any, konten: Any
+) -> None:
+    """Since 1.0.0 (nextasks put a failed mail into its outbox for another try): "Forgot your password?" sends at
+    once; a mail that fails takes its link with it and never waits in the outbox, where it would arrive an hour later
+    with a link that is gone. Through the app's own route."""
+    app.seed("alex", email="alex@example.com", password=password())
+    assert app.forgot_through_route("alex", mail_fails=True) == ([], 0)
+    assert app.forgot_through_route("alex", mail_fails=False) == (["alex@example.com"], 0)
+    assert app.forgot_through_route("nobody", mail_fails=False) == ([], 0)

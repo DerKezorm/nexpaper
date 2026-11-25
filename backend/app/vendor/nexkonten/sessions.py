@@ -222,11 +222,15 @@ def listing(
 
 def new_sign_in(account: Account, *, known: bool, wanted: bool = True) -> Mail | None:
     """The mail "new sign-in" after a sign-in from a browser the account does not know yet (no valid mark,
-    ``is_known``), to a confirmed address, unless the person turned it off (``wanted``, on by default). The app adds
-    the browser and the time (``post.letters.from_account_mail(..., where=...)``)."""
+    ``is_known``), to a confirmed address, unless the person turned it off (``wanted``, on by default). Since 1.0.0
+    it carries the moment (``Mail.at``, now); the app hands it to ``nexpost.letters.from_account_mail(mail,
+    language=..., link=<its page Security>, where=<the raw User-Agent>, time_zone=<the person's, if it has one>)``:
+    the browser on its system, the moment, the button "See signed-in devices", never a network address."""
     if known or not wanted or not account.email or not account.email_confirmed:
         return None
-    return Mail(MAIL_NEW_SIGN_IN, account.email, account.id, account.username, account.display_name)
+    return Mail(
+        MAIL_NEW_SIGN_IN, account.email, account.id, account.username, account.display_name, at=utcnow()
+    )
 
 
 def sign_out(store: SessionStore, account_id: AccountId, uid: str) -> bool:

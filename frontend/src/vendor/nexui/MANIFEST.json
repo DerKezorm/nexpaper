@@ -2,14 +2,14 @@
   "files": {
     "frontend/src/vendor/nexui/Avatar.tsx": "sha256-A7ONEhFXqDCJ4UAxzADYCA+qHi6Dje+T2rgHXDdwA9Y=",
     "frontend/src/vendor/nexui/Button.tsx": "sha256-CoubnHTKQOgJZThSRT46eV9NagXXyFZW14tEbQjcIYg=",
-    "frontend/src/vendor/nexui/Card.tsx": "sha256-9VjNP6nBy2XUjKvF1K7glGCR2cqUhSupQm6VF+lHc80=",
+    "frontend/src/vendor/nexui/Card.tsx": "sha256-0jmAasRZZ97QVqlUsCsGHS6h3S6zOvxA8L8YyngbHtY=",
     "frontend/src/vendor/nexui/Dialog.tsx": "sha256-xSIzWJv20susiIlQMPxj2MJiF6OaG6EIxre/sXWG2WA=",
     "frontend/src/vendor/nexui/Facts.tsx": "sha256-IAzTIrYxh9UULDaMUWOuazZ6DQ+EhA/EHJdq1PE547o=",
     "frontend/src/vendor/nexui/Field.tsx": "sha256-/B4hAANlwb0oUcUHwfSRDyrk4HNVUpZJO3WXOGGIU1M=",
     "frontend/src/vendor/nexui/Notice.tsx": "sha256-pMXKJd4oisKcV02aj4GpuXezGXzj7GywqH8rsHcyUMc=",
     "frontend/src/vendor/nexui/icons.ts": "sha256-08zBKAWXynfI21ZJhCUabVDyqsanXBTsGvONU4xwtEU=",
     "frontend/src/vendor/nexui/index.ts": "sha256-n+B3VgJCsx6uFqQAxn42GIHq/NRBBxHQF5U3TCOJKMI=",
-    "frontend/src/vendor/nexui/nexui.test.tsx": "sha256-rM5kEV/6/Oxdt8C3PfAT6e8QyYugW5APtGBFiWCLIxE=",
+    "frontend/src/vendor/nexui/nexui.test.tsx": "sha256-GnmHvDT/DF9DPp9vQXer83ZBbY8ZQc03t19Nzasov9w=",
     "frontend/src/vendor/nexui/styles.ts": "sha256-MJMZGWjIUUQ+N4WO/DRtjhJpixV9bVSyYwy+afJxfD4="
   },
   "module": "ui",
@@ -20,5 +20,5 @@
     "tailwindcss": ">=4.1.0"
   },
   "vendor_path": "frontend/src/vendor/nexui",
-  "version": "0.1.2"
+  "version": "1.0.0"
 }

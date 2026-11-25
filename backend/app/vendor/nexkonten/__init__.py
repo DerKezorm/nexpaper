@@ -94,7 +94,7 @@ from .model import (
     Taken,
 )
 
-__version__ = "0.3.10"
+__version__ = "1.0.0"
 
 __all__ = [
     "ACCESS_API_KEY",

@@ -16,13 +16,14 @@ from typing import Any
 import oidc_contract
 import oidc_fakes as fakes
 import pytest
-from conftest import add_in_store
 from oidc_contract import (
+    add_in_store,
     entry,
     error_in,
     form_of,
     link_person,
     location,
+    oidc_package,
     round_trip,
     start,
 )
@@ -276,9 +277,7 @@ def test_the_same_new_identity_returning_twice_at_once_makes_one_account_and_one
 
 
 def _set_in_store(adapter: Any, row: Any, **changes: Any) -> None:
-    import conftest
-
-    package = conftest.oidc_package(adapter)
+    package = oidc_package(adapter)
     values = {
         name: getattr(row, name)
         for name in (

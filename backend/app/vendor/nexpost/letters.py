@@ -4,6 +4,11 @@ of the recipient, and headers without line breaks.
 Every value that goes into a header (subject, sender name, a name in the subject) loses line breaks and control
 characters first (``one_line``): a name with a line break can neither add a header nor break the mail. Every value
 that goes into HTML is escaped.
+
+Since 1.0.0 the mail "New sign-in" names the browser on its system **and the moment** in the person's time zone
+(``moment``), never a network address, and carries the button "See signed-in devices" when the app gives the address
+of its page Security as ``link``. An invitation into a space has a second wording for somebody who has an account
+already (``member``).
 """
 
 from __future__ import annotations
@@ -12,8 +17,10 @@ import html
 import json
 import re
 import unicodedata
+from datetime import UTC, datetime, timedelta, tzinfo
 from functools import lru_cache
 from pathlib import Path
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from . import config
 from .errors import MailError
@@ -142,6 +149,52 @@ def describe_browser(agent: str, language: str) -> str:
 #: Since 0.1.2: kinds with a wording of their own when a value is given (``invite`` with ``space``: the space, place or
 #: book the person is invited into).
 VARIANTS = {"invite": ("space", "invite_space")}
+#: Since 1.0.0: a wording of a wording when another value is given (``invite_space`` with ``member``: the person has an
+#: account already and joins with it, nextasks and nexlore). ``member`` without ``space`` changes nothing.
+MEMBER_VARIANTS = {"invite_space": ("member", "invite_space_member")}
+
+
+def _zone(time_zone: str | tzinfo | None) -> tzinfo | None:
+    """The zone a moment is told in: a ``tzinfo`` as given, an IANA name (``Europe/Berlin``) where the system knows
+    it, ``UTC``; anything else (empty, unknown, no time zone data on the machine) None: the server's own."""
+    if isinstance(time_zone, tzinfo):
+        return time_zone
+    name = (time_zone or "").strip()
+    if name.upper() in ("UTC", "ETC/UTC", "Z"):
+        return UTC
+    if not name:
+        return None
+    try:
+        return ZoneInfo(name)
+    except (ZoneInfoNotFoundError, ValueError, OSError):
+        return None
+
+
+def _offset(local: datetime) -> str:
+    """``UTC``, ``UTC+1``, ``UTC-3``, ``UTC+5:30``: the offset of a moment, the same words in every language."""
+    minutes = int((local.utcoffset() or timedelta(0)).total_seconds() // 60)
+    if minutes == 0:
+        return "UTC"
+    hours, rest = divmod(abs(minutes), 60)
+    return f"UTC{'+' if minutes > 0 else '-'}{hours}" + (f":{rest:02d}" if rest else "")
+
+
+def moment(language: str, at: datetime | None = None, time_zone: str | tzinfo | None = None) -> str:
+    """Since 1.0.0: a moment as a mail tells it, in the person's time zone and language: ``25.11.2026 um 14:05 Uhr
+    (UTC+1)``, ``2026-11-25 at 14:05 (UTC+1)``, ``25/11/2026 à 14:05 (UTC+1)``. ``at`` default now; a naive time
+    counts as UTC (the way the apps store it). ``time_zone`` the person's (a name or a ``tzinfo``); without one, or
+    one the machine does not know, the server's own (the zone of the ``Date`` header)."""
+    language = language if language in LANGUAGES else "en"
+    when = at or datetime.now(UTC)
+    if when.tzinfo is None:
+        when = when.replace(tzinfo=UTC)
+    zone = _zone(time_zone)
+    local = when.astimezone(zone) if zone is not None else when.astimezone()
+    day = _fill(_text(language, "date"), {"d": f"{local.day:02d}", "m": f"{local.month:02d}", "y": str(local.year)})
+    return _fill(
+        _text(language, "moment"),
+        {"day": day, "time": f"{local.hour:02d}:{local.minute:02d}", "zone": _offset(local)},
+    )
 
 
 def compose(kind: str, to: str, *, language: str, values: dict[str, object], link: str = "") -> Letter:
@@ -149,16 +202,23 @@ def compose(kind: str, to: str, *, language: str, values: dict[str, object], lin
     ``email_removed``, ``username_changed``, ``factor_reset``, ``new_sign_in``, ``test``). ``values`` fills the
     texts: ``name``, ``username``, ``by``, ``hint``, ``where``, ``valid`` (``validity``); ``app`` comes from the
     configuration. Since 0.1.2 an invitation takes ``space`` too, the name of a space, place or address book the person
-    is invited into ("Alex invites you to Family in nextasks"); without it the letter is the one of 0.1.1."""
+    is invited into ("Alex invites you to Family in nextasks"); without it the letter is the one of 0.1.1. Since 1.0.0
+    ``member`` (any non-empty value) with ``space``: the person has an account and joins with it; ``new_sign_in``
+    takes ``when`` (``moment``), now in the server's zone when it is missing, and ``link`` becomes its button "See
+    signed-in devices" (the app's page Security)."""
     recipient = check_address(to)
     language = language if language in LANGUAGES else "en"
     if not _text(language, f"{kind}.subject"):
         raise ValueError(f"no mail of the kind {kind!r}")
     filled = {key: one_line(value) for key, value in values.items()}
     filled["app"] = one_line(config.current().shown_name)
+    if kind == "new_sign_in" and not filled.get("when"):
+        filled["when"] = moment(language)
     wording = kind
     if kind in VARIANTS and filled.get(VARIANTS[kind][0]):
         wording = VARIANTS[kind][1]
+    if wording in MEMBER_VARIANTS and filled.get(MEMBER_VARIANTS[wording][0]):
+        wording = MEMBER_VARIANTS[wording][1]
     subject = one_line(_fill(_text(language, f"{wording}.subject"), filled))
     greeting = _fill(_text(language, "greeting"), filled) if filled.get("name") else ""
     body = _fill(_text(language, f"{wording}.body"), filled)
@@ -171,12 +231,25 @@ def compose(kind: str, to: str, *, language: str, values: dict[str, object], lin
 
 
 def from_account_mail(
-    mail: object, *, language: str, link: str = "", by: str = "", where: str = "", days: int = 0, space: str = ""
+    mail: object,
+    *,
+    language: str,
+    link: str = "",
+    by: str = "",
+    where: str = "",
+    days: int = 0,
+    space: str = "",
+    member: bool = False,
+    time_zone: str | tzinfo | None = None,
 ) -> Letter:
     """A letter for a ``Mail`` of nexkonten (read by its fields, the modules import nothing from each other):
-    ``kind``, ``to``, ``username``, ``display_name``, ``hours``, ``new_hint``. ``link`` the app built from the token;
-    ``days`` for an invitation; ``where`` the raw User-Agent of a new sign-in (the module names the browser and the
-    system from it, nothing else); ``space`` (since 0.1.2) the space an invitation leads into."""
+    ``kind``, ``to``, ``username``, ``display_name``, ``hours``, ``new_hint``, since 1.0.0 ``at`` (when a new sign-in
+    happened; missing: now). ``link`` the app built from the token, for ``new_sign_in`` (since 1.0.0) the address of
+    the app's page Security (the button "See signed-in devices"); ``days`` for an invitation; ``where`` the raw
+    User-Agent of a new sign-in (the module names the browser and the system from it, nothing else, never an
+    address); ``space`` (since 0.1.2) the space an invitation leads into; ``member`` (since 1.0.0) with ``space``: the
+    person has an account and joins with it; ``time_zone`` (since 1.0.0) the person's, for the moment of a new sign-in
+    (without: the server's)."""
     kind = str(getattr(mail, "kind", ""))
     if kind == "email_changed" and not getattr(mail, "new_hint", ""):
         kind = "email_removed"
@@ -187,7 +260,9 @@ def from_account_mail(
         "hint": getattr(mail, "new_hint", ""),
         "by": by,
         "space": space,
+        "member": "yes" if member else "",
         "where": describe_browser(where, language) if kind == "new_sign_in" else "",
+        "when": moment(language, getattr(mail, "at", None), time_zone) if kind == "new_sign_in" else "",
         "valid": validity(language if language in LANGUAGES else "en", hours=hours, days=days) if hours or days else "",
     }
     return compose(kind, str(getattr(mail, "to", "")), language=language, values=values, link=link)

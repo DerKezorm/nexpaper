@@ -6,8 +6,16 @@ from typing import Any
 
 import oidc_fakes as fakes
 import pytest
-from conftest import add_in_store
-from oidc_contract import entry, error_in, form_of, link_person, location, round_trip
+from oidc_contract import (
+    add_in_store,
+    entry,
+    error_in,
+    form_of,
+    link_person,
+    location,
+    oidc_package,
+    round_trip,
+)
 
 COMMON = f"{fakes.ENTRA}/common/v2.0"
 
@@ -29,9 +37,7 @@ def add_entra(adapter: Any, entra: fakes.FakeEntra, slug: str = "entra", issuer:
 
 
 def _values(adapter: Any, row: Any, **changes: Any) -> Any:
-    import conftest
-
-    package = conftest.oidc_package(adapter)
+    package = oidc_package(adapter)
     values = {
         name: getattr(row, name)
         for name in (

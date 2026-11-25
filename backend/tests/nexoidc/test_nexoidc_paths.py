@@ -7,8 +7,16 @@ from http.cookies import SimpleCookie
 from typing import Any
 
 import oidc_fakes as fakes
-from conftest import add_in_store, oidc_package
-from oidc_contract import entry, error_in, link_person, location, round_trip, start
+from oidc_contract import (
+    add_in_store,
+    entry,
+    error_in,
+    link_person,
+    location,
+    oidc_package,
+    round_trip,
+    start,
+)
 
 
 def _cookies(response: Any) -> SimpleCookie:

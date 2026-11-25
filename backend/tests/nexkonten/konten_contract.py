@@ -192,6 +192,21 @@ class StandardAdapter:
         An expired invitation stays in that list until it is withdrawn."""
         raise NotImplementedError("APP: listed_invites")
 
+    def forgot_through_route(self, typed: str, *, mail_fails: bool) -> tuple[list[str], int]:
+        """APP (since 1.0.0): "Forgot your password?" with ``typed`` through the app's own route, a mail server set up,
+        the background work run (``TestClient`` runs ``BackgroundTasks`` after the answer). ``mail_fails``: the mail
+        server cannot be reached (``nexpost.testing.catch_mail(fail=True)``, or the app's own mailer made to fail).
+        Returns ``(addresses a mail went to at once, letters this request put into the app's outbox)``: the mail goes
+        at once (``nexpost.send.deliver``), never into the outbox, also not when it fails (nextasks put it there)."""
+        raise NotImplementedError("APP: forgot_through_route")
+
+    def picture_status(self, owner: Any, viewer: Any | None) -> int:
+        """APP (since 1.0.0): the status of the app's own route of ``owner``'s profile picture, asked by a browser
+        signed in as ``viewer`` (None: signed in as nobody). Every signed-in account sees every picture (200, or 304),
+        in every app (decided 24.11.2026; nextasks showed them only within a shared space); nobody else (401, 403 or
+        404, whatever the app answers)."""
+        raise NotImplementedError("APP: picture_status")
+
 
 def konten_package(adapter: Any) -> ModuleType:
     package = importlib.import_module(adapter.package)
