@@ -271,7 +271,8 @@
       "addressTaken": "The address is your account's now. Confirm it under Profile, then it counts for documents by mail too."
     },
     "keysWait": "Devices and API keys work only once you set up a second factor.",
-    "keysWaitLink": "Set up a second factor"
+    "keysWaitLink": "Set up a second factor",
+    "newSignInMailPush": "Also as a notice on your devices."
   },
   "twofactor": {
     "scan": "Scan this code with the app, or type the key below into it. Then give the code the app shows, and your password.",

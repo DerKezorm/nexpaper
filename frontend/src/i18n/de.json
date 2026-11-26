@@ -271,7 +271,8 @@
       "addressTaken": "Die Adresse gilt jetzt für dein Konto. Bestätige sie unter Profil, dann zählt sie auch für Dokumente per Mail."
     },
     "keysWait": "Geräte und API-Schlüssel wirken erst, wenn du einen zweiten Faktor einrichtest.",
-    "keysWaitLink": "Zweiten Faktor einrichten"
+    "keysWaitLink": "Zweiten Faktor einrichten",
+    "newSignInMailPush": "Auch als Mitteilung auf deinen Geräten."
   },
   "twofactor": {
     "scan": "Scanne diesen Code mit der App oder tippe den Schlüssel darunter ein. Dann gib den Code ein, den die App zeigt, und dein Passwort.",

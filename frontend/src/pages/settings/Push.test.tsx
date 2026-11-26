@@ -279,6 +279,8 @@ describe('the notice of a new sign-in', () => {
     const row = box.querySelector('[data-testid="security-newSignInMail"]')!
     // The module's words of the part "newSignInMail" (konten 1.1.0).
     expect(row.textContent).toContain('Mail bei neuer Anmeldung')
+    // nexpaper's sentence after the module's hint (konten 1.1.1, Bauplan E57): the notice comes on the devices too.
+    expect(row.textContent).toContain('Auch als Mitteilung auf deinen Geräten.')
     expect(row.querySelector('[role="switch"]')).toBeNull()
     const tick = row.querySelector<HTMLInputElement>('input[type="checkbox"]')!
     expect(tick.checked).toBe(true)

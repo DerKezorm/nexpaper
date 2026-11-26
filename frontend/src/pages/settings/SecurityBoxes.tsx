@@ -21,7 +21,7 @@ import { iso } from '../../lib/say'
 import { createPasskey, passkeysAvailable } from '../../lib/webauthn'
 import { useAuth } from '../../state/auth'
 import { PasskeyAddition } from '../../vendor/nexkonten/AccountCards'
-import { FIELDS, PAGES, pageOrder, passwordChanged, SECOND_FACTOR_STATE } from '../../vendor/nexkonten/konten'
+import { FIELDS, newSignInMailHint, PAGES, pageOrder, passwordChanged, SECOND_FACTOR_STATE } from '../../vendor/nexkonten/konten'
 import { Badge, Box, Button, Card, CheckboxRow, ConfirmDialog, Field, Notice, Row, Rows } from '../../vendor/nexui'
 import { useAction } from './actions'
 import { Outcome } from './Outcome'
@@ -621,7 +621,7 @@ function SignInMailRow({ me }: { me: Me }) {
     <div className="flex flex-col gap-2" data-testid="security-newSignInMail">
       <CheckboxRow
         label={t(part('newSignInMail').title)}
-        hint={t(part('newSignInMail').hint)}
+        hint={newSignInMailHint(t(part('newSignInMail').hint), t('me.newSignInMailPush'))}
         checked={me.profile.notify_login !== false}
         disabled={action.busy}
         onChange={(notify_login) => {

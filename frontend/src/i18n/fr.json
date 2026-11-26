@@ -271,7 +271,8 @@
       "addressTaken": "L'adresse est maintenant celle de votre compte. Confirmez-la sous Profil, elle servira alors aussi pour les documents envoyés par courriel."
     },
     "keysWait": "Les appareils et les clés d’API ne fonctionnent qu'une fois un second facteur configuré.",
-    "keysWaitLink": "Configurer un second facteur"
+    "keysWaitLink": "Configurer un second facteur",
+    "newSignInMailPush": "Aussi comme notification sur vos appareils."
   },
   "twofactor": {
     "scan": "Scannez ce code avec l'application, ou saisissez-y la clé ci-dessous. Puis indiquez le code affiché par l'application, et votre mot de passe.",
