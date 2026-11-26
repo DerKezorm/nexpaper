@@ -208,7 +208,8 @@
       "mineHint": "Off: your uploads get only rules and what nexpaper reads itself, and your text never goes to a model.",
       "byOperator": "Set by the operator:",
       "none": "The operator has not set up an AI. Until then there are only rules and what nexpaper reads from the text itself; your choice here is kept for later.",
-      "noneOperator": "No AI is set up. You choose a provider under <settings>Server › AI provider</settings>; your choice here is kept until then."
+      "noneOperator": "No AI is set up. You choose a provider under <settings>Server › AI provider</settings>; your choice here is kept until then.",
+      "task": "Suggestions in the inbox"
     },
     "push": {
       "title": "Notifications on your devices",

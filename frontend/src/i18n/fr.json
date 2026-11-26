@@ -208,7 +208,8 @@
       "mineHint": "Désactivé : vos téléversements ne reçoivent que les règles et ce que nexpaper lit lui-même, et votre texte ne va jamais à un modèle.",
       "byOperator": "Défini par l'administrateur :",
       "none": "L'administrateur n'a pas configuré d'IA. D'ici là, il n'y a que les règles et ce que nexpaper lit lui-même dans le texte ; votre choix ici est conservé pour plus tard.",
-      "noneOperator": "Aucune IA n'est configurée. Vous choisissez un fournisseur sous <settings>Serveur › Fournisseur d’IA</settings> ; votre choix ici est conservé d'ici là."
+      "noneOperator": "Aucune IA n'est configurée. Vous choisissez un fournisseur sous <settings>Serveur › Fournisseur d’IA</settings> ; votre choix ici est conservé d'ici là.",
+      "task": "Suggestions dans la boîte de réception"
     },
     "push": {
       "title": "Notifications sur vos appareils",

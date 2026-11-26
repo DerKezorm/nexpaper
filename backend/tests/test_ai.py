@@ -6,6 +6,7 @@ that every request of that block will go through."""
 
 from __future__ import annotations
 
+import dataclasses
 import json
 import logging
 import secrets
@@ -189,8 +190,10 @@ def test_a_model_that_turns_down_the_temperature_is_asked_once_more_without(clie
         return model.write(request)
 
     model.answer = picky
+    # Since ki 0.1.0 the probe sends no temperature at all (the module's probe); a request with one is asked once more
+    # without it (the proposals: test_ai_proposals.py, the module's contract tests).
     assert probe(client).status_code == 200
-    assert len(model.requests) == 2 and "temperature" not in model.body()
+    assert len(model.requests) == 1 and "temperature" not in model.body()
 
 
 
@@ -218,7 +221,8 @@ def test_a_newer_openai_model_gets_the_limit_as_max_completion_tokens(client: Te
     set_up(client)
     model.answer = newer_openai(model)
     assert probe(client).status_code == 200
-    assert len(model.requests) == 3
+    # max_tokens renamed once; the probe sends no temperature (ki 0.1.0).
+    assert len(model.requests) == 2
     body = model.body()
     assert "max_tokens" not in body and "temperature" not in body
     assert body["max_completion_tokens"] == 20 + ai.THINKING_OUT
@@ -285,7 +289,8 @@ def test_a_local_server_that_does_not_know_reasoning_effort_is_asked_once_more_w
 
     model.answer = strict
     assert probe(client).status_code == 200
-    assert len(model.requests) == 3
+    # reasoning_effort left out once; the probe sends no temperature (ki 0.1.0).
+    assert len(model.requests) == 2
     assert "reasoning_effort" not in model.body() and "temperature" not in model.body()
 
 
@@ -296,7 +301,9 @@ def test_a_refusal_for_another_reason_is_not_asked_again(client: TestClient, acc
     assert len(model.requests) == 1
 
 
-@pytest.mark.parametrize(("finish", "code"), [("length", "ai_used_up"), ("stop", "ai_empty")])
+# An empty answer that did not run out is no failure of the probe (the module asks only that the service answers); for
+# a task it is ``ai_empty`` (test_ai_proposals.py).
+@pytest.mark.parametrize(("finish", "code"), [("length", "ai_used_up")])
 def test_an_answer_used_up_by_thinking_says_so(client: TestClient, account: Account, model: Model, finish: str,
                                                code: str) -> None:
     set_up(client, "local", LOCAL)
@@ -382,7 +389,6 @@ def test_the_service_checks_the_permission_itself_not_only_the_route(client: Tes
     (lambda request: httpx.Response(500, json={"error": {"message": "overloaded"}}), 502, "ai_service_failed"),
     (lambda request: httpx.Response(200, content=b"<html>not json</html>"), 502, "ai_unreadable"),
     (lambda request: httpx.Response(200, json={"choices": []}), 502, "ai_unreadable"),
-    (lambda request: httpx.Response(200, json={"choices": [{"message": {"content": "   "}}]}), 502, "ai_empty"),
 ])
 def test_what_goes_wrong_is_said_plainly(client: TestClient, account: Account, model: Model,
                                          answer: Callable[[httpx.Request], httpx.Response], status: int,
@@ -423,7 +429,7 @@ def test_the_words_of_a_local_service_are_never_shown(client: TestClient, accoun
 def test_an_answer_is_read_up_to_a_limit(client: TestClient, account: Account, model: Model,
                                          monkeypatch: pytest.MonkeyPatch) -> None:
     set_up(client)
-    monkeypatch.setattr(ai, "MAX_ANSWER", 1000)
+    monkeypatch.setattr(ai, "CONFIG", dataclasses.replace(ai.CONFIG, max_answer=1000))
     # A well-formed answer, only too large: refused for its size, not for its form.
     model.text = "Ein Satz. " * 300
     assert probe(client).json()["detail"]["code"] == "ai_unreadable"
@@ -550,7 +556,7 @@ def test_a_double_click_makes_one_request(client: TestClient, account: Account, 
 def test_the_server_asks_for_a_few_at_once(client: TestClient, account: Account, model: Model,
                                            monkeypatch: pytest.MonkeyPatch) -> None:
     set_up(client)
-    monkeypatch.setattr(ai, "server_slots", threading.BoundedSemaphore(1))
+    monkeypatch.setattr(ai, "CONFIG", dataclasses.replace(ai.CONFIG, at_once=1))
     inside, release = threading.Event(), threading.Event()
 
     def held(request: httpx.Request) -> httpx.Response:
@@ -604,7 +610,7 @@ def test_the_log_names_the_request_and_never_a_word_of_it(client: TestClient, ac
         handler.flush()
     folder = logs.log_file().parent
     text = "".join(path.read_text(encoding="utf-8", errors="replace") for path in folder.glob(logs.log_file().name + "*"))
-    assert "provider=openai model=model-a status=ok" in text
+    assert "AI probe api=openai model=model-a outcome=ok" in text
     for secret in (answer_word, key, key[:12]):
         assert secret not in text, secret
 

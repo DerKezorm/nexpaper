@@ -208,7 +208,8 @@
       "mineHint": "Aus: Für deine Uploads gibt es nur Regeln und was nexpaper selbst liest, und dein Text geht nie an ein Modell.",
       "byOperator": "Vom Betreiber eingestellt:",
       "none": "Der Betreiber hat keine KI eingerichtet. Solange gibt es nur Regeln und was nexpaper selbst aus dem Text liest; deine Wahl hier bleibt für später gespeichert.",
-      "noneOperator": "Es ist keine KI eingerichtet. Einen Anbieter wählst du unter <settings>Server › KI-Anbieter</settings>; deine Wahl hier bleibt bis dahin gespeichert."
+      "noneOperator": "Es ist keine KI eingerichtet. Einen Anbieter wählst du unter <settings>Server › KI-Anbieter</settings>; deine Wahl hier bleibt bis dahin gespeichert.",
+      "task": "Vorschläge im Eingang"
     },
     "push": {
       "title": "Benachrichtigungen auf deinen Geräten",

@@ -96,6 +96,15 @@ DEFAULTS: dict[str, Any] = {
     #: The operator's own wishes for the proposals (a naming convention, a language), added to the fixed rules; they
     #: never change the answer's form or what is checked. Empty: the fixed rules alone.
     "ai_instructions": "",
+    #: The shared AI module (ki 0.1.0, ``services/ki_store.py``): the main switch "KI auf diesem Server erlaubt" (K3),
+    #: the way ("shared"/"own", K2), the hosts in the own network accounts may use (K4), the brakes per person (K10).
+    #: None while never stored: ``nexki.settings.adopt`` decides once at the start (K17).
+    "ai_enabled": None,
+    "ai_mode": None,
+    "ai_hosts": None,
+    "ai_hosts_adopted": None,
+    "ai_per_minute": None,
+    "ai_per_day": None,
     #: Web Push (``services/webpush.py``, ``services/push.py``): nexpaper's own key pair, made at the first need and
     #: sealed with the server's secret; who the push services may contact (empty: the public https address, else a
     #: placeholder); and push services beyond the known ones, as host names.

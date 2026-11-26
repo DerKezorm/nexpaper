@@ -84,6 +84,7 @@ from .services import (
     catalog,
     filecheck,
     jobs,
+    ki_store,
     locales,
     logs,
     mcp_store,
@@ -106,6 +107,7 @@ from .services import reminders as reminders_service
 from .services import uploads as uploads_service
 from .services.konten_store import KontenStore
 from .vendor import nexoidc
+from .vendor.nexki import api as ki_api
 from .vendor.nexkonten import factor as konten_factor
 from .vendor.nexkonten import manage as konten_manage
 from .vendor.nexkonten import setup as konten_setup
@@ -189,6 +191,16 @@ async def _sweep_forever(stop: asyncio.Event) -> None:
             continue
 
 
+def _adopt_ai() -> None:
+    from .vendor import nexki
+
+    with SessionLocal() as db:
+        taken = nexki.settings.adopt(mcp_store.McpStore(db), ki_store.CONFIG)
+        db.commit()
+    if taken:
+        logger.info("AI settings taken over: %s", ", ".join(taken))
+
+
 @asynccontextmanager
 async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     logs.setup()
@@ -206,6 +218,9 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     # The sign-in providers: the single provider of 1.0.1 becomes the entry ``oidc`` once (a backup first), every
     # start takes over what 1.0.1 changed on the way back and writes the way back again (``services/oidc_store.py``).
     oidc_store.migrate_settings()
+    # The shared AI module takes over what was never stored (K17): the main switch on where the operator's service was
+    # complete, the way "Einer für alle"; a second start changes nothing.
+    _adopt_ai()
     # The TLS context of the sign-in module, read once in a thread now: the first sign-in does not wait for it.
     await nexoidc.warm()
     # Nothing is being written yet: what a broken-off write left under a temporary name goes now, and an upload that was
@@ -345,6 +360,12 @@ for module in ROUTERS:
 app.include_router(schluessel_api.router(
     config=schluessel_store.CONFIG, store=schluessel_store.store, account=require_browser_account,
     operator=require_operator, address=schluessel_store.address, prefix="/api/v1/connections", tags=["api keys"]))
+# The AI (the shared module ki 0.1.0): the operator's service under Server › KI-Anbieter, the person's AI under
+# Mein Konto › KI, both only in a signed-in browser (an own access carries a key). The older routes of ``routers/ai.py``
+# stay beside them (``GET /api/v1/ai`` for devices as before).
+app.include_router(ki_api.router(
+    config=ki_store.CONFIG, store=mcp_store.store, account=require_browser_account, operator=require_operator,
+    server_prefix="/api/v1/server/ai", me_prefix="/api/v1/me/ai"))
 # AI tools (the shared MCP module, mcp 1.1.0): ``POST /api/mcp`` with an MCP key or a program's token, OAuth for
 # programs under ``/api/oauth`` and ``/.well-known``, the account's rights per tool and requests under
 # ``/api/v1/connections/mcp``. Consent and requests only in a signed-in browser, the settings for the operator.
@@ -433,3 +454,36 @@ def _mount_frontend(target: FastAPI, dist: Path) -> None:
 _mount_frontend(app, get_settings().frontend_dist)
 # The shared sign-in module learns who it runs in, before the first request.
 oidc_store.configure()
+
+
+# TODO ki 0.1.0: the module's routes name their bodies ``ModelsIn`` and ``OperatorIn`` and give no way to rename them
+# (updates and sicherung have ``schema_names``). Beside nexpaper's own ``ModelsIn`` (routers/ai.py) and ``OperatorIn``
+# (routers/push.py) FastAPI would call all four by their module paths, and the names of before would be gone (Bauplan
+# E53). The description keeps nexpaper's names and calls the module's ``AiModelsIn`` and ``AiOperatorIn``.
+SCHEMA_NAMES = {
+    "app__routers__ai__ModelsIn": "ModelsIn",
+    "app__routers__push__OperatorIn": "OperatorIn",
+    "app__vendor__nexki__api__ModelsIn": "AiModelsIn",
+    "app__vendor__nexki__api__OperatorIn": "AiOperatorIn",
+}
+_plain_openapi = app.openapi
+
+
+def _openapi_with_old_names() -> dict[str, Any]:
+    if app.openapi_schema is not None:
+        return app.openapi_schema
+    found = _plain_openapi()
+    text = json.dumps(found)
+    for qualified, name in SCHEMA_NAMES.items():
+        text = text.replace(f'"#/components/schemas/{qualified}"', f'"#/components/schemas/{name}"')
+    renamed = json.loads(text)
+    schemas = renamed.get("components", {}).get("schemas", {})
+    for qualified, name in SCHEMA_NAMES.items():
+        if qualified in schemas:
+            schemas[name] = schemas.pop(qualified)
+            schemas[name]["title"] = name
+    app.openapi_schema = renamed
+    return renamed
+
+
+app.openapi = _openapi_with_old_names  # type: ignore[method-assign]

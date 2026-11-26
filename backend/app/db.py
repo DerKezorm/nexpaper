@@ -727,8 +727,32 @@ def _additions_mcp(connection: Connection) -> None:
         connection.exec_driver_sql(statement)
 
 
+def _additions_ki(connection: Connection) -> None:
+    """1.13.0, the shared AI module (``services/ki_store.py``, ``models_ki.py``): an account's own AI service and the
+    lines of "Was ging hinaus". New and empty; the operator's service stays in ``settings``. Written out as the tables
+    stood in 1.13.0, like a step."""
+    for statement in (
+        (
+            "CREATE TABLE IF NOT EXISTS ai_own_access ( account_id INTEGER NOT NULL, api VARCHAR(16) NOT NULL, "
+            "url VARCHAR(255) NOT NULL, model VARCHAR(200) NOT NULL, key_enc TEXT NOT NULL, "
+            "updated_at DATETIME NOT NULL, PRIMARY KEY (account_id), "
+            "FOREIGN KEY(account_id) REFERENCES users (id) ON DELETE CASCADE )"
+        ),
+        (
+            "CREATE TABLE IF NOT EXISTS ai_events ( id INTEGER NOT NULL, account_id INTEGER NOT NULL, "
+            "at DATETIME NOT NULL, task VARCHAR(40) NOT NULL, target VARCHAR(255) NOT NULL, "
+            "model VARCHAR(200) NOT NULL, "
+            "manual BOOLEAN NOT NULL, chars INTEGER NOT NULL, outcome VARCHAR(40) NOT NULL, sent TEXT NOT NULL, "
+            "PRIMARY KEY (id), FOREIGN KEY(account_id) REFERENCES users (id) ON DELETE CASCADE )"
+        ),
+        "CREATE INDEX IF NOT EXISTS ix_ai_events_account_id ON ai_events (account_id)",
+        "CREATE INDEX IF NOT EXISTS ix_ai_events_at ON ai_events (at)",
+    ):
+        connection.exec_driver_sql(statement)
+
+
 #: Made at every start when missing, without a new version (see the top of this file). Each is idempotent.
-ADDITIONS: list[Callable[[Connection], None]] = [_additions_signin, _additions_konten, _additions_mcp]
+ADDITIONS: list[Callable[[Connection], None]] = [_additions_signin, _additions_konten, _additions_mcp, _additions_ki]
 
 #: The schema the additions are made on: the one of 1.0.1. From there on they run before every step too, so that a
 #: step of a later version finds their tables on a database 1.0.1 made (it would stop with "no such table" else).

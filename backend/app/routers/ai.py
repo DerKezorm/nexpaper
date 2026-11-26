@@ -1,7 +1,9 @@
-"""The AI over HTTP: what a person may know about it, and the operator's settings.
+"""The AI over HTTP, the older routes in their form of before (Bauplan E53, E55): what a person may know about it, and
+the operator's settings. Since ki 0.1.0 they go through the shared module (``services/ai.py``); its own routes are
+``/api/v1/server/ai`` and ``/api/v1/me/ai`` (``main.py``).
 
-Nothing is sent anywhere from here: the state comes from the settings alone, and the operator's routes are the only way
-to choose a service; they never show the key. The proposals for documents come with the block that sorts them.
+Nothing is sent anywhere from here but the operator's model list and probe: the state comes from the settings alone,
+and the operator's routes are the only way to choose a service; they never show the key.
 """
 
 from __future__ import annotations
@@ -48,7 +50,7 @@ def own_switch(account: Any) -> bool:
 
 @router.get("/ai", summary="Whether this person can use the AI, by which kind of service, and where to")
 def state(account: Account, db: DbSession) -> dict[str, Any]:
-    return ai.state(db, own_switch(account), bool(account.ai_allowed))
+    return ai.state(db, own_switch(account), bool(account.ai_allowed), account.id)
 
 
 # --- The operator ---------------------------------------------------------------------------------------------------

@@ -37,8 +37,11 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from .. import clock
-from ..models import INBOX, Account, Document, Vault, Version, VersionText
+from ..db import SessionLocal
+from ..models import INBOX, Document, Vault, Version, VersionText
+from ..vendor import nexki
 from . import ai, catalog, changes, documents, einvoices, jobs, settings_service
+from .ki_store import CONFIG
 
 logger = logging.getLogger("nexpaper.ai")
 
@@ -52,30 +55,28 @@ MAX_ANSWER_CHARS = 4_000
 TITLE_MAX = 120
 SENDER_MAX = 100
 #: How long the job waits for a free place on the server (the operator's probe and lists use the same places).
-WAIT_SECONDS = 120.0
 KEYS = ("title", "sender", "kind", "date", "amount")
 
 
 # --- Whether the AI may see a document ----------------------------------------------------------------------------
 
 
-def allowed(db: Session, document: Document) -> bool:
-    """Every switch on for this document (see the module's text)."""
-    found = ai.service(db)
-    if not found.complete or document.owner_id is None:
-        return False
-    owner = db.get(Account, document.owner_id)
-    if owner is None or owner.blocked_at is not None or not owner.ai_allowed:
-        return False
-    from ..routers.auth import profile_of
-
-    if not profile_of(owner.profile)["ai"]:
-        return False
+def vault_ok(db: Session, document: Document) -> bool:
+    """nexpaper's own check of one request (the module's ``app_ok``): a document in a personal vault never goes to the
+    AI while the operator keeps those out (``ai_skip_personal``, on from the start)."""
     if settings_service.get_all(db).get("ai_skip_personal", True):
         vault = db.get(Vault, document.vault_id)
         if vault is None or vault.personal_of is not None:
             return False
     return True
+
+
+def allowed(db: Session, document: Document) -> bool:
+    """Every switch on for this document (the module's chain for its owner, and ``vault_ok``)."""
+    if document.owner_id is None:
+        return False
+    store = ai.store_of(db)
+    return nexki.chain.reason(store, CONFIG, document.owner_id, app_ok=vault_ok(db, document)) is None
 
 
 def queue_if_allowed(db: Session, document: Document) -> bool:
@@ -88,29 +89,16 @@ def queue_if_allowed(db: Session, document: Document) -> bool:
 
 # --- The day's limit ----------------------------------------------------------------------------------------------
 
+#: The day the log last said that the day's limit was reached (``ai_daily_limit``, counted by the module, K16).
+_said_limit: str | None = None
 
-def take_a_place(db: Session) -> bool:
-    """Counts one request against today's limit (``ai_daily_limit``, on the whole server, a day by UTC; 0 is none), in
-    one step under the write lock, so that requests at the same moment cannot pass the limit together. False when the
-    limit is reached: the request is not made, and the log says so once a day. The count belongs to the day it was
-    made on; a new day starts at zero."""
-    changes.write_lock(db)
-    values = settings_service.get_all(db)
+
+def _limit_reached() -> None:
+    global _said_limit
     today = clock.now().date().isoformat()
-    stored = values.get("ai_day")
-    stored = stored if isinstance(stored, dict) and stored.get("day") == today else {}
-    count = int(stored.get("count") or 0)
-    limit = int(values.get("ai_daily_limit") or 0)
-    if limit > 0 and count >= limit:
-        said = bool(stored.get("said"))
-        if not said:
-            settings_service.save(db, {"ai_day": {"day": today, "count": count, "said": True}})
-            logger.warning("AI daily limit reached, no more documents go to the AI today limit=%s", limit)
-        else:
-            db.rollback()
-        return False
-    settings_service.save(db, {"ai_day": {"day": today, "count": count + 1, "said": False}})
-    return True
+    if _said_limit != today:
+        _said_limit = today
+        logger.warning("AI daily limit reached, no more documents go to the AI today")
 
 
 # --- What goes out ------------------------------------------------------------------------------------------------
@@ -242,6 +230,15 @@ def check(raw: str, kinds: list[str], today: Date) -> dict[str, Any]:
 # --- The job ------------------------------------------------------------------------------------------------------
 
 
+def ask(owner_id: int, text: str, kinds: list[str], wishes: str, mark: str, *, app_ok: bool = True) -> str:
+    """The one request of the task ``propose`` for a document of ``owner_id``, through the shared module (ki 0.1.0):
+    the chain of switches again right before it, where it may go, one deadline, the brakes and today's limit of the
+    server, one line in "Was ging hinaus" without content. ``nexki.AiRefused`` for every no."""
+    with SessionLocal() as asking:
+        return nexki.ask(ai.store_of(asking), CONFIG, owner_id, JOB, system=rules(mark, wishes),
+                         user=material(text, kinds, mark), app_ok=app_ok).text
+
+
 def run_job(db: Session, document_id: int) -> None:
     """Asks the AI about one document and adds what it proposes. Never tried again: every way it fails ends here."""
     document = db.get(Document, document_id)
@@ -254,26 +251,20 @@ def run_job(db: Session, document_id: int) -> None:
         return
     # The kinds the document can have: the server's and those of its vault, one entry per name.
     kinds = [row.name for row in catalog.kinds_of(db, document.vault_id)]
-    found = ai.service(db)
     wishes = str(settings_service.get_all(db).get("ai_instructions") or "")
+    owner_id, own_vault_ok = int(document.owner_id or 0), vault_ok(db, document)
     db.rollback()  # the request may take minutes: no read transaction stays open meanwhile
     mark = "DOC-" + secrets.token_hex(8)
-    if not ai.server_slots.acquire(timeout=WAIT_SECONDS):
-        logger.info("AI proposals skipped, the AI was busy document_id=%s", document_id)
-        return
     try:
-        if not take_a_place(db):
-            return
-        answer = ai._ask(found, rules(mark, wishes), material(text, kinds, mark), "propose", max_out=MAX_OUT)
-    except HTTPException as exc:
-        code = exc.detail.get("code") if isinstance(exc.detail, dict) else exc.status_code
-        logger.info("AI proposals failed document_id=%s code=%s", document_id, code)
+        answer = ask(owner_id, text, kinds, wishes, mark, app_ok=own_vault_ok)
+    except nexki.AiRefused as refused:
+        if refused.code == "ai_day_used":
+            _limit_reached()
+        logger.info("AI proposals failed document_id=%s code=%s", document_id, refused.code)
         return
     except Exception as exc:  # noqa: BLE001 - whatever happens out there, the document stays as it was
         logger.info("AI proposals failed document_id=%s error=%s", document_id, type(exc).__name__)
         return
-    finally:
-        ai.server_slots.release()
     try:
         proposals = check(answer, kinds, clock.now().date())
     except ValueError:
@@ -308,4 +299,4 @@ def _keep(db: Session, document_id: int, proposals: dict[str, Any]) -> None:
     db.commit()
 
 
-__all__ = ["JOB", "allowed", "check", "material", "queue_if_allowed", "rules", "run_job"]
+__all__ = ["JOB", "allowed", "ask", "check", "material", "queue_if_allowed", "rules", "run_job", "vault_ok"]

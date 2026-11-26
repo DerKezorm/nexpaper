@@ -72,6 +72,8 @@ beforeEach(async () => {
   await changeLanguage('de', false)
   auth.me = me
   server.answers = {
+    // The module's view of the AI (ki 0.1.0), above nexpaper's own card under Server › KI-Anbieter.
+    'GET /api/v1/server/ai': { enabled: true, mode: 'shared', modes: ['shared', 'own'], api: 'openai', url: 'http://ollama:11434/v1/', model: 'llama3.1:8b', key_set: false, complete: true, hosts: [], per_minute: 20, per_day: 0, server_day: 200, used_today: 0, messages_url: 'https://api.example.com/v1/' },
     [INBOX]: inboxOf([heating]),
     'GET /api/v1/vaults': vaults,
     'GET /api/v1/kinds?vault_id=9': [invoiceKind, health],
@@ -282,23 +284,20 @@ describe('the kinds card and the AI card', () => {
     expect(tick('Persönliche Tresore auslassen')!.checked).toBe(false)
   })
 
-  it('sets the daily limit of AI requests and shows today\'s count', async () => {
-    const local = { provider: 'local', url: 'http://ollama:11434/v1/', model: 'llama3.1:8b', key_set: false, skip_personal: true }
-    server.answers['GET /api/v1/settings/ai'] = { ...local, daily_limit: 200, used_today: 37 }
-    server.answers['PUT /api/v1/settings/ai'] = { ...local, daily_limit: 50, used_today: 37 }
+  it('sets the daily limit of AI requests in the module\'s card and shows today\'s count (ki 0.1.0)', async () => {
+    const view = { enabled: true, mode: 'shared', modes: ['shared', 'own'], api: 'openai', url: 'http://ollama:11434/v1/', model: 'llama3.1:8b', key_set: false,
+      complete: true, hosts: [], per_minute: 20, per_day: 0, server_day: 200, used_today: 37, messages_url: 'https://api.example.com/v1/' }
+    server.answers['GET /api/v1/server/ai'] = view
+    server.answers['PUT /api/v1/server/ai'] = { ...view, server_day: 50 }
+    server.answers['GET /api/v1/settings/ai'] = { provider: 'local', url: 'http://ollama:11434/v1/', model: 'llama3.1:8b', key_set: false, skip_personal: true }
     await page.show(<AiCard />)
-    const counter = await until(() => page.box.querySelector('[data-testid="ai-used-today"]'))
+    const counter = await until(() => page.box.querySelector('[data-testid="ki-operator-today"]'))
     expect(counter.textContent).toContain('37')
-    const field = page.box.querySelector<HTMLInputElement>('input[type="number"]')!
+    const field = page.box.querySelector<HTMLInputElement>('[data-card="ai-limits"] input[data-testid="ki-operator-server_day"]') ?? page.box.querySelectorAll<HTMLInputElement>('[data-card="ai-limits"] input[type="number"]')[2]!
     expect(field.value).toBe('200')
-    await page.type(field, 'viele')
-    await page.click(page.button('Grenze speichern'))
-    expect(server.called('PUT', '/api/v1/settings/ai')).toBeUndefined()
-    expect(page.text).toContain('Bitte eine ganze Zahl von 0 bis 100000 eingeben.')
-    await page.type(page.box.querySelector<HTMLInputElement>('input[type="number"]'), '50')
-    await page.click(page.button('Grenze speichern'))
-    expect(server.called('PUT', '/api/v1/settings/ai')!.body).toEqual({ daily_limit: 50 })
-    expect(page.box.querySelector<HTMLInputElement>('input[type="number"]')!.value).toBe('50')
+    await page.type(field, '50')
+    await page.click(page.box.querySelector<HTMLElement>('[data-testid="ki-operator-server_day-save"]'))
+    expect(server.called('PUT', '/api/v1/server/ai')!.body).toEqual({ server_day: 50 })
   })
 
   it('keeps the operator\'s own instructions for the AI, saved on their own', async () => {

@@ -37,6 +37,9 @@ PRODUCT_NAMES = {
     "frontend/src/lib/aiProviders.ts": re.compile(rf"console\.{_A}\.com|api\.{_A}\.com|{_A.capitalize()}"),
     "backend/app/services/ai.py": re.compile(f"{_A}-version"),
     "backend/tests/test_ai.py": re.compile(f"{_A}-version"),
+    # The shared AI module (ki 0.1.0, K14): its only product names, the version header and the tile of the provider.
+    "backend/app/vendor/nexki/config.py": re.compile(rf"{_A}-version|api\.{_A}\.com"),
+    "frontend/src/vendor/nexki/ki.ts": re.compile(rf"console\.{_A}\.com|api\.{_A}\.com|{_A.capitalize()}"),
 }
 
 

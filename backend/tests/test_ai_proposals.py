@@ -261,7 +261,12 @@ def test_the_daily_limit_stops_the_requests_and_a_new_day_starts_again(client: T
     # Said once in the log, not for every document.
     assert sum("AI daily limit reached" in record.getMessage() for record in caplog.records) == 1
     assert client.get("/api/v1/settings/ai").json()["used_today"] == 2
-    # The next day the count starts again.
+    # The next day the count starts again (the day of the shared AI module, ki 0.1.0, counts by its own clock).
+    from app.vendor import nexki
+
+    tomorrow = (clock.now() + timedelta(days=1)).date().isoformat()
+    for place in (nexki.settings, nexki.client):
+        monkeypatch.setattr(place, "today", lambda: tomorrow)
     freeze(monkeypatch, clock.now() + timedelta(days=1))
     assert client.get("/api/v1/settings/ai").json()["used_today"] == 0
     again = upload_and_read(client, "Fuenf.pdf", make_pdf(LETTER), household(operator))

@@ -1,145 +1,99 @@
-"""The AI of the operator: the service that later proposes title, sender, kind, date and amount for a document.
+"""The AI of the operator: since ki 0.1.0 the shared module ``vendor/nexki`` (``services/ki_store.py``), with
+nexpaper's older routes and names on top of it.
 
-Taken over from nexlore (``services/ai.py``), where the checks of the address were worked out in a security review.
-This block holds the setting and the test of the service; the proposals themselves come with the block that sorts
-documents.
+The module does the request itself: where it may go (a service of the operator in the own network or on the internet
+over https, an own access only to hosts on the operator's list; never link-local, the metadata services, a redirect or
+a proxy from the environment), one deadline for the whole of it, the size of the answer, the peculiarities of models
+(``max_completion_tokens``, ``temperature``, ``reasoning_effort``), the brakes, the log without content, and "Was ging
+hinaus". The chain of switches is the module's too: the operator's main switch "KI auf diesem Server erlaubt" (new,
+K3: on after the update where the service was set up), "KI erlaubt" of the account, the person's own switch, and
+nexpaper's own check (``ai_skip_personal``: personal vaults never go to the AI).
 
-* **The operator decides, for everybody.** One service for the whole server, set up only by the operator: none (from
-  the start), a local model in the own network (Ollama or any service that speaks ``/v1/chat/completions``, a key
-  optional), a service on the internet that speaks the same, or a service that speaks the Messages API
-  (``/v1/messages``, with the address the interface fills in for it). The key is sealed with the server's secret, never
-  shown again, never logged, and forgotten when the address or the kind of service changes without a new one.
-* **"Nothing leaves the house" has to be true.** A local service must lie in the own network: an address that resolves
-  to the internet is refused when it is saved (resolved and checked then) and again at every request. A service on the
-  internet must be reached over https and lie on the internet. Link-local addresses (169.254.169.254, the metadata of
-  cloud machines) never. The name is resolved once per request and only the addresses checked are connected to, one
-  after the other (``localhost`` may answer ``::1`` first while the service listens on 127.0.0.1).
-* **Nothing on its own without a switch.** Every person may switch the AI off for themselves, and the operator may take
-  it from single accounts (``check_allowed``: whatever sends a person's text anywhere asks it first).
-* **Limits:** one request per person at a time, a few per minute, a few on the server at once; the operator's model
-  list and probe the same way. Every request has a deadline for the whole of it, the answer read included, and is read
-  up to a size. The log names provider, model, status and time, never a word of a text or of the answer.
+What stays here is what the older routes (``/api/v1/ai``, ``/api/v1/settings/ai…``, ``routers/ai.py``) answered and
+checked, in their old form and with their old codes (Bauplan E53, E55): the kind of service named ``none``, ``local``,
+``openai`` or ``messages``; a ``local`` service must lie in the own network and one on the internet on the internet;
+the operator's own wishes for the proposals and the switch of personal vaults (nexpaper's own, not the module's).
+
+``transport``, ``resolver`` and ``ticks`` stand in for the module's (``nexki.client``): a test that puts its own here
+puts it there.
 """
 
 from __future__ import annotations
 
 import logging
-import threading
-import time
+import sys
+import types
 import unicodedata
-from collections import deque
-from collections.abc import Callable, Hashable, Iterator
+from collections.abc import Callable, Iterator
 from contextlib import contextmanager
-from dataclasses import dataclass
 from typing import Any
 from urllib.parse import urljoin, urlsplit
 
-import httpx
 from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from .. import clock
 from ..errors import error
 from ..models import Account
-from ..security import decrypt_secret, encrypt_secret
+from ..vendor import nexki
 from . import outbound, settings_service
+from .ki_store import CONFIG
 
 logger = logging.getLogger("nexpaper.ai")
 
-#: For the tests: an ``httpx`` transport that stands in for the service. Never a real key in a test.
-transport: httpx.BaseTransport | None = None
-#: The clock for deadlines and the brake per minute; the tests put their own in.
-ticks: Callable[[], float] = time.monotonic
-
-#: ``openai``: ``/chat/completions`` on the internet; ``messages``: ``/messages`` on the internet (the interface fills
-#: in the provider's address and does not show the field); ``local``: ``/chat/completions`` in the own network.
+#: The kinds of service of the older routes: ``local`` is the OpenAI form in the own network (K9: a place, not an
+#: interface), ``none`` no service.
 PROVIDERS = ("none", "local", "openai", "messages")
 CLOUD = ("openai", "messages")
 WORKING = ("local", "openai", "messages")
 MESSAGES_VERSION = "2023-06-01"
-#: The operator's key has a context of its own: it could not be passed off as another secret of the server.
-KEY_CONTEXT = "operator:ai-key"
-
-#: The whole of a model list: a list that takes longer is a broken address, and the operator should hear so soon.
-LIST_SECONDS = 10.0
-#: The whole of a request that asks for text, the answer read included; a model at home without a graphics card
-#: takes minutes.
+#: The operator's key, sealed in this context since 1.0.0 (the module reads it there).
+KEY_CONTEXT = CONFIG.operator_key_context
+LIST_SECONDS = CONFIG.list_seconds
 TEXT_SECONDS = 180.0
-#: The longest a connection may take to be made, within the deadline.
-CONNECT_SECONDS = 10.0
-#: What may come back, in the model's units and in bytes.
+CONNECT_SECONDS = CONFIG.connect_seconds
 MAX_OUT = 1_200
-#: What a model that thinks before it answers gets on top: its thoughts count against ``max_completion_tokens``.
-THINKING_OUT = 4_000
-MAX_ANSWER = 2 * 1024 * 1024
-MAX_MODELS = 500
-#: How much of a service's own words about an error the person sees.
-SAID_CHARS = 300
-#: Requests of the operator at the same moment, on the whole server.
-AT_ONCE = 4
-#: The operator's model lists and probes per minute.
-OPERATOR_PER_MINUTE = 10
+THINKING_OUT = CONFIG.thinking_out
+MAX_ANSWER = CONFIG.max_answer
+MAX_MODELS = CONFIG.max_models
+SAID_CHARS = CONFIG.said_chars
+AT_ONCE = CONFIG.at_once
+OPERATOR_PER_MINUTE = CONFIG.operator_per_minute
+#: The longest the operator's own wishes for the proposals may be.
+INSTRUCTIONS_MAX = 2000
+PROBE = CONFIG.probe_text
+
+#: The English sentences of the older routes; the module's own where it says the same.
+AI_MESSAGES = {
+    **{code: text for code, (_status, text) in nexki.CODES.items()},
+    "ai_off": "No AI is set up on this server.",
+    "ai_provider_unknown": "There is no such kind of AI service.",
+    "ai_address_private": "This address lies in the own network; choose a local model for it.",
+    "ai_address_public": "This address lies on the internet; a local model must stay in the own network.",
+}
+
+#: The status an older route answered with where the module's differs (E55): turning the AI off for oneself, the
+#: operator's say and "none set up" were 403 for a person.
+OLD_STATUS = {"ai_switched_off": 403, "ai_not_allowed": 403}
 
 
 def fail(code: str, status: int = 422, **values: Any) -> HTTPException:
     return error(code, AI_MESSAGES.get(code, "The AI service did not work."), status, **values)
 
 
-#: The English sentences for whoever uses the API directly; the interface has its own.
-AI_MESSAGES = {
-    "ai_off": "No AI is set up on this server.",
-    "ai_switched_off": "You switched the AI off for yourself.",
-    "ai_not_allowed": "Your operator has not allowed the AI for your account.",
-    "ai_incomplete": "The AI service is not set up completely.",
-    "ai_provider_unknown": "There is no such kind of AI service.",
-    "ai_address_missing": "Give the address of the service.",
-    "ai_address_invalid": "This is not an address of a service.",
-    "ai_https_required": "A service on the internet is reached over https only.",
-    "ai_address_refused": "This address is never reached.",
-    "ai_address_private": "This address lies in the own network; choose a local model for it.",
-    "ai_address_public": "This address lies on the internet; a local model must stay in the own network.",
-    "ai_unreachable": "The server cannot reach the AI service.",
-    "ai_timeout": "The AI service took too long.",
-    "ai_key_refused": "The AI service refused the key.",
-    "ai_address_not_found": "The AI service does not know this address.",
-    "ai_service_busy": "The AI service is busy. Try again in a moment.",
-    "ai_service_failed": "The AI service answered with an error.",
-    "ai_unreadable": "The answer of the AI service could not be read.",
-    "ai_empty": "The AI service gave back nothing.",
-    "ai_used_up": "The model used up its room for an answer before it wrote one. A thinking model needs its thinking "
-                  "switched off.",
-    "ai_no_list": "This service lists no models; type the name of the model.",
-    "ai_no_models": "This service offers no models.",
-    "ai_too_often": "Too many requests to the AI. Wait a little.",
-    "ai_busy": "The AI is already working on a request of yours.",
-    "ai_server_busy": "The AI is busy right now. Try again in a moment.",
-}
+def refusal(refused: nexki.AiRefused, status: int | None = None) -> HTTPException:
+    """A refusal of the module in the form of nexpaper's older routes (``{"detail": {"code", "message", …}}``)."""
+    values = {key: value for key, value in (refused.values or {}).items() if key not in ("code", "message")}
+    return fail(refused.code, status or OLD_STATUS.get(refused.code, refused.status), **values)
 
 
-# --- The service ----------------------------------------------------------------------------------------------------
+# --- The store of this request -------------------------------------------------------------------------------------
 
 
-@dataclass(frozen=True)
-class Service:
-    """The operator's service: what a request goes out with."""
+def store_of(db: Session) -> Any:
+    from .mcp_store import McpStore
 
-    provider: str
-    url: str
-    model: str
-    key: str
-
-    @property
-    def complete(self) -> bool:
-        return self.provider in WORKING and bool(self.url and self.model)
-
-
-def service(db: Session) -> Service:
-    values = settings_service.get_all(db)
-    provider = values["ai_provider"] if values["ai_provider"] in PROVIDERS else "none"
-    url = str(values["ai_url"] or "")
-    return Service(provider, url, str(values["ai_model"] or ""), decrypt_secret(str(values["ai_key_enc"] or ""),
-                                                                               KEY_CONTEXT))
+    return McpStore(db)
 
 
 def host_of(url: str) -> str:
@@ -152,51 +106,63 @@ def allowed_for(db: Session, account_id: int) -> bool:
 
 
 def check_allowed(db: Session, account_id: int) -> None:
-    """403 ``ai_not_allowed`` for an account the operator took the AI from. Whatever sends a person's text to the
-    service asks this first, besides the operator's service and the person's own switch."""
+    """403 ``ai_not_allowed`` for an account the operator took the AI from."""
     if not allowed_for(db, account_id):
         raise fail("ai_not_allowed", 403)
 
 
-def state(db: Session, own_switch: bool, allowed: bool) -> dict[str, Any]:
-    """What a person may know about the AI: whether there is one for them, of which kind, and where the text goes.
-    The address of a local service is not told (it names a machine in the own network); a service on the internet
-    is named by its host, so that the interface can say where the text goes."""
+def _provider(db: Session) -> str:
+    """The kind of the operator's service as the older routes name it; ``none`` while the main switch is off or the
+    service is not complete."""
     values = settings_service.get_all(db)
-    provider = values["ai_provider"] if values["ai_provider"] in WORKING else "none"
-    url, model = str(values["ai_url"] or ""), str(values["ai_model"] or "")
-    if not (url and model):
-        provider = "none"
+    stored = values["ai_provider"] if values["ai_provider"] in PROVIDERS else "none"
+    return stored
+
+
+def state(db: Session, own_switch: bool, allowed: bool, account_id: int | None = None) -> dict[str, Any]:
+    """What a person may know about the AI (``GET /api/v1/ai``, its form of before): whether there is one for them,
+    of which kind, and where the text goes. A host in the own network is never told."""
+    values = settings_service.get_all(db)
+    store = store_of(db)
+    found = nexki.settings.operator_service(store, CONFIG)
+    provider = _provider(db) if (nexki.settings.enabled(store) and found.complete) else "none"
+    if nexki.settings.mode(store, CONFIG) == "own" and account_id is not None:
+        own = nexki.settings.own_service(store, CONFIG, account_id)
+        found = own if own is not None else found
+        provider = (own.api if own is not None and own.complete and nexki.settings.enabled(store) else "none")
+    local = provider == "local"
+    if provider not in ("none", "local") and found.url:
+        try:
+            local = nexki.client._place(found, "models", store)[1]
+        except nexki.AiRefused:
+            local = False
     return {
         "provider": provider,
-        "to": host_of(url) if provider in CLOUD else "",
-        "model": model if provider != "none" else "",
+        "to": host_of(found.url) if provider != "none" and not local else "",
+        "model": found.model if provider != "none" else "",
         "mine": own_switch,
-        # The operator's say for this account: without it there is no button and the server refuses.
         "allowed": allowed,
         "available": provider != "none" and own_switch and allowed,
-        # Documents in personal vaults never go to the AI (the operator's choice, on from the start).
         "skip_personal": bool(values.get("ai_skip_personal", True)),
     }
 
 
 def operator_view(db: Session) -> dict[str, Any]:
+    """The operator's service in the form of ``GET /api/v1/settings/ai`` before the module."""
     values = settings_service.get_all(db)
-    provider = values["ai_provider"] if values["ai_provider"] in PROVIDERS else "none"
+    store = store_of(db)
+    view = nexki.settings.operator_view(store, CONFIG)
+    provider = _provider(db)
     return {
-        "provider": provider,
+        "provider": provider if view["enabled"] or provider == "none" else "none",
         "url": str(values["ai_url"] or ""),
         "model": str(values["ai_model"] or ""),
         "key_set": bool(values["ai_key_enc"]),
         "skip_personal": bool(values.get("ai_skip_personal", True)),
-        "daily_limit": int(values.get("ai_daily_limit") or 0),
-        "used_today": used_today(values),
+        "daily_limit": int(view["server_day"]),
+        "used_today": int(view["used_today"]),
         "instructions": str(values.get("ai_instructions") or ""),
     }
-
-
-#: The longest the operator's own wishes for the proposals may be.
-INSTRUCTIONS_MAX = 2000
 
 
 def clean_instructions(text: str) -> str:
@@ -207,17 +173,9 @@ def clean_instructions(text: str) -> str:
     return kept.strip()[:INSTRUCTIONS_MAX].strip()
 
 
-def used_today(values: dict[str, Any]) -> int:
-    """The requests of today's proposals so far (the count is of the day it was made; a new day starts at zero)."""
-    stored = values.get("ai_day")
-    if isinstance(stored, dict) and stored.get("day") == clock.now().date().isoformat():
-        return int(stored.get("count") or 0)
-    return 0
-
-
 def check_address(url: str, provider: str) -> str:
-    """The base address, cleaned, with its slash at the end (``urljoin(".../v1", "models")`` drops the ``v1``).
-    Only http and https, no credentials in it; a service on the internet over https only."""
+    """The base address, cleaned, with its slash at the end. Only http and https, no credentials in it; a service on
+    the internet over https only (the older route's checks, before the module's)."""
     url = (url or "").strip()
     if not url:
         raise fail("ai_address_missing")
@@ -237,405 +195,166 @@ def check_address(url: str, provider: str) -> str:
     return url if url.endswith("/") else url + "/"
 
 
-def save(db: Session, *, provider: str | None, url: str | None, model: str | None,
-         key: str | None, skip_personal: bool | None = None, daily_limit: int | None = None,
-         instructions: str | None = None) -> dict[str, Any]:
-    """Changes what was sent; left out stays. A new address is resolved and checked before it is kept, so that the
-    operator hears at once that it lies in the wrong network (every request checks again).
-
-    ⚠️ The key belongs to the address it was given for: a new address or another kind of service without a new key
-    forgets the old one, or a changed address would carry the stored key to whatever host it names."""
-    current = operator_view(db)
-    changes: dict[str, Any] = {}
-    next_provider = current["provider"] if provider is None else provider
-    if next_provider not in PROVIDERS:
-        raise fail("ai_provider_unknown")
-    if provider is not None:
-        changes["ai_provider"] = provider
-    next_url = current["url"] if url is None else url.strip()
-    if next_provider in WORKING and (url is not None or provider is not None):
-        next_url = check_address(next_url, next_provider) if next_url else ""
-        if next_url:
-            checked_target(urljoin(next_url, "models"), next_provider)
-        changes["ai_url"] = next_url
-    if model is not None:
-        changes["ai_model"] = " ".join(model.split())[:200]
-    moved = next_provider != current["provider"] or (next_provider in WORKING and next_url != current["url"])
-    if key is not None:
-        changes["ai_key_enc"] = encrypt_secret(key.strip(), KEY_CONTEXT) if key.strip() else ""
-    elif moved and current["key_set"]:
-        changes["ai_key_enc"] = ""
-    if skip_personal is not None:
-        changes["ai_skip_personal"] = skip_personal
-    if daily_limit is not None:
-        changes["ai_daily_limit"] = max(0, min(int(daily_limit), 1_000_000))
-    if instructions is not None:
-        changes["ai_instructions"] = clean_instructions(instructions)
-    settings_service.save(db, changes)
-    logger.info("The operator changed the AI service fields=%s", ",".join(sorted(changes)) or "nothing")
-    return operator_view(db)
-
-
-# --- Where a request goes -------------------------------------------------------------------------------------------
-
-
-def _resolve(host: str, port: int) -> list[str]:
+def _resolving(host: str, port: int) -> list[str]:
     try:
-        return outbound.resolve(host, port)
+        return nexki.client.resolver(host, port)
+    except nexki.AiRefused as refused:
+        raise refusal(refused) from None
     except outbound.Unreachable as exc:
         raise fail("ai_unreachable", 502) from exc
 
 
-#: Resolves a name to its addresses; the tests put their own in.
-resolver: Callable[[str, int], list[str]] = _resolve
-
-public = outbound.public
-Target = outbound.Target
-
-
-def checked_target(url: str, provider: str) -> Target:
-    """The service's address, resolved and checked once; the connection then goes to exactly the addresses checked
-    (no second lookup that could answer differently). A local service only in the own network, one on the internet
-    only on the internet; link-local, multicast, the unspecified address and the metadata services never
-    (``outbound``)."""
-    parts = urlsplit(url)
-    host = (parts.hostname or "").lower()
-    try:
-        outbound.port_of(url)
-    except ValueError as exc:
-        raise fail("ai_address_invalid") from exc
-    if parts.scheme not in ("http", "https") or not host or parts.username or parts.password:
-        raise fail("ai_address_invalid")
-    if provider in CLOUD and parts.scheme != "https":
-        raise fail("ai_https_required")
+def checked_place(url: str, provider: str) -> None:
+    """The older route's rule of the place: a ``local`` service only in the own network, one on the internet only on
+    the internet (the module allows the operator's service either, K9; the older route keeps its word)."""
 
     def rule(ip: Any) -> None:
-        if provider == "local" and public(str(ip)):
+        if provider == "local" and outbound.public(str(ip)):
             raise fail("ai_address_public")
-        if provider != "local" and not public(str(ip)):
+        if provider != "local" and not outbound.public(str(ip)):
             raise fail("ai_address_private")
 
     try:
-        return outbound.pin(url, resolver, rule)
+        outbound.pin(url, _resolving, rule)
     except outbound.Refused as exc:
         raise fail("ai_address_refused") from exc
     except outbound.Unreachable as exc:
         raise fail("ai_unreachable", 502) from exc
 
 
-def _client() -> httpx.Client:
-    return outbound.client(transport)
-
-
-def _late(seconds: float) -> HTTPException:
-    return fail("ai_timeout", 504, seconds=int(seconds))
-
-
-def _send(client: httpx.Client, method: str, place: Target, headers: dict[str, str], deadline: float,
-          seconds: float, **sent: Any) -> httpx.Response:
-    """One request to the checked addresses (``outbound.send``): no redirect followed, the answer read up to
-    MAX_ANSWER and only until the deadline."""
+def save(db: Session, *, provider: str | None, url: str | None, model: str | None,
+         key: str | None, skip_personal: bool | None = None, daily_limit: int | None = None,
+         instructions: str | None = None) -> dict[str, Any]:
+    """``PUT /api/v1/settings/ai`` as before: changes what was sent. Choosing a kind of service switches the AI on for
+    the server (that was what choosing one meant), ``none`` off. The key belongs to its address (the module forgets it
+    on a new address or kind without a new one)."""
+    current = operator_view(db)
+    stored_provider = _provider(db)
+    next_provider = stored_provider if provider is None else provider
+    if next_provider not in PROVIDERS:
+        raise fail("ai_provider_unknown")
+    next_url = None
+    if next_provider in WORKING and (url is not None or provider is not None):
+        typed = current["url"] if url is None else url.strip()
+        next_url = check_address(typed, next_provider) if typed else ""
+        if next_url:
+            checked_place(urljoin(next_url, "models"), next_provider)
+    elif url is not None:
+        next_url = url.strip()
+    store = store_of(db)
+    api = None if next_provider == "none" else ("openai" if next_provider == "local" else next_provider)
     try:
-        return outbound.send(client, method, place, headers, deadline=deadline, ticks=ticks, limit=MAX_ANSWER,
-                             connect_seconds=CONNECT_SECONDS, **sent)
-    except outbound.Late as exc:
-        raise _late(seconds) from exc
-    except (outbound.TooLarge, outbound.Refused) as exc:
-        raise fail("ai_unreadable", 502) from exc
+        nexki.settings.save_operator(
+            store, CONFIG, resolver=nexki.client.resolver,
+            api=api if provider is not None and api is not None else None,
+            url=next_url, model=model,
+            key=key, server_day=daily_limit,
+            enabled_now=(next_provider != "none") if provider is not None else None,
+        )
+    except nexki.AiRefused as refused:
+        raise refusal(refused) from None
+    changes: dict[str, Any] = {}
+    if provider is not None:
+        # The older name of the kind stays readable for the older routes (the module reads ``local`` as its form).
+        changes["ai_provider"] = provider
+        if next_provider != stored_provider and key is None and current["key_set"]:
+            changes["ai_key_enc"] = ""
+    if skip_personal is not None:
+        changes["ai_skip_personal"] = skip_personal
+    if instructions is not None:
+        changes["ai_instructions"] = clean_instructions(instructions)
+    if changes:
+        settings_service.save(db, changes)
+    logger.info("The operator changed the AI service")
+    return operator_view(db)
 
 
-def _headers(found: Service) -> dict[str, str]:
-    headers = {"content-type": "application/json"}
-    if found.provider == "messages":
-        headers["anthropic-version"] = MESSAGES_VERSION
-        if found.key:
-            headers["x-api-key"] = found.key
-    elif found.key:
-        headers["authorization"] = f"Bearer {found.key}"
-    return headers
-
-
-def _said(answer: httpx.Response) -> str:
-    """The service's own words about the error (``{"error": {"message": …}}`` nearly everywhere), one line, short.
-    Never logged."""
-    try:
-        data = answer.json()
-    except ValueError:
-        return ""
-    found = data.get("error") if isinstance(data, dict) else None
-    if isinstance(found, dict):
-        found = found.get("message")
-    if not isinstance(found, str):
-        return ""
-    return " ".join("".join(c if c.isprintable() else " " for c in found).split())[:SAID_CHARS]
-
-
-def _judge(answer: httpx.Response, place: Target) -> None:
-    """A status that says where to look: the key, the address, or waiting. The service's own words only from the
-    internet: a host in the own network could be any device there."""
-    if answer.status_code == 200:
-        return
-    if answer.status_code in (401, 403):
-        raise fail("ai_key_refused", 502)
-    if answer.status_code == 404:
-        raise fail("ai_address_not_found", 502)
-    if answer.status_code == 429:
-        raise fail("ai_service_busy", 502)
-    from_internet = all(public(address) for address in place.addresses)
-    raise fail("ai_service_failed", 502, answered=answer.status_code, said=_said(answer) if from_internet else "")
-
-
-def _log(found: Service, what: str, status: str, started: float) -> None:
-    # Provider, model, what, how it ended and how long: never a word of a note, of the answer or of the key.
-    logger.info("AI %s provider=%s model=%s status=%s seconds=%.1f", what, found.provider, found.model[:80], status,
-                ticks() - started)
-
-
-#: What a request may carry that a service may turn down, and the word its refusal names it by: asked once more without.
-#: ``max_tokens`` is not dropped but sent as ``max_completion_tokens`` (newer OpenAI models take only that name, and
-#: their refusal says so); the Messages API keeps ``max_tokens`` whatever its refusal says.
-OPTIONAL_FIELDS = (("temperature", "temperature"), ("reasoning_effort", "reasoning"),
-                   ("max_tokens", "max_completion_tokens"))
-
-
-def _exchange(found: Service, method: str, path: str, what: str, seconds: float,
-              body: Callable[[frozenset[str]], dict[str, Any]] | None = None) -> httpx.Response:
-    """One request with its deadline, judged. ``body`` makes the request without the fields it is given: a service that
-    turns one of ``OPTIONAL_FIELDS`` down is asked once more without it. Every way it ends is logged without content."""
-    place = checked_target(urljoin(found.url, path), found.provider)
-    started = ticks()
-    deadline = started + seconds
-    try:
-        with _client() as client:
-            left_out: frozenset[str] = frozenset()
-            sent = {"json": body(left_out)} if body else {}
-            answer = _send(client, method, place, _headers(found), deadline, seconds, **sent)
-            # Newer models choose the temperature themselves and turn down a request that sets it, and take the limit
-            # only as ``max_completion_tokens``; a local server that does not know ``reasoning_effort`` may turn that
-            # down: once more without, each at most once.
-            while body and answer.status_code == 400:
-                said = _said(answer).lower()
-                carried = body(left_out)
-                # Only what changes the request: the Messages API keeps ``max_tokens``, a field left out stays out.
-                field = next((name for name, word in OPTIONAL_FIELDS
-                              if name in carried and word in said and body(left_out | {name}) != carried), None)
-                if field is None:
-                    break
-                left_out = left_out | {field}
-                answer = _send(client, method, place, _headers(found), deadline, seconds, json=body(left_out))
-    except httpx.TimeoutException as exc:
-        _log(found, what, "timeout", started)
-        raise _late(seconds) from exc
-    except httpx.HTTPError as exc:
-        _log(found, what, "unreachable", started)
-        raise fail("ai_unreachable", 502) from exc
-    except HTTPException as exc:
-        _log(found, what, str(exc.detail.get("code") if isinstance(exc.detail, dict) else exc.status_code), started)
-        raise
-    if path.endswith("models") and answer.status_code in (404, 405, 501):
-        _log(found, what, "no-list", started)
-        raise fail("ai_no_list")
-    try:
-        _judge(answer, place)
-    except HTTPException:
-        _log(found, what, f"http-{answer.status_code}", started)
-        raise
-    _log(found, what, "ok", started)
-    return answer
+def _old_place(db: Session, url: str | None = None, provider: str | None = None) -> None:
+    """The older routes' rule of the place, at every request of theirs as before (E55): ``local`` in the own network,
+    the others on the internet. The module itself lets the operator's service lie in either (K9)."""
+    kind = provider or _provider(db)
+    base = (url or "").strip() or str(settings_service.get_all(db)["ai_url"] or "")
+    if kind in WORKING and base:
+        checked_place(urljoin(check_address(base, kind), "models"), kind)
 
 
 def list_models(db: Session, operator_id: int, *, provider: str | None, url: str | None,
                 key: str | None) -> list[dict[str, str]]:
-    """The models a service offers, for the operator, with what is typed (not saved yet) or what is stored. The stored
-    key goes only to the stored address: typed elsewhere, the address gets no key but the one typed with it."""
-    stored = service(db)
-    kind = provider or stored.provider
-    if kind not in WORKING:
-        raise fail("ai_off", 409)
-    base = check_address(url if url is not None else stored.url, kind)
-    same_place = kind == stored.provider and base == stored.url
-    found = Service(kind, base, "", (key or "").strip() or (stored.key if same_place else ""))
-    with _one_at_a_time(("operator", operator_id)):
-        operator_pace.take(operator_id)
-        answer = _exchange(found, "GET", "models", "models", LIST_SECONDS)
+    """``POST /api/v1/settings/ai/models`` as before: the models of what is typed or stored. The stored key goes only
+    to the stored address."""
+    store = store_of(db)
+    api = None if provider in (None, "none") else ("openai" if provider == "local" else provider)
     try:
-        data = answer.json()
-    except ValueError as exc:
-        raise fail("ai_unreadable", 502) from exc
-    raw = data.get("data") if isinstance(data, dict) else None
-    if not isinstance(raw, list):
-        raise fail("ai_unreadable", 502)
-    out: list[dict[str, str]] = []
-    for entry in raw[:MAX_MODELS]:
-        if isinstance(entry, dict) and str(entry.get("id") or "").strip():
-            out.append({"id": str(entry["id"]).strip()[:200],
-                        "name": str(entry.get("display_name") or "").strip()[:200]})
-    if not out:
-        raise fail("ai_no_models")
-    return out
-
-
-# --- What the model is asked ----------------------------------------------------------------------------------------
-
-
-def _body(found: Service, system: str, user: str, left_out: frozenset[str] = frozenset(),
-          max_out: int = MAX_OUT) -> dict[str, Any]:
-    body: dict[str, Any] = {"model": found.model}
-    thinks = found.provider != "messages" and "max_tokens" in left_out
-    if thinks:
-        # A model that wants ``max_completion_tokens`` thinks before it answers, and its thoughts count against the
-        # limit: room for them on top, and asked to keep them short (a model that does not take that is asked once
-        # more without).
-        body["max_completion_tokens"] = max_out + THINKING_OUT
-    else:
-        body["max_tokens"] = max_out
-    if "temperature" not in left_out:
-        body["temperature"] = 0.3
-    if found.provider == "local" and "reasoning_effort" not in left_out:
-        # A thinking model (Qwen3, DeepSeek-R1 through Ollama) would spend the few tokens of an answer on its thoughts
-        # and give back nothing; Ollama's OpenAI door does not take ``think: false``, but it takes this.
-        body["reasoning_effort"] = "none"
-    elif thinks and "reasoning_effort" not in left_out:
-        body["reasoning_effort"] = "low"
-    if found.provider == "messages":
-        body["system"] = system
-        body["messages"] = [{"role": "user", "content": user}]
-    else:
-        body["messages"] = [{"role": "system", "content": system}, {"role": "user", "content": user}]
-        body["stream"] = False
-    return body
-
-
-def _ran_out(found: Service, data: Any) -> bool:
-    """Whether the service stopped because the room for the answer was used up (a thinking model spends it on its
-    thoughts)."""
-    try:
-        if found.provider == "messages":
-            return data.get("stop_reason") == "max_tokens"
-        return data["choices"][0].get("finish_reason") == "length"
-    except (AttributeError, KeyError, IndexError, TypeError):
-        return False
-
-
-def _content_of(found: Service, data: Any) -> str:
-    if found.provider == "messages":
-        parts = data.get("content") if isinstance(data, dict) else None
-        if not isinstance(parts, list):
-            raise fail("ai_unreadable", 502)
-        return "".join(part.get("text", "") for part in parts if isinstance(part, dict) and part.get("type") == "text")
-    content = data["choices"][0]["message"]["content"]
-    if isinstance(content, list):
-        content = "".join(part.get("text", "") for part in content if isinstance(part, dict))
-    if not isinstance(content, str):
-        raise fail("ai_unreadable", 502)
-    return content
-
-
-# --- The limits -----------------------------------------------------------------------------------------------------
-
-
-class _Pace:
-    """Requests per minute for one account. In memory: a restart forgets them, which is fine for a brake."""
-
-    def __init__(self, per_minute: int) -> None:
-        self._lock = threading.Lock()
-        self._minute: dict[int, deque[float]] = {}
-        self.per_minute = per_minute
-
-    def take(self, account_id: int) -> None:
-        moment = ticks()
-        with self._lock:
-            seen = self._minute.setdefault(account_id, deque())
-            while seen and moment - seen[0] > 60:
-                seen.popleft()
-            if len(seen) >= self.per_minute:
-                exc = fail("ai_too_often", 429)
-                exc.headers = {"Retry-After": "60"}
-                raise exc
-            seen.append(moment)
-
-    def forget(self) -> None:
-        with self._lock:
-            self._minute.clear()
-
-
-operator_pace = _Pace(OPERATOR_PER_MINUTE)
-_writing: set[Hashable] = set()
-_writing_lock = threading.Lock()
-#: The requests on the whole server at once; the tests put a smaller one in.
-server_slots = threading.BoundedSemaphore(AT_ONCE)
+        with _one_lookup():
+            _old_place(db, url, provider)
+            found = nexki.client.list_models(store, CONFIG, operator=True, account_id=operator_id, api=api, url=url,
+                                             key=key)
+    except nexki.AiRefused as refused:
+        raise refusal(refused) from None
+    return [{"id": entry["id"], "name": entry.get("name", "")} for entry in found]
 
 
 @contextmanager
-def _one_at_a_time(who: Hashable) -> Iterator[None]:
-    """One request per person at a time (a double click makes one), and a few on the server at once."""
-    with _writing_lock:
-        if who in _writing:
-            raise fail("ai_busy", 409)
-        _writing.add(who)
+def _one_lookup() -> Iterator[None]:
+    """One lookup of a name for the older routes' rule and the module's request together: a second lookup could answer
+    differently (DNS rebinding) and pass the rule with one address and connect to another."""
+    asked = nexki.client.resolver
+    seen: dict[tuple[str, int], list[str]] = {}
+
+    def once(host: str, port: int) -> list[str]:
+        if (host, port) not in seen:
+            seen[(host, port)] = list(asked(host, port))
+        return list(seen[(host, port)])
+
+    nexki.client.resolver = once
     try:
-        slots = server_slots
-        if not slots.acquire(blocking=False):
-            raise fail("ai_server_busy", 503)
-        try:
-            yield
-        finally:
-            slots.release()
+        yield
     finally:
-        with _writing_lock:
-            _writing.discard(who)
-
-
-def forget() -> None:
-    """For the tests."""
-    operator_pace.forget()
-    with _writing_lock:
-        _writing.clear()
-
-
-# --- Asking ---------------------------------------------------------------------------------------------------------
-
-
-def _ask(found: Service, system: str, user: str, what: str, max_out: int = MAX_OUT) -> str:
-    """One request with the rules and the material; the text the model wrote."""
-    path = "messages" if found.provider == "messages" else "chat/completions"
-    answer = _exchange(found, "POST", path, what, TEXT_SECONDS,
-                       body=lambda left_out: _body(found, system, user, left_out, max_out))
-    try:
-        data = answer.json()
-        content = _content_of(found, data)
-    except (ValueError, KeyError, IndexError, TypeError) as exc:
-        raise fail("ai_unreadable", 502) from exc
-    if not content.strip():
-        raise fail("ai_used_up" if _ran_out(found, data) else "ai_empty", 502)
-    return content
-
-
-def usable(db: Session, own_switch: bool) -> Service:
-    """The service, or the reason there is none for this person (403 off, 409 not complete)."""
-    if not own_switch:
-        raise fail("ai_switched_off", 403)
-    found = service(db)
-    if found.provider not in WORKING:
-        raise fail("ai_off", 403)
-    if not found.complete:
-        raise fail("ai_incomplete", 409)
-    return found
-
-
-PROBE_RULES = "You answer with a single word."
-PROBE = "Answer with the single word OK."
+        if nexki.client.resolver is once:
+            nexki.client.resolver = asked
 
 
 def probe(db: Session, operator_id: int) -> float:
-    """Asks the operator's service one tiny question with no document in it; the seconds it took."""
-    found = service(db)
-    if found.provider not in WORKING:
+    """``POST /api/v1/settings/ai/probe`` as before: one tiny question to the stored service; the seconds it took."""
+    store = store_of(db)
+    if _provider(db) == "none" or not nexki.settings.enabled(store):
         raise fail("ai_off", 409)
-    if not found.complete:
-        raise fail("ai_incomplete", 409)
-    with _one_at_a_time(("operator", operator_id)):
-        operator_pace.take(operator_id)
-        started = ticks()
-        _ask(found, PROBE_RULES, PROBE, "probe", max_out=20)
-        return round(ticks() - started, 1)
+    try:
+        with _one_lookup():
+            _old_place(db)
+            return float(nexki.client.probe(store, CONFIG, operator_id)["seconds"])
+    except nexki.AiRefused as refused:
+        raise refusal(refused, 409 if refused.code in ("ai_off", "ai_incomplete") else None) from None
+
+
+def forget() -> None:
+    """For tests: the module's brakes start empty."""
+    nexki.brake.BRAKE.forget()
+
+
+class _Module(types.ModuleType):
+    """``ai.transport``, ``ai.resolver`` and ``ai.ticks`` are the module's (``nexki.client``)."""
+
+    _FORWARDED = ("transport", "resolver", "ticks")
+
+    def __getattr__(self, name: str) -> Any:
+        if name in _Module._FORWARDED:
+            return getattr(nexki.client, name)
+        raise AttributeError(name)
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        if name in _Module._FORWARDED:
+            setattr(nexki.client, name, value)
+            return
+        super().__setattr__(name, value)
+
+    def __delattr__(self, name: str) -> None:
+        if name in _Module._FORWARDED:
+            return
+        super().__delattr__(name)
+
+
+transport: Any
+resolver: Callable[[str, int], list[str]]
+ticks: Callable[[], float]
+sys.modules[__name__].__class__ = _Module

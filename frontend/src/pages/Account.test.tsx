@@ -96,6 +96,7 @@ beforeEach(async () => {
   auth.me = baseMe
   auth.setMe.mockClear()
   answers = {
+    'GET /api/v1/connections/mcp/requests?status=waiting': [],
     'GET /api/v1/auth/methods': { password: true, providers: [], passkeys: true },
     'GET /api/v1/auth/passkeys': [],
     'GET /api/v1/auth/sessions': [],
@@ -201,30 +202,28 @@ describe('the areas of my account', () => {
     expect(calls.some((call) => call.url === '/api/v1/auth/logout-all')).toBe(true)
   })
 
-  it('lock the own AI switch while no AI is set up, say why, and lead the operator there', async () => {
-    auth.me = { ...baseMe, role: 'operator' }
+  it('show the AI of the shared module: not ready while no AI is set up, and why (ki 0.1.0, E61)', async () => {
+    answers['GET /api/v1/me/ai'] = { available: false, reason: 'ai_off', enabled: false, allowed: true, mine: true, mode: 'shared', api: '', model: '', local: false, to: '' }
+    answers['GET /api/v1/me/ai/events'] = []
     await show('/settings/ai')
-    const own = field('KI-Vorschläge für meine Dokumente')!
-    expect([own.type, own.getAttribute('role')]).toEqual(['checkbox', null])
-    expect(own.disabled).toBe(true)
-    expect(own.checked).toBe(false)
-    const note = box.querySelector('[data-ai-none]')!
-    expect(note.textContent).toContain('Es ist keine KI eingerichtet.')
-    // To the operator's area of the AI, called "KI-Anbieter" now (E10).
-    expect(note.querySelector('a')!.getAttribute('href')).toBe('/settings/ai-provider')
+    const card = box.querySelector('[data-card="ai-me"]')!
+    const own = field('KI für mich', card)!
+    expect([own.type, own.getAttribute('role'), own.checked]).toEqual(['checkbox', null, true])
+    expect(card.querySelector('[data-testid="ki-me-state"]')!.textContent).toContain('Auf diesem Server ist keine KI eingerichtet oder erlaubt.')
+    // nexpaper's card says what goes out, after the module's cards.
+    expect(box.querySelector('[data-card="ai-what"]')!.textContent).toContain('der erkannte Text der ersten zwei Seiten')
+    expect(box.querySelector('[data-card="ai-events"]')).toBeTruthy()
   })
 
-  it('let the own AI switch work once the operator set one up', async () => {
-    answers['GET /api/v1/ai'] = { provider: 'local', to: 'http://ollama:11434', model: 'llama3.1:8b', mine: true, allowed: true, available: true }
-    answers['PUT /api/v1/me/preferences'] = { ...baseMe.profile, ai: false }
+  it('switch the own AI off through the module, for this account on every device', async () => {
+    answers['GET /api/v1/me/ai'] = { available: true, reason: null, enabled: true, allowed: true, mine: true, mode: 'shared', api: 'openai', model: 'llama3.1:8b', local: true, to: '' }
+    answers['GET /api/v1/me/ai/events'] = []
+    answers['PUT /api/v1/me/ai'] = { available: false, reason: 'ai_switched_off', enabled: true, allowed: true, mine: false, mode: 'shared', api: 'openai', model: 'llama3.1:8b', local: true, to: '' }
     await show('/settings/ai')
-    const own = field('KI-Vorschläge für meine Dokumente')!
-    expect(own.type).toBe('checkbox')
-    expect(own.disabled).toBe(false)
+    const own = field('KI für mich')!
     expect(own.checked).toBe(true)
-    expect(box.querySelector('[data-ai-none]')).toBeNull()
     await click(own)
-    expect(calls.find((call) => call.url === '/api/v1/me/preferences')!.body).toEqual({ ai: false })
+    expect(calls.find((call) => call.url === '/api/v1/me/ai' && call.method === 'PUT')!.body).toEqual({ mine: false })
   })
 
   it('end the profile with signing out, the one place for it', async () => {
@@ -457,13 +456,14 @@ describe('devices and apps', () => {
     answers['GET /api/v1/shortcut'] = { link: '', address: 'https://paper.example.com', upload_url: 'https://paper.example.com/api/v1/documents?source=share' }
     answers['GET /api/v1/phone/shortcut-link'] = { link: '' }
     await show('/konto?tab=devices')
-    // The operator sees the card of the shared shortcut too (from the area "API" of before); no MCP card (E27).
-    expect(cards()).toEqual(['devices', 'install', 'shortcut', 'shortcut-link', 'api-keys'])
+    // The operator sees the card of the shared shortcut too (from the area "API" of before); since mcp 1.1.0 the card
+    // "KI-Werkzeuge (MCP)" at the end (place 6).
+    expect(cards()).toEqual(['devices', 'install', 'shortcut', 'shortcut-link', 'api-keys', 'ai-tools'])
     act(() => root.unmount())
     box.remove()
     auth.me = { ...baseMe, role: 'member' }
     await show('/settings/connections')
-    expect(cards()).toEqual(['devices', 'install', 'shortcut', 'api-keys'])
+    expect(cards()).toEqual(['devices', 'install', 'shortcut', 'api-keys', 'ai-tools'])
   })
 
   it('keeps API keys off until the operator allows them, and says where', async () => {

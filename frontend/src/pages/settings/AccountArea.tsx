@@ -5,8 +5,8 @@
  * up), Notifications (`NotificationsArea.tsx`) and Connections (`ConnectionsArea.tsx`). Built only from the ui kit.
  */
 import { useEffect, useState } from 'react'
-import { Trans, useTranslation } from 'react-i18next'
-import { Link, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
+import { useNavigate } from 'react-router-dom'
 
 import { api, ApiError, authApi, type Me, type ProfileChange } from '../../api/client'
 import { AccountButton } from '../../components/AccountButton'
@@ -16,15 +16,14 @@ import { UploadRequestsCard } from '../../components/UploadRequests'
 import { BUILT_IN, changeLanguage, own } from '../../i18n'
 import { useLanguageOptions } from '../../vendor/nexsprachen/languages'
 import { confirmOf } from '../../lib/accountButton'
-import { providerName } from '../../lib/aiProviders'
 import { errorText } from '../../lib/errors'
-import { useAiState } from '../../state/ai'
 import { useAuth } from '../../state/auth'
 import { useWaitingUploads } from '../../state/uploads'
 import { SignOutCard, UnconfirmedEmailBox } from '../../vendor/nexkonten/AccountCards'
 import { FIELDS, PAGES, screenFields } from '../../vendor/nexkonten/konten'
-import { Box, Card, CheckboxRow, ConfirmDialog, Field, Notice, SelectField } from '../../vendor/nexui'
+import { Box, Card, ConfirmDialog, Field, SelectField } from '../../vendor/nexui'
 import { useAction } from './actions'
+import { MyAi } from './AiCard'
 import { AppearanceArea } from './AppearanceArea'
 import { ConnectionsArea } from './ConnectionsArea'
 import { MyIntakeCards } from './IntakeCards'
@@ -64,7 +63,7 @@ export function AccountArea({ part }: { part: AccountPart }) {
         </>
       )
     case 'ai':
-      return <AiCard me={me} />
+      return <MyAi />
     case 'notifications':
       return <NotificationsArea me={me} />
     case 'connections':
@@ -89,58 +88,6 @@ function SignOut({ viaProvider }: { viaProvider: boolean }) {
   )
 }
 
-/** "KI beim Einsortieren": the own switch, and below it what the operator set up for everybody. */
-function AiCard({ me }: { me: Me }) {
-  const { t } = useTranslation()
-  const { setMe } = useAuth()
-  const ai = useAiState()
-  const action = useAction()
-  const mine = me.profile.ai !== false
-  const provider = ai?.provider ?? 'none'
-  // The own switch only does something when there is an AI for this account: the operator set one up and allowed it
-  // for the account. Otherwise it stands locked, says why, and keeps the own choice for later (nothing is changed).
-  const noProvider = ai !== null && provider === 'none'
-  const notAllowed = me.ai_allowed === false
-  const locked = noProvider || notAllowed
-  return (
-    <Card id="my-ai" icon="Sparkles" title={t('me.ai.title')} subtitle={t('me.ai.text')}>
-      <CheckboxRow
-        label={t('me.ai.mine')}
-        hint={t('me.ai.mineHint')}
-        checked={mine && !locked}
-        disabled={locked}
-        testId="my-ai-switch"
-        onChange={(value) => {
-          setMe({ ...me, profile: { ...me.profile, ai: value } })
-          void action.run(async () => setMe({ ...me, profile: await authApi.preferences({ ai: value }) })).then((worked) => worked || setMe(me))
-        }}
-      />
-      {notAllowed && (
-        <div data-ai-not-allowed>
-          <Notice tone="warn">{t('me.ai.notAllowed')}</Notice>
-        </div>
-      )}
-      {!notAllowed && noProvider && (
-        <div data-ai-none>
-          <Notice tone="warn">
-            {me.role === 'operator' ? (
-              <Trans i18nKey="me.ai.noneOperator" components={{ settings: <Link to="/settings/ai-provider" className="font-semibold underline underline-offset-2" /> }} />
-            ) : (
-              t('me.ai.none')
-            )}
-          </Notice>
-        </div>
-      )}
-      {ai && !locked && (
-        <Box title={`${t('me.ai.byOperator')} ${providerName(provider, t)}${provider === 'local' && ai.model ? ` (${ai.model})` : ''}`} testId="my-ai-provider">
-          <p className="m-0 text-sm text-[var(--nexui-text-muted)]">{t(`server.ai.${provider}Note`)}</p>
-          {ai.skip_personal !== false && <p className="m-0 text-sm text-[var(--nexui-text-muted)]">{t('sorting.ai.skipNote')}</p>}
-        </Box>
-      )}
-      <Outcome problem={action.problem} />
-    </Card>
-  )
-}
 
 /** The files a picture may be (the server takes these). */
 const PICTURES = 'image/jpeg,image/png,image/webp,image/gif,image/bmp,image/heic,image/heif,image/avif,.heic,.heif'

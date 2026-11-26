@@ -28,10 +28,12 @@ from .. import __version__
 from ..db import SessionLocal
 from ..models import Account, Version, VersionText
 from ..models_mcp import McpClient, McpCode, McpKey, McpRequest, McpSpent, McpToolRight
-from ..vendor import nexmcp, nexschluessel
+from ..vendor import nexki, nexmcp, nexschluessel
 from ..vendor.nexmcp import Caller, Client, Code, Grant, Program
 from ..vendor.nexmcp import Request as ToolRequest
 from . import settings_service
+from .ki_store import SETTINGS as KI_SETTINGS
+from .ki_store import KiParts
 from .schluessel_store import CONFIG as KEYS
 from .schluessel_store import SchluesselStore
 
@@ -325,8 +327,13 @@ def _aware(moment: datetime | None) -> datetime | None:
     return moment.replace(tzinfo=UTC) if moment is not None and moment.tzinfo is None else moment
 
 
-class McpStore(SchluesselStore):
-    """``nexschluessel.Store`` (both kinds, ``SchluesselStore``) and ``nexmcp.Store`` in one SQLAlchemy session."""
+class McpStore(SchluesselStore, KiParts):
+    """``nexschluessel.Store`` (both kinds, ``SchluesselStore``), ``nexmcp.Store`` and ``nexki.Store`` (``KiParts``) in
+    one SQLAlchemy session."""
+
+    def ai_allowed(self, account_id: Any) -> bool:
+        """What ``schluessel`` and ``mcp`` ask (MCP decision 10, K8): "KI erlaubt" of the account and not shut out."""
+        return nexki.chain.for_programs(self, account_id)
 
     # --- who calls ---------------------------------------------------------------------------------------------
 
@@ -382,9 +389,15 @@ class McpStore(SchluesselStore):
         return self.switch("mcp")
 
     def setting(self, name: str) -> Any:
+        """The AI module's settings by their old names (``ki_store.SETTINGS``), MCP's under ``mcp.<name>``."""
+        if name in KI_SETTINGS:
+            return self.ki_setting(name)
         return settings_service.get(self.db, f"mcp.{name}")
 
     def set_setting(self, name: str, value: Any) -> None:
+        if name in KI_SETTINGS:
+            self.set_ki_setting(name, value)
+            return
         settings_service.save(self.db, {f"mcp.{name}": value}, commit=False)
 
     def key_rights(self, key_id: Any) -> dict[str, str]:
