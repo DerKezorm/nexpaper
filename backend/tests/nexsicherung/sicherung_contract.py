@@ -65,6 +65,14 @@ class StandardAdapter:
         sign-in (the restore ended every session)."""
         raise NotImplementedError("APP: operator")
 
+    def anonymous(self) -> Any:
+        """A test client without a session, with the headers the app's own page sends (its client header, where it
+        has one): by default ``operator()`` without its cookies and its ``Authorization``."""
+        signed_in = self.operator()
+        kept = {key: value for key, value in signed_in.headers.items()
+                if key.lower() not in ("cookie", "authorization")}
+        return type(signed_in)(signed_in.app, base_url=str(signed_in.base_url), headers=kept)
+
     def member(self) -> Any:
         """APP: a test client signed in as an account that is not the operator."""
         raise NotImplementedError("APP: member")
