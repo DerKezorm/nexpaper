@@ -22,6 +22,50 @@ dort weiter); und **die iPhone-App hängt am Benutzernamen** (Abschnitt 12). Umb
 
 ## 0. Stand (gebaut 25.11.2026, Zweig `konten`)
 
+### Durchgang „Einstellungen“ (25./26.11.2026, Zweig `einst-desktop`)
+
+Nach dem Bauplan in nexlore `Development/nexapps/Baupläne/Bauplan Einstellungen.md` (E1 bis E44). Module aus
+`bauplaene-stand` (zuletzt a374e3c, je `tools/sync.py copy`, `check` aller sieben ok): **ui 1.1.0, konten 1.1.0, oidc
+1.2.0, post 1.1.0, log 1.0.0 (neu), sicherung 1.0.1 (neu), schluessel 1.0.0 (neu)**. Keine neue Schemanummer: neue
+Spalten (`users.deleted_at`, `storage_limit`, `leaving`; Outbox `headers`, `letter_key`) über `_additions_konten`,
+Rückweg auf 1.12.0 bleibt. Theme ist `profile.mode` (keine eigene Spalte). E23: bisher unbestätigte Adressen bleiben
+unbestätigt (`keeps_unproven_addresses`).
+
+| Bereich | woher jetzt | was gewandert ist (alt → neu) |
+|---|---|---|
+| Gerüst | ui `SettingsLayout`, `SettingsNav`, `SettingsPage`, `NexuiLanguage` | eigene `SettingsNav`/`SettingsJump` weg, `/settings` auf dem Handy die Liste; Umleitungen `reminders`→`notifications`, `ai-setup`→`ai-provider`, `api`→`general`, `/konto?tab=`, `/einstellungen?tab=`, `/ueber` auf die neuen Slugs |
+| Profil | konten `PAGES.profile`, `UnconfirmedEmailBox` (`/auth/me` `email_needs_proof`), `SignOutCard` | Bild in Box, Boxen statt Notice; Rückfrage beim Abmelden, solange Uploads warten; Zeile „Mailadresse bestätigt“ weg (F4) |
+| Sicherheit | konten `PAGES.security`, eine Karte mit Kästen (`SecurityBoxes.tsx`) | sieben eigene Karten → Kästen; Anbieter als nexpapers Kasten |
+| Darstellung | konten `AppearanceCard` (`PUT /me/theme`, einmal `POST /me/theme/adopt`), dann „Archiv“ | Hell/Dunkel am Konto statt im Browser |
+| Hochladen, KI (eigene) | Bausatz | `CheckboxRow`, `Segment`, `Rows` |
+| Benachrichtigungen | ui `NotifyWays` (Mail, Dieser Browser mit `POST /push/test`, Browser mit Mitteilungen mit `DELETE /push/devices/{id}`, iPhone und iPad → Verbindungen), dann Wie früh, Welche Tresore, Vorschau | Bereich „Erinnerungen“ umbenannt; „Benachrichtigungen auf deinen Geräten“ aus Verbindungen hierher (in `NotifyWays`, F1) |
+| Verbindungen | Geräte (Rows, `sm` danger „Trennen“, QR im Fenster), `InstallCard` (`lib/install.ts`), „Aus anderen Apps auf dem iPhone“, „Kurzbefehl fürs iPhone“, schluessel `ApiKeysCard` | Kurzbefehl aus dem Bereich „API“; kein MCP, also keine Karte „KI-Werkzeuge“ (E27) |
+| Allgemein | „Grenzen“ (`Field action`, neu „Speicher für neue Konten“, E44), „Funktionen für alle Konten“, schluessel `InterfacesCard` mit nexpapers Zeilen (OpenAPI, Koppeln, Kopfzeile), „Web Push“, „Sprachen“ (`Chip`) | Schnittstelle aus dem Bereich „API“; API-Schalter aus „Funktionen“ in „Schnittstellen“ |
+| Anmeldung | konten `SignInPage` (`/api/v1/server/sign-in`, `/api/v1/server/readiness` mit nexpapers Punkten `secrets`, `backups`, `upload_requests`) + oidc `SignInProviders` | `ReadinessCards.tsx`, `SignInCards.tsx` weg; alter `/api/v1/settings/readiness` bleibt |
+| Mail | post `MailCard` unter `/api/v1/server/mail` | `services/mailer.py` weg, jede Mail über die Outbox von post (Fristen und Woche als `app_letters` mit `key`); alte Wege `/api/v1/settings` (smtp_*), `/settings/mail-test` bleiben mit alten Kennungen |
+| Speicher und Sicherung | sicherung `StorageArea` unter `/api/v1/server/storage`, Haken `services/backup_hooks.py`, dann „So liegen die Dateien auf der Platte“, „Dateien prüfen“ | Format unverändert; neu Uhrzeit (`backup_time`, 03:00) und „Jeden Monat“; alte Wege `/api/v1/backups` (`x-nexpaper-password`) in alter Form, `/api/v1/storage` bleibt |
+| Texterkennung, KI-Anbieter, Ablage, Eingänge, Import | Bausatz | Sprachen als `Segment multiple`; „KI“ unter Server heißt „KI-Anbieter“ (`ai-provider`) |
+| Konten | konten Kontenliste (`capsOf`), Offene Einladungen, `WhatYouSeeCard`, schluessel `AllKeysCard` | mehrere Betreiber; Löschen mit 30 Tagen Zurückholen (`POST /accounts/{id}/restore`, Übergabe-Dialog bleibt, Dokumente gehen beim endgültigen Löschen weiter, B2.2); Speichergrenze je Konto (`PUT /accounts/{id}/storage-limit`, zählt die Dokumente, Upload 507 `storage_limit_reached`); „KI erlaubt“ über `manage.set_right`; Schlüssel ruhen, solange ein Konto draußen ist (E41) |
+| Log | log `LogCard`, `services/logs.py` als Hülle um `nexlog` | Weg `/api/v1/logs` und Schlüssel unverändert; „Ältere laden“ über `offset` |
+| Über | ui `AboutPage` | Logo als Bild, Was ist neu aus `i18n/whatsnew` |
+| API-Schlüssel | schluessel `services/schluessel_store.py` über `api_keys` (`npk_`, read/upload, Schalter `api_keys_allowed`) | Karten-Wege `/api/v1/connections`; alte `/api/v1/api-keys`, `/admin/api-keys` in alter Form über `keys.*` (neu `…/unblock`); jeder alte Schlüssel gilt weiter |
+
+Weitere Punkte: kein Push an gesperrte oder gelöschte Konten, Ordner-Eingang wartet für sie (E38); gelöschte Konten
+unsichtbar in Mitgliederlisten, nicht wählbar, Mitgliedschaften fallen erst beim endgültigen Löschen weg (E33);
+Verweise auf alte Orte in Texten, Mails, Mitteilungen und Doku auf die neuen umgestellt (E39), festgehalten in
+`frontend/src/i18n/places.test.ts` und `backend/tests/test_places.py`. Fenster, die auch außerhalb der Einstellungen
+aufgehen, bleiben vorerst (F10).
+
+Umwege: keine offen (`TODO sicherung 1.0.1` und der tsconfig-Ausschluss der Modultests sind wieder heraus).
+Offene Fragen: `nexapps/einst-fragen/nexpaper.md` (B1.1 bis G6).
+
+Läufe (26.11.2026 früh, `reihe.sh nexpaper ende`, Stand `8f5db31`): ruff sauber; pytest 3800 grün, 5 übersprungen
+(zwei Einladungen mit festem Benutzernamen, Schlüssel nach Bereichen, eigener Scanner, ein OCR-Fall), 0 rot (Ausgangsstand:
+11 rot, OCR-Zeitgrenzen); `npm run lint` sauber; vitest 1191 grün in 107 Dateien (vorher 1053 in 96); `npm run build`
+grün; Playwright `npm run e2e` 2 von 2 grün, darunter `nexoidc.spec.ts` Test 34, vorher rot (Überschrift „Sign-in“
+doppelt; jetzt prüft er Pfad, h1 und h2 je einmal und die Knopfnamen). `sync.py check` aller sieben Module ok.
+
+
 **Gebaut** auf konten 0.3.9, oidc 1.1.0, post 0.1.1, ui 0.1.1, am selben Tag nachgezogen über 0.3.10 **auf den Modulen
 1.0.0** (konten 1.0.0, ui 1.0.0, post 1.0.0, oidc 1.1.2; Kopien aus `bauplaene`, Zweig `konten` `3c55402`, `sync.py check`
 grün).
