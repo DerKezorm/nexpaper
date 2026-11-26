@@ -41,11 +41,12 @@ from .store import (
     remove,
     save,
     template,
+    texts_only,
     tidy_at_start,
     valid_code,
 )
 
-__version__ = "1.0.1"
+__version__ = "1.0.2"
 
 __all__ = [
     "CODES",
@@ -81,6 +82,7 @@ __all__ = [
     "save",
     "store",
     "template",
+    "texts_only",
     "tidy_at_start",
     "valid_code",
 ]

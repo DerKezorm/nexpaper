@@ -29,7 +29,6 @@ import {
   useSprachenTexts,
   type Fetcher,
   type LanguageEntry,
-  type Texts,
 } from './sprachen'
 
 export type LanguagesCardProps = {
@@ -40,8 +39,9 @@ export type LanguagesCardProps = {
   /** The app's name, for the template's file (`<app>-language-template.json`). */
   app: string
   /** The app's English texts as its i18n has them; given, the page makes the template itself (nexnotes), else it
-   * fetches `<base>/template`. */
-  template?: Texts
+   * fetches `<base>/template`. Since 1.0.2 only what a language file may carry goes into it (`textsOnly`: lists and
+   * the like stay out), so the server takes the template back. */
+  template?: Record<string, unknown>
   /** After a language was added or removed (the app's i18n forgets its list). */
   onChange?: () => void
   /** `de`, `en` or `fr`; default the kit's. */

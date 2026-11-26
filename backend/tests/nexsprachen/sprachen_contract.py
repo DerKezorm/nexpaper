@@ -64,6 +64,18 @@ class StandardAdapter:
         found: dict[str, Any] = answer.json()
         return found
 
+    def offered_template(self) -> dict[str, Any]:
+        """The template the app offers to download, as a file holds it (since 1.0.2, E59). By default the server's
+        (``GET <prefix>/template``). APP, where the page makes it (``has_template = False``): the app's English texts
+        as the page offers them, e.g. its ``frontend/src/i18n/en.json`` through ``nexsprachen.texts_only`` (the rules
+        of the page's ``textsOnly``) with ``_meta``."""
+        if not self.has_template:
+            raise NotImplementedError("APP: offered_template (the page makes the template)")
+        answer = self.client("operator").get(f"{self.prefix}/template")
+        assert answer.status_code == 200, answer.status_code
+        found: dict[str, Any] = answer.json()
+        return found
+
     def folder(self) -> Path:
         """The app's folder of own languages (``AppConfig.folder``); by default what the module says."""
         return contract_package(self).locales_dir()

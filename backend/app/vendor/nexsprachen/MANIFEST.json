@@ -1,30 +1,31 @@
 {
   "files": {
-    "backend/app/vendor/nexsprachen/__init__.py": "sha256-EuPdYWzWJBk/dMKM0Zrxx0C0bTe1amkPG5XqB5/5up4=",
+    "backend/app/vendor/nexsprachen/__init__.py": "sha256-jMI7jqeoQp1OjLsiGzTUAzTfTaviwrfkFsi0fmQ17cE=",
     "backend/app/vendor/nexsprachen/api.py": "sha256-1HPjFp0q3v+6yDhCfqlqumVCForc5aQPEAiX+m41ux4=",
     "backend/app/vendor/nexsprachen/config.py": "sha256-kQTES2+6On02VPAmGuVTq9c1rg2B7XC9L9XmY5sUvaM=",
     "backend/app/vendor/nexsprachen/errors.py": "sha256-TlJS6pCc5tD4GrwywPEhRxEqnE6Dblyb9eUsGLubn6E=",
-    "backend/app/vendor/nexsprachen/store.py": "sha256-FXMpQEJh/WlE6zDPq7AGyPvDfpReL6OPWtKajt11IW8=",
+    "backend/app/vendor/nexsprachen/store.py": "sha256-oZ4IdQZ5PiLICvpDJtJ1p0UX8wqDZV0dlez/RUYewJA=",
     "backend/tests/nexsprachen/conftest.py": "sha256-u2Mg8oUAZq3dmQiWUEEsd8y40+ROFHtO51wRypReSPw=",
-    "backend/tests/nexsprachen/sprachen_contract.py": "sha256-C60nlnrbiUVi3yfZiObxwTylaAjC9B5AkabKqN4nOJA=",
+    "backend/tests/nexsprachen/sprachen_contract.py": "sha256-FTyA2k4jYxT9c7dKdSycXIYBawyErgQKCYJk+oXTuec=",
     "backend/tests/nexsprachen/test_nexsprachen_checks.py": "sha256-2shfQSDq4ZQdxxIZ4ZKDGXAJmwiRLlkjXhV0MXr+Sjk=",
     "backend/tests/nexsprachen/test_nexsprachen_existing.py": "sha256-pUCKVkeXozoK2qkkxfVuDZKB/nHF/t4v+4VHAdwmcT0=",
     "backend/tests/nexsprachen/test_nexsprachen_openapi.py": "sha256-PTx6P/QBokVvFI/VN5efrYbfxlf+e7fbgtIcFYVpdm4=",
     "backend/tests/nexsprachen/test_nexsprachen_routes.py": "sha256-cZoMQs/StM3SH4FU5S775i9kuzoKEmUtzlNsnXFfDe4=",
+    "backend/tests/nexsprachen/test_nexsprachen_template.py": "sha256-tDWDTcX9uZAXkClZUbxRS/yoPv8pr4nRncbCzy8ZXGQ=",
     "backend/tests/nexsprachen/test_nexsprachen_tidy.py": "sha256-7zvASuY/ZXsEO1zT1uz9kZUGCmdo0BbSGPpbMMHqaVE=",
     "backend/tests/nexsprachen/test_nexsprachen_vendored.py": "sha256-RXr0OaIelOnkaEzb50CHltQyEVtd44YCCv8pOPCmSsc=",
-    "frontend/src/vendor/nexsprachen/LanguagesCard.tsx": "sha256-tBhDjevGaTJLtnAI2DrITSJYFzqJR5iQggnYIlUjk5w=",
-    "frontend/src/vendor/nexsprachen/index.ts": "sha256-YTxz4Xeumc6GpgcttsDHCyseRsf2T/xbWl1dXpHMtSo=",
+    "frontend/src/vendor/nexsprachen/LanguagesCard.tsx": "sha256-ExXNfUgArz1wPzHtb/Tl6oun3Jj195h/PpaQqhFAGMM=",
+    "frontend/src/vendor/nexsprachen/index.ts": "sha256-bTUYXw1Stqj4Crh7dOGK1PoItLB/kSmXTgQSUn0FD1U=",
     "frontend/src/vendor/nexsprachen/languages.ts": "sha256-GjXvOS00yMslX0OgBdcYlzhLDL/HxfqhMJ+ZrNxCHyw=",
     "frontend/src/vendor/nexsprachen/sprachen.de.json": "sha256-UuDCHrzvEpLpMMVuzWTDCZGazwWrMWJElkRVrrSoZWU=",
     "frontend/src/vendor/nexsprachen/sprachen.en.json": "sha256-4u+0SDv7BMsjcaJVsimOAvKmRcOWRBV/TWjjhbdxxR0=",
     "frontend/src/vendor/nexsprachen/sprachen.fr.json": "sha256-Ars4nQrBTfl145456jilNwkWGM0cDxWBqG2rAIb9/l4=",
-    "frontend/src/vendor/nexsprachen/sprachen.ts": "sha256-piEowhTCGJSYjf5Nn0X7UGm1fOZAL9bbioZqQYtFmBY="
+    "frontend/src/vendor/nexsprachen/sprachen.ts": "sha256-gVORq8LIgl0prCtwuoC29bEsoaYnJga918CUlIFVlNc="
   },
   "module": "sprachen",
   "requires": {
     "fastapi": ">=0.121.0"
   },
   "vendor_path": "backend/app/vendor/nexsprachen",
-  "version": "1.0.1"
+  "version": "1.0.2"
 }

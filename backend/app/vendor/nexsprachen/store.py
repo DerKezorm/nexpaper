@@ -351,11 +351,32 @@ def remove(code: str) -> bool:
     return True
 
 
+def texts_only(tree: Mapping[str, Any], depth: int = 1) -> dict[str, Any]:
+    """Since 1.0.2 (E59): what of ``tree`` a language file may carry, so that the template the app offers is taken by
+    its own upload: texts and groups of texts, at most ``MAX_DEPTH`` levels, keys neither empty, nor longer than
+    ``MAX_KEY``, nor reserved, nor ``_meta`` at the top; lists, numbers, null and empty groups are left out (they
+    show in English, as every text a file leaves out). The same rules as ``textsOnly`` on the page."""
+    kept: dict[str, Any] = {}
+    for key, value in tree.items():
+        if (not isinstance(key, str) or not key or len(key) > MAX_KEY or key in RESERVED_KEYS or not _encodable(key)
+                or (depth == 1 and key == META_KEY)):
+            continue
+        if isinstance(value, str):
+            if _encodable(value):
+                kept[key] = value
+        elif isinstance(value, Mapping) and depth < MAX_DEPTH:
+            group = texts_only(value, depth + 1)
+            if group:
+                kept[key] = group
+    return kept
+
+
 def template() -> dict[str, Any] | None:
-    """The template to translate: ``_meta`` with a hint for the name, then the app's texts in the fallback language.
-    None when the app makes the template on its page."""
+    """The template to translate: ``_meta`` with a hint for the name, then the app's texts in the fallback language,
+    only what a language file may carry (``texts_only``, since 1.0.2). None when the app makes the template on its
+    page."""
     given = current().template
     if given is None:
         return None
     texts: Mapping[str, Any] = given()
-    return {META_KEY: {"name": "Name of the language in itself, for example Nederlands"}, **dict(texts)}
+    return {META_KEY: {"name": "Name of the language in itself, for example Nederlands"}, **texts_only(texts)}

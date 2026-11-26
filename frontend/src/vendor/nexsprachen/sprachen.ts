@@ -79,10 +79,31 @@ export function mergeTexts(under: Texts, over: Texts): Texts {
   return Object.fromEntries(merged) as Texts
 }
 
+/** The deepest a file may nest and the longest key, as the server checks them (`store.MAX_DEPTH`, `store.MAX_KEY`). */
+export const MAX_DEPTH = 8
+export const MAX_KEY = 120
+
+/** Since 1.0.2 (E59): what of `tree` a language file may carry, so that the template is taken by the server's own
+ * upload: texts and groups of texts, at most 8 levels, keys neither empty, nor longer than 120, nor reserved
+ * (`__proto__`), nor `_meta` at the top; lists, numbers, null and empty groups are left out (they show in English, as
+ * every text a file leaves out). The same rules as the server's `texts_only`. */
+export function textsOnly(tree: Record<string, unknown>, depth = 1): Texts {
+  const kept = new Map<string, string | Texts>()
+  for (const [key, value] of Object.entries(tree)) {
+    if (!key || key.length > MAX_KEY || key === '__proto__' || (depth === 1 && key === '_meta')) continue
+    if (typeof value === 'string') kept.set(key, value)
+    else if (value && typeof value === 'object' && !Array.isArray(value) && depth < MAX_DEPTH) {
+      const group = textsOnly(value as Record<string, unknown>, depth + 1)
+      if (Object.keys(group).length) kept.set(key, group)
+    }
+  }
+  return Object.fromEntries(kept) as Texts
+}
+
 /** The app's texts as a file to translate, with the `_meta` entry the server reads the name from (nexnotes'
- * template). */
-export function templateFile(texts: Texts): Blob {
-  const template = { _meta: { name: 'Name of the language in itself, for example Nederlands' }, ...texts }
+ * template); since 1.0.2 only what a file may carry (`textsOnly`), so the server takes it back. */
+export function templateFile(texts: Record<string, unknown>): Blob {
+  const template = { _meta: { name: 'Name of the language in itself, for example Nederlands' }, ...textsOnly(texts) }
   return new Blob([JSON.stringify(template, null, 2) + '\n'], { type: 'application/json' })
 }
 

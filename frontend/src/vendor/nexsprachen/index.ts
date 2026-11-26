@@ -6,7 +6,9 @@ export type { BuiltIn, LanguageOption, OwnLanguages } from './languages'
 export {
   BASE,
   CODE,
+  MAX_DEPTH,
   MAX_KB,
+  MAX_KEY,
   SPRACHEN_TEXTS,
   SprachenError,
   builtInNames,
@@ -21,6 +23,7 @@ export {
   saveFile,
   templateFile,
   textsCount,
+  textsOnly,
   useSprachenTexts,
   validEntries,
 } from './sprachen'
