@@ -138,7 +138,8 @@
     "nexfolk": {
       "birthdays.read": "Read birthdays and anniversaries",
       "contacts.read": "Read contacts",
-      "contacts.write": "Create and change contacts"
+      "contacts.write": "Create and change contacts",
+      "people.read": "Find people (name and mail address)"
     }
   },
   "about": {

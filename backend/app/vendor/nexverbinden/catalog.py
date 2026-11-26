@@ -47,7 +47,12 @@ PURPOSES: dict[str, dict[str, Purpose]] = {
     "nexnotes": _purposes(Purpose("notes.add", "write")),
     "nexlore": _purposes(Purpose("notes.add", "write")),
     "nexfolk": _purposes(
-        Purpose("birthdays.read", "read"), Purpose("contacts.read", "read"), Purpose("contacts.write", "write")
+        Purpose("birthdays.read", "read"),
+        Purpose("contacts.read", "read"),
+        Purpose("contacts.write", "write"),
+        # V29 (since 0.1.3): people for an entry or an event, only their id, name and mail addresses (no telephone, no
+        # address, no notes); nextime and nexdiary take this one, contacts.read stays nexmail's.
+        Purpose("people.read", "read"),
     ),
     "nexmail": {},
     "nexdiary": {},
@@ -80,14 +85,14 @@ PAIRS: tuple[Pair, ...] = (
     _pair("nextime", "nextasks", nextime=("tasks.read", "tasks.complete")),
     _pair("nextime", "nexpaper", nextime=("deadlines.read",)),
     _pair("nexmail", "nextime", nexmail=("calendars.read", "events.write", "invitations.answer")),
-    _pair("nextime", "nexfolk", nextime=("birthdays.read", "contacts.read")),
+    _pair("nextime", "nexfolk", nextime=("birthdays.read", "people.read")),
     _pair("nexmail", "nexfolk", nexmail=("contacts.read", "contacts.write")),
     _pair("nexmail", "nexpaper", nexmail=("documents.add",)),
     _pair("nexpaper", "nextasks", nexpaper=("tasks.read", "tasks.write")),
     _pair("nexnotes", "nexlore", nexnotes=("notes.add",)),
     _pair("nexdiary", "nextime", nexdiary=("calendars.read",)),
     _pair("nexdiary", "nextasks", nexdiary=("tasks.read",)),
-    _pair("nexdiary", "nexfolk", nexdiary=("contacts.read",)),
+    _pair("nexdiary", "nexfolk", nexdiary=("people.read",)),
     _pair("nextime", "nexnotes", nextime=("notes.add",)),
 )
 

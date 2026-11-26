@@ -407,7 +407,15 @@ class ReferenceApp:
             rows = self.db.execute(
                 "SELECT area_id, title FROM items WHERE account_id = ? ORDER BY id", (found.account_id,)
             )
-            shown = [{"area": row[0], "title": row[1]} for row in rows if found.areas is None or row[0] in found.areas]
-            return {"purpose": purpose, "items": shown}
+            seen = [(row[0], row[1]) for row in rows if found.areas is None or row[0] in found.areas]
+            if purpose == "people.read":
+                # V29: people as a narrow purpose names only id, name and mail addresses.
+                items: list[dict[str, Any]] = [
+                    {"id": index, "name": title, "emails": [f"{title.lower()}@example.com"]}
+                    for index, (_, title) in enumerate(seen, 1)
+                ]
+            else:
+                items = [{"area": area, "title": title, "phone": "+49 30 000000"} for area, title in seen]
+            return {"purpose": purpose, "items": items, "areas": sorted({area for area, _ in seen})}
 
         return app

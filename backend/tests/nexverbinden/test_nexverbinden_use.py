@@ -227,3 +227,23 @@ def test_only_partners_in_use_get_a_card_and_a_start(world: Any) -> None:
             f"{world.pkg.PREFIX}/partners/{other}/start", json={"address": world.partner.base}
         )
         assert found.status_code == 404, other
+
+
+def test_people_for_an_entry_or_an_event_show_only_id_name_and_mail_addresses(world: Any) -> None:
+    """V29 (since 0.1.3): the narrow purpose ``people.read`` (nexfolk for nextime and nexdiary) gives a person's id,
+    name and mail addresses, never telephone, address or notes; ``contacts.read`` stays for nexmail."""
+    app_name = world.app.config().app_name
+    catalog = world.pkg.CATALOG
+    for reader in ("nextime", "nexdiary"):
+        uses = catalog.uses(reader, "nexfolk")
+        assert "people.read" in uses and "contacts.read" not in uses, reader
+    if "people.read" not in world.pkg.PURPOSES[app_name]:
+        return
+    assert "people.read" in catalog.uses(world.partner.name, app_name), "APP: the partner of the test reads people"
+    assert world.connect("partner").status_code == 200
+    answer = world.partner_calls_app(world.app.probe("people.read"))
+    assert getattr(answer, "status", None) == 200, answer
+    persons = world.app.people(answer.data)
+    assert persons, "APP: the owner has at least one person"
+    for person in persons:
+        assert set(person) <= {"id", "name", "emails"} and {"id", "name"} <= set(person), person

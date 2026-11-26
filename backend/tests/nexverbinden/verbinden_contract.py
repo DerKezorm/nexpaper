@@ -77,6 +77,11 @@ class StandardAdapter:
         """APP: the ids of the areas whose things the answer of ``probe(purpose)`` shows (JSON of the answer)."""
         raise NotImplementedError("APP: areas_seen")
 
+    def people(self, answer: Any) -> list[dict[str, Any]]:
+        """APP, only for an app that grants ``people.read`` (nexfolk, V29): the persons in the answer of
+        ``probe("people.read")`` (JSON of the answer)."""
+        raise NotImplementedError("APP: people")
+
     def everything(self) -> str:
         """APP: all text the app keeps (its database as text), to look for tokens in it."""
         raise NotImplementedError("APP: everything")

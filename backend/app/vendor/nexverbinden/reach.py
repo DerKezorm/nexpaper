@@ -24,6 +24,7 @@ import httpx
 
 from . import outbound
 from .errors import Refused
+from .shared import oauthcore
 
 logger = logging.getLogger("nexverbinden")
 
@@ -68,6 +69,9 @@ def clean_url(raw: str) -> str:
     if port is not None and port < 1024 and port not in LOW_PORTS:
         raise Refused("address_port")
     host = parts.hostname.lower().rstrip(".")
+    if not oauthcore.safe_host(host):
+        # mcp 1.1.1 (M-8): no wildcard and no letter of another script that looks Latin, as for return addresses.
+        raise Refused("address_invalid")
     if host in OWN_NAMES or host.endswith(".localhost"):
         raise Refused("address_refused")
     return url

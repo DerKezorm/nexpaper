@@ -90,6 +90,15 @@ def test_the_consent_needs_pkce_with_s256(world: Any) -> None:
         assert found.status_code == 400 and found.json()["detail"]["code"] == "pkce_required"
 
 
+def test_an_asking_app_with_a_host_of_odd_letters_is_refused(world: Any) -> None:
+    """mcp 1.1.1 (M-8): the address of the app that asks names a plain host."""
+    params = world.consent_params(world.start("partner").json()["go"])
+    for host in ("https://*.example.com", "https://\u0430pple.example.com"):
+        odd = {"client_id": host, "redirect_uri": host + world.pkg.RETURN_PAGE}
+        found = world.app.client("owner").get(f"{world.pkg.PREFIX}/consent", params={**params, **odd})
+        assert found.status_code == 400 and found.json()["detail"]["code"] in ("client_invalid", "redirect_invalid")
+
+
 def test_only_an_app_of_the_catalog_may_ask(world: Any) -> None:
     params = world.consent_params(world.start("partner").json()["go"])
     # The address answers, but as an app this one does not connect with (the app itself).
@@ -106,6 +115,9 @@ def test_starting_checks_the_address_and_the_app_there(world: Any) -> None:
         ("https://user:pw@x.example.com", "address_invalid"),
         ("https://x.example.com:22", "address_port"),
         ("http://localhost:8000", "address_refused"),
+        # mcp 1.1.1 (M-8): no wildcard, no letter of another script that looks Latin.
+        ("https://*.example.com", "address_invalid"),
+        ("https://\u0430pple.example.com", "address_invalid"),
     ):
         found = owner.post(url, json={"address": address})
         assert found.status_code == 422 and found.json()["detail"]["code"] == code, address
