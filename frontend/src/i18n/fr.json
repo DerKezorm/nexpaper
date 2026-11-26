@@ -76,8 +76,7 @@
       "text": "Le premier compte administre ce serveur : il invite des personnes et peut modifier tous les paramètres. Il ne voit pas les coffres personnels des autres.",
       "code": "Code de configuration",
       "codeHint": "Il figure dans le journal du serveur (docker logs nexpaper), ou définissez NEXPAPER_SETUP_TOKEN.",
-      "submit": "Créer le compte",
-      "updateCheckHint": "Quand un opérateur ouvre Paramètres › À propos de nexpaper, nexpaper demande au plus une fois par jour à {host} si une nouvelle version est parue. Modifiable plus tard au même endroit."
+      "submit": "Créer le compte"
     },
     "login": {
       "title": "Connexion",

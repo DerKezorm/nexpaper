@@ -38,7 +38,7 @@ from .check import (
 from .config import DEFAULT_ON, AppConfig, configure, current
 from .words import notice
 
-__version__ = "0.1.1"
+__version__ = "0.1.2"
 
 __all__ = [
     "DEFAULT_ON",

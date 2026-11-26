@@ -81,6 +81,10 @@ class StandardAdapter:
     prefix = "/api/about"
     #: Further prefixes the same routes are mounted under.
     also: tuple[str, ...] = ()
+    #: Since 0.1.2: False for an app without a bell (U19: ``configure`` without ``on_newer``; it asks only when an
+    #: operator opens "Über"). Then ``bell`` and ``bell_notices`` are never called, and the tests check instead that
+    #: the background never asks.
+    has_bell = True
 
     def start(self) -> None:
         """APP: an empty app with a fresh database and data folder, started as in production (``configure``), with an
@@ -113,11 +117,12 @@ class StandardAdapter:
         raise NotImplementedError("APP: setup")
 
     def bell(self) -> list[str]:
-        """APP: the versions one operator's bell was told about, oldest first (U3)."""
+        """APP (only with ``has_bell``): the versions one operator's bell was told about, oldest first (U3)."""
         raise NotImplementedError("APP: bell")
 
     def bell_notices(self) -> list[tuple[str, str, str]]:
-        """APP: every notice of the bell as (language of the operator's account, version, title), U17."""
+        """APP (only with ``has_bell``): every notice of the bell as (language of the operator's account, version,
+        title), U17."""
         raise NotImplementedError("APP: bell_notices")
 
     def description(self) -> dict[str, Any]:
@@ -141,3 +146,13 @@ def plug(adapter: Any, fake: FakeGitHub) -> None:
 
     package = contract_package(adapter)
     package.configure(dataclasses.replace(package.current(), update_url=fake.url))
+
+
+def background_stays_quiet(adapter: Any, fake: FakeGitHub) -> None:
+    """Without a bell (U19): the background's look asks nobody and tells nobody, however often it runs."""
+    package = contract_package(adapter)
+    before = len(fake.requests)
+    for _ in range(2):
+        package.forget()
+        assert package.look_once() is None
+    assert len(fake.requests) == before, "an app without a bell asked in the background"

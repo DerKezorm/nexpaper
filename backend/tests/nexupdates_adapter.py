@@ -6,10 +6,8 @@ The contract tests in ``backend/tests/nexupdates/`` run the module inside nexpap
 ``/api/v1/about`` (``app/routers/about.py``) and its setup route ``POST /api/v1/setup`` with the box "Nach neuen
 Versionen sehen".
 
-nexpaper has no bell (U19): nothing looks in the background, and the operators hear of a new version on the about page.
-So ``look`` is what nexpaper does by itself, an operator's look at the about page (it asks when the state is a day old
-and the switch is on, never while it is off), and the tests about the bell's words are skipped (``bell``). The contract
-has no form for an app without a bell; noted in ``einst-fragen/nexpaper-module.md``.
+nexpaper has no bell (U19, ``has_bell = False``): nothing looks in the background, and the operators hear of a new
+version on the about page; the contract (updates 0.1.2) checks exactly that.
 """
 
 from __future__ import annotations
@@ -17,7 +15,6 @@ from __future__ import annotations
 import secrets
 from typing import Any
 
-import pytest
 from updates_contract import StandardAdapter
 
 
@@ -25,6 +22,7 @@ class Adapter(StandardAdapter):
     package = "app.vendor.nexupdates"
     prefix = "/api/v1/about"
     also: tuple[str, ...] = ()
+    has_bell = False
 
     def start(self) -> None:
         from fastapi.testclient import TestClient
@@ -93,18 +91,3 @@ class Adapter(StandardAdapter):
                 "code": SETUP_CODE, "name": "olga", "password": PASSWORD, "language": "de", "update_check": on,
             })
         assert answer.status_code == 200, answer.text
-
-    def look(self) -> None:
-        """What nexpaper does by itself: no background look (no bell, U19), but an operator's look at the about page,
-        which asks when the state is a day old and the switch is on."""
-        from app.vendor import nexupdates
-
-        nexupdates.look_once()
-        answer = self.client("operator").get(f"{self.prefix}/updates")
-        assert answer.status_code == 200, answer.text
-
-    def bell(self) -> list[str]:
-        pytest.skip("nexpaper has no bell (U19): the operators see a new version on the about page")
-
-    def bell_notices(self) -> list[tuple[str, str, str]]:
-        pytest.skip("nexpaper has no bell (U19)")

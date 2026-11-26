@@ -76,8 +76,7 @@
       "text": "The first account runs this server: it invites people and may change every setting. It does not look into the personal vaults of the others.",
       "code": "Setup code",
       "codeHint": "It stands in the server log (docker logs nexpaper), or set NEXPAPER_SETUP_TOKEN.",
-      "submit": "Create account",
-      "updateCheckHint": "When an operator opens Settings › About nexpaper, nexpaper asks {host} at most once a day whether a newer version is out. You can change this there later."
+      "submit": "Create account"
     },
     "login": {
       "title": "Sign in",

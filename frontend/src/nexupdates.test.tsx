@@ -1,4 +1,4 @@
-// Vorlage nexupdates 0.1.1
+// Vorlage nexupdates 0.1.2
 // @vitest-environment jsdom
 /**
  * The card "Aktualisierungen" of the kit's about page with the module's state in the app: an operator sees the newer
@@ -215,5 +215,20 @@ describe('what goes out, and the setup (U1)', () => {
     }
     await act(async () => find<HTMLInputElement>('[data-testid="setup-update-check"]')!.click())
     expect(on).toBe(false)
+  })
+
+  it('without a bell the hint says where the answer stands instead (U19, since 0.1.2)', async () => {
+    for (const language of ['de', 'en', 'fr'] as const) {
+      await act(async () =>
+        root.render(
+          <NexuiLanguage language={language}>
+            <UpdateSetupRow app={APP} checked onChange={() => undefined} bell={false} />
+          </NexuiLanguage>,
+        ),
+      )
+      const texts = UPDATES_TEXTS[language]
+      expect(box.textContent).toContain(texts.setupHintNoBell.replace(/\{app\}/g, APP).replace('{host}', 'api.github.com'))
+      expect(box.textContent).not.toContain(texts.setupHint.replace(/\{app\}/g, APP).replace('{host}', 'api.github.com'))
+    }
   })
 })

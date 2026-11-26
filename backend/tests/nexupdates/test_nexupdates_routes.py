@@ -9,7 +9,7 @@ from __future__ import annotations
 from typing import Any
 
 import pytest
-from updates_contract import plug
+from updates_contract import background_stays_quiet, plug
 
 
 def _state(client: Any, app: Any) -> dict[str, Any]:
@@ -48,7 +48,8 @@ def test_off_nothing_goes_out_by_itself(app: Any, operator: Any, member: Any, gi
         member.get(f"{app.prefix}/updates")
         app.look()
     assert github.requests == []
-    assert app.bell() == []
+    if app.has_bell:
+        assert app.bell() == []
 
 
 def test_the_button_asks_also_when_off_and_only_the_operator_may(app: Any, operator: Any, member: Any,
@@ -176,6 +177,9 @@ def test_errors_and_oversized_answers_are_no_answer_and_keep_the_last_good_one(a
 
 def test_the_bell_hears_of_each_new_version_once(app: Any, operator: Any, github: Any, nexupdates: Any) -> None:
     _switch(operator, app, True)
+    if not app.has_bell:
+        background_stays_quiet(app, github)
+        return
     app.look()
     app.look()
     assert app.bell() == ["v99.0.0"]
@@ -192,9 +196,13 @@ def test_the_bell_hears_of_each_new_version_once(app: Any, operator: Any, github
     assert app.bell() == ["v99.0.0", "v99.0.1"]
 
 
-def test_the_bell_speaks_the_language_of_each_operator_s_account(app: Any, operator: Any, nexupdates: Any) -> None:
+def test_the_bell_speaks_the_language_of_each_operator_s_account(app: Any, operator: Any, github: Any,
+                                                                  nexupdates: Any) -> None:
     """U17: one notice per operator, in the language of the account (as the mails of post, E26)."""
     _switch(operator, app, True)
+    if not app.has_bell:
+        background_stays_quiet(app, github)
+        return
     app.look()
     notices = app.bell_notices()
     assert notices, "no notice at all"
@@ -205,6 +213,9 @@ def test_the_bell_speaks_the_language_of_each_operator_s_account(app: Any, opera
 def test_the_bell_never_hears_of_the_running_version_or_an_older_one(app: Any, operator: Any, github: Any,
                                                                        nexupdates: Any) -> None:
     _switch(operator, app, True)
+    if not app.has_bell:
+        background_stays_quiet(app, github)
+        return
     running = nexupdates.parse(nexupdates.current().running())
     assert running is not None
     for tag in (f"v{running[0]}.{running[1]}.{running[2]}", "v0.0.1"):
@@ -219,13 +230,27 @@ def test_the_setup_asks_once_and_a_new_installation_keeps_its_answer(app: Any, g
     app.setup(False)
     assert app.stored_switch() not in (None, True, "1", 1)
     app.look()
-    assert github.requests == [] and app.bell() == []
+    assert github.requests == [] and (not app.has_bell or app.bell() == [])
 
 
 def test_the_setup_ticked_checks_by_itself(app: Any, github: Any) -> None:
     app.setup(True)
+    if not app.has_bell:
+        # U19: nothing in the background; the first visit of an operator on "Über" asks, once.
+        background_stays_quiet(app, github)
+        operator = app.client("operator")
+        assert _state(operator, app)["latest"] == "v99.0.0"
+        _state(operator, app)
+        assert len(github.requests) == 1
+        return
     app.look()
     assert len(github.requests) == 1 and app.bell() == ["v99.0.0"]
+
+
+def test_the_bell_is_given_exactly_where_the_app_has_one(app: Any, nexupdates: Any) -> None:
+    """U-1 (0.1.2): an app tells the contract whether it has a bell (``has_bell``), and gives ``configure`` its
+    ``on_newer`` exactly then."""
+    assert (nexupdates.current().on_newer is not None) == app.has_bell
 
 
 def test_a_switch_from_before_stays_as_it_was(app: Any, github: Any) -> None:

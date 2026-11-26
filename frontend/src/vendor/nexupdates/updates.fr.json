@@ -4,5 +4,6 @@
   "noOtherCalls": "À part cela, {app} n’appelle personne de lui-même.",
   "setupLabel": "Rechercher les nouvelles versions",
   "setupHint": "Une fois par jour, {app} demande à {host} si une nouvelle version est parue et te le dit dans la cloche. Modifiable plus tard sous Réglages › À propos de {app}.",
+  "setupHintNoBell": "Quand tu ouvres Réglages › À propos de {app}, {app} demande à {host} au plus une fois par jour si une nouvelle version est parue et l'affiche là. Modifiable plus tard sous Réglages › À propos de {app}.",
   "failed": "Cela n’a pas fonctionné. Réessaie dans un instant."
 }

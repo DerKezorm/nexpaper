@@ -38,7 +38,8 @@ describe('the box "Nach neuen Versionen sehen" (U1)', () => {
     expect(box.checked).toBe(true)
     expect(page.text).toContain('Nach neuen Versionen sehen')
     expect(page.text).toContain('api.github.com')
-    expect(page.text).toContain('Einstellungen › Über nexpaper')
+    // The module's hint for an app without a bell (updates 0.1.2, U19).
+    expect(page.text).toContain('Wenn du Einstellungen › Über nexpaper öffnest')
     expect(page.text).not.toContain('Glocke')
     await setUp()
     expect(server.called('POST', '/api/v1/setup')?.body).toMatchObject({ update_check: true })
