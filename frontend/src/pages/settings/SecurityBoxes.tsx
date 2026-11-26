@@ -21,7 +21,7 @@ import { iso } from '../../lib/say'
 import { createPasskey, passkeysAvailable } from '../../lib/webauthn'
 import { useAuth } from '../../state/auth'
 import { PasskeyAddition } from '../../vendor/nexkonten/AccountCards'
-import { FIELDS, newSignInMailHint, PAGES, pageOrder, passwordChanged, SECOND_FACTOR_STATE } from '../../vendor/nexkonten/konten'
+import { fieldLabel, FIELDS, newSignInMailHint, PAGES, pageOrder, passwordChanged, SECOND_FACTOR_STATE } from '../../vendor/nexkonten/konten'
 import { Badge, Box, Button, Card, CheckboxRow, ConfirmDialog, Field, Notice, Row, Rows } from '../../vendor/nexui'
 import { useAction } from './actions'
 import { Outcome } from './Outcome'
@@ -127,7 +127,7 @@ function RemainingAccessNotice() {
 
 /** The module's part "password": when it was changed last (`passwordChanged`) and "Change password", which opens the
  * module's three fields in a dialog. */
-function PasswordBox({ changedAt }: { changedAt: string | null }) {
+export function PasswordBox({ changedAt }: { changedAt: string | null }) {
   const { t, i18n } = useTranslation()
   const [open, setOpen] = useState(false)
   const [pw, setPw] = useState({ current: '', next: '', again: '' })
@@ -170,7 +170,7 @@ function PasswordBox({ changedAt }: { changedAt: string | null }) {
           }}
         >
           <Field label={t(FIELDS.currentPassword.label)} type="password" autoComplete="current-password" value={pw.current} onChange={(event) => setPw({ ...pw, current: event.target.value })} />
-          <Field label={t(FIELDS.newPassword.label)} type="password" autoComplete="new-password" hints={[t(FIELDS.newPassword.hint)]} value={pw.next} onChange={(event) => setPw({ ...pw, next: event.target.value })} />
+          <Field label={t(fieldLabel('change', 'newPassword'))} type="password" autoComplete="new-password" hints={[t(FIELDS.newPassword.hint)]} value={pw.next} onChange={(event) => setPw({ ...pw, next: event.target.value })} />
           <Field label={t(FIELDS.passwordRepeat.label)} type="password" autoComplete="new-password" value={pw.again} onChange={(event) => setPw({ ...pw, again: event.target.value })} />
         </ConfirmDialog>
       )}

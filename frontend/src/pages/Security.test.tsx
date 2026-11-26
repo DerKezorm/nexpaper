@@ -12,7 +12,7 @@ import type { Me } from '../api/client'
 import '../i18n'
 import { changeLanguage } from '../i18n'
 import { LoginPage } from './AuthPages'
-import { PasskeysBox, SecondFactorBox, SessionsBox } from './settings/SecurityBoxes'
+import { PasskeysBox, PasswordBox, SecondFactorBox, SessionsBox } from './settings/SecurityBoxes'
 import { SignInArea } from './settings/SignInArea'
 import { idle } from '../test/wait'
 
@@ -203,6 +203,15 @@ describe('the second factor right after the password', () => {
 })
 
 describe('the own account, Security', () => {
+  it('names the fields of "Passwort ändern" as the module does: current, new, repeated (konten 1.1.2)', async () => {
+    await show(<PasswordBox changedAt={null} />, '/settings/security')
+    await click(box.querySelector<HTMLElement>('[data-testid="password-change"]')!)
+    const dialog = document.querySelector<HTMLElement>('[role="dialog"]')!
+    const labels = [...dialog.querySelectorAll('label')].map((label) => label.textContent?.trim().split('\n')[0])
+    expect(labels.slice(0, 3)).toEqual(['Aktuelles Passwort', 'Neues Passwort', 'Passwort wiederholen'])
+    expect(field('Neues Passwort', dialog)!.autocomplete).toBe('new-password')
+  })
+
   it('lists the signed-in devices and signs out one', async () => {
     answers['GET /api/v1/auth/sessions'] = [
       { id: 'a'.repeat(32), device: 'Firefox unter Windows', phone: false, network: 'Netz 203.0.113.0/24', created_at: new Date(NOW).toISOString(), last_seen_at: new Date(NOW).toISOString(), remember: true, here: true },

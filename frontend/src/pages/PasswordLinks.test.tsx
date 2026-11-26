@@ -170,7 +170,7 @@ describe('the page of the link', () => {
     answers[`POST /api/v1/reset/${'a'.repeat(30)}`] = 204
     await show(<ResetPage />, at, '/reset/:token')
     expect(box.textContent).toContain('Wähle ein neues Passwort für anna.')
-    await type(field('Passwort'), 'a long enough password')
+    await type(field('Neues Passwort'), 'a long enough password')
     await type(field('Passwort wiederholen'), 'another long password')
     await submit(box.querySelector('form'))
     expect(calls.some((call) => call.method === 'POST')).toBe(false)
@@ -190,7 +190,7 @@ describe('the page of the link', () => {
     answers[`GET /api/v1/reset/${'a'.repeat(30)}`] = { name: 'anna', min_password: 12 }
     answers[`POST /api/v1/reset/${'a'.repeat(30)}`] = { refused: 'reset_invalid' }
     await show(<ResetPage />, at, '/reset/:token')
-    await type(field('Passwort'), 'a long enough password')
+    await type(field('Neues Passwort'), 'a long enough password')
     await type(field('Passwort wiederholen'), 'a long enough password')
     await submit(box.querySelector('form'))
     expect(box.querySelector('h1')!.textContent).toBe('Link nicht gültig')

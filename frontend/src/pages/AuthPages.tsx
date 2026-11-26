@@ -23,7 +23,7 @@ import i18n from '../i18n'
 import { errorText } from '../lib/errors'
 import { answerWithPasskey, passkeysAvailable } from '../lib/webauthn'
 import { safeNext, useAuth } from '../state/auth'
-import { followUsername, newPasswordProblem, screenFields, SETUP_PAGE, setupNotes, type AccountField, type AccountScreen, type ButtonName } from '../vendor/nexkonten/konten'
+import { fieldLabel, followUsername, newPasswordProblem, screenFields, SETUP_PAGE, setupNotes, type AccountField, type AccountScreen, type ButtonName } from '../vendor/nexkonten/konten'
 import { Field } from '../vendor/nexui'
 import { Input } from './settings/ui'
 
@@ -685,7 +685,7 @@ export function ResetPage() {
         }}
       >
         <Problem code={problem} />
-        <Field label={t('account.newPassword')} value={password} onChange={(event) => setPassword(event.target.value)} type="password" autoComplete="new-password" autoFocus hints={[t('account.passwordRules')]} />
+        <Field label={t(fieldLabel('reset', 'newPassword'))} value={password} onChange={(event) => setPassword(event.target.value)} type="password" autoComplete="new-password" autoFocus hints={[t('account.passwordRules')]} />
         <Field label={t('account.passwordRepeat')} value={again} onChange={(event) => setAgain(event.target.value)} type="password" autoComplete="new-password" />
         <Primary name="resetSubmit" busy={busy}>{t('auth.reset.submit')}</Primary>
       </form>
