@@ -28,6 +28,13 @@ class StandardAdapter:
     public_read = True
     #: Whether the server hands out the template (``AppConfig.template``); False when the app's page makes it.
     has_template = True
+    #: Where the app describes its interface (nexpaper ``/api/v1/openapi.json``).
+    openapi_path = "/openapi.json"
+    #: The names the app gave ``api.router`` for ``prefix`` so that its description stays as it was (the same dicts:
+    #: ``operation_ids``, ``summaries`` by route, ``schema_names`` by schema); empty: FastAPI's names of the module.
+    operation_ids: dict[str, str] = {}
+    summaries: dict[str, str] = {}
+    schema_names: dict[str, str] = {}
 
     def start(self) -> None:
         """APP: an empty app with a fresh data folder, started as in production (``nexsprachen.configure``, the

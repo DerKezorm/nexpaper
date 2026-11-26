@@ -1,14 +1,15 @@
 {
   "files": {
     "backend/app/vendor/nexsprachen/__init__.py": "sha256-SkidBfJJ7+ptoiEm4/uaBQSvvARPMixPM7rkkh01BjA=",
-    "backend/app/vendor/nexsprachen/api.py": "sha256-YFHiY4gQBtfcgRzPfmcP3d452z4zLER00WUlEsVcyfI=",
+    "backend/app/vendor/nexsprachen/api.py": "sha256-1+FUhAMyLhHDZ/ETZHH8me9eCoWvFi+bb2YAaZirw2c=",
     "backend/app/vendor/nexsprachen/config.py": "sha256-kQTES2+6On02VPAmGuVTq9c1rg2B7XC9L9XmY5sUvaM=",
     "backend/app/vendor/nexsprachen/errors.py": "sha256-TlJS6pCc5tD4GrwywPEhRxEqnE6Dblyb9eUsGLubn6E=",
     "backend/app/vendor/nexsprachen/store.py": "sha256-oss7g5hdDJx8Iqgnx2ywQpT2BmcPchSMWmA8GBmc/mE=",
     "backend/tests/nexsprachen/conftest.py": "sha256-u2Mg8oUAZq3dmQiWUEEsd8y40+ROFHtO51wRypReSPw=",
-    "backend/tests/nexsprachen/sprachen_contract.py": "sha256-7XuoxetQuWzIgju3tLqpTZd4dF1JZVKgLDTYVlZEaCY=",
+    "backend/tests/nexsprachen/sprachen_contract.py": "sha256-Mg2E0cHSLHLfZP5Ghgl8PvisKVrDyKLKW6AbimmOkBg=",
     "backend/tests/nexsprachen/test_nexsprachen_checks.py": "sha256-2shfQSDq4ZQdxxIZ4ZKDGXAJmwiRLlkjXhV0MXr+Sjk=",
     "backend/tests/nexsprachen/test_nexsprachen_existing.py": "sha256-pUCKVkeXozoK2qkkxfVuDZKB/nHF/t4v+4VHAdwmcT0=",
+    "backend/tests/nexsprachen/test_nexsprachen_openapi.py": "sha256-UQNqC4Y1fipagigrjwTe/l/kCwuRNKDAPZAxPHJdYa4=",
     "backend/tests/nexsprachen/test_nexsprachen_routes.py": "sha256-cZoMQs/StM3SH4FU5S775i9kuzoKEmUtzlNsnXFfDe4=",
     "backend/tests/nexsprachen/test_nexsprachen_vendored.py": "sha256-RXr0OaIelOnkaEzb50CHltQyEVtd44YCCv8pOPCmSsc=",
     "frontend/src/vendor/nexsprachen/LanguagesCard.tsx": "sha256-QqDE/jmjdqnX6rP9cAnx8fubMOOSvwaBYxeGrmrdEjg=",
