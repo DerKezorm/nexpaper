@@ -572,6 +572,30 @@
         "title": "AutoTrashOut",
         "type": "object"
       },
+      "BackupScheduleIn": {
+        "properties": {
+          "every": {
+            "maxLength": 16,
+            "title": "Every",
+            "type": "string"
+          },
+          "keep": {
+            "title": "Keep"
+          },
+          "time": {
+            "maxLength": 5,
+            "title": "Time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "every",
+          "time",
+          "keep"
+        ],
+        "title": "BackupScheduleIn",
+        "type": "object"
+      },
       "BroughtOut": {
         "description": "The answer of ``POST /devices/pair``: the new device, its token (shown once) and the account.",
         "properties": {
@@ -861,6 +885,18 @@
           "op"
         ],
         "title": "ConditionIn",
+        "type": "object"
+      },
+      "CreateIn": {
+        "properties": {
+          "note": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Note",
+            "type": "string"
+          }
+        },
+        "title": "CreateIn",
         "type": "object"
       },
       "CurrencySum": {
@@ -5749,6 +5785,20 @@
         "title": "NewPasswordIn",
         "type": "object"
       },
+      "NoteIn": {
+        "properties": {
+          "text": {
+            "maxLength": 10000,
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "title": "NoteIn",
+        "type": "object"
+      },
       "NoteOut": {
         "properties": {
           "author": {
@@ -8332,6 +8382,22 @@
         "title": "ResetLinkIn",
         "type": "object"
       },
+      "RestoreIn": {
+        "additionalProperties": false,
+        "properties": {
+          "base_version": {
+            "maximum": 2147483647.0,
+            "minimum": 1.0,
+            "title": "Base Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "base_version"
+        ],
+        "title": "RestoreIn",
+        "type": "object"
+      },
       "RoleIn": {
         "properties": {
           "current_password": {
@@ -8615,30 +8681,6 @@
           "name"
         ],
         "title": "SavedRename",
-        "type": "object"
-      },
-      "ScheduleIn": {
-        "properties": {
-          "every": {
-            "maxLength": 16,
-            "title": "Every",
-            "type": "string"
-          },
-          "keep": {
-            "title": "Keep"
-          },
-          "time": {
-            "maxLength": 5,
-            "title": "Time",
-            "type": "string"
-          }
-        },
-        "required": [
-          "every",
-          "time",
-          "keep"
-        ],
-        "title": "ScheduleIn",
         "type": "object"
       },
       "SearchHit": {
@@ -11306,6 +11348,55 @@
         "title": "SetupIn",
         "type": "object"
       },
+      "app__routers__backups__PasswordIn": {
+        "properties": {
+          "archive_password": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Archive Password"
+          },
+          "options": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "boolean"
+                    },
+                    {
+                      "type": "integer"
+                    }
+                  ]
+                },
+                "maxProperties": 20,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Options"
+          },
+          "password": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Password",
+            "type": "string"
+          }
+        },
+        "title": "PasswordIn",
+        "type": "object"
+      },
       "app__routers__catalog__MergeIn": {
         "properties": {
           "into": {
@@ -11544,20 +11635,6 @@
         "title": "DeviceIn",
         "type": "object"
       },
-      "app__routers__documents__NoteIn": {
-        "properties": {
-          "text": {
-            "maxLength": 10000,
-            "title": "Text",
-            "type": "string"
-          }
-        },
-        "required": [
-          "text"
-        ],
-        "title": "NoteIn",
-        "type": "object"
-      },
       "app__routers__keeping__MergeIn": {
         "additionalProperties": false,
         "properties": {
@@ -11644,22 +11721,6 @@
           "others"
         ],
         "title": "MergeIn",
-        "type": "object"
-      },
-      "app__routers__pagetools__RestoreIn": {
-        "additionalProperties": false,
-        "properties": {
-          "base_version": {
-            "maximum": 2147483647.0,
-            "minimum": 1.0,
-            "title": "Base Version",
-            "type": "integer"
-          }
-        },
-        "required": [
-          "base_version"
-        ],
-        "title": "RestoreIn",
         "type": "object"
       },
       "app__routers__passkeys__PasswordIn": {
@@ -11849,79 +11910,6 @@
           "url"
         ],
         "title": "DeadlineOut",
-        "type": "object"
-      },
-      "app__vendor__nexsicherung__routes__NoteIn": {
-        "properties": {
-          "note": {
-            "default": "",
-            "maxLength": 200,
-            "title": "Note",
-            "type": "string"
-          }
-        },
-        "title": "NoteIn",
-        "type": "object"
-      },
-      "app__vendor__nexsicherung__routes__PasswordIn": {
-        "properties": {
-          "password": {
-            "default": "",
-            "maxLength": 200,
-            "title": "Password",
-            "type": "string"
-          }
-        },
-        "title": "PasswordIn",
-        "type": "object"
-      },
-      "app__vendor__nexsicherung__routes__RestoreIn": {
-        "properties": {
-          "archive_password": {
-            "anyOf": [
-              {
-                "maxLength": 200,
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Archive Password"
-          },
-          "options": {
-            "anyOf": [
-              {
-                "additionalProperties": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "boolean"
-                    },
-                    {
-                      "type": "integer"
-                    }
-                  ]
-                },
-                "maxProperties": 20,
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Options"
-          },
-          "password": {
-            "default": "",
-            "maxLength": 200,
-            "title": "Password",
-            "type": "string"
-          }
-        },
-        "title": "RestoreIn",
         "type": "object"
       }
     },
@@ -14254,7 +14242,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/app__vendor__nexsicherung__routes__NoteIn"
+                "$ref": "#/components/schemas/CreateIn"
               }
             }
           }
@@ -14320,7 +14308,7 @@
             "HTTPBearer": []
           }
         ],
-        "summary": "Upload",
+        "summary": "Bring in an archive from elsewhere (the body is the ZIP); needs the password again",
         "tags": [
           "backups"
         ]
@@ -14344,7 +14332,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/app__vendor__nexsicherung__routes__PasswordIn"
+                "$ref": "#/components/schemas/app__routers__backups__PasswordIn"
               }
             }
           },
@@ -14474,7 +14462,7 @@
             "HTTPBearer": []
           }
         ],
-        "summary": "Download",
+        "summary": "The archive itself, to keep a copy elsewhere; needs the password again",
         "tags": [
           "backups"
         ]
@@ -14482,7 +14470,7 @@
     },
     "/api/v1/backups/{name}/restore": {
       "post": {
-        "operationId": "restore_route_api_v1_backups__name__restore_post",
+        "operationId": "restore_api_v1_backups__name__restore_post",
         "parameters": [
           {
             "in": "path",
@@ -14498,7 +14486,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/app__vendor__nexsicherung__routes__RestoreIn"
+                "$ref": "#/components/schemas/app__routers__backups__PasswordIn"
               }
             }
           },
@@ -14509,7 +14497,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "title": "Response Restore Route Api V1 Backups  Name  Restore Post"
+                  "title": "Response Restore Api V1 Backups  Name  Restore Post"
                 }
               }
             },
@@ -14531,7 +14519,7 @@
             "HTTPBearer": []
           }
         ],
-        "summary": "Restore Route",
+        "summary": "Restore",
         "tags": [
           "backups"
         ]
@@ -16659,7 +16647,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/app__routers__documents__NoteIn"
+                "$ref": "#/components/schemas/NoteIn"
               }
             }
           },
@@ -16772,7 +16760,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/app__routers__documents__NoteIn"
+                "$ref": "#/components/schemas/NoteIn"
               }
             }
           },
@@ -18666,7 +18654,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/app__routers__pagetools__RestoreIn"
+                "$ref": "#/components/schemas/RestoreIn"
               }
             }
           },
@@ -26127,7 +26115,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/app__vendor__nexsicherung__routes__NoteIn"
+                "$ref": "#/components/schemas/CreateIn"
               }
             }
           }
@@ -26193,7 +26181,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ScheduleIn"
+                "$ref": "#/components/schemas/BackupScheduleIn"
               }
             }
           },
@@ -26282,7 +26270,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/app__vendor__nexsicherung__routes__PasswordIn"
+                "$ref": "#/components/schemas/app__routers__backups__PasswordIn"
               }
             }
           },
@@ -26445,7 +26433,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/app__vendor__nexsicherung__routes__RestoreIn"
+                "$ref": "#/components/schemas/app__routers__backups__PasswordIn"
               }
             }
           },

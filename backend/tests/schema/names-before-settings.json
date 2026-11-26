@@ -1,0 +1,1576 @@
+{
+ "note": "The names nexpaper's interface had before the settings pass (branch konten): every one stays (Bauplan E53).",
+ "operations": {
+  "DELETE /api/v1/accounts/{account_id}": {
+   "operationId": "delete_account_api_v1_accounts__account_id__delete",
+   "summary": "Delete an account"
+  },
+  "DELETE /api/v1/accounts/{account_id}/email": {
+   "operationId": "remove_account_email_api_v1_accounts__account_id__email_delete",
+   "summary": "Operator: take an account's address away (never set one)"
+  },
+  "DELETE /api/v1/api-keys/{key_id}": {
+   "operationId": "delete_key_api_v1_api_keys__key_id__delete",
+   "summary": "Delete an own API key"
+  },
+  "DELETE /api/v1/auth/avatar": {
+   "operationId": "remove_avatar_api_v1_auth_avatar_delete",
+   "summary": "Remove the own profile picture"
+  },
+  "DELETE /api/v1/auth/sessions/{uid}": {
+   "operationId": "end_one_api_v1_auth_sessions__uid__delete",
+   "summary": "Sign out one of the own browsers or devices"
+  },
+  "DELETE /api/v1/backups/{name}": {
+   "operationId": "delete_api_v1_backups__name__delete",
+   "summary": "Delete"
+  },
+  "DELETE /api/v1/devices/{uid}": {
+   "operationId": "revoke_api_v1_devices__uid__delete",
+   "summary": "Revoke a device: its token stops working at once"
+  },
+  "DELETE /api/v1/documents/{document_id}": {
+   "operationId": "trash_api_v1_documents__document_id__delete",
+   "summary": "Put a document in the trash for 30 days"
+  },
+  "DELETE /api/v1/documents/{document_id}/dates/{kind}/done": {
+   "operationId": "mark_open_api_v1_documents__document_id__dates__kind__done_delete",
+   "summary": "Open a deadline that was marked done again"
+  },
+  "DELETE /api/v1/documents/{document_id}/dates/{kind}/snooze": {
+   "operationId": "end_put_off_api_v1_documents__document_id__dates__kind__snooze_delete",
+   "summary": "End the caller's own later on a deadline"
+  },
+  "DELETE /api/v1/documents/{document_id}/links/{link_id}": {
+   "operationId": "revoke_link_api_v1_documents__document_id__links__link_id__delete",
+   "summary": "Revoke a link: it stops at once"
+  },
+  "DELETE /api/v1/documents/{document_id}/notes/{note_id}": {
+   "operationId": "delete_note_api_v1_documents__document_id__notes__note_id__delete",
+   "summary": "Delete an own note, or any note as a manager of the vault"
+  },
+  "DELETE /api/v1/documents/{document_id}/pin": {
+   "operationId": "unpin_api_v1_documents__document_id__pin_delete",
+   "summary": "Take one's pin off a document"
+  },
+  "DELETE /api/v1/documents/{document_id}/related/{other_id}": {
+   "operationId": "unlink_api_v1_documents__document_id__related__other_id__delete",
+   "summary": "Remove that two documents go with each other (edit on both)"
+  },
+  "DELETE /api/v1/documents/{document_id}/separators": {
+   "operationId": "keep_as_one_api_v1_documents__document_id__separators_delete",
+   "summary": "Keep it as one document: no proposal to split this version again"
+  },
+  "DELETE /api/v1/documents/{document_id}/shares/{user_id}": {
+   "operationId": "remove_share_api_v1_documents__document_id__shares__user_id__delete",
+   "summary": "Stop sharing a document with a person (or give a shared document back)"
+  },
+  "DELETE /api/v1/documents/{document_id}/shown-through/{item_id}": {
+   "operationId": "take_out_api_v1_documents__document_id__shown_through__item_id__delete",
+   "summary": "Take this document out of a link of another document (the link stays)"
+  },
+  "DELETE /api/v1/documents/{document_id}/versions/{number}": {
+   "operationId": "discard_api_v1_documents__document_id__versions__number__delete",
+   "summary": "Put away an uploaded version that could not be read (a version that was read stays)"
+  },
+  "DELETE /api/v1/exports/{export_id}": {
+   "operationId": "remove_api_v1_exports__export_id__delete",
+   "summary": "Delete an export: the ZIP and its links go"
+  },
+  "DELETE /api/v1/exports/{export_id}/links/{link_id}": {
+   "operationId": "revoke_link_api_v1_exports__export_id__links__link_id__delete",
+   "summary": "Revoke a link to an export"
+  },
+  "DELETE /api/v1/invites/{invite_id}": {
+   "operationId": "withdraw_api_v1_invites__invite_id__delete",
+   "summary": "Withdraw an invitation (operator)"
+  },
+  "DELETE /api/v1/kinds/{kind_id}": {
+   "operationId": "delete_kind_api_v1_kinds__kind_id__delete",
+   "summary": "Delete a kind; its documents are left without one (managers of its vault, or `force`; the operator for the server's)"
+  },
+  "DELETE /api/v1/locales/{code}": {
+   "operationId": "delete_locale_api_v1_locales__code__delete",
+   "summary": "Remove an added language (operator)"
+  },
+  "DELETE /api/v1/logs": {
+   "operationId": "clear_logs_api_v1_logs_delete",
+   "summary": "Clear the log"
+  },
+  "DELETE /api/v1/me/email/pending": {
+   "operationId": "withdraw_api_v1_me_email_pending_delete",
+   "summary": "Withdraw the address that waits for its link"
+  },
+  "DELETE /api/v1/me/mail-senders/{sender_id}": {
+   "operationId": "remove_sender_api_v1_me_mail_senders__sender_id__delete",
+   "summary": "Remove an address forwarded from"
+  },
+  "DELETE /api/v1/oidc/admin/accounts/{account_id}/links/{provider_id}": {
+   "operationId": "operator_unlink_api_v1_oidc_admin_accounts__account_id__links__provider_id__delete",
+   "summary": "Operator: unlink an account from a provider (with the own password)"
+  },
+  "DELETE /api/v1/oidc/admin/providers/{provider_id}": {
+   "operationId": "remove_provider_api_v1_oidc_admin_providers__provider_id__delete",
+   "summary": "Remove a provider with its links"
+  },
+  "DELETE /api/v1/oidc/me/address": {
+   "operationId": "decline_provider_address_api_v1_oidc_me_address_delete",
+   "summary": "Do not offer the provider's address any more"
+  },
+  "DELETE /api/v1/oidc/{slug}/link": {
+   "operationId": "unlink_api_v1_oidc__slug__link_delete",
+   "summary": "Unlink the own account from a provider"
+  },
+  "DELETE /api/v1/pdf-passwords/{entry_id}": {
+   "operationId": "delete_kept_api_v1_pdf_passwords__entry_id__delete",
+   "summary": "Delete a kept PDF password (for good)"
+  },
+  "DELETE /api/v1/push/devices/{device_id}": {
+   "operationId": "remove_api_v1_push_devices__device_id__delete",
+   "summary": "Remove an own device"
+  },
+  "DELETE /api/v1/rules/{rule_id}": {
+   "operationId": "delete_rule_api_v1_rules__rule_id__delete",
+   "summary": "Delete a rule of a vault"
+  },
+  "DELETE /api/v1/saved-searches/{saved_id}": {
+   "operationId": "delete_saved_api_v1_saved_searches__saved_id__delete",
+   "summary": "Delete a saved search (the documents stay as they are)"
+  },
+  "DELETE /api/v1/senders/{sender_id}": {
+   "operationId": "delete_sender_api_v1_senders__sender_id__delete",
+   "summary": "Delete a sender from its vault; its documents are left without one (managers, if any use it)"
+  },
+  "DELETE /api/v1/settings/paperless": {
+   "operationId": "forget_api_v1_settings_paperless_delete",
+   "summary": "Remove the connection (what was taken stays)"
+  },
+  "DELETE /api/v1/settings/rules/{rule_id}": {
+   "operationId": "delete_server_rule_api_v1_settings_rules__rule_id__delete",
+   "summary": "Delete a rule of the server"
+  },
+  "DELETE /api/v1/tags/{tag_id}": {
+   "operationId": "delete_tag_api_v1_tags__tag_id__delete",
+   "summary": "Delete a tag from its vault, and take it off the documents there (edit in the vault)"
+  },
+  "DELETE /api/v1/upload-requests/{request_id}": {
+   "operationId": "revoke_api_v1_upload_requests__request_id__delete",
+   "summary": "Revoke an own upload request: it takes nothing from now on"
+  },
+  "DELETE /api/v1/uploads/{upload_id}": {
+   "operationId": "cancel_api_v1_uploads__upload_id__delete",
+   "summary": "Cancel an upload and drop what arrived"
+  },
+  "DELETE /api/v1/vaults/{vault_id}": {
+   "operationId": "delete_api_v1_vaults__vault_id__delete",
+   "summary": "Delete a shared vault (managers); documents in it go to `move_to`"
+  },
+  "DELETE /api/v1/vaults/{vault_id}/members/{user_id}": {
+   "operationId": "remove_member_api_v1_vaults__vault_id__members__user_id__delete",
+   "summary": "Take a person out of the vault (managers)"
+  },
+  "GET /api/v1/about": {
+   "operationId": "about_api_v1_about_get",
+   "summary": "About nexpaper"
+  },
+  "GET /api/v1/about/updates": {
+   "operationId": "update_state_api_v1_about_updates_get",
+   "summary": "Whether a newer nexpaper is out (asked once a day)"
+  },
+  "GET /api/v1/accounts": {
+   "operationId": "list_accounts_api_v1_accounts_get",
+   "summary": "All accounts (never what is written in them)"
+  },
+  "GET /api/v1/accounts/{account_id}/leaving": {
+   "operationId": "account_leaving_api_v1_accounts__account_id__leaving_get",
+   "summary": "What deleting an account would take along: the number of documents in its own vault"
+  },
+  "GET /api/v1/accounts/{account_id}/totp/reset": {
+   "operationId": "operator_reset_overview_api_v1_accounts__account_id__totp_reset_get",
+   "summary": "Operator: what a reset of the second factor takes away"
+  },
+  "GET /api/v1/admin/api-keys": {
+   "operationId": "every_key_api_v1_admin_api_keys_get",
+   "summary": "Every API key (operator)"
+  },
+  "GET /api/v1/ai": {
+   "operationId": "state_api_v1_ai_get",
+   "summary": "Whether this person can use the AI, by which kind of service, and where to"
+  },
+  "GET /api/v1/api-keys": {
+   "operationId": "own_keys_api_v1_api_keys_get",
+   "summary": "The own API keys"
+  },
+  "GET /api/v1/auth/access": {
+   "operationId": "remaining_access_api_v1_auth_access_get",
+   "summary": "What still has access after a password set through a link"
+  },
+  "GET /api/v1/auth/me": {
+   "operationId": "me_api_v1_auth_me_get",
+   "summary": "The signed-in account, and what this server offers it"
+  },
+  "GET /api/v1/auth/methods": {
+   "operationId": "methods_api_v1_auth_methods_get",
+   "summary": "How one can sign in here (no sign-in needed)"
+  },
+  "GET /api/v1/auth/passkeys": {
+   "operationId": "listing_api_v1_auth_passkeys_get",
+   "summary": "The own passkeys"
+  },
+  "GET /api/v1/auth/sessions": {
+   "operationId": "sessions_api_v1_auth_sessions_get",
+   "summary": "Where the own account is signed in: browsers and paired devices"
+  },
+  "GET /api/v1/auth/totp/setup": {
+   "operationId": "waiting_setup_api_v1_auth_totp_setup_get",
+   "summary": "The authenticator that waits for its first code, once more"
+  },
+  "GET /api/v1/avatars/{account_id}": {
+   "operationId": "get_avatar_api_v1_avatars__account_id__get",
+   "summary": "A profile picture, for those who may see it"
+  },
+  "GET /api/v1/backups": {
+   "operationId": "listing_api_v1_backups_get",
+   "summary": "Listing"
+  },
+  "GET /api/v1/changes": {
+   "operationId": "feed_api_v1_changes_get",
+   "summary": "Changes to the caller's documents after a number"
+  },
+  "GET /api/v1/counts": {
+   "operationId": "counts_api_v1_counts_get",
+   "summary": "The numbers beside Inbox, Deadlines and Trash in the menu"
+  },
+  "GET /api/v1/dashboard": {
+   "operationId": "dashboard_card_api_v1_dashboard_get",
+   "summary": "The numbers for a dashboard card: the inbox, the archive and what falls due soon"
+  },
+  "GET /api/v1/deadlines": {
+   "operationId": "listing_api_v1_deadlines_get",
+   "summary": "What is to be paid, cancelled or claimed: overdue, the next 14 days, later, done"
+  },
+  "GET /api/v1/devices": {
+   "operationId": "listing_api_v1_devices_get",
+   "summary": "The devices paired with the own account"
+  },
+  "GET /api/v1/devices/pairing": {
+   "operationId": "state_api_v1_devices_pairing_get",
+   "summary": "What became of the newest pairing code (for the page that shows it)"
+  },
+  "GET /api/v1/documents": {
+   "operationId": "listing_api_v1_documents_get",
+   "summary": "Documents the caller may see, by id"
+  },
+  "GET /api/v1/documents/{document_id}": {
+   "operationId": "read_api_v1_documents__document_id__get",
+   "summary": "One document"
+  },
+  "GET /api/v1/documents/{document_id}/einvoice": {
+   "operationId": "einvoice_api_v1_documents__document_id__einvoice_get",
+   "summary": "The data of the e-invoice a document carries (404 when it carries none)"
+  },
+  "GET /api/v1/documents/{document_id}/events": {
+   "operationId": "events_api_v1_documents__document_id__events_get",
+   "summary": "Who did what to a document and when (for everybody who sees it)"
+  },
+  "GET /api/v1/documents/{document_id}/links": {
+   "operationId": "links_api_v1_documents__document_id__links_get",
+   "summary": "The links of a document"
+  },
+  "GET /api/v1/documents/{document_id}/notes": {
+   "operationId": "notes_api_v1_documents__document_id__notes_get",
+   "summary": "The notes on a document (everybody who sees it sees them)"
+  },
+  "GET /api/v1/documents/{document_id}/origin": {
+   "operationId": "origin_api_v1_documents__document_id__origin_get",
+   "summary": "Where a document came from"
+  },
+  "GET /api/v1/documents/{document_id}/related": {
+   "operationId": "listing_api_v1_documents__document_id__related_get",
+   "summary": "The documents that go with a document (only those the caller may see)"
+  },
+  "GET /api/v1/documents/{document_id}/related/suggestions": {
+   "operationId": "suggestions_api_v1_documents__document_id__related_suggestions_get",
+   "summary": "Documents proposed to go with a document (only for a caller who may change both)"
+  },
+  "GET /api/v1/documents/{document_id}/separators": {
+   "operationId": "separators_api_v1_documents__document_id__separators_get",
+   "summary": "The blank separator pages of the current version, and the split they propose"
+  },
+  "GET /api/v1/documents/{document_id}/shares": {
+   "operationId": "shares_api_v1_documents__document_id__shares_get",
+   "summary": "Who a document was shared with (who may share it: managers of the vault, its owner)"
+  },
+  "GET /api/v1/documents/{document_id}/shown-through": {
+   "operationId": "shown_through_api_v1_documents__document_id__shown_through_get",
+   "summary": "The links of other documents that show this one too (who may share it: managers, its owner)"
+  },
+  "GET /api/v1/documents/{document_id}/transfer": {
+   "operationId": "info_api_v1_documents__document_id__transfer_get",
+   "summary": "What a bank transfer for a document can take, each with where it comes from"
+  },
+  "GET /api/v1/documents/{document_id}/versions": {
+   "operationId": "versions_api_v1_documents__document_id__versions_get",
+   "summary": "The versions of a document, newest first"
+  },
+  "GET /api/v1/documents/{document_id}/versions/{number}/archive": {
+   "operationId": "archive_api_v1_documents__document_id__versions__number__archive_get",
+   "summary": "The PDF made from a picture, or the searchable copy (404 while there is none)"
+  },
+  "GET /api/v1/documents/{document_id}/versions/{number}/dates": {
+   "operationId": "version_dates_api_v1_documents__document_id__versions__number__dates_get",
+   "summary": "The dates written in the text of a version, to choose the date of the document from"
+  },
+  "GET /api/v1/documents/{document_id}/versions/{number}/einvoice": {
+   "operationId": "einvoice_xml_api_v1_documents__document_id__versions__number__einvoice_get",
+   "summary": "The e-invoice of a version as XML: taken out of the PDF, or the XML that came"
+  },
+  "GET /api/v1/documents/{document_id}/versions/{number}/file": {
+   "operationId": "original_api_v1_documents__document_id__versions__number__file_get",
+   "summary": "The file as it came (the original, never changed)"
+  },
+  "GET /api/v1/documents/{document_id}/versions/{number}/pages/{page}": {
+   "operationId": "page_api_v1_documents__document_id__versions__number__pages__page__get",
+   "summary": "One page as a WebP picture"
+  },
+  "GET /api/v1/documents/{document_id}/versions/{number}/preview": {
+   "operationId": "preview_api_v1_documents__document_id__versions__number__preview_get",
+   "summary": "The first page, small, as a WebP picture"
+  },
+  "GET /api/v1/documents/{document_id}/versions/{number}/text": {
+   "operationId": "version_text_api_v1_documents__document_id__versions__number__text_get",
+   "summary": "The text of every page of a version (what the file carries and what was recognised)"
+  },
+  "GET /api/v1/email/confirm/{token}": {
+   "operationId": "confirm_state_api_v1_email_confirm__token__get",
+   "summary": "Whether a link that confirms a mail address holds (no sign-in needed)"
+  },
+  "GET /api/v1/exports": {
+   "operationId": "listing_api_v1_exports_get",
+   "summary": "The caller's exports, newest first"
+  },
+  "GET /api/v1/exports/preview": {
+   "operationId": "preview_api_v1_exports_preview_get",
+   "summary": "What an export would hold: how many documents, their sum, about how large, the first paths"
+  },
+  "GET /api/v1/exports/{export_id}": {
+   "operationId": "one_api_v1_exports__export_id__get",
+   "summary": "One export of the caller"
+  },
+  "GET /api/v1/exports/{export_id}/file": {
+   "operationId": "download_api_v1_exports__export_id__file_get",
+   "summary": "The ZIP of an export of the caller"
+  },
+  "GET /api/v1/exports/{export_id}/links": {
+   "operationId": "links_api_v1_exports__export_id__links_get",
+   "summary": "The links of an export"
+  },
+  "GET /api/v1/health": {
+   "operationId": "health_api_v1_health_get",
+   "summary": "Is nexpaper running?"
+  },
+  "GET /api/v1/inbox": {
+   "operationId": "listing_api_v1_inbox_get",
+   "summary": "What waits in the inbox, in the vaults where the caller may change things"
+  },
+  "GET /api/v1/invite/{token}": {
+   "operationId": "invite_state_api_v1_invite__token__get",
+   "summary": "Whether an invitation holds, and what the form starts with (no sign-in needed)"
+  },
+  "GET /api/v1/invites": {
+   "operationId": "list_invites_api_v1_invites_get",
+   "summary": "Open invitations, also those that ran out (operator)"
+  },
+  "GET /api/v1/keeping": {
+   "operationId": "may_go_api_v1_keeping_get",
+   "summary": "Filed documents whose keeping time is over, in the vaults where the caller may change things"
+  },
+  "GET /api/v1/kinds": {
+   "operationId": "kinds_api_v1_kinds_get",
+   "summary": "The kinds the caller can choose from: the server's and those of their vaults"
+  },
+  "GET /api/v1/l/{token}": {
+   "operationId": "open_link_api_v1_l__token__get",
+   "summary": "What a link shows (no sign-in; the token is the key)"
+  },
+  "GET /api/v1/l/{token}/also/{item}/file": {
+   "operationId": "also_file_api_v1_l__token__also__item__file_get",
+   "summary": "The file of a further document behind a link that allows downloading"
+  },
+  "GET /api/v1/l/{token}/also/{item}/pages/{page}": {
+   "operationId": "also_page_api_v1_l__token__also__item__pages__page__get",
+   "summary": "One page of a further document behind a link as a WebP picture"
+  },
+  "GET /api/v1/l/{token}/also/{item}/preview": {
+   "operationId": "also_preview_api_v1_l__token__also__item__preview_get",
+   "summary": "The first page of a further document behind a link, small, as a WebP picture"
+  },
+  "GET /api/v1/l/{token}/also/{item}/text": {
+   "operationId": "link_also_text_api_v1_l__token__also__item__text_get",
+   "summary": "The text of a further document behind a link that allows downloading"
+  },
+  "GET /api/v1/l/{token}/file": {
+   "operationId": "file_api_v1_l__token__file_get",
+   "summary": "The file of the document behind a link that allows downloading"
+  },
+  "GET /api/v1/l/{token}/pages/{page}": {
+   "operationId": "page_api_v1_l__token__pages__page__get",
+   "summary": "One page of the document behind a link as a WebP picture"
+  },
+  "GET /api/v1/l/{token}/preview": {
+   "operationId": "preview_api_v1_l__token__preview_get",
+   "summary": "The first page of the document behind a link, small, as a WebP picture"
+  },
+  "GET /api/v1/l/{token}/text": {
+   "operationId": "link_text_api_v1_l__token__text_get",
+   "summary": "The text of the document behind a link that allows downloading"
+  },
+  "GET /api/v1/links": {
+   "operationId": "my_links_api_v1_links_get",
+   "summary": "The open links the caller made"
+  },
+  "GET /api/v1/locales": {
+   "operationId": "list_locales_api_v1_locales_get",
+   "summary": "Languages the operator added"
+  },
+  "GET /api/v1/locales/{code}": {
+   "operationId": "read_locale_api_v1_locales__code__get",
+   "summary": "The texts of one added language"
+  },
+  "GET /api/v1/logs": {
+   "operationId": "read_logs_api_v1_logs_get",
+   "summary": "The newest lines"
+  },
+  "GET /api/v1/logs/level": {
+   "operationId": "read_level_api_v1_logs_level_get",
+   "summary": "Which level applies"
+  },
+  "GET /api/v1/mail-senders/confirm/{token}": {
+   "operationId": "sender_state_api_v1_mail_senders_confirm__token__get",
+   "summary": "Whether a link that confirms a sender address holds (no sign-in)"
+  },
+  "GET /api/v1/me": {
+   "operationId": "me_api_v1_me_get",
+   "summary": "Who the API key speaks for, and what it may"
+  },
+  "GET /api/v1/me/intake": {
+   "operationId": "my_intake_api_v1_me_intake_get",
+   "summary": "Where the own documents can be sent: the mailbox, the addresses forwarded from, the own subfolder"
+  },
+  "GET /api/v1/me/reminders": {
+   "operationId": "get_reminders_api_v1_me_reminders_get",
+   "summary": "How the own account is reminded of deadlines"
+  },
+  "GET /api/v1/oauth/authorize": {
+   "operationId": "asked_api_v1_oauth_authorize_get",
+   "summary": "Check what an app asks for, before the person allows it (the page /oauth/authorize)"
+  },
+  "GET /api/v1/oidc/admin/links": {
+   "operationId": "admin_links_api_v1_oidc_admin_links_get",
+   "summary": "Which account is linked to which provider (the marks in the account list)"
+  },
+  "GET /api/v1/oidc/admin/providers": {
+   "operationId": "admin_providers_api_v1_oidc_admin_providers_get",
+   "summary": "The provider list for the operator (never a secret)"
+  },
+  "GET /api/v1/oidc/admin/providers/{provider_id}/impact": {
+   "operationId": "provider_impact_api_v1_oidc_admin_providers__provider_id__impact_get",
+   "summary": "Who loses a link when the issuer changes or it goes"
+  },
+  "GET /api/v1/oidc/authentik/address": {
+   "operationId": "authentik_address_api_v1_oidc_authentik_address_get",
+   "summary": "What the authentik card shows about the public address"
+  },
+  "GET /api/v1/oidc/authentik/blueprint": {
+   "operationId": "authentik_blueprint_api_v1_oidc_authentik_blueprint_get",
+   "summary": "Download a blueprint that creates the same objects in authentik"
+  },
+  "GET /api/v1/oidc/callback": {
+   "operationId": "legacy_callback_api_v1_oidc_callback_get",
+   "summary": "The return from the provider of the entry oidc (the address of 1.0.1)"
+  },
+  "GET /api/v1/oidc/me": {
+   "operationId": "my_providers_api_v1_oidc_me_get",
+   "summary": "The active providers and whether the own account is linked to each"
+  },
+  "GET /api/v1/oidc/providers": {
+   "operationId": "public_providers_api_v1_oidc_providers_get",
+   "summary": "The active sign-in providers: slug and label (no sign-in needed)"
+  },
+  "GET /api/v1/oidc/{slug}/callback": {
+   "operationId": "callback_api_v1_oidc__slug__callback_get",
+   "summary": "The return from the provider (no sign-in needed)"
+  },
+  "GET /api/v1/oidc/{slug}/start": {
+   "operationId": "start_api_v1_oidc__slug__start_get",
+   "summary": "Send the browser to the provider (no sign-in needed)"
+  },
+  "GET /api/v1/order/kinds": {
+   "operationId": "order_kinds_api_v1_order_kinds_get",
+   "summary": "The kinds of the server and of the caller's vaults with the number of documents that have each"
+  },
+  "GET /api/v1/order/senders": {
+   "operationId": "order_senders_api_v1_order_senders_get",
+   "summary": "The senders of the caller's vaults with the number of documents that use each, and their notes"
+  },
+  "GET /api/v1/order/tags": {
+   "operationId": "order_tags_api_v1_order_tags_get",
+   "summary": "The tags of the caller's vaults with the number of documents that carry each"
+  },
+  "GET /api/v1/pdf-passwords": {
+   "operationId": "list_kept_api_v1_pdf_passwords_get",
+   "summary": "The caller's kept PDF passwords: names and dates, never a password"
+  },
+  "GET /api/v1/people": {
+   "operationId": "people_api_v1_people_get",
+   "summary": "The people of this server, to share with"
+  },
+  "GET /api/v1/pins": {
+   "operationId": "listing_api_v1_pins_get",
+   "summary": "The caller's pinned documents (only what they may see now)"
+  },
+  "GET /api/v1/push": {
+   "operationId": "state_api_v1_push_get",
+   "summary": "The key a browser signs up with, and the own devices"
+  },
+  "GET /api/v1/quick": {
+   "operationId": "quick_api_v1_quick_get",
+   "summary": "What the quick upload of a phone shows"
+  },
+  "GET /api/v1/reset/{token}": {
+   "operationId": "reset_state_api_v1_reset__token__get",
+   "summary": "Whether a link to set a new password holds (no sign-in needed)"
+  },
+  "GET /api/v1/rules": {
+   "operationId": "list_rules_api_v1_rules_get",
+   "summary": "The rules of the vaults the caller manages, in order"
+  },
+  "GET /api/v1/saved-searches": {
+   "operationId": "list_saved_api_v1_saved_searches_get",
+   "summary": "The caller's saved searches, in their order, each with its number of hits"
+  },
+  "GET /api/v1/search": {
+   "operationId": "find_api_v1_search_get",
+   "summary": "Find documents the caller may see"
+  },
+  "GET /api/v1/search/overview": {
+   "operationId": "overview_api_v1_search_overview_get",
+   "summary": "How the documents the caller may see spread over senders, kinds, years and tags"
+  },
+  "GET /api/v1/search/sum": {
+   "operationId": "sum_of_api_v1_search_sum_get",
+   "summary": "The sums of the amounts of everything a search finds (not one page), per currency"
+  },
+  "GET /api/v1/senders": {
+   "operationId": "senders_api_v1_senders_get",
+   "summary": "The senders of the caller's vaults and shared documents, gathered by name"
+  },
+  "GET /api/v1/settings": {
+   "operationId": "read_api_v1_settings_get",
+   "summary": "Read"
+  },
+  "GET /api/v1/settings/ai": {
+   "operationId": "settings_api_v1_settings_ai_get",
+   "summary": "The AI service of the server, without its key"
+  },
+  "GET /api/v1/settings/intake": {
+   "operationId": "read_intake_api_v1_settings_intake_get",
+   "summary": "The intake folder and the mailbox for documents"
+  },
+  "GET /api/v1/settings/ocr": {
+   "operationId": "read_api_v1_settings_ocr_get",
+   "summary": "The text recognition: languages, straightening, the queue"
+  },
+  "GET /api/v1/settings/paperless": {
+   "operationId": "read_api_v1_settings_paperless_get",
+   "summary": "The Paperless-ngx server documents are taken from, and where the import stands"
+  },
+  "GET /api/v1/settings/paperless/skipped": {
+   "operationId": "skipped_api_v1_settings_paperless_skipped_get",
+   "summary": "The documents of the import that were skipped: their number in Paperless and the reason"
+  },
+  "GET /api/v1/settings/push": {
+   "operationId": "operator_view_api_v1_settings_push_get",
+   "summary": "Web Push on this server: ready, how many devices, the key, the contact"
+  },
+  "GET /api/v1/settings/queue": {
+   "operationId": "queue_api_v1_settings_queue_get",
+   "summary": "How many documents are being read, and how many wait"
+  },
+  "GET /api/v1/settings/readiness": {
+   "operationId": "ready_api_v1_settings_readiness_get",
+   "summary": "Ready for the internet? What nexpaper checks about itself"
+  },
+  "GET /api/v1/settings/rules": {
+   "operationId": "server_rules_api_v1_settings_rules_get",
+   "summary": "The rules for the whole server, in order"
+  },
+  "GET /api/v1/settings/shortcut": {
+   "operationId": "shortcut_link_api_v1_settings_shortcut_get",
+   "summary": "The iCloud link of the iPhone shortcut (operator)"
+  },
+  "GET /api/v1/setup": {
+   "operationId": "setup_state_api_v1_setup_get",
+   "summary": "Does nexpaper still need its first account, and is this browser signed in?"
+  },
+  "GET /api/v1/sharing": {
+   "operationId": "rules_api_v1_sharing_get",
+   "summary": "Whether links to the outside are on, and how long they last"
+  },
+  "GET /api/v1/sharing/overview": {
+   "operationId": "overview_api_v1_sharing_overview_get",
+   "summary": "For the operator: how many links are open and whose (never what they point at)"
+  },
+  "GET /api/v1/shortcut": {
+   "operationId": "shortcut_api_v1_shortcut_get",
+   "summary": "The iPhone shortcut: its link and where it sends"
+  },
+  "GET /api/v1/storage": {
+   "operationId": "overview_api_v1_storage_get",
+   "summary": "What the data folder holds, where it lies, and how the check of the files stands"
+  },
+  "GET /api/v1/tags": {
+   "operationId": "tags_api_v1_tags_get",
+   "summary": "The tags of the caller's vaults and shared documents, gathered by name"
+  },
+  "GET /api/v1/u/{token}": {
+   "operationId": "show_api_v1_u__token__get",
+   "summary": "What an upload request shows (no sign-in; the token is the key)"
+  },
+  "GET /api/v1/upload-requests": {
+   "operationId": "mine_api_v1_upload_requests_get",
+   "summary": "The caller's own upload requests"
+  },
+  "GET /api/v1/upload-requests/overview": {
+   "operationId": "overview_api_v1_upload_requests_overview_get",
+   "summary": "For the operator: how many upload requests take files, and of how many people"
+  },
+  "GET /api/v1/upload-requests/rules": {
+   "operationId": "rules_api_v1_upload_requests_rules_get",
+   "summary": "Whether upload requests are on, and what one may be"
+  },
+  "GET /api/v1/uploads": {
+   "operationId": "open_uploads_api_v1_uploads_get",
+   "summary": "The own uploads that wait for more pieces, newest first"
+  },
+  "GET /api/v1/uploads/{upload_id}": {
+   "operationId": "state_api_v1_uploads__upload_id__get",
+   "summary": "How far an upload has come (to go on after a break)"
+  },
+  "GET /api/v1/vaults": {
+   "operationId": "listing_api_v1_vaults_get",
+   "summary": "The vaults the caller is a member of"
+  },
+  "GET /api/v1/vaults/{vault_id}": {
+   "operationId": "read_api_v1_vaults__vault_id__get",
+   "summary": "One vault, with its members"
+  },
+  "GET /api/v1/x/{token}": {
+   "operationId": "open_link_api_v1_x__token__get",
+   "summary": "What a link to an export shows (no sign-in)"
+  },
+  "GET /api/v1/x/{token}/file": {
+   "operationId": "public_file_api_v1_x__token__file_get",
+   "summary": "The ZIP behind a link to an export (no sign-in)"
+  },
+  "PATCH /api/v1/documents/{document_id}": {
+   "operationId": "patch_api_v1_documents__document_id__patch",
+   "summary": "Change fields of a document"
+  },
+  "PATCH /api/v1/kinds/{kind_id}": {
+   "operationId": "update_kind_api_v1_kinds__kind_id__patch",
+   "summary": "Rename or recolor a kind (edit in its vault; the operator for the server's)"
+  },
+  "PATCH /api/v1/pdf-passwords/{entry_id}": {
+   "operationId": "rename_kept_api_v1_pdf_passwords__entry_id__patch",
+   "summary": "Rename a kept PDF password"
+  },
+  "PATCH /api/v1/rules/{rule_id}": {
+   "operationId": "update_rule_api_v1_rules__rule_id__patch",
+   "summary": "Change, switch or move a rule of a vault"
+  },
+  "PATCH /api/v1/saved-searches/{saved_id}": {
+   "operationId": "rename_saved_api_v1_saved_searches__saved_id__patch",
+   "summary": "Rename a saved search"
+  },
+  "PATCH /api/v1/senders/{sender_id}": {
+   "operationId": "rename_sender_api_v1_senders__sender_id__patch",
+   "summary": "Rename a sender in its vault (onto a name the vault has merges them: manage, else 409); edit"
+  },
+  "PATCH /api/v1/settings/rules/{rule_id}": {
+   "operationId": "update_server_rule_api_v1_settings_rules__rule_id__patch",
+   "summary": "Change, switch or move a rule of the server"
+  },
+  "PATCH /api/v1/tags/{tag_id}": {
+   "operationId": "rename_tag_api_v1_tags__tag_id__patch",
+   "summary": "Rename a tag in its vault (onto a name the vault has merges them: manage, else 409); edit"
+  },
+  "PATCH /api/v1/vaults/{vault_id}": {
+   "operationId": "patch_api_v1_vaults__vault_id__patch",
+   "summary": "Rename a shared vault or change its icon (managers)"
+  },
+  "POST /api/v1/about/updates/check": {
+   "operationId": "check_now_api_v1_about_updates_check_post",
+   "summary": "Ask now, also with the daily check off"
+  },
+  "POST /api/v1/accounts/{account_id}/block": {
+   "operationId": "block_account_api_v1_accounts__account_id__block_post",
+   "summary": "Block an account (its sessions end)"
+  },
+  "POST /api/v1/accounts/{account_id}/reset-link": {
+   "operationId": "send_link_api_v1_accounts__account_id__reset_link_post",
+   "summary": "Make an account a link to set a new password (operator)"
+  },
+  "POST /api/v1/accounts/{account_id}/sign-out": {
+   "operationId": "sign_out_account_api_v1_accounts__account_id__sign_out_post",
+   "summary": "End every session of an account"
+  },
+  "POST /api/v1/accounts/{account_id}/totp/reset": {
+   "operationId": "operator_reset_api_v1_accounts__account_id__totp_reset_post",
+   "summary": "Operator: take the second factor of a locked-out account"
+  },
+  "POST /api/v1/accounts/{account_id}/unblock": {
+   "operationId": "unblock_account_api_v1_accounts__account_id__unblock_post",
+   "summary": "Let a blocked account in again"
+  },
+  "POST /api/v1/admin/api-keys/{key_id}/block": {
+   "operationId": "block_key_api_v1_admin_api_keys__key_id__block_post",
+   "summary": "Block a key for good (operator); its account sees it blocked"
+  },
+  "POST /api/v1/api-keys": {
+   "operationId": "make_key_api_v1_api_keys_post",
+   "summary": "Make an API key; shown once"
+  },
+  "POST /api/v1/auth/access/disconnect": {
+   "operationId": "disconnect_all_api_v1_auth_access_disconnect_post",
+   "summary": "Disconnect all: every paired device, API key and passkey"
+  },
+  "POST /api/v1/auth/access/seen": {
+   "operationId": "remaining_access_seen_api_v1_auth_access_seen_post",
+   "summary": "The list of what still has access is put away"
+  },
+  "POST /api/v1/auth/forgot": {
+   "operationId": "forgot_api_v1_auth_forgot_post",
+   "summary": "Ask for a link to set a new password (no sign-in needed)"
+  },
+  "POST /api/v1/auth/login": {
+   "operationId": "login_api_v1_auth_login_post",
+   "summary": "Sign in with username or email and password"
+  },
+  "POST /api/v1/auth/login/totp": {
+   "operationId": "login_code_api_v1_auth_login_totp_post",
+   "summary": "Second step of the sign-in: the code from the app or a recovery code"
+  },
+  "POST /api/v1/auth/login/totp/cancel": {
+   "operationId": "cancel_code_api_v1_auth_login_totp_cancel_post",
+   "summary": "Give up the second step and start over"
+  },
+  "POST /api/v1/auth/logout": {
+   "operationId": "logout_api_v1_auth_logout_post",
+   "summary": "Sign out in this browser"
+  },
+  "POST /api/v1/auth/logout-all": {
+   "operationId": "logout_everywhere_api_v1_auth_logout_all_post",
+   "summary": "Sign out every other browser and paired device"
+  },
+  "POST /api/v1/auth/passkey": {
+   "operationId": "sign_in_finish_api_v1_auth_passkey_post",
+   "summary": "Sign in with a passkey: the browser's signed answer"
+  },
+  "POST /api/v1/auth/passkey/begin": {
+   "operationId": "sign_in_begin_api_v1_auth_passkey_begin_post",
+   "summary": "Sign in with a passkey: the browser gets a challenge (no sign-in needed)"
+  },
+  "POST /api/v1/auth/passkeys": {
+   "operationId": "add_api_v1_auth_passkeys_post",
+   "summary": "Finish adding a passkey: the browser's answer, the password"
+  },
+  "POST /api/v1/auth/passkeys/begin": {
+   "operationId": "begin_api_v1_auth_passkeys_begin_post",
+   "summary": "Start adding a passkey; the browser gets the options"
+  },
+  "POST /api/v1/auth/passkeys/{uid}/remove": {
+   "operationId": "remove_api_v1_auth_passkeys__uid__remove_post",
+   "summary": "Remove an own passkey; needs the password"
+  },
+  "POST /api/v1/auth/setup/codes": {
+   "operationId": "setup_codes_api_v1_auth_setup_codes_post",
+   "summary": "New recovery codes while they wait to be confirmed (a reload lost them)"
+  },
+  "POST /api/v1/auth/setup/done": {
+   "operationId": "setup_done_api_v1_auth_setup_done_post",
+   "summary": "The recovery codes are kept: the session that set up the second factor becomes a full one"
+  },
+  "POST /api/v1/auth/totp/begin": {
+   "operationId": "begin_api_v1_auth_totp_begin_post",
+   "summary": "Start enrolling an authenticator app; the seed is shown once"
+  },
+  "POST /api/v1/auth/totp/confirm": {
+   "operationId": "confirm_api_v1_auth_totp_confirm_post",
+   "summary": "Finish enrolling: a code from the app (and the password, later on)"
+  },
+  "POST /api/v1/auth/totp/disable": {
+   "operationId": "disable_api_v1_auth_totp_disable_post",
+   "summary": "Turn the code from the app off; needs the password"
+  },
+  "POST /api/v1/auth/totp/recovery": {
+   "operationId": "new_recovery_codes_api_v1_auth_totp_recovery_post",
+   "summary": "New recovery codes; the old ones stop working"
+  },
+  "POST /api/v1/backups": {
+   "operationId": "create_api_v1_backups_post",
+   "summary": "Create"
+  },
+  "POST /api/v1/backups/upload": {
+   "operationId": "upload_api_v1_backups_upload_post",
+   "summary": "Bring in an archive from elsewhere (the body is the ZIP); needs the password again"
+  },
+  "POST /api/v1/backups/{name}/check": {
+   "operationId": "check_api_v1_backups__name__check_post",
+   "summary": "Check"
+  },
+  "POST /api/v1/backups/{name}/download": {
+   "operationId": "download_api_v1_backups__name__download_post",
+   "summary": "The archive itself, to keep a copy elsewhere; needs the password again"
+  },
+  "POST /api/v1/backups/{name}/restore": {
+   "operationId": "restore_api_v1_backups__name__restore_post",
+   "summary": "Restore"
+  },
+  "POST /api/v1/devices": {
+   "operationId": "pair_api_v1_devices_post",
+   "summary": "Pair a device; its token is shown once"
+  },
+  "POST /api/v1/devices/pair": {
+   "operationId": "pair_api_v1_devices_pair_post",
+   "summary": "Trade a pairing code for a device token (no sign-in; the code is the key)"
+  },
+  "POST /api/v1/devices/pairing": {
+   "operationId": "start_api_v1_devices_pairing_post",
+   "summary": "Make a code to pair a device (QR code; 5 minutes, once); one still open ends"
+  },
+  "POST /api/v1/devices/pairing/cancel": {
+   "operationId": "cancel_api_v1_devices_pairing_cancel_post",
+   "summary": "End the open pairing code"
+  },
+  "POST /api/v1/devices/sibling": {
+   "operationId": "bring_in_api_v1_devices_sibling_post",
+   "summary": "A device brings in another device of its account; the new token is shown once"
+  },
+  "POST /api/v1/documents": {
+   "operationId": "upload_api_v1_documents_post",
+   "summary": "Upload one or more files (multipart/form-data, field 'file'); each becomes a document"
+  },
+  "POST /api/v1/documents/bulk": {
+   "operationId": "change_many_api_v1_documents_bulk_post",
+   "summary": "Change many documents at once: a tag added or taken away, a kind, another vault, the trash, or set them to go with each other"
+  },
+  "POST /api/v1/documents/trash": {
+   "operationId": "trash_many_api_v1_documents_trash_post",
+   "summary": "Put many documents in the trash for 30 days, each checked on its own"
+  },
+  "POST /api/v1/documents/{document_id}/dates/{kind}/done": {
+   "operationId": "mark_done_api_v1_documents__document_id__dates__kind__done_post",
+   "summary": "Mark a deadline done (paid, cancelled, claimed), for everybody"
+  },
+  "POST /api/v1/documents/{document_id}/links": {
+   "operationId": "create_link_api_v1_documents__document_id__links_post",
+   "summary": "Make a link for somebody without an account"
+  },
+  "POST /api/v1/documents/{document_id}/links/{link_id}/address": {
+   "operationId": "link_address_api_v1_documents__document_id__links__link_id__address_post",
+   "summary": "The address of a link again, to copy (the person who made it, managers of the vault)"
+  },
+  "POST /api/v1/documents/{document_id}/merge": {
+   "operationId": "merge_api_v1_documents__document_id__merge_post",
+   "summary": "Join other documents into this one (their pages after its own); they go to the trash"
+  },
+  "POST /api/v1/documents/{document_id}/move": {
+   "operationId": "move_api_v1_documents__document_id__move_post",
+   "summary": "Move a document to another vault (edit in both)"
+  },
+  "POST /api/v1/documents/{document_id}/notes": {
+   "operationId": "add_note_api_v1_documents__document_id__notes_post",
+   "summary": "Write a note on a document (anybody who sees it)"
+  },
+  "POST /api/v1/documents/{document_id}/pages": {
+   "operationId": "edit_pages_api_v1_documents__document_id__pages_post",
+   "summary": "Turn, delete and order the pages: a new version (the file as it came stays)"
+  },
+  "POST /api/v1/documents/{document_id}/purge": {
+   "operationId": "purge_api_v1_documents__document_id__purge_post",
+   "summary": "Delete a document in the trash for good (managers of the vault, or its owner with edit; browser only)"
+  },
+  "POST /api/v1/documents/{document_id}/related/{other_id}/dismiss": {
+   "operationId": "dismiss_api_v1_documents__document_id__related__other_id__dismiss_post",
+   "summary": "Turn a proposal down: the pair is not proposed again (edit on both)"
+  },
+  "POST /api/v1/documents/{document_id}/restore": {
+   "operationId": "restore_api_v1_documents__document_id__restore_post",
+   "summary": "Take a document out of the trash"
+  },
+  "POST /api/v1/documents/{document_id}/retry": {
+   "operationId": "retry_api_v1_documents__document_id__retry_post",
+   "summary": "Try again to read a document that could not be read"
+  },
+  "POST /api/v1/documents/{document_id}/rule": {
+   "operationId": "remember_api_v1_documents__document_id__rule_post",
+   "summary": "Remember as a rule: documents from this sender get what was chosen for this one"
+  },
+  "POST /api/v1/documents/{document_id}/split": {
+   "operationId": "split_api_v1_documents__document_id__split_post",
+   "summary": "Split a document into new ones in the inbox; it goes to the trash"
+  },
+  "POST /api/v1/documents/{document_id}/transfer/code": {
+   "operationId": "code_api_v1_documents__document_id__transfer_code_post",
+   "summary": "The EPC QR code (GiroCode) for one of the document's IBANs, an amount and a purpose, as SVG"
+  },
+  "POST /api/v1/documents/{document_id}/unlock": {
+   "operationId": "unlock_api_v1_documents__document_id__unlock_post",
+   "summary": "Open the protected PDF of a document with its password; it is read again from the PDF opened"
+  },
+  "POST /api/v1/documents/{document_id}/versions": {
+   "operationId": "upload_version_api_v1_documents__document_id__versions_post",
+   "summary": "Upload a new version of a document (multipart/form-data, field 'file'); it is read, then current"
+  },
+  "POST /api/v1/documents/{document_id}/versions/{number}/restore": {
+   "operationId": "restore_api_v1_documents__document_id__versions__number__restore_post",
+   "summary": "Make an older version the current one again (as a new version; nothing is deleted)"
+  },
+  "POST /api/v1/email/confirm/{token}": {
+   "operationId": "confirm_api_v1_email_confirm__token__post",
+   "summary": "Confirm the mail address the link was sent to (no sign-in needed)"
+  },
+  "POST /api/v1/exports": {
+   "operationId": "create_api_v1_exports_post",
+   "summary": "Ask for an export: the ZIP is packed in the background, with a notice when it is ready"
+  },
+  "POST /api/v1/exports/{export_id}/links": {
+   "operationId": "create_link_api_v1_exports__export_id__links_post",
+   "summary": "Make a link to an export for somebody without an account"
+  },
+  "POST /api/v1/exports/{export_id}/links/{link_id}/address": {
+   "operationId": "link_address_api_v1_exports__export_id__links__link_id__address_post",
+   "summary": "The address of a link to an export again, to copy"
+  },
+  "POST /api/v1/inbox/file": {
+   "operationId": "file_documents_api_v1_inbox_file_post",
+   "summary": "File many documents at once, with a vault, a kind and tags for all of them"
+  },
+  "POST /api/v1/inbox/sort-again": {
+   "operationId": "sort_again_apply_api_v1_inbox_sort_again_post",
+   "summary": "Work the proposals of documents in the inbox out again, after a rule was made or changed"
+  },
+  "POST /api/v1/inbox/sort-again/preview": {
+   "operationId": "sort_again_preview_api_v1_inbox_sort_again_preview_post",
+   "summary": "What working the proposals out again would change, without changing anything"
+  },
+  "POST /api/v1/invite/{token}": {
+   "operationId": "accept_api_v1_invite__token__post",
+   "summary": "Accept an invitation with a new account"
+  },
+  "POST /api/v1/invites": {
+   "operationId": "invite_api_v1_invites_post",
+   "summary": "Invite somebody into nexpaper; the link is shown once (operator)"
+  },
+  "POST /api/v1/kinds": {
+   "operationId": "create_kind_api_v1_kinds_post",
+   "summary": "Add a kind: for a vault (`vault_id`, edit there) or for the whole server (the operator)"
+  },
+  "POST /api/v1/kinds/{kind_id}/auto-trash/preview": {
+   "operationId": "preview_auto_trash_api_v1_kinds__kind_id__auto_trash_preview_post",
+   "summary": "Whether expired documents of a kind go to the trash by themselves, and how many would go now; changes nothing (manage in its vault; the operator for the server's)"
+  },
+  "POST /api/v1/kinds/{kind_id}/keeping/preview": {
+   "operationId": "preview_api_v1_kinds__kind_id__keeping_preview_post",
+   "summary": "What setting a keeping time for the documents of a kind already there would do; changes nothing (manage in its vault; the operator for the server's)"
+  },
+  "POST /api/v1/kinds/{kind_id}/merge": {
+   "operationId": "merge_kind_api_v1_kinds__kind_id__merge_post",
+   "summary": "Move all documents of a kind to another kind they may have, and delete it (manage in its vault; the operator for the server's)"
+  },
+  "POST /api/v1/kinds/{kind_id}/merge/preview": {
+   "operationId": "preview_merge_api_v1_kinds__kind_id__merge_preview_post",
+   "summary": "What merging a kind into another would do to the nightly task; changes nothing (manage in its vault; the operator for the server's)"
+  },
+  "POST /api/v1/mail-senders/confirm/{token}": {
+   "operationId": "sender_confirm_api_v1_mail_senders_confirm__token__post",
+   "summary": "Confirm a sender address (no sign-in needed)"
+  },
+  "POST /api/v1/me/email/prove": {
+   "operationId": "prove_api_v1_me_email_prove_post",
+   "summary": "Send a link that proves the address there is (the intake trusts it then)"
+  },
+  "POST /api/v1/me/email/resend": {
+   "operationId": "resend_api_v1_me_email_resend_post",
+   "summary": "Send the link for the address that waits once more"
+  },
+  "POST /api/v1/me/mail-senders": {
+   "operationId": "add_sender_api_v1_me_mail_senders_post",
+   "summary": "Add an address the own documents are forwarded from; it counts once its link is opened"
+  },
+  "POST /api/v1/me/reminders/test": {
+   "operationId": "test_reminder_api_v1_me_reminders_test_post",
+   "summary": "A test message on every way the own reminders go"
+  },
+  "POST /api/v1/me/whats-new/seen": {
+   "operationId": "whats_new_seen_api_v1_me_whats_new_seen_post",
+   "summary": "\"What's new\" of the running version is read or put away"
+  },
+  "POST /api/v1/oauth/authorize": {
+   "operationId": "authorize_api_v1_oauth_authorize_post",
+   "summary": "Allow (or refuse) an app: the address that takes a code (valid 2 minutes, once) back to it"
+  },
+  "POST /api/v1/oauth/token": {
+   "operationId": "token_api_v1_oauth_token_post",
+   "summary": "Trade the code of an app and its PKCE verifier for a device token (OAuth 2, RFC 6749 and 7636)"
+  },
+  "POST /api/v1/oidc/admin/providers": {
+   "operationId": "add_provider_api_v1_oidc_admin_providers_post",
+   "summary": "Add a provider; the issuer is checked by discovery"
+  },
+  "POST /api/v1/oidc/authentik/address": {
+   "operationId": "authentik_save_address_api_v1_oidc_authentik_address_post",
+   "summary": "Use the address as nexpaper's public address, without setting up"
+  },
+  "POST /api/v1/oidc/authentik/setup": {
+   "operationId": "authentik_setup_api_v1_oidc_authentik_setup_post",
+   "summary": "Set up provider and application in authentik with a one-time token"
+  },
+  "POST /api/v1/oidc/me/address": {
+   "operationId": "take_provider_address_api_v1_oidc_me_address_post",
+   "summary": "Take the address the provider knows as the own one"
+  },
+  "POST /api/v1/oidc/{slug}/link": {
+   "operationId": "link_start_api_v1_oidc__slug__link_post",
+   "summary": "Start linking the own account to a provider; needs the password"
+  },
+  "POST /api/v1/push/devices": {
+   "operationId": "add_api_v1_push_devices_post",
+   "summary": "Sign this browser up for notices; the same browser twice stays one"
+  },
+  "POST /api/v1/push/devices/lookup": {
+   "operationId": "lookup_api_v1_push_devices_lookup_post",
+   "summary": "Whether this browser is signed up: the id of the own device, or none"
+  },
+  "POST /api/v1/push/test": {
+   "operationId": "probe_api_v1_push_test_post",
+   "summary": "A probe to every own device"
+  },
+  "POST /api/v1/reset/{token}": {
+   "operationId": "reset_password_api_v1_reset__token__post",
+   "summary": "Set the new password; browser sessions of the account end"
+  },
+  "POST /api/v1/rules": {
+   "operationId": "create_rule_api_v1_rules_post",
+   "summary": "Add a rule to a vault the caller manages (it applies to documents that arrive there)"
+  },
+  "POST /api/v1/saved-searches": {
+   "operationId": "create_saved_api_v1_saved_searches_post",
+   "summary": "Keep a search of the archive under a name (at most 30)"
+  },
+  "POST /api/v1/saved-searches/{saved_id}/down": {
+   "operationId": "down_saved_api_v1_saved_searches__saved_id__down_post",
+   "summary": "Move a saved search one place down; answers the whole list"
+  },
+  "POST /api/v1/saved-searches/{saved_id}/up": {
+   "operationId": "up_saved_api_v1_saved_searches__saved_id__up_post",
+   "summary": "Move a saved search one place up; answers the whole list"
+  },
+  "POST /api/v1/senders/{sender_id}/merge": {
+   "operationId": "merge_sender_api_v1_senders__sender_id__merge_post",
+   "summary": "Move all documents of a sender to another sender of the same vault, and delete it (manage)"
+  },
+  "POST /api/v1/settings/ai/models": {
+   "operationId": "models_api_v1_settings_ai_models_post",
+   "summary": "The models a service offers, with the address typed or stored"
+  },
+  "POST /api/v1/settings/ai/probe": {
+   "operationId": "probe_api_v1_settings_ai_probe_post",
+   "summary": "One tiny question to the stored service, with nothing of a document in it"
+  },
+  "POST /api/v1/settings/intake/mail/fetch": {
+   "operationId": "fetch_mail_api_v1_settings_intake_mail_fetch_post",
+   "summary": "Fetch the mailbox now"
+  },
+  "POST /api/v1/settings/intake/mail/test": {
+   "operationId": "test_mail_api_v1_settings_intake_mail_test_post",
+   "summary": "Connect to the mailbox, sign in and count the mails that are new (nothing is taken)"
+  },
+  "POST /api/v1/settings/mail-test": {
+   "operationId": "mail_test_api_v1_settings_mail_test_post",
+   "summary": "Send a test mail through the configured server"
+  },
+  "POST /api/v1/settings/paperless/check": {
+   "operationId": "check_api_v1_settings_paperless_check_post",
+   "summary": "Connect and look: what Paperless holds and how it would come over (nothing is written)"
+  },
+  "POST /api/v1/settings/paperless/start": {
+   "operationId": "start_api_v1_settings_paperless_start_post",
+   "summary": "Start the import (or go on with one that stopped): it runs in the background"
+  },
+  "POST /api/v1/settings/paperless/stop": {
+   "operationId": "stop_api_v1_settings_paperless_stop_post",
+   "summary": "Stop the import after the document it is at; starting again goes on from there"
+  },
+  "POST /api/v1/settings/push/renew": {
+   "operationId": "renew_api_v1_settings_push_renew_post",
+   "summary": "A new key pair; every device has to sign up again"
+  },
+  "POST /api/v1/settings/rules": {
+   "operationId": "create_server_rule_api_v1_settings_rules_post",
+   "summary": "Add a rule for the whole server"
+  },
+  "POST /api/v1/setup": {
+   "operationId": "setup_api_v1_setup_post",
+   "summary": "Create the operator account"
+  },
+  "POST /api/v1/storage/files/check": {
+   "operationId": "check_files_api_v1_storage_files_check_post",
+   "summary": "Check the checksums of all files now, in the background"
+  },
+  "POST /api/v1/storage/files/documents/{document_id}/check": {
+   "operationId": "check_document_api_v1_storage_files_documents__document_id__check_post",
+   "summary": "Look at the files of one document again, now"
+  },
+  "POST /api/v1/tags/{tag_id}/merge": {
+   "operationId": "merge_tag_api_v1_tags__tag_id__merge_post",
+   "summary": "Move all documents of a tag to another tag of the same vault, and delete it (manage)"
+  },
+  "POST /api/v1/u/{token}/files": {
+   "operationId": "send_api_v1_u__token__files_post",
+   "summary": "Send one file through an upload request (no sign-in; the token is the key)"
+  },
+  "POST /api/v1/upload-requests": {
+   "operationId": "create_api_v1_upload_requests_post",
+   "summary": "Ask somebody without an account for files: an address that puts them into the own inbox"
+  },
+  "POST /api/v1/upload-requests/{request_id}/address": {
+   "operationId": "address_api_v1_upload_requests__request_id__address_post",
+   "summary": "The address of an own upload request again, to copy"
+  },
+  "POST /api/v1/uploads": {
+   "operationId": "start_api_v1_uploads_post",
+   "summary": "Announce a file to upload in pieces (size and SHA-256 first; a file the caller has is not sent)"
+  },
+  "POST /api/v1/uploads/{upload_id}/finish": {
+   "operationId": "finish_api_v1_uploads__upload_id__finish_post",
+   "summary": "Check the file against its SHA-256 and make the document (twice makes one)"
+  },
+  "POST /api/v1/vaults": {
+   "operationId": "create_api_v1_vaults_post",
+   "summary": "Make a shared vault (the operator)"
+  },
+  "POST /api/v1/vaults/{vault_id}/leave": {
+   "operationId": "leave_api_v1_vaults__vault_id__leave_post",
+   "summary": "Leave a shared vault"
+  },
+  "PUT /api/v1/about/updates": {
+   "operationId": "switch_api_v1_about_updates_put",
+   "summary": "Switch the daily check"
+  },
+  "PUT /api/v1/accounts/{account_id}/display-name": {
+   "operationId": "rename_display_api_v1_accounts__account_id__display_name_put",
+   "summary": "Operator: give an account another display name"
+  },
+  "PUT /api/v1/accounts/{account_id}/name": {
+   "operationId": "rename_account_api_v1_accounts__account_id__name_put",
+   "summary": "Operator: give an account another username"
+  },
+  "PUT /api/v1/accounts/{account_id}/permissions": {
+   "operationId": "set_permissions_api_v1_accounts__account_id__permissions_put",
+   "summary": "Allow an account the AI, or take it away"
+  },
+  "PUT /api/v1/accounts/{account_id}/role": {
+   "operationId": "set_role_api_v1_accounts__account_id__role_put",
+   "summary": "Make an account operator or member"
+  },
+  "PUT /api/v1/auth/avatar": {
+   "operationId": "set_avatar_api_v1_auth_avatar_put",
+   "summary": "Set the own profile picture (the picture itself as the body)"
+  },
+  "PUT /api/v1/auth/password": {
+   "operationId": "change_password_api_v1_auth_password_put",
+   "summary": "Change the own password"
+  },
+  "PUT /api/v1/documents/{document_id}/dates/{kind}/snooze": {
+   "operationId": "put_off_api_v1_documents__document_id__dates__kind__snooze_put",
+   "summary": "Later: no reminder of this deadline for the caller for 1, 3 or 7 days"
+  },
+  "PUT /api/v1/documents/{document_id}/notes/{note_id}": {
+   "operationId": "edit_note_api_v1_documents__document_id__notes__note_id__put",
+   "summary": "Change an own note"
+  },
+  "PUT /api/v1/documents/{document_id}/pin": {
+   "operationId": "pin_api_v1_documents__document_id__pin_put",
+   "summary": "Pin a document for oneself (reading it is enough; at most 20)"
+  },
+  "PUT /api/v1/documents/{document_id}/related/{other_id}": {
+   "operationId": "link_api_v1_documents__document_id__related__other_id__put",
+   "summary": "Set that two documents go with each other (edit on both)"
+  },
+  "PUT /api/v1/documents/{document_id}/shares/{user_id}": {
+   "operationId": "set_share_api_v1_documents__document_id__shares__user_id__put",
+   "summary": "Share a document with a person (or change the right)"
+  },
+  "PUT /api/v1/kinds/{kind_id}/auto-trash": {
+   "operationId": "set_auto_trash_api_v1_kinds__kind_id__auto_trash_put",
+   "summary": "Switch expired documents of a kind into the trash by themselves on or off (manage in its vault; the operator for the server's)"
+  },
+  "PUT /api/v1/kinds/{kind_id}/keeping": {
+   "operationId": "set_keeping_api_v1_kinds__kind_id__keeping_put",
+   "summary": "Set or take away the keeping time of a kind (manage in its vault; the operator for the server's)"
+  },
+  "PUT /api/v1/locales/{code}": {
+   "operationId": "upload_locale_api_v1_locales__code__put",
+   "summary": "Add or replace a language (operator)"
+  },
+  "PUT /api/v1/logs/level": {
+   "operationId": "set_level_api_v1_logs_level_put",
+   "summary": "Change the level, effective at once"
+  },
+  "PUT /api/v1/me/email": {
+   "operationId": "set_email_api_v1_me_email_put",
+   "summary": "Give a new mail address; with a mail server it counts once its link is opened"
+  },
+  "PUT /api/v1/me/language": {
+   "operationId": "set_language_api_v1_me_language_put",
+   "summary": "The language of the own account; empty follows the browser"
+  },
+  "PUT /api/v1/me/preferences": {
+   "operationId": "set_preferences_api_v1_me_preferences_put",
+   "summary": "The own profile choices; only the values sent change"
+  },
+  "PUT /api/v1/me/profile": {
+   "operationId": "set_profile_api_v1_me_profile_put",
+   "summary": "The own display name, username and address"
+  },
+  "PUT /api/v1/me/reminders": {
+   "operationId": "put_reminders_api_v1_me_reminders_put",
+   "summary": "Change how the own account is reminded; only the values sent change"
+  },
+  "PUT /api/v1/oidc/admin/providers/order": {
+   "operationId": "order_providers_api_v1_oidc_admin_providers_order_put",
+   "summary": "Put the providers in this order (the drag handle)"
+  },
+  "PUT /api/v1/oidc/admin/providers/{provider_id}": {
+   "operationId": "save_provider_api_v1_oidc_admin_providers__provider_id__put",
+   "summary": "Save a provider; another issuer drops its links"
+  },
+  "PUT /api/v1/push/devices/{device_id}": {
+   "operationId": "rename_api_v1_push_devices__device_id__put",
+   "summary": "Give an own device another name"
+  },
+  "PUT /api/v1/senders/{sender_id}/memo": {
+   "operationId": "set_memo_api_v1_senders__sender_id__memo_put",
+   "summary": "Change the vault's note on a sender (edit in its vault; members of the vault see it)"
+  },
+  "PUT /api/v1/settings": {
+   "operationId": "save_api_v1_settings_put",
+   "summary": "Save"
+  },
+  "PUT /api/v1/settings/ai": {
+   "operationId": "save_api_v1_settings_ai_put",
+   "summary": "Choose the AI service of the server; only the fields sent change"
+  },
+  "PUT /api/v1/settings/intake": {
+   "operationId": "save_intake_api_v1_settings_intake_put",
+   "summary": "Change the intake folder or the mailbox"
+  },
+  "PUT /api/v1/settings/ocr": {
+   "operationId": "change_api_v1_settings_ocr_put",
+   "summary": "Change the settings of the text recognition (from the next file)"
+  },
+  "PUT /api/v1/settings/paperless": {
+   "operationId": "save_api_v1_settings_paperless_put",
+   "summary": "Change the address, token or switch"
+  },
+  "PUT /api/v1/settings/push": {
+   "operationId": "operator_save_api_v1_settings_push_put",
+   "summary": "Who the push services may contact, and push services beyond the known ones"
+  },
+  "PUT /api/v1/settings/shortcut": {
+   "operationId": "set_shortcut_link_api_v1_settings_shortcut_put",
+   "summary": "Set or take away the iCloud link of the iPhone shortcut (operator)"
+  },
+  "PUT /api/v1/uploads/{upload_id}": {
+   "operationId": "piece_api_v1_uploads__upload_id__put",
+   "summary": "Send the next piece (raw bytes) at the offset where the last one ended"
+  },
+  "PUT /api/v1/vaults/{vault_id}/members": {
+   "operationId": "set_members_api_v1_vaults__vault_id__members_put",
+   "summary": "Set who is in the vault with which right, all at once (managers); a refusal changes nothing"
+  },
+  "PUT /api/v1/vaults/{vault_id}/members/{user_id}": {
+   "operationId": "set_member_api_v1_vaults__vault_id__members__user_id__put",
+   "summary": "Give a person a right in the vault, or change it (managers)"
+  }
+ },
+ "schemas": [
+  "AcceptIn",
+  "AccountDeleteIn",
+  "AccountLeaving",
+  "ActionIn",
+  "AddIn",
+  "AddressIn",
+  "AiSettingsIn",
+  "AmountOut",
+  "AnswerIn",
+  "AnyKeyOut",
+  "Arrived",
+  "AskedOut",
+  "AuthorizeIn",
+  "AutoTrashIn",
+  "AutoTrashOut",
+  "BroughtOut",
+  "BulkIn",
+  "BulkOut",
+  "ChangeOut",
+  "ChangesOut",
+  "ConditionIn",
+  "CreateIn",
+  "CurrencySum",
+  "DashboardOut",
+  "DateIn",
+  "DateOut",
+  "DateSet",
+  "DeadlinesOut",
+  "DeviceOut",
+  "DocumentOut",
+  "DocumentPage",
+  "DocumentPatch",
+  "DoneOut",
+  "DownloadIn",
+  "DuplicateOut",
+  "EInvoiceOut",
+  "EmailIn",
+  "EventOut",
+  "Excerpt",
+  "ExistingOut",
+  "ExportContentIn",
+  "ExportIn",
+  "ExportLinkAddress",
+  "ExportLinkIn",
+  "ExportLinkMade",
+  "ExportLinkOut",
+  "ExportMade",
+  "ExportOut",
+  "ExportPreviewOut",
+  "FactorResetIn",
+  "FetchOut",
+  "FileIn",
+  "FileOut",
+  "FileResult",
+  "FinishOut",
+  "FolderOut",
+  "FolderPerson",
+  "ForgotIn",
+  "FoundDate",
+  "FoundDatesOut",
+  "HTTPValidationError",
+  "IbanOut",
+  "ImportOwnerIn",
+  "ImportPersonOut",
+  "ImportStartIn",
+  "InboxPage",
+  "IntakeIn",
+  "IntakeOut",
+  "InviteIn",
+  "InvoiceLineOut",
+  "KeepIn",
+  "KeepOut",
+  "KeepPreview",
+  "KeyIn",
+  "KeyOut",
+  "KeysOut",
+  "KindCount",
+  "KindEntry",
+  "KindIn",
+  "KindOrderPage",
+  "KindOut",
+  "KindPatch",
+  "LanguageIn",
+  "Lead",
+  "LeadIn",
+  "LeadOptions",
+  "LinkAddress",
+  "LinkCreated",
+  "LinkIn",
+  "LinkOut",
+  "LocaleEntry",
+  "LogEntry",
+  "LogMode",
+  "LogModeChange",
+  "LoginIn",
+  "LookupIn",
+  "MadeOut",
+  "MailLast",
+  "MailOut",
+  "MayGoPage",
+  "MemberIn",
+  "MemberOut",
+  "MemberRow",
+  "MembersIn",
+  "MemoIn",
+  "MemoOut",
+  "MenuCounts",
+  "MergeEffect",
+  "MergeItem",
+  "ModelsIn",
+  "MoveIn",
+  "MyIntakeOut",
+  "MyLink",
+  "NameCount",
+  "NameGroup",
+  "NameItem",
+  "NameRef",
+  "NewPasswordIn",
+  "NoteIn",
+  "NoteOut",
+  "NoticeIn",
+  "NoticeOut",
+  "OcrIn",
+  "OcrOut",
+  "OperatorConfirmIn",
+  "OperatorIn",
+  "OrderEntry",
+  "OrderIn",
+  "OrderPage",
+  "OriginOut",
+  "OverviewOut",
+  "PageIn",
+  "PagesIn",
+  "PairIn",
+  "PairedOut",
+  "PairingOut",
+  "PairingStateOut",
+  "PaperlessCheckOut",
+  "PaperlessIn",
+  "PaperlessOut",
+  "PaperlessOwnerOut",
+  "PaperlessRunOut",
+  "PaperlessSkippedItem",
+  "PaperlessSkippedOut",
+  "PaperlessStoragePathOut",
+  "PaperlessVaultChoice",
+  "PartIn",
+  "PasswordChangeIn",
+  "PdfPasswordOut",
+  "PdfPasswordRename",
+  "PermissionsIn",
+  "PersonRef",
+  "PinOut",
+  "PinsOut",
+  "PreviewIn",
+  "ProbeOut",
+  "ProfileIn",
+  "ProviderIn",
+  "PublicAlso",
+  "PublicExport",
+  "PublicLink",
+  "PublicRequest",
+  "PushCount",
+  "QueueOut",
+  "QuickOut",
+  "QuickVault",
+  "RedirectOut",
+  "Refused",
+  "RelatedOut",
+  "RememberIn",
+  "ReminderTestOut",
+  "ReminderVault",
+  "ReminderVaultMine",
+  "RemindersIn",
+  "RemindersOut",
+  "RenameIn",
+  "RequestAddress",
+  "RequestCreated",
+  "RequestIn",
+  "RequestOut",
+  "RequestRules",
+  "RequestsOverview",
+  "ResetLinkIn",
+  "RestoreIn",
+  "RoleIn",
+  "RuleIn",
+  "RuleOut",
+  "RulePatch",
+  "SavedIn",
+  "SavedOut",
+  "SavedRename",
+  "SearchHit",
+  "SearchOut",
+  "SectionOut",
+  "SenderEntry",
+  "SenderIn",
+  "SenderOrderPage",
+  "SenderOut",
+  "SeparatorsOut",
+  "SettingsIn",
+  "SettingsOut",
+  "ShareIn",
+  "ShareOut",
+  "SharedVaultRef",
+  "SharingOverview",
+  "SharingRules",
+  "ShortcutLinkIn",
+  "ShortcutLinkOut",
+  "ShortcutOut",
+  "ShownThrough",
+  "Skipped",
+  "SnoozeIn",
+  "SnoozeOut",
+  "SortAgainApplyIn",
+  "SortAgainIn",
+  "SortAgainItem",
+  "SortAgainOut",
+  "SortAgainPreview",
+  "SplitIn",
+  "SplitOut",
+  "StartIn",
+  "StartOut",
+  "SuggestionOut",
+  "SumOut",
+  "TakeAddressIn",
+  "TestMailIn",
+  "TextOut",
+  "TransferOut",
+  "TrashIn",
+  "TrashOut",
+  "Understood",
+  "UnlockIn",
+  "UnlockOut",
+  "UpdateSwitchIn",
+  "UpdatesOut",
+  "UploadOut",
+  "UploadResults",
+  "ValidationError",
+  "VaultIn",
+  "VaultOut",
+  "VaultPatch",
+  "VaultRef",
+  "VaultRuleIn",
+  "VersionOut",
+  "WaitingOut",
+  "YearCount",
+  "app__routers__auth__SetupIn",
+  "app__routers__backups__PasswordIn",
+  "app__routers__catalog__MergeIn",
+  "app__routers__catalog__NameIn",
+  "app__routers__deadlines__DeadlineOut",
+  "app__routers__devices__DeviceIn",
+  "app__routers__keeping__MergeIn",
+  "app__routers__oidc__PasswordIn",
+  "app__routers__oidc__SetupIn",
+  "app__routers__pagetools__MergeIn",
+  "app__routers__passkeys__PasswordIn",
+  "app__routers__push__ConfirmIn",
+  "app__routers__push__DeviceIn",
+  "app__routers__push__NameIn",
+  "app__routers__totp__CodeIn",
+  "app__routers__totp__ConfirmIn",
+  "app__routers__totp__PasswordIn",
+  "app__routers__transfer__CodeIn",
+  "app__routers__v1__DeadlineOut"
+ ]
+}
