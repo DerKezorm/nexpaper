@@ -58,24 +58,7 @@ class Adapter(StandardAdapter):
 
         if role not in self._clients:
             self._clients[role] = new_client(None if role == "anonymous" else self._accounts[role])
-            if role == "owner" and self._owes:
-                self._through_provider()
         return self._clients[role]
-
-    _owes = False
-
-    def _through_provider(self) -> None:
-        """The owner's browser came in through a provider that checks the second factor itself: the page opens, its
-        keys rest (a key has no provider behind it; ``totp.keys_wait``)."""
-        from sqlalchemy import update
-
-        from app.db import SessionLocal
-        from app.models import AuthSession
-
-        with SessionLocal() as db:
-            db.execute(update(AuthSession).where(AuthSession.account_id == self._accounts["owner"].id)
-                       .values(second_factor_by_provider=True))
-            db.commit()
 
     def legacy_keys(self) -> list[LegacyKey]:
         return [
@@ -114,14 +97,11 @@ class Adapter(StandardAdapter):
         return answer.status_code
 
     def owe_factor(self) -> None:
-        """The operator requires a second factor and the owner, who has a password, has none. A browser session with
-        the password alone would only reach the setup of the factor in nexpaper; the owner's browser came in through a
-        provider that checks the factor itself, which is the session that sees its keys resting."""
+        """The operator requires a second factor and the owner, who has a password, has none. Its browser still reaches
+        its keys (``deps.KEYS_WHILE_OWED``): it may make them, they rest until the factor is there."""
         from tests.conftest import require_second_factor
 
         require_second_factor(True)
-        self._owes = True
-        self._through_provider()
 
     def foreign_area(self) -> Any:
         pytest.skip("nexpaper does not limit keys to vaults")

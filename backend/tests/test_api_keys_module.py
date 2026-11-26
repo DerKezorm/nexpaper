@@ -137,3 +137,28 @@ def test_a_new_key_starts_with_a_year_for_reading_and_never_for_uploading(client
     apikeys.forget()
     assert client.get("/api/v1/me", headers=bearer(read["secret"])).json()["scope"] == "read"
     assert client.get("/api/v1/dashboard", headers=bearer(upload["secret"])).json()["detail"]["code"] == "key_scope"
+
+
+def test_an_account_that_owes_its_second_factor_reaches_its_keys_and_nothing_more(client: TestClient,
+                                                                                 operator: Account) -> None:
+    """Bauplan E33, the module's rule: the operator asks every account for a second factor and mika has none yet.
+    Mika's browser still lists and makes keys (they rest, the card says so); everything else waits for the factor, and
+    a resting key is refused where a program shows it."""
+    from .conftest import require_second_factor
+
+    client.put("/api/v1/settings", json={"api_keys_allowed": True})
+    member = make_account("mika")
+    with new_client(member) as browser:
+        require_second_factor(True)
+        listed = browser.get(f"{NEW}/keys")
+        assert listed.status_code == 200 and listed.json()["keys_wait"] is True
+        made = browser.post(f"{NEW}/keys", json={"kind": "api", "name": "script"})
+        assert made.status_code == 201, made.text
+        key = made.json()["key"]["id"]
+        assert browser.patch(f"{NEW}/keys/{key}", json={"name": "scanner"}).status_code == 200
+        for path in ("/api/v1/api-keys", "/api/v1/documents", f"{NEW}/interfaces", f"{NEW}/admin/keys"):
+            answer = browser.get(path)
+            assert answer.status_code == 403 and answer.json()["detail"]["code"] == "second_factor_setup_required", path
+        apikeys.forget()
+        assert client.get("/api/v1/me", headers=bearer(made.json()["secret"])).status_code == 401
+        assert browser.delete(f"{NEW}/keys/{key}").status_code == 204

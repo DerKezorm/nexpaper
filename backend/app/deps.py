@@ -133,6 +133,10 @@ SETUP_ONLY_PATHS = frozenset({
     "/api/v1/auth/me", "/api/v1/auth/logout", "/api/v1/auth/totp/begin", "/api/v1/auth/totp/confirm",
     "/api/v1/auth/passkeys", "/api/v1/auth/passkeys/begin",
 })
+#: And, for a full session of an account that owes a second factor since the operator asks for it, its API keys (module
+#: schluessel, Bauplan E33): it may list and make them, they rest until the factor is there (``keys_wait``, refused
+#: with ``second_factor_required`` when a program shows one).
+KEYS_WHILE_OWED = "/api/v1/connections/keys"
 #: What a session may reach between setting up the second factor and confirming the recovery codes are kept.
 CODES_ONLY_PATHS = frozenset({
     "/api/v1/auth/me", "/api/v1/auth/logout", "/api/v1/auth/setup/done", "/api/v1/auth/setup/codes",
@@ -140,6 +144,10 @@ CODES_ONLY_PATHS = frozenset({
 #: How long after a sign-in through the provider an account without a password may confirm a change of its own (and an
 #: operator without one an act on others): the shared account module's window, five minutes.
 FRESH_MINUTES = FRESH_SIGN_IN_MINUTES
+
+
+def _keys_path(path: str) -> bool:
+    return path == KEYS_WHILE_OWED or path.startswith(KEYS_WHILE_OWED + "/")
 
 
 @dataclass(frozen=True)
@@ -213,7 +221,7 @@ def require_account(
                 raise error("second_factor_setup_required", "Set up your second factor first.", 403)
         elif session.stage != STAGE_FULL:
             raise error("sign_in_required", "Sign in first.", 401)
-        elif path not in SETUP_ONLY_PATHS and totp.setup_required(db, account):
+        elif path not in SETUP_ONLY_PATHS and not _keys_path(path) and totp.setup_required(db, account):
             raise error("second_factor_setup_required", "Set up your second factor first.", 403)
         request.state.session = SessionInfo(session.uid, session.stage, session.remember, session.created_at)
         db.expunge(account)
