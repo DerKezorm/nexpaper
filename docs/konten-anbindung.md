@@ -174,6 +174,12 @@ vitest 1233 grün in 109 Dateien; build grün; Playwright 2 von 2 grün.
 Endlauf `reihe.sh nexpaper ende9` (Stand `f289749`, mit P1 bis P5): ruff sauber; pytest 3925 grün, 5 übersprungen, 0 rot;
 lint sauber; vitest 1231 grün in 109 Dateien; build grün; Playwright 2 von 2 grün.
 
+**Fund der Galerie (Vorlage der Sprachen):** Die heruntergeladene Vorlage wurde beim Hochladen mit 422 `not_text`
+abgelehnt, weil nexpapers Englisch vier Listen hat (Wochentage, Monate, Suchhilfe des Archivs). `TEMPLATE` ist jetzt
+`textsOnly(en)` (`frontend/src/i18n/index.ts`); Tests in `languagesCard.test.tsx` und `test_locales.py`. Endlauf
+`reihe.sh nexpaper ende11` (Stand `579cbe9`): ruff sauber; pytest 3928 grün, 5 übersprungen, 0 rot; lint sauber; vitest 1234
+grün in 109 Dateien; build grün; Playwright 2 von 2 grün.
+
 **Endlauf (26.11.2026, `reihe.sh nexpaper ende4`, Stand `29ba6c2`, nach Passkeys E49, Grenzen-Satz E46, Bestand E51,
 sprachen):** ruff sauber; pytest 3879 grün, 5 übersprungen, 1 rot: `test_routes.py::test_the_description_of_the_interface_is_the_snapshot`
 (OpenAPI-Schnappschuss, die alten Wege `/api/v1/locales…` tragen über das Modul andere `operationId` und den Schemanamen
