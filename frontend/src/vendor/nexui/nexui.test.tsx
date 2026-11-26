@@ -42,6 +42,7 @@ import {
   ThemeSegment,
   ICONS,
 } from './index'
+import type { RowMarks } from './index'
 import { BUTTON_KIND } from './styles'
 
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
@@ -661,6 +662,24 @@ describe('the parts of the settings (since 1.1.0)', () => {
     shown = null
     const none = show(<Table label="Log" columns={[{ key: 'a', label: 'A' }]} rows={[]} cell={() => null} empty="Nothing yet." />)
     expect(none.textContent).toBe('Nothing yet.')
+  })
+
+  it('a table row takes only data marks, never an id that would stand twice in the page (E56)', () => {
+    const columns = [{ key: 'a', label: 'A' }]
+    const marked = show(<Table label="Keys" columns={columns} rows={['x']} rowProps={() => ({ 'data-testid': 'key-row' })} cell={(row) => row} />)
+    // Both forms carry the mark: a test takes the visible one.
+    expect(marked.querySelectorAll('[data-testid="key-row"]')).toHaveLength(2)
+    expect(marked.querySelectorAll('[id]')).toHaveLength(0)
+    shown?.unmount()
+    shown = null
+    const withId: (row: string) => RowMarks = () => ({
+      // @ts-expect-error an id is no data mark
+      id: 'row-1',
+    })
+    const quiet = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    expect(() => show(<Table label="Keys" columns={columns} rows={['x']} rowProps={withId} cell={(row) => row} />)).toThrow(/not "id"/)
+    quiet.mockRestore()
+    shown = null
   })
 
   it('a copy row shows the value in fixed letters and copies it with a small button that says so', async () => {

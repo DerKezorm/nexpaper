@@ -4,7 +4,10 @@
  * the other, label left and grey, value right, no sideways scrolling. For the log and the API keys of all accounts.
  *
  * The caller names the columns (`key`, `label`, a `width` such as `9rem`) and fills each cell (`cell`). `rowProps` adds
- * `data-…` marks to a row (the log's level). Both forms carry the same marks, so a test finds them in either.
+ * `data-…` marks to a row (the log's level). Both forms carry the same marks, so a test finds them in either: a row's
+ * marks stand twice in the page, and a test takes the visible one. Since E56 nothing else may come through `rowProps`
+ * (an `id` would stand twice, which a page must never have): the type takes only `data-…`, and any other key stops the
+ * table with an error that says so.
  */
 import type { ReactNode } from 'react'
 
@@ -15,6 +18,19 @@ export type TableColumn<K extends string = string> = {
   label: string
   /** A fixed width of the column on a wide place ("9rem"); without, it takes what is left. */
   width?: string
+}
+
+/** What `rowProps` gives a row: `data-…` marks, never an `id`. */
+export type RowMarks = Record<`data-${string}`, string | undefined> & { id?: never }
+
+/** The marks of a row: only `data-…` (E56). Throws for any other key, an `id` above all (it would stand twice). */
+function marksOf(given: Record<string, string | undefined> | undefined): Record<string, string | undefined> | undefined {
+  for (const key of Object.keys(given ?? {})) {
+    if (!key.startsWith('data-')) {
+      throw new Error(`Table: rowProps gives only data-… marks, not "${key}" (each row stands twice in the page, as a table row and as a card)`)
+    }
+  }
+  return given
 }
 
 export function Table<T, K extends string = string>({
@@ -33,7 +49,8 @@ export function Table<T, K extends string = string>({
   rows: readonly T[]
   cell: (row: T, key: K) => ReactNode
   rowKey?: (row: T, index: number) => string | number
-  rowProps?: (row: T) => Record<`data-${string}`, string | undefined>
+  /** Only `data-…` marks; an `id` is refused by the type and at run time (it would stand twice, E56). */
+  rowProps?: (row: T) => RowMarks
   /** What stands in place of an empty table ("Nothing logged yet."). */
   empty?: ReactNode
   testId?: string
@@ -46,6 +63,7 @@ export function Table<T, K extends string = string>({
     ) : null
   }
   const keyOf = (row: T, index: number) => (rowKey ? rowKey(row, index) : index)
+  const marks = rows.map((row) => marksOf(rowProps?.(row)))
   return (
     <div className="@container min-w-0" data-testid={testId}>
       <table
@@ -69,7 +87,7 @@ export function Table<T, K extends string = string>({
         </thead>
         <tbody>
           {rows.map((row, index) => (
-            <tr key={keyOf(row, index)} {...rowProps?.(row)} data-part="table-row">
+            <tr key={keyOf(row, index)} {...marks[index]} data-part="table-row">
               {columns.map((column) => (
                 <td
                   key={column.key}
@@ -86,7 +104,7 @@ export function Table<T, K extends string = string>({
         {rows.map((row, index) => (
           <li
             key={keyOf(row, index)}
-            {...rowProps?.(row)}
+            {...marks[index]}
             className="rounded-[12px] border border-solid border-[var(--nexui-line)] px-3 py-2 text-xs leading-4 tracking-normal text-[var(--nexui-text)]"
             data-part="table-card"
           >
