@@ -19,12 +19,20 @@ from typing import Any
 
 from sicherung_contract import StandardAdapter
 
+from app.vendor.nexsicherung.routes import former_names
+
 
 class Adapter(StandardAdapter):
     package = "app.vendor.nexsicherung"
     prefix = "/api/v1/server/storage"
     legacy_prefix = "/api/v1/backups"
     legacy_header = "x-nexpaper-password"
+    # E53: the names nexpaper gives the routers for the description, exactly as given (routers/backups.py).
+    _names = former_names(legacy_prefix)
+    operation_ids: dict[str, str] = _names["operation_ids"]
+    summaries: dict[str, str] = _names["summaries"]
+    schema_names: dict[str, str] = _names["schema_names"]
+    openapi_path = "/api/v1/openapi.json"
 
     def start(self) -> None:
         from fastapi.testclient import TestClient

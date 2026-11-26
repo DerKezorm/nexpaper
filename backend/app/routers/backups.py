@@ -40,7 +40,10 @@ def _error(code: str, text: str, status: int) -> Exception:
 
 
 router = APIRouter()
+# The description keeps the names nexpaper's own backup routes had before the module (Bauplan E53): the schemas of
+# the app the module's would push aside, and under /api/v1/backups the former operationIds, summaries and inputs.
 router.include_router(routes.router(operator=OperatorAccount, confirm=_confirm, error=_error,
-                                    prefix="/api/v1/server/storage"))
+                                    prefix="/api/v1/server/storage", schema_names=routes.FORMER_SCHEMAS))
 router.include_router(routes.legacy_router(prefix="/api/v1/backups", password_header=PASSWORD_HEADER,
-                                           operator=OperatorAccount, confirm=_confirm, error=_error))
+                                           operator=OperatorAccount, confirm=_confirm, error=_error,
+                                           **routes.former_names("/api/v1/backups")))
