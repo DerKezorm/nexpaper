@@ -219,6 +219,36 @@ def test_a_blocked_persons_files_wait(operator: Account, ticks: Clock, folder: P
     assert (folder / "tom" / "a.pdf").exists() and docs() == []
 
 
+def test_a_deleted_persons_files_wait_and_come_in_when_the_account_is_back(operator: Account, ticks: Clock,
+                                                                          folder: Path) -> None:
+    """konten 1.1.0 (Bauplan E38): the intake halts while the account is out, deleted or blocked, and runs again when it
+    is back (``KontenStore.on_shut_out``/``on_back``)."""
+    from app.services.konten_store import KontenStore
+    from app.vendor.nexkonten import manage
+
+    from .conftest import PASSWORD
+
+    tom = make_account("tom")
+    intake_folder.scan()
+
+    def act(name: str) -> None:
+        with SessionLocal() as db:
+            getattr(manage, name)(KontenStore(db), tom.id, actor_id=operator.id, password=PASSWORD)
+
+    act("remove")
+    (folder / "tom" / "a.pdf").write_bytes(make_pdf(["eins"]))
+    assert settle(ticks).taken == {}
+    assert (folder / "tom" / "a.pdf").exists() and docs() == []
+    act("restore")
+    assert settle(ticks).taken == {"tom": 1}
+    act("block")
+    (folder / "tom" / "b.pdf").write_bytes(make_pdf(["zwei"]))
+    assert settle(ticks).taken == {}
+    act("unblock")
+    assert settle(ticks).taken == {"tom": 1}
+    assert sorted(d.owner_id for d in docs()) == [tom.id, tom.id]
+
+
 def test_nothing_is_taken_while_the_folder_is_switched_off(operator: Account, ticks: Clock, folder: Path) -> None:
     make_account("jule")
     intake_folder.scan()
