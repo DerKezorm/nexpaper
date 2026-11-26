@@ -114,6 +114,7 @@
     "level_invalid": "There is no such level here.",
     "request_unknown": "This request no longer exists.",
     "request_decided": "This request was decided already.",
+    "request_changed": "The request was changed after it was asked. It does not run.",
     "request_expired": "This request ran out.",
     "confirm_needed": "This request is dangerous. Allow it on its own page.",
     "programs_off": "The operator no longer lets programs connect.",

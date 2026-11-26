@@ -400,7 +400,8 @@ app.include_router(verbinden_api.router(
 # ``/api/v1/connections/mcp``. Consent and requests only in a signed-in browser, the settings for the operator.
 app.include_router(mcp_api.router(
     config=mcp_store.MCP, store=mcp_store.store, account=require_browser_account, operator=require_operator,
-    address=schluessel_store.address, sender=client_ip, prefix="/api/v1/connections/mcp", notify=mcp_store.notify,
+    address=schluessel_store.address, sender=client_ip, prefix="/api/v1/connections/mcp",
+    notify=lambda event, request: mcp_store.notify(event, request),
     tags=["mcp"]))
 
 

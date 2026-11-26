@@ -118,3 +118,61 @@ def test_a_dangerous_call_always_waits_and_takes_a_second_yes(app: Any) -> None:
     assert once.status_code == 409 and app.refusal(once)["code"] == "confirm_needed"
     twice = app.client("owner").post(path, json={"confirm": True})
     assert twice.status_code == 200 and twice.json()["status"] == "done", twice.text
+
+
+def test_the_app_hears_of_each_new_request_exactly_once(app: Any) -> None:
+    """MCP 14 (since 1.1.1): "Ein Programm wartet auf dein Ja" reaches the account on the app's ways (bell, else push or
+    mail) through ``notify``: once per new request, never for asking its status, once more when it is decided."""
+    _, secret, name, args = _asked(app)
+    before = list(app.notified())
+    first = call(app, secret, name, args)["structuredContent"]["request"]
+    second = call(app, secret, name, args)["structuredContent"]["request"]
+    call(app, secret, "request_status", {"request": first})
+    app.client("owner").get(f"{app.prefix}/requests", params={"status": "waiting"})
+    told = app.notified()[len(before) :]
+    assert [(event, str(found)) for event, found in told] == [("waiting", str(first)), ("waiting", str(second))]
+    assert app.client("owner").post(f"{app.prefix}/requests/{first}/approve", json={}).status_code == 200
+    assert [(event, str(found)) for event, found in app.notified()[len(before) + 2 :]] == [("decided", str(first))]
+
+
+def test_a_request_changed_after_it_was_asked_never_runs(app: Any) -> None:
+    """M-9 (since 1.1.1): what the account allows is what the program asked. Arguments changed in the app's table
+    afterwards are refused with 409 ``request_changed``; nothing runs, the request ends as failed."""
+    import json
+
+    _, secret, name, args = _asked(app)
+    asked = call(app, secret, name, args)["structuredContent"]["request"]
+    app.change_arguments(asked, json.dumps({**args, "changed": "after asking"}, sort_keys=True))
+    done = app.client("owner").post(f"{app.prefix}/requests/{asked}/approve", json={})
+    assert done.status_code == 409 and done.json()["detail"]["code"] == "request_changed", done.text
+    told = call(app, secret, "request_status", {"request": asked})["structuredContent"]
+    assert told["status"] == "failed"
+
+
+def test_the_line_of_a_request_is_made_with_the_caller(app: Any) -> None:
+    """M-12 (since 1.1.1): ``Tool.describe(arguments, caller)`` gets the caller, so the line for the account speaks its
+    language and names its things; a ``describe(arguments)`` of before still works."""
+    made, secret, name, args = _asked(app)
+    tool = app.config().tool(name)
+    seen: list[Any] = []
+
+    def spy(arguments: dict[str, Any], caller: Any) -> str:
+        seen.append(caller)
+        return f"line for {caller.key_id}"
+
+    kept = tool.describe
+    object.__setattr__(tool, "describe", spy)
+    try:
+        asked = call(app, secret, name, args)["structuredContent"]["request"]
+    finally:
+        object.__setattr__(tool, "describe", kept)
+    assert len(seen) == 1 and str(seen[0].key_id) == str(made["key"]["id"])
+    rows = app.client("owner").get(f"{app.prefix}/requests").json()
+    assert next(row for row in rows if row["id"] == asked)["summary"] == f"line for {seen[0].key_id}"
+    object.__setattr__(tool, "describe", lambda arguments: "line of before")
+    try:
+        older = call(app, secret, name, args)["structuredContent"]["request"]
+    finally:
+        object.__setattr__(tool, "describe", kept)
+    rows = app.client("owner").get(f"{app.prefix}/requests").json()
+    assert next(row for row in rows if row["id"] == older)["summary"] == "line of before"

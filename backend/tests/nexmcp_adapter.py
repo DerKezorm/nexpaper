@@ -42,15 +42,43 @@ class Adapter(StandardAdapter):
         self._clients: dict[str, Any] = {}
         self._main = TestClient(app, base_url="http://testserver", headers=TAB)
         self._main.__enter__()
+        # Every call of nexpaper's notify (MCP 14), as the module's router makes it.
+        from app.services import mcp_store
+
+        self._notified: list[tuple[str, Any]] = []
+        self._notify = mcp_store.notify
+
+        def recording(event: str, request: Any) -> None:
+            self._notified.append((event, request.id))
+            self._notify(event, request)
+
+        mcp_store.notify = recording
 
     def start_older(self) -> None:
         # nexpaper had no MCP before: a database of 1.12.0 is one without anything of it, as a fresh one.
         self.start()
 
     def stop(self) -> None:
+        from app.services import mcp_store
+
+        mcp_store.notify = self._notify
         for client in self._clients.values():
             client.close()
         self._main.__exit__(None, None, None)
+
+    def notified(self) -> list[tuple[str, Any]]:
+        return list(self._notified)
+
+    def change_arguments(self, request_id: Any, arguments: str) -> None:
+        """As someone with access to the database: other arguments in a waiting request of ``mcp_requests``."""
+        from app.db import SessionLocal
+        from app.models_mcp import McpRequest
+
+        with SessionLocal() as db:
+            row = db.get(McpRequest, int(request_id))
+            assert row is not None
+            row.arguments = arguments
+            db.commit()
 
     def client(self, role: str) -> Any:
         from tests.conftest import new_client

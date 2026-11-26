@@ -23,6 +23,7 @@ CODES: dict[str, tuple[int, str]] = {
     "level_invalid": (422, "There is no such level here."),
     "request_unknown": (404, "No such request."),
     "request_decided": (409, "This request was decided already."),
+    "request_changed": (409, "The request was changed after it was asked. It does not run."),
     "request_expired": (409, "This request ran out."),
     "confirm_needed": (409, "This one is dangerous: confirm it once more."),
     # consent (OAuth)

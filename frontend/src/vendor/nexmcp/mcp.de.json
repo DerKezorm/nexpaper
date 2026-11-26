@@ -114,6 +114,7 @@
     "level_invalid": "Diese Stufe gibt es hier nicht.",
     "request_unknown": "Diese Rückfrage gibt es nicht mehr.",
     "request_decided": "Diese Rückfrage ist schon entschieden.",
+    "request_changed": "Die Rückfrage wurde nach dem Fragen verändert. Sie läuft nicht.",
     "request_expired": "Diese Rückfrage ist abgelaufen.",
     "confirm_needed": "Diese Rückfrage ist gefährlich. Erlaube sie auf ihrer eigenen Seite.",
     "programs_off": "Der Betreiber lässt keine Programme mehr verbinden.",

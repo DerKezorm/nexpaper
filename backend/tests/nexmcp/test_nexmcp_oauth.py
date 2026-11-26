@@ -6,11 +6,11 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
-from mcp_contract import REDIRECT, connect, consent, pkce, refresh, register, rpc, trade
+from mcp_contract import REDIRECT, connect, consent, pkce, program, refresh, register, rpc, trade
 
 
 def test_the_401_leads_a_program_to_the_metadata(app: Any) -> None:
-    anonymous = app.client("anonymous")
+    anonymous = program(app)
     challenge = rpc(app, None, "ping").headers["www-authenticate"]
     where = challenge.split('resource_metadata="', 1)[1].rstrip('"')
     resource = anonymous.get(where[where.index("/.well-known") :]).json()
@@ -81,8 +81,16 @@ def test_consent_refuses_what_a_program_may_not_ask(app: Any) -> None:
 
 def test_registration_takes_only_public_programs_with_safe_return_addresses(app: Any) -> None:
     path = f"{app.config().oauth_prefix}/register"
-    anonymous = app.client("anonymous")
-    for uris in (["http://example.com/cb"], ["https://example.com/cb#x"], ["https://user@example.com/cb"], []):
+    anonymous = program(app)
+    for uris in (
+        ["http://example.com/cb"],
+        ["https://example.com/cb#x"],
+        ["https://user@example.com/cb"],
+        [],
+        # Since 1.1.1 (M-8): no wildcard, no letter of another script that looks Latin (a Cyrillic а).
+        ["https://*.example.com/cb"],
+        ["https://\u0430pple.example.com/cb"],
+    ):
         assert anonymous.post(path, json={"redirect_uris": uris}).status_code == 400, uris
     secret = anonymous.post(
         path, json={"redirect_uris": [REDIRECT], "token_endpoint_auth_method": "client_secret_basic"}
@@ -113,16 +121,37 @@ def test_a_program_signs_in_again_after_30_idle_days_and_after_90(app: Any, nexm
 def test_a_program_revokes_itself_and_the_operator_switches_programs_off(app: Any) -> None:
     client_id, tokens = connect(app)
     path = f"{app.config().oauth_prefix}/revoke"
-    assert app.client("anonymous").post(path, data={"token": "nothing", "client_id": client_id}).status_code == 200
-    assert (
-        app.client("anonymous").post(path, data={"token": tokens["refresh_token"], "client_id": client_id}).status_code
-        == 200
-    )
+    assert program(app).post(path, data={"token": "nothing", "client_id": client_id}).status_code == 200
+    assert program(app).post(path, data={"token": tokens["refresh_token"], "client_id": client_id}).status_code == 200
     assert rpc(app, tokens["access_token"], "ping").status_code == 401
     client_id, tokens = connect(app)
     app.client("operator").put(f"{app.prefix}/admin", json={"programs": False})
     assert rpc(app, tokens["access_token"], "ping").status_code == 401
-    assert app.client("anonymous").get("/.well-known/oauth-authorization-server").status_code == 404
+    assert program(app).get("/.well-known/oauth-authorization-server").status_code == 404
     assert "resource_metadata" not in rpc(app, None, "ping").headers["www-authenticate"]
     app.client("operator").put(f"{app.prefix}/admin", json={"programs": True})
     assert rpc(app, tokens["access_token"], "ping").status_code == 200
+
+
+def test_the_token_route_takes_json_as_well(app: Any) -> None:
+    """M-10 (since 1.1.1): a program may send the token request as JSON (nexlore took it)."""
+    from mcp_contract import REDIRECT as BACK
+
+    client_id = register(app)
+    code_value, verifier = consent(app, client_id)
+    form = {
+        "grant_type": "authorization_code",
+        "code": code_value,
+        "redirect_uri": BACK,
+        "client_id": client_id,
+        "code_verifier": verifier,
+    }
+    traded = program(app).post(f"{app.config().oauth_prefix}/token", json=form)
+    assert traded.status_code == 200, traded.text
+    again = program(app).post(
+        f"{app.config().oauth_prefix}/token",
+        json={"grant_type": "refresh_token", "refresh_token": traded.json()["refresh_token"], "client_id": client_id},
+    )
+    assert again.status_code == 200, again.text
+    broken = program(app).post(f"{app.config().oauth_prefix}/token", json={"grant_type": ["x"]})
+    assert broken.status_code == 400 and broken.json()["error"] == "invalid_request"

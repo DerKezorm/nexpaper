@@ -66,8 +66,9 @@ class Tool:
     #: ``(ctx, args) -> bool``: this call is dangerous (nexdeck: a button that stops something); then it always waits
     #: for the account's yes, which takes a second click.
     dangerous: Callable[[Any, dict[str, Any]], bool] | None = None
-    #: ``(args) -> str``: one line for the bell and the request page ("Delete the event 'Dentist'"); default: none.
-    describe: Callable[[dict[str, Any]], str] | None = None
+    #: One line for the bell and the request page ("Delete the event 'Dentist'"), default none: ``describe(arguments)``,
+    #: or since 1.1.1 (M-12) ``describe(arguments, caller)`` to speak the account's language and name its things.
+    describe: Callable[..., str] | None = None
     #: Never denied and never blocked (``request_status``, which the module brings itself).
     always: bool = False
 

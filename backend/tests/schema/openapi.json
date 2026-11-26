@@ -1060,6 +1060,85 @@
         "title": "ConditionIn",
         "type": "object"
       },
+      "ConsentIn": {
+        "additionalProperties": true,
+        "description": "The account's answer on the consent page (since 1.1.1 a named schema, M-1); every field as it came before.",
+        "properties": {
+          "allow": {
+            "title": "Allow"
+          },
+          "areas": {
+            "title": "Areas"
+          },
+          "client_id": {
+            "title": "Client Id"
+          },
+          "code_challenge": {
+            "title": "Code Challenge"
+          },
+          "code_challenge_method": {
+            "title": "Code Challenge Method"
+          },
+          "level": {
+            "title": "Level"
+          },
+          "options": {
+            "title": "Options"
+          },
+          "redirect_uri": {
+            "title": "Redirect Uri"
+          },
+          "resource": {
+            "title": "Resource"
+          },
+          "response_type": {
+            "title": "Response Type"
+          },
+          "scope": {
+            "title": "Scope"
+          },
+          "state": {
+            "title": "State"
+          }
+        },
+        "title": "ConsentIn",
+        "type": "object"
+      },
+      "ConsentInfo": {
+        "additionalProperties": true,
+        "description": "What the consent page shows (since 1.1.1 a named schema, as nexlore's description had it, M-1).",
+        "properties": {
+          "ai_allowed": {
+            "title": "Ai Allowed"
+          },
+          "app": {
+            "title": "App"
+          },
+          "areas": {
+            "title": "Areas"
+          },
+          "client": {
+            "title": "Client"
+          },
+          "extras": {
+            "title": "Extras"
+          },
+          "level": {
+            "title": "Level"
+          },
+          "levels": {
+            "title": "Levels"
+          },
+          "redirect_host": {
+            "title": "Redirect Host"
+          },
+          "redirect_uri": {
+            "title": "Redirect Uri"
+          }
+        },
+        "title": "ConsentInfo",
+        "type": "object"
+      },
       "CreateIn": {
         "properties": {
           "note": {
@@ -12763,9 +12842,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": true,
-                  "title": "Response Consent Info Api Oauth Authorize Get",
-                  "type": "object"
+                  "$ref": "#/components/schemas/ConsentInfo"
                 }
               }
             },
@@ -12798,9 +12875,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "additionalProperties": true,
-                "title": "Body",
-                "type": "object"
+                "$ref": "#/components/schemas/ConsentIn"
               }
             }
           },

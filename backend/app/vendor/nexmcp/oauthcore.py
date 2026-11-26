@@ -5,7 +5,9 @@
 - PKCE with S256 only: ``VERIFIER`` (43 to 128 characters of RFC 7636), ``verifier_fits`` on the server,
   ``new_verifier`` and ``challenge_of`` for an app that asks;
 - ``valid_redirect``: a return address without fragment or user, ``https://``, or ``http://`` to the own machine
-  (``http_hosts`` widens the second for an app that runs without TLS itself);
+  (``http_hosts`` widens the second for an app that runs without TLS itself); since 1.1.1 its host is only letters
+  a to z, digits, dots and dashes, or an IP address (``safe_host``): no ``*``, no letters of other scripts that look
+  alike (a Cyrillic а in "аpple");
 - ``back``: the return address with the answer added to its query;
 - ``new_tokens``: an access and a refresh token with their hashes and the access token's end.
 
@@ -16,6 +18,7 @@ from __future__ import annotations
 
 import base64
 import hashlib
+import ipaddress
 import re
 import secrets
 from collections.abc import Iterable
@@ -25,6 +28,20 @@ from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 LOOPBACK = ("localhost", "127.0.0.1", "::1")
 VERIFIER = re.compile(r"[A-Za-z0-9._~-]{43,128}")
+_HOST = re.compile(r"[a-z0-9](?:[a-z0-9.-]{0,251}[a-z0-9])?")
+
+
+def safe_host(host: str | None) -> bool:
+    """Since 1.1.1 (M-8): a host of letters a to z, digits, dots and dashes (as it stands, lower case), or an IP
+    address; never a wildcard or a letter of another script that looks like a Latin one."""
+    if not host:
+        return False
+    try:
+        ipaddress.ip_address(host)
+        return True
+    except ValueError:
+        pass
+    return bool(_HOST.fullmatch(host)) and ".." not in host
 
 
 def digest(token: str) -> str:
@@ -57,7 +74,7 @@ def valid_redirect(uri: object, http_hosts: Iterable[str] = LOOPBACK) -> bool:
         _ = parts.port  # a broken port raises here
     except ValueError:
         return False
-    if "#" in uri or parts.username is not None or parts.password is not None or not parts.hostname:
+    if "#" in uri or parts.username is not None or parts.password is not None or not safe_host(parts.hostname):
         return False
     if parts.scheme == "https":
         return True

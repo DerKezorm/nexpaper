@@ -75,6 +75,16 @@ class StandardAdapter:
         """APP: the app's ``nexschluessel.AppConfig``."""
         raise NotImplementedError("APP: keys_config")
 
+    def change_arguments(self, request_id: Any, arguments: str) -> None:
+        """APP (since 1.1.1, M-9): write other arguments into a waiting request in the app's table, as someone with
+        access to the database would; the test then allows it and expects nothing to run."""
+        raise NotImplementedError("APP: change_arguments")
+
+    def notified(self) -> list[tuple[str, Any]]:
+        """APP (since 1.1.1, MCP 14): every call of the app's ``notify`` so far as (event, request id), in order: the
+        app's bell, or its push or mail where it has no bell. A test reads it after each step."""
+        raise NotImplementedError("APP: notified")
+
     def read_call(self) -> tuple[str, dict[str, Any]]:
         """APP: a call of a reading tool that finds something of ``owner`` (name, arguments)."""
         raise NotImplementedError("APP: read_call")
@@ -143,12 +153,21 @@ def mcp_key(app: Any, *, right: str | None = None, options: dict[str, bool] | No
     return made.json()
 
 
+def program(app: Any) -> Any:
+    """A client as a program calls (since 1.1.1): the app's routes without a session and without any header of the
+    app's own client (a tab guard of the app must let programs through on ``mcp_path`` and the OAuth routes)."""
+    from fastapi.testclient import TestClient
+
+    browser = app.client("anonymous")
+    return TestClient(browser.app, base_url=str(browser.base_url))
+
+
 def rpc(app: Any, secret: str | None, method: str, params: dict | None = None, **headers: str) -> Any:
     sent = {"Content-Type": "application/json", **headers}
     if secret:
         sent["Authorization"] = f"Bearer {secret}"
     body = {"jsonrpc": "2.0", "id": 1, "method": method, "params": params or {}}
-    return app.client("anonymous").post(app.config().mcp_path, json=body, headers=sent)
+    return program(app).post(app.config().mcp_path, json=body, headers=sent)
 
 
 def call(app: Any, secret: str, name: str, args: dict[str, Any]) -> dict[str, Any]:
@@ -173,7 +192,7 @@ REDIRECT = "http://127.0.0.1:33418/callback"
 
 
 def register(app: Any, redirect: str = REDIRECT) -> str:
-    answer = app.client("anonymous").post(
+    answer = program(app).post(
         f"{app.config().oauth_prefix}/register", json={"client_name": "Probe client", "redirect_uris": [redirect]}
     )
     assert answer.status_code == 201, answer.text
@@ -208,12 +227,12 @@ def trade(app: Any, client_id: str, code: str, verifier: str) -> Any:
         "client_id": client_id,
         "code_verifier": verifier,
     }
-    return app.client("anonymous").post(f"{app.config().oauth_prefix}/token", data=form)
+    return program(app).post(f"{app.config().oauth_prefix}/token", data=form)
 
 
 def refresh(app: Any, client_id: str, token: str) -> Any:
     form = {"grant_type": "refresh_token", "refresh_token": token, "client_id": client_id}
-    return app.client("anonymous").post(f"{app.config().oauth_prefix}/token", data=form)
+    return program(app).post(f"{app.config().oauth_prefix}/token", data=form)
 
 
 def connect(app: Any, **choice: Any) -> tuple[str, dict[str, Any]]:

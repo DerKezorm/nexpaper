@@ -70,7 +70,7 @@ def ask(session: Session, tool: Tool, args: dict[str, Any], *, dangerous: bool =
         )
     summary = ""
     if tool.describe is not None:
-        summary = str(tool.describe(dict(args)) or "")[:300]
+        summary = str(_describe(tool.describe, dict(args), caller) or "")[:300]
     made = store.add_request(
         Request(
             id=0,
@@ -100,6 +100,21 @@ def ask(session: Session, tool: Tool, args: dict[str, Any], *, dangerous: bool =
         "note": f"Waiting for approval in {config.app_name}, request {made.id}. It runs out in {span}. "
         f"Ask request_status with request {made.id} to learn what came of it.",
     }
+
+
+def _describe(describe: Callable[..., str], args: dict[str, Any], caller: Any) -> str:
+    """``describe(arguments, caller)`` where the app's function takes the caller (since 1.1.1, M-12), else
+    ``describe(arguments)`` as before."""
+    import inspect  # noqa: PLC0415
+
+    try:
+        parameters = inspect.signature(describe).parameters.values()
+    except (TypeError, ValueError):
+        return describe(args)
+    positional = [p for p in parameters if p.kind in (p.POSITIONAL_ONLY, p.POSITIONAL_OR_KEYWORD, p.VAR_POSITIONAL)]
+    if len(positional) >= 2 or any(p.kind == p.VAR_POSITIONAL for p in positional):
+        return describe(args, caller)
+    return describe(args)
 
 
 def _status(context: Any, args: dict[str, Any]) -> dict[str, Any]:
@@ -190,6 +205,14 @@ async def approve(
 
     moment = now or datetime.now(UTC)
     found = _own(store, account_id, request_id, moment)
+    if hashlib.sha256(found.arguments.encode("utf-8")).hexdigest() != found.digest:
+        # Since 1.1.1 (M-9): the arguments changed after the program asked; what the account would allow is not what
+        # was asked. Nothing runs, the request ends as failed, and the account hears why (as nexlore answered).
+        if store.claim(found.id, RUNNING, now=moment, by=account_name):
+            store.finish(found.id, FAILED, _no_longer("the request was changed after it was asked"), moment)
+            store.commit()
+        logger.warning("MCP request changed after it was asked request_id=%s", found.id)
+        raise McpRefused("request_changed")
     if found.dangerous and not confirm:
         raise McpRefused("confirm_needed")
     if not store.claim(found.id, RUNNING, now=moment, by=account_name):

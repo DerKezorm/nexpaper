@@ -28,6 +28,7 @@ from urllib.parse import parse_qsl
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Query, Request
 from fastapi.responses import JSONResponse, Response
+from pydantic import BaseModel, ConfigDict, create_model
 
 from . import oauth, requests, rights
 from .brake import BRAKE, sender_of
@@ -40,6 +41,81 @@ logger = logging.getLogger("nexmcp")
 
 #: The largest form a program sends to the token endpoint.
 MAX_FORM = 16 * 1024
+
+#: The summaries of the routes in the description, by the route's name; an app keeps its older ones with
+#: ``router(summaries=…)`` (E53, since 1.1.1: nextime "… with a key made for MCP …").
+SUMMARIES: dict[str, str] = {
+    "endpoint": "MCP (JSON-RPC over HTTP) with a key in Authorization: Bearer",
+    "consent_info": "What a program asks to sign in for",
+    "consent": "Agree to a program's sign-in, or turn it down",
+    "tool_list": "Every tool with its group, level, default right and whether it is blocked",
+    "key_rights": "Rights per tool of an own key or program",
+    "set_key_rights": "Set what an own key may do with each tool",
+    "request_list": "The own requests, newest first",
+    "request_one": "One own request",
+    "approve": "Allow a request: it runs now, as asked",
+    "decline": "Turn a request down",
+    "admin_get": "The operator's settings of MCP",
+    "admin_put": "Change the operator's settings of MCP",
+}
+
+
+class ConsentInfo(BaseModel):
+    """What the consent page shows (since 1.1.1 a named schema, as nexlore's description had it, M-1)."""
+
+    model_config = ConfigDict(extra="allow")
+    app: Any = None
+    client: Any = None
+    redirect_uri: Any = None
+    redirect_host: Any = None
+    levels: Any = None
+    level: Any = None
+    areas: Any = None
+    extras: Any = None
+    ai_allowed: Any = None
+
+
+class ConsentIn(BaseModel):
+    """The account's answer on the consent page (since 1.1.1 a named schema, M-1); every field as it came before."""
+
+    model_config = ConfigDict(extra="allow")
+    client_id: Any = None
+    redirect_uri: Any = None
+    response_type: Any = None
+    code_challenge: Any = None
+    code_challenge_method: Any = None
+    state: Any = None
+    resource: Any = None
+    scope: Any = None
+    allow: Any = None
+    level: Any = None
+    areas: Any = None
+    options: Any = None
+
+
+SCHEMAS = ("ConsentInfo", "ConsentIn")
+_models: dict[str, type[BaseModel]] = {}
+
+
+def _named(model: type[BaseModel], target: str | None) -> type[BaseModel]:
+    """``model`` under the name an app's description had (a name, or a dotted place and name), made once."""
+    if not target or target == model.__name__:
+        return model
+    if target not in _models:
+        place, _, name = target.rpartition(".")
+        fields = {key: (info.annotation, info) for key, info in model.model_fields.items()}
+        _models[target] = create_model(  # type: ignore[call-overload]
+            name, __module__=place or __name__, __config__=model.model_config, **fields
+        )
+    return _models[target]
+
+
+def _checked(given: dict[str, str] | None, known: tuple[str, ...], what: str) -> dict[str, str]:
+    found = dict(given or {})
+    unknown = sorted(set(found) - set(known))
+    if unknown:
+        raise ValueError(f"unknown {what}: {', '.join(unknown)} (known: {', '.join(known)})")
+    return found
 
 
 def _now() -> datetime:
@@ -75,9 +151,18 @@ async def _limited_body(request: Request, limit: int) -> bytes | None:
 
 
 async def _form(request: Request) -> dict[str, str]:
+    """The fields of a form, or since 1.1.1 (M-10, as nexlore took them) of a JSON object with text values."""
     body = await _limited_body(request, MAX_FORM)
     if body is None:
         raise OAuthError("invalid_request", "The request is too large.", 413)
+    if request.headers.get("content-type", "").split(";")[0].strip().lower() == "application/json":
+        try:
+            found = json.loads(body.decode("utf-8") or "{}")
+        except (UnicodeDecodeError, ValueError, RecursionError):
+            raise OAuthError("invalid_request", "The body must be a JSON object.") from None
+        if not isinstance(found, dict) or not all(isinstance(value, str) for value in found.values()):
+            raise OAuthError("invalid_request", "The body must be a JSON object of texts.")
+        return dict(found)
     try:
         return dict(parse_qsl(body.decode("utf-8"), keep_blank_values=True))
     except (UnicodeDecodeError, ValueError):
@@ -102,13 +187,23 @@ def router(
     error: Callable[[McpRefused], Exception] | None = None,
     notify: Callable[[str, Any], None] | None = None,
     tags: list[str] | None = None,
+    summaries: dict[str, str] | None = None,
+    operation_ids: dict[str, str] | None = None,
+    schema_names: dict[str, str] | None = None,
 ) -> APIRouter:
     """The routes. ``store``: a dependency giving the app's ``nexmcp.Store`` for this request. ``account``: the
     dependency of a signed-in browser session with a password or a provider (never a key, never a device);
     ``operator``: the app's dependency for operators. ``address(request)``: the app's public address (its setting,
     else the request's through trusted proxies only). ``sender(request)``: the sender's address as the app reads it
     behind its trusted proxies. ``notify(event, request)``: ``waiting`` and ``decided``, for the app's bell and its
-    channels. ``error``: the app's form of a refusal on its own pages."""
+    channels. ``error``: the app's form of a refusal on its own pages. ``summaries``: the app's older summaries by the
+    route's name (``SUMMARIES``), ``operation_ids`` by the same names, ``schema_names`` for ``ConsentInfo`` and
+    ``ConsentIn`` (``SCHEMAS``), so that its description only adds (E53)."""
+    said = SUMMARIES | _checked(summaries, tuple(SUMMARIES), "route")
+    ids = _checked(operation_ids, tuple(SUMMARIES), "route")
+    names = _checked(schema_names, SCHEMAS, "schema")
+    consent_out = _named(ConsentInfo, names.get("ConsentInfo"))
+    consent_in = _named(ConsentIn, names.get("ConsentIn"))
     routes = APIRouter(tags=tags or ["mcp"])
     base_of = address or (lambda request: str(request.base_url).rstrip("/"))
     sender_ip = sender or (lambda request: request.client.host if request.client else "")
@@ -122,7 +217,7 @@ def router(
 
     # --- the endpoint -------------------------------------------------------------------------------------------
 
-    @routes.post(config.mcp_path, summary="MCP (JSON-RPC over HTTP) with a key in Authorization: Bearer")
+    @routes.post(config.mcp_path, summary=said["endpoint"], operation_id=ids.get("endpoint"))
     async def endpoint(request: Request, data: Data) -> Response:
         if request.headers.get("origin"):
             return wall("origin_refused")
@@ -220,7 +315,12 @@ def router(
 
     # --- OAuth: the account's side ------------------------------------------------------------------------------
 
-    @routes.get(f"{config.oauth_prefix}/authorize", summary="What a program asks to sign in for")
+    @routes.get(
+        f"{config.oauth_prefix}/authorize",
+        summary=said["consent_info"],
+        operation_id=ids.get("consent_info"),
+        response_model=consent_out,
+    )
     def consent_info(
         request: Request,
         signed_in: Own,
@@ -248,10 +348,12 @@ def router(
         except McpRefused as refusal:
             raise refuse(refusal) from None
 
-    @routes.post(f"{config.oauth_prefix}/authorize", summary="Agree to a program's sign-in, or turn it down")
-    def consent(request: Request, signed_in: Own, data: Data, body: Annotated[dict, Body()]) -> dict:
+    @routes.post(f"{config.oauth_prefix}/authorize", summary=said["consent"], operation_id=ids.get("consent"))
+    def consent(request: Request, signed_in: Own, data: Data, body: Annotated[consent_in, Body()]) -> dict:
+        # Only the fields that came: a missing one reads as before (``body.get``), never as a null sent.
+        given = body.model_dump(exclude_unset=True)
         try:
-            redirect = oauth.consent(data, config, account_id(signed_in), body, base_of(request), _now())
+            redirect = oauth.consent(data, config, account_id(signed_in), given, base_of(request), _now())
         except McpRefused as refusal:
             data.rollback()
             raise refuse(refusal) from None
@@ -276,7 +378,7 @@ def router(
             for tool in all_tools(config)
         ]
 
-    @routes.get(f"{prefix}/tools", summary="Every tool with its group, level, default right and whether it is blocked")
+    @routes.get(f"{prefix}/tools", summary=said["tool_list"], operation_id=ids.get("tool_list"))
     def tool_list(signed_in: Own, data: Data) -> dict:
         _, max_level = settings(config, data)
         return {
@@ -315,11 +417,11 @@ def router(
             ],
         }
 
-    @routes.get(f"{prefix}/keys/{{key}}/rights", summary="Rights per tool of an own key or program")
+    @routes.get(f"{prefix}/keys/{{key}}/rights", summary=said["key_rights"], operation_id=ids.get("key_rights"))
     def key_rights(key: str, signed_in: Own, data: Data) -> dict:
         return _rights_of(data, _own_key(data, signed_in, key))
 
-    @routes.put(f"{prefix}/keys/{{key}}/rights", summary="Set what an own key may do with each tool")
+    @routes.put(f"{prefix}/keys/{{key}}/rights", summary=said["set_key_rights"], operation_id=ids.get("set_key_rights"))
     def set_key_rights(key: str, signed_in: Own, data: Data, body: Annotated[dict, Body()]) -> dict:
         caller = _own_key(data, signed_in, key)
         wanted = body.get("rights")
@@ -334,7 +436,7 @@ def router(
         data.commit()
         return _rights_of(data, caller)
 
-    @routes.get(f"{prefix}/requests", summary="The own requests, newest first")
+    @routes.get(f"{prefix}/requests", summary=said["request_list"], operation_id=ids.get("request_list"))
     def request_list(
         signed_in: Own, data: Data, status: Annotated[str | None, Query(max_length=20)] = None
     ) -> list[dict]:
@@ -351,11 +453,11 @@ def router(
             raise refuse(McpRefused("request_unknown"))
         return found
 
-    @routes.get(f"{prefix}/requests/{{request_id}}", summary="One own request")
+    @routes.get(f"{prefix}/requests/{{request_id}}", summary=said["request_one"], operation_id=ids.get("request_one"))
     def request_one(request_id: str, signed_in: Own, data: Data) -> dict:
         return requests.listed(_one(data, signed_in, request_id))
 
-    @routes.post(f"{prefix}/requests/{{request_id}}/approve", summary="Allow a request: it runs now, as asked")
+    @routes.post(f"{prefix}/requests/{{request_id}}/approve", summary=said["approve"], operation_id=ids.get("approve"))
     async def approve(request_id: str, signed_in: Own, data: Data, body: Annotated[dict | None, Body()] = None) -> dict:
         try:
             done = await requests.approve(
@@ -372,7 +474,7 @@ def router(
             raise refuse(refusal) from None
         return requests.listed(done)
 
-    @routes.post(f"{prefix}/requests/{{request_id}}/decline", summary="Turn a request down")
+    @routes.post(f"{prefix}/requests/{{request_id}}/decline", summary=said["decline"], operation_id=ids.get("decline"))
     def decline(request_id: str, signed_in: Own, data: Data) -> dict:
         try:
             done = requests.decline(
@@ -399,11 +501,21 @@ def router(
             ],
         }
 
-    @routes.get(f"{prefix}/admin", summary="The operator's settings of MCP", dependencies=[Depends(operator)])
+    @routes.get(
+        f"{prefix}/admin",
+        summary=said["admin_get"],
+        operation_id=ids.get("admin_get"),
+        dependencies=[Depends(operator)],
+    )
     def admin_get(data: Data) -> dict:
         return _admin(data)
 
-    @routes.put(f"{prefix}/admin", summary="Change the operator's settings of MCP", dependencies=[Depends(operator)])
+    @routes.put(
+        f"{prefix}/admin",
+        summary=said["admin_put"],
+        operation_id=ids.get("admin_put"),
+        dependencies=[Depends(operator)],
+    )
     def admin_put(data: Data, body: Annotated[dict, Body()]) -> dict:
         if "max_level" in body and body["max_level"] not in config.levels:
             raise refuse(McpRefused("level_invalid"))

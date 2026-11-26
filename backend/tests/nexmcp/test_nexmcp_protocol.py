@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from mcp_contract import mcp_key, rpc
+from mcp_contract import mcp_key, program, rpc
 
 
 def test_initialize_names_the_app_its_version_and_says_texts_are_data(app: Any) -> None:
@@ -22,7 +22,7 @@ def test_ping_unknown_methods_notifications_and_broken_requests(app: Any) -> Non
     secret = mcp_key(app)["secret"]
     assert rpc(app, secret, "ping").json()["result"] == {}
     assert rpc(app, secret, "resources/list").json()["error"]["code"] == -32601
-    owner = app.client("anonymous")
+    owner = program(app)
     headers = {"Authorization": f"Bearer {secret}", "Content-Type": "application/json"}
     path = app.config().mcp_path
     assert (
@@ -45,5 +45,5 @@ def test_a_protocol_version_not_spoken_and_a_body_too_large_are_refused(app: Any
     assert rpc(app, secret, "ping", **{"MCP-Protocol-Version": "2025-06-18"}).status_code == 200
     headers = {"Authorization": f"Bearer {secret}", "Content-Type": "application/json"}
     huge = b'{"jsonrpc":"2.0","id":1,"method":"ping","params":{"x":"' + b"a" * app.config().max_body + b'"}}'
-    answer = app.client("anonymous").post(app.config().mcp_path, content=huge, headers=headers)
+    answer = program(app).post(app.config().mcp_path, content=huge, headers=headers)
     assert answer.status_code == 413 and answer.json()["detail"]["code"] == "too_large"

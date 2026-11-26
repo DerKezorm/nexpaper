@@ -114,6 +114,7 @@
     "level_invalid": "Ce niveau n’existe pas ici.",
     "request_unknown": "Cette demande n’existe plus.",
     "request_decided": "Cette demande a déjà été décidée.",
+    "request_changed": "La demande a été modifiée après coup. Elle ne s'exécute pas.",
     "request_expired": "Cette demande a expiré.",
     "confirm_needed": "Cette demande est dangereuse. Autorise-la sur sa propre page.",
     "programs_off": "L’opérateur ne laisse plus les programmes se connecter.",
