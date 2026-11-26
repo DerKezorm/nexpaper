@@ -112,6 +112,13 @@ Profil `useLanguageOptions`. Die Anmeldeseite hat keine Sprachwahl (Frage S3).
   Mail; `tests/nexsprachen` 63 grün; vitest 1222 grün in 109 Dateien; `npm run lint` sauber; `npm run build` grün;
   Playwright `npm run e2e` 2 von 2 grün. Neue Tests je gegen eine Mutation rot (Rückgabecode 1).
 
+**Endlauf (26.11.2026, `reihe.sh nexpaper ende4`, Stand `29ba6c2`, nach Passkeys E49, Grenzen-Satz E46, Bestand E51,
+sprachen):** ruff sauber; pytest 3879 grün, 5 übersprungen, 1 rot: `test_routes.py::test_the_description_of_the_interface_is_the_snapshot`
+(OpenAPI-Schnappschuss, die alten Wege `/api/v1/locales…` tragen über das Modul andere `operationId` und den Schemanamen
+`LanguageEntry`; Frage S1, absichtlich nicht erneuert); `npm run lint` sauber; vitest 1222 grün in 109 Dateien;
+`npm run build` grün; Playwright `npm run e2e` 2 von 2 grün. Zuvor eine zufällige Ziffernfolge in einer MIME-Grenze
+(`test_reminders.py`, „9876“) gefunden: der Test liest jetzt den entschlüsselten Inhalt statt der rohen Mail (`6d1d708`).
+
 
 **Gebaut** auf konten 0.3.9, oidc 1.1.0, post 0.1.1, ui 0.1.1, am selben Tag nachgezogen über 0.3.10 **auf den Modulen
 1.0.0** (konten 1.0.0, ui 1.0.0, post 1.0.0, oidc 1.1.2; Kopien aus `bauplaene`, Zweig `konten` `3c55402`, `sync.py check`
