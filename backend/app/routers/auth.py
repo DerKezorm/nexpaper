@@ -97,8 +97,6 @@ logger = logging.getLogger("nexpaper.auth")
 
 router = APIRouter(prefix="/api/v1", tags=["auth"])
 
-#: The languages inside the frontend; others come as files from the operator.
-SHIPPED = ("en", "de", "fr")
 #: Names a sign-in waiting for its second factor (``services/totp.py``), and nothing else.
 PENDING_COOKIE = "nexpaper_2fa" + get_settings().cookie_name_suffix()
 
@@ -238,23 +236,18 @@ def check_confirm(password: str, confirm: str | None) -> None:
 LANGUAGE_HEADER = "x-nexpaper-language"
 
 
-def _known(language: str) -> bool:
-    return language in SHIPPED or language in {item.code for item in locales.available()}
-
-
 def interface_language(request: Request) -> str:
     """The language of the page that asks: the one the interface names (``X-Nexpaper-Language``), else the first of
     the browser's languages nexpaper has, by their weight (``locales.best_match``); empty when none fits."""
     named = request.headers.get(LANGUAGE_HEADER, "").strip()[:16]
-    if named and _known(named):
+    if named and locales.known(named):
         return named
-    known = set(SHIPPED) | {item.code for item in locales.available()}
-    return locales.best_match(request.headers.get("accept-language", ""), known)
+    return locales.best_match(request.headers.get("accept-language", ""), locales.codes())
 
 
 def check_language(language: str) -> str:
-    """Empty (the browser decides) or a language nexpaper has."""
-    if language and language not in SHIPPED and language not in {item.code for item in locales.available()}:
+    """Empty (the browser decides) or a language nexpaper has: built in or a usable file (``nexsprachen.known``)."""
+    if language and not locales.known(language):
         raise error("unknown_language", "nexpaper does not have this language.", 422)
     return language
 

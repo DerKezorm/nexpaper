@@ -38,14 +38,10 @@ SHORTCUTS = {"/schnell": ("upload", "uploadShort"), "/kamera": ("camera", "camer
 MAX_TEXT = 120
 
 
-def _known() -> set[str]:
-    return set(SHIPPED) | {item.code for item in locales.available()}
-
-
 def choose(accept_language: str) -> str:
     """The first language of the browser that nexpaper has (``pt-BR``, else ``pt``), else English. The header is
     read by ``locales.accepted``, as everywhere in nexpaper."""
-    return locales.best_match(accept_language or "", _known()) or FALLBACK
+    return locales.best_match(accept_language or "", locales.codes()) or FALLBACK
 
 
 def texts(language: str) -> dict[str, str]:

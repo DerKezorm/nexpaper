@@ -1,0 +1,73 @@
+"""nexsprachen contract tests: nexpaper's adapter (copied once from the module's template, now nexpaper's file).
+
+nexpaper as in production: ``services/locales.py`` configures the module with ``NEXPAPER_LOCALES_DIR`` (in the tests
+a fresh folder per test, set on the settings and put back afterwards), German, English and French built in, the routes
+under ``/api/v1/locales`` readable without signing in, nexpaper's refusals (``{"detail": {"code", "message", …}}``),
+the template made on the page (the server has none). The database is the one of the test session
+(``tests/conftest.py`` empties it before every test).
+"""
+
+from __future__ import annotations
+
+import shutil
+import tempfile
+from pathlib import Path
+from typing import Any
+
+from sprachen_contract import StandardAdapter
+
+OPERATOR_NAME = "sprachen-operator"
+
+
+class Adapter(StandardAdapter):
+    package = "app.vendor.nexsprachen"
+    prefix = "/api/v1/locales"
+    also: tuple[str, ...] = ()
+    built_in = {"de": "Deutsch", "en": "English", "fr": "Français"}  # noqa: RUF012 (the contract's base declares it so)
+    public_read = True
+    has_template = False
+
+    def start(self) -> None:
+        from app.config import get_settings
+        from app.services import locales
+
+        self._clients: list[Any] = []
+        self._settings = get_settings()
+        self._before = self._settings.locales_dir
+        # A fresh folder, as on a new server; nexpaper's own folder of the test session stays as it was.
+        self._folder = Path(tempfile.mkdtemp(prefix="nexpaper-locales-"))
+        self._settings.locales_dir = self._folder
+        locales.forget()
+
+    def stop(self) -> None:
+        from app.services import locales
+
+        for client in self._clients:
+            client.close()
+        self._settings.locales_dir = self._before
+        locales.forget()
+        shutil.rmtree(self._folder, ignore_errors=True)
+
+    def client(self, role: str) -> Any:
+        from app.models import MEMBER, OPERATOR
+        from tests.conftest import make_account, new_client
+
+        if role == "anonymous":
+            client = new_client()
+        else:
+            name = OPERATOR_NAME if role == "operator" else "sprachen-member"
+            client = new_client(self._account(name, OPERATOR if role == "operator" else MEMBER, make_account))
+        self._clients.append(client)
+        return client
+
+    @staticmethod
+    def _account(name: str, role: str, make: Any) -> Any:
+        from app.db import SessionLocal
+        from app.models import Account
+
+        with SessionLocal() as db:
+            row = db.query(Account).filter_by(name=name).one_or_none()
+            if row is not None:
+                db.expunge(row)
+                return row
+        return make(name, role)

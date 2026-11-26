@@ -35,6 +35,8 @@ OPEN = {
     ("GET", "/api/v1/docs"),
     ("GET", "/api/v1/locales"),
     ("GET", "/api/v1/locales/{code}"),
+    # The template to translate (module sprachen 1.0.0): 404, nexpaper's page makes it.
+    ("GET", "/api/v1/locales/template"),
     ("GET", "/api/v1/setup"),
     ("POST", "/api/v1/setup"),
     ("GET", "/api/v1/auth/methods"),
