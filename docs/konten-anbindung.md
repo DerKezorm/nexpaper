@@ -169,6 +169,8 @@ TODO weg). P4: unter „Mail bei neuer Anmeldung“ nexpapers Satz „Auch als M
 am Ende (`children`). E58: der Link „Eigene API-Schlüssel anlegen“ (Ziel Mein Konto › Verbindungen) steht am Ende von
 „API-Schlüssel aller Konten“ (`AllKeysCard` `children`, schluessel 1.0.2); Fristen-Briefe, Wochenübersicht und ihre
 Push-Meldungen auch auf Französisch.
+Endlauf `reihe.sh nexpaper ende10` (Stand `3b07018`): ruff sauber; pytest 3927 grün, 5 übersprungen, 0 rot; lint sauber;
+vitest 1233 grün in 109 Dateien; build grün; Playwright 2 von 2 grün.
 Endlauf `reihe.sh nexpaper ende9` (Stand `f289749`, mit P1 bis P5): ruff sauber; pytest 3925 grün, 5 übersprungen, 0 rot;
 lint sauber; vitest 1231 grün in 109 Dateien; build grün; Playwright 2 von 2 grün.
 
