@@ -899,7 +899,29 @@ TEXTS = {
            "failed": ("Export fehlgeschlagen", "Das ZIP konnte nicht gepackt werden.")},
     "en": {"ready": ("Export ready", "Your ZIP with {count} documents is ready."),
            "failed": ("Export failed", "The ZIP could not be packed.")},
+    "fr": {"ready": ("Exportation prête", "Votre ZIP avec {count} documents est prêt."),
+           "failed": ("Échec de l'exportation", "Le ZIP n'a pas pu être préparé.")},
 }
+#: The mail in the recipient's language: subject and text (``{count}``, ``{days}``, ``{where}``).
+MAILS: dict[str, dict[str, tuple[str, str]]] = {
+    "de": {"ready": ("Dein nexpaper-Export ist fertig",
+                     ("Das ZIP mit {count} Dokumenten, das du angefordert hast, ist fertig.\n\n"
+                      "Hier herunterladen: {where}\nEs bleibt {days} Tage liegen.\n")),
+           "failed": ("Dein nexpaper-Export ist gescheitert",
+                      "Das angeforderte ZIP ließ sich nicht packen. Versuch es in nexpaper noch einmal: {where}\n")},
+    "en": {"ready": ("Your nexpaper export is ready",
+                     ("The ZIP with {count} documents you asked for is ready.\n\n"
+                      "Download it here: {where}\nIt is kept for {days} days.\n")),
+           "failed": ("Your nexpaper export failed",
+                      "The ZIP you asked for could not be packed. Try again in nexpaper: {where}\n")},
+    "fr": {"ready": ("Votre exportation nexpaper est prête",
+                     ("Le ZIP avec {count} documents que vous avez demandé est prêt.\n\n"
+                      "Téléchargez-le ici : {where}\nIl est conservé {days} jours.\n")),
+           "failed": ("Votre exportation nexpaper a échoué",
+                      "Le ZIP demandé n'a pas pu être préparé. Réessayez dans nexpaper : {where}\n")},
+}
+#: Where the export lies, named without a public address.
+PLACES = {"de": "nexpaper, Archiv, Export", "en": "nexpaper, Archive, Export", "fr": "nexpaper, Archives, Exporter"}
 #: Where a tap leads: the archive, which opens the exports.
 EXPORTS_PATH = "/?export=1"
 
@@ -913,7 +935,7 @@ def _tell(export_id: int) -> None:
 def _send(export_id: int) -> None:
     from ..db import SessionLocal
     from ..vendor import nexpost
-    from . import notices, post_store, push
+    from . import kontenpost, post_store, push
 
     with SessionLocal() as db:
         export = db.get(Export, export_id)
@@ -923,31 +945,37 @@ def _send(export_id: int) -> None:
         state, count, uid = export.state, export.documents, account.id
         mail_to = account.email if account.email and account.email_confirmed_at and post_store.configured(db) else ""
         base = sharing_base(db)
-        language = notices.language_of(account.language)
+        language = account.language or ""
+        mail_language = kontenpost.language_for(db, account)
     what = "ready" if state == READY else "failed"
 
     def message_for(lang: str) -> Any:
-        title, body = TEXTS[notices.language_of(lang or language)][what]
+        title, body = TEXTS[_short(lang or language)][what]
         return push.Message(title=title, body=body.format(count=count), url=EXPORTS_PATH, desk=EXPORTS_PATH,
                             tag=f"export-{export_id}")
 
     push.send_to_person(uid, message_for)
     if mail_to:
-        subject = "Your nexpaper export is ready" if what == "ready" else "Your nexpaper export failed"
-        where = f"{base}{EXPORTS_PATH}" if base else "nexpaper, Archive, Export"
-        text = (
-            (f"The ZIP with {count} documents you asked for is ready.\n\nDownload it here: {where}\n"
-             f"It is kept for {KEEP_DAYS} days.\n") if what == "ready"
-            else f"The ZIP you asked for could not be packed. Try again in nexpaper: {where}\n"
-        )
-        # The words as before (English), through the outbox of the shared post module with nexpaper's logo; once per
+        mail_language = mail_language if mail_language in MAILS else "en"
+        subject, template = MAILS[mail_language][what]
+        where = f"{base}{EXPORTS_PATH}" if base else PLACES[mail_language]
+        text = template.format(count=count, days=KEEP_DAYS, where=where)
+        # In the recipient's language, through the outbox of the shared post module with nexpaper's logo; once per
         # export.
         with SessionLocal() as db:
             try:
-                post_store.queue(db, post_store.plain(mail_to, kind="export", subject=subject, text=text, language="en",
+                post_store.queue(db, post_store.plain(mail_to, kind="export", subject=subject, text=text,
+                                                      language=mail_language,
                                                       key=f"export:{export_id}:{what}"))
             except (nexpost.MailError, ValueError):  # an address the module refuses: the export stands all the same
                 logger.warning("Export notice not mailed export_id=%s", export_id)
+
+
+def _short(language: str) -> str:
+    """The language of a push: French where the device or the account speaks it, else German or English as before."""
+    from . import notices
+
+    return "fr" if (language or "").split("-")[0].lower() == "fr" else notices.language_of(language)
 
 
 def sharing_base(db: Session) -> str:

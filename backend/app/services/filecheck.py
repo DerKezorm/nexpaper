@@ -343,6 +343,7 @@ def run_portion(db: Session, *, max_files: int = PORTION_FILES, max_bytes: int =
 TEXTS = {
     "de": ("Dateien prüfen: Auffälligkeiten", "{count} Dokumente haben fehlende oder veränderte Dateien."),
     "en": ("Checking the files: problems found", "{count} documents have missing or changed files."),
+    "fr": ("Vérification des fichiers : anomalies", "{count} documents ont des fichiers manquants ou modifiés."),
 }
 
 
@@ -354,6 +355,15 @@ def _tell_operators(new: int, total: int) -> None:
         mail_subject="nexpaper: files are missing or changed",
         mail_body=(f"The check of the files found {count} documents with missing or changed files "
                    "(new since the last check: " + str(new) + ").\n\nSee Server › Storage and backups: {where}\n"),
+        mails={
+            "de": ("nexpaper: Dateien fehlen oder sind verändert",
+                   (f"Die Prüfung der Dateien hat {count} Dokumente mit fehlenden oder veränderten Dateien gefunden "
+                    f"(neu seit der letzten Prüfung: {new}).\n\nSiehe Server › Speicher und Sicherung: " "{where}\n")),
+            "fr": ("nexpaper : des fichiers manquent ou ont changé",
+                   (f"La vérification des fichiers a trouvé {count} documents avec des fichiers manquants ou modifiés "
+                    f"(nouveaux depuis la dernière vérification : {new}).\n\nVoir Serveur › Stockage et sauvegardes : "
+                    "{where}\n")),
+        },
     ))
 
 

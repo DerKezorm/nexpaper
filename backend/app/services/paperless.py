@@ -947,6 +947,17 @@ TEXTS = {
            " {inbox} davon warten im Eingang."),
     "en": ("Paperless import done", "{count} documents from Paperless are now yours.",
            " {inbox} are waiting in your inbox."),
+    "fr": ("Reprise depuis Paperless terminée", "{count} documents de Paperless sont maintenant à vous.",
+           " {inbox} attendent dans votre boîte de réception."),
+}
+#: The mail in German and French: subject, what came, what waits in the inbox, the last line (as ``CLOSING``).
+MAILS = {
+    "de": ("nexpaper: der Import aus Paperless ist fertig",
+           "{count} Dokumente aus Paperless liegen jetzt in nexpaper für dich",
+           ", {inbox} davon warten in deinem Eingang", "\n\nnexpaper öffnen: {where}\n"),
+    "fr": ("nexpaper : la reprise depuis Paperless est terminée",
+           "{count} documents de Paperless sont maintenant dans nexpaper pour vous",
+           ", dont {inbox} attendent dans votre boîte de réception", "\n\nOuvrir nexpaper : {where}\n"),
 }
 
 
@@ -973,14 +984,21 @@ def tell_people(db: Session, document_ids: list[int]) -> None:
             owned[user] += 1
     db.rollback()
     for person, count in owned.items():
-        inbox = waiting[person]
-        texts = {lang: (title, (body + (tail if inbox else "")).format(count=count, inbox=inbox))
-                 for lang, (title, body, tail) in TEXTS.items()}
-        tell.person(person, tell.Notice(
-            texts=texts, url="/eingang" if inbox else "/", tag="paperless-import",
-            mail_subject="nexpaper: the import from Paperless is done",
-            mail_body=f"{count} documents from Paperless are now in nexpaper for you"
-                      + (f", {inbox} of them waiting in your inbox" if inbox else "") + "." + CLOSING))
+        tell.person(person, import_notice(count, waiting[person]))
+
+
+def import_notice(count: int, inbox: int) -> tell.Notice:
+    """What the import brought one person (``count`` documents, ``inbox`` of them waiting in the inbox), in German,
+    English and French; numbers only, nothing names a document."""
+    texts = {lang: (title, (body + (tail if inbox else "")).format(count=count, inbox=inbox))
+             for lang, (title, body, tail) in TEXTS.items()}
+    return tell.Notice(
+        texts=texts, url="/eingang" if inbox else "/", tag="paperless-import",
+        mail_subject="nexpaper: the import from Paperless is done",
+        mail_body=f"{count} documents from Paperless are now in nexpaper for you"
+                  + (f", {inbox} of them waiting in your inbox" if inbox else "") + "." + CLOSING,
+        mails={lang: (subject, body.format(count=count) + (tail.format(inbox=inbox) if inbox else "") + "."
+                      + closing) for lang, (subject, body, tail, closing) in MAILS.items()})
 
 
 def _skipped(db: Session, origin: str, pid: int, reason: str, document_id: int | None) -> None:

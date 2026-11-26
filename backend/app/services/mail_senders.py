@@ -11,6 +11,7 @@ from. That is why nothing from the mailbox is filed by itself; it waits in the i
 from __future__ import annotations
 
 import logging
+import re
 import secrets
 from datetime import timedelta
 from typing import Any
@@ -69,20 +70,42 @@ def link_to(db: Session, token: str) -> str:
     return f"{base}/absender/{token}" if base else ""
 
 
-def confirm_letter(to: str, link: str, *, name: str, hours: int, mailbox: str) -> Any:
-    """The link that makes an address count as one the account forwards documents from: the words of before the shared
-    post module (English), now with nexpaper's logo. ``nexpost.MailError`` for an address the module refuses."""
+#: The letter "confirm the address" in German, English and French: subject, the words with ``{target}`` (the mailbox
+#: of the intake, or nothing), the line before the link, the last words (``{hours}``).
+CONFIRM_WORDS = {
+    "de": ("Bestätige die Adresse, von der du Dokumente weiterleitest",
+           "Das nexpaper-Konto {name} möchte von dieser Adresse aus Dokumente{target} weiterleiten.", " an {mailbox}",
+           "Öffne diesen Link, um es zu bestätigen:",
+           ("Der Link gilt einmal und {hours} Stunden lang. Hast du ihn nicht angefordert, beachte diese Mail nicht: "
+            "Es ändert sich nichts.")),
+    "en": ("Confirm the address you forward documents from",
+           "The nexpaper account {name} wants to forward documents{target} from this address.", " to {mailbox}",
+           "Open this link to confirm it:",
+           "The link works once and for {hours} hours. If you did not ask for it, ignore this mail: nothing changes."),
+    "fr": ("Confirmez l'adresse depuis laquelle vous transférez des documents",
+           "Le compte nexpaper {name} souhaite transférer des documents{target} depuis cette adresse.", " à {mailbox}",
+           "Ouvrez ce lien pour le confirmer :",
+           ("Le lien fonctionne une seule fois et pendant {hours} heures. Si vous ne l'avez pas demandé, ignorez ce "
+            "message : rien ne change.")),
+}
+
+
+def confirm_letter(to: str, link: str, *, name: str, hours: int, mailbox: str, language: str = "") -> Any:
+    """The link that makes an address count as one the account forwards documents from, with nexpaper's logo, in
+    ``language`` (the account's: German, English or French; else English). ``nexpost.MailError`` for an address the
+    module refuses."""
     from . import post_store
 
-    target = f" to {mailbox}" if mailbox else ""
-    text = (
-        f"The nexpaper account {name} wants to forward documents{target} from this address.\n\n"
-        f"Open this link to confirm it:\n{link}\n\n"
-        f"The link works once and for {hours} hours. If you did not ask for it, ignore this mail: nothing "
-        "changes.\n"
-    )
-    return post_store.plain(to, kind="sender_confirm", subject="Confirm the address you forward documents from",
-                            text=text, language="en", link=link)
+    language = language if language in CONFIRM_WORDS else "en"
+    subject, words, target, before, after = CONFIRM_WORDS[language]
+    # Names go in as text in one pass, never by ``str.format`` on what a person chose (a name "{target}" stays a name).
+    values = {"name": name, "target": target.replace("{mailbox}", mailbox) if mailbox else "", "hours": str(hours)}
+
+    def fill(template: str) -> str:
+        return re.sub(r"\{(name|target|hours)\}", lambda found: values[found.group(1)], template)
+
+    text = f"{fill(words)}\n\n{before}\n{link}\n\n{fill(after)}\n"
+    return post_store.plain(to, kind="sender_confirm", subject=subject, text=text, language=language, link=link)
 
 
 def available(db: Session) -> bool:

@@ -517,12 +517,21 @@ def _unlinked_notice(provider: str, by: str) -> tell.Notice:
     texts = {
         "de": ("Verknüpfung gelöst", f"{by} hat die Verknüpfung deines Kontos mit {provider} gelöst."),
         "en": ("Link removed", f"{by} removed the link of your account to {provider}."),
+        "fr": ("Liaison supprimée", f"{by} a supprimé la liaison de votre compte avec {provider}."),
     }
     return tell.Notice(
         texts=texts, url="/settings/security", tag="oidc-unlinked",
         mail_subject="nexpaper: a sign-in link of your account was removed",
         mail_body=(f"{by} removed the link of your nexpaper account to the sign-in provider {provider}.\n\n"
                    "See your account: {where}\n"),
+        mails={
+            "de": ("nexpaper: Verknüpfung deines Kontos mit einem Anmeldeanbieter gelöst",
+                   (f"{by} hat die Verknüpfung deines nexpaper-Kontos mit dem Anmeldeanbieter {provider} gelöst.\n\n"
+                    "Zu deinem Konto: {where}\n")),
+            "fr": ("nexpaper : une liaison de votre compte à un fournisseur de connexion a été supprimée",
+                   (f"{by} a supprimé la liaison de votre compte nexpaper avec le fournisseur de connexion {provider}."
+                    "\n\nVoir votre compte : {where}\n")),
+        },
     )
 
 

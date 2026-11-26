@@ -24,6 +24,7 @@ from ..services import (
     intake_folder,
     intake_mail,
     konten_store,
+    kontenpost,
     mail_senders,
     post_store,
     rights,
@@ -375,7 +376,7 @@ def add_sender(payload: SenderIn, account: BrowserAccount, db: DbSession) -> Sen
     try:
         post_store.send_now(db, mail_senders.confirm_letter(
             address, mail_senders.link_to(db, token), name=row.name, hours=mail_senders.HOURS,
-            mailbox=str(settings_service.get(db, "mail_address") or ""),
+            mailbox=str(settings_service.get(db, "mail_address") or ""), language=kontenpost.language_for(db, row),
         ))
     except nexpost.MailError as exc:
         db.delete(made)

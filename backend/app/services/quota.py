@@ -163,6 +163,15 @@ def notice(count: int) -> Notice:
         texts=texts, url=PATH, tag=TAG, mail_subject="nexpaper: storage full",
         mail_body=(f"The storage of your account is full: {count} documents are waiting until there is room again. "
                    "Nothing is lost; they come in by themselves once there is room.\n\nOpen nexpaper: {where}\n"),
+        mails={
+            "de": ("nexpaper: Speicher voll",
+                   (f"Der Speicher deines Kontos ist voll: {count} Dokumente warten, bis wieder Platz ist. Nichts geht "
+                    "verloren; sie kommen von selbst herein, sobald Platz ist.\n\nnexpaper öffnen: {where}\n")),
+            "fr": ("nexpaper : stockage plein",
+                   (f"Le stockage de votre compte est plein : {count} documents attendent qu'il y ait de nouveau de la "
+                    "place. Rien n'est perdu ; ils arrivent d'eux-mêmes dès qu'il y a de la place.\n\n"
+                    "Ouvrir nexpaper : {where}\n")),
+        },
     )
 
 

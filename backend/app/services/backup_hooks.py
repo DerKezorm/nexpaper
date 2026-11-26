@@ -474,6 +474,9 @@ FAILED_TEXTS = {
            "Die Sicherung ließ sich beim Neustart nicht einspielen. Der Server läuft mit den Daten von vorher weiter."),
     "en": ("Restore failed",
            "The backup could not be put in place at the restart. The server went on with the data it had."),
+    "fr": ("Échec de la restauration",
+           ("La sauvegarde n'a pas pu être remise en place au redémarrage. Le serveur continue avec les données "
+            "d'avant.")),
 }
 #: A scheduled backup failed (the module tells once, until one succeeds again; it tries again after an hour).
 BACKUP_FAILED_TEXTS = {
@@ -651,6 +654,16 @@ def restore_failed_notice() -> Any:
         mail_body=("The backup you chose could not be put in place when nexpaper restarted. The server went on with "
                    "the data it had, and the staged files were put aside in the backups folder (restore-failed)."
                    "\n\nThe backups and the log: {where}\n"),
+        mails={
+            "de": ("nexpaper: Wiederherstellen einer Sicherung gescheitert",
+                   ("Die gewählte Sicherung ließ sich beim Neustart von nexpaper nicht einspielen. Der Server läuft "
+                    "mit den Daten von vorher weiter; die vorbereiteten Dateien liegen beiseitegelegt im Ordner der "
+                    "Sicherungen (restore-failed).\n\nDie Sicherungen und das Log: {where}\n")),
+            "fr": ("nexpaper : échec de la restauration d'une sauvegarde",
+                   ("La sauvegarde choisie n'a pas pu être remise en place au redémarrage de nexpaper. Le serveur "
+                    "continue avec les données d'avant ; les fichiers préparés ont été mis de côté dans le dossier des "
+                    "sauvegardes (restore-failed).\n\nLes sauvegardes et le journal : {where}\n")),
+        },
     )
 
 
@@ -664,6 +677,14 @@ def backup_failed_notice() -> Any:
         mail_subject="nexpaper: a scheduled backup failed",
         mail_body=("The scheduled backup of nexpaper could not be made. nexpaper tries again in an hour; the page "
                    "and the log say why.\n\nThe backups and the log: {where}\n"),
+        mails={
+            "de": ("nexpaper: geplante Sicherung gescheitert",
+                   ("Die geplante Sicherung von nexpaper ließ sich nicht anlegen. nexpaper versucht es in einer Stunde "
+                    "noch einmal; die Seite und das Log sagen, warum.\n\nDie Sicherungen und das Log: {where}\n")),
+            "fr": ("nexpaper : échec d'une sauvegarde planifiée",
+                   ("La sauvegarde planifiée de nexpaper n'a pas pu être faite. nexpaper réessaiera dans une heure ; "
+                    "la page et le journal indiquent pourquoi.\n\nLes sauvegardes et le journal : {where}\n")),
+        },
     )
 
 

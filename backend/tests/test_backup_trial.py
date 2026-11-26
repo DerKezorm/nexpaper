@@ -262,9 +262,9 @@ def test_a_restore_that_fails_at_the_start_leaves_the_database_and_the_server_st
     assert accounts_now() == before, "the live database is as it was, tom (made after the backup) is still there"
     live = backups.folder().parent
     assert [path.name for path in live.glob("*.restoring")] == []
-    # The operators were told, once, in both languages, with no dash.
+    # The operators were told, once, in German, English and French (the push and the mail), with no dash.
     assert len(told) == 1 and told[0].tag == "restore-failed"
-    assert set(told[0].texts) == {"de", "en"}
+    assert set(told[0].texts) == {"de", "en", "fr"} and set(told[0].mails) == {"de", "fr"}
     assert all("–" not in text and "—" not in text for pair in told[0].texts.values() for text in pair)
     assert backups.report_failed_restore() is False
 

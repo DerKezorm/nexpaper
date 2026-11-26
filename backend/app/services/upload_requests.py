@@ -403,19 +403,36 @@ def tell_if_due(db: Session, request_id: int) -> None:
     row = db.get(UploadRequest, request_id)
     if row is None:
         return
-    count, name = row.received, row.name
-    tell.person(row.user_id, tell.Notice(
+    tell.person(row.user_id, request_notice(request_id, row.name, row.received))
+
+
+def request_notice(request_id: int, name: str, count: int) -> Any:
+    """The notice to the person of a request: its name and how many files came so far, in German, English and French."""
+    from . import tell
+
+    return tell.Notice(
         texts={
             "de": ("Neue Dateien im Eingang", f"Über die Bitte „{name}“ sind bis jetzt {count} Dateien angekommen."
                    if count != 1 else f"Über die Bitte „{name}“ ist eine Datei angekommen."),
             "en": ("New files in the inbox", f"{count} files have arrived so far through the request “{name}”."
                    if count != 1 else f"A file has arrived through the request “{name}”."),
+            "fr": ("Nouveaux fichiers dans la boîte de réception",
+                   f"{count} fichiers sont arrivés jusqu'ici par la demande « {name} »."
+                   if count != 1 else f"Un fichier est arrivé par la demande « {name} »."),
         },
         url=INBOX_PATH, tag=f"upload-request-{request_id}",
         mail_subject="Files arrived through an upload request",
         mail_body=f"Files arrived through your upload request \"{name}\": {count} so far.\n\n"
                   "They wait in your inbox: {where}\n",
-    ))
+        mails={
+            "de": ("Dateien über eine Upload-Bitte angekommen",
+                   (f"Über deine Upload-Bitte „{name}“ sind Dateien angekommen: {count} bis jetzt.\n\n"
+                    "Sie warten in deinem Eingang: {where}\n")),
+            "fr": ("Des fichiers sont arrivés par une demande de dépôt",
+                   (f"Des fichiers sont arrivés par votre demande de dépôt « {name} » : {count} jusqu'ici.\n\n"
+                    "Ils attendent dans votre boîte de réception : {where}\n")),
+        },
+    )
 
 
 # --- Limits per hour (in memory) and per day (in the settings) --------------------------------------------------------
