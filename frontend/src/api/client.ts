@@ -119,6 +119,13 @@ async function once<T>(path: string, options: Options): Promise<T> {
   return data as T
 }
 
+/** A request whose answer the caller reads itself (the shared module sprachen), with what every call of nexpaper
+ * carries: this tab in `X-Nexpaper-Client` and the language of the page. */
+export function tabFetch(path: string, init: RequestInit = {}): Promise<Response> {
+  const headers = { ...(init.headers as Record<string, string> | undefined), 'X-Nexpaper-Client': tabId(), ...(i18n.language ? { 'X-Nexpaper-Language': i18n.language } : {}) }
+  return fetch(path, { credentials: 'same-origin', ...init, headers })
+}
+
 // ---- Types ----------------------------------------------------------------------------------------------------------
 
 export type ThemeChoice = 'system' | 'light' | 'dark'

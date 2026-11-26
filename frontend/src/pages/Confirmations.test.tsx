@@ -35,7 +35,6 @@ beforeEach(async () => {
     'GET /api/v1/oidc/me': [{ slug: 'authentik', label: 'authentik', linked: true, address: null }],
     'GET /api/v1/auth/passkeys': [],
     'GET /api/v1/auth/sessions': [],
-    'GET /api/v1/locales': [{ code: 'es', name: 'Español', keys: 120 }],
     // The module's list of keys (schluessel 1.0.0, `/api/v1/connections/keys`), with a key that only uploads.
     'GET /api/v1/connections/keys': {
       app: 'nexpaper', api: true, mcp: null, programs: false, api_path: '/api/v1', mcp_path: null, keys_wait: false, warn_days: 7, address: 'https://paper.example.com',
@@ -113,10 +112,20 @@ describe('my account', () => {
 })
 
 describe('the operator', () => {
-  it('asks before a language is removed', async () => {
+  // TODO sprachen 1.0.0: nexpaper asked before a language was removed; the card of the module removes at once, as
+  // nexnotes did (question S2 in einst-fragen/nexpaper.md). Until it is answered this holds what the card does now.
+  it('removes a language at once, as the card of the module sprachen does (no question)', async () => {
+    server.answers['GET /api/v1/locales'] = [
+      { code: 'de', name: 'Deutsch', keys: 0, built_in: true, own: false },
+      { code: 'en', name: 'English', keys: 0, built_in: true, own: false },
+      { code: 'fr', name: 'Français', keys: 0, built_in: true, own: false },
+      { code: 'es', name: 'Español', keys: 120, built_in: false, own: true },
+    ]
     await page.show(<LanguagesCard />)
     // The chip's own small button, named by the language (ui `Chip`).
-    await asksFirst(() => page.button('Español entfernen'), 'Sprache entfernen', 'DELETE /api/v1/locales/es')
+    await page.click(page.button('Español entfernen'))
+    expect(page.dialog).toBeFalsy()
+    expect(server.changes()).toEqual(['DELETE /api/v1/locales/es'])
   })
 
   it('asks before an invitation is withdrawn', async () => {

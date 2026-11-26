@@ -311,15 +311,6 @@
     "mailHint": "nexpaper sends through it invitations, links for a new password and to confirm an address, notices about your account (a new sign-in, a changed address, a new username, a second factor reset), reminders of deadlines and the weekly overview, word of a finished or failed export, notices to operators (upload requests, Paperless import, the check of the files, restoring, sign-in) and the confirmation of a sender address for the mail intake.",
     "countAccounts_one": "{{count}} account",
     "countAccounts_other": "{{count}} accounts",
-    "languages": "Languages",
-    "languagesHint": "German, English and French are built in. Add more as a JSON file; missing texts fall back to English.",
-    "builtIn": "built in",
-    "texts_one": "one text",
-    "texts_other": "{{count}} texts",
-    "template": "Download the template",
-    "languageCode": "Language code",
-    "upload": "Upload a language",
-    "languageAdded": "Language added. It appears under My account › Profile.",
     "ai": {
       "title": "AI proposals in the inbox",
       "text": "Applies to everybody. The AI proposes title, sender, kind, date and amount; only what a person confirms is filed. Rules always come first.",
@@ -2076,11 +2067,6 @@
       "title": "Withdraw the invitation?",
       "text": "The link of the invitation stops working. A new invitation is always possible.",
       "confirm": "Withdraw invitation"
-    },
-    "locale": {
-      "title": "Remove the language?",
-      "text": "The uploaded language \"{{name}}\" is deleted. Whoever chose it sees the default language afterwards.",
-      "confirm": "Remove language"
     },
     "avatar": {
       "title": "Remove the profile picture?",

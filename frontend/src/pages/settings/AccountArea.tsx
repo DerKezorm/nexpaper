@@ -13,7 +13,8 @@ import { AccountButton } from '../../components/AccountButton'
 import { Avatar } from '../../components/Avatar'
 import { UploadVaultCard } from '../../components/PhoneCards'
 import { UploadRequestsCard } from '../../components/UploadRequests'
-import { changeLanguage, languageOptions, type LanguageOption } from '../../i18n'
+import { BUILT_IN, changeLanguage, own } from '../../i18n'
+import { useLanguageOptions } from '../../vendor/nexsprachen/languages'
 import { confirmOf } from '../../lib/accountButton'
 import { providerName } from '../../lib/aiProviders'
 import { errorText } from '../../lib/errors'
@@ -157,16 +158,10 @@ function ProfileCard({ me }: { me: Me }) {
   const [values, setValues] = useState({ displayName: me.display_name ?? '', username: me.name, email: me.email ?? '' })
   const [password, setPassword] = useState('')
   const [asking, setAsking] = useState(false)
-  const [languages, setLanguages] = useState<LanguageOption[]>([])
+  // The built-in languages at once, the operator's own when the server answered (module sprachen).
+  const languages = useLanguageOptions(own, BUILT_IN)
   const action = useAction()
   const { ask, dialog } = useAsk()
-  useEffect(() => {
-    let alive = true
-    void languageOptions().then((list) => alive && setLanguages(list))
-    return () => {
-      alive = false
-    }
-  }, [])
   useEffect(() => {
     setValues({ displayName: me.display_name ?? '', username: me.name, email: me.email ?? '' })
   }, [me.display_name, me.name, me.email])

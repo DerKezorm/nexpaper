@@ -1,7 +1,6 @@
 /**
  * The operator's part of the settings that is not a module's area: the server's settings for the cards (`useServerSettings`),
- * "Sprachen" under General (the built-in ones, the operator's own as chips, the template and "Sprache hochladen" at
- * the field of the language code), and the cards of the shared modules with nexpaper's client: "Mail" (post 1.1.0,
+ * "Sprachen" under General (the card of the shared module sprachen), and the cards of the shared modules with nexpaper's client: "Mail" (post 1.1.0,
  * `/api/v1/server/mail`, nexpaper's sentence of every mail it sends) and "Log" (log 1.0.0, `/api/v1/logs`). Sign-in
  * is `SignInArea.tsx`, Storage and backups `StorageArea.tsx`, the keys `KeysCards.tsx`. Everything here is the
  * server's; it applies to all. The operator manages accounts and does not read the documents in them.
@@ -9,17 +8,14 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import { ApiError, api, type AddressQuestion } from '../../api/client'
-import { byName, forgetAddedLanguages, templateFile } from '../../i18n'
+import { ApiError, api, tabFetch, type AddressQuestion } from '../../api/client'
+import { APP_NAME, own, TEMPLATE } from '../../i18n'
 import { LogCard } from '../../vendor/nexlog/LogCard'
 import type { LogLine, LogRequest } from '../../vendor/nexlog/log'
 import { MailCard } from '../../vendor/nexpost/MailCard'
 import type { PostRequest } from '../../vendor/nexpost/mailserver'
-import { Button, Buttons, Card, Chip, Field } from '../../vendor/nexui'
-import { saveAsFile, useAction } from './actions'
-import { Outcome } from './Outcome'
-import { useAsk } from './useAsk'
-import { iso } from '../../lib/say'
+import { LanguagesCard as SprachenCard } from '../../vendor/nexsprachen/LanguagesCard'
+import { useAction } from './actions'
 
 export type ServerSettings = {
   public_url: string
@@ -98,76 +94,10 @@ export function useServerSettings() {
   return { settings, save, saveNow, saveAddress, reload, setSettings, ...action }
 }
 
-type Locale = { code: string; name: string; keys: number }
-
-/** "Sprachen" (General, place 5): the built-in ones, the operator's own as chips with "remove", the template, and the
- * language code with its own button that uploads the file. */
+/** "Sprachen" (General, place 5): the card of the shared module sprachen 1.0.0 with nexpaper's way to the server
+ * (`/api/v1/locales`, its tab), the English texts as the template, and the menus asking anew after a change. */
 export function LanguagesCard() {
-  const { t } = useTranslation()
-  const [list, setList] = useState<Locale[]>([])
-  const [code, setCode] = useState('')
-  const action = useAction()
-  const { ask, dialog } = useAsk()
-  const load = useCallback(() => {
-    api<Locale[]>('/api/v1/locales').then((rows) => setList(rows.sort(byName)), () => undefined)
-  }, [])
-  useEffect(load, [load])
-  const upload = (chosen: File) =>
-    void action.run(async () => {
-      await api(`/api/v1/locales/${encodeURIComponent(code)}`, { method: 'PUT', raw: chosen })
-      forgetAddedLanguages()
-      load()
-    }, t('server.languageAdded'))
-  return (
-    <Card id="languages" icon="Globe" title={t('server.languages')} subtitle={t('server.languagesHint')}>
-      <div className="flex flex-wrap gap-2" data-testid="languages-list">
-        <Chip>{`Deutsch · ${t('server.builtIn')}`}</Chip>
-        <Chip>{`English · ${t('server.builtIn')}`}</Chip>
-        <Chip>{`Français · ${t('server.builtIn')}`}</Chip>
-        {list.map((entry) => (
-          <Chip
-            key={entry.code}
-            name={entry.name}
-            disabled={action.busy}
-            testId={`language-${entry.code}`}
-            onRemove={() =>
-              ask({
-                title: t('confirm.locale.title'),
-                text: t('confirm.locale.text', { name: iso(entry.name) }),
-                confirm: t('confirm.locale.confirm'),
-                run: async () => {
-                  await api(`/api/v1/locales/${entry.code}`, { method: 'DELETE' })
-                  forgetAddedLanguages()
-                  load()
-                },
-              })
-            }
-          >
-            {`${entry.name} (${entry.code}) · ${t('server.texts', { count: entry.keys })}`}
-          </Chip>
-        ))}
-      </div>
-      <Buttons>
-        <Button kind="secondary" icon="Download" onClick={() => saveAsFile('nexpaper-language-template.json', templateFile())} testId="language-template">
-          {t('server.template')}
-        </Button>
-      </Buttons>
-      <Field
-        label={t('server.languageCode')}
-        value={code}
-        onChange={(event) => setCode(event.target.value.trim())}
-        placeholder="es"
-        data-testid="language-code"
-        action={
-          <Button kind="secondary" icon="Upload" disabled={!code} busy={action.busy} accept="application/json,.json" onFile={upload} testId="language-upload">
-            {t('server.upload')}
-          </Button>
-        }
-      />
-      <Outcome problem={action.problem} done={action.done} />
-      {dialog}
-    </Card>
-  )
+  return <SprachenCard app={APP_NAME} base="/api/v1/locales" fetcher={tabFetch} template={TEMPLATE} onChange={own.forget} />
 }
 
 /** nexpaper's client for the cards of the modules post and log (its headers, its errors with their codes). */

@@ -311,15 +311,6 @@
     "mailHint": "Über ihn verschickt nexpaper Einladungen, Links für ein neues Passwort und zum Bestätigen einer Adresse, Hinweise zu deinem Konto (neue Anmeldung, geänderte Adresse, neuer Benutzername, zurückgesetzter zweiter Faktor), Erinnerungen an Fristen und die Wochenübersicht, Bescheid zu einem fertigen oder gescheiterten Export, Hinweise an Betreiber (Upload-Bitten, Paperless-Import, Prüfung der Dateien, Wiederherstellen, Anmeldung) und die Bestätigung einer Absenderadresse für den Mail-Eingang.",
     "countAccounts_one": "{{count}} Konto",
     "countAccounts_other": "{{count}} Konten",
-    "languages": "Sprachen",
-    "languagesHint": "Deutsch, Englisch und Französisch sind eingebaut. Weitere als JSON-Datei hinzufügen, fehlende Texte fallen auf Englisch zurück.",
-    "builtIn": "eingebaut",
-    "texts_one": "ein Text",
-    "texts_other": "{{count}} Texte",
-    "template": "Vorlage herunterladen",
-    "languageCode": "Sprachcode",
-    "upload": "Sprache hochladen",
-    "languageAdded": "Sprache hinzugefügt. Sie erscheint unter Mein Konto › Profil.",
     "ai": {
       "title": "KI-Vorschläge im Eingang",
       "text": "Gilt für alle. Die KI schlägt Titel, Absender, Art, Datum und Betrag vor; abgelegt wird nur, was ein Mensch bestätigt. Regeln gehen immer vor.",
@@ -2076,11 +2067,6 @@
       "title": "Einladung zurückziehen?",
       "text": "Der Link der Einladung geht danach nicht mehr. Eine neue Einladung ist jederzeit möglich.",
       "confirm": "Einladung zurückziehen"
-    },
-    "locale": {
-      "title": "Sprache entfernen?",
-      "text": "Die hochgeladene Sprache „{{name}}“ wird gelöscht. Wer sie gewählt hat, sieht danach wieder die Standardsprache.",
-      "confirm": "Sprache entfernen"
     },
     "avatar": {
       "title": "Profilbild entfernen?",

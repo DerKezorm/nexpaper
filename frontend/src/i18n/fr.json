@@ -311,15 +311,6 @@
     "mailHint": "nexpaper envoie par lui les invitations, les liens pour un nouveau mot de passe et pour confirmer une adresse, les avis sur ton compte (nouvelle connexion, adresse modifiée, nouveau nom d'utilisateur, second facteur réinitialisé), les rappels d'échéances et l'aperçu de la semaine, l'avis d'un export terminé ou échoué, les avis aux opérateurs (demandes de dépôt, import Paperless, vérification des fichiers, restauration, connexion) et la confirmation d'une adresse d'expéditeur pour l'entrée par courriel.",
     "countAccounts_one": "{{count}} compte",
     "countAccounts_other": "{{count}} comptes",
-    "languages": "Langues",
-    "languagesHint": "L'allemand, l'anglais et le français sont intégrés. Ajoutez-en d'autres sous forme de fichier JSON ; les textes manquants s'affichent en anglais.",
-    "builtIn": "intégrée",
-    "texts_one": "un texte",
-    "texts_other": "{{count}} textes",
-    "template": "Télécharger le modèle",
-    "languageCode": "Code de langue",
-    "upload": "Téléverser une langue",
-    "languageAdded": "Langue ajoutée. Elle apparaît sous Mon compte › Profil.",
     "ai": {
       "title": "Propositions de l'IA dans la boîte de réception",
       "text": "S'applique à tout le monde. L'IA propose le titre, l'expéditeur, le type, la date et le montant ; seul ce qu'une personne confirme est classé. Les règles passent toujours en premier.",
@@ -2076,11 +2067,6 @@
       "title": "Retirer l'invitation ?",
       "text": "Le lien de l'invitation cesse de fonctionner. Une nouvelle invitation est toujours possible.",
       "confirm": "Retirer l'invitation"
-    },
-    "locale": {
-      "title": "Retirer la langue ?",
-      "text": "La langue téléversée « {{name}} » est supprimée. Ceux qui l'ont choisie verront la langue par défaut.",
-      "confirm": "Retirer la langue"
     },
     "avatar": {
       "title": "Retirer la photo de profil ?",
