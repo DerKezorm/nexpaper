@@ -65,6 +65,27 @@ Läufe (26.11.2026 früh, `reihe.sh nexpaper ende`, Stand `8f5db31`): ruff saube
 grün; Playwright `npm run e2e` 2 von 2 grün, darunter `nexoidc.spec.ts` Test 34, vorher rot (Überschrift „Sign-in“
 doppelt; jetzt prüft er Pfad, h1 und h2 je einmal und die Knopfnamen). `sync.py check` aller sieben Module ok.
 
+**Gemeinsame Runde (26.11.2026 früh, E45 bis E49).** Module aus `bauplaene-stand` 86a0cce (`322b739`).
+- E45: neue Konten (Einrichtung, Einladung, Anbieter, `accounts.create_with_password`) mit `profile.mode = "system"`;
+  Konten von vorher übernehmen einmal den Rohwert von `nexpaper.theme`, sonst die Vorgabe (`system`, kein
+  `theme_default_before`); die Seite schickt nie `prefers-color-scheme` (`state/auth.tsx`).
+- E46/E49: Orte überall „Gruppe › Bereich“ (Texte, Mails, Fehler, Kommentare, README, `docs/`), Karten als letzter
+  Teil statt „, Karte …“; in „Was ist neu“ nur die Wegweiser (`where`) auf heute, die alten Texte wie erschienen.
+  Wächter: `places.test.ts` (auch die Wegweiser), `test_places.py` (README, `docs/`, jede Zeichenkette des Servers).
+- E48: Karte `web-push` (Reihenfolge Grenzen, Funktionen, Schnittstellen, Web Push, Sprachen), Satz unter Grenzen
+  „Was nexpaper annimmt … Die Grenze eines Kontos setzt du unter Konten › Verwalten.“, Satz unter Funktionen,
+  „Schriften im Abbild“; „Verwalten“ bleibt `sm` wie aus konten.
+- E47: `tests/test_bestand.py` wieder wie auf `konten`, dünne Hülle `services/mailer.py` (`send_reset` →
+  `kontenpost`); der Fänger `bestand_mail_caught` bleibt (ohne ihn sechs Versuche an mail.example.com:587).
+  Speichergrenze an jedem Eingang (`services/quota.py`): Ordner (Datei bleibt liegen), Postfach (Mail bleibt
+  ungelesen, `mail_state.full` mit Person, Zahl, Bytes, wird mit Platz geholt), Paperless (`storage_full`, ein späterer
+  Lauf holt nach), Upload-Bitten (507 `request_no_room`); Mitteilung „Speicher voll, x Dokumente warten“ über `tell`
+  (Push und Mail, DE/EN/FR, höchstens stündlich neu), Logzeile `Storage full: documents wait`.
+- Läufe (26.11.2026 früh, Stand `35f8e41`): ruff sauber; pytest gezielt 1048 grün, 2 übersprungen (nexkonten, nexoidc,
+  nexpost, Bestand, Orte, Eingänge, Paperless, Upload-Bitten, Mail, Push, Einstellungen); vitest 1199 grün in 107
+  Dateien; `npm run lint` sauber; `npm run build` grün; Playwright `npm run e2e` 2 von 2 grün. Volle Backend-Reihe
+  macht die Bau-Leitung.
+
 
 **Gebaut** auf konten 0.3.9, oidc 1.1.0, post 0.1.1, ui 0.1.1, am selben Tag nachgezogen über 0.3.10 **auf den Modulen
 1.0.0** (konten 1.0.0, ui 1.0.0, post 1.0.0, oidc 1.1.2; Kopien aus `bauplaene`, Zweig `konten` `3c55402`, `sync.py check`
