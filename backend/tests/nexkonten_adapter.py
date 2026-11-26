@@ -467,3 +467,37 @@ class Adapter(StandardAdapter):
         answer = browser.get("/api/v1/server/readiness")
         assert answer.status_code == 200, answer.text
         return answer.json()
+
+    def push_ready(self, account_id: Any) -> bool | None:
+        """Whether a push to the account would go out now (konten 1.1.0, E38): the account gets one signed-up browser
+        (sealed as ``push.add_device`` seals it, without a push service to ask), then one message is sent through
+        ``push.send_to_person`` with the delivery to the push service stood in for; True when it reached the device.
+        The device stays, so that every later answer asks the same subscription."""
+        import secrets
+
+        from app.db import SessionLocal
+        from app.models import PushDevice, utcnow
+        from app.services import push
+
+        with SessionLocal() as db:
+            if not push.has_devices(db, int(account_id)):
+                uid = secrets.token_hex(16)
+                content = {"endpoint": f"https://push.example.com/{uid}", "p256dh": "contract", "auth": "contract",
+                           "name": "Firefox", "lang": "en", "phone": False}
+                db.add(PushDevice(uid=uid, user_id=int(account_id), endpoint_key=uid,
+                                  content=push._seal(int(account_id), uid, content), created_at=utcnow()))
+                db.commit()
+        delivered: list[str] = []
+        original = push._deliver
+
+        def stand_in(_factory: Any, _key: Any, _subject: str, device: Any, _message: Any) -> str:
+            delivered.append(device.uid)
+            return "sent"
+
+        push._deliver = stand_in  # type: ignore[assignment]
+        try:
+            push.send_to_person(int(account_id), lambda _lang: push.Message(title="t", body="b", url="/", desk="/",
+                                                                            tag="contract"))
+        finally:
+            push._deliver = original  # type: ignore[assignment]
+        return bool(delivered)

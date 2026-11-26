@@ -381,6 +381,40 @@ def test_deleting_an_account_takes_its_devices(client: TestClient, account: Acco
     assert client.get("/api/v1/settings/push").json()["devices"] == 0
 
 
+def test_an_account_that_is_out_gets_no_push_and_keeps_its_devices_until_it_goes_for_good(
+        client: TestClient, account: Account, push_service: FakePushService) -> None:
+    """konten 1.1.0 (Bauplan E38): blocked or deleted, nothing goes to the person's browsers, they stay signed up;
+    unblocked or brought back, messages reach them again; at the end of the 30 days the devices go with the account."""
+    rike = make_account("rike")
+    with new_client(rike) as browser:
+        assert browser.post("/api/v1/push/devices", json=push_service.device().subscription()).status_code == 201
+
+    def send() -> int:
+        message = push.Message(title="nexpaper", body="Probe", url="/", desk="/", tag="probe")
+        return push.send_to_person(rike.id, lambda _lang: message).sent
+
+    confirm = {"current_password": PASSWORD}
+    steps = [
+        (None, 1),
+        (("POST", f"/api/v1/accounts/{rike.id}/block"), 0),
+        (("POST", f"/api/v1/accounts/{rike.id}/unblock"), 1),
+        (("DELETE", f"/api/v1/accounts/{rike.id}"), 0),
+        (("POST", f"/api/v1/accounts/{rike.id}/restore"), 1),
+        (("DELETE", f"/api/v1/accounts/{rike.id}"), 0),
+    ]
+    for step, expected in steps:
+        if step is not None:
+            method, path = step
+            body = {**confirm, "confirm_name": "rike"} if method == "DELETE" else confirm
+            assert client.request(method, path, json=body).status_code in (200, 204), path
+        before = len(push_service.received)
+        assert send() == expected, step
+        assert len(push_service.received) - before == expected, step
+        assert client.get("/api/v1/settings/push").json()["devices"] == 1, step
+    remove_for_good(rike)
+    assert client.get("/api/v1/settings/push").json()["devices"] == 0
+
+
 # --- Sealed ---------------------------------------------------------------------------------------------------------
 
 

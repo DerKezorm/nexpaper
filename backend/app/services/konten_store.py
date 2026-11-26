@@ -1047,6 +1047,22 @@ class KontenStore:
         upload_requests.end_for(self.db, uid)
         self.db.flush()
 
+    def on_shut_out(self, account: KontoAccount) -> None:
+        """konten 1.1.0 (Bauplan E38), after the commit of a block or of a deletion of an account that was not blocked.
+        In nexpaper an account is out exactly while ``blocked_at`` is set (a deletion sets it too, ``set_deleted``), and
+        everything that runs for an account in the background reads that row each time, so nothing more is needed here:
+        no push goes out (``push.reaches``; the devices stay signed up), the intake folder leaves the person's folder
+        alone (its files wait there), the mailbox of the intake files nothing for the person (a mail for it goes to the
+        operator, marked unknown, as before), and reminders, the weekly mail, exports, notices
+        and the AI's proposals wait (``reminders``, ``exports``, ``tell``, ``ai_proposals``). At the end of the 30 days
+        the devices go with the account (``purge_account``)."""
+        logger.info("Account out, its pushes and its intake wait account=%s", account.id)
+
+    def on_back(self, account: KontoAccount) -> None:
+        """konten 1.1.0 (Bauplan E38), after unblocking or bringing back an account that was not blocked before: the
+        same row says it is in again, so its pushes, its intake folder and the rest run again at their next turn."""
+        logger.info("Account back, its pushes and its intake run again account=%s", account.id)
+
     def deleted_before(self, moment: datetime) -> list[AccountId]:
         return list(self.db.scalars(
             select(Account.id).where(Account.deleted_at.is_not(None), Account.deleted_at <= moment).order_by(Account.id)

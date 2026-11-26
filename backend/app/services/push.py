@@ -42,7 +42,7 @@ from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 from sqlalchemy.orm import Session
 
 from ..errors import error
-from ..models import PushDevice, utcnow
+from ..models import Account, PushDevice, utcnow
 from ..security import decrypt_secret, encrypt_secret, server_key
 from . import outbound, settings_service, webpush
 
@@ -459,14 +459,24 @@ def _deliver_one(db_factory: Callable[[], Session], key: Any, subject: str, devi
     return "failed"
 
 
+def reaches(db: Session, account_id: int) -> bool:
+    """Whether a message may go to the person at all: not while the account is out, blocked or deleted (konten 1.1.0,
+    Bauplan E38). Its devices stay signed up meanwhile, so that unblocking or bringing it back makes it whole; they go
+    only with the account itself, at the end of its 30 days. Read from the account's row at every message, so a message
+    already on its way when the account goes out stays here too, and nothing has to be remembered beside the row."""
+    row = db.get(Account, account_id)
+    return row is not None and row.blocked_at is None and row.deleted_at is None
+
+
 def send_to_person(account_id: int, message_for: Callable[[str], Message]) -> Result:
     """One message to every device of a person, each in the language it signed up in (``message_for`` gets it).
-    A device that left is removed; the others note when they last took a message."""
+    A device that left is removed; the others note when they last took a message. Nothing goes to an account that is
+    out (``reaches``)."""
     from ..db import SessionLocal
 
     result = Result()
     with SessionLocal() as db:
-        if not has_devices(db, account_id):
+        if not has_devices(db, account_id) or not reaches(db, account_id):
             return result
         devices = devices_of(db, account_id)
         key = webpush.server_key(db)
