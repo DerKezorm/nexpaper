@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import secrets
 import sqlite3
-from datetime import UTC, date, datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -38,7 +38,7 @@ class Adapter(StandardAdapter):
             "operator": make_account("op", OPERATOR, password=secrets.token_urlsafe(12)),
         }
         owner = self._accounts["owner"]
-        due = date.today() + timedelta(days=5)
+        due = datetime.now(UTC).date() + timedelta(days=5)
         office = shared_vault("Office", self._accounts["operator"], (owner, "edit"))
         add_document(own_vault(owner), owner, "Electricity", dates=[("due", due)])
         add_document(office, owner, "Rent", dates=[("due", due)])
