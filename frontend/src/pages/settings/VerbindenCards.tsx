@@ -9,15 +9,30 @@ import { useTranslation } from 'react-i18next'
 
 import { api } from '../../api/client'
 import { shortDate } from '../../lib/dates'
-import { ConnectionsArea, ConnectionsOperatorCard, ConsentPage, ReturnPage, type VerbindenRequest } from '../../vendor/nexverbinden'
+import { ConnectionsArea, ConnectionsOperatorCard, ConsentPage, ReturnPage, type PartnerView, type VerbindenRequest } from '../../vendor/nexverbinden'
 
 const request: VerbindenRequest = (path, init = {}) => api(path, { method: init.method, body: init.body })
+
+/** Partners of the catalog nexpaper has no use with yet (Bauplan V20: no card without an effect): nexpaper as a guest
+ * of nextasks ("Aufgabe aus Dokument") is not built. */
+// eslint-disable-next-line react-refresh/only-export-components
+export const WITHOUT_USE = ['nextasks']
+
+/** TODO verbinden 0.1.2: `ConnectionsArea` shows every partner of the catalog and takes no list of the app's; nexpaper
+ * leaves the partners without a use out of the module's answer for the cards. */
+const cardsRequest: VerbindenRequest = async <T,>(path: string, init: Parameters<VerbindenRequest>[1] = {}): Promise<T> => {
+  const found = await request<T>(path, init)
+  if (path.endsWith('/partners') && (init.method ?? 'GET') === 'GET' && Array.isArray(found)) {
+    return (found as PartnerView[]).filter((view) => !WITHOUT_USE.includes(view.partner)) as T
+  }
+  return found
+}
 
 /** My account › Connections, place 3. */
 export function OtherApps() {
   const { t, i18n } = useTranslation()
   return (
-    <ConnectionsArea app="nexpaper" request={request} areaWord={t('mcp.vaults')} language={i18n.language}
+    <ConnectionsArea app="nexpaper" request={cardsRequest} areaWord={t('mcp.vaults')} language={i18n.language}
       when={(iso, language) => shortDate(iso, language)} />
   )
 }
