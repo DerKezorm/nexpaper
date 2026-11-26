@@ -121,6 +121,15 @@ nur die Menüs. Endlauf `reihe.sh nexpaper ende5` (Stand `65946b0`): ruff sauber
 `npm run lint` sauber; vitest 1222 grün in 109 Dateien; `npm run build` grün; danach Modul 68fd070 (nur Vertragstests,
 `tests/nexsprachen` und `test_routes.py` 82 grün); Playwright `npm run e2e` 2 von 2 grün.
 
+**E53, alte Namen der API-Beschreibung (26.11.2026, `bauplaene-stand` 130e4e9):** `routers/backups.py` gibt
+`routes.router(..., schema_names=routes.FORMER_SCHEMAS)` und `routes.legacy_router(..., **routes.former_names("/api/v1/backups"))`;
+die alten Sicherungswege tragen wieder ihre operationIds, Zusammenfassungen und Eingaben (`CreateIn`,
+`app__routers__backups__PasswordIn`), `NoteIn` und `RestoreIn` der App heißen wieder so. Neuer Test
+`tests/test_openapi_names.py` gegen `tests/schema/names-before-settings.json` (alle 326 Wege und 265 Schemas von
+`konten`). Gegen `konten` bleiben nur zwei Zusammenfassungen, die sich mit dem Verhalten geändert haben (Fragen E2, E3).
+Endlauf `reihe.sh nexpaper ende6` (Stand `b61acc3`): ruff sauber; pytest 3892 grün, 5 übersprungen, 0 rot; lint sauber;
+vitest 1222 grün in 109 Dateien; build grün; Playwright 2 von 2 grün.
+
 **Endlauf (26.11.2026, `reihe.sh nexpaper ende4`, Stand `29ba6c2`, nach Passkeys E49, Grenzen-Satz E46, Bestand E51,
 sprachen):** ruff sauber; pytest 3879 grün, 5 übersprungen, 1 rot: `test_routes.py::test_the_description_of_the_interface_is_the_snapshot`
 (OpenAPI-Schnappschuss, die alten Wege `/api/v1/locales…` tragen über das Modul andere `operationId` und den Schemanamen
