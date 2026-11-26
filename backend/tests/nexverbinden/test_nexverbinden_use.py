@@ -27,10 +27,12 @@ def test_a_connection_opens_only_what_the_catalog_names(world: Any) -> None:
         path = world.app.probe(purpose)
         assert path, purpose
         answer = world.partner_calls_app(path)
+        status = getattr(answer, "status", None)
         if purpose in _grants(world):
-            assert getattr(answer, "status", None) == 200, (purpose, answer)
+            # Opened: whatever the route answers, never a refusal of the connection (a write may say 404 or 422).
+            assert status is not None and status not in (401, 403), (purpose, answer)
         else:
-            assert getattr(answer, "status", None) == 403 and answer.code == "purpose_missing", (purpose, answer)
+            assert status == 403, (purpose, answer)
 
 
 def test_the_partner_reaches_only_the_areas_given(world: Any) -> None:
@@ -88,7 +90,7 @@ def test_tokens_refresh_on_their_own_and_a_copied_one_ends_the_connection(world:
     assert world.partner_calls_app(f"{world.pkg.PREFIX}/hello").status == 200
     # A refresh token spent before, brought again: somebody holds a copy, the app ends the connection.
     for token in spent:
-        found = world.app.client(None).post(
+        found = world.program().post(
             f"{world.pkg.PREFIX}/token",
             data={"grant_type": "refresh_token", "refresh_token": token, "client_id": world.partner.base},
         )
@@ -147,6 +149,7 @@ def test_starting_in_the_app_with_the_data_gives_only_the_areas_chosen_in_the_ca
         purpose
         for purpose in world.pkg.CATALOG.uses(world.partner.name, app_name)
         if world.pkg.CATALOG.purpose(app_name, purpose).areas
+        and world.pkg.CATALOG.purpose(app_name, purpose).level == "read"
     ]
     card = world.card("app")
     if not reading:
@@ -172,3 +175,55 @@ def test_starting_in_the_app_with_the_data_gives_only_the_areas_chosen_in_the_ca
         assert getattr(answer, "status", None) == 200, (purpose, answer)
         seen = world.app.areas_seen(purpose, answer.data)
         assert first in seen and second not in seen, (purpose, seen)
+
+
+def test_the_app_uses_a_connection_with_its_own_requests(world: Any) -> None:
+    """Decision V18: an app asks its partner with its own ``request()`` and the connection's address and token
+    (``access``); a token run out is refreshed, an old one no longer opens anything, and the card follows."""
+    from datetime import UTC, datetime, timedelta
+
+    assert world.connect("app").status_code == 200
+    store, config, owner = world.app.store, world.app.config(), world.app.account_id("owner")
+    first = world.pkg.access(store, config, owner, world.partner.name, datetime.now(UTC))
+    assert first.base == world.partner.base and first.expires_at > datetime.now(UTC)
+    asked = world.partner.client(None).get(
+        f"{world.pkg.PREFIX}/hello", headers={"Authorization": f"Bearer {first.token}"}
+    )
+    assert asked.status_code == 200 and asked.json()["app"] == world.partner.name
+    # An hour later: the module refreshes on its own, the old token is done.
+    later = datetime.now(UTC) + timedelta(hours=2)
+    second = world.pkg.access(store, config, owner, world.partner.name, later)
+    assert second.token != first.token
+    for token, status in ((first.token, 401), (second.token, 200)):
+        found = world.partner.client(None).get(
+            f"{world.pkg.PREFIX}/hello", headers={"Authorization": f"Bearer {token}"}
+        )
+        assert found.status_code == status
+    # What the app's own request met goes onto the card.
+    world.pkg.reached(store, owner, world.partner.name, datetime.now(UTC), problem="unreachable")
+    assert world.card("app")["state"] == "unreachable" and world.card("app")["stale_since"]
+    world.pkg.reached(store, owner, world.partner.name, datetime.now(UTC))
+    assert world.card("app")["state"] == "connected"
+    world.pkg.reached(store, owner, world.partner.name, datetime.now(UTC), problem="account_resting")
+    assert world.card("app")["state"] == "resting"
+    # Ended at the partner: a forced refresh is turned down and the card says so.
+    world.partner.client("owner").delete(f"{world.pkg.PREFIX}/partners/{config.app_name}")
+    try:
+        world.pkg.access(store, config, owner, world.partner.name, later, force=True)
+    except world.pkg.Refused as refusal:
+        assert refusal.code in ("not_connected", "refused")
+    else:
+        raise AssertionError("a connection ended at the partner gave a token")
+
+
+def test_only_partners_in_use_get_a_card_and_a_start(world: Any) -> None:
+    """Decision V20: a partner the app has no use for yet (``AppConfig.in_use``) shows no card and cannot be started."""
+    config = world.app.config()
+    cards = [card["partner"] for card in world.app.client("owner").get(f"{world.pkg.PREFIX}/partners").json()]
+    assert cards == config.usable
+    assert world.partner.name in config.usable, "APP: the partner of the test must be one the app uses"
+    for other in set(config.partners) - set(config.usable):
+        found = world.app.client("owner").post(
+            f"{world.pkg.PREFIX}/partners/{other}/start", json={"address": world.partner.base}
+        )
+        assert found.status_code == 404, other

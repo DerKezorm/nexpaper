@@ -18,7 +18,7 @@ from __future__ import annotations
 import json
 import logging
 import secrets
-from dataclasses import replace
+from dataclasses import dataclass, replace
 from datetime import datetime, timedelta
 from typing import Any
 from urllib.parse import urlencode, urlsplit
@@ -127,7 +127,7 @@ def start(
     """The account clicked "Mit <partner> verbinden": the address of the partner's consent page to send it to."""
     if not connections_on(store):
         raise Refused("connections_off")
-    if partner not in config.partners:
+    if partner not in config.usable:
         raise Refused("partner_unknown")
     url = reach.clean_url(address)
     # Only what goes out counts: a mistyped address costs nothing.
@@ -797,6 +797,53 @@ def view(
 
 
 def views(config: AppConfig, store: Any, account_id: AccountId, now: datetime) -> list[dict[str, Any]]:
-    """Every partner of the app in the order of the catalog, connected or not; no token, no hash in it."""
+    """The partners of the app in the order of the catalog, connected or not; no token, no hash in it. Decision V20: a
+    partner the app has no use for yet (``in_use``) is left out, unless a connection grants it something here."""
     mine = {connection.partner: connection for connection in store.connections(account_id)}
-    return [view(config, store, account_id, partner, now, mine.get(partner)) for partner in config.partners]
+    shown = [
+        partner for partner in config.partners if partner in config.usable or (partner in mine and mine[partner].grants)
+    ]
+    return [view(config, store, account_id, partner, now, mine.get(partner)) for partner in shown]
+
+
+# --- using a connection with the app's own requests (decision V18) ------------------------------------------------
+
+
+@dataclass(frozen=True)
+class Access:
+    """What an app's own request to the partner needs (its ``request()`` with address and key): the partner's address
+    and a fresh access token of the connection, until ``expires_at``."""
+
+    base: str
+    token: str
+    expires_at: datetime
+
+
+def access(
+    store: Any, config: AppConfig, account_id: AccountId, partner: str, now: datetime, *, force: bool = False
+) -> Access:
+    """Decision V18: the address and a fresh token of the connection with ``partner``, for the app's own requests (as
+    it asked with an address and a key typed in by hand). Refreshes on its own; ``force`` refreshes even a token still
+    valid (after the partner answered 401 once). Raises ``Refused`` like ``call``: ``not_connected``, ``unreachable``,
+    ``refused``, ``resting``, ``partner_off``. The app tells the module how its own request went with ``reached``."""
+    connection = store.connection(account_id, partner)
+    if connection is None:
+        raise Refused("not_connected")
+    token = _fresh_access(store, config, connection, now, force=force)
+    held = _held_of(store, store.connection(account_id, partner) or connection)
+    return Access(base=connection.partner_base, token=token, expires_at=datetime.fromisoformat(held["expires"]))
+
+
+def reached(store: Any, account_id: AccountId, partner: str, now: datetime, *, problem: str | None = None) -> None:
+    """How the app's own request to the partner went, for the card: ``problem`` ``None`` (it answered), ``unreachable``
+    (nothing usable came), or the partner's code of a refusal (``token_invalid`` after ``access(force=True)``,
+    ``account_resting``, ``connections_off``)."""
+    connection = store.connection(account_id, partner)
+    if connection is None:
+        return
+    if problem is None:
+        _mark(store, connection, "connected", now)
+    elif problem == "unreachable":
+        _mark(store, connection, "unreachable", now)
+    else:
+        _mark(store, connection, _state_of_refusal(problem), now, problem)

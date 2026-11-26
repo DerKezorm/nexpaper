@@ -57,6 +57,11 @@ class AppConfig:
     revoke_days: int = 30
     #: The words the app sends as ``User-Agent``.
     agent: str = field(default="")
+    #: Decision V20 (since 0.1.2): the partners for which this app has a use already, as guest (it calls them) or as
+    #: host (its routes serve their purposes). Only these get a card and may be started from here; a partner outside
+    #: shows its card only while a connection grants it something here (the other side started it). ``None``: every
+    #: partner of the catalog (0.1.1).
+    in_use: tuple[str, ...] | None = None
 
     def __post_init__(self) -> None:
         if self.app_name not in self.catalog.purposes:
@@ -64,10 +69,17 @@ class AppConfig:
         prefixes = {self.access_prefix, self.refresh_prefix, self.code_prefix}
         if len(prefixes) != 3 or not all(prefix.endswith("_") and len(prefix) >= 3 for prefix in prefixes):
             raise ValueError("access, refresh and code need three different prefixes ending in _")
+        if self.in_use is not None and not set(self.in_use) <= set(self.partners):
+            raise ValueError(f"in_use names apps {self.app_name} does not connect with")
 
     @property
     def partners(self) -> list[str]:
         return self.catalog.partners(self.app_name)
+
+    @property
+    def usable(self) -> list[str]:
+        """The partners this app may start with and always shows (``in_use``), in the order of the catalog."""
+        return [partner for partner in self.partners if self.in_use is None or partner in self.in_use]
 
     @property
     def user_agent(self) -> str:

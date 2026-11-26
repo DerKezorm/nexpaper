@@ -22,11 +22,23 @@ from __future__ import annotations
 from . import catalog, connect, reach
 from .catalog import APPS, CATALOG, PAIRS, PURPOSES, Catalog, Pair, Purpose
 from .config import CONSENT_PAGE, PREFIX, PROTOCOL, RETURN_PAGE, STATES, WELL_KNOWN, AppConfig
-from .connect import authenticate, call, check, disconnect, end_all, require, retry_waiting, views
+from .connect import (
+    Access,
+    access,
+    authenticate,
+    call,
+    check,
+    disconnect,
+    end_all,
+    reached,
+    require,
+    retry_waiting,
+    views,
+)
 from .errors import CODES, GrantError, Refused
 from .model import Caller, Code, Connection, Legacy, Pending, Store, Waiting
 
-__version__ = "0.1.1"
+__version__ = "0.1.2"
 
 __all__ = [
     "APPS",
@@ -40,6 +52,7 @@ __all__ = [
     "RETURN_PAGE",
     "STATES",
     "WELL_KNOWN",
+    "Access",
     "AppConfig",
     "Caller",
     "Catalog",
@@ -54,6 +67,7 @@ __all__ = [
     "Store",
     "Waiting",
     "__version__",
+    "access",
     "authenticate",
     "call",
     "catalog",
@@ -62,6 +76,7 @@ __all__ = [
     "disconnect",
     "end_all",
     "reach",
+    "reached",
     "require",
     "retry_waiting",
     "views",

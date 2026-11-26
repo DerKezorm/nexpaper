@@ -7,14 +7,14 @@ from typing import Any
 
 
 def test_the_description_names_the_app_and_says_whether_it_connects(world: Any) -> None:
-    found = world.app.client(None).get(world.pkg.WELL_KNOWN)
+    found = world.program().get(world.pkg.WELL_KNOWN)
     assert found.status_code == 200
     data = found.json()
     assert data["app"] == world.app.config().app_name and data["protocol"] == world.pkg.PROTOCOL
     assert data["connect"] is True and data["consent"] == world.pkg.CONSENT_PAGE
     switched = world.app.client("operator").put(f"{world.pkg.PREFIX}/admin", json={"connections": False})
     assert switched.status_code == 200 and switched.json()["connections"] is False
-    assert world.app.client(None).get(world.pkg.WELL_KNOWN).json()["connect"] is False
+    assert world.program().get(world.pkg.WELL_KNOWN).json()["connect"] is False
 
 
 def test_the_partner_of_the_test_is_one_of_the_catalog(world: Any) -> None:
@@ -35,7 +35,7 @@ def test_connecting_from_the_app_gives_both_sides_one_connection(world: Any) -> 
     theirs = world.card("partner")
     assert theirs["state"] == "connected" and theirs["uses"] == view["grants"] and theirs["grants"] == view["uses"]
     # One connection, the same on both sides.
-    assert world.partner_connection() is not None and theirs["account"] == "kim"
+    assert world.partner_connection() is not None and theirs["account"] == world.app.names["owner"]
 
 
 def test_connecting_from_the_partner_works_the_same(world: Any) -> None:
@@ -52,7 +52,7 @@ def test_the_consent_page_needs_a_session_and_shows_both_directions(world: Any) 
     assert world.app.client(None).get(f"{world.pkg.PREFIX}/consent", params=params).status_code in (401, 403)
     info = world.app.client("owner").get(f"{world.pkg.PREFIX}/consent", params=params).json()
     assert info["partner"] == world.partner.name and info["app"] == world.app.config().app_name
-    assert info["account"] == "kim" and info["partner_host"] == world.host(world.partner.base)
+    assert info["account"] == world.app.names["owner"] and info["partner_host"] == world.host(world.partner.base)
     assert [entry["id"] for entry in info["partner_may"]] == list(
         world.pkg.CATALOG.uses(world.partner.name, world.app.config().app_name)
     )
@@ -174,7 +174,7 @@ def test_the_areas_given_are_the_accounts_own(world: Any) -> None:
 
 
 def test_nothing_between_the_apps_is_for_web_pages(world: Any) -> None:
-    client = world.app.client(None)
+    client = world.program()
     for path in ("/token", "/revoke", "/retire"):
         found = client.post(f"{world.pkg.PREFIX}{path}", headers={"Origin": "https://evil.example.com"}, data={})
         assert found.status_code == 403 and found.json()["detail"]["code"] == "origin_refused", path
@@ -229,6 +229,6 @@ def test_a_code_needs_the_verifier_the_return_address_and_the_asking_app(world: 
         "reverse_refresh": "y" * 30,
         "reverse_expires_in": "3600",
     }
-    found = world.app.client(None).post(f"{world.pkg.PREFIX}/token", data=right)
+    found = world.program().post(f"{world.pkg.PREFIX}/token", data=right)
     assert found.status_code == 400 and found.json()["error"] == "invalid_grant"
     assert world.card("app")["state"] == "none"

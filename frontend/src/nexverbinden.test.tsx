@@ -1,4 +1,4 @@
-// Vorlage nexverbinden 0.1.1
+// Vorlage nexverbinden 0.1.2
 // @vitest-environment jsdom
 /**
  * The parts of the module in the app: the card of a partner app in each state, the cards of all partners, the consent
@@ -24,11 +24,20 @@ import {
   type VerbindenRequest,
 } from './vendor/nexverbinden'
 
-// APP: this app's name and a partner of it in the catalog, with what each may do at the other (purpose ids).
+// APP: this app's name and a partner of it in the catalog, with what each may do at the other (purpose ids; an app that
+// only grants leaves USES empty, one that only uses leaves GRANTS empty).
 const APP = 'nexpaper'
-const PARTNER = 'nextasks'
-const USES: Record<string, string> = { 'tasks.read': 'read', 'tasks.write': 'write' }
-const GRANTS: Record<string, string> = {}
+const PARTNER = 'nextime'
+const USES: Record<string, string> = {}
+const GRANTS: Record<string, string> = { 'deadlines.read': 'read' }
+
+// Derived from the pair above (since 0.1.2): the cases fit a guest (it uses something at the partner) as well as a
+// host that only grants (nexfolk, nextasks).
+const FIRST_USE = Object.keys(USES)[0]
+const FIRST_GRANT = Object.keys(GRANTS)[0]
+const IS_GUEST = FIRST_USE !== undefined
+const word = (grantedBy: string, id: string) => (VERBINDEN_TEXTS.de.purposes as Record<string, Record<string, string>>)[grantedBy]?.[id] ?? id
+const OWN_PURPOSE = Object.keys((VERBINDEN_TEXTS.de.purposes as Record<string, Record<string, string>>)[APP] ?? {})[0] ?? 'own.purpose'
 
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
@@ -45,9 +54,9 @@ function view(more: Partial<PartnerView> = {}): PartnerView {
   return {
     partner: PARTNER,
     state: 'connected',
-    address: 'https://tasks.example.com',
+    address: 'https://partner.example.com',
     address_from_operator: false,
-    host: 'tasks.example.com',
+    host: 'partner.example.com',
     uses: Object.keys(USES),
     grants: Object.keys(GRANTS),
     uses_levels: USES,
@@ -118,18 +127,18 @@ afterEach(() => {
 
 describe('the card of a partner app', () => {
   it('not connected: the address from the operator, then off to the partner', async () => {
-    answers[`POST /api/connect/partners/${PARTNER}/start`] = { go: 'https://tasks.example.com/connect/app?state=s' }
+    answers[`POST /api/connect/partners/${PARTNER}/start`] = { go: 'https://partner.example.com/connect/app?state=s' }
     await show(<ConnectionCard app={APP} view={view({ state: 'none', account: null, host: '', address_from_operator: true })} request={request} navigate={(url) => went.push(url)} defaultOpen />)
     expect(byTest('connection-state')?.textContent).toBe('Nicht verbunden')
-    expect((byTest('connection-address') as HTMLInputElement).value).toBe('https://tasks.example.com')
+    expect((byTest('connection-address') as HTMLInputElement).value).toBe('https://partner.example.com')
     expect(box.textContent).toContain(VERBINDEN_TEXTS.de.card.fromOperator)
     await click('connection-connect')
-    expect(calls.at(-1)).toEqual({ path: `/api/connect/partners/${PARTNER}/start`, method: 'POST', body: { address: 'https://tasks.example.com', areas: null } })
-    expect(went).toEqual(['https://tasks.example.com/connect/app?state=s'])
+    expect(calls.at(-1)).toEqual({ path: `/api/connect/partners/${PARTNER}/start`, method: 'POST', body: { address: 'https://partner.example.com', areas: null } })
+    expect(went).toEqual(['https://partner.example.com/connect/app?state=s'])
   })
 
   it('where the partner reads areas here, the card asks for them before the click (all at first)', async () => {
-    answers[`POST /api/connect/partners/${PARTNER}/start`] = { go: 'https://tasks.example.com/connect/app?state=s' }
+    answers[`POST /api/connect/partners/${PARTNER}/start`] = { go: 'https://partner.example.com/connect/app?state=s' }
     const choice = [{ id: 1, name: 'Arbeit' }, { id: 2, name: 'Familie' }]
     await show(<ConnectionCard app={APP} view={view({ state: 'none', account: null, areas_choice: choice })} request={request} navigate={(url) => went.push(url)} defaultOpen />)
     expect(byTest('connection-areas')).not.toBeNull()
@@ -139,7 +148,7 @@ describe('the card of a partner app', () => {
     expect((byTest('connection-connect') as HTMLButtonElement).disabled).toBe(true)
     await click('connection-area-2')
     await click('connection-connect')
-    expect(calls.at(-1)).toMatchObject({ method: 'POST', body: { address: 'https://tasks.example.com', areas: [2] } })
+    expect(calls.at(-1)).toMatchObject({ method: 'POST', body: { address: 'https://partner.example.com', areas: [2] } })
     await show(<ConnectionCard key="plain" app={APP} view={view({ state: 'none', account: null })} request={request} navigate={(url) => went.push(url)} defaultOpen />)
     expect(byTest('connection-areas')).toBeNull()
     await click('connection-connect')
@@ -161,23 +170,33 @@ describe('the card of a partner app', () => {
     const changed: PartnerView[] = []
     answers[`DELETE /api/connect/partners/${PARTNER}`] = view({ state: 'none' })
     await show(<ConnectionCard app={APP} view={view()} request={request} onChange={(found) => changed.push(found)} defaultOpen><p data-testid="own-part">lists</p></ConnectionCard>)
-    expect(byTest('connection-state')?.textContent).toBe('Verbunden')
-    expect(byTest('connection-summary')?.textContent).toContain('tasks.example.com')
-    expect(byTest('connection-app-may')?.textContent).toContain(VERBINDEN_TEXTS.de.purposes.nextasks['tasks.read'])
+    expect(byTest('connection-state')?.textContent).toBe(IS_GUEST ? 'Verbunden' : `Nutzt ${APP}`)
+    expect(byTest('connection-summary')?.textContent).toContain('partner.example.com')
+    if (FIRST_USE) expect(byTest('connection-app-may')?.textContent).toContain(word(PARTNER, FIRST_USE))
+    if (FIRST_GRANT) expect(byTest('connection-partner-may')?.textContent).toContain(word(APP, FIRST_GRANT))
     expect(byTest('connection-account')?.textContent).toContain('kim')
     expect(byTest('own-part')).not.toBeNull()
-    expect(byTest('connection-renew')).not.toBeNull()
+    expect(byTest('connection-renew') !== null).toBe(IS_GUEST)
     await click('connection-disconnect')
     await confirmDialog()
     expect(calls.at(-1)).toMatchObject({ path: `/api/connect/partners/${PARTNER}`, method: 'DELETE' })
     expect(changed.at(-1)?.state).toBe('none')
   })
 
-  it('a partner that only uses this app: "Nutzt" and "Zugriff beenden"', async () => {
-    await show(<ConnectionCard app={APP} view={view({ uses: [], uses_levels: {}, grants: ['tasks.read'], grants_levels: { 'tasks.read': 'read' } })} request={request} defaultOpen />)
+  it('a partner that only uses this app: "Nutzt", what it may here, and "Zugriff beenden"', async () => {
+    await show(<ConnectionCard app={APP} view={view({ uses: [], uses_levels: {}, grants: [OWN_PURPOSE], grants_levels: { [OWN_PURPOSE]: 'read' } })} request={request} defaultOpen />)
     expect(byTest('connection-state')?.textContent).toBe(`Nutzt ${APP}`)
+    expect(byTest('connection-partner-may')?.textContent).toContain(word(APP, OWN_PURPOSE))
     expect(byTest('connection-disconnect')?.textContent).toBe('Zugriff beenden')
     expect(byTest('connection-renew')).toBeNull()
+  })
+
+  it("the app's own parts stand open in every state, by hand or not connected at all (V23)", async () => {
+    const legacy = { shown: 'ntk_AbCd', expires_at: null }
+    for (const state of ['none', 'legacy', 'connected', 'unreachable', 'refused', 'resting', 'off'] as const) {
+      await show(<ConnectionCard key={state} app={APP} view={view({ state, legacy: state === 'legacy' ? legacy : null })} request={request} defaultOpen><p data-testid="own-part">lists</p></ConnectionCard>)
+      expect(byTest('own-part'), state).not.toBeNull()
+    }
   })
 
   it('not reachable: the last state with its time, and checking again', async () => {
@@ -219,24 +238,28 @@ describe('the card of a partner app', () => {
 })
 
 describe('the cards of all partners', () => {
-  it('loads them once and keeps a card as the server answers', async () => {
+  it('loads them once, 24 px apart, each with the mark the module brings (V21)', async () => {
     answers['GET /api/connect/partners'] = [view({ state: 'none' }), view({ partner: 'nexpaper', state: 'unreachable' })]
-    await show(<ConnectionsArea app={APP} request={request} logos={{ [PARTNER]: '/apps/nextasks.svg' }} />)
+    await show(<ConnectionsArea app={APP} request={request} />)
     expect(byTest(`connection-${PARTNER}`)).not.toBeNull()
     expect(byTest('connection-nexpaper')).not.toBeNull()
+    expect(byTest('connections-area')?.className).toContain('gap-6')
+    const mark = byTest(`connection-${PARTNER}`)?.querySelector('img')
+    expect(mark?.getAttribute('src')?.startsWith('data:image/svg+xml,')).toBe(true)
     expect(calls.filter((call) => call.path === '/api/connect/partners')).toHaveLength(1)
   })
 })
 
 describe('the consent page', () => {
   const search = '?client_id=https%3A%2F%2Ftime.example.com&redirect_uri=https%3A%2F%2Ftime.example.com%2Fconnect%2Freturn&state=s1&code_challenge=c&code_challenge_method=S256'
+  // The page in this app; the partner asks. What the partner may here is what this app grants (GRANTS).
   const info: ConsentInfo = {
-    app: PARTNER,
-    partner: APP,
-    partner_host: 'time.example.com',
+    app: APP,
+    partner: PARTNER,
+    partner_host: 'partner.example.com',
     account: 'kim',
-    partner_may: [{ id: 'tasks.read', level: 'read', areas: true }],
-    app_may: [],
+    partner_may: Object.entries(GRANTS).map(([id, level]) => ({ id, level, areas: true })),
+    app_may: Object.entries(USES).map(([id, level]) => ({ id, level, areas: true })),
     areas: [{ id: 11, name: 'Zuhause' }, { id: 12, name: 'Garten' }],
     replaces: false,
   }
@@ -245,9 +268,9 @@ describe('the consent page', () => {
     answers['GET /api/connect/consent'] = info
     answers['POST /api/connect/consent'] = { redirect: 'https://time.example.com/connect/return?code=x&state=s1' }
     await show(<ConsentPage request={request} search={search} navigate={(url) => went.push(url)} />)
-    expect(box.textContent).toContain(`${APP} möchte sich mit ${PARTNER} verbinden`)
-    expect(byTest('consent-partner-may')?.textContent).toContain(VERBINDEN_TEXTS.de.purposes.nextasks['tasks.read'])
-    expect(byTest('consent-app-may')?.textContent).toContain(VERBINDEN_TEXTS.de.card.onlyCheck)
+    expect(box.textContent).toContain(`${PARTNER} möchte sich mit ${APP} verbinden`)
+    expect(byTest('consent-partner-may')?.textContent).toContain(FIRST_GRANT ? word(APP, FIRST_GRANT) : VERBINDEN_TEXTS.de.card.onlyCheck)
+    expect(byTest('consent-app-may')?.textContent).toContain(FIRST_USE ? word(PARTNER, FIRST_USE) : VERBINDEN_TEXTS.de.card.onlyCheck)
     await click('consent-all-areas')
     await click('consent-area-12')
     await click('consent-allow')
@@ -269,9 +292,9 @@ describe('the consent page', () => {
 describe('the page back from the partner', () => {
   it('finishes the connection once and goes to the cards', async () => {
     answers['POST /api/connect/return'] = view()
-    await show(<ReturnPage app={APP} request={request} search="?code=c&state=s&iss=https%3A%2F%2Ftasks.example.com" navigate={(url) => went.push(url)} />)
+    await show(<ReturnPage app={APP} request={request} search="?code=c&state=s&iss=https%3A%2F%2Fpartner.example.com" navigate={(url) => went.push(url)} />)
     expect(calls.filter((call) => call.path === '/api/connect/return')).toHaveLength(1)
-    expect(calls[0]?.body).toEqual({ code: 'c', state: 's', iss: 'https://tasks.example.com' })
+    expect(calls[0]?.body).toEqual({ code: 'c', state: 's', iss: 'https://partner.example.com' })
     expect(went).toEqual([`/settings/connections#${PARTNER}`])
   })
 

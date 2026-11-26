@@ -3,7 +3,11 @@
 // ConnectionsOperatorCard.tsx (built from the ui kit). Copied unchanged into frontend/src/vendor/nexverbinden/ by
 // bauplaene/verbinden/tools/sync.py; changed only there.
 
+import { useSyncExternalStore } from 'react'
+
 import { NEXUI_TEXTS, languageOf, useNexuiTexts } from '../nexui'
+
+import { APP_MARKS } from './logos'
 
 import de from './verbinden.de.json'
 import en from './verbinden.en.json'
@@ -168,4 +172,50 @@ export function useVerbindenTexts(language?: string): { texts: VerbindenTexts; c
   }
   const code = (Object.keys(NEXUI_TEXTS) as (keyof typeof NEXUI_TEXTS)[]).find((key) => NEXUI_TEXTS[key] === kit) ?? 'en'
   return { texts: VERBINDEN_TEXTS[code], code }
+}
+
+/** Whether the page is dark: the luminance of the kit's surface (`--nexui-surface`, which every app sets for light and
+ * dark), else the system. Apps mark their theme differently (`data-theme="light"` or `"dark"`, a class); the surface
+ * is the same everywhere. */
+export function pageIsDark(): boolean {
+  if (typeof window === 'undefined' || typeof document === 'undefined') return false
+  const value = getComputedStyle(document.documentElement).getPropertyValue('--nexui-surface').trim()
+  const hex = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(value)
+  const rgb = /^rgba?\(\s*(\d+)[\s,]+(\d+)[\s,]+(\d+)/i.exec(value)
+  let parts: number[] | null = null
+  if (hex) {
+    const digits = hex[1] ?? ''
+    const full = digits.length === 3 ? [...digits].map((one) => one + one).join('') : digits
+    parts = [0, 2, 4].map((at) => parseInt(full.slice(at, at + 2), 16))
+  } else if (rgb) {
+    parts = [rgb[1], rgb[2], rgb[3]].map((one) => Number(one))
+  }
+  if (parts) {
+    const [red = 0, green = 0, blue = 0] = parts
+    return 0.2126 * red + 0.7152 * green + 0.0722 * blue < 128
+  }
+  return typeof window.matchMedia === 'function' && window.matchMedia('(prefers-color-scheme: dark)').matches
+}
+
+function subscribeTheme(changed: () => void): () => void {
+  if (typeof window === 'undefined' || typeof MutationObserver === 'undefined') return () => undefined
+  const watcher = new MutationObserver(changed)
+  watcher.observe(document.documentElement, { attributes: true, attributeFilter: ['class', 'data-theme', 'style'] })
+  const system = typeof window.matchMedia === 'function' ? window.matchMedia('(prefers-color-scheme: dark)') : null
+  system?.addEventListener?.('change', changed)
+  return () => {
+    watcher.disconnect()
+    system?.removeEventListener?.('change', changed)
+  }
+}
+
+/** The page's light or dark, kept up to date when the account switches it. */
+export function usePageDark(): boolean {
+  return useSyncExternalStore(subscribeTheme, pageIsDark, () => false)
+}
+
+/** The mark of a nex app for the page's light or dark (decision V21: in the module, the app gives nothing). */
+export function markOf(app: string, dark: boolean): string | undefined {
+  const found = APP_MARKS[app]
+  return found ? (dark ? found.dark : found.light) : undefined
 }

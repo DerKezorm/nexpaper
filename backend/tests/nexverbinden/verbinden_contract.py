@@ -35,6 +35,8 @@ class StandardAdapter:
     older_link = False
     #: APP: after ``start``, the app's ``nexverbinden.Store`` (for ``retry_waiting``, as the app's clock calls it).
     store: Any = None
+    #: The display names of ``owner`` and ``other`` in the app (since 0.1.2; an app with other names says so).
+    names: dict[str, str] = {"owner": "kim", "other": "sam"}  # noqa: RUF012 (read only)
 
     def start(self, folder: Path, *, older: bool = False) -> None:
         """APP: the app started as in production, with ``owner``, ``other`` and ``operator``; ``older``: on a database
@@ -57,13 +59,18 @@ class StandardAdapter:
         """APP: the app's ``nexverbinden.AppConfig``."""
         raise NotImplementedError("APP: config")
 
+    def account_id(self, role: str) -> Any:
+        """APP (since 0.1.2): the id of the account of ``owner`` or ``other`` as the app's Store knows it."""
+        raise NotImplementedError("APP: account_id")
+
     def block(self, role: str, blocked: bool = True) -> None:
         """APP: block (or free) the account as the operator does."""
         raise NotImplementedError("APP: block")
 
-    def probe(self, purpose: str) -> str | None:
-        """APP: a ``GET`` route of the app that a connection with ``purpose`` opens (``/api/v1/tasks``); ``None`` only
-        when the app grants no purpose at all."""
+    def probe(self, purpose: str) -> str | tuple[str, str, Any] | None:
+        """APP: a ``GET`` route of the app that a connection with ``purpose`` opens (``/api/v1/tasks``), or since 0.1.2
+        ``(method, route, body)`` for a purpose that writes (``("PATCH", "/api/v1/tasks/1", {"completed": True})``);
+        ``None`` only when the app grants no purpose at all."""
         raise NotImplementedError("APP: probe")
 
     def areas_seen(self, purpose: str, answer: Any) -> set[str]:
@@ -142,6 +149,11 @@ class World:
             if isinstance(value, str) and len(value) > 20 and value not in self.tokens:
                 self.tokens.append(value)
 
+    def program(self) -> TestClient:
+        """A client as another app or a program calls: no session, none of the app's own headers (a tab guard of the
+        app must let programs through on the module's routes between the apps)."""
+        return TestClient(self.app.asgi(), base_url=self.app.base)
+
     # --- sides ------------------------------------------------------------------------------------------------------
 
     def side(self, which: str) -> tuple[Any, str, str]:
@@ -191,21 +203,24 @@ class World:
 
         return self.partner.store.connection(ROLES[role][0], self.app.config().app_name)
 
-    def partner_calls_app(self, path: str, role: str = "owner") -> Any:
-        """The partner asks the app with its connection (``connect.call``); the answer or the ``Refused``."""
+    def partner_calls_app(self, path: Any, role: str = "owner") -> Any:
+        """The partner asks the app with its connection (``connect.call``); the answer or the ``Refused``. ``path``: a
+        route (GET) or ``(method, route, body)`` as the adapter's ``probe`` names it."""
         from datetime import UTC, datetime
 
         from verbinden_partner import ROLES
 
+        method, route, body = ("GET", path, None) if isinstance(path, str) else path
         try:
             return self.pkg.call(
                 self.partner.store,
                 self.partner.config,
                 ROLES[role][0],
                 self.app.config().app_name,
-                "GET",
-                path,
+                method,
+                route,
                 datetime.now(UTC),
+                body=body,
             )
         except self.pkg.Refused as refusal:
             return refusal

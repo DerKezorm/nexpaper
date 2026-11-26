@@ -11,8 +11,9 @@
  * - not reachable (the last state stays, since when), refused, resting, switched off: a `Notice` and what helps;
  * - an older connection by an API key typed in by hand: shown as it is, "läuft ab" a week before its key ends.
  *
- * The app adds its own parts (lists, calendars) as `children`, shown while connected, and its form for connecting by
- * hand as `manual`. Copied unchanged into frontend/src/vendor/nexverbinden/ by bauplaene/verbinden/tools/sync.py.
+ * The app adds its own parts (lists, calendars, a feed's address) as `children`, shown open in every state, connected
+ * by click, by hand or not at all (V23, V-9), and its form for connecting by hand as `manual`. The partner's mark comes from the module, light and dark
+ * as the page is (V21). Copied unchanged into frontend/src/vendor/nexverbinden/ by bauplaene/verbinden/tools/sync.py.
  */
 import { useState, type ReactNode } from 'react'
 
@@ -27,7 +28,9 @@ import {
   fillVerbinden,
   purposeLabel,
   refusalCode,
+  markOf,
   refusalText,
+  usePageDark,
   useVerbindenTexts,
   wayOf,
   type PartnerView,
@@ -41,7 +44,7 @@ export type ConnectionCardProps = {
   app: string
   view: PartnerView
   request: VerbindenRequest
-  /** The partner's logo (the app keeps them, e.g. `/apps/nextasks.svg`). */
+  /** Since 0.1.2 the module brings the partner's mark, light and dark (V21); `logo` only overrides it. */
   logo?: string
   base?: string
   /** The card as it stands after a change. */
@@ -115,6 +118,8 @@ export function ConnectionCard({
   const [allAreas, setAllAreas] = useState(true)
   const [chosen, setChosen] = useState<string[]>([])
   const at = (iso: string | null) => (iso ? when(iso, code) : '')
+  const dark = usePageDark()
+  const mark = logo ?? markOf(partner, dark)
 
   const onlyThem = view.uses.length === 0 && view.grants.length > 0
   const connected = !['none', 'legacy', 'expiring'].includes(view.state)
@@ -223,7 +228,7 @@ export function ConnectionCard({
     <Collapsible
       variant="card"
       id={partner}
-      logo={logo}
+      logo={mark}
       icon="Plug"
       title={partner}
       subtitle={aboutPair(texts, app, partner)}
@@ -282,13 +287,17 @@ export function ConnectionCard({
             {connectButton('primary')}
             {manualButton}
           </Buttons>
+          {/* V23, V-9: the app's own parts stand in every state, also before a connection by click (nexfolk's address
+              of the calendar feed, its device password). */}
+          {children}
         </>
       ) : (
         <>
           {mine.length > 0 && <FlowBox title={fillVerbinden(texts.card.appMay, words)} items={mine} empty={texts.card.onlyCheck} testId="connection-app-may" />}
           {theirs.length > 0 && <FlowBox title={fillVerbinden(texts.card.partnerMay, words)} items={theirs} empty={texts.card.onlyCheck} testId="connection-partner-may" />}
           {facts.length > 0 && <Facts items={facts} testId="connection-facts" />}
-          {connected && view.state === 'connected' && children}
+          {/* V23: the app's own choice (lists, areas, calendars) stands open in every state, by click or by hand. */}
+          {children}
           {(view.state === 'refused' || view.state === 'expiring' || view.state === 'legacy') && areaChoice}
           <Buttons>
             {view.state === 'connected' && !onlyThem && (

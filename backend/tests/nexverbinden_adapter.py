@@ -80,6 +80,9 @@ class Adapter(StandardAdapter):
 
         return CONFIG
 
+    def account_id(self, role: str) -> Any:
+        return self._accounts[role].id
+
     def block(self, role: str, blocked: bool = True) -> None:
         from app.db import SessionLocal
         from app.models import Account

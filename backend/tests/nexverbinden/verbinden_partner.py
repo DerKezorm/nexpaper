@@ -276,7 +276,16 @@ class ReferenceStore:
 class ReferenceApp:
     """One app of the catalog, e.g. ``ReferenceApp(pkg, "nextasks", "https://tasks.example.com", folder)``."""
 
-    def __init__(self, pkg: ModuleType, name: str, base: str, folder: Path, *, older_link: str | None = None) -> None:
+    def __init__(
+        self,
+        pkg: ModuleType,
+        name: str,
+        base: str,
+        folder: Path,
+        *,
+        older_link: str | None = None,
+        in_use: tuple[str, ...] | None = None,
+    ) -> None:
         self.pkg = pkg
         self.name = name
         self.base = base
@@ -295,6 +304,7 @@ class ReferenceApp:
             access_prefix=f"r{name[3:5]}c_",
             refresh_prefix=f"r{name[3:5]}r_",
             code_prefix=f"r{name[3:5]}o_",
+            in_use=in_use,
         )
         self.old_key_for: dict[str, str] = {}
         self.api = self._app()

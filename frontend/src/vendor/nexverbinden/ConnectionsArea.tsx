@@ -1,7 +1,9 @@
 /**
  * Every partner app of this app under Mein Konto › Verbindungen, one `ConnectionCard` each, in the order of the module's
- * catalog (Verbindungen 3). It loads `GET <base>/partners` once and keeps each card as the server answers after a
- * change. The app gives the logos, its forms for connecting by hand and its own parts per partner.
+ * catalog (Verbindungen 3), 24 px apart like every list of cards. It shows the partners the server names (V20: only
+ * those the app has a use for, and those that a connection made by the other side lets use this app). It loads
+ * `GET <base>/partners` once and keeps each card as the server answers after a change. The app gives its forms for
+ * connecting by hand and its own parts per partner; the marks come from the module (V21).
  *
  * Copied unchanged into frontend/src/vendor/nexverbinden/ by bauplaene/verbinden/tools/sync.py; changed only there.
  */
@@ -15,7 +17,7 @@ export type ConnectionsAreaProps = {
   app: string
   request: VerbindenRequest
   base?: string
-  /** Partner -> address of its logo. */
+  /** Partner -> address of a logo, only to override the module's marks (V21). */
   logos?: Record<string, string>
   /** Partner -> the app's own form for connecting by hand. */
   manual?: Record<string, ReactNode>
@@ -56,7 +58,7 @@ export function ConnectionsArea({ app, request, base = VERBINDEN_BASE, logos = {
     )
   }
   return (
-    <div className="flex flex-col gap-3" data-testid={testId}>
+    <div className="flex flex-col gap-6" data-testid={testId}>
       {(views ?? []).map((view) => (
         <ConnectionCard
           key={view.partner}
