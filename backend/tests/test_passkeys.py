@@ -443,3 +443,7 @@ def test_the_box_passkeys_offers_adding_only_where_a_browser_can(client: TestCli
         settings_service.save(db, {"public_url": ""})
     assert can_add() is False  # opened as testserver, not localhost
     assert can_add(origin="http://localhost:8560") is True
+    # The address goes in as it is set, never the one of the request: a set http address on localhost does not pass.
+    with SessionLocal() as db:
+        settings_service.save(db, {"public_url": "http://localhost:8560"})
+    assert can_add(origin="http://localhost:8560") is False
