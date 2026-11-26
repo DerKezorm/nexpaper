@@ -36,7 +36,7 @@ from app.db import SessionLocal, engine, init_db
 from app.main import app
 from app.models import Account
 from app.security import MAX_FAILURES, SESSION_COOKIE
-from app.services import mailer, notices, settings_service, totp
+from app.services import notices, settings_service, totp
 from app.vendor import nexoidc
 from app.vendor.nexoidc import attempt, protocol
 
@@ -455,6 +455,10 @@ def test_a_shared_address_never_signs_in(bestand: Any) -> None:
 # --- After the change (account module): what 1.12.0 did not do -------------------------------------------------------
 
 AFTER_THE_CHANGE = pytest.mark.xfail(strict=True, reason="comes with the account module (nexkonten)")
+
+# The link of "Forgot your password?" goes out through the shared modules since the change (post, through nexpaper's
+# kontenpost): the fixture ``post`` above catches it there, under the name it always used (Bauplan E51).
+from app.services import kontenpost as mailer  # noqa: E402
 
 
 @pytest.mark.parametrize("account", UNIQUE_CONFIRMED, ids=_name)
