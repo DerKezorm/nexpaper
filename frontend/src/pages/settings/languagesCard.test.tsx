@@ -68,6 +68,12 @@ describe('the card "Sprachen" of nexpaper', () => {
     expect(calls[0]).toMatchObject({ path: '/api/v1/locales', method: 'GET' })
     await act(async () => box.querySelector<HTMLButtonElement>('[aria-label="Nederlands entfernen"]')!.click())
     await act(async () => undefined)
+    // Since sprachen 1.0.1 the cross asks first: nothing goes before "Sprache entfernen" in the window.
+    expect(calls.some((call) => call.method === 'DELETE')).toBe(false)
+    const dialog = document.querySelector<HTMLElement>('[data-testid="language-remove-dialog"]')!
+    const confirm = [...dialog.querySelectorAll('button')].find((button) => button.textContent?.trim() === 'Sprache entfernen')!
+    await act(async () => confirm.click())
+    await act(async () => undefined)
     const removed = calls.find((call) => call.method === 'DELETE')!
     expect(removed.path).toBe('/api/v1/locales/nl')
     expect(removed.client).toMatch(/^tab-/)

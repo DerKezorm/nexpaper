@@ -112,9 +112,7 @@ describe('my account', () => {
 })
 
 describe('the operator', () => {
-  // TODO sprachen 1.0.0: nexpaper asked before a language was removed; the card of the module removes at once, as
-  // nexnotes did (question S2 in einst-fragen/nexpaper.md). Until it is answered this holds what the card does now.
-  it('removes a language at once, as the card of the module sprachen does (no question)', async () => {
+  it('asks before a language is removed (sprachen 1.0.1, as nexpaper asked before)', async () => {
     server.answers['GET /api/v1/locales'] = [
       { code: 'de', name: 'Deutsch', keys: 0, built_in: true, own: false },
       { code: 'en', name: 'English', keys: 0, built_in: true, own: false },
@@ -122,10 +120,8 @@ describe('the operator', () => {
       { code: 'es', name: 'Español', keys: 120, built_in: false, own: true },
     ]
     await page.show(<LanguagesCard />)
-    // The chip's own small button, named by the language (ui `Chip`).
-    await page.click(page.button('Español entfernen'))
-    expect(page.dialog).toBeFalsy()
-    expect(server.changes()).toEqual(['DELETE /api/v1/locales/es'])
+    // The chip's own small button, named by the language (ui `Chip`), opens the question.
+    await asksFirst(() => page.button('Español entfernen'), 'Sprache entfernen', 'DELETE /api/v1/locales/es')
   })
 
   it('asks before an invitation is withdrawn', async () => {
