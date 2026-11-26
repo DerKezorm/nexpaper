@@ -21,6 +21,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from . import __version__, private
 from .config import get_settings
 from .db import SessionLocal, init_db
+from .deps import require_browser_account, require_operator
 from .errors import detail
 from .middleware import ForwardedProtoMiddleware, GuardMiddleware, RequestContextMiddleware, unhandled_error
 from .routers import (
@@ -89,6 +90,7 @@ from .services import (
     oidc_store,
     pictures,
     post_store,
+    schluessel_store,
     settings_service,
     storage,
     totp,
@@ -104,6 +106,7 @@ from .services.konten_store import KontenStore
 from .vendor import nexoidc
 from .vendor.nexkonten import factor as konten_factor
 from .vendor.nexkonten import setup as konten_setup
+from .vendor.nexschluessel import api as schluessel_api
 
 logger = logging.getLogger("nexpaper")
 
@@ -317,6 +320,13 @@ app.add_exception_handler(Exception, unhandled_error)
 
 for module in ROUTERS:
     app.include_router(module.router)
+
+# The cards "API keys", "Interfaces" and "API keys of every account" (the shared key module): an account's own keys
+# only in a signed-in browser (``require_browser_account`` turns a device token and a key away, as on the old routes
+# in ``routers/apikeys.py``), the overview and the switch for the operator.
+app.include_router(schluessel_api.router(
+    config=schluessel_store.CONFIG, store=schluessel_store.store, account=require_browser_account,
+    operator=require_operator, address=schluessel_store.address, prefix="/api/v1/connections", tags=["api keys"]))
 
 
 #: Files a browser asks the server about again each time: the service worker (an old one would keep its old ways for a

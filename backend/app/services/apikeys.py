@@ -15,6 +15,11 @@ good (``blocked_at``); a blocked key answers like none.
 
 **The key.** ``npk_`` and 43 random characters, shown once. Only its SHA-256 is stored, and its first characters to
 tell keys apart. It travels in ``Authorization: Bearer``, never in an address, and never reaches the log.
+
+**The shared key module.** Since the settings of 1.12 the routes make, list, revoke, lock and unlock keys through
+``vendor/nexschluessel`` (``services/schluessel_store.py``), and a presented key is checked by its ``authenticate``
+over the same rows; the walls around it (``allowed``, the brake, the upload limit, the scope) stay here. ``make`` below
+is the way keys were made before the module, kept for the tests that write keys as an older nexpaper did.
 """
 
 from __future__ import annotations
@@ -32,7 +37,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ..models import Account, ApiKey, utcnow
-from . import settings_service, totp
+from . import settings_service
 
 logger = logging.getLogger("nexpaper.api")
 
@@ -70,7 +75,8 @@ def digest(token: str) -> str:
 
 
 def make(db: Session, account: Account, name: str, scope: str, days: int | None = None) -> tuple[ApiKey, str]:
-    """A new key; the key itself is returned once and never stored. ``days``: runs out then; None: never."""
+    """A new key as nexpaper made them before the shared key module (no switch asked); the key itself is returned once
+    and never stored. ``days``: runs out then; None: never. The routes make keys through ``nexschluessel.keys.make``."""
     if scope not in CREATABLE:
         raise KeyProblem("invalid_input", "No such scope.", 422)
     if days is not None and days not in LIFETIMES:
@@ -100,29 +106,24 @@ class Caller:
 
 
 def authenticate(db: Session, token: str | None) -> Caller | None:
-    """The account behind a key, or None: no such key, run out, blocked, or the account locked or waiting for its
-    second factor. Keys being switched off is the caller's to check (``allowed``)."""
-    if not token or not token.startswith(KEY_PREFIX) or len(token) > 200:
+    """The account behind a key, or None: no such key, run out, blocked, or the account blocked, locked, deleted or
+    waiting for its second factor. The shared module checks it (``nexschluessel.authenticate`` over ``api_keys``,
+    ``last_used_at`` at most once a minute); keys being switched off is the caller's to check (``allowed``)."""
+    from ..vendor import nexschluessel
+    from .schluessel_store import CONFIG, SchluesselStore
+
+    if not token or not token.startswith(KEY_PREFIX):
         return None
-    row = db.scalar(select(ApiKey).where(ApiKey.token_hash == digest(token)))
-    now = utcnow()
-    if row is None or row.blocked_at is not None or (row.expires_at is not None and row.expires_at <= now):
+    try:
+        found = nexschluessel.authenticate(SchluesselStore(db), CONFIG, token, ("api",))
+    except nexschluessel.KeyRefused:
         return None
-    account = db.get(Account, row.account_id)
-    if account is None or account.blocked_at is not None or (
-            account.locked_until is not None and account.locked_until > now):
-        # Blocked means no way in at all, a key included.
+    account = db.get(Account, found.key.account_id)
+    if account is None:
         return None
-    if totp.setup_required(db, account):
-        # The operator requires a second factor this account has not set up: its keys wait like its sessions.
-        return None
-    if row.last_used_at is None or now - row.last_used_at >= USED_EVERY:
-        row.last_used_at = now
-        db.commit()
-    scope = row.scope if row.scope in SCOPES else "read"
-    key_id = row.id
     db.expunge(account)
-    return Caller(account=account, key_id=key_id, scope=scope)
+    return Caller(account=account, key_id=int(found.key.id), scope=found.key.right if found.key.right in SCOPES
+                  else "read")
 
 
 _calls_lock = threading.Lock()
