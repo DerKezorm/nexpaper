@@ -28,7 +28,8 @@ class StandardAdapter:
     public_read = True
     #: Whether the server hands out the template (``AppConfig.template``); False when the app's page makes it.
     has_template = True
-    #: Where the app describes its interface (nexpaper ``/api/v1/openapi.json``).
+    #: Where the app publishes the description of its interface (nexpaper ``/api/v1/openapi.json``); only read by the
+    #: default ``description``.
     openapi_path = "/openapi.json"
     #: The names the app gave ``api.router`` for ``prefix`` so that its description stays as it was (the same dicts:
     #: ``operation_ids``, ``summaries`` by route, ``schema_names`` by schema); empty: FastAPI's names of the module.
@@ -53,6 +54,15 @@ class StandardAdapter:
         """APP: a ``TestClient`` of the app: ``"operator"`` signed in as an operator, ``"member"`` signed in as an
         account without that role, ``"anonymous"`` without a session."""
         raise NotImplementedError("APP: client")
+
+    def description(self) -> dict[str, Any]:
+        """The description of the app's interface (OpenAPI). By default what the app publishes under
+        ``openapi_path``. An app that publishes none (nexmail: ``openapi_url=None``; or only with an environment
+        variable) returns ``self.app.openapi()`` instead; never publish it only for the tests."""
+        answer = self.client("operator").get(self.openapi_path)
+        assert answer.status_code == 200, (self.openapi_path, answer.status_code)
+        found: dict[str, Any] = answer.json()
+        return found
 
     def folder(self) -> Path:
         """The app's folder of own languages (``AppConfig.folder``); by default what the module says."""

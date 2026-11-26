@@ -18,9 +18,10 @@ ROUTES = {
 
 
 def _description(app: Any) -> dict[str, Any]:
-    answer = app.client("operator").get(app.openapi_path)
-    assert answer.status_code == 200, (app.openapi_path, answer.status_code)
-    return answer.json()
+    """Only through the adapter: an app may publish no description (nexmail) and hand over ``app.openapi()``."""
+    described = app.description()
+    assert isinstance(described, dict) and "paths" in described, type(described)
+    return described
 
 
 def _operation(described: dict[str, Any], app: Any, route: str) -> dict[str, Any]:
