@@ -36,7 +36,7 @@ from app.db import SessionLocal, engine, init_db
 from app.main import app
 from app.models import Account
 from app.security import MAX_FAILURES, SESSION_COOKIE
-from app.services import kontenpost, notices, settings_service, totp
+from app.services import mailer, notices, settings_service, totp
 from app.vendor import nexoidc
 from app.vendor.nexoidc import attempt, protocol
 
@@ -139,7 +139,7 @@ def post(monkeypatch: pytest.MonkeyPatch) -> list[dict[str, Any]]:
     def send_reset(_db: Any, to: str, link: str, *, name: str, hours: int) -> None:
         sent.append({"to": to, "link": link, "name": name, "hours": hours})
 
-    monkeypatch.setattr(kontenpost, "send_reset", send_reset)
+    monkeypatch.setattr(mailer, "send_reset", send_reset)
     with SessionLocal() as db:
         settings_service.save(db, {"smtp_host": "mail.example.com", "smtp_from": "paper@example.com",
                                    "public_url": PUBLIC})

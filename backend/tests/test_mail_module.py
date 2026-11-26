@@ -1,9 +1,11 @@
-"""System mail on the shared post module 1.1.0: nexpaper's own mailer is gone, every mail goes through the module; what
-was there before goes on (a mail waiting in the outbox from before, the mail server of the settings page, the codes of
-the routes of before), and what the module adds holds in nexpaper (the page Server › Mail, one key once, the logo)."""
+"""System mail on the shared post module 1.1.0: nexpaper's own mailer is gone (one name is left for the test
+"Bestand"), every mail goes through the module; what was there before goes on (a mail waiting in the outbox from
+before, the mail server of the settings page, the codes of the routes of before), and what the module adds holds in
+nexpaper (the page Server › Mail, one key once, the logo)."""
 
 from __future__ import annotations
 
+import ast
 import json
 from pathlib import Path
 
@@ -37,7 +39,16 @@ def test_no_mail_is_written_by_hand_any_more() -> None:
     found = [str(path.relative_to(APP)) for path in APP.rglob("*.py") if "vendor" not in path.parts
              and any(word in path.read_text(encoding="utf-8") for word in ("smtplib", "EmailMessage"))]
     assert found == []
-    assert not (APP / "services" / "mailer.py").exists()
+    # What is left of the mailer is one name for the test "Bestand" (Bauplan E47, as nexdiary): ``send_reset`` hands
+    # the link to ``kontenpost.send_reset`` and does nothing of its own.
+    mailer = (APP / "services" / "mailer.py").read_text(encoding="utf-8")
+    tree = ast.parse(mailer)
+    functions = [node for node in ast.walk(tree) if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))]
+    assert [function.name for function in functions] == ["send_reset"]
+    calls = [ast.unparse(node.func) for node in ast.walk(functions[0]) if isinstance(node, ast.Call)]
+    assert calls == ["kontenpost.send_reset"]
+    imported = {alias.name for node in ast.walk(tree) if isinstance(node, (ast.Import, ast.ImportFrom)) for alias in node.names}
+    assert imported <= {"annotations", "Session", "kontenpost"}, imported
 
 
 def test_a_mail_waiting_in_the_outbox_from_before_still_goes_out(smtp: type[FakeSmtp]) -> None:  # noqa: F811

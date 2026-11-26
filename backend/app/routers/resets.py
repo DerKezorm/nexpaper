@@ -27,7 +27,7 @@ from ..deps import (
 from ..errors import error
 from ..models import Account as AccountRow
 from ..security import MIN_PASSWORD
-from ..services import kontenpost, notices, post_store, resets, settings_service
+from ..services import kontenpost, mailer, notices, post_store, resets, settings_service
 from ..services.konten_store import KontenStore, own_store
 from ..vendor import nexkonten, nexpost
 from ..vendor.nexkonten import resets as konten_resets
@@ -63,14 +63,15 @@ class ResetLinkIn(OperatorConfirmIn):
 
 def _send(mail: nexkonten.Mail) -> None:
     """The link of "Forgot your password?", at once (the module drops the link when this raises): through
-    ``kontenpost.send_reset``, the way 1.12.0 sent it, written by the shared post module in the account's language."""
+    ``mailer.send_reset`` (a thin name for ``kontenpost.send_reset``, the test "Bestand" catches it there), the way
+    1.12.0 sent it, written by the shared post module in the account's language."""
     from ..db import SessionLocal
 
     with SessionLocal() as db:
         link = kontenpost.link_for(db, mail)
         if not link:
             raise ValueError("No public address for the link.")
-        kontenpost.send_reset(db, mail.to, link, name=mail.username, hours=mail.hours)
+        mailer.send_reset(db, mail.to, link, name=mail.username, hours=mail.hours)
         logger.info("Password link mailed name=%s", mail.username)
 
 
