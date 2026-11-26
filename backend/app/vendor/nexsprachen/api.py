@@ -19,7 +19,10 @@ The description of the interface (``/openapi.json``) stays an app's own where it
 ``summaries`` (by the module's name of a route: ``list``, ``template``, ``read``, ``upload``, ``remove``) and
 ``schema_names`` (``LanguageEntry`` for the list's entries, ``LocaleEntry`` for the answer of an upload) give the names
 the app's routes had before (nexpaper: ``list_locales_api_v1_locales_get``, ``LocaleEntry``). One name for both schemas
-makes one schema (the list's, the upload answering only its three fields). Without them FastAPI's names stay. An app
+makes one schema (the list's, the upload answering only its three fields). Without them the names every app had
+before the module stand (E53): ``list_locales_<path>_get`` …, the list's summary „Languages the operator added“, one
+schema ``LocaleEntry``. A schema name may be a dotted place and name (``app.routers.locales.LocaleEntry``) for an app
+whose old name FastAPI had written long (``app__routers__locales__LocaleEntry``). An app
 that mounts the routes under two prefixes gives ``operation_ids`` to one of them and the same ``schema_names`` to
 both.
 
@@ -50,43 +53,39 @@ MESSAGES = {
 }
 
 
-class LanguageEntry(BaseModel):
-    code: str
-    name: str
-    #: Texts in the operator's file (0 for a built-in language without one).
-    keys: int
-    built_in: bool = False
-    #: The operator added a file (a further language, or one over a built-in language).
-    own: bool = False
-
-
-class LocaleEntry(BaseModel):
-    code: str
-    name: str
-    keys: int
-
-
 #: The module's names of its routes, for ``operation_ids`` and ``summaries``.
 ROUTES = ("list", "template", "read", "upload", "remove")
-#: The module's names of its schemas, for ``schema_names``.
+#: The module's names of its schemas, for ``schema_names``: the entries of the list and the answer of an upload.
 SCHEMAS = ("LanguageEntry", "LocaleEntry")
+#: Since E53 the names every app had before the module (nexnotes' eigenbau in all eight): the functions are named as
+#: there (``list_locales`` …, so FastAPI's operationIds stay), the list's summary is the old one, and both schemas are
+#: one ``LocaleEntry`` (the list's with ``built_in`` and ``own``, which are not required).
+SUMMARIES = {
+    "list": "Languages the operator added",
+    "template": "The template to translate",
+    "read": "The texts of one added language",
+    "upload": "Add or replace a language (operator)",
+    "remove": "Remove an added language (operator)",
+}
+DEFAULT_SCHEMA = "LocaleEntry"
 
 #: One class per name and form, so that a router mounted twice (two prefixes) gives one schema, not two.
-_models: dict[tuple[str, bool], type[BaseModel]] = {
-    ("LanguageEntry", True): LanguageEntry,
-    ("LocaleEntry", False): LocaleEntry,
-}
+_models: dict[tuple[str, bool], type[BaseModel]] = {}
 
 
-def _model(name: str, full: bool) -> type[BaseModel]:
-    """The schema under ``name``: with ``built_in`` and ``own`` (``full``, the list's) or the three fields only."""
-    found = _models.get((name, full))
+def _model(target: str, full: bool) -> type[BaseModel]:
+    """The schema under ``target``: with ``built_in`` and ``own`` (``full``, the list's) or the three fields only.
+    ``target`` is a name (``LocaleEntry``) or a dotted place and name (``app.routers.locales.LocaleEntry``): the class
+    then lives there for FastAPI, which writes it ``app__routers__locales__LocaleEntry`` where two classes of the app
+    share the name, as it did before."""
+    found = _models.get((target, full))
     if found is None:
+        place, _, name = target.rpartition(".")
         fields: dict[str, Any] = {"code": (str, ...), "name": (str, ...), "keys": (int, ...)}
         if full:
             fields |= {"built_in": (bool, False), "own": (bool, False)}
-        found = create_model(name, **fields)
-        _models[(name, full)] = found
+        found = create_model(name, __module__=place or __name__, **fields)
+        _models[(target, full)] = found
     return found
 
 
@@ -122,16 +121,10 @@ def router(
     names an app's description of the interface had before; a key the module does not know is a mistake."""
     make = error or _refuse
     ids = _checked(operation_ids, ROUTES, "route")
-    said = {
-        "list": "The languages: built in and added",
-        "template": "The template to translate",
-        "read": "The texts of one added language",
-        "upload": "Add or replace a language (operator)",
-        "remove": "Remove an added language (operator)",
-    } | _checked(summaries, ROUTES, "route")
+    said = SUMMARIES | _checked(summaries, ROUTES, "route")
     names = _checked(schema_names, SCHEMAS, "schema")
-    listed_name = names.get("LanguageEntry", "LanguageEntry")
-    uploaded_name = names.get("LocaleEntry", "LocaleEntry")
+    listed_name = names.get("LanguageEntry", DEFAULT_SCHEMA)
+    uploaded_name = names.get("LocaleEntry", DEFAULT_SCHEMA)
     listed = _model(listed_name, True)
     uploaded = listed if uploaded_name == listed_name else _model(uploaded_name, False)
 
@@ -144,7 +137,7 @@ def router(
 
     @routes.get("", response_model=list[listed], summary=said["list"], dependencies=readers,
                 operation_id=ids.get("list"))
-    def list_languages(response: Response) -> list[store.Language]:
+    def list_locales(response: Response) -> list[store.Language]:
         response.headers.update(NO_CACHE)
         return store.languages()
 
@@ -162,7 +155,7 @@ def router(
 
     @routes.get("/{code}", summary=said["read"], dependencies=readers, response_model=None,
                 operation_id=ids.get("read"))
-    def read_language(code: str) -> JSONResponse:
+    def read_locale(code: str) -> JSONResponse:
         try:
             texts = store.load(code)
         except FileNotFoundError as exc:
@@ -177,7 +170,7 @@ def router(
 
     @routes.put("/{code}", response_model=uploaded, summary=said["upload"], dependencies=operators,
                 operation_id=ids.get("upload"), response_model_exclude_unset=True)
-    async def upload_language(code: str, request: Request) -> store.Locale:
+    async def upload_locale(code: str, request: Request) -> store.Locale:
         """The body is the JSON file itself, at most 512 KB."""
         limit = {"max_kb": store.MAX_BYTES // 1024, "max_mb": round(store.MAX_BYTES / 1024**2, 1)}
         if not store.valid_code(code):
@@ -201,7 +194,7 @@ def router(
 
     @routes.delete("/{code}", status_code=204, summary=said["remove"], dependencies=operators,
                    operation_id=ids.get("remove"))
-    def remove_language(code: str) -> None:
+    def delete_locale(code: str) -> None:
         if not store.remove(code):
             raise refuse("not_found")
 

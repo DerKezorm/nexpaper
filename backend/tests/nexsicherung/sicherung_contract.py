@@ -25,6 +25,24 @@ class StandardAdapter:
     #: The app's old routes (``routes.legacy_router``) and their password header; empty: the app had none.
     legacy_prefix = "/api/backups"
     legacy_header = ""
+    #: Since E53: the names the app gave for its description, exactly as given to the routers: ``operation_ids`` and
+    #: ``summaries`` of ``legacy_router`` (by ``routes.LEGACY_ROUTES``), ``schema_names`` of both (by
+    #: ``routes.SCHEMAS``); an app with its own backup routes before the module: ``routes.former_names(legacy_prefix)``.
+    #: Empty: the module's names.
+    operation_ids: dict[str, str] = {}
+    summaries: dict[str, str] = {}
+    schema_names: dict[str, str] = {}
+    #: Where the app publishes the description of its interface; only read by the default ``description``.
+    openapi_path = "/openapi.json"
+
+    def description(self) -> dict[str, Any]:
+        """The description of the app's interface (OpenAPI). By default what the app publishes under
+        ``openapi_path``; an app that publishes none (nexmail; or only with an environment variable) returns
+        ``self.app.openapi()`` instead. Never publish it only for the tests."""
+        answer = self.operator().get(self.openapi_path)
+        assert answer.status_code == 200, (self.openapi_path, answer.status_code)
+        found: dict[str, Any] = answer.json()
+        return found
 
     def start(self) -> None:
         """APP: an empty app in a fresh data folder, started as in production (``configure``, ``apply_pending``, the

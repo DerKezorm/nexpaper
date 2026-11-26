@@ -1,7 +1,7 @@
-"""The description of the interface stays the app's: where the app had its own routes, the module's routes carry the
-operationId, summary and schema names they had (nexpaper ``list_locales_api_v1_locales_get``, ``LocaleEntry``), so a
-snapshot and a generated client keep working; without such names the module's own stand. Copied unchanged into every
-app."""
+"""The description of the interface stays the app's (E53): the module's routes carry the operationId, summary and
+schema names the app's routes had (``list_locales_api_v1_locales_get``, „Languages the operator added“,
+``LocaleEntry``), so a snapshot and a generated client keep working. Without names from the app the module's defaults
+are the names all eight apps had before. Copied unchanged into every app."""
 
 from __future__ import annotations
 
@@ -9,12 +9,26 @@ from typing import Any
 
 #: The module's routes: (path after the prefix, method), and FastAPI's name of the module's function.
 ROUTES = {
-    "list": ("", "get", "list_languages"),
+    "list": ("", "get", "list_locales"),
     "template": ("/template", "get", "download_template"),
-    "read": ("/{code}", "get", "read_language"),
-    "upload": ("/{code}", "put", "upload_language"),
-    "remove": ("/{code}", "delete", "remove_language"),
+    "read": ("/{code}", "get", "read_locale"),
+    "upload": ("/{code}", "put", "upload_locale"),
+    "remove": ("/{code}", "delete", "delete_locale"),
 }
+#: What the routes said before the module (nexnotes' eigenbau, in all eight apps).
+SUMMARIES = {
+    "list": "Languages the operator added",
+    "read": "The texts of one added language",
+    "upload": "Add or replace a language (operator)",
+    "remove": "Remove an added language (operator)",
+}
+
+
+def shown(target: str) -> set[str]:
+    """How FastAPI writes a schema name: ``LocaleEntry``, or for a dotted place and name either the name or, where two
+    classes share it, ``app__routers__locales__LocaleEntry``."""
+    place, _, name = target.rpartition(".")
+    return {name, f"{place.replace('.', '__')}__{name}"} if place else {target}
 
 
 def _description(app: Any) -> dict[str, Any]:
@@ -39,27 +53,27 @@ def test_every_route_carries_the_operation_id_the_app_gave_or_the_modules(app: A
             assert found.startswith(f"{function}_"), (route, found)
 
 
-def test_every_route_carries_the_summary_the_app_gave(app: Any) -> None:
+def test_every_route_carries_the_summary_the_app_gave_or_the_old_one(app: Any) -> None:
     described = _description(app)
-    for route, summary in app.summaries.items():
+    for route, summary in (SUMMARIES | app.summaries).items():
         assert _operation(described, app, route)["summary"] == summary, route
 
 
 def test_the_schemas_carry_the_names_the_app_gave_or_the_modules(app: Any) -> None:
     described = _description(app)
     schemas = described["components"]["schemas"]
-    listed = app.schema_names.get("LanguageEntry", "LanguageEntry")
+    listed = app.schema_names.get("LanguageEntry", "LocaleEntry")
     uploaded = app.schema_names.get("LocaleEntry", "LocaleEntry")
-    assert listed in schemas and uploaded in schemas, sorted(schemas)
-    doubled = [name for name in schemas if "__" in name and ("LanguageEntry" in name or "LocaleEntry" in name)]
-    assert doubled == [], "one class per name, not one per mount"
-    for renamed in set(app.schema_names) - set(app.schema_names.values()):
-        assert renamed not in schemas, renamed
+    assert not [name for name in schemas if "nexsprachen" in name], "a class of the module shares a name"
     items = _operation(described, app, "list")["responses"]["200"]["content"]["application/json"]["schema"]["items"]
-    assert items == {"$ref": f"#/components/schemas/{listed}"}
+    listed_as = items["$ref"].rsplit("/", 1)[-1]
+    assert listed_as in shown(listed), (listed_as, listed)
     answer = _operation(described, app, "upload")["responses"]["200"]["content"]["application/json"]["schema"]
-    assert answer == {"$ref": f"#/components/schemas/{uploaded}"}
-    assert set(schemas[listed]["required"]) == {"code", "name", "keys"}
+    uploaded_as = answer["$ref"].rsplit("/", 1)[-1]
+    assert uploaded_as in shown(uploaded), (uploaded_as, uploaded)
+    assert set(schemas[listed_as]["required"]) == {"code", "name", "keys"}
+    assert set(schemas[uploaded_as]["required"]) == {"code", "name", "keys"}
+    assert "LanguageEntry" not in schemas or "LanguageEntry" in shown(listed)
 
 
 def test_an_upload_answers_three_fields_whatever_its_schema_is_called(app: Any, operator: Any) -> None:
