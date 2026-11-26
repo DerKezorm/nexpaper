@@ -184,13 +184,15 @@ export function SignInCard({
   if (!view) return null
   const card = SIGN_IN_CARD
 
-  const run = async (work: () => Promise<void>, inDialog = false): Promise<boolean> => {
+  /** ``work`` answers false when nothing was saved yet (a question comes first): then no "Gespeichert." (E44). */
+  const run = async (work: () => Promise<void | boolean>, inDialog = false): Promise<boolean> => {
     setBusy(true)
     setProblem('')
     setAskProblem('')
     setDone(false)
     try {
-      await work()
+      const saved = await work()
+      if (saved === false) return false
       setDone(true)
       return true
     } catch (error) {
@@ -206,6 +208,7 @@ export function SignInCard({
       const question = await onSaveAddress(url, confirm)
       setAsking(question ? { question, url } : null)
       if (!question) setAddress(null)
+      return !question
     })
 
   const submitAddress = (event: FormEvent) => {

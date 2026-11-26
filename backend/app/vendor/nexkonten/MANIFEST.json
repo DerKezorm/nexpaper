@@ -44,7 +44,7 @@
     "backend/tests/nexkonten/test_nexkonten_vendored.py": "sha256-6X/Zu0wcCmqjt46UbLUtjwvo8Bx06LrZuMbyPFumtb0=",
     "backend/tests/nexkonten/webauthn_device.py": "sha256-67Qt8Bq4aAveF/3aP8YTNjGRGxqzqItI1QQHHrkeEF8=",
     "frontend/src/vendor/nexkonten/AccountCards.tsx": "sha256-wAZgOx+sN+KcWwLtKDLy0ynOiWJo81v2SwrCqb3QP+k=",
-    "frontend/src/vendor/nexkonten/SignInPage.tsx": "sha256-Swel99qsZPEOqP93Y0BJiIoNxNSZ08eBdq/uNQs+4Pc=",
+    "frontend/src/vendor/nexkonten/SignInPage.tsx": "sha256-MxChjNXdovJBBJ5Gr4dzox8iodAFD+UOu5zPByeOY/w=",
     "frontend/src/vendor/nexkonten/konten.de.json": "sha256-bNr/5BqbK+7tTQR+NA56W9eSMu46zGGjzcEE6ZSRz1g=",
     "frontend/src/vendor/nexkonten/konten.en.json": "sha256-DtUI2y9uQK7u94ZE24fA6P/CQJq3+f+8YWB81pL29Sg=",
     "frontend/src/vendor/nexkonten/konten.fr.json": "sha256-r9shW3l8OgaBum735JWsdxyICzBNvwz4GDyBW5R6jM4=",

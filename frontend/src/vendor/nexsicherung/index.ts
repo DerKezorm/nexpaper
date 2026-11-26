@@ -1,6 +1,8 @@
 /** nexsicherung in the browser (bauplaene/sicherung). Changed only in bauplaene, copied unchanged into each app. */
-export { BackupCard, BriefBox, StorageArea, StorageCard, blockedWords } from './StorageArea'
-export type { BlockedTexts, StorageAreaProps } from './StorageArea'
+export { BackupCard, BriefBox, StorageArea, StorageCard } from './StorageArea'
+export type { StorageAreaProps } from './StorageArea'
+export { blockedWords } from './storage'
+export type { BlockedTexts } from './storage'
 export {
   EVERY,
   PASSWORD_HEADER,

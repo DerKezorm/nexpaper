@@ -33,6 +33,7 @@ import {
   type SicherungApi,
   type SicherungTexts,
 } from './sicherung'
+import { blockedWords, type BlockedTexts } from './storage'
 
 export type StorageAreaProps = {
   /** The app's name ("nexnotes"). */
@@ -66,15 +67,6 @@ export type StorageAreaProps = {
    * address of the archive applies); the answers go to the server as `options` and on to the app's hook. */
   restoreOptions?: readonly RestoreOption[]
   children?: ReactNode
-}
-
-/** The app's words for its own blocking codes, per language (English stands in for a language it lacks). */
-export type BlockedTexts = Readonly<Record<string, Partial<Record<Language, string>>>>
-
-/** The app's sentence for a code, in the page's language, or null. */
-export function blockedWords(blockedText: BlockedTexts | undefined, code: string | null | undefined, language: Language): string | null {
-  const found = code ? blockedText?.[code] : undefined
-  return found?.[language] ?? found?.en ?? null
 }
 
 /** The code of a refusal, if it has one. */

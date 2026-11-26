@@ -28,7 +28,6 @@ from .common import log, utcnow
 from .errors import MailError, is_final
 from .letters import compose, language_for
 from .model import Letter, MailSettings, MailStatus, OutboxItem, Store
-from .send import deliver
 
 #: Minutes after the first, second … failure.
 RETRY_MINUTES = (1, 5, 15, 60, 180)
@@ -41,7 +40,8 @@ def _deliver(settings: MailSettings, letter: Letter) -> None:
     """``deliver``, and whatever else breaks counts as ``mail_failed``: one broken mail never stops the outbox, and
     the page shows a reason instead of a 500."""
     try:
-        deliver(settings, letter)
+        # Through the module (never a name imported once): testing.catch_mail replaces send.deliver (since E44).
+        send.deliver(settings, letter)
     except MailError:
         raise
     except Exception as error:  # one broken mail must not stop the outbox

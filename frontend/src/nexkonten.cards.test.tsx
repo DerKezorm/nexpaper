@@ -184,6 +184,22 @@ describe('Server › Sign-in (konten 1.1.0)', () => {
     expect(props.onSaveAddress).toHaveBeenCalledWith('', false)
   })
 
+  it('says "Gespeichert." only after the address was saved, never while authentik is asked first (since E44)', async () => {
+    const question = { count: 2, hand: 0, address: 'https://old.example.com' }
+    const onSaveAddress = vi.fn(async (_url: string, confirm: boolean) => (confirm ? null : question))
+    page({ onSaveAddress, saved: 'Gespeichert.' })
+    const card = document.querySelector('[data-card="sign-in"]') as HTMLElement
+    await click(card.querySelector('[data-part="field-action"] button'))
+    expect(onSaveAddress).toHaveBeenCalledWith('', false)
+    expect(document.querySelector('[role="dialog"]')).not.toBeNull()
+    expect(document.body.textContent).not.toContain('Gespeichert.')
+    const dialog = document.querySelector('[role="dialog"]') as HTMLElement
+    await click([...dialog.querySelectorAll('button')].find((entry) => entry.textContent?.trim() === t('account.save')))
+    expect(onSaveAddress).toHaveBeenLastCalledWith('', true)
+    expect(document.querySelector('[role="dialog"]')).toBeNull()
+    expect(document.body.textContent).toContain('Gespeichert.')
+  })
+
   it('keeps password sign-in on without a provider and the second factor off without an own one', () => {
     page()
     const boxes = [...document.querySelectorAll('[data-card="sign-in"] input[type="checkbox"]')] as HTMLInputElement[]

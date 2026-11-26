@@ -17,13 +17,22 @@ reached (``mail_unreachable``). What goes into the outbox is kept **and** still 
 outbox keeps its checks. Not loaded by ``nexpost/__init__.py``; only the standard library. The app calls the module
 as ``nexpost.send.deliver`` and ``nexpost.outbox.queue`` (never a name it imported once), otherwise nothing is
 caught.
+
+Since E44 every way of the module goes through ``send.deliver`` (the outbox, ``deliver_now``, ``test_mail``, the
+letters of the app), and while ``catch_mail`` is on **no test reaches a real mail server**: ``smtplib.SMTP``,
+``smtplib.SMTP_SSL`` and ``socket.create_connection`` to port 25, 465 or 587 raise ``RealMailAttempt`` (a
+``BaseException``, so that no ``except Exception`` of the outbox swallows it), and the block fails at its end if one was
+tried anyway. ``use_smtp`` (the contract tests' ``FakeServer``) is no real server and stays allowed.
 """
 
 from __future__ import annotations
 
+import smtplib
+import socket
 from collections.abc import Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass, field
+from typing import Any
 
 from . import outbox, send
 from .errors import MailError
@@ -39,6 +48,16 @@ class Caught:
     queued: list[Letter] = field(default_factory=list)
     letters: list[Letter] = field(default_factory=list)
     refused: list[Letter] = field(default_factory=list)
+    #: Since E44: every try to reach a real mail server while the block ran (each also raised ``RealMailAttempt``).
+    attempts: list[str] = field(default_factory=list)
+
+
+#: The ports of a mail server.
+MAIL_PORTS = frozenset({25, 465, 587})
+
+
+class RealMailAttempt(BaseException):
+    """A test tried to reach a real mail server while ``catch_mail`` was on."""
 
 
 @contextmanager
@@ -61,10 +80,36 @@ def catch_mail(*, fail: bool = False) -> Iterator[Caught]:
         caught.letters.append(letter)
         return real_queue(store, letter)
 
+    real_smtp, real_smtp_ssl, real_connect = smtplib.SMTP, smtplib.SMTP_SSL, socket.create_connection
+
+    def refuse(what: str) -> RealMailAttempt:
+        caught.attempts.append(what)
+        return RealMailAttempt(f"a test tried to reach a real mail server ({what}) while catch_mail was on")
+
+    def smtp(*args: Any, **kwargs: Any) -> Any:
+        raise refuse(f"smtplib.SMTP{args[:2]!r}")
+
+    def smtp_ssl(*args: Any, **kwargs: Any) -> Any:
+        raise refuse(f"smtplib.SMTP_SSL{args[:2]!r}")
+
+    def connect(address: Any, *args: Any, **kwargs: Any) -> socket.socket:
+        port = address[1] if isinstance(address, tuple) and len(address) > 1 else None
+        if port in MAIL_PORTS:
+            raise refuse(f"socket.create_connection({address!r})")
+        return real_connect(address, *args, **kwargs)
+
     send.deliver = deliver  # type: ignore[assignment]
     outbox.queue = queue  # type: ignore[assignment]
+    smtplib.SMTP = smtp  # type: ignore[assignment,misc]
+    smtplib.SMTP_SSL = smtp_ssl  # type: ignore[assignment,misc]
+    socket.create_connection = connect  # type: ignore[assignment]
     try:
         yield caught
     finally:
         send.deliver = real_deliver  # type: ignore[assignment]
         outbox.queue = real_queue  # type: ignore[assignment]
+        smtplib.SMTP = real_smtp  # type: ignore[misc]
+        smtplib.SMTP_SSL = real_smtp_ssl  # type: ignore[misc]
+        socket.create_connection = real_connect
+    if caught.attempts:
+        raise AssertionError(f"a test tried to reach a real mail server: {caught.attempts}")

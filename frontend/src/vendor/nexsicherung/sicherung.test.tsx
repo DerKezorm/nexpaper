@@ -239,7 +239,7 @@ describe('the area "Speicher und Sicherung"', () => {
   it("asks the app's own questions when restoring and sends the answers (since E38)", async () => {
     const api = fakeApi()
     const answered: unknown[] = []
-    api.restore = vi.fn(async (name, password, archivePassword, options) => (answered.push(options), { ...brief(), result: {}, restarting: false }))
+    api.restore = vi.fn(async (_name, _password, _archivePassword, options) => (answered.push(options), { ...brief(), result: {}, restarting: false }))
     const root = await show(
       <StorageArea app="nexmail" things="Mails" holds="h" api={api} password language="de"
         restoreOptions={[

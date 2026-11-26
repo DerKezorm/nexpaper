@@ -29,7 +29,9 @@ _CREDENTIAL = re.compile(
     r"(?i)(\b(?:password|passwort|kennwort|passphrase|secret|client_secret|token|api[_-]?key|access[_-]?token|"
     r"refresh[_-]?token)\b\s*[=:]\s*)(?!…)[^\s,;)\"'&]+"
 )
-_BEARER = re.compile(r"(?i)(\bbearer\s+)(?!…)[A-Za-z0-9._~+/=-]+")
+#: A token after "Bearer" goes, unless a rule before already blacked it out: then the key's prefix stays visible
+#: (``Bearer nxa_…``, as without "Bearer"; since E44 it became ``Bearer ……``).
+_BEARER = re.compile(r"(?i)(\bbearer\s+)(?![A-Za-z0-9._~+/=-]*…)[A-Za-z0-9._~+/=-]+")
 
 _rules: list[tuple[re.Pattern[str], str]] = []
 
