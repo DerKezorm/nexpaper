@@ -98,12 +98,19 @@ def can_add(public_url: str, origin: str = "", request_url: str = "") -> bool:
     with a public https address of the app, or where the page is open on ``localhost``; the same inputs as ``party``
     (the app's public address, the request's ``Origin``, the address the request came to). Without, the box says
     instead what is missing (an operator: enter the public address, with a link to Server › Sign-in; a member: the
-    operator has to). Passkeys an account has stay listed and removable either way."""
-    try:
-        party(public_url, origin, request_url)
-    except AccountError:
-        return False
-    return True
+    operator has to). Passkeys an account has stay listed and removable either way.
+
+    A public address set counts alone, and only with https: the page's ``origin`` or the address of the request do not
+    matter then (an http address on localhost answers no, adding would fail). Only without one, the page on
+    ``localhost`` (by ``origin``, else by ``request_url``) is enough; an IP or another name is not."""
+    given = (public_url or "").strip()
+    if given:
+        parts = urlsplit(given)
+        return parts.scheme == "https" and bool(parts.hostname)
+    seen = urlsplit((origin or "").strip())
+    if not (origin or "").strip() and (request_url or "").strip():
+        seen = urlsplit((request_url or "").strip())
+    return (seen.hostname or "").lower() == LOCALHOST and seen.scheme in ("http", "https")
 
 
 @dataclass
