@@ -140,6 +140,27 @@ Passwortfrage; der Schnappschuss hat das Muster wieder, die Wege `/api/v1/backup
 `reihe.sh nexpaper ende8` (Stand `549b40d`): ruff sauber; pytest 3899 grün, 5 übersprungen, 0 rot; lint sauber; vitest 1223
 grün in 109 Dateien; build grün; Playwright 2 von 2 grün.
 
+**Letzte Runde (E57, 26.11.2026, P1 bis P3).**
+- P1 (B1.3, `6951456`): eine gescheiterte **geplante** Sicherung meldet sich bei allen Betreibern über den Haken
+  `tell("backup_failed")` (`backup_hooks.backup_failed_notice`, Push und Mail, Link `/settings/storage`, Tag
+  `backup-failed`), DE/EN/FR; das Modul meldet einmal, bis wieder eine gelingt.
+- P2 (B1.5, E26, `76f0cc5`): nexpapers eigene Briefe in der Sprache des Empfängers (`kontenpost.language_for` wie
+  `Store.recipient`: Konto, sonst erster Betreiber, sonst Englisch), DE/EN/FR: `tell.Notice.mails` (de/fr neben dem
+  englischen `mail_subject`/`mail_body`, `tell.mail_words`) für Sicherung/Wiederherstellen gescheitert, Dateien prüfen,
+  Anmeldeweg gelöst, Speicher voll, Upload-Bitte (`upload_requests.request_notice`), Paperless-Import
+  (`paperless.import_notice`); Export fertig/gescheitert (`exports.MAILS`); „Absender bestätigen“
+  (`mail_senders.confirm_letter(language=…)`, Namen in einem Durchgang eingesetzt). Push dieser Hinweise jetzt auch FR.
+  Die Fristen-Briefe bleiben DE/EN (Frage Q1).
+- P3 (B3.1, E38, `ac6ee58`): Mail an `paper+<konto>@` eines gesperrten oder gelöschten Kontos, oder nur von dessen
+  bestätigter Adresse, geht nie an den Betreiber (`intake_mail.held_for`, `mail_senders.owners(shut_out=True)`): sie
+  bleibt ungelesen liegen (`mail_state.held`), kommt nach Entsperren/Zurückholen wie jede andere herein und wird nach
+  dem endgültigen Löschen übergangen (`dropped`, nie wieder geholt, niemand bekommt sie). `test_mail_text.py::
+  test_a_blocked_account_gets_nothing` prüft jetzt das neue Verhalten (vorher: an den Betreiber, unbekannt). Mail
+  danach an den reservierten Namen: Frage Q2.
+- Läufe: gezielt 813 grün (berührte Dateien, `tests/nexsicherung`, `tests/nexpost`, `test_bestand.py`,
+  `test_places.py`, `test_openapi_names.py`, `test_routes.py`; Schnappschuss unverändert), ruff sauber; neue Tests je
+  einmal gegen Mutationen rot (Rückgabecode 1). Oberfläche nicht berührt.
+
 **Endlauf (26.11.2026, `reihe.sh nexpaper ende4`, Stand `29ba6c2`, nach Passkeys E49, Grenzen-Satz E46, Bestand E51,
 sprachen):** ruff sauber; pytest 3879 grün, 5 übersprungen, 1 rot: `test_routes.py::test_the_description_of_the_interface_is_the_snapshot`
 (OpenAPI-Schnappschuss, die alten Wege `/api/v1/locales…` tragen über das Modul andere `operationId` und den Schemanamen
