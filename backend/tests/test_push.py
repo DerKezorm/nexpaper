@@ -13,8 +13,9 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.config import get_settings
+from app.db import SessionLocal
 from app.models import Account
-from app.services import push, webpush
+from app.services import devices, push, webpush
 
 from .clear import deep_log, found_in, journal_kept, word  # noqa: F401 - fixtures
 from .conftest import DATA_DIR, PASSWORD, make_account, new_client, remove_for_good
@@ -413,6 +414,33 @@ def test_an_account_that_is_out_gets_no_push_and_keeps_its_devices_until_it_goes
         assert client.get("/api/v1/settings/push").json()["devices"] == 1, step
     remove_for_good(rike)
     assert client.get("/api/v1/settings/push").json()["devices"] == 0
+
+
+def test_the_browsers_hang_at_the_account_and_stay_when_sessions_and_devices_end(
+        client: TestClient, account: Account, push_service: FakePushService) -> None:
+    """Bauplan E43: in nexpaper a browser with notices belongs to the account, not to a session or a paired device
+    (nexpaper has no pushes to its iPhone app). Signing out, signing out everywhere, an operator ending every session
+    and a device cut off leave it signed up, and the messages reach it (E38: they stay until the account goes)."""
+    rike = make_account("rike")
+    with SessionLocal() as db:
+        row = db.get(Account, rike.id)
+        assert row is not None
+        devices.make(db, row, "iPhone")
+    with new_client(rike) as browser:
+        assert browser.post("/api/v1/push/devices", json=push_service.device().subscription()).status_code == 201
+        # The paired device cut off from the list of the own sign-ins, then every other browser, then this one.
+        listed = browser.get("/api/v1/auth/sessions").json()
+        assert any(not entry["here"] for entry in listed), "the paired device is listed"
+        for entry in listed:
+            if not entry["here"]:
+                assert browser.delete(f"/api/v1/auth/sessions/{entry['id']}").status_code == 204
+        assert browser.post("/api/v1/auth/logout-all").status_code == 204
+        assert browser.post("/api/v1/auth/logout").status_code == 204
+    assert client.post(f"/api/v1/accounts/{rike.id}/sign-out").status_code == 204
+
+    message = push.Message(title="nexpaper", body="Probe", url="/", desk="/", tag="probe")
+    assert push.send_to_person(rike.id, lambda _lang: message).sent == 1
+    assert client.get("/api/v1/settings/push").json()["devices"] == 1
 
 
 # --- Sealed ---------------------------------------------------------------------------------------------------------
