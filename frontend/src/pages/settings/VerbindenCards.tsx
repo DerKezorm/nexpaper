@@ -8,7 +8,6 @@
 import { useTranslation } from 'react-i18next'
 
 import { api } from '../../api/client'
-import { shortDate } from '../../lib/dates'
 import { ConnectionsArea, ConnectionsOperatorCard, ConsentPage, ReturnPage, type VerbindenRequest } from '../../vendor/nexverbinden'
 
 const request: VerbindenRequest = (path, init = {}) => api(path, { method: init.method, body: init.body })
@@ -17,8 +16,7 @@ const request: VerbindenRequest = (path, init = {}) => api(path, { method: init.
 export function OtherApps() {
   const { t, i18n } = useTranslation()
   return (
-    <ConnectionsArea app="nexpaper" request={request} areaWord={t('mcp.vaults')} language={i18n.language}
-      when={(iso, language) => shortDate(iso, language)} />
+    <ConnectionsArea app="nexpaper" request={request} areaWord={t('mcp.vaults')} language={i18n.language} />
   )
 }
 

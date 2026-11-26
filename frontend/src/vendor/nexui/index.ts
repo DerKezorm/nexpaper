@@ -24,6 +24,7 @@ export type { AboutUpdates, BuiltWith, WhatsNewEntry, WhatsNewLink, WhatsNewSect
 export { NotifyWays } from './NotifyWays'
 export type { NotifyBrowser } from './NotifyWays'
 export { NEXUI_TEXTS, NexuiLanguage, areaText, fill, languageOf, useNexuiTexts } from './texts'
+export { formatDay, formatMoment, formatTime, inSentence } from './when'
 export type { NexuiLanguageCode, NexuiTexts, SharedAreaSlug } from './texts'
 export { ICONS, iconOf } from './icons'
 export type { IconLike, IconName } from './icons'

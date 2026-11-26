@@ -15,6 +15,7 @@ import type { LogLine, LogRequest } from '../../vendor/nexlog/log'
 import { MailCard } from '../../vendor/nexpost/MailCard'
 import type { PostRequest } from '../../vendor/nexpost/mailserver'
 import { LanguagesCard as SprachenCard } from '../../vendor/nexsprachen/LanguagesCard'
+import { formatMoment } from '../../vendor/nexui'
 import { useAction } from './actions'
 
 export type ServerSettings = {
@@ -114,7 +115,7 @@ export function MailArea() {
       subtitle={t('server.mailHint')}
       senderPlaceholder="paper@example.com"
       language={i18n.language}
-      when={(moment, language) => new Date(moment).toLocaleString(language, { dateStyle: 'short', timeStyle: 'short' })}
+      when={formatMoment}
     />
   )
 }

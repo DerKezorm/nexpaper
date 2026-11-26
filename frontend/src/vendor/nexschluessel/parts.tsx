@@ -7,16 +7,18 @@
  */
 import { useState, type ReactNode } from 'react'
 
-import { Badge, Box, Button, Buttons, Checkbox, CheckboxRow, ConfirmDialog, CopyRow, Dialog, Field, Notice, Segment, SelectField, Table, TextLink, useNexuiTexts } from '../nexui'
+import { Badge, Box, Button, Buttons, Checkbox, CheckboxRow, ConfirmDialog, CopyRow, Dialog, Field, Notice, Segment, SelectField, Table, TextLink, inSentence, useNexuiTexts } from '../nexui'
 import {
   BUTTONS,
   COLUMN_WIDTHS,
+  KEY_TEXTS,
   KEY_COLUMNS,
   actionWidth,
   daysOf,
   daysValue,
   defaultDays,
   fillKeys,
+  defaultDay,
   defaultWhen,
   newClientRef,
   optionHint,
@@ -62,6 +64,7 @@ export function KeysTable({
   label,
   empty,
   when = defaultWhen,
+  day = defaultDay,
   onEdit,
   onRevoke,
   extra,
@@ -77,6 +80,8 @@ export function KeysTable({
   label: string
   empty: string
   when?: WhenFormat
+  /** Since 1.1.2: how a day is written (expiry). */
+  day?: WhenFormat
   onEdit?: (key: KeyEntry) => void
   onRevoke: (key: KeyEntry) => void
   /** The app's own button for a key (nexlore: "Rights per tool"), before the module's. */
@@ -104,7 +109,7 @@ export function KeysTable({
             {key.program ? null : <span className="font-mono text-[var(--nexui-text-muted)]">{key.prefix}…</span>}
             {key.legacy && <span className="text-[var(--nexui-text-muted)]">{(texts.legacy as Record<string, string>)[key.legacy] ?? key.legacy}</span>}
             {listing.keys_wait && <KeyFactorHint texts={texts} securityHref="" compact />}
-            {compact && showExpiry && !key.program && <span data-testid="key-expiry">{cell(key, 'expires')}</span>}
+            {compact && showExpiry && !key.program && <span data-testid="key-expires">{cell(key, 'expires')}</span>}
             {compact && (
               <span className="text-[var(--nexui-text-muted)]" data-testid="key-used">
                 {texts.columns.used}: {cell(key, 'used')}
@@ -124,9 +129,9 @@ export function KeysTable({
         if (key.expired) return <Badge tone="danger" testId="key-expired">{texts.key.expired}</Badge>
         if (!key.expires_at) return <span className="text-[var(--nexui-text-muted)]">{texts.key.neverExpires}</span>
         return key.expiring ? (
-          <Badge tone="warn" testId="key-expiring">{fillKeys(texts.key.expires, { date: when(key.expires_at, code) })}</Badge>
+          <Badge tone="warn" testId="key-expiring">{fillKeys(texts.key.expires, { date: day(key.expires_at, code) })}</Badge>
         ) : (
-          <span>{fillKeys(texts.key.expires, { date: when(key.expires_at, code) })}</span>
+          <span>{fillKeys(texts.key.expires, { date: day(key.expires_at, code) })}</span>
         )
       case 'used':
         return <span className="text-[var(--nexui-text-muted)]">{key.last_used_at ? when(key.last_used_at, code) : texts.key.neverUsed}</span>
@@ -223,6 +228,9 @@ export function KeyDialog({
 }) {
   const kit = useNexuiTexts()
   const { kind } = state
+  // M-19 (1.1.2): the app's word for its areas inside the sentence, small in English and French.
+  const code = (['de', 'en', 'fr'] as const).find((found) => KEY_TEXTS[found] === texts) ?? 'en'
+  const areasInline = inSentence(words?.areas ?? texts.areaWord, code)
   const editing = state.mode === 'edit' ? state.key : null
   const startRight = editing?.right ?? kind.default_right ?? kind.rights[0] ?? ''
   const [name, setName] = useState(editing?.name ?? '')
@@ -301,8 +309,8 @@ export function KeyDialog({
                     value={allAreas ? 'all' : 'some'}
                     onChange={(value) => setAllAreas(value === 'all')}
                     options={[
-                      { value: 'all', label: words?.areasAll ?? fillKeys(texts.key.areasAll, { areas: words?.areas ?? texts.areaWord }), testId: 'key-areas-all' },
-                      { value: 'some', label: words?.areasSome ?? fillKeys(texts.key.areasSome, { areas: words?.areas ?? texts.areaWord }), testId: 'key-areas-some' },
+                      { value: 'all', label: words?.areasAll ?? fillKeys(texts.key.areasAll, { areas: areasInline }), testId: 'key-areas-all' },
+                      { value: 'some', label: words?.areasSome ?? fillKeys(texts.key.areasSome, { areas: areasInline }), testId: 'key-areas-some' },
                     ]}
                   />
                 )}

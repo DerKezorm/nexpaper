@@ -3,7 +3,7 @@
 // McpOperatorSettings.tsx (built from the ui kit). Copied unchanged into frontend/src/vendor/nexmcp/ by
 // bauplaene/mcp/tools/sync.py; changed only there.
 
-import { NEXUI_TEXTS, languageOf, useNexuiTexts } from '../nexui'
+import { NEXUI_TEXTS, formatMoment, languageOf, useNexuiTexts } from '../nexui'
 
 import de from './mcp.de.json'
 import en from './mcp.en.json'
@@ -193,10 +193,10 @@ export function argumentsShort(args: Record<string, unknown>, max = 80): string 
 /** How a moment is written; the app may give its own (nextime: the account's zone). */
 export type WhenFormat = (iso: string, language: string) => string
 
-/** Day and time: a request runs out within a day, so the hour matters. */
+/** Day and time: a request runs out within a day, so the hour matters. Since 1.1.3 (E65) the one form of every app,
+ * "heute, 14:05" / "24.02.2027, 14:05" (`formatMoment` of `ui` 1.1.2). */
 export function defaultWhen(iso: string, language: string): string {
-  const moment = new Date(iso)
-  return Number.isNaN(moment.getTime()) ? iso : moment.toLocaleString(language, { dateStyle: 'medium', timeStyle: 'short' })
+  return formatMoment(iso, language)
 }
 
 /** The module's words in the kit's language (or the one given). */

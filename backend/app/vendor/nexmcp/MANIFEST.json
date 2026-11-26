@@ -1,6 +1,6 @@
 {
   "files": {
-    "backend/app/vendor/nexmcp/__init__.py": "sha256-CoaE1Jymh46ByNvuDoE3yxAYihK2GRiCQMu8FfXJqyg=",
+    "backend/app/vendor/nexmcp/__init__.py": "sha256-6sNCo3yNt47V3fEXLj0DGfySYqTU8n+3+bfUxvjbboY=",
     "backend/app/vendor/nexmcp/api.py": "sha256-SmrWmDDfPilVJz4KMocGjX7X4zs6GSANGrP7fg8RzqQ=",
     "backend/app/vendor/nexmcp/arguments.py": "sha256-MAxoMzwJCQ+AOdxc4ujLuo8T9WmoyLdoYCsm4cRAey8=",
     "backend/app/vendor/nexmcp/brake.py": "sha256-VqZPmc/NHcrRkr8YCV24v/yir1khtyf5NKXVtOMROJU=",
@@ -22,7 +22,7 @@
     "backend/tests/nexmcp/test_nexmcp_tools.py": "sha256-ZCve8g82KsUlvXgtSO1t8DmLje91Z9dx6YIcTSxOCc4=",
     "backend/tests/nexmcp/test_nexmcp_vendored.py": "sha256-cjKCi/kQWAQjbL4yDP0+b8OZuSqg27cVrE3JiAuN1iE=",
     "backend/tests/nexmcp/test_nexmcp_walls.py": "sha256-xFyTTsN4W7T/8+9jWITqA3oHAxDt1C/HJn43QXx0sdc=",
-    "frontend/src/vendor/nexmcp/ConsentPage.tsx": "sha256-PTeo2Sc/kLrkBPcDq/uUd1Xo40oAZ/gcpqX1PIV6IJE=",
+    "frontend/src/vendor/nexmcp/ConsentPage.tsx": "sha256-Z1meWuGiN5P9Zc+5haCGBG2r5dfDRZvPn3mbRYd+yl8=",
     "frontend/src/vendor/nexmcp/McpOperatorSettings.tsx": "sha256-xRdO0lyv3r66sA+i4f4CEmmWuFpNmzza4fttsVQ1kek=",
     "frontend/src/vendor/nexmcp/PendingRequests.tsx": "sha256-hx/zTiMWV6OZxqD40f7SPi6UG8uhE0ekF6PIjWKvbeY=",
     "frontend/src/vendor/nexmcp/RequestBellRow.tsx": "sha256-s6KrNGdKM9WkViKqXiLfeQ3L32/4ekDZoOj4t8DZ8bU=",
@@ -32,7 +32,7 @@
     "frontend/src/vendor/nexmcp/mcp.de.json": "sha256-vYhWoEf/fMSO15MGK0z6yoyVmATJ5mrk8XmIFOOP4a0=",
     "frontend/src/vendor/nexmcp/mcp.en.json": "sha256-WPcewxV8mWp0Begay1u0OoFaDTJTuo4snVNuMrra96A=",
     "frontend/src/vendor/nexmcp/mcp.fr.json": "sha256-JldYT4HIKazzRPsPITW7NJO/I4DBxerFasScRrtyfuI=",
-    "frontend/src/vendor/nexmcp/mcp.ts": "sha256-T0WVG2i//ZtM93klekTnFqC73rX0JpXASGf/w5aI1IM=",
+    "frontend/src/vendor/nexmcp/mcp.ts": "sha256-nU3lfK+kVJiRysrSLgisdqSjN8+qa/zWuqfBij5CY3Q=",
     "frontend/src/vendor/nexmcp/parts.tsx": "sha256-N4bAjkzCUMxTIyPr/4d/lDtUxpzPxoxjQyvNpKMuK+M="
   },
   "module": "mcp",
@@ -40,5 +40,5 @@
     "fastapi": ">=0.121.0"
   },
   "vendor_path": "backend/app/vendor/nexmcp",
-  "version": "1.1.2"
+  "version": "1.1.3"
 }

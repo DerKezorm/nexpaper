@@ -11,7 +11,7 @@ import { act, type ReactNode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { NexuiLanguage } from '../nexui'
+import { NexuiLanguage, formatMoment } from '../nexui'
 import { SICHERUNG_TEXTS, StorageArea, blockedWords, fillWhen, makeSicherungApi, passwordHeader, shares, bytes, type Backups, type Brief, type Entry, type Overview, type SicherungApi } from './index'
 
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
@@ -199,11 +199,17 @@ describe('the area "Speicher und Sicherung"', () => {
     expect(root.querySelector('[data-testid="backup-brief"]')?.textContent).toContain('heute 3:00 AM <03:00>')
     expect(asked.every((call) => call.endsWith(' de'))).toBe(true)
     // No time of the card in the browser's own way.
-    const plain = new Date('2026-11-25T03:00:00+00:00').toLocaleString('de-DE', { dateStyle: 'medium', timeStyle: 'short' })
+    // Without it, since 1.0.5 (E65) the one form of every app.
+    const plain = formatMoment('2026-11-25T03:00:00+00:00', 'de')
     expect(root.textContent).not.toContain(plain)
     shown?.unmount()
     const before = await area(fakeApi())
     expect(before.querySelector('[data-testid="backup-last"]')?.textContent).toContain(plain)
+  })
+
+  it('writes the time in the one form of every app, in French too (since 1.0.5, E65)', async () => {
+    const root = await area(fakeApi(), true, 'fr')
+    expect(root.querySelector('[data-testid="backup-last"]')?.textContent).toMatch(/(\d\d\/\d\d\/\d{4}|aujourd’hui|hier), \d\d:\d\d/)
   })
 
   it("says an app's own blocking reason in the app's words and the page's language (since E37), as before without", async () => {

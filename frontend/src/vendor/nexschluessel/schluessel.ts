@@ -5,6 +5,8 @@
 
 import type { ReactNode } from 'react'
 
+import { formatDay, formatMoment } from '../nexui'
+
 import de from './schluessel.de.json'
 import en from './schluessel.en.json'
 import fr from './schluessel.fr.json'
@@ -192,12 +194,17 @@ export function fillKeys(text: string, values: Record<string, string | number>):
   return text.replace(/\{(\w+)\}/g, (whole, key: string) => (key in values ? String(values[key] ?? '') : whole))
 }
 
-/** How a day is written; the app may give its own (nextime: the account's zone). */
+/** How a moment or a day is written; the app may give its own (nextime: the account's zone). */
 export type WhenFormat = (iso: string, language: string) => string
 
+/** Since 1.1.2 (E65): a moment as every app writes it, "heute, 14:05" (last use). */
 export function defaultWhen(iso: string, language: string): string {
-  const moment = new Date(iso)
-  return Number.isNaN(moment.getTime()) ? iso : moment.toLocaleDateString(language, { dateStyle: 'medium' })
+  return formatMoment(iso, language)
+}
+
+/** Since 1.1.2 (E65): a day as every app writes it, "24.02.2027" (expiry). */
+export function defaultDay(iso: string, language: string): string {
+  return formatDay(iso, language)
 }
 
 /** Words the app brings: its own rights (nexmail `count`, `headers`; nexlore `draft`), its extras (nexmail `tasks`,

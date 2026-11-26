@@ -3,7 +3,7 @@
 //
 // Copied unchanged into frontend/src/vendor/nexsicherung/ by bauplaene/sicherung/tools/sync.py; changed only there.
 
-import { NEXUI_TEXTS, useNexuiTexts } from '../nexui'
+import { NEXUI_TEXTS, formatMoment, useNexuiTexts } from '../nexui'
 
 import de from './sicherung.de.json'
 import en from './sicherung.en.json'
@@ -252,11 +252,10 @@ export function bytes(value: number, language: Language): string {
   return `${size.toLocaleString(LOCALES[language], { maximumFractionDigits: digits, minimumFractionDigits: digits })} ${units[unit]}`
 }
 
-/** A moment as day and time in the browser's zone. */
+/** A moment as day and time in the browser's zone; since 1.0.5 (E65) the one form of every app, "heute, 03:00" /
+ * "gestern, 03:00" / "25.11.2026, 03:00" (`formatMoment` of `ui` 1.1.2), the forms E62 reckons with. */
 export function when(iso: string, language: Language): string {
-  const moment = new Date(iso)
-  if (Number.isNaN(moment.getTime())) return iso
-  return moment.toLocaleString(LOCALES[language], { dateStyle: 'medium', timeStyle: 'short' })
+  return formatMoment(iso, language)
 }
 
 /** The share of the disk for the bar: what the app takes, and what else is in use, each in percent. */

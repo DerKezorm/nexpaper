@@ -1,6 +1,6 @@
 {
   "files": {
-    "backend/app/vendor/nexverbinden/__init__.py": "sha256-cYwFp/Crs40PDkmCaTqgsnbWH+gL8gYNAx5niuy/8Q4=",
+    "backend/app/vendor/nexverbinden/__init__.py": "sha256-hI35omm1NOU5i2S6UVDnzJ7xJwz7B6USykMN/8tIdEA=",
     "backend/app/vendor/nexverbinden/api.py": "sha256-XZ+R7Bowo18QMnpZhB3RxpHIxC+AHXL6jiUdv4iUfT4=",
     "backend/app/vendor/nexverbinden/catalog.py": "sha256-n+/eThdmEHiAuWBDxz46ydUJK1lpn6EOL/AvwlkOiBc=",
     "backend/app/vendor/nexverbinden/config.py": "sha256-Dcco3xmYmswf/kpxPMBTzjOlS2gq/BB/4d3dhjuoYJc=",
@@ -19,17 +19,17 @@
     "backend/tests/nexverbinden/test_nexverbinden_vendored.py": "sha256-kvTRwh+aVZVwFjE23KPugX/9FZSRHRvoOevElyQM/vE=",
     "backend/tests/nexverbinden/verbinden_contract.py": "sha256-rlJy+7b4vvHnsmR7NL6wDaVX6SPLg3/9IWElcPm2i1s=",
     "backend/tests/nexverbinden/verbinden_partner.py": "sha256-erIpfluj5NaBC+xE49MuM+E+pV53xEScphU52NOczOI=",
-    "frontend/src/vendor/nexverbinden/ConnectionCard.tsx": "sha256-ZEMoAxw06p4pGeMXo2T6zsRW3JsEEpoC2hdvI7hpzyE=",
+    "frontend/src/vendor/nexverbinden/ConnectionCard.tsx": "sha256-SSmJ5g7M7ep2x5csVHT+4S3mjVKy7JSfXRq3MX0I2ZQ=",
     "frontend/src/vendor/nexverbinden/ConnectionsArea.tsx": "sha256-QrjlzKDlvWS+3eQ84+8YbXNaqy3RgUPzv5oSrmU2aDE=",
     "frontend/src/vendor/nexverbinden/ConnectionsOperatorCard.tsx": "sha256-r3zn9q4MJ2ygUQQxdnp8Irx66zvc1Rk9RVSOViAYCQM=",
-    "frontend/src/vendor/nexverbinden/ConsentPage.tsx": "sha256-QCoYHSJxkAKdDySrzrI5VqeoIhHv1ZNGb5Fa6wg5Xng=",
+    "frontend/src/vendor/nexverbinden/ConsentPage.tsx": "sha256-pWki8k3w/GWXh3QKh/N0lQUMzoN1zLfuthak/kcD1q8=",
     "frontend/src/vendor/nexverbinden/ReturnPage.tsx": "sha256-+pxC5bMpCnCAO8xT4JmYznQ/lnsBBGHgXhn7SufYwpw=",
     "frontend/src/vendor/nexverbinden/index.ts": "sha256-lhmebq0dsrkMYsxrROv7nhUEpBnkh40VEULM/CPpKSg=",
     "frontend/src/vendor/nexverbinden/logos.ts": "sha256-gLzPmyvrH1nv6F+FYCEzHOOogjzhO2ieS4v6JD50KNs=",
-    "frontend/src/vendor/nexverbinden/verbinden.de.json": "sha256-41TO2uxynzzgJ3OsEJpp+TG5WgtARM0DisBHZIEgKJU=",
-    "frontend/src/vendor/nexverbinden/verbinden.en.json": "sha256-fcgXI/pOzXragAxPUba8L8K01VxC418BlRM6ffeDnsw=",
-    "frontend/src/vendor/nexverbinden/verbinden.fr.json": "sha256-e93QGCVyrblFLHBAiR2V/4FAHugfo4JLJ0IW53Jye8E=",
-    "frontend/src/vendor/nexverbinden/verbinden.ts": "sha256-/4cgljk3VPe6qqgbkR/Eey1UvB19QdhKTyluOh8C9rQ="
+    "frontend/src/vendor/nexverbinden/verbinden.de.json": "sha256-z7ZEUlBMvxxb2Kg/gTuNPu6S/vq4PyJ9cEo/VbGGWX4=",
+    "frontend/src/vendor/nexverbinden/verbinden.en.json": "sha256-+rF4WSllBcfxXgk977ddsXDq7kDIPiGMO43av/JuqgM=",
+    "frontend/src/vendor/nexverbinden/verbinden.fr.json": "sha256-wJUspINvRpwmajTBSrcl8zVAVh+8X9fM8xc02i3PdB4=",
+    "frontend/src/vendor/nexverbinden/verbinden.ts": "sha256-rhAnZ3y/5jY/OM/LG0NTxuGLnOatIBJASwBywYL+j5I="
   },
   "module": "verbinden",
   "modules": {
@@ -40,5 +40,5 @@
     "httpx": ">=0.28.1"
   },
   "vendor_path": "backend/app/vendor/nexverbinden",
-  "version": "0.1.4"
+  "version": "0.1.5"
 }

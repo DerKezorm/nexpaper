@@ -1,4 +1,4 @@
-// Vorlage nexverbinden 0.1.4
+// Vorlage nexverbinden 0.1.5
 // @vitest-environment jsdom
 /**
  * The parts of the module in the app: the card of a partner app in each state, the cards of all partners, the consent
@@ -271,6 +271,18 @@ describe('the card of a partner app', () => {
     expect(byTest('connection-expiring')).not.toBeNull()
     expect(byTest('connection-facts')?.textContent).toContain('ntk_AbCd')
     expect(byTest('connection-connect')?.textContent).toBe('Neu verbinden')
+    // E65 (0.1.5): a day with two digits, in English as well.
+    expect(byTest('connection-until')?.textContent).toContain('03.12.2026')
+    await show(<ConnectionCard key="en" app={APP} view={view({ state: 'expiring', account: null, legacy })} request={request} manual={<p>form</p>} language="en" defaultOpen />, 'en')
+    expect(byTest('connection-until')?.textContent).toContain('03/12/2026')
+  })
+
+  it('writes a moment in the one form of every app (E65) and the area word small in an English sentence (M-19)', async () => {
+    await show(<ConnectionCard app={APP} view={view()} request={request} language="en" defaultOpen />, 'en')
+    expect(byTest('connection-ok-at')?.textContent).toMatch(/(\d\d\/\d\d\/\d{4}|today|yesterday), \d\d:\d\d$/)
+    const choice = [{ id: 1, name: 'Work' }]
+    await show(<ConnectionCard key="areas" app={APP} view={view({ state: 'none', account: null, areas_choice: choice, grants: ['some.read'], grants_levels: { 'some.read': 'read' } })} request={request} areaWord="Address books" language="en" defaultOpen />, 'en')
+    expect(byTest('connection-all-areas')?.parentElement?.textContent).toContain('All address books, including later ones')
   })
 
   it('speaks English and French', async () => {

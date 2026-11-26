@@ -17,7 +17,7 @@
  */
 import { useState, type ReactNode } from 'react'
 
-import { Badge, Box, Button, Buttons, CheckboxRow, Collapsible, ConfirmDialog, Facts, Field, Notice, Row, Rows, useNexuiTexts, type Fact } from '../nexui'
+import { Badge, Box, Button, Buttons, CheckboxRow, Collapsible, ConfirmDialog, Facts, Field, Notice, Row, Rows, inSentence, useNexuiTexts, type Fact } from '../nexui'
 import {
   STATE_TONES,
   VERBINDEN_BASE,
@@ -107,7 +107,8 @@ export function ConnectionCard({
   const { texts, code } = useVerbindenTexts(language)
   const kit = useNexuiTexts()
   const partner = view.partner
-  const words = { app, partner, areas: areaWord ?? texts.areaWord }
+  // M-19 (0.1.5): inside a sentence the app's word stands small in English and French (`areasInline`).
+  const words = { app, partner, areas: areaWord ?? texts.areaWord, areasInline: inSentence(areaWord ?? texts.areaWord, code) }
   const [address, setAddress] = useState(view.address)
   const [byHand, setByHand] = useState(false)
   const [busy, setBusy] = useState(false)

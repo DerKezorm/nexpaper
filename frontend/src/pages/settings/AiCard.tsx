@@ -11,9 +11,8 @@ import { useEffect, useId, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { aiApi, api, type AiSettings } from '../../api/client'
-import { shortDate } from '../../lib/dates'
 import { AiAccountArea, AiProviderArea, type AiRequest } from '../../vendor/nexki'
-import { Button, Card, CheckboxRow } from '../../vendor/nexui'
+import { Button, Card, CheckboxRow, formatMoment } from '../../vendor/nexui'
 import { useAction } from './actions'
 import { Outcome } from './Outcome'
 
@@ -112,7 +111,7 @@ export function MyAi() {
       base={KI_ME_AT}
       language={i18n.language}
       tasks={{ propose: t('me.ai.task') }}
-      when={(iso, language) => shortDate(iso, language)}
+      when={formatMoment}
     >
       <Card id="ai-what" icon="ScanText" title={t('me.ai.title')} subtitle={t('me.ai.text')} testId="ai-what">
         <p className="m-0 text-sm text-[var(--nexui-text-muted)]">{t('server.ai.outgoing')}</p>

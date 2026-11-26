@@ -1,4 +1,4 @@
-// Vorlage nexschluessel 1.1.1
+// Vorlage nexschluessel 1.1.2
 // @vitest-environment jsdom
 /**
  * The cards of the module in the app: "API-Schlüssel", "KI-Werkzeuge (MCP)", "Schnittstellen" and "API-Schlüssel aller
@@ -245,6 +245,23 @@ describe('the card API-Schlüssel', () => {
     expect(find<HTMLInputElement>('[data-testid="api-keys-address"] input')!.value).toBe('https://notes.example.com/api/v1')
     // M-7 (1.1.1): the column of the buttons is wide enough for "Bearbeiten" and "Widerrufen" side by side.
     expect(all('[data-testid="api-keys-table"] col').at(-1)!.style.width).toBe('17rem')
+    // E65 (1.1.2): a day with two digits, a moment with its time.
+    const first = all('[data-testid="api-keys-table"] [data-part="table-row"]')[0]!
+    expect(first.textContent).toContain('Läuft am 20.02.2027 ab')
+    expect(first.textContent).toMatch(/24\.11\.2026, \d\d:\d\d/)
+  })
+
+  it('writes dates in English the same way and puts the area word into the sentence in small letters (M-19)', async () => {
+    show(<ApiKeysCard request={request} base={BASE} things="notes" words={{ areas: 'Address books' }} />, 'en')
+    await settle()
+    const first = all('[data-testid="api-keys-table"] [data-part="table-row"]')[0]!
+    expect(first.textContent).toContain('Expires on 20/02/2027')
+    expect(first.textContent).toMatch(/24\/11\/2026, \d\d:\d\d/)
+    click(button('api-keys-new'))
+    expect([find('[data-testid="key-areas-all"]')!.textContent, find('[data-testid="key-areas-some"]')!.textContent]).toEqual([
+      'All address books, including later ones',
+      'Only these address books',
+    ])
   })
 
   it('makes a key and shows it once, to copy', async () => {
@@ -402,6 +419,7 @@ describe('the card KI-Werkzeuge (MCP)', () => {
     for (const id of ['tools-programs-table', 'tools-keys-table']) {
       expect(all(`[data-testid="${id}"] th`).map((cell) => cell.textContent)).toEqual(['Name', 'Recht', 'Aktion'])
       expect(find(`[data-testid="${id}"] [data-testid="key-used"]`)!.textContent).toBe('Zuletzt benutzt: noch nie')
+      expect(find(`[data-testid="${id}"] [data-testid="key-expiry"]`)).toBeNull()
     }
     expect(all('[data-testid="tools-programs-table"] col').at(-1)!.style.width).toBe('20.5rem')
     expect(all('[data-testid="tools-keys-table"] col').at(-1)!.style.width).toBe('28.5rem')

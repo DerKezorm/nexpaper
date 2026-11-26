@@ -10,7 +10,7 @@
  */
 import { useEffect, useMemo, useState } from 'react'
 
-import { AuthCard, Box, Button, Buttons, CheckboxRow, Notice, Row, Rows } from '../nexui'
+import { AuthCard, Box, Button, Buttons, CheckboxRow, Notice, Row, Rows, inSentence } from '../nexui'
 import {
   CONSENT_PARAMS,
   VERBINDEN_BASE,
@@ -52,7 +52,7 @@ function MayBox({ title, texts, grantedBy, items, mine }: { title: string; texts
 }
 
 export function ConsentPage({ request, base = VERBINDEN_BASE, search, areaWord, language, navigate = (url) => window.location.assign(url), testId = 'connect-consent' }: ConsentPageProps) {
-  const { texts } = useVerbindenTexts(language)
+  const { texts, code } = useVerbindenTexts(language)
   const asked = search ?? window.location.search
   const params = useMemo(() => {
     const found = new URLSearchParams(asked)
@@ -102,7 +102,7 @@ export function ConsentPage({ request, base = VERBINDEN_BASE, search, areaWord, 
       </div>
     )
   }
-  const words = { app: info.app, partner: info.partner, account: info.account, host: info.partner_host, areas: areaWord ?? texts.areaWord }
+  const words = { app: info.app, partner: info.partner, account: info.account, host: info.partner_host, areas: areaWord ?? texts.areaWord, areasInline: inSentence(areaWord ?? texts.areaWord, code) }
   const toggle = (id: string, on: boolean) => setAreas((all) => (on ? [...all, id] : all.filter((one) => one !== id)))
   const nothingChosen = !allAreas && info.areas.length > 0 && areas.length === 0
   return (

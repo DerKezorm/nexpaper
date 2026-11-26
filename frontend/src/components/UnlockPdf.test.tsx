@@ -117,7 +117,7 @@ describe('the list under My account', () => {
     const rows = [...document.querySelectorAll('[data-testid="pdf-password"]')]
     expect(rows).toHaveLength(2)
     expect(rows[0].textContent).toContain('Gehaltsabrechnung')
-    expect(rows[0].textContent).toContain('gemerkt am 1.11.2026')
+    expect(rows[0].textContent).toContain('gemerkt am 01.11.2026')
     expect(rows[0].textContent).toContain('zuletzt gepasst am 10.11.2026')
     expect(rows[1].textContent).toContain('hat noch nicht gepasst')
     expect(document.querySelectorAll('[data-testid="pdf-password-lost"]')).toHaveLength(1)

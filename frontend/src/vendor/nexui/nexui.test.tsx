@@ -41,6 +41,9 @@ import {
   Table,
   ThemeSegment,
   ICONS,
+  formatDay,
+  formatMoment,
+  inSentence,
 } from './index'
 import type { RowMarks } from './index'
 import { BUTTON_KIND } from './styles'
@@ -67,6 +70,44 @@ function show(element: ReactNode): HTMLElement {
 afterEach(() => {
   shown?.unmount()
   shown = null
+})
+
+describe('dates and moments (since 1.1.2, E65)', () => {
+  const now = new Date(2027, 1, 24, 18, 30)
+  const at = (day: number, hour: number, minute: number) => new Date(2027, 1, day, hour, minute)
+
+  it('write a day with two digits in each language', () => {
+    expect([formatDay(at(3, 9, 5), 'de'), formatDay(at(3, 9, 5), 'en'), formatDay(at(3, 9, 5), 'fr')]).toEqual(['03.02.2027', '03/02/2027', '03/02/2027'])
+    expect(formatDay('no date', 'de')).toBe('no date')
+  })
+
+  it('say today and yesterday, else the day, with the time of 24 hours', () => {
+    expect([formatMoment(at(24, 14, 5), 'de', now), formatMoment(at(23, 7, 3), 'de', now), formatMoment(at(22, 14, 5), 'de', now)]).toEqual([
+      'heute, 14:05',
+      'gestern, 07:03',
+      '22.02.2027, 14:05',
+    ])
+    expect([formatMoment(at(24, 14, 5), 'en', now), formatMoment(at(23, 21, 0), 'en', now), formatMoment(at(22, 14, 5), 'en', now)]).toEqual([
+      'today, 14:05',
+      'yesterday, 21:00',
+      '22/02/2027, 14:05',
+    ])
+    expect([formatMoment(at(24, 14, 5), 'fr', now), formatMoment(at(23, 21, 0), 'fr', now), formatMoment(at(22, 14, 5), 'fr', now)]).toEqual([
+      'aujourd’hui, 14:05',
+      'hier, 21:00',
+      '22/02/2027, 14:05',
+    ])
+    expect(formatMoment(new Date(2027, 2, 1, 8, 0), 'de', new Date(2027, 2, 2, 0, 5))).toBe('gestern, 08:00')
+  })
+
+  it('put an area word into an English or French sentence in small letters (M-19)', () => {
+    expect([inSentence('Address books', 'en'), inSentence('Carnets', 'fr'), inSentence('Adressbücher', 'de'), inSentence('IMAP folders', 'en')]).toEqual([
+      'address books',
+      'carnets',
+      'Adressbücher',
+      'IMAP folders',
+    ])
+  })
 })
 
 describe('Button', () => {

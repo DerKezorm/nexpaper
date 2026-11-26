@@ -5,7 +5,7 @@
 
 import { useSyncExternalStore } from 'react'
 
-import { NEXUI_TEXTS, languageOf, useNexuiTexts } from '../nexui'
+import { NEXUI_TEXTS, formatDay, formatMoment, languageOf, useNexuiTexts } from '../nexui'
 
 import { APP_MARKS } from './logos'
 
@@ -160,14 +160,14 @@ export function refusalText(texts: VerbindenTexts, error: unknown, app: string):
 /** How a moment is written; the app may give its own (nextime: the account's zone). */
 export type WhenFormat = (iso: string, language: string) => string
 
+/** Since 0.1.5 (E65): the one form of every app, "heute, 14:05" / "24.02.2027, 14:05" (`formatMoment`, `ui` 1.1.2). */
 export function defaultWhen(iso: string, language: string): string {
-  const moment = new Date(iso)
-  return Number.isNaN(moment.getTime()) ? iso : moment.toLocaleString(language, { dateStyle: 'medium', timeStyle: 'short' })
+  return formatMoment(iso, language)
 }
 
+/** Since 0.1.5 (E65): a day, "24.02.2027" (`formatDay`). */
 export function defaultDay(iso: string, language: string): string {
-  const moment = new Date(iso)
-  return Number.isNaN(moment.getTime()) ? iso : moment.toLocaleDateString(language, { dateStyle: 'medium' })
+  return formatDay(iso, language)
 }
 
 /** The module's words in the kit's language (or the one given). */

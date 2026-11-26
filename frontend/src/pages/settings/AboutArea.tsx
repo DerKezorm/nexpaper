@@ -14,7 +14,7 @@ import { tabFetch } from '../../api/client'
 import { APP_NAME } from '../../i18n'
 import { useWhatsNew } from '../../lib/whatsNew'
 import { useAuth } from '../../state/auth'
-import { AboutPage, Notice, type BuiltWith } from '../../vendor/nexui'
+import { AboutPage, Notice, formatMoment, type BuiltWith } from '../../vendor/nexui'
 import { useUpdates, useUpdatesTexts, whatGoesOut } from '../../vendor/nexupdates/updates'
 
 const PARTS: BuiltWith[] = [
@@ -38,9 +38,9 @@ const PARTS: BuiltWith[] = [
 ]
 const FONTS = ['Inter']
 
-/** "26.11.2026, 09:12" in the reader's language. */
+/** A moment as all nex apps write it (E65, ui `formatMoment`): "heute, 09:12", else "26.11.2026, 09:12". */
 function when(language: string): (iso: string) => string {
-  return (iso) => new Date(iso).toLocaleString(language)
+  return (iso) => formatMoment(iso, language)
 }
 
 export function AboutArea() {

@@ -11,7 +11,7 @@ import { useTranslation } from 'react-i18next'
 import { pdfPasswordApi, type PdfPassword } from '../../api/client'
 import { iso } from '../../lib/say'
 import { errorText } from '../../lib/errors'
-import { Button, Card, ConfirmDialog, Field, Row, Rows } from '../../vendor/nexui'
+import { Button, Card, ConfirmDialog, Field, Row, Rows, formatDay } from '../../vendor/nexui'
 import { useAction } from './actions'
 import { Outcome } from './Outcome'
 import { useAsk } from './useAsk'
@@ -26,7 +26,7 @@ export function PdfPasswordsCard() {
   useEffect(() => {
     void load()
   }, [])
-  const day = (value: string) => new Date(value).toLocaleDateString(i18n.language)
+  const day = (value: string) => formatDay(value, i18n.language)
   if (entries === null) return null
   return (
     <Card id="pdf-passwords" icon={KeyRound} title={t('pdfPassword.listTitle')} subtitle={t('pdfPassword.listText')}>

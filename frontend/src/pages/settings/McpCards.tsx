@@ -9,7 +9,6 @@
 import { useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 
-import { shortDate } from '../../lib/dates'
 import { ConsentPage, McpOperatorSettings, PendingRequests, RequestPage, ToolRights, type McpRequest, type McpWords } from '../../vendor/nexmcp'
 import { ToolsCard } from '../../vendor/nexschluessel'
 import { KEYS_AT, keyRequest } from './KeysCards'
@@ -44,7 +43,6 @@ export function AiTools() {
       request={keyRequest}
       base={KEYS_AT}
       language={i18n.language}
-      when={(iso, language) => shortDate(iso, language)}
       extra={(key) => (key.kind === 'mcp' ? <ToolRights request={mcpRequest} keyId={key.id} base={MCP_AT} words={words} language={i18n.language} /> : null)}
     >
       <PendingRequests request={mcpRequest} base={MCP_AT} words={words} language={i18n.language} viewHref={(entry) => `/mcp/requests/${entry.id}`} />
@@ -82,7 +80,6 @@ export function McpRequestPage() {
         base={MCP_AT}
         words={useMcpWords()}
         language={i18n.language}
-        when={(iso) => shortDate(iso, i18n.language)}
         onDecided={() => navigate('/settings/connections')}
       />
     </div>

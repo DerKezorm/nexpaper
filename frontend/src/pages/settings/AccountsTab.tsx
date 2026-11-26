@@ -72,19 +72,19 @@ import {
   type ListedAccount,
   type ListedInvite,
 } from '../../vendor/nexkonten/konten'
-import { Avatar, Badge, Button, ButtonGroup, Card, CheckboxRow, ConfirmDialog, CopyRow, Dialog, Facts, Field, Notice, Row, Rows, SelectField, type IconName } from '../../vendor/nexui'
+import { Avatar, Badge, Button, ButtonGroup, Card, CheckboxRow, ConfirmDialog, CopyRow, Dialog, Facts, Field, Notice, Row, Rows, SelectField, formatDay, formatMoment, type IconName } from '../../vendor/nexui'
 import { APP_CAPS, appOwnFacts, listedOf } from './accountList'
 import { useAction } from './actions'
 import { Outcome } from './Outcome'
 
-/** A day as nexpaper writes it in the list ("25.11.2026"). */
+/** A day as all nex apps write it (E65, ui `formatDay`: "25.11.2026"). */
 function day(value: string, lang: string): string {
-  return new Date(value).toLocaleDateString(lang)
+  return formatDay(value, lang)
 }
 
-/** A moment, day and time ("25.11.2026, 14:05"). */
+/** A moment as all nex apps write it (E65, ui `formatMoment`: "heute, 14:05", else "25.11.2026, 14:05"). */
 function moment(value: string, lang: string): string {
-  return new Date(value).toLocaleString(lang, { dateStyle: 'medium', timeStyle: 'short' })
+  return formatMoment(value, lang)
 }
 
 /** The badges of a row or an invitation, in the kit's look; a day in the app's way of writing it. */

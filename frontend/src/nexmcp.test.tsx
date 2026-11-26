@@ -1,4 +1,4 @@
-// Vorlage nexmcp 1.1.2
+// Vorlage nexmcp 1.1.3
 // @vitest-environment jsdom
 /**
  * The parts of the module in the app: "Rechte je Werkzeug", "Wartende Rückfragen", the page of one request, the row in
@@ -340,6 +340,13 @@ describe('the page of one request', () => {
     expect(page.textContent).toContain('Rückfrage von „Notebook“')
     expect(page.textContent).toContain('Notiz schreiben')
     expect(find('[data-testid="request-status"]')!.textContent).toBe('Wartet')
+    // E65 (1.1.3): the one form of a moment.
+    expect(find('[data-testid="request-fact-created"]')!.textContent).toMatch(/(\d\d\.\d\d\.\d{4}|heute|gestern), \d\d:\d\d$/)
+    show(<RequestPage key="en" request={request} id={1} base={BASE} words={WORDS} language="en" />, 'en')
+    await settle()
+    expect(find('[data-testid="request-fact-created"]')!.textContent).toMatch(/(\d\d\/\d\d\/\d{4}|today|yesterday), \d\d:\d\d$/)
+    show(<RequestPage key="de" request={request} id={1} base={BASE} words={WORDS} />)
+    await settle()
     expect(JSON.parse(find('[data-testid="request-arguments"] pre')!.textContent!)).toEqual({ path: 'Inbox/Plan.md', text: 'Hello' })
     const approve = byTestId('request-approve')!
     expect([approve.dataset.kind, approve.dataset.icon]).toEqual(['primary', 'Check'])
@@ -464,6 +471,12 @@ describe('Programm verbinden', () => {
       },
     ])
     expect(went).toEqual(['http://127.0.0.1:3334/callback?code=abc&state=s1'])
+  })
+
+  it('puts the area word into an English sentence in small letters (M-19)', async () => {
+    show(<ConsentPage request={request} oauthBase={OAUTH} search={SEARCH} areaWord="Folders" navigate={() => undefined} />, 'en')
+    await settle()
+    expect([byTestId('consent-areas-all')!.textContent, byTestId('consent-areas-some')!.textContent]).toEqual(['All folders, including later ones', 'Only these folders'])
   })
 
   it('sends every area as null and declines on "Ablehnen"', async () => {

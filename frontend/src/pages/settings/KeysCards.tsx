@@ -12,7 +12,6 @@ import { useTranslation } from 'react-i18next'
 
 import { api, ApiError } from '../../api/client'
 import { errorText } from '../../lib/errors'
-import { shortDate } from '../../lib/dates'
 import { useAuth } from '../../state/auth'
 import { AllKeysCard, ApiKeysCard, InterfacesCard, type AppWords, type KeyRequest } from '../../vendor/nexschluessel'
 import { Button, ConfirmDialog, CopyRow, Row, Rows, TextLink } from '../../vendor/nexui'
@@ -53,7 +52,6 @@ export function ApiKeys() {
       docsHref={DOCS}
       operator={me?.role === 'operator'}
       language={i18n.language}
-      when={(iso, language) => shortDate(iso, language)}
       offAction={me?.role === 'operator' ? <AllowKeys onAllowed={() => setRound((count) => count + 1)} /> : undefined}
       made={({ name, secret }) => <TryIt name={name} secret={secret} />}
     >
@@ -182,7 +180,7 @@ export function Interfaces() {
 export function AllKeys() {
   const { t, i18n } = useTranslation()
   return (
-    <AllKeysCard request={keyRequest} base={KEYS_AT} words={useWords()} language={i18n.language} when={(iso, language) => shortDate(iso, language)}>
+    <AllKeysCard request={keyRequest} base={KEYS_AT} words={useWords()} language={i18n.language}>
       <p className="m-0">
         <TextLink href="/settings/connections" testId="all-keys-own">
           {t('apiKeys.ownKeys')}

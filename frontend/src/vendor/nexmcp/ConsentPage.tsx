@@ -11,7 +11,7 @@
  */
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 
-import { AuthCard, Button, Buttons, Checkbox, CheckboxRow, Notice, Segment } from '../nexui'
+import { AuthCard, Button, Buttons, Checkbox, CheckboxRow, Notice, Segment, inSentence } from '../nexui'
 import {
   CONSENT_PARAMS,
   MCP_BUTTONS,
@@ -54,7 +54,7 @@ function withHost(text: string, host: string): ReactNode {
 }
 
 export function ConsentPage({ request, oauthBase = OAUTH_BASE, search, areaWord, words, language, navigate = (url) => window.location.assign(url), testId = 'mcp-consent' }: ConsentPageProps) {
-  const { texts } = useMcpTexts(language)
+  const { texts, code } = useMcpTexts(language)
   const asked = search ?? window.location.search
   const params = useMemo(() => {
     const found = new URLSearchParams(asked)
@@ -141,8 +141,8 @@ export function ConsentPage({ request, oauthBase = OAUTH_BASE, search, areaWord,
                   value={allAreas ? 'all' : 'some'}
                   onChange={(value) => setAllAreas(value === 'all')}
                   options={[
-                    { value: 'all', label: fillMcp(texts.consent.areasAll, { areas: areaWord ?? texts.areaWord }), testId: 'consent-areas-all' },
-                    { value: 'some', label: fillMcp(texts.consent.areasSome, { areas: areaWord ?? texts.areaWord }), testId: 'consent-areas-some' },
+                    { value: 'all', label: fillMcp(texts.consent.areasAll, { areas: inSentence(areaWord ?? texts.areaWord, code) }), testId: 'consent-areas-all' },
+                    { value: 'some', label: fillMcp(texts.consent.areasSome, { areas: inSentence(areaWord ?? texts.areaWord, code) }), testId: 'consent-areas-some' },
                   ]}
                   hints={noneChosen ? [texts.consent.areasNone] : []}
                 />

@@ -81,7 +81,6 @@ export function StorageArea() {
       facts={facts}
       details={details}
       language={language}
-      when={(iso) => new Date(iso).toLocaleString(shown.language, { dateStyle: 'medium', timeStyle: 'short', ...(me?.profile.timezone ? { timeZone: me.profile.timezone } : {}) })}
     >
       <DiskCard info={storage.info} />
       {storage.info && <FilesCheckCard info={storage.info} reload={storage.load} />}

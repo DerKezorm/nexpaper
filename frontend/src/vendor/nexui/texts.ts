@@ -58,6 +58,9 @@ const DE = {
   whatsNewWhere: 'Wo:',
   whatsNewDone: 'Verstanden',
   close: 'Schließen',
+  // Since 1.1.2 (E65): a moment of today or yesterday (`formatMoment`).
+  today: 'heute',
+  yesterday: 'gestern',
   notifyTitle: 'Auf welchem Weg',
   notifyMail: 'Mail',
   notifyConfirmed: 'bestätigt',
@@ -138,6 +141,9 @@ const EN: NexuiTexts = {
   whatsNewWhere: 'Where:',
   whatsNewDone: 'Got it',
   close: 'Close',
+  // Since 1.1.2 (E65): a moment of today or yesterday (`formatMoment`).
+  today: 'today',
+  yesterday: 'yesterday',
   notifyTitle: 'Which way',
   notifyMail: 'Mail',
   notifyConfirmed: 'confirmed',
@@ -216,6 +222,9 @@ const FR: NexuiTexts = {
   whatsNewWhere: 'Où :',
   whatsNewDone: 'Compris',
   close: 'Fermer',
+  // Since 1.1.2 (E65): a moment of today or yesterday (`formatMoment`).
+  today: 'aujourd’hui',
+  yesterday: 'hier',
   notifyTitle: 'Par quel moyen',
   notifyMail: 'E-mail',
   notifyConfirmed: 'confirmée',
