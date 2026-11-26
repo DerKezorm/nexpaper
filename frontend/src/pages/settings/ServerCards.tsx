@@ -51,6 +51,8 @@ export type ServerSettings = {
   cache_max_mb: number
   /** U1: upload requests, off from the start. */
   upload_requests_allowed?: boolean
+  /** The storage limit new accounts start with, in bytes; null: none (Bauplan E44). */
+  new_account_storage_limit?: number | null
 }
 
 type Change = Partial<ServerSettings> & { smtp_password?: string; current_password?: string; confirm_address?: boolean }

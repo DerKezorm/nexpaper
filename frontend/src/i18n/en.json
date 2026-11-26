@@ -1000,6 +1000,8 @@
       "invalid": "The numbers must lie in the allowed range.",
       "cache": "Cache for page pictures (MB)",
       "cacheHint": "When it grows past this, nexpaper clears the pictures that were not used for the longest time. They are made again when needed.",
+      "newAccountStorage": "Storage for new accounts (GB)",
+      "newAccountStorageHint": "Empty means no limit. Applies to accounts added from now on. The limit of one account is set under Accounts › Manage.",
       "perAccount": "You set the storage of each account under “Accounts”."
     },
     "disk": {

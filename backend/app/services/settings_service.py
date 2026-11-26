@@ -113,6 +113,9 @@ DEFAULTS: dict[str, Any] = {
     "process_memory_mb": 2048,
     #: The pictures of pages are kept in a cache that is trimmed to this size (MB), the ones used longest ago first.
     "cache_max_mb": 1024,
+    #: The storage limit every new account starts with, in bytes (Bauplan E44); None: none. An account's own limit is
+    #: set under Accounts › Manage; changing this changes no account that exists.
+    "new_account_storage_limit": None,
     #: Pages of a long document drawn in the background after it was read, behind every document that waits to be read
     #: (``services/pages.py``, job ``pages``); the ones after it are drawn when somebody asks for them.
     "prerender_max_pages": 500,
@@ -232,3 +235,9 @@ def public_url(db: Session) -> str:
     """The public address without a trailing slash: the setting, otherwise the environment, otherwise empty."""
     stored = str(get(db, "public_url") or "").strip().rstrip("/")
     return stored or get_settings().public_url.strip().rstrip("/")
+
+
+def new_account_storage_limit(db: Session) -> int | None:
+    """The limit a new account starts with (Bauplan E44), bytes or None."""
+    value = get(db, "new_account_storage_limit")
+    return int(value) if isinstance(value, int) and not isinstance(value, bool) and value > 0 else None

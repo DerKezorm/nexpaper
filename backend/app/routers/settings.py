@@ -71,6 +71,8 @@ class SettingsOut(BaseModel):
     prerender_max_pages: int
     #: Upload requests (U1): off from the start; off, nobody makes one and none takes files.
     upload_requests_allowed: bool = False
+    #: The storage limit new accounts start with, in bytes; None: none (Bauplan E44).
+    new_account_storage_limit: int | None = None
 
 
 class SettingsIn(BaseModel):
@@ -112,6 +114,8 @@ class SettingsIn(BaseModel):
     prerender_max_pages: StrictInt | None = Field(default=None, ge=0, le=20000)
     #: Upload requests: files from people without an account into a person's inbox. Off ends every one at once.
     upload_requests_allowed: bool | None = None
+    #: Bytes; sent as null it is removed (new accounts without a limit), left out it stays (Bauplan E44).
+    new_account_storage_limit: StrictInt | None = Field(default=None, ge=1, le=10 * 1024**4)
 
 
 class TestMailIn(BaseModel):
@@ -144,6 +148,7 @@ def _view(db: DbSession) -> SettingsOut:
         link_max_days=int(values["link_max_days"]),
         **{key: int(values[key]) for key in limits.RANGES},
         upload_requests_allowed=bool(values["upload_requests_allowed"]),
+        new_account_storage_limit=settings_service.new_account_storage_limit(db),
     )
 
 
@@ -164,8 +169,11 @@ def save(payload: SettingsIn, request: Request, operator: OperatorAccount, db: D
         # A stolen session must not be enough to take the second factor away from everybody.
         confirm_operator(request, db, operator, payload.current_password)
     changes: dict[str, Any] = {}
+    if "new_account_storage_limit" in sent:
+        # null removes the limit for new accounts; the accounts there are keep theirs.
+        changes["new_account_storage_limit"] = sent["new_account_storage_limit"]
     for key, value in sent.items():
-        if value is None or key in ("current_password", "confirm_address"):
+        if value is None or key in ("current_password", "confirm_address", "new_account_storage_limit"):
             continue
         if key == "public_url":
             try:

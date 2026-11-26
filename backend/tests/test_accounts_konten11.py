@@ -21,6 +21,7 @@ from app.services.post_store import PostStore
 from app.vendor.nexkonten import manage
 
 from .conftest import PASSWORD, make_account, new_client
+from .oidc_helpers import FakeProvider, configure, fresh_browser, location, sign_in_via_oidc
 from .papers import PDF, add_document, own_vault, shared_vault
 
 #: A file of its own for an upload (the checksum must not match a document the account has).
@@ -326,3 +327,43 @@ def test_ready_for_the_internet_in_the_module_s_form_and_the_old_route_as_before
                                                           "cookies", "proxy", "backups", "upload_requests"]
     with new_client(make_account("mika")) as member:
         assert member.get("/api/v1/server/readiness").status_code == 403
+
+
+def test_new_accounts_start_with_the_storage_for_new_accounts_the_ones_there_keep_theirs(
+        client: TestClient, operator: Account, provider: FakeProvider) -> None:
+    """Bauplan E44: "Speicher für neue Konten" under Server › General › Limits; empty means no limit. An invitation, a
+    provider and nexpaper's own way all give a new account that limit; an account that is there keeps its own."""
+    from app.services import accounts as account_service
+
+    before = make_account("before")
+    assert client.get("/api/v1/settings").json()["new_account_storage_limit"] is None
+    five = 5 * 1024**3
+    saved = client.put("/api/v1/settings", json={"new_account_storage_limit": five})
+    assert saved.status_code == 200 and saved.json()["new_account_storage_limit"] == five
+    # Other settings sent alone leave it as it is.
+    assert client.put("/api/v1/settings", json={"links_allowed": True}).json()["new_account_storage_limit"] == five
+
+    token = client.post("/api/v1/invites", json={"days": 7}).json()["link"].rsplit("/", 1)[1]
+    with new_client() as visitor:
+        joined = visitor.post(f"/api/v1/invite/{token}", json={"name": "nina", "password": PASSWORD})
+        assert joined.status_code in (200, 201), joined.text
+    configure(client, provider, auto_create=True)
+    assert location(sign_in_via_oidc(fresh_browser(), provider, sub="person-9", preferred_username="lea")) == "/"
+    with SessionLocal() as db:
+        made = account_service.create_with_password(db, "otto", PASSWORD)
+        assert made.storage_limit == five
+        for name in ("nina", "lea"):
+            row = db.scalar(select(Account).where(Account.name == name))
+            assert row is not None and row.storage_limit == five, name
+        assert db.get(Account, before.id).storage_limit is None, "an account that is there keeps its limit"  # type: ignore[union-attr]
+    assert listed(client, "nina")["storage_limit"] == five
+
+    # Emptied: new accounts start without a limit again; nothing below one byte, no text.
+    assert client.put("/api/v1/settings", json={"new_account_storage_limit": None}).json()[
+        "new_account_storage_limit"] is None
+    for wrong in (0, -1, "5", 11 * 1024**4):
+        assert client.put("/api/v1/settings", json={"new_account_storage_limit": wrong}).status_code == 422, wrong
+    with SessionLocal() as db:
+        assert account_service.create_with_password(db, "paul", PASSWORD).storage_limit is None
+    with SessionLocal() as db:
+        assert db.scalar(select(Account).where(Account.name == "nina")).storage_limit == five  # type: ignore[union-attr]

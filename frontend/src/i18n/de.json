@@ -1000,6 +1000,8 @@
       "invalid": "Die Zahlen müssen in den erlaubten Bereich fallen.",
       "cache": "Zwischenspeicher für Seitenbilder (MB)",
       "cacheHint": "Wird er größer, räumt nexpaper die Bilder weg, die am längsten nicht gebraucht wurden. Sie entstehen bei Bedarf neu.",
+      "newAccountStorage": "Speicher für neue Konten (GB)",
+      "newAccountStorageHint": "Leer heißt ohne Grenze. Gilt für Konten, die ab jetzt dazukommen. Die Grenze eines Kontos setzt du unter Konten › Verwalten.",
       "perAccount": "Speicher je Konto setzt du unter „Konten“."
     },
     "disk": {

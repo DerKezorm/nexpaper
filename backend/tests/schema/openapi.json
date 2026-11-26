@@ -9024,6 +9024,19 @@
             ],
             "title": "Links Allowed"
           },
+          "new_account_storage_limit": {
+            "anyOf": [
+              {
+                "maximum": 10995116277760.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "New Account Storage Limit"
+          },
           "passkeys_allowed": {
             "anyOf": [
               {
@@ -9341,6 +9354,17 @@
               }
             ],
             "title": "Mail Last Ok At"
+          },
+          "new_account_storage_limit": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "New Account Storage Limit"
           },
           "passkeys_allowed": {
             "default": true,

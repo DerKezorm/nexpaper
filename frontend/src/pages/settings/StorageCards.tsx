@@ -1,7 +1,8 @@
 /**
  * Server › General: the card "Grenzen" (limits), laid out as nexnotes' card of the same name: the size of one file
  * first, its own field with its own button (`Field action`); nexpaper's further limits on what comes in below it, two to
- * a row, with one button for all of them; the line that the storage of each account is set under "Konten". Server ›
+ * a row, with one button for all of them; "Speicher für neue Konten" in GB with its own button, empty for no limit
+ * (Bauplan E44); the line that the storage of each account is set under "Konten". Server ›
  * Storage and backups: the card that shows how the files lie on the disk. The operator's numbers count from the next
  * file on.
  */
@@ -30,13 +31,34 @@ const MORE: Limit[] = [
   { key: 'cache_max_mb', label: 'cache', hint: 'cacheHint', min: 64, max: 1048576 },
 ]
 
+const GB = 1024 ** 3
+/** The most the server takes for the storage of new accounts: 10 TiB. */
+const NEW_ACCOUNT_MAX = 10 * 1024 ** 4
+
 export function LimitsCard() {
   const { t } = useTranslation()
   const server = useServerSettings()
   const settings = server.settings
   const [typed, setTyped] = useState<Partial<Record<Field, string>>>({})
+  const [newLimit, setNewLimit] = useState<string | null>(null)
   const [invalid, setInvalid] = useState(false)
   if (!settings) return null
+  const current = settings.new_account_storage_limit ?? null
+  const shownLimit = current ? String(Math.round((current / GB) * 10) / 10) : ''
+  /** Bauplan E44: the limit every new account starts with, in GB; empty sends null (no limit). */
+  const saveNewLimit = async () => {
+    const text = (newLimit ?? shownLimit).replace(',', '.').trim()
+    const gigabytes = Number(text)
+    const bytes = text ? Math.round(gigabytes * GB) : null
+    if (bytes !== null && (!Number.isFinite(gigabytes) || bytes < 1 || bytes > NEW_ACCOUNT_MAX)) {
+      setInvalid(true)
+      return
+    }
+    setInvalid(false)
+    if (bytes === current) return
+    await server.save({ new_account_storage_limit: bytes }, t('storage.limits.saved'))
+    setNewLimit(null)
+  }
   const shown = (key: Field) => typed[key] ?? String(settings[key])
   /** Each button saves the fields of its own part, and only those that changed; a number out of range sends nothing. */
   const save = async (fields: Limit[]) => {
@@ -92,6 +114,30 @@ export function LimitsCard() {
             {t('storage.limits.save')}
           </Button>,
         )}
+      </form>
+      <form
+        noValidate
+        data-testid="limit-new-accounts"
+        onSubmit={(event) => {
+          event.preventDefault()
+          void saveNewLimit()
+        }}
+      >
+        <Field
+          label={t('storage.limits.newAccountStorage')}
+          hints={[t('storage.limits.newAccountStorageHint')]}
+          type="number"
+          min={0}
+          step="any"
+          value={newLimit ?? shownLimit}
+          onChange={(event) => setNewLimit(event.target.value)}
+          data-testid="limits-new-account-storage"
+          action={
+            <Button kind="secondary" icon="Check" type="submit" busy={server.busy} testId="limits-new-account-storage-save">
+              {t('storage.limits.save')}
+            </Button>
+          }
+        />
       </form>
       <form
         noValidate

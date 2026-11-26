@@ -21,6 +21,7 @@ from sqlalchemy.orm import Session
 from .. import __version__, clock
 from ..models import MEMBER, ROLES, SIGN_IN_PASSWORD, Account, Invite, utcnow
 from ..security import LOCK_MINUTES, MAX_FAILURES, hash_password, hash_token, verify_password
+from . import settings_service
 
 logger = logging.getLogger("nexpaper.auth")
 
@@ -54,6 +55,7 @@ def create_with_password(db: Session, name: str, password: str, role: str = MEMB
         sign_in=SIGN_IN_PASSWORD,
         password_hash=hash_password(password),
         whats_new_seen=__version__,
+        storage_limit=settings_service.new_account_storage_limit(db),
     )
     db.add(account)
     if commit:

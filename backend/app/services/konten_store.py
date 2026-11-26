@@ -343,6 +343,8 @@ class KontenStore:
             raise Taken("display_name")
         if self.find_by_username(new.username):
             raise Taken("username")
+        from . import settings_service
+
         address = (new.email or "").strip()
         now = utcnow()
         row = Account(
@@ -358,6 +360,8 @@ class KontenStore:
             password_changed_at=now if new.password else None,
             language=new.language or "",
             whats_new_seen=__version__,
+            # The limit new accounts start with (Bauplan E44, Server › General › Limits).
+            storage_limit=settings_service.new_account_storage_limit(self.db),
         )
         self.db.add(row)
         self._flush()

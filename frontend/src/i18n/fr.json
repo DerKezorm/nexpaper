@@ -1000,6 +1000,8 @@
       "invalid": "Les nombres doivent se situer dans la plage autorisée.",
       "cache": "Cache des images de pages (Mo)",
       "cacheHint": "Quand il dépasse cette taille, nexpaper efface les images inutilisées depuis le plus longtemps. Elles sont recréées au besoin.",
+      "newAccountStorage": "Espace pour les nouveaux comptes (Go)",
+      "newAccountStorageHint": "Vide signifie sans limite. Vaut pour les comptes ajoutés à partir de maintenant. Tu fixes la limite d'un compte sous Comptes › Gérer.",
       "perAccount": "Tu fixes l'espace de chaque compte sous « Comptes »."
     },
     "disk": {

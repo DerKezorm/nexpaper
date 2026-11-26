@@ -133,6 +133,62 @@ describe('the limits', () => {
   })
 })
 
+describe('the storage for new accounts (Bauplan E44)', () => {
+  const GB = 1024 ** 3
+  const own = () => page.button('Speichern', document.querySelector('[data-testid="limit-new-accounts"]')!)!
+
+  it('stands in "Grenzen" in GB with its own Save level with it, and says where one account gets its limit', async () => {
+    server.answers['GET /api/v1/settings'] = { ...settings, new_account_storage_limit: 5 * GB }
+    await page.show(<LimitsCard />)
+    const input = field('Speicher für neue Konten (GB)')
+    expect(input.value).toBe('5')
+    expect(document.querySelector('[data-testid="limit-new-accounts"]')!.contains(input)).toBe(true)
+    expect(own().closest('[data-part="field-action"]')!.contains(input)).toBe(true)
+    expect([own().dataset.kind, own().dataset.size, own().dataset.icon]).toEqual(['secondary', 'md', 'Check'])
+    const hint = document.getElementById((input.getAttribute('aria-describedby') ?? '').split(' ')[0]!)!
+    expect(hint.textContent).toBe('Leer heißt ohne Grenze. Gilt für Konten, die ab jetzt dazukommen. Die Grenze eines Kontos setzt du unter Konten › Verwalten.')
+  })
+
+  it('sends the GB as bytes, alone, and empty as null', async () => {
+    server.answers['PUT /api/v1/settings'] = { ...settings, new_account_storage_limit: Math.round(2.5 * GB) }
+    await page.show(<LimitsCard />)
+    expect(field('Speicher für neue Konten (GB)').value).toBe('')
+    await page.type(field('Größe einer Datei (MB)'), '50')
+    await page.type(field('Speicher für neue Konten (GB)'), '2.5')
+    await page.click(own())
+    expect(server.called('PUT', '/api/v1/settings')!.body).toEqual({ new_account_storage_limit: Math.round(2.5 * GB) })
+    expect(field('Speicher für neue Konten (GB)').value).toBe('2.5')
+    server.answers['PUT /api/v1/settings'] = { ...settings, new_account_storage_limit: null }
+    await page.type(field('Speicher für neue Konten (GB)'), '')
+    await page.click(own())
+    expect(server.calls.filter((c) => c.method === 'PUT').at(-1)!.body).toEqual({ new_account_storage_limit: null })
+    expect(field('Speicher für neue Konten (GB)').value).toBe('')
+  })
+
+  it.each(['0', '-1', '20000', '1e9'])('refuses %s on the page, without asking the server', async (value) => {
+    await page.show(<LimitsCard />)
+    await page.type(field('Speicher für neue Konten (GB)'), value)
+    await page.click(own())
+    expect(page.text).toContain('Die Zahlen müssen in den erlaubten Bereich fallen.')
+    expect(server.changes()).toEqual([])
+  })
+
+  it('sends nothing when nothing changed, and is in English and French too', async () => {
+    await page.show(<LimitsCard />)
+    await page.click(own())
+    expect(server.changes()).toEqual([])
+    page.close()
+    await changeLanguage('en', false)
+    await page.show(<LimitsCard />)
+    expect(field('Storage for new accounts (GB)')).toBeTruthy()
+    expect(page.text).toContain('The limit of one account is set under Accounts › Manage.')
+    page.close()
+    await changeLanguage('fr', false)
+    await page.show(<LimitsCard />)
+    expect(field('Espace pour les nouveaux comptes (Go)')).toBeTruthy()
+  })
+})
+
 describe('the disk', () => {
   it('shows how the files lie on the disk, readable without nexpaper', async () => {
     await page.show(<DiskCard />)
