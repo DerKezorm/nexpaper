@@ -4,7 +4,7 @@
  * download menu, the rules card (as sentences, on and off, order, a new rule, the operator's for the whole server),
  * the kinds card, the switch for personal vaults on the AI card, and the history line of the proposals.
  */
-import { Route, Routes } from 'react-router-dom'
+import { Route, Routes, useLocation } from 'react-router-dom'
 
 import type { DocumentEvent, Me } from '../api/client'
 import i18n, { changeLanguage } from '../i18n'
@@ -27,6 +27,25 @@ vi.mock('../state/auth', () => ({ useAuth: () => auth }))
 
 const server = new Server()
 const page = new Page()
+
+/** Where the page went (the address with its query). */
+function Where() {
+  const location = useLocation()
+  return <p data-testid="where">{location.pathname + location.search}</p>
+}
+
+/** The kit's field or choice by its label (joined by `for`). */
+function labelled<T extends HTMLElement>(label: string, tag: 'INPUT' | 'SELECT' = 'INPUT'): T | null {
+  const named = [...page.box.querySelectorAll<HTMLLabelElement>('label')].filter((item) => item.textContent === label)
+  return (named.map((item) => document.getElementById(item.htmlFor)).find((found) => found?.tagName === tag) as T | undefined) ?? null
+}
+const typed = (label: string) => labelled<HTMLInputElement>(label)
+const chosen = (label: string) => labelled<HTMLSelectElement>(label, 'SELECT')
+/** The kit's box to tick (`CheckboxRow`), null until it is there. */
+function tick(label: string): HTMLInputElement | null {
+  const found = labelled<HTMLInputElement>(label)
+  return found && found.type === 'checkbox' ? found : null
+}
 
 const invoiceKind = { id: 1, key: 'invoice', name: 'Rechnung', hue: 28, position: 0 }
 const health = { id: 2, key: 'health', name: 'Gesundheit', hue: 340, position: 1 }
@@ -193,8 +212,12 @@ describe('the rules card', () => {
     await page.show(<RulesCard server />)
     await until(() => page.box.querySelectorAll('[data-testid="rule"]').length === 3)
     const [server0, , third] = [...page.box.querySelectorAll<HTMLElement>('[data-testid="rule"]')]
-    await page.click(server0.querySelector<HTMLButtonElement>('[role="switch"]'))
+    // On and off is the kit's box to tick, the order the kit's arrows, removing a small red button.
+    expect(server0.querySelector('[role="switch"]')).toBeNull()
+    await page.click(server0.querySelector<HTMLInputElement>('input[type="checkbox"]'))
     expect(server.called('PATCH', '/api/v1/settings/rules/1')!.body).toEqual({ on: false })
+    expect(page.button('Regel nach oben', third)!.dataset.icon).toBe('ArrowUp')
+    expect([page.button('Regel löschen', third)!.dataset.kind, page.button('Regel löschen', third)!.dataset.size]).toEqual(['danger', 'sm'])
     await page.click(page.button('Regel nach oben', third))
     expect(server.called('PATCH', '/api/v1/rules/3')!.body).toEqual({ position: 1 })
     await page.click(page.button('Regel löschen', third))
@@ -211,15 +234,15 @@ describe('the rules card', () => {
     await until(() => page.button('Regel'))
     await page.click(page.button('Regel'))
     await page.type(page.box.querySelector<HTMLInputElement>('input[aria-label="Absender"]'), 'Stadtwerke Lindenau')
-    await page.choose(page.select('dann'), 'tag')
-    await page.type(page.box.querySelector<HTMLInputElement>('input[aria-label="Tag"]'), 'strom')
+    await page.choose(chosen('dann'), 'tag')
+    await page.type(typed('Tag'), 'strom')
     await page.click(page.button('Regel anlegen'))
     expect(server.called('POST', '/api/v1/settings/rules')!.body).toEqual({ when: [{ field: 'sender', op: 'is', values: ['Stadtwerke Lindenau'] }], then: [{ field: 'tag', value: 'strom' }] })
     await page.click(page.button('Regel'))
-    await page.choose(page.select('Gilt für'), '9')
-    await page.choose(page.select('Wenn'), 'amount')
-    await page.type(page.box.querySelector<HTMLInputElement>('input[aria-label="Betrag"]'), '250,00')
-    await page.choose(page.select('Tresor'), '7')
+    await page.choose(chosen('Gilt für'), '9')
+    await page.choose(chosen('Wenn'), 'amount')
+    await page.type(typed('Betrag'), '250,00')
+    await page.choose(chosen('Tresor'), '7')
     await page.click(page.button('Regel anlegen'))
     expect(server.called('POST', '/api/v1/rules')!.body).toEqual({ vault_id: 9, when: [{ field: 'amount', op: 'over', value: 25000 }], then: [{ field: 'vault', value: 7 }] })
   })
@@ -235,21 +258,28 @@ describe('the rules card', () => {
 
 describe('the kinds card and the AI card', () => {
   it('sends whoever looks for the kinds to the order page, where they are kept', async () => {
-    await page.show(<KindsCard />)
-    const link = [...page.box.querySelectorAll('a')].find((a) => a.textContent?.includes('Arten unter Ordnung öffnen'))!
-    expect(link.getAttribute('href')).toBe('/ordnung?tab=kinds')
+    await page.show(
+      <Routes>
+        <Route path="/" element={<KindsCard />} />
+        <Route path="/ordnung" element={<Where />} />
+      </Routes>,
+    )
+    const open = [...page.box.querySelectorAll<HTMLButtonElement>('button')].find((button) => button.textContent?.includes('Arten unter Ordnung öffnen'))!
+    expect([open.dataset.kind, open.dataset.icon]).toEqual(['secondary', 'ArrowRight'])
     expect(page.box.querySelector('input')).toBeNull()
+    await page.click(open)
+    expect(page.box.querySelector('[data-testid="where"]')!.textContent).toBe('/ordnung?tab=kinds')
   })
 
   it('leaves personal vaults out of the AI until the operator lets them in', async () => {
     server.answers['GET /api/v1/settings/ai'] = { provider: 'local', url: 'http://ollama:11434/v1/', model: 'llama3.1:8b', key_set: false, skip_personal: true }
     server.answers['PUT /api/v1/settings/ai'] = { provider: 'local', url: 'http://ollama:11434/v1/', model: 'llama3.1:8b', key_set: false, skip_personal: false }
     await page.show(<AiCard />)
-    const toggle = await until(() => page.box.querySelector<HTMLButtonElement>('[role="switch"][aria-label="Persönliche Tresore auslassen"]'))
-    expect(toggle.getAttribute('aria-checked')).toBe('true')
+    const toggle = await until(() => tick('Persönliche Tresore auslassen'))
+    expect(toggle.checked).toBe(true)
     await page.click(toggle)
     expect(server.called('PUT', '/api/v1/settings/ai')!.body).toEqual({ skip_personal: false })
-    expect(page.box.querySelector('[role="switch"][aria-label="Persönliche Tresore auslassen"]')!.getAttribute('aria-checked')).toBe('false')
+    expect(tick('Persönliche Tresore auslassen')!.checked).toBe(false)
   })
 
   it('sets the daily limit of AI requests and shows today\'s count', async () => {

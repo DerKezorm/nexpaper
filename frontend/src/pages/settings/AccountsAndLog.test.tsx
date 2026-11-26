@@ -1,15 +1,17 @@
 /**
  * Settings, Accounts and Log against a stand-in of the server: the accounts as the shared account module lays them out
  * (a row each with "Verwalten", the dialog with nexpaper's box "KI erlaubt" and the documents), the open invitations as a
- * card of their own, the keys of all accounts with a red word to block one; the log as one bar (level chips, search,
- * level of detail, download, clear after a question) above a table of its lines.
+ * card of their own, "Was du siehst"; the keys of all accounts in the module's table (schluessel 1.0.0) with a small red
+ * "Sperren"; the module's log (log 1.0.0) under nexpaper's route: one bar (level filter, search, level of detail,
+ * download, clear after a question) above a table of its lines.
  */
 import type { Me } from '../../api/client'
 import { changeLanguage } from '../../i18n'
 import { Page, Server } from '../../test/harness'
 import { until } from '../../test/wait'
 import { AccountsTab } from './AccountsTab'
-import { AllApiKeysCard, LogCard } from './ServerCards'
+import { AllKeys } from './KeysCards'
+import { LogArea } from './ServerCards'
 
 const me: Me = {
   id: 1, name: 'jule', display_name: 'Jule', role: 'operator', sign_in: 'password', email: 'jule@example.com', language: 'de', email_confirmed: true,
@@ -71,13 +73,14 @@ describe('the accounts', () => {
     expect(document.querySelector('[role="menu"]')).toBeNull()
   })
 
-  it('switch the AI for one account with the box under "Rechte", and name the documents of its own vault', async () => {
+  it('switch the AI for one account with the module\'s box "KI erlaubt" under "Rechte", and name the documents of its own vault', async () => {
     await page.show(<AccountsTab />)
     const dialog = await manage('tom')
     expect(dialog.textContent).toContain('Rechte')
     expect(dialog.textContent).toContain('Dokumente')
     expect(dialog.textContent).toContain('1.637')
     const box = [...dialog.querySelectorAll<HTMLInputElement>('input[type="checkbox"]')][0]!
+    expect(document.querySelector(`label[for="${box.id}"]`)!.textContent).toBe('KI erlaubt')
     expect(box.checked).toBe(false)
     await page.click(box)
     expect(server.called('PUT', '/api/v1/accounts/2/permissions')!.body).toEqual({ ai_allowed: true })
@@ -115,6 +118,47 @@ describe('the accounts', () => {
     expect(server.changes()).toEqual(['DELETE /api/v1/invites/9'])
   })
 
+  it('set the storage limit of an account in GB with the operator\'s password, and show what its documents take', async () => {
+    server.answers['GET /api/v1/accounts'] = [row({ self: true }), row({ id: 2, name: 'tom', display_name: 'Tom', role: 'member', storage_limit: null, storage_used: 1_500_000_000 })]
+    server.answers['PUT /api/v1/accounts/2/storage-limit'] = row({ id: 2, name: 'tom', storage_limit: 2 * 1024 ** 3 })
+    await page.show(<AccountsTab />)
+    const dialog = await manage('tom')
+    expect(dialog.querySelector('[data-testid="fact-storage"]')!.textContent).toContain('1,5 GB, ohne Grenze')
+    await page.click(page.button('Speichergrenze', dialog))
+    const limit = document.querySelector<HTMLElement>('[data-testid="limit-dialog"]')!
+    expect(limit.textContent).toContain('Speichergrenze für Tom')
+    expect(limit.textContent).toContain('Ist die Grenze erreicht, nimmt nexpaper keine neuen Dateien dieses Kontos mehr an')
+    const inputs = [...limit.querySelectorAll<HTMLInputElement>('input')]
+    await page.type(inputs.find((input) => input.type === 'number')!, '2')
+    await page.type(inputs.find((input) => input.type === 'password')!, 'the own password')
+    await page.click(page.button('Speichern', limit))
+    expect(server.called('PUT', '/api/v1/accounts/2/storage-limit')!.body).toEqual({ limit: 2 * 1024 ** 3, current_password: 'the own password' })
+  })
+
+  it('bring a deleted account back within its 30 days, and offer nothing else for it', async () => {
+    const deleted = new Date(Date.now() - 2 * 24 * HOUR).toISOString()
+    const purge = new Date(Date.now() + 28 * 24 * HOUR).toISOString()
+    server.answers['GET /api/v1/accounts'] = [row({ self: true }), row({ id: 2, name: 'tom', display_name: 'Tom', role: 'member', deleted_at: deleted, purge_at: purge })]
+    server.answers['POST /api/v1/accounts/2/restore'] = row({ id: 2, name: 'tom' })
+    await page.show(<AccountsTab />)
+    expect(rowOf('tom')!.textContent).toContain('Gelöscht')
+    const dialog = await manage('tom')
+    for (const word of ['Sperren', 'Konto löschen', 'Zum Betreiber machen']) expect(page.button(word, dialog), word).toBeUndefined()
+    await page.click(page.button('Zurückholen', dialog))
+    expect(server.changes()).toEqual([])
+    const confirm = document.querySelector<HTMLElement>('[data-testid="manage-confirm"]')!
+    await page.type(confirm.querySelector<HTMLInputElement>('input[type="password"]'), 'the own password')
+    await page.click(page.button('Zurückholen', confirm))
+    expect(server.called('POST', '/api/v1/accounts/2/restore')!.body).toEqual({ current_password: 'the own password' })
+  })
+
+  it('say under the list what the operator sees and never sees, in nexpaper\'s sentence', async () => {
+    await page.show(<AccountsTab />)
+    const card = document.querySelector('[data-card="what-you-see"]') ?? [...document.querySelectorAll('[data-card]')].find((found) => found.textContent?.includes('Was du siehst'))
+    expect(card!.textContent).toContain('aber nie die Dokumente in den Tresoren anderer')
+    expect(document.querySelector('[data-card="accounts"]')!.compareDocumentPosition(card!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
   it('show no card of open invitations while there are none', async () => {
     await page.show(<AccountsTab />)
     expect(document.getElementById('open-invites')).toBeNull()
@@ -122,92 +166,114 @@ describe('the accounts', () => {
 })
 
 describe('the keys of all accounts', () => {
-  it('list them in the row form of nexnotes and block one with the red word, after the question', async () => {
-    server.answers['GET /api/v1/admin/api-keys'] = [
-      { id: 1, account: 'anna', name: 'nexdeck', scope: 'read', prefix: 'npk_Ab3d', created_at: '2026-10-01T10:00:00Z', last_used_at: null, expires_at: null, blocked: false },
-      { id: 2, account: 'tom', name: 'Scanner', scope: 'upload', prefix: 'npk_Sc12', created_at: '2026-10-01T10:00:00Z', last_used_at: null, expires_at: null, blocked: true },
-    ]
-    server.answers['POST /api/v1/admin/api-keys/1/block'] = { id: 1, blocked: true }
-    await page.show(<AllApiKeysCard />)
-    expect(page.text).toContain('API-Token aller Konten')
-    const rows = [...document.querySelectorAll('[data-testid="admin-api-keys"] li')]
-    expect(rows[0].textContent).toContain('anna · nexdeck')
-    expect(rows[0].textContent).toContain('nur lesen · läuft nicht ab · noch nie benutzt')
-    expect(rows[1].textContent).toContain('gesperrt')
+  const key = (over: Record<string, unknown>) => ({
+    id: 1, kind: 'api', name: 'nexdeck', right: 'read', options: {}, areas: null, created_at: '2026-10-01T10:00:00Z', last_used_at: null, expires_at: null,
+    expired: false, expiring: false, blocked: false, legacy: null, program: false, account: { id: 2, name: 'anna', display_name: 'Anna', out: false }, ...over,
+  })
+
+  it('list them in the module\'s table under nexpaper\'s route, in nexpaper\'s words, and block one after the question', async () => {
+    server.answers['GET /api/v1/connections/admin/keys'] = { keys: [key({}), key({ id: 2, name: 'Scanner', right: 'upload', blocked: true, account: { id: 3, name: 'tom', display_name: 'Tom', out: false } })] }
+    server.answers['POST /api/v1/connections/admin/keys/1/block'] = key({ blocked: true })
+    await page.show(<AllKeys />)
+    const card = document.querySelector<HTMLElement>('[data-card="all-api-keys"]')!
+    expect(card.querySelector('h2')!.textContent).toBe('API-Schlüssel aller Konten')
+    const table = card.querySelector<HTMLElement>('table')!
+    const rows = [...table.querySelectorAll<HTMLElement>('[data-testid="all-keys-row"]')]
+    expect(rows[0].textContent).toContain('Anna')
+    expect(rows[0].textContent).toContain('nexdeck')
+    expect(rows[0].textContent).toContain('Nur lesen')
+    expect(rows[1].textContent).toContain('Nur hochladen')
+    // Never the start of a key for the operator (E36).
+    expect(card.textContent).not.toContain('npk_')
+    expect(rows[1].getAttribute('data-blocked')).toBe('true')
     expect(page.button('Sperren', rows[1])).toBeUndefined()
-    await page.click(page.button('Sperren', rows[0]))
+    expect(page.button('Entsperren', rows[1])).toBeTruthy()
+    const block = page.button('Sperren', rows[0])!
+    expect([block.dataset.kind, block.dataset.size]).toEqual(['danger', 'sm'])
+    await page.click(block)
     expect(server.changes()).toEqual([])
     await page.inDialog('Sperren')
-    expect(server.changes()).toEqual(['POST /api/v1/admin/api-keys/1/block'])
+    expect(server.changes()).toEqual(['POST /api/v1/connections/admin/keys/1/block'])
   })
 
   it('say so when nobody has a key', async () => {
-    server.answers['GET /api/v1/admin/api-keys'] = []
-    await page.show(<AllApiKeysCard />)
-    expect(document.querySelector('[data-testid="admin-api-keys-none"]')!.textContent).toBe('Noch kein Konto hat einen API-Token.')
+    server.answers['GET /api/v1/connections/admin/keys'] = { keys: [] }
+    await page.show(<AllKeys />)
+    expect(document.querySelector('[data-card="all-api-keys"]')!.textContent).toContain('Noch kein Konto hat einen API-Schlüssel.')
   })
 })
 
 describe('the log', () => {
   const lines = [
-    { time: '2026-11-23 10:00:01', level: 'ERROR', logger: 'nexpaper.ocr', message: 'Reading failed', request_id: 'a1b2c3', user: 'jule' },
-    { time: '2026-11-23 09:59:00', level: 'INFO', logger: 'nexpaper.web', message: 'Started', request_id: null, user: null },
+    { time: '2026-11-23 10:00:01', level: 'ERROR', logger: 'nexpaper.ocr', message: 'Reading failed', request_id: 'a1b2c3', user: 'jule', at: null },
+    { time: '2026-11-23 09:59:00', level: 'INFO', logger: 'nexpaper.web', message: 'Started', request_id: null, user: null, at: null },
   ]
 
   beforeEach(() => {
-    // The page asks for the newest 300 lines (the server gives no older ones page by page).
-    server.answers['GET /api/v1/logs?limit=300'] = lines
-    server.answers['GET /api/v1/logs?level=WARNING&limit=300'] = [lines[0]]
-    server.answers['GET /api/v1/logs?search=a1b2c3&limit=300'] = [lines[0]]
-    server.answers['GET /api/v1/logs/level'] = { mode: 'normal', until: null, fixed_by_env: false, modes: ['quiet', 'normal', 'detailed', 'trace'] }
+    // The module asks page by page (`limit` 200, `offset`) under nexpaper's route.
+    server.answers['GET /api/v1/logs?limit=200&offset=0'] = lines
+    server.answers['GET /api/v1/logs?level=WARNING&limit=200&offset=0'] = [lines[0]]
+    server.answers['GET /api/v1/logs?search=a1b2c3&limit=200&offset=0'] = [lines[0]]
+    server.answers['GET /api/v1/logs/level'] = { mode: 'normal', until: null, fixed_by_env: false, variable: 'NEXPAPER_LOG_LEVEL', modes: ['quiet', 'normal', 'detailed', 'trace'], durations: [30, 60, 120, 480] }
     server.answers['DELETE /api/v1/logs'] = 204
   })
 
-  /** The lines come a moment after the page (the search waits for typing to stop). */
-  const rows = (count: number) => until(() => document.querySelectorAll('[data-testid="log-row"]').length === count && document.querySelectorAll('[data-testid="log-row"]'), `${count} lines`)
+  /** The lines of the table (the search waits for typing to stop). */
+  const rows = (count: number) =>
+    until(() => {
+      const found = document.querySelectorAll('[data-testid="log-table"] tbody [data-testid="log-row"]')
+      return found.length === count && found
+    }, `${count} lines`)
 
-  it('has one bar with the chips, the search, the level of detail, download and clear', async () => {
-    await page.show(<LogCard />)
+  it('has one bar with the level filter, the search, the level of detail, download and clear, and nexpaper\'s word in the line', async () => {
+    await page.show(<LogArea />)
+    const card = document.querySelector<HTMLElement>('[data-card="log"]')!
+    expect(card.textContent).toContain('Nie Inhalte von Dokumenten')
     const bar = document.querySelector<HTMLElement>('[data-testid="log-bar"]')!
     expect([...bar.querySelectorAll('[role="radio"]')].map((chip) => chip.textContent)).toEqual(['Alle', 'INFO', 'WARNING', 'ERROR'])
     expect(bar.querySelector('[aria-checked="true"]')!.textContent).toBe('Alle')
-    expect(bar.querySelector<HTMLInputElement>('[data-testid="log-search"]')!.placeholder).toBe('Im Text suchen …')
+    expect(bar.querySelector<HTMLInputElement>('[data-testid="log-search"]')).toBeTruthy()
     expect(bar.querySelector<HTMLSelectElement>('[data-testid="log-mode"]')!.value).toBe('normal')
     expect(bar.querySelector('a[href="/api/v1/logs/download"]')).toBeTruthy()
-    expect(page.button('Protokoll leeren', bar)).toBeTruthy()
+    expect(bar.querySelector<HTMLElement>('[data-testid="log-clear"]')!.dataset.kind).toBe('danger')
   })
 
-  it('shows the lines in a table of time, level, source, request and account, and message, and as cards on a phone', async () => {
-    await page.show(<LogCard />)
+  it('shows the lines in a table of time, level, source, request and account, and message', async () => {
+    await page.show(<LogArea />)
     const found = await rows(2)
-    const table = document.querySelector('[data-testid="log-table"]')!
-    expect([...table.querySelectorAll('th')].map((cell) => cell.textContent)).toEqual(['Zeit', 'Stufe', 'Quelle', 'Nr. / Konto', 'Meldung'])
-    expect([...found[0].querySelectorAll('td')].map((cell) => cell.textContent)).toEqual(['2026-11-23 10:00:01', 'ERROR', 'nexpaper.ocr', 'a1b2c3jule', 'Reading failed'])
-    expect(document.querySelectorAll('[data-testid="log-card"]')).toHaveLength(2)
+    const table = document.querySelector('[data-testid="log-table"] table')!
+    expect([...table.querySelectorAll('th')].map((cell) => cell.textContent)).toEqual(['Zeit', 'Stufe', 'Quelle', 'Anfrage / Konto', 'Meldung'])
+    const cells = [...found[0].querySelectorAll('td')].map((cell) => cell.textContent)
+    expect(cells[0]).toBe('2026-11-23 10:00:01')
+    expect(cells[1]).toBe('ERROR')
+    expect(cells[2]).toBe('nexpaper.ocr')
+    expect(cells[3]).toContain('a1b2c3')
+    expect(cells[3]).toContain('jule')
+    expect(cells[4]).toBe('Reading failed')
   })
 
-  it('asks the server for the level of a chip, and a request number filters by it', async () => {
-    await page.show(<LogCard />)
+  it('asks the server for the level of a filter, and a request number filters by it', async () => {
+    await page.show(<LogArea />)
     await rows(2)
     await page.click(document.querySelector<HTMLElement>('[data-testid="log-level-WARNING"]'))
     await rows(1)
-    expect(server.called('GET', '/api/v1/logs?level=WARNING&limit=300')).toBeTruthy()
+    expect(server.called('GET', '/api/v1/logs?level=WARNING&limit=200&offset=0')).toBeTruthy()
     await page.click(document.querySelector<HTMLElement>('[data-testid="log-level-all"]'))
     await rows(2)
-    await page.click(page.button('a1b2c3', document.querySelector<HTMLElement>('[data-testid="log-table"]')!))
+    await page.click(document.querySelector<HTMLElement>('[data-testid="log-table"] tbody [data-testid="log-request"]'))
     expect(document.querySelector<HTMLInputElement>('[data-testid="log-search"]')!.value).toBe('a1b2c3')
     await rows(1)
-    expect(server.called('GET', '/api/v1/logs?search=a1b2c3&limit=300')).toBeTruthy()
+    expect(server.called('GET', '/api/v1/logs?search=a1b2c3&limit=200&offset=0')).toBeTruthy()
   })
 
   it('clears the log only after the question', async () => {
-    await page.show(<LogCard />)
+    await page.show(<LogArea />)
     await rows(2)
-    await page.click(page.button('Protokoll leeren'))
+    await page.click(document.querySelector<HTMLElement>('[data-testid="log-clear"]'))
     expect(server.changes()).toEqual([])
     await page.inDialog('Abbrechen')
     expect(server.changes()).toEqual([])
-    await page.click(page.button('Protokoll leeren'))
+    await page.click(document.querySelector<HTMLElement>('[data-testid="log-clear"]'))
     await page.inDialog('Protokoll leeren')
     expect(server.changes()).toEqual(['DELETE /api/v1/logs'])
     expect(page.text).toContain('Nichts im Log.')

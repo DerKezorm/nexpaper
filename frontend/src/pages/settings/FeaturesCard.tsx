@@ -1,8 +1,8 @@
 /**
  * Settings, General: "Funktionen für alle Konten", as nexnotes' card of the same name: one switch per feature the
  * operator opens or closes for everybody. nexpaper's are links to the outside (with the longest they may last and how
- * many are open now), upload requests (U1, off from the start, with how many take files now; never an address or a
- * name) and API keys.
+ * many are open now) and upload requests (U1, off from the start, with how many take files now; never an address or a
+ * name). The switch for API keys is under "Schnittstellen" now (schluessel 1.0.0).
  */
 import { SlidersHorizontal } from 'lucide-react'
 import { useEffect, useState } from 'react'
@@ -10,7 +10,8 @@ import { useTranslation } from 'react-i18next'
 
 import { sharingApi, uploadRequestsApi, type RequestsOverview, type SharingOverview } from '../../api/client'
 import { shortDate } from '../../lib/dates'
-import { Card, Feedback, Select, Toggle } from './ui'
+import { Card, CheckboxRow, Notice, SelectField } from '../../vendor/nexui'
+import { Outcome } from './Outcome'
 import { useServerSettings } from './ServerCards'
 
 const DAYS = ['7', '14', '30', '90'] as const
@@ -32,23 +33,22 @@ export function FeaturesCard() {
   }, [requestsOn])
   if (!settings) return null
   // What belongs to a switch stands under it, a little in, while the switch is on.
-  const beneath = 'space-y-2 border-l-2 border-line pl-4'
+  const beneath = 'flex flex-col gap-2 border-0 border-l-2 border-solid border-[var(--nexui-line)] pl-4'
   return (
     <Card id="features" icon={SlidersHorizontal} title={t('server.features')}>
-      <Toggle label={t('sharingSettings.allow')} hint={t('sharingSettings.allowHint')} checked={linksOn} onChange={(links_allowed) => void server.save({ links_allowed })} />
+      <CheckboxRow label={t('sharingSettings.allow')} hint={t('sharingSettings.allowHint')} checked={linksOn} onChange={(links_allowed) => void server.save({ links_allowed })} />
       {linksOn && (
         <div className={beneath} data-testid="links-beneath">
-          <div className="flex flex-wrap items-end gap-3">
-            <Select
-              className="w-40"
+          <div className="max-w-xs">
+            <SelectField
               label={t('sharingSettings.longest')}
-              value={longest as (typeof DAYS)[number]}
+              hints={[t('sharingSettings.hint')]}
+              value={longest}
               options={DAYS.map((d) => ({ value: d, label: t('sharingSettings.days', { count: Number(d) }) }))}
-              onChange={(value) => void server.save({ link_max_days: Number(value) })}
+              onChange={(event) => void server.save({ link_max_days: Number(event.target.value) })}
             />
-            <p className="max-w-md pb-2 text-xs text-muted">{t('sharingSettings.hint')}</p>
           </div>
-          <p className="text-sm text-ink-2" data-testid="links-overview">
+          <p className="m-0 text-sm" data-testid="links-overview">
             {overview && overview.open_links > 0 && overview.next_end ? (
               <>
                 <span className="font-semibold">{t('sharingSettings.open')}: </span>
@@ -64,7 +64,7 @@ export function FeaturesCard() {
           </p>
         </div>
       )}
-      <Toggle
+      <CheckboxRow
         label={t('uploadRequest.settings.allow')}
         hint={t('uploadRequest.settings.allowHint')}
         checked={requestsOn}
@@ -72,8 +72,8 @@ export function FeaturesCard() {
       />
       {requestsOn && (
         <div className={beneath}>
-          {!settings.public_url && <p className="text-sm text-warn">{t('uploadRequest.settings.noAddress')}</p>}
-          <p className="text-sm text-ink-2" data-testid="request-overview">
+          {!settings.public_url && <Notice tone="warn">{t('uploadRequest.settings.noAddress')}</Notice>}
+          <p className="m-0 text-sm" data-testid="request-overview">
             {requests && requests.open_requests > 0
               ? t('uploadRequest.settings.overview', {
                   requests: t('uploadRequest.settings.requestCount', { count: requests.open_requests }),
@@ -83,8 +83,7 @@ export function FeaturesCard() {
           </p>
         </div>
       )}
-      <Toggle label={t('server.apiKeys.allow')} hint={t('server.apiKeys.allowHint')} checked={settings.api_keys_allowed} onChange={(api_keys_allowed) => void server.save({ api_keys_allowed })} />
-      <Feedback problem={server.problem} values={server.values} />
+      <Outcome problem={server.problem} values={server.values} />
     </Card>
   )
 }

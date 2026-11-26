@@ -44,7 +44,12 @@
       "trustsSecondFactorHint": "Désactivé : qui a un second facteur ici se voit demander le code après s'être connecté par le fournisseur.",
       "scopes": "Portées (scopes)",
       "issuerChangeConfirm_one": "Un autre émetteur est un autre fournisseur. {{count}} compte devra se lier de nouveau ensuite.",
-      "issuerChangeConfirm_other": "Un autre émetteur est un autre fournisseur. {{count}} comptes devront se lier de nouveau ensuite."
+      "issuerChangeConfirm_other": "Un autre émetteur est un autre fournisseur. {{count}} comptes devront se lier de nouveau ensuite.",
+      "order": "Déplacer {{name}} : le faire glisser ou utiliser les flèches",
+      "more": "Plus",
+      "save": "Enregistrer",
+      "cancel": "Annuler",
+      "failed": "Cela n'a pas marché. Réessaie."
     },
     "authentik": {
       "title": "authentik en une étape",

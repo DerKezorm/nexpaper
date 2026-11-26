@@ -10,11 +10,13 @@ import { useTranslation } from 'react-i18next'
 
 import { aiApi, type AiModel, type AiProvider, type AiSettings } from '../../api/client'
 import { AI_PROVIDERS, LOCAL_URL, MESSAGES_URL, providerName } from '../../lib/aiProviders'
-import { Button, Card, Feedback, Input, Select, Toggle, useAction } from './ui'
+import { Button, Card, CheckboxRow, Field, Notice, Segment, SelectField } from '../../vendor/nexui'
+import { useAction } from './actions'
+import { Outcome } from './Outcome'
 
 /** The most the operator's own wishes may be, as the server keeps them. */
 const WISHES_MAX = 2000
-const AREA = 'mt-1 block min-h-28 w-full rounded-[9px] border border-edge bg-sheet px-3 py-2 text-sm text-ink outline-none placeholder:text-muted/70 focus:border-accent'
+const AREA = 'block min-h-28 w-full rounded-[9px] border border-solid border-[var(--nexui-edge)] bg-[var(--nexui-field)] px-3 py-2 text-sm text-[var(--nexui-text)] outline-none focus:border-[var(--nexui-accent)]'
 
 export function AiCard() {
   const { t, i18n } = useTranslation()
@@ -31,6 +33,7 @@ export function AiCard() {
   const [limitInvalid, setLimitInvalid] = useState(false)
   const [wishes, setWishes] = useState<string | null>(null)
   const wishesHint = useId()
+  const wishesField = useId()
 
   const take = (found: AiSettings) => {
     setStored(found)
@@ -105,51 +108,49 @@ export function AiCard() {
   }
 
   return (
-    <Card id="ai" icon={Sparkles} title={t('server.ai.title')} text={t('server.ai.text')}>
-      <div className="grid gap-2 sm:grid-cols-2">
-        {AI_PROVIDERS.map((provider) => {
-          const on = chosen === provider
-          return (
-            <button
-              key={provider}
-              type="button"
-              onClick={() => provider !== chosen && choose(provider)}
-              aria-pressed={on}
-              className={`rounded-xl border px-4 py-3 text-left text-sm transition ${on ? 'border-accent bg-accent-soft/50' : 'border-line hover:bg-sheet-2'}`}
-            >
-              <span className="font-semibold">{providerName(provider, t)}</span>
-              <span className="mt-0.5 block text-xs text-muted">{t(`server.ai.${provider}Note`)}</span>
-            </button>
-          )
-        })}
-      </div>
+    <Card id="ai-provider" icon={Sparkles} title={t('server.ai.title')} subtitle={t('server.ai.text')}>
+      {/* The providers to choose from, each with what it means; nothing is saved before "Save and try". */}
+      <Segment<AiProvider>
+        label={t('server.ai.title')}
+        hideLabel
+        value={chosen}
+        onChange={(provider) => choose(provider)}
+        options={AI_PROVIDERS.map((provider) => ({ value: provider, label: providerName(provider, t), testId: `ai-${provider}` }))}
+        hints={[t(`server.ai.${chosen}Note`)]}
+        testId="ai-providers"
+      />
       {chosen !== 'none' && (
         <form
-          className="mt-4 grid gap-3 sm:grid-cols-2"
+          className="grid gap-3 sm:grid-cols-2"
           onSubmit={(event) => {
             event.preventDefault()
             saveAndTry()
           }}
         >
-          {chosen !== 'messages' && <Input label={t('server.ai.address')} value={url} onChange={setUrl} placeholder={chosen === 'local' ? LOCAL_URL : 'https://api.example.com/v1'} />}
+          {chosen !== 'messages' && <Field label={t('server.ai.address')} value={url} onChange={(event) => setUrl(event.target.value)} placeholder={chosen === 'local' ? LOCAL_URL : 'https://api.example.com/v1'} />}
           {/* A local model takes a key too, where its service asks for one (LiteLLM in the own network). */}
-          <Input
+          <Field
             label={chosen === 'local' ? t('server.ai.keyOptional') : t('server.ai.key')}
             type="password"
             autoComplete="new-password"
             value={key}
-            onChange={setKey}
+            onChange={(event) => setKey(event.target.value)}
             placeholder={keyKept ? t('server.ai.keyKept') : ''}
-            hint={chosen === 'local' ? t('server.ai.keyLocalHint') : undefined}
+            hints={chosen === 'local' ? [t('server.ai.keyLocalHint')] : undefined}
           />
           {models ? (
-            <Select label={t('server.ai.pick')} value={model} onChange={setModel} options={[...(models.some((entry) => entry.id === model) ? [] : [{ value: model, label: model || '…' }]), ...models.map((entry) => ({ value: entry.id, label: entry.name || entry.id }))]} />
+            <SelectField
+              label={t('server.ai.pick')}
+              value={model}
+              onChange={(event) => setModel(event.target.value)}
+              options={[...(models.some((entry) => entry.id === model) ? [] : [{ value: model, label: model || '…' }]), ...models.map((entry) => ({ value: entry.id, label: entry.name || entry.id }))]}
+            />
           ) : (
-            <Input label={t('server.ai.model')} value={model} onChange={setModel} placeholder={chosen === 'local' ? 'llama3.1:8b' : ''} />
+            <Field label={t('server.ai.model')} value={model} onChange={(event) => setModel(event.target.value)} placeholder={chosen === 'local' ? 'llama3.1:8b' : ''} />
           )}
           <div className="sm:col-span-2">
             {/* Saved at once, apart from the service: it says what may go to any model. */}
-            <Toggle
+            <CheckboxRow
               label={t('sorting.ai.skipPersonal')}
               hint={t('sorting.ai.skipPersonalHint')}
               checked={stored.skip_personal !== false}
@@ -159,59 +160,61 @@ export function AiCard() {
               }}
             />
           </div>
-          <div className="flex flex-wrap items-end gap-3 sm:col-span-2">
-            <Input
-              className="w-full sm:w-72"
+          <div className="flex flex-col gap-1 sm:col-span-2">
+            <Field
               label={t('sorting.ai.dailyLimit')}
-              hint={t('sorting.ai.dailyLimitHint')}
+              hints={[t('sorting.ai.dailyLimitHint')]}
               type="number"
               min={0}
               max={100000}
               value={limit ?? String(stored.daily_limit ?? 200)}
-              onChange={setLimit}
+              onChange={(event) => setLimit(event.target.value)}
+              action={
+                <Button kind="secondary" icon="Check" busy={action.busy} onClick={saveLimit}>
+                  {t('sorting.ai.dailyLimitSave')}
+                </Button>
+              }
             />
-            <div className="pb-6">
-              <Button busy={action.busy} onClick={saveLimit}>
-                {t('sorting.ai.dailyLimitSave')}
-              </Button>
-            </div>
-            <p className="pb-6 text-sm text-ink-2" data-testid="ai-used-today">
+            <p className="m-0 text-sm" data-testid="ai-used-today">
               {t('sorting.ai.usedToday', { count: stored.used_today ?? 0 })}
             </p>
           </div>
-          <div className="text-sm sm:col-span-2">
-            <label className="block">
-              <span className="font-semibold">{t('sorting.ai.instructions')}</span>
-              <textarea
-                value={wishes ?? stored.instructions ?? ''}
-                onChange={(event) => setWishes(event.target.value)}
-                rows={4}
-                maxLength={WISHES_MAX}
-                placeholder={t('sorting.ai.instructionsPlaceholder')}
-                aria-describedby={wishesHint}
-                className={AREA}
-              />
+          <div className="flex flex-col gap-1 text-sm sm:col-span-2">
+            <label htmlFor={wishesField} className="font-medium">
+              {t('sorting.ai.instructions')}
             </label>
-            <span id={wishesHint} className="mt-1 block text-xs text-muted">
+            <textarea
+              id={wishesField}
+              value={wishes ?? stored.instructions ?? ''}
+              onChange={(event) => setWishes(event.target.value)}
+              rows={4}
+              maxLength={WISHES_MAX}
+              placeholder={t('sorting.ai.instructionsPlaceholder')}
+              aria-describedby={wishesHint}
+              className={AREA}
+            />
+            <span id={wishesHint} className="text-xs text-[var(--nexui-text-muted)]">
               {t('sorting.ai.instructionsHint', { max: WISHES_MAX })}
             </span>
-            <div className="mt-2">
-              <Button busy={action.busy} disabled={wishes === null} onClick={saveWishes}>
+            <div className="mt-1">
+              <Button kind="secondary" icon="Check" busy={action.busy} disabled={wishes === null} onClick={saveWishes}>
                 {t('sorting.ai.instructionsSave')}
               </Button>
             </div>
           </div>
           {limitInvalid && (
-            <p role="alert" className="rounded-xl border border-bad/40 bg-bad/10 px-3 py-2 text-sm text-bad sm:col-span-2">
-              {t('sorting.ai.dailyLimitInvalid')}
-            </p>
+            <div className="sm:col-span-2">
+              <Notice tone="danger">{t('sorting.ai.dailyLimitInvalid')}</Notice>
+            </div>
           )}
           <div className="flex flex-wrap gap-2 sm:col-span-2">
-            <Button primary type="submit" busy={action.busy} disabled={!address || !model.trim()}>
+            <Button kind="primary" icon="Check" type="submit" busy={action.busy} disabled={!address || !model.trim()}>
               {t('server.ai.saveTry')}
             </Button>
             {/* The models the service offers, with what is typed: the list is the test that address and key are right. */}
             <Button
+              kind="secondary"
+              icon="RefreshCw"
               busy={listing.busy}
               disabled={!address}
               onClick={() =>
@@ -225,9 +228,9 @@ export function AiCard() {
           </div>
         </form>
       )}
-      <Feedback problem={listing.problem} values={listing.values} />
-      {chosen !== 'none' && chosen !== 'local' && <p className="mt-4 rounded-xl bg-sheet-2 px-4 py-3 text-xs leading-relaxed text-ink-2">{t('server.ai.outgoing')}</p>}
-      <Feedback
+      <Outcome problem={listing.problem} values={listing.values} />
+      {chosen !== 'none' && chosen !== 'local' && <p className="m-0 text-xs leading-relaxed text-[var(--nexui-text-muted)]">{t('server.ai.outgoing')}</p>}
+      <Outcome
         problem={action.problem}
         values={action.values}
         done={probed !== null ? t('server.ai.probed', { seconds: new Intl.NumberFormat(i18n.language, { maximumFractionDigits: 1 }).format(probed) }) : action.done}

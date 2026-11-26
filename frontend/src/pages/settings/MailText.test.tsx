@@ -24,9 +24,13 @@ function settings(mail: Partial<IntakeSettings['mail']> = {}): IntakeSettings {
   }
 }
 
-function toggle(label: string): HTMLButtonElement {
-  const found = document.querySelector<HTMLButtonElement>(`[role="switch"][aria-label="${label}"]`)
+/** The kit's box to tick (`CheckboxRow`), found by its label: never a sliding switch (plan "Einstellungen", E11). */
+function toggle(label: string): HTMLInputElement {
+  const named = [...document.querySelectorAll<HTMLLabelElement>('label')].find((item) => item.textContent === label)
+  const found = named ? (document.getElementById(named.htmlFor) as HTMLInputElement | null) : null
   expect(found, label).toBeTruthy()
+  expect(found!.type).toBe('checkbox')
+  expect(found!.getAttribute('role')).toBeNull()
   return found!
 }
 
@@ -46,14 +50,14 @@ describe('Mails without an attachment as a document', () => {
     server.answers['PUT /api/v1/settings/intake'] = settings({ text: true })
     await page.show(<IntakeCards />)
     const toggled = toggle('Mails ohne Anhang als Dokument nehmen')
-    expect(toggled.getAttribute('aria-checked')).toBe('false')
+    expect(toggled.checked).toBe(false)
     expect(page.text).toContain(
       'Eine Mail ganz ohne Anhang wird zu einem PDF mit ihrem Text, etwa eine weitergeleitete Bestellbestätigung. Nur wenn sie von einer bestätigten Adresse einer Person kommt und der Mailserver die Echtheit bestätigt hat (dmarc=pass), dann in deren Eingang. Nie für unbekannte Absender, nie allein über die Adresse mit +name, höchstens 50 am Tag je Person.',
     )
     expect(document.querySelector('[data-testid="mail-text-judge"]')).toBeNull()
     await page.click(toggled)
     expect(server.calls.filter((c) => c.method === 'PUT').map((c) => c.body)).toEqual([{ mail_text: true }])
-    expect(toggle('Mails ohne Anhang als Dokument nehmen').getAttribute('aria-checked')).toBe('true')
+    expect(toggle('Mails ohne Anhang als Dokument nehmen').checked).toBe(true)
   })
 
   it('names the server whose verdict counts, and says when there is none', async () => {

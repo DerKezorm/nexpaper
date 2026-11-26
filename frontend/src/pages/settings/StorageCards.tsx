@@ -1,14 +1,17 @@
 /**
- * Settings, General: the card "Grenzen" (limits), laid out as nexnotes' card of the same name: the size of one file
- * first, in its own row with its own button; nexpaper's further limits on what comes in below it, two to a row, with one
- * button for all of them. Settings, Storage: the card that shows how the files lie on the disk. The operator's numbers
- * count from the next file on.
+ * Server › General: the card "Grenzen" (limits), laid out as nexnotes' card of the same name: the size of one file
+ * first, its own field with its own button (`Field action`); nexpaper's further limits on what comes in below it, two to
+ * a row, with one button for all of them; the line that the storage of each account is set under "Konten". Server ›
+ * Storage and backups: the card that shows how the files lie on the disk. The operator's numbers count from the next
+ * file on.
  */
 import { FolderTree, Gauge } from 'lucide-react'
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import { Button, Card, Feedback, Input } from './ui'
+import { Button, Card, Field, Notice } from '../../vendor/nexui'
+import { Outcome } from './Outcome'
+import type { StorageInfo } from './FilesCards'
 import { useServerSettings, type ServerSettings } from './ServerCards'
 
 type Field = keyof Pick<ServerSettings, 'upload_max_mb' | 'upload_max_pages' | 'upload_max_megapixels' | 'upload_open_count' | 'upload_open_mb' | 'process_timeout_seconds' | 'process_memory_mb' | 'cache_max_mb'>
@@ -59,39 +62,40 @@ export function LimitsCard() {
       return left
     })
   }
-  const field = (limit: Limit, className = '') => (
-    <Input
+  const field = (limit: Limit, action?: ReactNode) => (
+    <Field
       key={limit.key}
       label={t(`storage.limits.${limit.label}`)}
-      hint={t(`storage.limits.${limit.hint}`)}
+      hints={[t(`storage.limits.${limit.hint}`)]}
       type="number"
       min={limit.min}
       max={limit.max}
       value={shown(limit.key)}
-      onChange={(value) => setTyped({ ...typed, [limit.key]: value })}
-      className={className}
+      onChange={(event) => setTyped({ ...typed, [limit.key]: event.target.value })}
+      action={action}
     />
   )
   return (
-    <Card id="limits" icon={Gauge} title={t('storage.limits.title')} text={t('storage.limits.text')}>
+    <Card id="limits" icon={Gauge} title={t('storage.limits.title')} subtitle={t('storage.limits.text')}>
       {/* The page checks the ranges itself and says so in words; the browser's own bubbles would say it twice. */}
       <form
         noValidate
-        className="flex flex-wrap items-end gap-2"
         data-testid="limit-file"
         onSubmit={(event) => {
           event.preventDefault()
           void save([FILE])
         }}
       >
-        {field(FILE, 'min-w-60 flex-1 sm:max-w-md')}
-        <Button type="submit" busy={server.busy}>
-          {t('storage.limits.save')}
-        </Button>
+        {field(
+          FILE,
+          <Button kind="secondary" icon="Check" type="submit" busy={server.busy}>
+            {t('storage.limits.save')}
+          </Button>,
+        )}
       </form>
       <form
         noValidate
-        className="space-y-3"
+        className="flex flex-col gap-3"
         data-testid="limit-more"
         onSubmit={(event) => {
           event.preventDefault()
@@ -99,31 +103,48 @@ export function LimitsCard() {
         }}
       >
         <div className="grid gap-4 sm:grid-cols-2">{MORE.map((limit) => field(limit))}</div>
-        <Button type="submit" busy={server.busy}>
-          {t('storage.limits.save')}
-        </Button>
+        <div>
+          <Button kind="secondary" icon="Check" type="submit" busy={server.busy}>
+            {t('storage.limits.save')}
+          </Button>
+        </div>
       </form>
-      {invalid && (
-        <p role="alert" className="rounded-xl border border-bad/40 bg-bad/10 px-3 py-2 text-sm text-bad">
-          {t('storage.limits.invalid')}
-        </p>
-      )}
-      <Feedback problem={server.problem} done={server.done} values={server.values} />
+      {invalid && <Notice tone="danger">{t('storage.limits.invalid')}</Notice>}
+      <p className="m-0 text-xs text-[var(--nexui-text-muted)]" data-testid="limits-accounts">
+        {t('storage.limits.perAccount')}
+      </p>
+      <Outcome problem={server.problem} done={server.done} values={server.values} />
     </Card>
   )
 }
 
-/** How the files lie on the disk (read only: the scheme is fixed). */
-export function DiskCard() {
+/** How the files lie on the disk (read only: the scheme is fixed), and where the database lies: a network share is the
+ * one place SQLite must not be, while the documents may lie on one (the module's card "Speicher" says only that a place
+ * is on a share). `info` comes from the old route `/api/v1/storage`, which the check of the files reads too. */
+export function DiskCard({ info }: { info?: StorageInfo | null }) {
   const { t } = useTranslation()
+  const where = info?.database.where
   return (
-    <Card id="disk" icon={FolderTree} title={t('storage.disk.title')} text={t('storage.disk.text')}>
-      <pre className="overflow-x-auto rounded-xl bg-sheet-2 p-3 font-mono text-xs leading-relaxed text-ink-2">
+    <Card id="disk" icon={FolderTree} title={t('storage.disk.title')} subtitle={t('storage.disk.text')}>
+      <pre className="m-0 overflow-x-auto rounded-[9px] bg-[var(--nexui-field)] p-3 font-mono text-xs leading-relaxed">
         {`/data/dokumente/Haushalt/2026/Stadtwerke Lindenau/2026-10-01 Rechnung.jpg
 /data/dokumente/Haushalt/2026/Stadtwerke Lindenau/2026-10-01 Rechnung (searchable).pdf`}
       </pre>
-      <p className="text-xs text-muted">{t('storage.disk.note')}</p>
-      <p className="text-xs text-muted">{t('storage.disk.english')}</p>
+      <p className="m-0 text-xs text-[var(--nexui-text-muted)]">{t('storage.disk.note')}</p>
+      <p className="m-0 text-xs text-[var(--nexui-text-muted)]">{t('storage.disk.english')}</p>
+      {where &&
+        (where.kind === 'local' ? (
+          <p className="m-0 text-xs text-[var(--nexui-text-muted)]" data-testid="database-local">
+            {t('space.local.title')} {t('space.local.text')}
+          </p>
+        ) : (
+          <div data-testid={`database-${where.kind}`}>
+            <Notice tone={where.network ? 'danger' : 'warn'} title={t(`space.${where.kind}.title`, { type: where.fstype })}>
+              {t(`space.${where.kind}.text`)}
+            </Notice>
+          </div>
+        ))}
+      {info?.documents.where.network && <p className="m-0 text-xs text-[var(--nexui-text-muted)]">{t('space.documentsOnShare')}</p>}
     </Card>
   )
 }

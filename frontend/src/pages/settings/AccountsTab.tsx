@@ -1,16 +1,18 @@
 /**
- * Server › "Accounts", the operator's list as the shared account module lays it out (konten 0.3.9, `ACCOUNT_LIST`), the
- * same as in nextime and nextasks: one row per account with its picture, name, badges and "username · email", and
+ * Server › "Accounts", the operator's list as the shared account module lays it out (konten 1.1.0, `ACCOUNT_LIST`,
+ * `capsOf`), the same in every nex app: one row per account with its picture, name, badges and "username · email", and
  * "Manage" on the right, which opens a dialog with every fact and every act in words (`MANAGE_DIALOG`: change, rights,
  * access, end). No table, no menu of three dots.
  *
  * Everything the table of 1.12.0 could do is in the dialog: the role, a link for a new password, resetting the second
  * factor, signing out everywhere, taking a provider's link, blocking and unblocking, deleting; new are renaming and
- * taking an address away. nexpaper's own parts stand at the module's fixed places: "AI allowed" as a box under
- * "Rights", the documents of the own vault as a fact, and "Delete account" opens nexpaper's own dialog of handing the
- * documents over (to a person, into a shared vault, or deleting them along; refused while the account manages a shared
- * vault alone; the account's name typed once more). The open invitations are the module's card under the list (expired
- * ones stay until withdrawn); under them stays nexpaper's card of every API key (`AllApiKeysCard`).
+ * taking an address away. Since konten 1.1.0 the module brings several operators, the storage limit of an account
+ * (with what its documents take), "KI erlaubt" under "Rights" and bringing a deleted account back within 30 days. nexpaper's
+ * own parts stand at the module's fixed places: the documents of the own vault as a fact, and "Delete account" opens
+ * nexpaper's own dialog of handing the documents over (to a person, into a shared vault, or deleting them along; the
+ * hand-over happens when the 30 days are over; refused while the account manages a shared vault alone; the account's
+ * name typed once more). The open invitations are the module's card under the list (expired ones stay until
+ * withdrawn), then "Was du siehst" with nexpaper's sentence; "API-Schlüssel aller Konten" follows (`KeysCards.tsx`).
  */
 import { Mail, Users } from 'lucide-react'
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
@@ -31,8 +33,9 @@ import {
 } from '../../api/client'
 import { AccountButton } from '../../components/AccountButton'
 import { confirmOf } from '../../lib/accountButton'
-import { copyText } from '../../lib/copy'
+import { formatBytes } from '../../lib/bytes'
 import { useAuth } from '../../state/auth'
+import { WhatYouSeeCard } from '../../vendor/nexkonten/AccountCards'
 import {
   ACCOUNT_LIST,
   accountActions,
@@ -43,6 +46,7 @@ import {
   accountName,
   accountPicture,
   confirmLine,
+  DELETE_DAYS,
   DISPLAY_NAME_MAX,
   FACTOR_RESET_DEFAULTS,
   factorResetParts,
@@ -58,15 +62,20 @@ import {
   RESET_DAYS_DEFAULT,
   RESET_LINK_DIALOG,
   removeLines,
+  STORAGE_LIMIT_DIALOG,
+  STORAGE_LIMIT_UNIT,
+  storageFact,
+  FIELDS,
   USERNAME_MAX,
   type AccountAction,
   type BadgeShown,
   type ListedAccount,
   type ListedInvite,
 } from '../../vendor/nexkonten/konten'
-import { Avatar, Badge, Button, ButtonGroup, Card, CheckboxRow, ConfirmDialog, Dialog, Facts, Field, Notice, Row, Rows, SelectField, type IconName } from '../../vendor/nexui'
-import { APP_CAPS, appOwnActions, appOwnFacts, listedOf } from './accountList'
-import { Feedback, useAction } from './ui'
+import { Avatar, Badge, Button, ButtonGroup, Card, CheckboxRow, ConfirmDialog, CopyRow, Dialog, Facts, Field, Notice, Row, Rows, SelectField, type IconName } from '../../vendor/nexui'
+import { APP_CAPS, appOwnFacts, listedOf } from './accountList'
+import { useAction } from './actions'
+import { Outcome } from './Outcome'
 
 /** A day as nexpaper writes it in the list ("25.11.2026"). */
 function day(value: string, lang: string): string {
@@ -123,7 +132,7 @@ export function AccountsTab() {
   const open = managing === null ? null : (ordered.find((row) => row.id === managing) ?? null)
 
   return (
-    <div className="space-y-6">
+    <>
       <Card id="accounts" icon={Users} title={t(ACCOUNT_LIST.title)} subtitle={t(ACCOUNT_LIST.subtitle, { count: accountCount(listed) })} testId="account-list">
         <div>
           <AccountButton name="account.invite" testId="invite-open" onClick={() => setInviting(true)} />
@@ -145,7 +154,7 @@ export function AccountsTab() {
             />
           ))}
         </Rows>
-        <Feedback problem={action.problem} done={action.done} />
+        <Outcome problem={action.problem} done={action.done} />
       </Card>
 
       {invites.length > 0 && (
@@ -168,6 +177,8 @@ export function AccountsTab() {
           </Rows>
         </Card>
       )}
+
+      <WhatYouSeeCard t={t} text={t('server.whatYouSee')} />
 
       {open && (
         <ManageDialog
@@ -203,7 +214,7 @@ export function AccountsTab() {
           }
         />
       )}
-    </div>
+    </>
   )
 }
 
@@ -242,9 +253,9 @@ function ManageDialog({ row, ownId, links, operatorHasPassword, mailServer, onCl
   const [naming, setNaming] = useState<'name' | 'display_name' | null>(null)
   const [resetting, setResetting] = useState(false)
   const [removing, setRemoving] = useState(false)
-  const [ai, setAi] = useState(row.ai_allowed !== false)
+  const [limiting, setLimiting] = useState(false)
 
-  const facts = accountFacts(listed, appOwnFacts(row, lang)).map((fact) => ({
+  const facts = accountFacts(listed, [...appOwnFacts(row, lang), storageFact(listed, (size) => formatBytes(size, lang, 1000))]).map((fact) => ({
     label: t(fact.label),
     value: (
       <>
@@ -255,13 +266,14 @@ function ManageDialog({ row, ownId, links, operatorHasPassword, mailServer, onCl
     note: fact.note ? t(fact.note) : undefined,
     testId: `fact-${fact.fact}`,
   }))
-  const groups = manageGroups(accountActions(listed, APP_CAPS, appOwnActions({ ai_allowed: ai })))
+  const groups = manageGroups(accountActions(listed, APP_CAPS))
 
   const start = (act: Extract<AccountAction, { type: 'button' }>) => {
     const base = act.name.split(':')[0]
     if (base === 'account.changeUsername') return setNaming('name')
     if (base === 'account.changeDisplayName') return setNaming('display_name')
     if (base === 'account.resetLink') return setResetting(true)
+    if (base === 'account.storageLimit') return setLimiting(true)
     // nexpaper's own question at the module's place: where the documents of the own vault go (SCHNITTSTELLE 0.3.9).
     if (base === 'account.remove') return setRemoving(true)
     if (base === 'account.factorReset') {
@@ -273,10 +285,10 @@ function ManageDialog({ row, ownId, links, operatorHasPassword, mailServer, onCl
     setPending({ action: act })
   }
 
+  /** "KI erlaubt", the module's right (konten 1.1.0), saved at once without a password as before. */
   const tick = (checked: boolean) =>
     void action.run(async () => {
-      const saved = await accountsApi.permissions(row.id, checked)
-      setAi(saved.ai_allowed)
+      await accountsApi.permissions(row.id, checked)
       onChanged()
     })
 
@@ -301,7 +313,7 @@ function ManageDialog({ row, ownId, links, operatorHasPassword, mailServer, onCl
               )}
             </ButtonGroup>
           ))}
-          <Feedback problem={action.problem} done={action.done} values={action.values} />
+          <Outcome problem={action.problem} done={action.done} values={action.values} />
         </div>
       </Dialog>
       {pending && (
@@ -320,6 +332,7 @@ function ManageDialog({ row, ownId, links, operatorHasPassword, mailServer, onCl
       {naming && <NameDialog row={row} field={naming} operatorHasPassword={operatorHasPassword} onClose={() => setNaming(null)} onSaved={onChanged} />}
       {resetting && <ResetLinkDialog row={row} name={name} mailServer={mailServer} operatorHasPassword={operatorHasPassword} onClose={() => setResetting(false)} />}
       {removing && <DeleteAccount row={row} name={name} operatorHasPassword={operatorHasPassword} onCancel={() => setRemoving(false)} onDeleted={onGone} />}
+      {limiting && <LimitDialog row={row} name={name} operatorHasPassword={operatorHasPassword} onClose={() => setLimiting(false)} onSaved={onChanged} />}
     </>
   )
 }
@@ -397,15 +410,16 @@ function ConfirmAct({ row, name, pending, operatorHasPassword, onCancel, onDone 
           if (base === 'account.unlinkProvider' && act.provider) await oidcApi.unlinkAccount(row.id, Number(act.provider.id), password)
           if (base === 'account.block') await accountsApi.block(row.id, password)
           if (base === 'account.unblock') await accountsApi.unblock(row.id, password)
+          if (base === 'account.restore') await accountsApi.restore(row.id, password)
           onDone()
         })
       }
     >
       {lines}
       {asksPassword && operatorHasPassword && (
-        <Field label={t('account.currentPassword')} type="password" autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} />
+        <Field label={t(FIELDS.password.label)} type="password" autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} />
       )}
-      <Feedback problem={action.problem} values={action.values} />
+      <Outcome problem={action.problem} values={action.values} />
     </ConfirmDialog>
   )
 }
@@ -546,13 +560,13 @@ function DeleteAccount({ row, name, operatorHasPassword, onCancel, onDeleted }: 
         )}
         {removeLines(APP_CAPS).map((line) => (
           <p key={line} className="m-0 text-sm">
-            {t(line)}
+            {t(line, { count: DELETE_DAYS })}
           </p>
         ))}
         <Field label={t('server.remove.typeName', { name: row.name })} value={typed} onChange={(event) => setTyped(event.target.value)} autoComplete="off" />
         <p className="m-0 text-sm text-[var(--nexui-text-muted)]">{t(confirmLine(operatorHasPassword))}</p>
-        {operatorHasPassword && <Field label={t('account.currentPassword')} type="password" autoComplete="current-password" value={secret} onChange={(event) => setSecret(event.target.value)} />}
-        <Feedback problem={action.problem} values={action.values} />
+        {operatorHasPassword && <Field label={t(FIELDS.password.label)} type="password" autoComplete="current-password" value={secret} onChange={(event) => setSecret(event.target.value)} />}
+        <Outcome problem={action.problem} values={action.values} />
         <div className="flex flex-wrap justify-end gap-2">
           <AccountButton name="cancel" onClick={onCancel}>
             {t('common.cancel')}
@@ -600,8 +614,8 @@ function NameDialog({ row, field, operatorHasPassword, onClose, onSaved }: {
           hints={[field === 'name' ? t('account.usernameRules') : t('account.displayNameHint')]}
         />
         <p className="m-0 text-sm text-[var(--nexui-text-muted)]">{t(confirmLine(operatorHasPassword))}</p>
-        {operatorHasPassword && <Field label={t('account.currentPassword')} type="password" autoComplete="current-password" value={own} onChange={(event) => setOwn(event.target.value)} />}
-        <Feedback problem={action.problem} values={action.values} />
+        {operatorHasPassword && <Field label={t(FIELDS.password.label)} type="password" autoComplete="current-password" value={own} onChange={(event) => setOwn(event.target.value)} />}
+        <Outcome problem={action.problem} values={action.values} />
         <div className="flex flex-wrap justify-end gap-2">
           <AccountButton name="cancel" onClick={onClose}>
             {t('common.cancel')}
@@ -613,18 +627,70 @@ function NameDialog({ row, field, operatorHasPassword, onClose, onSaved }: {
   )
 }
 
-/** A link to hand on: the field to read it in and the button that copies it. */
-function CopyField({ value, label, hint }: { value: string; label: string; hint?: string }) {
-  const { t } = useTranslation()
-  const [copied, setCopied] = useState(false)
+/** The storage limit of the account (konten 1.1.0, `STORAGE_LIMIT_DIALOG`; an upload past it is refused with a sentence,
+ * nexpaper's line), with the operator's own password. */
+function LimitDialog({ row, name, operatorHasPassword, onClose, onSaved }: {
+  row: AccountRow
+  name: string
+  operatorHasPassword: boolean
+  onClose: () => void
+  onSaved: () => void
+}) {
+  const { t, i18n } = useTranslation()
+  const [value, setValue] = useState(row.storage_limit ? String(Math.round((row.storage_limit / STORAGE_LIMIT_UNIT) * 10) / 10) : '')
+  const [own, setOwn] = useState('')
+  const action = useAction()
+  const save = (limit: number | null) =>
+    void action.run(async () => {
+      await accountsApi.limit(row.id, limit, own)
+      onSaved()
+      onClose()
+    })
   return (
-    <div className="flex items-end gap-2">
-      <div className="min-w-0 flex-1">
-        <Field label={label} value={value} readOnly mono hints={hint ? [hint] : undefined} onFocus={(event) => event.target.select()} />
-      </div>
-      <AccountButton name="copy" onClick={() => void copyText(value).then(setCopied)}>
-        {copied ? t('common.copied') : t('common.copy')}
-      </AccountButton>
+    <Dialog title={t(STORAGE_LIMIT_DIALOG.title, { name })} onClose={onClose} closeLabel={t('common.close')} testId="limit-dialog">
+      <form
+        className="flex flex-col gap-3"
+        onSubmit={(event) => {
+          event.preventDefault()
+          const gigabytes = Number(value.replace(',', '.'))
+          if (!gigabytes || gigabytes <= 0) return
+          save(Math.round(gigabytes * STORAGE_LIMIT_UNIT))
+        }}
+      >
+        <p className="m-0 text-sm">{t('server.limitText')}</p>
+        <Field
+          label={t(STORAGE_LIMIT_DIALOG.field)}
+          type="number"
+          min={0}
+          value={value}
+          onChange={(event) => setValue(event.target.value)}
+          hints={[t(STORAGE_LIMIT_DIALOG.used, { used: formatBytes(row.storage_used ?? 0, i18n.language, 1000) })]}
+        />
+        <p className="m-0 text-sm text-[var(--nexui-text-muted)]">{t(confirmLine(operatorHasPassword))}</p>
+        {operatorHasPassword && <Field label={t(FIELDS.password.label)} type="password" autoComplete="current-password" value={own} onChange={(event) => setOwn(event.target.value)} />}
+        <Outcome problem={action.problem} values={action.values} />
+        <div className="flex flex-wrap justify-end gap-2">
+          {row.storage_limit != null && (
+            <AccountButton name="account.storageLimitRemove" disabled={action.busy || (operatorHasPassword && !own)} onClick={() => save(null)}>
+              {t(STORAGE_LIMIT_DIALOG.remove)}
+            </AccountButton>
+          )}
+          <AccountButton name="account.save" type="submit" disabled={action.busy || !value || (operatorHasPassword && !own)}>
+            {t(STORAGE_LIMIT_DIALOG.save)}
+          </AccountButton>
+        </div>
+      </form>
+    </Dialog>
+  )
+}
+
+/** A link to hand on: its name, the kit's row that copies it, and a line under it. */
+function CopyField({ value, label, hint }: { value: string; label: string; hint?: string }) {
+  return (
+    <div className="flex flex-col gap-1">
+      <span className="text-sm font-medium">{label}</span>
+      <CopyRow value={value} label={label} />
+      {hint && <span className="text-xs text-[var(--nexui-text-muted)]">{hint}</span>}
     </div>
   )
 }
@@ -686,8 +752,8 @@ function ResetLinkDialog({ row, name, mailServer, operatorHasPassword, onClose }
             options={RESET_DAYS.map((value) => ({ value: String(value), label: t('account.days', { count: value }) }))}
           />
           <p className="m-0 text-sm text-[var(--nexui-text-muted)]">{t(confirmLine(operatorHasPassword))}</p>
-          {operatorHasPassword && <Field label={t('account.currentPassword')} type="password" autoComplete="current-password" value={own} onChange={(event) => setOwn(event.target.value)} />}
-          <Feedback problem={action.problem} values={action.values} />
+          {operatorHasPassword && <Field label={t(FIELDS.password.label)} type="password" autoComplete="current-password" value={own} onChange={(event) => setOwn(event.target.value)} />}
+          <Outcome problem={action.problem} values={action.values} />
           <div className="flex flex-wrap justify-end gap-2">
             <AccountButton name="cancel" onClick={onClose}>
               {t('common.cancel')}
@@ -752,7 +818,7 @@ function InviteDialog({ onClose, onMade }: { onClose: () => void; onMade: () => 
             />
           )}
           {fields.includes('sendMail') && <CheckboxRow label={t(INVITE_DIALOG.sendMail)} checked={send} onChange={setSend} />}
-          <Feedback problem={action.problem} values={action.values} />
+          <Outcome problem={action.problem} values={action.values} />
           <div className="flex flex-wrap justify-end gap-2">
             <AccountButton name="cancel" onClick={onClose}>
               {t('common.cancel')}

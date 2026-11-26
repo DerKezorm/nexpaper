@@ -1,7 +1,7 @@
 /**
  * Sign-in through providers, against a stand-in of the server: the
- * sign-in and invitation pages with a button per provider, the three cards under Settings, Sign-in (the form in a fixed
- * order, the questions before an issuer or an address changes, the steps of the authentik button with their
+ * sign-in and invitation pages with a button per provider, the cards under Server › Sign-in from the shared modules
+ * (konten's `SignInPage` with oidc's `SignInProviders`: the form in a fixed order, the questions before an issuer or an address changes, the steps of the authentik button with their
  * names and reasons), the row per provider on the account page, and the marks in the account list.
  */
 import { Route, Routes } from 'react-router-dom'
@@ -12,8 +12,7 @@ import { Page, Server, plain } from '../test/harness'
 import { SettingsRoutes } from '../test/settings'
 import { InvitePage, LoginPage } from './AuthPages'
 import { AccountsTab } from './settings/AccountsTab'
-import { useServerSettings } from './settings/ServerCards'
-import { SignInPart } from './settings/SignInCards'
+import { SignInArea } from './settings/SignInArea'
 
 const me: Me = {
   id: 1, name: 'jule', display_name: 'Jule', role: 'operator', sign_in: 'password', email: 'jule@example.com', language: 'de',
@@ -49,6 +48,8 @@ beforeEach(async () => {
   server.answers = {
     'GET /api/v1/auth/methods': { password: true, providers: [{ slug: 'authentik', label: 'authentik' }, { slug: 'entra', label: 'Microsoft' }], passkeys: false },
     'GET /api/v1/settings': { public_url: 'https://paper.example.com', password_login: true, two_factor_required: true },
+    'GET /api/v1/server/sign-in': signIn(),
+    'GET /api/v1/server/readiness': { state: 'ok', open: 0, points: [] },
     'GET /api/v1/oidc/admin/providers': [AUTHENTIK, ENTRA],
     'GET /api/v1/oidc/authentik/address': ADDRESS,
   }
@@ -73,9 +74,18 @@ async function target(button: HTMLButtonElement): Promise<string> {
   return String(assign.mock.calls[0]?.[0])
 }
 
+/** Server › Sign-in as the app shows it: konten's page with oidc's provider cards (`SignInArea`). */
 function Cards() {
-  const settings = useServerSettings()
-  return settings.settings ? <SignInPart server={settings} /> : null
+  return <SignInArea />
+}
+
+/** What `GET /api/v1/server/sign-in` answers (konten 1.1.0 `signin.view` with the public address). */
+function signIn(change: Record<string, unknown> = {}) {
+  return {
+    password_login: true, factor_required: true, passkeys_allowed: true, password_may_go_off: true, factor_may_go_on: true,
+    second_factor_off: false, public_url: 'https://paper.example.com', public_url_effective: 'https://paper.example.com', operator_has_password: true,
+    ...change,
+  }
 }
 
 describe('the sign-in page', () => {
@@ -125,10 +135,15 @@ describe('Settings, Sign-in', () => {
     auth.status = 'signedIn'
   })
 
-  it('has the three cards one below the other, and the list with its marks', async () => {
+  it('has the cards of the modules one below the other, and the list with its marks', async () => {
     await page.show(<Cards />)
+    // The plan's order: "Bereit fürs Internet?", "Anmeldung", "Anmeldeanbieter", "authentik in einem Schritt"; each
+    // title once (the page's own heading is the frame's, not a second "Anmeldung" here).
+    const cards = [...document.querySelectorAll('[data-card]')].map((card) => card.getAttribute('data-card'))
+    expect(cards).toEqual(['sign-in-ready', 'sign-in', 'sign-in-providers', 'sign-in-authentik'])
     const titles = [...document.querySelectorAll('h2')].map((title) => title.textContent)
-    expect(titles).toEqual(['Anmeldung', 'Anmeldeanbieter', 'authentik in einem Schritt'])
+    expect(titles).toEqual(['Bereit fürs Internet?', 'Anmeldung', 'Anmeldeanbieter', 'authentik in einem Schritt'])
+    expect(server.calls.some((call) => call.url === '/api/v1/server/sign-in')).toBe(true)
     const rows = [...document.querySelectorAll('[data-testid="provider-list"] li')].map((row) => plain(row.textContent))
     for (const part of ['authentik', 'aktiv', 'über authentik eingerichtet']) expect(rows[0]).toContain(part)
     for (const part of ['Microsoft', 'aus']) expect(rows[1]).toContain(part)
@@ -189,6 +204,7 @@ describe('Settings, Sign-in', () => {
   it("proposes the browser's address while nexpaper has none, and the button says so", async () => {
     server.answers['GET /api/v1/oidc/authentik/address'] = { ...ADDRESS, public_url: '', redirect_uri: '' }
     server.answers['GET /api/v1/settings'] = { public_url: '', password_login: true, two_factor_required: true }
+    server.answers['GET /api/v1/server/sign-in'] = signIn({ public_url: '', public_url_effective: '' })
     await page.show(<Cards />)
     expect(document.querySelector('[data-testid="authentik-proposal"]')?.textContent).toBe(window.location.origin)
     expect(page.button('Übernehmen und einrichten')).toBeTruthy()
@@ -214,17 +230,17 @@ describe('Settings, Sign-in', () => {
   })
 
   // A password account that comes in through a provider with "the provider checks the second factor itself" is not sent
-  // away; both hints under "Require a second factor" say so and name that switch.
+  // away; both hints under "Require a second factor" say so and name that switch (the module's words since E36).
   for (const language of ['de', 'en'] as const) {
     for (const own of [true, false]) {
       it(`names the provider switch that exempts a sign-in (${language}, ${own ? 'with' : 'without'} an own second factor)`, async () => {
         await changeLanguage(language, false)
         auth.me = { ...me, two_factor: own }
-        server.answers['GET /api/v1/settings'] = { public_url: 'https://paper.example.com', password_login: true, two_factor_required: false }
+        server.answers['GET /api/v1/server/sign-in'] = signIn({ factor_required: false, factor_may_go_on: own })
         await page.show(<Cards />)
         const card = plain(document.querySelector('#sign-in')?.textContent)
         const name = i18n.t('oidc.admin.trustsSecondFactor')
-        const hint = plain(i18n.t(own ? 'server.twoFactorRequiredHint' : 'server.ownSecondFactorFirst', { trusts: name }))
+        const hint = plain(own ? `${i18n.t('account.factorRequiredSwitchHint')} ${i18n.t('account.factorRequiredExempt', { trusts: name })}` : `${i18n.t('account.ownSecondFactorFirst')} ${i18n.t('account.factorRequiredExemptLocked', { trusts: name })}`)
         expect(card).toContain(hint)
         // The words of the switch itself between the quotes of the sentence, not a gap.
         const [open, close] = language === 'de' ? ['„', '“'] : ['“', '”']
@@ -255,9 +271,13 @@ describe('the account page', () => {
     expect(rows[0]).toContain('Verknüpft')
     expect(rows[0]).toContain('authentik kennt dich als jule@work.example.com.')
     expect(rows[1]).toContain('Nicht verknüpft')
-    await page.click(page.button('Verknüpfen'))
-    await page.type(document.querySelector<HTMLInputElement>('[data-testid="my-providers"] input[type="password"]'), 'geheimwort')
-    await page.click(document.querySelector<HTMLElement>('[data-testid="my-providers"] button[type="submit"]'))
+    // "Verknüpfen: Microsoft" (sm, the module's kind and symbol), then the own password in a window of the kit.
+    const link = page.button('Verknüpfen: Microsoft')!
+    expect([link.dataset.kind, link.dataset.size]).toEqual(['secondary', 'sm'])
+    await page.click(link)
+    expect(page.dialog?.querySelector('h2')?.textContent).toBe('Verknüpfen: Microsoft')
+    await page.type(page.dialog!.querySelector<HTMLInputElement>('input[type="password"]'), 'geheimwort')
+    await page.inDialog('Verknüpfen')
     expect(server.called('POST', '/api/v1/oidc/entra/link')?.body).toEqual({ password: 'geheimwort' })
     expect(assign).toHaveBeenCalledWith('https://login.microsoftonline.com/authorize')
   })
@@ -267,6 +287,7 @@ describe('the account page', () => {
     server.answers['GET /api/v1/oidc/me'] = [{ slug: 'authentik', label: 'authentik', linked: true, address: null }]
     await page.show(<SettingsRoutes />, '/konto?tab=security')
     expect(page.text).toContain('Dieses Konto meldet sich nur über authentik an.')
+    expect(page.button('Lösen: authentik')).toBeUndefined()
     expect(page.button('Lösen')).toBeUndefined()
   })
 
@@ -275,8 +296,11 @@ describe('the account page', () => {
     server.answers['GET /api/v1/devices'] = []
     server.answers['GET /api/v1/api-keys'] = { allowed: true, keys: [] }
     server.answers['GET /api/v1/push'] = { key: '', devices: [] }
+    server.answers['GET /api/v1/connections/keys'] = { app: 'nexpaper', api: true, mcp: null, programs: false, api_path: '/api/v1', mcp_path: null, keys_wait: true, warn_days: 7, kinds: [], keys: [], address: 'https://paper.example.com' }
     await page.show(<SettingsRoutes />, '/konto?tab=devices')
-    expect(document.querySelector('[data-testid="keys-wait"]')?.textContent).toContain('Geräte und API-Token wirken erst, wenn du einen zweiten Faktor einrichtest.')
+    // Beside the devices (their card) and beside the keys (the module's own hint in its card).
+    expect(document.querySelector('[data-card="devices"] [data-testid="keys-wait"]')?.textContent).toContain('Geräte und API-Schlüssel wirken erst, wenn du einen zweiten Faktor einrichtest.')
+    expect(document.querySelector('[data-testid="keys-wait"] a')?.getAttribute('href')).toBe('/settings/security')
   })
 })
 

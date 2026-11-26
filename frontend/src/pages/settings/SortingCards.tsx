@@ -5,26 +5,31 @@
  * Absender ist „Stadtwerke Lindenau“ → Art Rechnung, Tag strom"), with how often it applied, a switch, its place in
  * the order and a way to delete it.
  */
-import { ArrowRight, ChevronDown, ChevronUp, ListTree, Plus, Tags, Trash2, Wand2 } from 'lucide-react'
+import { ArrowRight, Tags, Wand2 } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Link } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 
 import { catalogApi, kindsApi, rulesApi, vaultsApi, type DocumentKind, type Rule, type RuleAction, type RuleCondition, type Vault } from '../../api/client'
 import { SenderPicker } from '../../components/SenderPicker'
-import { useConfirm } from '../../components/useConfirm'
 import { amountText, money, parseAmount } from '../../lib/money'
 import { listOf } from '../../lib/say'
-import { Button, Card, Feedback, useAction } from './ui'
+import { Box, Button, Card, Checkbox, Field, IconButton, Row, Rows, SelectField } from '../../vendor/nexui'
+import { useAction } from './actions'
+import { Outcome } from './Outcome'
+import { useAsk } from './useAsk'
 
 /** The kinds are kept on the order page now (all of them, with their documents); here is the way there. */
 export function KindsCard() {
   const { t } = useTranslation()
+  const navigate = useNavigate()
   return (
-    <Card icon={Tags} title={t('sorting.kinds.title')} text={t('sorting.kinds.text')} id="kinds">
-      <Link to="/ordnung?tab=kinds" className="inline-flex items-center gap-1.5 text-sm font-semibold text-accent">
-        <ListTree size={15} aria-hidden /> {t('sorting.kinds.open')}
-      </Link>
+    <Card icon={Tags} title={t('sorting.kinds.title')} subtitle={t('sorting.kinds.text')} id="kinds">
+      <div>
+        <Button kind="secondary" icon="ArrowRight" onClick={() => navigate('/ordnung?tab=kinds')} testId="kinds-open">
+          {t('sorting.kinds.open')}
+        </Button>
+      </div>
     </Card>
   )
 }
@@ -74,7 +79,7 @@ export function RulesCard({ server = false }: { server?: boolean }) {
   const [names, setNames] = useState<Names>({ kinds: [], vaults: [], senders: [] })
   const [adding, setAdding] = useState(false)
   const action = useAction()
-  const { ask, dialog } = useConfirm()
+  const { ask, dialog } = useAsk()
 
   const load = useCallback(async () => {
     const [own, everywhere] = await Promise.all([rulesApi.list().catch(() => []), server ? rulesApi.serverList().catch(() => []) : Promise.resolve([])])
@@ -100,67 +105,71 @@ export function RulesCard({ server = false }: { server?: boolean }) {
     rule.vault_id === null ? t('sorting.rules.everywhere') : t('sorting.rules.inVault', { vault: names.vaults.find((v) => v.id === rule.vault_id)?.name ?? t('sorting.rules.gone') })
 
   return (
-    <Card icon={Wand2} title={t('sorting.rules.title')} text={t(server ? 'sorting.rules.text' : 'sorting.rules.textVaults')} id="rules">
-      {rules.length === 0 && <p className="text-sm text-muted">{t('sorting.rules.empty')}</p>}
-      <ul className="space-y-2">
-        {rules.map((rule) => {
-          const group = siblings(rule)
-          const at = group.indexOf(rule)
-          const calls = apiOf(rule)
-          return (
-            <li key={rule.id} className="flex items-center gap-3 rounded-xl border border-line bg-sheet-2/50 px-4 py-3 text-sm" data-testid="rule">
-              <span className="min-w-0 flex-1">
-                <span className="font-semibold">{t('sorting.rules.if')}</span> <bdi>{words.when(rule, names)}</bdi> <ArrowRight size={13} className="inline text-muted" aria-hidden /> <bdi>{words.then(rule, names)}</bdi>
-                <span className="block text-xs text-muted">
-                  {t('sorting.rules.hits', { count: rule.hits })}
-                  {(server || managed.length > 1) && ` · ${vaultLabel(rule)}`}
-                </span>
-              </span>
-              {group.length > 1 && (
-                <span className="flex flex-col">
-                  <button type="button" disabled={at === 0} onClick={() => void action.run(async () => { await calls.change(rule.id, { position: at }); await load() })} className="rounded p-0.5 text-muted hover:text-ink disabled:opacity-30" aria-label={t('sorting.rules.up')}>
-                    <ChevronUp size={14} aria-hidden />
-                  </button>
-                  <button type="button" disabled={at === group.length - 1} onClick={() => void action.run(async () => { await calls.change(rule.id, { position: at + 2 }); await load() })} className="rounded p-0.5 text-muted hover:text-ink disabled:opacity-30" aria-label={t('sorting.rules.down')}>
-                    <ChevronDown size={14} aria-hidden />
-                  </button>
-                </span>
-              )}
-              <input
-                type="checkbox"
-                role="switch"
-                checked={rule.on}
-                aria-checked={rule.on}
-                aria-label={t('sorting.rules.switch')}
-                onChange={() => void action.run(async () => {
-                  setRules(rules.map((r) => (r.id === rule.id ? { ...r, on: !r.on } : r)))
-                  await calls.change(rule.id, { on: !rule.on })
-                  await load()
-                })}
-                className="h-5 w-5 shrink-0 cursor-pointer accent-[var(--accent)]"
-              />
-              <button
-                type="button"
-                onClick={() =>
-                  ask({
-                    title: t('confirm.rule.title'),
-                    text: t('confirm.rule.text'),
-                    confirm: t('confirm.rule.confirm'),
-                    run: async () => {
-                      await calls.remove(rule.id)
-                      await load()
-                    },
-                  })
+    <Card icon={Wand2} title={t('sorting.rules.title')} subtitle={t(server ? 'sorting.rules.text' : 'sorting.rules.textVaults')} id="rules">
+      {rules.length === 0 && <p className="m-0 text-sm text-[var(--nexui-text-muted)]">{t('sorting.rules.empty')}</p>}
+      {rules.length > 0 && (
+        <Rows label={t('sorting.rules.title')}>
+          {rules.map((rule) => {
+            const group = siblings(rule)
+            const at = group.indexOf(rule)
+            const calls = apiOf(rule)
+            return (
+              <Row
+                key={rule.id}
+                icon={Wand2}
+                testId="rule"
+                name={
+                  <span className="whitespace-normal">
+                    <span className="font-semibold">{t('sorting.rules.if')}</span> <bdi>{words.when(rule, names)}</bdi> <ArrowRight size={13} className="inline text-[var(--nexui-text-muted)]" aria-hidden /> <bdi>{words.then(rule, names)}</bdi>
+                  </span>
                 }
-                className="rounded-full p-1.5 text-muted hover:text-ink"
-                aria-label={t('sorting.rules.delete')}
-              >
-                <Trash2 size={14} aria-hidden />
-              </button>
-            </li>
-          )
-        })}
-      </ul>
+                sub={`${t('sorting.rules.hits', { count: rule.hits })}${server || managed.length > 1 ? ` · ${vaultLabel(rule)}` : ''}`}
+                action={
+                  <span className="flex flex-wrap items-center gap-2">
+                    {group.length > 1 && (
+                      <>
+                        <IconButton icon="ArrowUp" disabled={at === 0} aria-label={t('sorting.rules.up')} onClick={() => void action.run(async () => { await calls.change(rule.id, { position: at }); await load() })} />
+                        <IconButton icon="ArrowDown" disabled={at === group.length - 1} aria-label={t('sorting.rules.down')} onClick={() => void action.run(async () => { await calls.change(rule.id, { position: at + 2 }); await load() })} />
+                      </>
+                    )}
+                    <Checkbox
+                      label={t('sorting.rules.switch')}
+                      checked={rule.on}
+                      testId="rule-on"
+                      onChange={() =>
+                        void action.run(async () => {
+                          setRules(rules.map((r) => (r.id === rule.id ? { ...r, on: !r.on } : r)))
+                          await calls.change(rule.id, { on: !rule.on })
+                          await load()
+                        })
+                      }
+                    />
+                    <Button
+                      kind="danger"
+                      size="sm"
+                      icon="Trash2"
+                      aria-label={t('sorting.rules.delete')}
+                      onClick={() =>
+                        ask({
+                          title: t('confirm.rule.title'),
+                          text: t('confirm.rule.text'),
+                          confirm: t('confirm.rule.confirm'),
+                          run: async () => {
+                            await calls.remove(rule.id)
+                            await load()
+                          },
+                        })
+                      }
+                    >
+                      {t('common.delete')}
+                    </Button>
+                  </span>
+                }
+              />
+            )
+          })}
+        </Rows>
+      )}
       {adding ? (
         <RuleForm
           server={server}
@@ -179,12 +188,14 @@ export function RulesCard({ server = false }: { server?: boolean }) {
         />
       ) : (
         (server || managed.length > 0) && (
-          <Button className="mt-4" onClick={() => setAdding(true)}>
-            <Plus size={15} aria-hidden /> {t('sorting.rules.add')}
-          </Button>
+          <div>
+            <Button kind="primary" icon="Plus" onClick={() => setAdding(true)} testId="rule-add">
+              {t('sorting.rules.add')}
+            </Button>
+          </div>
         )
       )}
-      <Feedback problem={action.problem} values={action.values} />
+      <Outcome problem={action.problem} values={action.values} />
       {dialog}
     </Card>
   )
@@ -238,125 +249,74 @@ function RuleForm({ server, names, managed, onCancel, onSave, busy }: { server: 
   }, [scope, kindChoices, whenField, thenField, whenValue, thenValue])
   const ready = condition() !== null && consequence() !== null && (scope === 'all' ? server : scope !== '')
 
+  const select = (label: string, value: string, onChange: (value: string) => void, options: { value: string; label: string }[]) => (
+    <SelectField label={label} value={value} onChange={(event) => onChange(event.target.value)} options={options} />
+  )
   return (
-    <form
-      className="mt-4 space-y-3 rounded-2xl border border-dashed border-line p-4 text-sm"
-      onSubmit={(event) => {
-        event.preventDefault()
-        const when = condition()
-        const then = consequence()
-        if (!when || !then) return
-        onSave(scope === 'all' ? null : Number(scope), when, then)
-      }}
-    >
-      {(server || managed.length > 1) && (
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="w-12 font-semibold">{t('sorting.rules.scope')}</span>
-          <select value={scope} onChange={(event) => setScope(event.target.value)} className="input h-9 min-w-40 flex-1" aria-label={t('sorting.rules.scope')}>
-            {server && <option value="all">{t('sorting.rules.everywhere')}</option>}
-            {managed.map((v) => (
-              <option key={v.id} value={String(v.id)}>
-                {vaultLabel(v)}
-              </option>
-            ))}
-          </select>
+    <Box title={t('sorting.rules.add')} hint={t('sorting.rules.hint')} testId="rule-form">
+      <form
+        className="flex flex-col gap-3"
+        onSubmit={(event) => {
+          event.preventDefault()
+          const when = condition()
+          const then = consequence()
+          if (!when || !then) return
+          onSave(scope === 'all' ? null : Number(scope), when, then)
+        }}
+      >
+        {(server || managed.length > 1) &&
+          select(t('sorting.rules.scope'), scope, setScope, [...(server ? [{ value: 'all', label: t('sorting.rules.everywhere') }] : []), ...managed.map((v) => ({ value: String(v.id), label: vaultLabel(v) }))])}
+        <div className="grid gap-3 sm:grid-cols-3">
+          {select(t('sorting.rules.if'), whenField, (value) => chooseWhen(value as WhenField), WHEN_FIELDS.map((field) => ({ value: field, label: t(`sorting.rules.field.${field}`) })))}
+          {select(t(`sorting.rules.field.${whenField}`), op, (value) => setOp(value as RuleCondition['op']), OPS[whenField].map((value) => ({ value, label: t(`sorting.rules.op.${value}`) })))}
+          {whenField === 'kind' ? (
+            select(t('sorting.rules.field.kind'), whenValue, setWhenValue, kindChoices.map((k) => ({ value: String(k.id), label: k.name })))
+          ) : whenField === 'source' ? (
+            select(t('sorting.rules.field.source'), whenValue, setWhenValue, SOURCES.map((value) => ({ value, label: t(`docs.source.${value}`) })))
+          ) : whenField === 'sender' && op === 'is' ? (
+            <div className="flex min-w-0 flex-col gap-1 self-end">
+              <SenderPicker value={whenValue} onChange={setWhenValue} names={names.senders} label={t('sorting.rules.field.sender')} className="input h-10" />
+            </div>
+          ) : (
+            <Field
+              label={t(`sorting.rules.field.${whenField}`)}
+              value={whenValue}
+              onChange={(event) => setWhenValue(event.target.value)}
+              placeholder={whenField === 'amount' ? amountText(10000, i18n.language) : t('sorting.rules.valuePlaceholder')}
+              maxLength={100}
+            />
+          )}
         </div>
-      )}
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="w-12 font-semibold">{t('sorting.rules.if')}</span>
-        <select value={whenField} onChange={(event) => chooseWhen(event.target.value as WhenField)} className="input h-9 w-36" aria-label={t('sorting.rules.if')}>
-          {WHEN_FIELDS.map((field) => (
-            <option key={field} value={field}>
-              {t(`sorting.rules.field.${field}`)}
-            </option>
-          ))}
-        </select>
-        <select value={op} onChange={(event) => setOp(event.target.value as RuleCondition['op'])} className="input h-9 w-36" aria-label={t(`sorting.rules.field.${whenField}`)}>
-          {OPS[whenField].map((value) => (
-            <option key={value} value={value}>
-              {t(`sorting.rules.op.${value}`)}
-            </option>
-          ))}
-        </select>
-        {whenField === 'kind' ? (
-          <select value={whenValue} onChange={(event) => setWhenValue(event.target.value)} className="input h-9 min-w-40 flex-1" aria-label={t('sorting.rules.field.kind')}>
-            {kindChoices.map((k) => (
-              <option key={k.id} value={String(k.id)}>
-                {k.name}
-              </option>
-            ))}
-          </select>
-        ) : whenField === 'source' ? (
-          <select value={whenValue} onChange={(event) => setWhenValue(event.target.value)} className="input h-9 min-w-40 flex-1" aria-label={t('sorting.rules.field.source')}>
-            {SOURCES.map((s) => (
-              <option key={s} value={s}>
-                {t(`docs.source.${s}`)}
-              </option>
-            ))}
-          </select>
-        ) : whenField === 'sender' && op === 'is' ? (
-          <div className="min-w-40 flex-1">
-            <SenderPicker value={whenValue} onChange={setWhenValue} names={names.senders} label={t('sorting.rules.field.sender')} className="input h-9" />
+        <div className="grid gap-3 sm:grid-cols-3">
+          {select(t('sorting.rules.then'), thenField, (value) => chooseThen(value as ThenField), THEN_FIELDS.map((field) => ({ value: field, label: t(`sorting.rules.target.${field}`) })))}
+          <div className="sm:col-span-2">
+            {thenField === 'vault' ? (
+              select(t('sorting.rules.target.vault'), thenValue, setThenValue, writable.map((v) => ({ value: String(v.id), label: vaultLabel(v) })))
+            ) : thenField === 'kind' ? (
+              select(t('sorting.rules.target.kind'), thenValue, setThenValue, kindChoices.map((k) => ({ value: String(k.id), label: k.name })))
+            ) : thenField === 'sender' ? (
+              <SenderPicker value={thenValue} onChange={setThenValue} names={names.senders} label={t('sorting.rules.target.sender')} className="input h-10" />
+            ) : (
+              <Field
+                label={t(`sorting.rules.target.${thenField}`)}
+                value={thenValue}
+                onChange={(event) => setThenValue(event.target.value)}
+                placeholder={thenField === 'title' ? t('sorting.rules.titlePlaceholder') : ''}
+                maxLength={thenField === 'title' ? 120 : thenField === 'tag' ? 40 : 160}
+                hints={thenField === 'title' ? [t('sorting.rules.titleHint')] : undefined}
+              />
+            )}
           </div>
-        ) : (
-          <input
-            value={whenValue}
-            onChange={(event) => setWhenValue(event.target.value)}
-            placeholder={whenField === 'amount' ? amountText(10000, i18n.language) : t('sorting.rules.valuePlaceholder')}
-            maxLength={100}
-            aria-label={t(`sorting.rules.field.${whenField}`)}
-            className="input h-9 min-w-40 flex-1"
-          />
-        )}
-      </div>
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="w-12 font-semibold">{t('sorting.rules.then')}</span>
-        <select value={thenField} onChange={(event) => chooseThen(event.target.value as ThenField)} className="input h-9 w-36" aria-label={t('sorting.rules.then')}>
-          {THEN_FIELDS.map((field) => (
-            <option key={field} value={field}>
-              {t(`sorting.rules.target.${field}`)}
-            </option>
-          ))}
-        </select>
-        {thenField === 'vault' ? (
-          <select value={thenValue} onChange={(event) => setThenValue(event.target.value)} className="input h-9 min-w-40 flex-1" aria-label={t('sorting.rules.target.vault')}>
-            {writable.map((v) => (
-              <option key={v.id} value={String(v.id)}>
-                {vaultLabel(v)}
-              </option>
-            ))}
-          </select>
-        ) : thenField === 'kind' ? (
-          <select value={thenValue} onChange={(event) => setThenValue(event.target.value)} className="input h-9 min-w-40 flex-1" aria-label={t('sorting.rules.target.kind')}>
-            {kindChoices.map((k) => (
-              <option key={k.id} value={String(k.id)}>
-                {k.name}
-              </option>
-            ))}
-          </select>
-        ) : thenField === 'sender' ? (
-          <div className="min-w-40 flex-1">
-            <SenderPicker value={thenValue} onChange={setThenValue} names={names.senders} label={t('sorting.rules.target.sender')} className="input h-9" />
-          </div>
-        ) : (
-          <input
-            value={thenValue}
-            onChange={(event) => setThenValue(event.target.value)}
-            placeholder={thenField === 'title' ? t('sorting.rules.titlePlaceholder') : ''}
-            maxLength={thenField === 'title' ? 120 : thenField === 'tag' ? 40 : 160}
-            aria-label={t(`sorting.rules.target.${thenField}`)}
-            className="input h-9 min-w-40 flex-1"
-          />
-        )}
-      </div>
-      {thenField === 'title' && <p className="text-xs text-muted">{t('sorting.rules.titleHint')}</p>}
-      <div className="flex justify-end gap-2">
-        <Button onClick={onCancel}>{t('sorting.rules.cancel')}</Button>
-        <Button primary type="submit" busy={busy} disabled={!ready}>
-          {t('sorting.rules.create')}
-        </Button>
-      </div>
-      <p className="text-xs text-muted">{t('sorting.rules.hint')}</p>
-    </form>
+        </div>
+        <div className="flex justify-end gap-2">
+          <Button kind="secondary" icon="Undo2" onClick={onCancel}>
+            {t('sorting.rules.cancel')}
+          </Button>
+          <Button kind="primary" icon="Check" type="submit" busy={busy} disabled={!ready}>
+            {t('sorting.rules.create')}
+          </Button>
+        </div>
+      </form>
+    </Box>
   )
 }

@@ -11,6 +11,7 @@ import { INBOX_CHANGED } from '../lib/say'
 import { Page, Server, plain } from '../test/harness'
 import { idle } from '../test/wait'
 import { FeaturesCard } from './settings/FeaturesCard'
+import { Interfaces } from './settings/KeysCards'
 import { VaultsPage } from './VaultsPage'
 
 const me: Me = {
@@ -20,6 +21,15 @@ const me: Me = {
 }
 const auth = { status: 'signedIn', me: me as Me | null, setMe: vi.fn(), refresh: vi.fn(async () => undefined), signOut: vi.fn(async () => undefined) }
 vi.mock('../state/auth', () => ({ useAuth: () => auth }))
+
+/** The kit's box to tick (`CheckboxRow`) by its label. */
+function tick(label: string): HTMLInputElement {
+  const named = [...document.querySelectorAll<HTMLLabelElement>('label')].find((item) => item.textContent === label)
+  const found = named ? (document.getElementById(named.htmlFor) as HTMLInputElement | null) : null
+  expect(found, label).toBeTruthy()
+  expect(found!.type).toBe('checkbox')
+  return found!
+}
 
 const server = new Server()
 const page = new Page()
@@ -287,7 +297,9 @@ describe('the switches for all accounts (links to the outside, upload requests, 
     await page.choose(document.querySelector('select'), '14')
     expect(server.called('PUT', '/api/v1/settings')!.body).toEqual({ link_max_days: 14 })
     server.answers['PUT /api/v1/settings'] = { ...settings, links_allowed: false }
-    await page.click(document.querySelector<HTMLElement>('[role="switch"]'))
+    // On and off is the kit's box to tick (`CheckboxRow`), never a sliding switch.
+    expect(document.querySelector('[role="switch"]')).toBeNull()
+    await page.click(tick('Teilen per Link'))
     expect(server.calls.filter((c) => c.method === 'PUT').at(-1)!.body).toEqual({ links_allowed: false })
     expect(document.querySelector('select')).toBeNull()
   })
@@ -298,8 +310,8 @@ describe('the switches for all accounts (links to the outside, upload requests, 
     server.answers['GET /api/v1/upload-requests/overview'] = { open_requests: 3, people: 2 }
     server.answers['PUT /api/v1/settings'] = { ...settings, upload_requests_allowed: true }
     await page.show(<FeaturesCard />, '/settings/general')
-    const toggle = document.querySelector<HTMLElement>('[role="switch"][aria-label="Upload-Bitten erlauben"]')
-    expect(toggle!.getAttribute('aria-checked')).toBe('false')
+    const toggle = tick('Upload-Bitten erlauben')
+    expect(toggle.checked).toBe(false)
     expect(document.querySelector('[data-testid="request-overview"]')).toBeNull()
     await page.click(toggle)
     expect(server.called('PUT', '/api/v1/settings')!.body).toEqual({ upload_requests_allowed: true })
@@ -307,16 +319,21 @@ describe('the switches for all accounts (links to the outside, upload requests, 
     expect(page.text).toContain('Ohne öffentliche Adresse (Einstellungen, Anmeldung) lässt sich keine Bitte erstellen.')
   })
 
-  it('switch API keys for everybody, here and no longer under API', async () => {
+  it('switch API keys for everybody under "Schnittstellen" now, no longer among the features', async () => {
     server.answers['GET /api/v1/settings'] = settings
     server.answers['GET /api/v1/sharing/overview'] = { open_links: 0, people: 0, next_end: null }
-    server.answers['PUT /api/v1/settings'] = { ...settings, api_keys_allowed: true }
     await page.show(<FeaturesCard />, '/settings/general')
-    const toggle = document.querySelector<HTMLElement>('[role="switch"][aria-label="API-Token erlauben"]')
-    expect(toggle!.getAttribute('aria-checked')).toBe('false')
+    expect(page.text).not.toContain('API-Token erlauben')
+    page.close()
+    server.answers['GET /api/v1/connections/interfaces'] = { api: false }
+    server.answers['PUT /api/v1/connections/interfaces'] = { api: true }
+    await page.show(<Interfaces />, '/settings/general')
+    const toggle = tick('Programmschnittstelle (API) für Mitglieder')
+    expect(toggle.checked).toBe(false)
     await page.click(toggle)
-    expect(server.called('PUT', '/api/v1/settings')!.body).toEqual({ api_keys_allowed: true })
-    expect(toggle!.getAttribute('aria-checked')).toBe('true')
+    expect(server.called('PUT', '/api/v1/connections/interfaces')!.body).toEqual({ api: true })
+    expect(tick('Programmschnittstelle (API) für Mitglieder').checked).toBe(true)
+    expect(document.querySelector('[data-testid="interfaces-docs"]')!.getAttribute('href')).toBe('/api/v1/docs')
   })
 })
 

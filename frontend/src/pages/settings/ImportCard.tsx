@@ -8,9 +8,9 @@ import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { ApiError, paperlessApi, type PaperlessCheck, type PaperlessRun, type PaperlessSettings, type PaperlessSkipped, type PaperlessSort, type PaperlessWhere } from '../../api/client'
-import { useConfirm } from '../../components/useConfirm'
+import { useAsk } from './useAsk'
 import { errorText } from '../../lib/errors'
-import { Button, Card, Input, Segment, Toggle } from './ui'
+import { Button, Card, CheckboxRow, Field, Notice, Segment, SelectField } from '../../vendor/nexui'
 
 const POLL_MS = 2000
 
@@ -51,7 +51,7 @@ export function ImportCard() {
   const [vault, setVault] = useState<number | null>(null)
   const [sort, setSort] = useState<PaperlessSort>('paperless')
   const [busy, setBusy] = useState(false)
-  const { ask, dialog } = useConfirm()
+  const { ask, dialog } = useAsk()
   const [problem, setProblem] = useState<string | null>(null)
 
   const take = useCallback((next: PaperlessSettings) => {
@@ -120,7 +120,7 @@ export function ImportCard() {
     })
 
   return (
-    <Card icon={Inbox} title={t('paperless.title')} text={t('paperless.text')}>
+    <Card id="paperless" icon={Inbox} title={t('paperless.title')} subtitle={t('paperless.text')}>
       {stage === 'form' && (
         <form
           className="grid gap-3 sm:grid-cols-2"
@@ -129,17 +129,19 @@ export function ImportCard() {
             void connect()
           }}
         >
-          <Input label={t('paperless.url')} value={url} onChange={setUrl} placeholder="http://paperless:8000" />
-          <Input label={t('paperless.token')} type="password" value={token} onChange={setToken} hint={kept ? t('paperless.tokenKept') : t('paperless.tokenHint')} />
+          <Field label={t('paperless.url')} value={url} onChange={(event) => setUrl(event.target.value)} placeholder="http://paperless:8000" />
+          <Field label={t('paperless.token')} type="password" value={token} onChange={(event) => setToken(event.target.value)} hints={[kept ? t('paperless.tokenKept') : t('paperless.tokenHint')]} />
           <div className="sm:col-span-2">
-            <Toggle label={t('paperless.private')} hint={t('paperless.privateHint')} checked={own} onChange={setOwn} />
+            <CheckboxRow label={t('paperless.private')} hint={t('paperless.privateHint')} checked={own} onChange={setOwn} />
           </div>
           <div className="flex flex-wrap gap-2 sm:col-span-2">
-            <Button primary type="submit" busy={busy} disabled={!url.trim() || (!token.trim() && !kept)}>
+            <Button kind="primary" icon="Plug" type="submit" busy={busy} disabled={!url.trim() || (!token.trim() && !kept)}>
               {t('paperless.connect')}
             </Button>
             {settings?.token_set && (
               <Button
+                kind="danger"
+                icon="Trash2"
                 onClick={() =>
                   ask({
                     title: t('confirm.paperless.title'),
@@ -187,11 +189,7 @@ export function ImportCard() {
           }}
         />
       )}
-      {problem && (
-        <p role="alert" className="rounded-xl border border-bad/40 bg-bad/10 px-3 py-2 text-sm text-bad">
-          {say(problem)}
-        </p>
-      )}
+      {problem && <Notice tone="danger">{say(problem)}</Notice>}
       {dialog}
     </Card>
   )
@@ -246,26 +244,26 @@ function CheckView({
             [found.document_types, t('paperless.stats.types')],
           ] as const
         ).map(([value, label]) => (
-          <div key={label} className="rounded-xl bg-sheet-2 px-4 py-3">
+          <div key={label} className="rounded-[12px] border border-solid border-[var(--nexui-line)] px-4 py-3">
             <p className="text-2xl font-semibold">{number(value)}</p>
-            <p className="text-xs text-muted">{label}</p>
+            <p className="text-xs text-[var(--nexui-text-muted)]">{label}</p>
           </div>
         ))}
       </div>
-      {found.version && <p className="text-xs text-muted">{t('paperless.version', { version: found.version })}</p>}
+      {found.version && <p className="text-xs text-[var(--nexui-text-muted)]">{t('paperless.version', { version: found.version })}</p>}
       <div>
         <p className="font-semibold">{t('paperless.howTitle')}</p>
-        <ul className="mt-1 space-y-0.5 text-ink-2">
+        <ul className="mt-1 space-y-0.5 text-[var(--nexui-text-muted)]">
           <li>{t('paperless.how1')}</li>
           <li>{t('paperless.how2')}</li>
           <li>{t('paperless.how3')}</li>
           <li>{t('paperless.how4')}</li>
         </ul>
-        {found.new_kinds.length > 0 && <p className="mt-1 text-xs text-muted">{t('paperless.newKinds', { names: found.new_kinds.join(', ') })}</p>}
+        {found.new_kinds.length > 0 && <p className="mt-1 text-xs text-[var(--nexui-text-muted)]">{t('paperless.newKinds', { names: found.new_kinds.join(', ') })}</p>}
       </div>
       <div>
         <p className="font-semibold">{t('paperless.ownersTitle')}</p>
-        {found.users_hidden && <p className="text-xs text-muted">{t('paperless.usersHidden')}</p>}
+        {found.users_hidden && <p className="text-xs text-[var(--nexui-text-muted)]">{t('paperless.usersHidden')}</p>}
         <ul className="mt-2 space-y-1.5">
           {found.owners.map((owner) => {
             const key = String(owner.paperless_id)
@@ -275,21 +273,17 @@ function CheckView({
                 <span className="w-24 truncate font-mono text-xs" title={name}>
                   {name}
                 </span>
-                <ArrowRight size={14} className="text-muted" aria-hidden />
-                <select
-                  aria-label={t('paperless.personFor', { name })}
-                  value={people[key] ?? owner.user_id}
-                  onChange={(event) => setPeople({ ...people, [key]: Number(event.target.value) })}
-                  className="input h-9 w-40"
-                >
-                  {found.people.map((person) => (
-                    <option key={person.id} value={person.id}>
-                      {person.display_name || person.name}
-                    </option>
-                  ))}
-                </select>
+                <ArrowRight size={14} className="text-[var(--nexui-text-muted)]" aria-hidden />
+                <div className="w-48">
+                  <SelectField
+                    label={t('paperless.personFor', { name })}
+                    value={String(people[key] ?? owner.user_id)}
+                    onChange={(event) => setPeople({ ...people, [key]: Number(event.target.value) })}
+                    options={found.people.map((person) => ({ value: String(person.id), label: person.display_name || person.name }))}
+                  />
+                </div>
                 {owner.paperless_id !== null && !owner.matched && (
-                  <span className="text-xs text-muted">{t('paperless.noMatch', { name: personName(people[key] ?? owner.user_id) })}</span>
+                  <span className="text-xs text-[var(--nexui-text-muted)]">{t('paperless.noMatch', { name: personName(people[key] ?? owner.user_id) })}</span>
                 )}
               </li>
             )
@@ -302,6 +296,7 @@ function CheckView({
           <Segment
             value={where}
             onChange={setWhere}
+            hideLabel
             label={t('paperless.where')}
             options={[
               { value: 'owner', label: t('paperless.whereOwner') },
@@ -310,36 +305,32 @@ function CheckView({
             ]}
           />
           {where === 'vault' && found.vaults.length > 1 && (
-            <select
-              aria-label={t('paperless.vault')}
-              value={vault ?? ''}
-              onChange={(event) => setVault(Number(event.target.value))}
-              className="input h-9 w-auto px-2"
-            >
-              {found.vaults.map((v) => (
-                <option key={v.id} value={v.id}>
-                  {vaultName(v)}
-                </option>
-              ))}
-            </select>
+            <div className="w-56">
+              <SelectField
+                label={t('paperless.vault')}
+                value={String(vault ?? '')}
+                onChange={(event) => setVault(Number(event.target.value))}
+                options={found.vaults.map((v) => ({ value: String(v.id), label: vaultName(v) }))}
+              />
+            </div>
           )}
         </div>
-        <p className="mt-1 text-xs text-muted">
+        <p className="mt-1 text-xs text-[var(--nexui-text-muted)]">
           {where === 'owner' ? t('paperless.whereOwnerHint') : where === 'vault' ? t('paperless.whereVaultHint') : t('paperless.whereStorageHint')}
         </p>
         {where === 'storage' && (
           <ul className="mt-2 flex flex-wrap gap-1.5" aria-label={t('paperless.storagePaths')} data-testid="storage-paths">
             {paths.map((path) => (
-              <li key={path.name} className="rounded-full bg-sheet-2 px-2.5 py-1 text-xs">
-                <span className="font-semibold">{path.name}</span> · {number(path.documents)} · <span className="text-muted">{path.exists ? t('paperless.storageExists') : t('paperless.storageNew')}</span>
+              <li key={path.name} className="rounded-[9px] border border-solid border-[var(--nexui-line)] px-2.5 py-1 text-xs">
+                <span className="font-semibold">{path.name}</span> · {number(path.documents)} · <span className="text-[var(--nexui-text-muted)]">{path.exists ? t('paperless.storageExists') : t('paperless.storageNew')}</span>
               </li>
             ))}
             {(found.without_storage_path ?? 0) > 0 && (
-              <li className="rounded-full border border-line px-2.5 py-1 text-xs text-muted">{t('paperless.storageNone', { n: number(found.without_storage_path ?? 0) })}</li>
+              <li className="rounded-full border border-line px-2.5 py-1 text-xs text-[var(--nexui-text-muted)]">{t('paperless.storageNone', { n: number(found.without_storage_path ?? 0) })}</li>
             )}
           </ul>
         )}
-        <p className="mt-1 text-xs text-muted">{t('paperless.whereHint')}</p>
+        <p className="mt-1 text-xs text-[var(--nexui-text-muted)]">{t('paperless.whereHint')}</p>
       </div>
       <div>
         <p className="font-semibold">{t('paperless.sortTitle')}</p>
@@ -347,6 +338,7 @@ function CheckView({
           <Segment
             value={sort}
             onChange={setSort}
+            hideLabel
             label={t('paperless.sortTitle')}
             options={[
               { value: 'paperless', label: t('paperless.sortPaperless') },
@@ -354,16 +346,18 @@ function CheckView({
             ]}
           />
         </div>
-        <p className="mt-1 text-xs text-muted">
+        <p className="mt-1 text-xs text-[var(--nexui-text-muted)]">
           {sort === 'paperless'
             ? t('paperless.sortPaperlessHint', { inbox: number(inbox), total: number(found.documents), filed: number(found.documents - inbox) })
             : t('paperless.sortInboxHint', { total: number(found.documents) })}
         </p>
       </div>
-      {found.already > 0 && <p className="text-xs text-muted">{t('paperless.already', { n: number(found.already) })}</p>}
+      {found.already > 0 && <p className="text-xs text-[var(--nexui-text-muted)]">{t('paperless.already', { n: number(found.already) })}</p>}
       <div className="flex flex-wrap justify-end gap-2">
-        <Button onClick={onBack}>{t('paperless.back')}</Button>
-        <Button primary onClick={onStart} busy={busy} disabled={left === 0 || (where === 'vault' && vault === null)}>
+        <Button kind="secondary" icon="ArrowLeft" onClick={onBack}>
+          {t('paperless.back')}
+        </Button>
+        <Button kind="primary" icon="Download" onClick={onStart} busy={busy} disabled={left === 0 || (where === 'vault' && vault === null)}>
           {t('paperless.go', { n: number(left) })}
         </Button>
       </div>
@@ -392,29 +386,29 @@ function RunView({ run, busy, onStop, onResume, onAgain }: { run: PaperlessRun; 
   const listed = run.skipped > 0 && run.state !== 'queued' && run.state !== 'running'
   return (
     <div className="space-y-3 text-sm">
-      <div className="flex h-3 overflow-hidden rounded-full bg-sheet-2" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress}>
-        <div className="h-full bg-accent transition-all" style={{ width: `${takenShare}%` }} />
-        {skippedShare > 0 && <div data-testid="skipped-part" className="h-full bg-muted/60 transition-all" style={{ width: `${skippedShare}%` }} />}
+      <div className="flex h-3 overflow-hidden rounded-full bg-[var(--nexui-line)]" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress}>
+        <div className="h-full bg-[var(--nexui-accent)] transition-all" style={{ width: `${takenShare}%` }} />
+        {skippedShare > 0 && <div data-testid="skipped-part" className="h-full bg-[var(--nexui-text-muted)] opacity-60 transition-all" style={{ width: `${skippedShare}%` }} />}
       </div>
-      <p className="text-ink-2" aria-live="polite">
+      <p className="text-[var(--nexui-text-muted)]" aria-live="polite">
         {sentence}
       </p>
-      {run.stop && (run.state === 'running' || run.state === 'queued') && <p className="text-xs text-muted">{t('paperless.stopping')}</p>}
+      {run.stop && (run.state === 'running' || run.state === 'queued') && <p className="text-xs text-[var(--nexui-text-muted)]">{t('paperless.stopping')}</p>}
       {listed && <SkippedList key={`${run.state}-${run.skipped}-${run.finished_at ?? ''}`} />}
-      {run.state === 'done' && <p className="text-xs text-muted">{t('paperless.again')}</p>}
+      {run.state === 'done' && <p className="text-xs text-[var(--nexui-text-muted)]">{t('paperless.again')}</p>}
       <div className="flex flex-wrap gap-2">
         {(run.state === 'running' || run.state === 'queued') && !run.stop && (
-          <Button onClick={onStop} busy={busy}>
+          <Button kind="danger" icon="Ban" onClick={onStop} busy={busy}>
             {t('paperless.stop')}
           </Button>
         )}
         {(run.state === 'paused' || run.state === 'failed') && (
-          <Button primary onClick={onResume} busy={busy}>
+          <Button kind="primary" icon="RotateCcw" onClick={onResume} busy={busy}>
             {t('paperless.resume')}
           </Button>
         )}
         {(run.state === 'done' || run.state === 'paused' || run.state === 'failed') && (
-          <Button onClick={onAgain} disabled={busy}>
+          <Button kind="secondary" icon="RefreshCw" onClick={onAgain} disabled={busy}>
             {run.state === 'done' ? t('paperless.runAgain') : t('paperless.other')}
           </Button>
         )}
@@ -442,10 +436,10 @@ function SkippedList() {
   return (
     <div>
       <p className="flex items-center gap-2 font-semibold">
-        <span className="inline-block h-2.5 w-2.5 rounded-full bg-muted/60" aria-hidden />
+        <span className="inline-block h-2.5 w-2.5 rounded-full bg-[var(--nexui-text-muted)] opacity-60" aria-hidden />
         {t('paperless.skippedTitle')}
       </p>
-      <ul className="mt-1 space-y-0.5 text-ink-2" aria-label={t('paperless.skippedTitle')}>
+      <ul className="mt-1 space-y-0.5 text-[var(--nexui-text-muted)]" aria-label={t('paperless.skippedTitle')}>
         {found.items.map((item) => (
           <li key={item.paperless_id}>
             <span className="font-mono text-xs">{t('paperless.skippedNumber', { id: item.paperless_id })}</span>
@@ -454,7 +448,7 @@ function SkippedList() {
           </li>
         ))}
       </ul>
-      {found.more > 0 && <p className="mt-1 text-xs text-muted">{t('paperless.skippedMore', { n: found.more.toLocaleString(i18n.language) })}</p>}
+      {found.more > 0 && <p className="mt-1 text-xs text-[var(--nexui-text-muted)]">{t('paperless.skippedMore', { n: found.more.toLocaleString(i18n.language) })}</p>}
     </div>
   )
 }

@@ -53,17 +53,37 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
+/** A field of the kit by its label (joined by `for`). */
+function labelled<T extends HTMLElement>(label: string, exact = false): T | null {
+  const named = [...document.querySelectorAll<HTMLLabelElement>('label')].find((l) => (exact ? l.textContent === label : l.textContent?.startsWith(label)))
+  return named ? ((named.querySelector('input, select') ?? document.getElementById(named.htmlFor)) as T | null) : null
+}
+
 function field(label: string): HTMLInputElement {
-  const input = [...document.querySelectorAll<HTMLLabelElement>('label')].find((l) => l.textContent?.startsWith(label))?.querySelector('input')
+  const input = labelled<HTMLInputElement>(label)
   expect(input, label).toBeTruthy()
   return input!
+}
+
+/** A choice of the kit (`SelectField`) by its label. */
+function select(label: string): HTMLSelectElement | null {
+  const found = labelled<HTMLSelectElement>(label, true)
+  return found instanceof HTMLSelectElement ? found : null
+}
+
+/** The kit's box to tick (`CheckboxRow`) by its label: never a sliding switch. */
+function box(label: string): HTMLInputElement {
+  const found = labelled<HTMLInputElement>(label, true)
+  expect(found, label).toBeTruthy()
+  expect(found!.type).toBe('checkbox')
+  return found!
 }
 
 async function connect() {
   await page.show(<ImportCard />)
   await page.type(field('Adresse von Paperless'), 'http://paperless.example.com:8000')
   await page.type(field('API-Token'), 'made-up-token')
-  await page.click(document.querySelector<HTMLButtonElement>('[role="switch"][aria-label="Paperless läuft im eigenen Netz"]'))
+  await page.click(box('Paperless läuft im eigenen Netz'))
   await page.click(page.button('Verbinden und nachsehen'))
 }
 
@@ -97,15 +117,15 @@ describe('Settings, Import', () => {
     ]) {
       expect(page.text, words).toContain(words)
     }
-    expect(page.select('Person für admin')!.value).toBe('1')
-    expect(page.select('Person für tom')!.value).toBe('2')
+    expect(select('Person für admin')!.value).toBe('1')
+    expect(select('Person für tom')!.value).toBe('2')
     // The token is gone from the page once it was sent.
     expect(document.body.innerHTML).not.toContain('made-up-token')
   })
 
   it('starts with the people and the place chosen', async () => {
     await connect()
-    await page.choose(page.select('Person für scanner'), '3')
+    await page.choose(select('Person für scanner'), '3')
     await page.click([...document.querySelectorAll<HTMLButtonElement>('button[role="radio"]')].find((b) => b.textContent === 'Alles nach Haushalt'))
     await page.click(page.button('1.432 Dokumente übernehmen'))
     expect(server.called('POST', '/api/v1/settings/paperless/start')!.body).toEqual({
@@ -268,7 +288,7 @@ describe('Settings, Import', () => {
     expect(page.text).toContain('kein Konto gleichen Namens, geht an Jule')
     expect(page.text.match(/kein Konto gleichen Namens/g)).toHaveLength(2)
     expect(page.text).toContain('Die Dokumente kommen in die persönlichen Tresore der zugeordneten Personen; jede sieht sie dort.')
-    await page.choose(page.select('Person für scanner'), '3')
+    await page.choose(select('Person für scanner'), '3')
     expect(page.text).toContain('kein Konto gleichen Namens, geht an Lea')
     await page.click([...document.querySelectorAll<HTMLButtonElement>('button[role="radio"]')].find((b) => b.textContent === 'Alles nach Haushalt'))
     expect(page.text).toContain('Wer nicht Mitglied dieses Tresors ist, wird nicht Besitzer')

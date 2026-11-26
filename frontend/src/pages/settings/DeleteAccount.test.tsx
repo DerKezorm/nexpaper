@@ -57,9 +57,11 @@ async function openFor(name: string, manage = 'verwalten', remove = 'Konto lösc
   return page.dialog!
 }
 
-/** A field of the dialog by the start of its label (the kit joins label and field by an id). */
+/** A field of the dialog by the start of its label (the kit joins label and field by an id). The operator's own
+ * password is the account module's field "Passwort" (plan "Einstellungen": password fields only in the module's words). */
 function field(dialog: HTMLElement, label: string): HTMLInputElement {
   const found = [...dialog.querySelectorAll('label')].find((l) => l.textContent?.startsWith(label))
+  expect(found, label).toBeTruthy()
   return (found!.querySelector('input') ?? document.getElementById(found!.htmlFor)) as HTMLInputElement
 }
 
@@ -76,10 +78,13 @@ describe('deleting an account', () => {
     expect(dialog.textContent).toContain('An eine andere Person')
     expect(dialog.textContent).toContain('In einen gemeinsamen Tresor')
     expect(dialog.textContent).toContain('Mitlöschen, samt Dateien')
+    // Since konten 1.1.0 an account is brought back within 30 days (the module's line).
+    expect(dialog.textContent).toContain('30 Tage lang kannst du es zurückholen.')
+    expect(dialog.textContent).not.toContain('{{count}}')
     expect(deleteButton(dialog).disabled).toBe(true)
     await page.click(choose(dialog, 'Mitlöschen'))
     await page.type(field(dialog, 'Zum Bestätigen'), 'Tom')
-    await page.type(field(dialog, 'Aktuelles Passwort'), 'own password')
+    await page.type(field(dialog, 'Passwort'), 'own password')
     expect(deleteButton(dialog).disabled).toBe(true)
     await page.type(field(dialog, 'Zum Bestätigen'), 'tom')
     expect(deleteButton(dialog).disabled).toBe(false)
@@ -91,7 +96,7 @@ describe('deleting an account', () => {
   it('waits for a way, and for the person or vault of that way, before it deletes anything', async () => {
     const dialog = await openFor('tom')
     await page.type(field(dialog, 'Zum Bestätigen'), 'tom')
-    await page.type(field(dialog, 'Aktuelles Passwort'), 'own password')
+    await page.type(field(dialog, 'Passwort'), 'own password')
     expect(deleteButton(dialog).disabled).toBe(true)
     await page.click(choose(dialog, 'An eine andere Person'))
     expect(deleteButton(dialog).disabled).toBe(true)
@@ -125,7 +130,7 @@ describe('deleting an account', () => {
     expect([...people.options].map((o) => o.textContent)).toEqual(['', 'Jule', 'Lea'])
     await page.choose(people, '3')
     await page.type(field(dialog, 'Zum Bestätigen'), 'tom')
-    await page.type(field(dialog, 'Aktuelles Passwort'), 'own password')
+    await page.type(field(dialog, 'Passwort'), 'own password')
     await page.click(deleteButton(dialog))
     expect(server.called('DELETE', '/api/v1/accounts/2')!.body).toEqual({ current_password: 'own password', confirm_name: 'tom', documents: 'transfer_to_user', target_user_id: 3 })
   })
@@ -135,7 +140,7 @@ describe('deleting an account', () => {
     await page.click(choose(dialog, 'In einen gemeinsamen Tresor'))
     await page.choose(dialog.querySelector<HTMLSelectElement>('select'), '9')
     await page.type(field(dialog, 'Zum Bestätigen'), 'tom')
-    await page.type(field(dialog, 'Aktuelles Passwort'), 'own password')
+    await page.type(field(dialog, 'Passwort'), 'own password')
     await page.click(deleteButton(dialog))
     expect(server.called('DELETE', '/api/v1/accounts/2')!.body).toEqual({ current_password: 'own password', confirm_name: 'tom', documents: 'transfer_to_vault', target_vault_id: 9 })
   })
@@ -147,7 +152,7 @@ describe('deleting an account', () => {
     expect(dialog.textContent).toContain('Lea verwaltet „Haushalt“ allein.')
     expect(dialog.querySelector('input[type="radio"]')).toBeNull()
     await page.type(field(dialog, 'Zum Bestätigen'), 'lea')
-    await page.type(field(dialog, 'Aktuelles Passwort'), 'own password')
+    await page.type(field(dialog, 'Passwort'), 'own password')
     expect(deleteButton(dialog).disabled).toBe(true)
   })
 
@@ -156,7 +161,7 @@ describe('deleting an account', () => {
     const dialog = await openFor('tom')
     await page.click(choose(dialog, 'Mitlöschen'))
     await page.type(field(dialog, 'Zum Bestätigen'), 'tom')
-    await page.type(field(dialog, 'Aktuelles Passwort'), 'own password')
+    await page.type(field(dialog, 'Passwort'), 'own password')
     await page.click(deleteButton(dialog))
     expect(dialog.textContent).toContain('Der Name stimmt nicht.')
     expect(page.dialog?.textContent).toContain('Zum Bestätigen')

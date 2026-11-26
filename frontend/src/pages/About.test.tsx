@@ -44,6 +44,10 @@ afterEach(() => {
 describe('the facts', () => {
   it('show the version, the licence, the source, the releases and where to report a problem', async () => {
     await page.show(<AboutArea />)
+    // The kit's card with nexpaper's logo as a picture, no hand-written wordmark (plan "Einstellungen", Über).
+    const card = document.querySelector('[data-card="about"]')!
+    expect(card.querySelector('img')!.getAttribute('src')).toBe('/logo.svg')
+    expect(card.querySelector('h2')!.textContent).toBe('nexpaper')
     const facts = document.querySelector('[data-testid="about-facts"]')!.textContent!
     expect(document.querySelector('[data-testid="about-version"]')?.textContent).toBe('1.0.0')
     expect(facts).toContain('AGPL-3.0')
@@ -75,16 +79,22 @@ describe('the daily question', () => {
     server.answers['POST /api/v1/about/updates/check'] = current
     await page.show(<AboutArea />)
     expect(page.text).toContain('Hinaus geht nur die Frage')
-    await page.click(page.button('Jetzt nachsehen'))
+    // The kit's About page (ui AboutPage): the card of the updates, "Jetzt nachsehen" secondary, the daily question a box.
+    expect(document.querySelector('[data-card="about-updates"]')).toBeTruthy()
+    const now = page.button('Jetzt nachsehen')!
+    expect([now.dataset.kind, now.dataset.icon]).toEqual(['secondary', 'RefreshCw'])
+    await page.click(now)
     expect(server.changes()).toEqual(['POST /api/v1/about/updates/check'])
-    await page.click(document.querySelector<HTMLElement>('[role="switch"]'))
+    expect(document.querySelector('[role="switch"]')).toBeNull()
+    await page.click(document.querySelector<HTMLElement>('[data-testid="about-daily"]'))
     expect(server.called('PUT', '/api/v1/about/updates')?.body).toEqual({ update_check: false })
   })
 
   it('is only shown, not changed, to a member', async () => {
     auth.me = { ...me, role: 'member' } as Me
     await page.show(<AboutArea />)
-    expect(document.querySelector('[role="switch"]')).toBeNull()
+    expect(document.querySelector('[data-testid="about-updates"]') ?? document.querySelector('[data-card="about-updates"]')).toBeTruthy()
+    expect(document.querySelector('[data-testid="about-daily"]')).toBeNull()
     expect(page.button('Jetzt nachsehen')).toBeUndefined()
     expect(document.querySelector('[data-testid="about-update-state"]')?.textContent).toBe('Das ist die neueste Version.')
   })

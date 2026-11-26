@@ -1,6 +1,6 @@
 /**
- * Settings, the card "Text recognition", as nexnotes': the six languages of the server as chips right under the head
- * with the chosen ones marked, a change saved at once (in the order of the offer, never the last language off); under
+ * Server › Text recognition, the card "Texterkennung", as nexnotes': the six languages of the server as the kit's choice
+ * of several (`Segment multiple`, plan "Einstellungen") right under the head with the chosen ones marked, a change saved at once (in the order of the offer, never the last language off); under
  * "Verarbeitung" the two switches, the queue with the pace, and an honest line when the server has no recognition.
  */
 import { changeLanguage } from '../../i18n'
@@ -26,10 +26,25 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
+/** One language of the kit's choice of several (`Segment multiple`: a group of checkbox buttons). */
 function chip(name: string): HTMLButtonElement {
-  const found = [...document.querySelectorAll<HTMLButtonElement>('button[aria-pressed]')].find((b) => b.textContent === name)
+  const found = [...document.querySelectorAll<HTMLButtonElement>('[data-segment="multiple"] button[role="checkbox"]')].find((b) => b.textContent === name)
   expect(found, name).toBeTruthy()
   return found!
+}
+
+/** A box to tick of the kit (`CheckboxRow`) by its label: never a sliding switch. */
+function box(label: string): HTMLInputElement {
+  const named = [...document.querySelectorAll<HTMLLabelElement>('label')].find((item) => item.textContent === label)
+  const found = named ? (document.getElementById(named.htmlFor) as HTMLInputElement | null) : null
+  expect(found, label).toBeTruthy()
+  expect(found!.type).toBe('checkbox')
+  return found!
+}
+
+function field(label: string): HTMLInputElement {
+  const named = [...document.querySelectorAll<HTMLLabelElement>('label')].find((l) => l.textContent?.startsWith(label))!
+  return document.getElementById(named.htmlFor) as HTMLInputElement
 }
 
 describe('the card of the text recognition', () => {
@@ -37,15 +52,16 @@ describe('the card of the text recognition', () => {
     await page.show(<OcrCard />)
     expect(page.text).toContain('Texterkennung')
     expect(page.text).toContain('Sprachen, die in Scans, Fotos und PDFs gelesen werden. PDFs, die schon Text haben, bleiben, wie sie sind.')
-    expect([...document.querySelectorAll('button[aria-pressed]')].map((b) => b.textContent)).toEqual(['Deutsch', 'Englisch', 'Französisch', 'Niederländisch', 'Polnisch', 'Türkisch'])
-    // As in nexnotes: the chips are the first thing in the card, without a heading of their own; nexpaper's own below a
-    // heading of theirs.
-    const card = document.querySelector('section')!
+    expect([...document.querySelectorAll('[data-segment="multiple"] button')].map((b) => b.textContent)).toEqual(['Deutsch', 'Englisch', 'Französisch', 'Niederländisch', 'Polnisch', 'Türkisch'])
+    // As in nexnotes: the languages are the first thing in the card; nexpaper's own below in a box with its heading.
+    const card = document.querySelector('[data-card="ocr"]')!
+    expect(card.querySelector('[role="group"]')!.getAttribute('data-testid')).toBe('ocr-languages')
     expect(card.querySelector('h3')!.textContent).toBe('Verarbeitung')
     expect(card.querySelector('[role="group"]')!.compareDocumentPosition(card.querySelector('h3')!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-    expect(card.querySelector('h3')!.compareDocumentPosition(card.querySelector('[role="switch"]')!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-    expect(chip('Deutsch').getAttribute('aria-pressed')).toBe('true')
-    expect(chip('Polnisch').getAttribute('aria-pressed')).toBe('false')
+    expect(card.querySelector('h3')!.compareDocumentPosition(card.querySelector('input[type="checkbox"]')!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(card.querySelector('[role="switch"]')).toBeNull()
+    expect(chip('Deutsch').getAttribute('aria-checked')).toBe('true')
+    expect(chip('Polnisch').getAttribute('aria-checked')).toBe('false')
     // Nothing is loaded later: the hint says so.
     expect(page.text).toContain('Diese sechs bringt nexpaper mit, nachgeladen wird nichts.')
     expect(page.text).not.toContain('beim ersten Gebrauch')
@@ -60,32 +76,35 @@ describe('the card of the text recognition', () => {
     await page.show(<OcrCard />)
     await page.click(chip('Polnisch'))
     expect(server.called('PUT', '/api/v1/settings/ocr')!.body).toEqual({ languages: ['deu', 'eng', 'pol'] })
-    expect(chip('Polnisch').getAttribute('aria-pressed')).toBe('true')
+    expect(chip('Polnisch').getAttribute('aria-checked')).toBe('true')
   })
 
   it('never switches the last language off', async () => {
     server.answers['GET /api/v1/settings/ocr'] = { ...state, languages: ['eng'] }
     await page.show(<OcrCard />)
+    // The last one stands locked (the kit's `min`), a press sends nothing.
+    expect(chip('Englisch').disabled).toBe(true)
     await page.click(chip('Englisch'))
     expect(server.called('PUT', '/api/v1/settings/ocr')).toBeUndefined()
-    expect(chip('Englisch').getAttribute('aria-pressed')).toBe('true')
+    expect(chip('Englisch').getAttribute('aria-checked')).toBe('true')
   })
 
   it('saves the switches, and says what the separator pages do', async () => {
     server.answers['PUT /api/v1/settings/ocr'] = { ...state, straighten: false }
     await page.show(<OcrCard />)
     expect(page.text).toContain('Ein Stapelscan wird im Eingang zum Aufteilen vorgeschlagen.')
-    const straighten = document.querySelector<HTMLButtonElement>('[role="switch"][aria-label="Schiefe Seiten gerade richten und drehen"]')
+    const straighten = box('Schiefe Seiten gerade richten und drehen')
+    expect(straighten.checked).toBe(true)
     await page.click(straighten)
     expect(server.called('PUT', '/api/v1/settings/ocr')!.body).toEqual({ straighten: false })
-    expect(straighten!.getAttribute('aria-checked')).toBe('false')
+    expect(box('Schiefe Seiten gerade richten und drehen').checked).toBe(false)
   })
 
   it('goes back to what the server has when saving fails', async () => {
     server.fails['PUT /api/v1/settings/ocr'] = { status: 422, code: 'invalid_input' }
     await page.show(<OcrCard />)
     await page.click(chip('Türkisch'))
-    expect(chip('Türkisch').getAttribute('aria-pressed')).toBe('false')
+    expect(chip('Türkisch').getAttribute('aria-checked')).toBe('false')
     expect(document.querySelector('[role="alert"]')).toBeTruthy()
   })
 
@@ -108,20 +127,23 @@ describe('the card of the text recognition', () => {
   it('shows the longest time for a document in minutes and saves it in seconds', async () => {
     server.answers['PUT /api/v1/settings/ocr'] = { ...state, max_seconds: 5400 }
     await page.show(<OcrCard />)
-    const field = [...document.querySelectorAll<HTMLLabelElement>('label')].find((l) => l.textContent?.startsWith('Zeit je Dokument (Minuten)'))!.querySelector('input')!
-    expect(field.value).toBe('60')
+    const minutes = field('Zeit je Dokument (Minuten)')
+    expect(minutes.value).toBe('60')
     expect(page.text).toContain('Eine Seite darf höchstens das Zehnfache des Schnitts dauern.')
-    await page.type(field, '90')
-    await page.click(page.button('Speichern'))
+    await page.type(minutes, '90')
+    // The field's own button, level with the field (`Field action`).
+    const save = page.button('Speichern')!
+    expect(save.closest('[data-part="field-action"]')).toBeTruthy()
+    await page.click(save)
     expect(server.called('PUT', '/api/v1/settings/ocr')!.body).toEqual({ max_seconds: 5400 })
-    expect(field.value).toBe('90')
+    expect(minutes.value).toBe('90')
   })
 
   it('refuses a time out of range on the page and sends nothing', async () => {
     await page.show(<OcrCard />)
-    const field = [...document.querySelectorAll<HTMLLabelElement>('label')].find((l) => l.textContent?.startsWith('Zeit je Dokument (Minuten)'))!.querySelector('input')!
+    const minutes = field('Zeit je Dokument (Minuten)')
     for (const wrong of ['0', '1441', '1,5', 'x']) {
-      await page.type(field, wrong)
+      await page.type(minutes, wrong)
       await page.click(page.button('Speichern'))
       expect(page.text).toContain('Gib eine ganze Zahl von 1 bis 1440 Minuten an.')
     }

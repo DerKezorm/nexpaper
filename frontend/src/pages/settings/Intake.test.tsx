@@ -50,15 +50,21 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
+/** A field of the kit, found by its label (joined by `for`). */
 function field(label: string): HTMLInputElement {
-  const input = [...document.querySelectorAll<HTMLLabelElement>('label')].find((l) => l.textContent?.startsWith(label))?.querySelector('input')
+  const named = [...document.querySelectorAll<HTMLLabelElement>('label')].find((l) => l.textContent?.startsWith(label))
+  const input = named ? ((named.querySelector('input') ?? document.getElementById(named.htmlFor)) as HTMLInputElement | null) : null
   expect(input, label).toBeTruthy()
   return input!
 }
 
-function toggle(label: string): HTMLButtonElement {
-  const found = document.querySelector<HTMLButtonElement>(`[role="switch"][aria-label="${label}"]`)
+/** The kit's box to tick (`CheckboxRow`), found by its label: never a sliding switch (plan "Einstellungen", E11). */
+function toggle(label: string): HTMLInputElement {
+  const named = [...document.querySelectorAll<HTMLLabelElement>('label')].find((item) => item.textContent === label)
+  const found = named ? (document.getElementById(named.htmlFor) as HTMLInputElement | null) : null
   expect(found, label).toBeTruthy()
+  expect(found!.type).toBe('checkbox')
+  expect(found!.getAttribute('role')).toBeNull()
   return found!
 }
 
@@ -84,11 +90,14 @@ describe('Settings, Inputs', () => {
   })
 
   it('switches the folder and the mailbox at once, and changes "Afterwards" with one press', async () => {
-    server.answers['PUT /api/v1/settings/intake'] = settings({ folder: { on: false }, mail: { after: 'delete' } })
+    server.answers['PUT /api/v1/settings/intake'] = settings({ folder: { on: false } })
     await page.show(<IntakeCards />)
     await page.click(toggle('Eingangsordner beobachten'))
     expect(server.called('PUT', '/api/v1/settings/intake')!.body).toEqual({ folder_on: false })
+    server.answers['PUT /api/v1/settings/intake'] = settings({ folder: { on: false }, mail: { after: 'delete' } })
+    // "Afterwards" is the kit's choice of one (`Segment`, radio buttons).
     await page.click(page.button('Löschen'))
+    expect(document.querySelector('[role="radio"][aria-checked="true"]')!.textContent).toBe('Löschen')
     expect(server.calls.filter((c) => c.method === 'PUT').map((c) => c.body)).toEqual([{ folder_on: false }, { mail_after: 'delete' }])
   })
 
@@ -198,7 +207,7 @@ describe('Settings, Inputs', () => {
     await page.show(<IntakeCards />)
     expect(page.text).not.toContain('Adresse des Postfachs')
     expect(page.text).not.toContain('Ordner im Container')
-    expect(toggle('Postfach abholen').getAttribute('aria-checked')).toBe('false')
+    expect(toggle('Postfach abholen').checked).toBe(false)
   })
 })
 
@@ -210,10 +219,12 @@ describe('My account, Upload', () => {
       'jule@example.com', 'Adresse deines Kontos', 'jule.berger@example.org', 'neu@example.org', 'wartet auf Bestätigung', 'Weitere Absenderadresse',
       'Bekommt eine Mail mit Bestätigungslink, damit niemand fremde Adressen einträgt.',
       'Von irgendeiner anderen Adresse geht es mit deiner eigenen Postfach-Adresse:', 'paper+jule@example.com',
-      'Dein Unterordner für den Scanner im Netz.', '/data/eingang/jule/',
+      'Dein Unterordner für den Scanner im Netz.',
     ]) {
       expect(page.text, words).toContain(words)
     }
+    // The own subfolder stands in the kit's row to copy (`CopyRow`).
+    expect(document.querySelector<HTMLInputElement>('[data-testid="my-folder"] input')!.value).toBe('/data/eingang/jule/')
   })
 
   it('adds an address (the server mails the link) and removes one', async () => {
@@ -246,13 +257,14 @@ describe('My account, Upload', () => {
     server.answers['GET /api/v1/me/intake'] = { ...mine, folder_on: false, folder: '', can_confirm: false }
     await page.show(<MyIntakeCards />)
     expect(page.text).not.toContain('/data/eingang/jule/')
+    expect(document.querySelector('[data-testid="my-folder"]')).toBeNull()
     expect(page.text).toContain('Ohne Mailserver lässt sich keine Adresse bestätigen.')
     expect(document.querySelector('input')).toBeNull()
     page.close()
     server.answers['GET /api/v1/me/intake'] = { ...mine, mail_on: false, mail_address: '', plus_address: '' }
     await page.show(<MyIntakeCards />)
     expect(page.text).not.toContain('Per Mail')
-    expect(page.text).toContain('/data/eingang/jule/')
+    expect(document.querySelector<HTMLInputElement>('[data-testid="my-folder"] input')!.value).toBe('/data/eingang/jule/')
   })
 })
 

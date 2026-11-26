@@ -1,6 +1,7 @@
 /**
- * Settings, General, the card "Grenzen": the limits on what comes in are shown with their values; the size of one file
- * has its own row and Save as in nexnotes, the further limits one Save below (each sends only what changed in its part),
+ * Server › General, the card "Grenzen": the limits on what comes in are shown with their values; the size of one file
+ * has its own field with its own Save (`Field action`) as in nexnotes, the line that the storage of each account is
+ * set under "Konten", the further limits one Save below (each sends only what changed in its part),
  * refused on the page when a number is out of its range. Settings, Storage: the disk card shows how the files lie (the
  * queue is on the card of the text recognition, `Ocr.test.tsx`).
  */
@@ -34,8 +35,10 @@ function save(part: 'file' | 'more', name = 'Speichern'): HTMLButtonElement | un
   return page.button(name, document.querySelector(`[data-testid="limit-${part}"]`)!)
 }
 
+/** A field of the kit by its label (joined by `for`). */
 function field(label: string): HTMLInputElement {
-  const input = [...document.querySelectorAll<HTMLLabelElement>('label')].find((l) => l.textContent?.startsWith(label))?.querySelector('input')
+  const named = [...document.querySelectorAll<HTMLLabelElement>('label')].find((l) => l.textContent?.startsWith(label))
+  const input = named ? (document.getElementById(named.htmlFor) as HTMLInputElement | null) : null
   expect(input, label).toBeTruthy()
   return input!
 }
@@ -56,6 +59,11 @@ describe('the limits', () => {
     expect(field('Arbeitsspeicher je Dokument (MB)').value).toBe('2048')
     expect(field('Zwischenspeicher für Seitenbilder (MB)').value).toBe('1024')
     expect(page.text).toContain('0 heißt: keine Grenze, sonst mindestens 256.')
+    // The card of the kit, and the Save of one file level with its field (plan "Einstellungen", Allgemein 1).
+    expect(document.querySelector('[data-card="limits"]')).toBeTruthy()
+    expect(save('file')!.closest('[data-part="field-action"]')!.contains(field('Größe einer Datei (MB)'))).toBe(true)
+    expect([save('file')!.dataset.kind, save('more')!.dataset.kind]).toEqual(['secondary', 'secondary'])
+    expect(document.querySelector('[data-testid="limits-accounts"]')!.textContent).toBe('Speicher je Konto setzt du unter „Konten“.')
   })
 
   it('send only what was changed, each Save its own part', async () => {
