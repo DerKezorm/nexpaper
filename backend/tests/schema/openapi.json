@@ -14323,6 +14323,8 @@
             "name": "name",
             "required": true,
             "schema": {
+              "maxLength": 64,
+              "pattern": "^nexpaper-\\d{4}-\\d{2}-\\d{2}-\\d{6}(-\\d+)?(-upload)?\\.zip$",
               "title": "Name",
               "type": "string"
             }
@@ -14373,6 +14375,8 @@
             "name": "name",
             "required": true,
             "schema": {
+              "maxLength": 64,
+              "pattern": "^nexpaper-\\d{4}-\\d{2}-\\d{2}-\\d{6}(-\\d+)?(-upload)?\\.zip$",
               "title": "Name",
               "type": "string"
             }
@@ -14422,6 +14426,8 @@
             "name": "name",
             "required": true,
             "schema": {
+              "maxLength": 64,
+              "pattern": "^nexpaper-\\d{4}-\\d{2}-\\d{2}-\\d{6}(-\\d+)?(-upload)?\\.zip$",
               "title": "Name",
               "type": "string"
             }
@@ -14477,6 +14483,8 @@
             "name": "name",
             "required": true,
             "schema": {
+              "maxLength": 64,
+              "pattern": "^nexpaper-\\d{4}-\\d{2}-\\d{2}-\\d{6}(-\\d+)?(-upload)?\\.zip$",
               "title": "Name",
               "type": "string"
             }

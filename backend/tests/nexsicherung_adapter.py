@@ -32,6 +32,8 @@ class Adapter(StandardAdapter):
     operation_ids: dict[str, str] = _names["operation_ids"]
     summaries: dict[str, str] = _names["summaries"]
     schema_names: dict[str, str] = _names["schema_names"]
+    # E53, step 9: the old routes check {name} with nexpaper's pattern and length again (former_names gives it).
+    name_pattern = bool(_names.get("name_pattern"))
     openapi_path = "/api/v1/openapi.json"
 
     def start(self) -> None:
