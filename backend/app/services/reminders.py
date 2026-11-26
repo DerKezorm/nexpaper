@@ -287,8 +287,10 @@ def save(db: Session, account: Account, change: dict[str, Any]) -> None:
 # --- What a message says ----------------------------------------------------------------------------------------------
 
 
-WEEKDAYS = {"de": ("Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"), "en": ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")}
-MONTHS = {"en": ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")}
+WEEKDAYS = {"de": ("Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"), "en": ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"),
+            "fr": ("lun.", "mar.", "mer.", "jeu.", "ven.", "sam.", "dim.")}
+MONTHS = {"en": ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"),
+          "fr": ("janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc.")}
 WORDS: dict[str, dict[str, str]] = {
     "de": {
         "pay": "Zahlen bis {day}", "cancel": "Kündigen bis {day}", "ends": "Vertrag endet {day}",
@@ -352,20 +354,58 @@ WORDS: dict[str, dict[str, str]] = {
         "all": "Open all deadlines in nexpaper",
         "week_why": "This mail comes because you switched on the weekly overview under My account › Notifications.",
     },
+    "fr": {
+        "pay": "Payer avant le {day}", "cancel": "Résilier avant le {day}", "ends": "Le contrat prend fin le {day}",
+        "warranty": "Garantie jusqu'au {day}", "follow_up": "Relance le {day}",
+        "short_pay": "Payer", "short_cancel": "Résilier", "short_ends": "Résilier", "short_warranty": "Garantie",
+        "short_follow_up": "Relance",
+        "days": "Encore {n} jours.", "tomorrow": "Demain.", "today": "Aujourd'hui.", "yesterday": "Depuis hier.",
+        "since": "Depuis {n} jours.",
+        "renews": " Ensuite, le contrat est prolongé jusqu'au {date}.",
+        "ends_renews": " Sans résiliation, il est prolongé jusqu'au {date}.",
+        "more_one": "Et une autre échéance", "more": "Et {n} autres échéances",
+        "more_body": "Plus de {limit} en un jour. Toutes figurent sur la page Échéances.",
+        "test_title": "Message de test de nexpaper",
+        "test_body": "Voici comment arrivent vos rappels. Un appui ouvre la page Échéances.",
+        "open": "Ouvrir : {link}",
+        "single_why": "Ce courriel vous parvient parce que vous avez activé les rappels par courriel sous "
+                      "Mon compte › Notifications.",
+        "week_subject": "Cette semaine : {n} {fristen}", "week_none": "Cette semaine : aucune échéance",
+        "frist": "échéance", "fristen": "échéances", "overdue_part": ", {n} en retard",
+        "hello": "Bonjour {name}, voici ce qui arrive cette semaine :",
+        "overdue": "En retard", "week": "Cette semaine", "nothing": "rien", "may_go": "Peut partir",
+        "may_go_one": "La durée de conservation d'un document est écoulée. Il se trouve dans les archives sous "
+                      "« Peut partir ».",
+        "may_go_many": "La durée de conservation de {n} documents est écoulée. Ils se trouvent dans les archives sous "
+                       "« Peut partir ».",
+        "trashed": "Corbeille",
+        "trashed_one": "nexpaper a mis un document à la corbeille, sa durée de conservation était écoulée. Il peut y "
+                       "être restauré pendant 30 jours.",
+        "trashed_many": "nexpaper a mis {n} documents à la corbeille, leur durée de conservation était écoulée. Ils "
+                        "peuvent y être restaurés pendant 30 jours.",
+        "and_more": "et {n} autres",
+        "all": "Ouvrir toutes les échéances dans nexpaper",
+        "week_why": "Ce courriel vous parvient parce que vous avez activé l'aperçu hebdomadaire sous "
+                    "Mon compte › Notifications.",
+    },
 }
 
 
 def short_day(day: Date, lang: str) -> str:
-    """"Mi, 30.09." or "Wed, Sep 30"."""
+    """"Mi, 30.09.", "Wed, Sep 30" or "mer. 30 sept."."""
     weekday = WEEKDAYS[lang][day.weekday()]
     if lang == "de":
         return f"{weekday}, {day.day:02d}.{day.month:02d}."
+    if lang == "fr":
+        return f"{weekday} {day.day} {MONTHS['fr'][day.month - 1]}"
     return f"{weekday}, {MONTHS['en'][day.month - 1]} {day.day}"
 
 
 def long_date(day: Date, lang: str) -> str:
     if lang == "de":
         return f"{day.day:02d}.{day.month:02d}.{day.year}"
+    if lang == "fr":
+        return f"{day.day} {MONTHS['fr'][day.month - 1]} {day.year}"
     return f"{MONTHS['en'][day.month - 1]} {day.day}, {day.year}"
 
 
@@ -407,8 +447,10 @@ def words_for(deadline: deadlines.Deadline, today: Date, lang: str) -> tuple[str
 
 
 def language_of(account: Account, device_lang: str = "") -> str:
-    """The person's language: the one of the account, else the one the device signed up in."""
-    return notices.language_of(account.language or device_lang)
+    """The person's language: the one of the account, else the one the device signed up in; German, English or French
+    (Bauplan E26, E58), any other English as before."""
+    code = (account.language or device_lang or "").split("-")[0].lower()
+    return "fr" if code == "fr" else notices.language_of(account.language or device_lang)
 
 
 @dataclass

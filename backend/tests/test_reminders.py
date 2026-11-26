@@ -502,6 +502,38 @@ def test_an_english_person_gets_english_words(town: Town) -> None:
     assert message["body"] == "14 days to go. After that the contract renews until Jan 22, 2028."
 
 
+def test_a_french_person_gets_french_words_by_push_and_by_mail(town: Town, mails: Mails) -> None:
+    """Bauplan E26, E58: the reminders speak French too, push and mail, in the language of the account."""
+    set_profile(town.jule, language="fr", mail="jule@example.com")
+    choose(town.jule, mail=True, rhythm="single")
+    doc = town.add("Mobile", town.mine, town.jule)
+    contract(doc, town.jule.id, Date(2027, 1, 22))
+    run(at(TODAY, 8))
+    message = town.messages()[0]
+    assert message["title"] == "Résilier avant le jeu. 22 oct.: Mobile"
+    assert message["body"] == "Encore 14 jours. Ensuite, le contrat est prolongé jusqu'au 22 janv. 2028."
+    single = mails[0]
+    assert single["Subject"] == "Résilier avant le jeu. 22 oct.: Mobile"
+    assert ("Content-Language", "fr") in single.letter.headers
+    assert "Mon compte › Notifications" in single.get_content()
+
+
+def test_the_weekly_mail_speaks_french_too(town: Town, mails: Mails) -> None:
+    set_profile(town.jule, language="fr", mail="jule@example.com")
+    choose(town.jule, rhythm="weekly")
+    monday = Date(2026, 10, 12)
+    town.add("Prochaine", town.mine, town.jule, dates=[("due", monday + 8 * DAY)])
+    for n in range(2):
+        town.add(f"Ancien {n}", town.mine, town.jule, dates=[("keep_until", monday - 30 * DAY)])
+    run(at(monday + 7 * DAY, 9))
+    assert len(mails) == 1
+    assert mails[0]["Subject"] == "Cette semaine : 1 échéance"
+    plain = mails[0].get_body(("plain",)).get_content()  # type: ignore[union-attr]
+    assert "mar. 20 oct. · Payer: Prochaine" in plain
+    assert "La durée de conservation de 2 documents est écoulée." in plain
+    assert "Bonjour jule" in plain
+
+
 def test_the_weekly_mail_goes_on_monday_only_when_something_comes_up(town: Town, mails: Mails) -> None:
     choose(town.jule, rhythm="weekly")
     monday = Date(2026, 10, 12)
