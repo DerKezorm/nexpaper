@@ -15,8 +15,8 @@ import { LogCard } from './vendor/nexlog/LogCard'
 import { LOG_TEXTS, type LogLine, type LogMode, type LogRequest } from './vendor/nexlog/log'
 
 // APP: where the app mounts the routes (nexpaper '/api/v1/logs'), and its word for what it keeps (German).
-const BASE = '/api/logs'
-const THINGS = 'Notizen'
+const BASE = '/api/v1/logs'
+const THINGS = 'Dokumenten'
 
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 

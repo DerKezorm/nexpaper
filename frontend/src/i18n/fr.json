@@ -518,7 +518,7 @@
     "ownSecondFactorFirst": "Configurez d'abord votre propre second facteur (Mon compte, Sécurité), sinon vous seriez le premier à ne plus pouvoir continuer. N'est pas concerné qui se connecte par un fournisseur pour lequel « {{trusts}} » est activé.",
     "secretKept": "enregistré, laisser vide pour le conserver",
     "mail": "Courriel",
-    "mailHint": "Pour l'envoi : invitations, « Mot de passe oublié ? », confirmation d'adresses courriel, avis de nouvelle connexion. Sans serveur, le lien à copier suffit, et « Mot de passe oublié ? » est absent à la connexion.",
+    "mailHint": "nexpaper envoie par lui les invitations, les liens pour un nouveau mot de passe et pour confirmer une adresse, les avis sur ton compte (nouvelle connexion, adresse modifiée, nouveau nom d'utilisateur, second facteur réinitialisé), les rappels d'échéances et l'aperçu de la semaine, l'avis d'un export terminé ou échoué, les avis aux opérateurs (demandes de dépôt, import Paperless, vérification des fichiers, restauration, connexion) et la confirmation d'une adresse d'expéditeur pour l'entrée par courriel.",
     "smtpHost": "Serveur",
     "smtpPort": "Port",
     "smtpSecurity": "Chiffrement",

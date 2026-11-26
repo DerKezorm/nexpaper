@@ -14,11 +14,13 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { NexuiLanguage } from './vendor/nexui'
 import { MailCard } from './vendor/nexpost/MailCard'
 import type { MailView, PostRequest } from './vendor/nexpost/mailserver'
+import german from './i18n/de.json'
 
 // APP: where the app mounts nexpost.api.router, its name, and its sentence under the title (German).
-const BASE = '/api/server/mail'
-const APP = 'nexapp'
-const SUBTITLE = `Der Mailserver, über den ${APP} Einladungen, Links und Benachrichtigungen verschickt.`
+const BASE = '/api/v1/server/mail'
+const APP = 'nexpaper'
+// nexpaper's sentence (`server.mailHint`), naming every mail it sends (plan E26).
+const SUBTITLE = german.server.mailHint
 
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 

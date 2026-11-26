@@ -518,7 +518,7 @@
     "ownSecondFactorFirst": "Set up your own second factor first (My account, Security), or you would be the first one who cannot go on. Not affected is whoever signs in through a provider for which “{{trusts}}” is on.",
     "secretKept": "stored, leave empty to keep it",
     "mail": "Mail",
-    "mailHint": "For sending: invitations, \"Forgot your password?\", confirming mail addresses, the notice of a new sign-in. Without a server the link to copy is enough, and \"Forgot your password?\" is missing at sign-in.",
+    "mailHint": "nexpaper sends through it invitations, links for a new password and to confirm an address, notices about your account (a new sign-in, a changed address, a new username, a second factor reset), reminders of deadlines and the weekly overview, word of a finished or failed export, notices to operators (upload requests, Paperless import, the check of the files, restoring, sign-in) and the confirmation of a sender address for the mail intake.",
     "smtpHost": "Server",
     "smtpPort": "Port",
     "smtpSecurity": "Encryption",

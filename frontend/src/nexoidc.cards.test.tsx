@@ -16,8 +16,8 @@ import { AUTHENTIK_STEPS, issuerPlaceholder, oidcVariables } from './vendor/nexo
 import german from './vendor/nexoidc/oidc.de.json'
 
 // APP: the app's name and where its API lives (nexpaper '/api/v1').
-const APP = 'nexnotes'
-const API = '/api'
+const APP = 'nexpaper'
+const API = '/api/v1'
 
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 

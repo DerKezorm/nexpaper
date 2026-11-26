@@ -518,7 +518,7 @@
     "ownSecondFactorFirst": "Richte zuerst deinen eigenen zweiten Faktor ein (Mein Konto, Sicherheit), sonst wärst du der Erste, der nicht mehr weiterkommt. Nicht betroffen ist, wer sich über einen Anbieter anmeldet, bei dem „{{trusts}}“ an ist.",
     "secretKept": "gespeichert, leer lassen zum Behalten",
     "mail": "Mail",
-    "mailHint": "Zum Verschicken: Einladungen, „Passwort vergessen?“, Bestätigung von Mailadressen, Bescheid bei neuer Anmeldung. Ohne Server reicht der Link zum Kopieren, und „Passwort vergessen?“ fehlt bei der Anmeldung.",
+    "mailHint": "Über ihn verschickt nexpaper Einladungen, Links für ein neues Passwort und zum Bestätigen einer Adresse, Hinweise zu deinem Konto (neue Anmeldung, geänderte Adresse, neuer Benutzername, zurückgesetzter zweiter Faktor), Erinnerungen an Fristen und die Wochenübersicht, Bescheid zu einem fertigen oder gescheiterten Export, Hinweise an Betreiber (Upload-Bitten, Paperless-Import, Prüfung der Dateien, Wiederherstellen, Anmeldung) und die Bestätigung einer Absenderadresse für den Mail-Eingang.",
     "smtpHost": "Server",
     "smtpPort": "Port",
     "smtpSecurity": "Verschlüsselung",

@@ -15,8 +15,8 @@ import { NexuiLanguage } from './vendor/nexui'
 import { AllKeysCard, ApiKeysCard, InterfacesCard, KEY_TEXTS, ToolsCard, type AdminKey, type Interfaces, type KeyEntry, type KeyListing, type KeyRequest } from './vendor/nexschluessel'
 
 // APP: where the app mounts the module's routes, and its word for what it keeps (German, in the form of the sentence).
-const BASE = '/api/connections'
-const THINGS = 'Notizen'
+const BASE = '/api/v1/connections'
+const THINGS = 'Dokumenten'
 
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 

@@ -18,7 +18,7 @@ import german from './vendor/nexkonten/konten.de.json'
 import english from './vendor/nexkonten/konten.en.json'
 
 // APP: the app's name, as its container is called.
-const APP = 'nexnotes'
+const APP = 'nexpaper'
 
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
