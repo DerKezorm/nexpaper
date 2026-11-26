@@ -3,7 +3,8 @@
  * and, where the app has MCP, "MCP-Zugang", each a `CheckboxRow`; where the app has an iPhone app, the places
  * "iPhone-App erlauben" and "Neue Geräte verbinden" (the app fills them by naming the switches in its `AppConfig`;
  * the setting stays where the app keeps it). Then the app's own rows (nexlore: highest level of an MCP key,
- * connectors, blocked tools) and the link "Beschreibung der Schnittstelle". Switching off deletes nothing.
+ * connectors, blocked tools) and the link "Beschreibung der Schnittstelle". A box is kept at once, since 1.1.1 with a
+ * short "Gespeichert." (MCP 21). Switching off deletes nothing.
  *
  * Copied unchanged into frontend/src/vendor/nexschluessel/ by bauplaene/schluessel/tools/sync.py; changed only there.
  */
@@ -31,6 +32,7 @@ export function InterfacesCard({ request, base = KEYS_BASE, docsHref, language, 
   const [state, setState] = useState<Interfaces | null>(null)
   const [busy, setBusy] = useState<SwitchName | null>(null)
   const [problem, setProblem] = useState<string>()
+  const [saved, setSaved] = useState(false)
 
   const load = useCallback(() => request<Interfaces>(`${base}/interfaces`), [request, base])
   useEffect(() => {
@@ -40,8 +42,10 @@ export function InterfacesCard({ request, base = KEYS_BASE, docsHref, language, 
   const change = async (name: SwitchName, on: boolean) => {
     setBusy(name)
     setProblem(undefined)
+    setSaved(false)
     try {
       setState(await request<Interfaces>(`${base}/interfaces`, { method: 'PUT', body: { [name]: on } }))
+      setSaved(true)
     } catch (failure) {
       setProblem(refusalText(texts, failure))
     } finally {
@@ -77,6 +81,11 @@ export function InterfacesCard({ request, base = KEYS_BASE, docsHref, language, 
             {after?.[name]}
           </div>
         ))}
+      {saved && (
+        <p className="m-0 text-xs leading-4 text-[var(--nexui-ok)]" role="status" data-testid="interfaces-saved">
+          {texts.interfaces.saved}
+        </p>
+      )}
       {children}
       {docsHref && (
         <Buttons>

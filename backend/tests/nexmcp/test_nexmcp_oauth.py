@@ -6,7 +6,7 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
-from mcp_contract import REDIRECT, connect, consent, pkce, program, refresh, register, rpc, trade
+from mcp_contract import REDIRECT, connect, consent, pkce, program, refresh, register, rpc, switch_mcp, trade
 
 
 def test_the_401_leads_a_program_to_the_metadata(app: Any) -> None:
@@ -155,3 +155,65 @@ def test_the_token_route_takes_json_as_well(app: Any) -> None:
     assert again.status_code == 200, again.text
     broken = program(app).post(f"{app.config().oauth_prefix}/token", json={"grant_type": ["x"]})
     assert broken.status_code == 400 and broken.json()["error"] == "invalid_request"
+
+
+def _asked(app: Any, client_id: str) -> dict[str, str]:
+    _, challenge = pkce()
+    return {
+        "client_id": client_id,
+        "redirect_uri": REDIRECT,
+        "response_type": "code",
+        "code_challenge": challenge,
+        "code_challenge_method": "S256",
+        "state": "s1",
+    }
+
+
+def test_the_consent_checks_its_fields_and_takes_the_answer_of_the_page_before(app: Any) -> None:
+    """M-13, M-14 (1.1.2): lengths and forms of the answer as nexnotes checked them (422); ``approve`` of the page of
+    before, still open in a tab at the update; ``client_name`` as that page read it."""
+    owner = app.client("owner")
+    path = f"{app.config().oauth_prefix}/authorize"
+    params = _asked(app, register(app))
+    shown = owner.get(path, params=params).json()
+    assert shown["client_name"] == shown["client"]["name"] == "Probe client"
+    for broken in (
+        {"client_id": "x" * 201},
+        {"redirect_uri": "x" * 2049},
+        {"state": "s" * 1025},
+        {"level": "Write!"},
+        {"level": "w" * 41},
+        {"areas": ["1"] * 1001},
+        {"areas": [{"id": 1}]},
+        {"options": {"x": [1]}},
+        {"allow": "perhaps"},
+    ):
+        refused = owner.post(path, json={**params, "allow": True, **broken})
+        assert refused.status_code == 422, (broken, refused.text)
+    agreed = owner.post(path, json={**params, "approve": True})
+    assert agreed.status_code == 200 and "code=" in agreed.json()["redirect"], agreed.text
+    declined = owner.post(path, json={**_asked(app, register(app)), "approve": False})
+    assert "error=access_denied" in declined.json()["redirect"]
+
+
+def test_the_oauth_ways_answer_as_the_app_did_while_mcp_is_off(app: Any) -> None:
+    """M-15 (1.1.2): while MCP itself is off, the consent answers ``oauth_off_status`` and ``oauth_off_code``, the
+    registration with 403 ``access_denied`` where that status is 403, else 404."""
+    config = app.config()
+    owner = app.client("owner")
+    path = f"{config.oauth_prefix}/authorize"
+    params = _asked(app, register(app))
+    switch_mcp(app, False)
+    try:
+        for answer in (owner.get(path, params=params), owner.post(path, json={**params, "allow": True})):
+            assert answer.status_code == config.oauth_off_status, answer.text
+            assert app.refusal(answer)["code"] == config.oauth_off_code
+        registered = program(app).post(
+            f"{config.oauth_prefix}/register", json={"client_name": "Probe client", "redirect_uris": [REDIRECT]}
+        )
+        if config.oauth_off_status == 403:
+            assert registered.status_code == 403 and registered.json()["error"] == "access_denied", registered.text
+        else:
+            assert registered.status_code == 404, registered.text
+    finally:
+        switch_mcp(app, True)

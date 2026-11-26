@@ -4,6 +4,7 @@ whole server per minute. A restart forgets them; that is accepted (it was so in 
 
 from __future__ import annotations
 
+import hashlib
 import ipaddress
 import threading
 import time
@@ -54,6 +55,15 @@ class Brake:
         moment = time.monotonic() if now is None else now
         with self._lock:
             self._count(key, WRONG_WINDOW, moment).append(moment)
+
+
+def wrong_key_pot(address: str, token: str | None) -> str:
+    """Since 1.1.2 (M-18): where the wrong keys of a request count. With a known sender per sender (``sender_of``);
+    where the app does not know it (``sender`` gives ``""``, nexmail behind a proxy without ``NEXMAIL_CLIENT_IP``) per
+    key brought, so that a stranger's wrong keys never make a right key of someone else wait."""
+    if address:
+        return "mcp:" + sender_of(address)
+    return "mcp:key:" + hashlib.sha256((token or "").encode("utf-8")).hexdigest()[:24]
 
 
 def sender_of(address: str) -> str:

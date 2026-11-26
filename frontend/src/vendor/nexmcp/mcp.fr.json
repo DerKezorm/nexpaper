@@ -12,7 +12,10 @@
     "ask": "Demander",
     "deny": "Refuser",
     "save": "Enregistrer",
-    "cancel": "Annuler"
+    "cancel": "Annuler",
+    "search": "Chercher un outil",
+    "saved": "Enregistré.",
+    "close": "Fermer"
   },
   "groups": {
     "read": "Lire",
@@ -66,7 +69,7 @@
     "decline": "Rejeter",
     "confirmTitle": "Vraiment autoriser « {tool} » ?",
     "confirmText": "{program} l’exécute aussitôt, avec exactement ces détails.",
-    "confirm": "Oui, autoriser",
+    "confirm": "Oui, vraiment autoriser",
     "cancel": "Annuler",
     "loading": "Chargement …"
   },
@@ -81,12 +84,11 @@
   "consent": {
     "title": "{program} veut utiliser {app}",
     "text": "Ensuite, retour à {host}.",
-    "returnTo": "Retour à",
     "unverified": "Le programme se donne ce nom lui-même ; {app} ne l’a pas vérifié. N’autorise que si tu as commencé cette connexion toi-même.",
     "level": "Ce que le programme peut faire",
     "areas": "Ce que le programme atteint",
-    "areasAll": "Tout, y compris ce qui viendra",
-    "areasSome": "Seulement ceux-ci",
+    "areasAll": "Tous les {areas}, aussi les futurs",
+    "areasSome": "Seulement ces {areas}",
     "areasNone": "Choisis-en au moins un.",
     "extras": "Options",
     "aiOff": "L’opérateur ne permet pas l’IA à ton compte. Tu peux seulement rejeter cette connexion.",
@@ -105,7 +107,8 @@
     "blocked": "Outils bloqués",
     "blockedHint": "Aucun programme ne voit un outil bloqué, quoi qu’un membre autorise.",
     "blockedCount": "{count} bloqué(s)",
-    "blockedNone": "aucun bloqué"
+    "blockedNone": "aucun bloqué",
+    "saved": "Enregistré."
   },
   "errors": {
     "key_unknown": "Cet accès n’existe plus.",
@@ -128,5 +131,6 @@
     "extra_invalid": "Cette option n’existe pas ici.",
     "mcp_off": "L’opérateur a désactivé l’accès MCP."
   },
-  "failed": "Cela n’a pas marché. Réessaie dans un instant."
+  "failed": "Cela n’a pas marché. Réessaie dans un instant.",
+  "areaWord": "espaces"
 }

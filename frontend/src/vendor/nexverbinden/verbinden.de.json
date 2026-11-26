@@ -43,8 +43,12 @@
     "expiringText": "Verbinde einmal neu. Danach hält sich die Verbindung selbst frisch, und du trägst nie wieder einen Schlüssel ein.",
     "legacyText": "Verbunden über einen API-Schlüssel, den du von Hand eingetragen hast. Er gilt weiter wie bisher.",
     "tooOld": "{partner} unter dieser Adresse kann so noch nicht verbinden. Verbinde von Hand oder bitte den Betreiber um ein Update.",
-    "areasChoice": "Welche {areas} darf {partner} lesen?",
-    "areasChoiceAll": "Alle {areas}, auch spätere"
+    "areasChoice": "Wo darf {partner} {actions}?",
+    "areasChoiceAll": "Alle {areas}, auch spätere",
+    "actionRead": "lesen",
+    "actionWrite": "lesen und ändern",
+    "and": " und ",
+    "actionOrder": "{object} {verbs}"
   },
   "buttons": {
     "connect": "Mit {partner} verbinden",
@@ -88,7 +92,9 @@
     "switchHint": "Aus: niemand verbindet neu, bestehende Verbindungen ruhen. Nichts wird gelöscht.",
     "addressesHint": "Steht hier eine Adresse, finden alle Konten sie in der Karte schon vorbelegt.",
     "address": "Adresse von {partner}",
-    "saved": "Gespeichert."
+    "saved": "Gespeichert.",
+    "local": "Verbindungen ins eigene Netz",
+    "localHint": "Andere nex-Apps dürfen auch unter einer Adresse im eigenen Netz (LAN, VPN) stehen. Dann kann jedes Konto {app} Adressen dort ansprechen lassen."
   },
   "areaWord": "Bereiche",
   "failed": "Das hat nicht geklappt. Versuch es gleich noch einmal.",
@@ -157,5 +163,112 @@
     "nexdiary+nextasks": "Erledigte Aufgaben des Tages im Tagesrückblick.",
     "nexdiary+nexfolk": "Personen aus deinen Kontakten im Eintrag.",
     "nexnotes+nextime": "Eine Notiz zum Termin, mit Rücklink."
+  },
+  "areaActions": {
+    "nextasks": {
+      "tasks.read": {
+        "object": "Aufgaben",
+        "verbs": [
+          "lesen"
+        ]
+      },
+      "tasks.write": {
+        "object": "Aufgaben",
+        "verbs": [
+          "anlegen",
+          "ändern"
+        ]
+      },
+      "tasks.complete": {
+        "object": "Aufgaben",
+        "verbs": [
+          "abhaken"
+        ]
+      },
+      "members.read": {
+        "object": "Mitglieder",
+        "verbs": [
+          "sehen"
+        ]
+      }
+    },
+    "nextime": {
+      "calendars.read": {
+        "object": "Termine",
+        "verbs": [
+          "lesen"
+        ]
+      },
+      "events.write": {
+        "object": "Termine",
+        "verbs": [
+          "anlegen",
+          "ändern"
+        ]
+      },
+      "invitations.answer": {
+        "object": "Einladungen",
+        "verbs": [
+          "beantworten"
+        ]
+      }
+    },
+    "nexpaper": {
+      "deadlines.read": {
+        "object": "Fristen",
+        "verbs": [
+          "lesen"
+        ]
+      },
+      "documents.add": {
+        "object": "Dokumente",
+        "verbs": [
+          "ablegen"
+        ]
+      }
+    },
+    "nexnotes": {
+      "notes.add": {
+        "object": "Notizen",
+        "verbs": [
+          "ablegen"
+        ]
+      }
+    },
+    "nexlore": {
+      "notes.add": {
+        "object": "Notizen",
+        "verbs": [
+          "ablegen"
+        ]
+      }
+    },
+    "nexfolk": {
+      "birthdays.read": {
+        "object": "Geburtstage",
+        "verbs": [
+          "lesen"
+        ]
+      },
+      "contacts.read": {
+        "object": "Kontakte",
+        "verbs": [
+          "lesen"
+        ]
+      },
+      "contacts.write": {
+        "object": "Kontakte",
+        "verbs": [
+          "anlegen",
+          "ändern"
+        ]
+      },
+      "people.read": {
+        "object": "Personen",
+        "verbs": [
+          "finden"
+        ]
+      }
+    }
   }
 }

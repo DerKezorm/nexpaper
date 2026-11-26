@@ -2,8 +2,8 @@
  * "<Partner> möchte sich mit <App> verbinden", the page at the app's route `/connect/app`: another nex app of the
  * catalog asks, for the signed-in account, to connect both ways (V3: one consent for both directions). The page shows
  * who asks and from where (the host stands out), what the asking app may do here and what this app gets there, the
- * areas to give (all, or some ticked one by one; the app's word for them), then "Verbinden erlauben" (primary) and
- * "Ablehnen" (secondary). Either way the browser goes to the address the server answers: the asking app's own return,
+ * areas to give (all, or some ticked one by one; the app's word for them), then "Ablehnen" (secondary, X) on the left
+ * and "Verbinden erlauben" (primary, Check) on the right (MCP 20, since 0.1.4). Either way the browser goes to the address the server answers: the asking app's own return,
  * which the server checked against that app's description. A refusal of the server stands as a `Notice`.
  *
  * Copied unchanged into frontend/src/vendor/nexverbinden/ by bauplaene/verbinden/tools/sync.py; changed only there.
@@ -125,12 +125,12 @@ export function ConsentPage({ request, base = VERBINDEN_BASE, search, areaWord, 
             {sendProblem}
           </Notice>
         )}
-        <Buttons>
-          <Button kind={VERBINDEN_BUTTONS.allow.kind} icon={VERBINDEN_BUTTONS.allow.icon} busy={busy} disabled={nothingChosen} onClick={() => void answer(true)} testId="consent-allow">
-            {texts.buttons.allow}
-          </Button>
+        <Buttons end>
           <Button kind={VERBINDEN_BUTTONS.decline.kind} icon={VERBINDEN_BUTTONS.decline.icon} disabled={busy} onClick={() => void answer(false)} testId="consent-decline">
             {texts.buttons.decline}
+          </Button>
+          <Button kind={VERBINDEN_BUTTONS.allow.kind} icon={VERBINDEN_BUTTONS.allow.icon} busy={busy} disabled={nothingChosen} onClick={() => void answer(true)} testId="consent-allow">
+            {texts.buttons.allow}
           </Button>
         </Buttons>
       </AuthCard>

@@ -1,4 +1,4 @@
-// Vorlage nexschluessel 1.1.0
+// Vorlage nexschluessel 1.1.1
 // @vitest-environment jsdom
 /**
  * The cards of the module in the app: "API-Schlüssel", "KI-Werkzeuge (MCP)", "Schnittstellen" and "API-Schlüssel aller
@@ -243,6 +243,8 @@ describe('the card API-Schlüssel', () => {
     expect([edit[0]!.dataset.kind, edit[0]!.dataset.size]).toEqual(['secondary', 'sm'])
     expect([button('api-keys-new')!.dataset.kind, button('api-keys-new')!.dataset.icon]).toEqual(['primary', 'Plus'])
     expect(find<HTMLInputElement>('[data-testid="api-keys-address"] input')!.value).toBe('https://notes.example.com/api/v1')
+    // M-7 (1.1.1): the column of the buttons is wide enough for "Bearbeiten" and "Widerrufen" side by side.
+    expect(all('[data-testid="api-keys-table"] col').at(-1)!.style.width).toBe('17rem')
   })
 
   it('makes a key and shows it once, to copy', async () => {
@@ -252,6 +254,8 @@ describe('the card API-Schlüssel', () => {
     const dialog = find('[data-testid="key-dialog"]')!
     expect(dialog.textContent).toContain('Neuer API-Schlüssel')
     expect(find<HTMLSelectElement>('[data-testid="key-expiry"]')!.value).toBe('90')
+    // M-5 (1.1.1): one wording for the areas in mcp, schluessel and verbinden.
+    expect([find('[data-testid="key-areas-all"]')!.textContent, find('[data-testid="key-areas-some"]')!.textContent]).toEqual(['Alle Bereiche, auch spätere', 'Nur diese Bereiche'])
     type(find<HTMLInputElement>('[data-testid="key-name"]')!, 'n8n')
     click(find('[data-testid="key-option-mcp"]'))
     click(button('key-submit'))
@@ -390,6 +394,19 @@ describe('the card KI-Werkzeuge (MCP)', () => {
     expect(all('[data-testid="tools-keys"] [data-kind="primary"]')).toHaveLength(0)
   })
 
+  it('puts the address at the top and the buttons of a row side by side, last use under the name (since 1.1.1, M-7)', async () => {
+    show(<ToolsCard request={request} base={BASE} extra={() => <button type="button">Rechte je Werkzeug</button>} />)
+    await settle()
+    const address = find('[data-testid="tools-address"]')!
+    expect(address.compareDocumentPosition(find('[data-testid="tools-programs"]')!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    for (const id of ['tools-programs-table', 'tools-keys-table']) {
+      expect(all(`[data-testid="${id}"] th`).map((cell) => cell.textContent)).toEqual(['Name', 'Recht', 'Aktion'])
+      expect(find(`[data-testid="${id}"] [data-testid="key-used"]`)!.textContent).toBe('Zuletzt benutzt: noch nie')
+    }
+    expect(all('[data-testid="tools-programs-table"] col').at(-1)!.style.width).toBe('20.5rem')
+    expect(all('[data-testid="tools-keys-table"] col').at(-1)!.style.width).toBe('28.5rem')
+  })
+
   it('says when the operator takes AI from the account (since 1.1.0, MCP decision 10)', async () => {
     listing.ai_allowed = false
     show(<ToolsCard request={request} base={BASE} />)
@@ -423,9 +440,12 @@ describe('the card Schnittstellen', () => {
     const mcp = find<HTMLInputElement>('[data-testid="interfaces-mcp"]')!
     expect(mcp.type).toBe('checkbox')
     expect(mcp.checked).toBe(false)
+    expect(find('[data-testid="interfaces-saved"]')).toBeNull()
     click(mcp)
     await settle()
     expect(calls.at(-1)).toMatchObject({ method: 'PUT', body: { mcp: true } })
+    // MCP 21 (1.1.1): a box is kept at once and says so shortly.
+    expect(find('[data-testid="interfaces-saved"]')!.textContent).toBe('Gespeichert.')
     expect(find<HTMLInputElement>('[data-testid="interfaces-mcp"]')!.checked).toBe(true)
     expect(find('[data-testid="interfaces-docs"]')!.textContent).toContain('Beschreibung der Schnittstelle')
     expect(document.querySelector('[role="switch"]')).toBeNull()

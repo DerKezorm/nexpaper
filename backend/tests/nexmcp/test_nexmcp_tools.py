@@ -3,6 +3,7 @@ its account; a tool it does not have answers like one that is not there; argumen
 
 from __future__ import annotations
 
+import json
 from typing import Any
 
 import pytest
@@ -37,9 +38,21 @@ def test_a_tool_the_key_does_not_have_answers_like_one_that_is_not_there(app: An
 
 def test_what_the_account_may_not_read_answers_not_found(app: Any) -> None:
     secret = mcp_key(app)["secret"]
-    name, args = app.foreign_call()
-    answer = call(app, secret, name, args)
-    assert answer["isError"] and answer["content"][0]["text"] == "Not found."
+    foreign = app.foreign_call()
+    if foreign is not None:
+        name, args = foreign
+        answer = call(app, secret, name, args)
+        assert answer["isError"] and answer["content"][0]["text"] == "Not found."
+    else:
+        # M-16 (1.1.2): no tool takes a name of something of another account; then the same reading call as the other
+        # account shows its data, as the owner never.
+        text = app.foreign_text()
+        assert text, "foreign_call is None: the adapter names foreign_text"
+        name, args = app.read_call()
+        theirs = call(app, mcp_key(app, role="other")["secret"], name, args)
+        assert not theirs["isError"] and text in json.dumps(theirs, ensure_ascii=False), theirs
+        ours = call(app, secret, name, args)
+        assert text not in json.dumps(ours, ensure_ascii=False), ours
     name, args = app.read_call()
     found = call(app, secret, name, args)
     assert not found["isError"], found

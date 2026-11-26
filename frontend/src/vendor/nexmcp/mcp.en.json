@@ -12,7 +12,10 @@
     "ask": "Ask",
     "deny": "Deny",
     "save": "Save",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "search": "Find a tool",
+    "saved": "Saved.",
+    "close": "Close"
   },
   "groups": {
     "read": "Read",
@@ -66,7 +69,7 @@
     "decline": "Decline",
     "confirmTitle": "Really allow “{tool}”?",
     "confirmText": "{program} runs this at once, with exactly these details.",
-    "confirm": "Yes, allow",
+    "confirm": "Yes, really allow",
     "cancel": "Cancel",
     "loading": "Loading …"
   },
@@ -81,12 +84,11 @@
   "consent": {
     "title": "{program} wants to use {app}",
     "text": "Afterwards you go back to {host}.",
-    "returnTo": "Back to",
     "unverified": "The program gives itself this name; {app} has not checked it. Allow only if you started this sign-in yourself.",
     "level": "What the program may do",
     "areas": "What the program reaches",
-    "areasAll": "Everything, also what comes later",
-    "areasSome": "Only these",
+    "areasAll": "All {areas}, including later ones",
+    "areasSome": "Only these {areas}",
     "areasNone": "Choose at least one.",
     "extras": "Extras",
     "aiOff": "The operator does not let your account use AI. You can only decline this sign-in.",
@@ -105,7 +107,8 @@
     "blocked": "Blocked tools",
     "blockedHint": "No program sees a blocked tool, whatever a member allows.",
     "blockedCount": "{count} blocked",
-    "blockedNone": "none blocked"
+    "blockedNone": "none blocked",
+    "saved": "Saved."
   },
   "errors": {
     "key_unknown": "This access no longer exists.",
@@ -128,5 +131,6 @@
     "extra_invalid": "There is no such extra here.",
     "mcp_off": "The operator has switched MCP access off."
   },
-  "failed": "That did not work just now. Try again in a moment."
+  "failed": "That did not work just now. Try again in a moment.",
+  "areaWord": "areas"
 }

@@ -222,6 +222,10 @@ class VerbindenStore:
     def local_allowed(self) -> bool:
         return bool(self.setting("connections_local_network"))
 
+    def set_local_allowed(self, on: bool) -> None:
+        """verbinden 0.1.4: the operator's box "Verbindungen ins eigene Netz" in "Andere nex-Apps"."""
+        self.set_setting("connections_local_network", bool(on))
+
     def seal(self, text: str) -> str:
         return encrypt_secret(text, SEAL_CONTEXT)
 
@@ -235,10 +239,20 @@ class VerbindenStore:
         self.db.rollback()
 
 
+def on_disconnected(store: VerbindenStore, account_id: Any, partner: str) -> None:
+    """verbinden 0.1.4: a connection ended, by "Trennen" here or by the partner's revocation. nexpaper's own row of it
+    goes: the list of nextasks used last (``services/task_from_document.py``)."""
+    from ..models_verbinden import NextasksListUsed
+
+    if partner == "nextasks":
+        store.db.query(NextasksListUsed).filter(NextasksListUsed.account_id == int(str(account_id))).delete()
+        store.commit()
+
+
 def store() -> Iterator[VerbindenStore]:
     """The dependency of the module's routes: one session per request."""
     with SessionLocal() as db:
         yield VerbindenStore(db)
 
 
-__all__ = ["CONFIG", "VerbindenStore", "store"]
+__all__ = ["CONFIG", "VerbindenStore", "on_disconnected", "store"]

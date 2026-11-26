@@ -43,8 +43,12 @@
     "expiringText": "Connect once more. Afterwards the connection keeps itself fresh, and you never enter a key again.",
     "legacyText": "Connected with an API key you entered by hand. It keeps working as before.",
     "tooOld": "{partner} at this address cannot connect this way yet. Connect by hand or ask the operator for an update.",
-    "areasChoice": "Which {areas} may {partner} read?",
-    "areasChoiceAll": "All {areas}, including later ones"
+    "areasChoice": "Where may {partner} {actions}?",
+    "areasChoiceAll": "All {areas}, including later ones",
+    "actionRead": "read",
+    "actionWrite": "read and change",
+    "and": " and ",
+    "actionOrder": "{verbs} {object}"
   },
   "buttons": {
     "connect": "Connect with {partner}",
@@ -88,7 +92,9 @@
     "switchHint": "Off: nobody connects anew, existing connections rest. Nothing is deleted.",
     "addressesHint": "An address set here is prefilled in the card for every account.",
     "address": "Address of {partner}",
-    "saved": "Saved."
+    "saved": "Saved.",
+    "local": "Connections into the local network",
+    "localHint": "Other nex apps may also be at an address in the local network (LAN, VPN). Then every account can have {app} ask addresses there."
   },
   "areaWord": "areas",
   "failed": "That did not work. Try again in a moment.",
@@ -157,5 +163,112 @@
     "nexdiary+nextasks": "The day's finished tasks in the review of the day.",
     "nexdiary+nexfolk": "People from your contacts in the entry.",
     "nexnotes+nextime": "A note for the event, with a link back."
+  },
+  "areaActions": {
+    "nextasks": {
+      "tasks.read": {
+        "object": "tasks",
+        "verbs": [
+          "read"
+        ]
+      },
+      "tasks.write": {
+        "object": "tasks",
+        "verbs": [
+          "create",
+          "change"
+        ]
+      },
+      "tasks.complete": {
+        "object": "tasks",
+        "verbs": [
+          "tick off"
+        ]
+      },
+      "members.read": {
+        "object": "members",
+        "verbs": [
+          "see"
+        ]
+      }
+    },
+    "nextime": {
+      "calendars.read": {
+        "object": "events",
+        "verbs": [
+          "read"
+        ]
+      },
+      "events.write": {
+        "object": "events",
+        "verbs": [
+          "create",
+          "change"
+        ]
+      },
+      "invitations.answer": {
+        "object": "invitations",
+        "verbs": [
+          "answer"
+        ]
+      }
+    },
+    "nexpaper": {
+      "deadlines.read": {
+        "object": "deadlines",
+        "verbs": [
+          "read"
+        ]
+      },
+      "documents.add": {
+        "object": "documents",
+        "verbs": [
+          "file"
+        ]
+      }
+    },
+    "nexnotes": {
+      "notes.add": {
+        "object": "notes",
+        "verbs": [
+          "file"
+        ]
+      }
+    },
+    "nexlore": {
+      "notes.add": {
+        "object": "notes",
+        "verbs": [
+          "file"
+        ]
+      }
+    },
+    "nexfolk": {
+      "birthdays.read": {
+        "object": "birthdays",
+        "verbs": [
+          "read"
+        ]
+      },
+      "contacts.read": {
+        "object": "contacts",
+        "verbs": [
+          "read"
+        ]
+      },
+      "contacts.write": {
+        "object": "contacts",
+        "verbs": [
+          "create",
+          "change"
+        ]
+      },
+      "people.read": {
+        "object": "people",
+        "verbs": [
+          "find"
+        ]
+      }
+    }
   }
 }

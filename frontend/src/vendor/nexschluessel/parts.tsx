@@ -12,6 +12,7 @@ import {
   BUTTONS,
   COLUMN_WIDTHS,
   KEY_COLUMNS,
+  actionWidth,
   daysOf,
   daysValue,
   defaultDays,
@@ -50,7 +51,8 @@ export function KeyFactorHint({ texts, securityHref, compact = false }: { texts:
 }
 
 /** The account's keys as a table: name with its marks, right and reach, expiry (where the app knows one), last use,
- * the buttons. */
+ * the buttons side by side in a column as wide as they need (since 1.1.1, M-7). `compact` (the card "KI-Werkzeuge
+ * (MCP)") puts expiry and last use under the name, so three buttons fit beside name and right. */
 export function KeysTable({
   rows,
   listing,
@@ -64,6 +66,7 @@ export function KeysTable({
   onRevoke,
   extra,
   showExpiry,
+  compact = false,
   testId,
 }: {
   rows: KeyEntry[]
@@ -79,12 +82,14 @@ export function KeysTable({
   /** The app's own button for a key (nexlore: "Rights per tool"), before the module's. */
   extra?: (key: KeyEntry) => ReactNode
   showExpiry: boolean
+  compact?: boolean
   testId?: string
 }) {
-  const columns = KEY_COLUMNS.filter((column) => column !== 'expires' || showExpiry)
+  const columns = KEY_COLUMNS.filter((column) => (compact ? column === 'name' || column === 'right' || column === 'action' : column !== 'expires' || showExpiry))
   const reach = (key: KeyEntry) =>
     key.areas === null ? texts.key.allAreas : Array.isArray(key.areas) ? key.areas.map((area) => area.name ?? String(area.id)).join(', ') || fillKeys(texts.key.someAreas, { count: 0 }) : fillKeys(texts.key.someAreas, { count: key.areas })
   const editable = (key: KeyEntry) => !key.program && !key.legacy && listing.kinds.find((kind) => kind.id === key.kind)?.editable
+  const width = actionWidth(onEdit && rows.some((key) => editable(key)) ? 2 : 1, extra !== undefined)
   const cell = (key: KeyEntry, column: KeyColumn) => {
     switch (column) {
       case 'name':
@@ -99,6 +104,12 @@ export function KeysTable({
             {key.program ? null : <span className="font-mono text-[var(--nexui-text-muted)]">{key.prefix}…</span>}
             {key.legacy && <span className="text-[var(--nexui-text-muted)]">{(texts.legacy as Record<string, string>)[key.legacy] ?? key.legacy}</span>}
             {listing.keys_wait && <KeyFactorHint texts={texts} securityHref="" compact />}
+            {compact && showExpiry && !key.program && <span data-testid="key-expiry">{cell(key, 'expires')}</span>}
+            {compact && (
+              <span className="text-[var(--nexui-text-muted)]" data-testid="key-used">
+                {texts.columns.used}: {cell(key, 'used')}
+              </span>
+            )}
           </span>
         )
       case 'right':
@@ -121,7 +132,7 @@ export function KeysTable({
         return <span className="text-[var(--nexui-text-muted)]">{key.last_used_at ? when(key.last_used_at, code) : texts.key.neverUsed}</span>
       case 'action':
         return (
-          <span className="flex flex-wrap justify-end gap-2 @min-[640px]:justify-start">
+          <span className="flex flex-wrap justify-end gap-2 @min-[640px]:justify-start" data-testid="key-actions">
             {extra?.(key)}
             {onEdit && editable(key) && (
               <Button kind={BUTTONS.edit.kind} icon={BUTTONS.edit.icon} size="sm" onClick={() => onEdit(key)} testId="key-edit">
@@ -138,7 +149,7 @@ export function KeysTable({
   return (
     <Table<KeyEntry, KeyColumn>
       label={label}
-      columns={columns.map((key) => ({ key, label: texts.columns[key], width: COLUMN_WIDTHS[key] }))}
+      columns={columns.map((key) => ({ key, label: texts.columns[key], width: key === 'action' ? width : COLUMN_WIDTHS[key] }))}
       rows={rows}
       cell={cell}
       rowKey={(key) => String(key.id)}
@@ -290,8 +301,8 @@ export function KeyDialog({
                     value={allAreas ? 'all' : 'some'}
                     onChange={(value) => setAllAreas(value === 'all')}
                     options={[
-                      { value: 'all', label: words?.areasAll ?? texts.key.areasAll, testId: 'key-areas-all' },
-                      { value: 'some', label: words?.areasSome ?? texts.key.areasSome, testId: 'key-areas-some' },
+                      { value: 'all', label: words?.areasAll ?? fillKeys(texts.key.areasAll, { areas: words?.areas ?? texts.areaWord }), testId: 'key-areas-all' },
+                      { value: 'some', label: words?.areasSome ?? fillKeys(texts.key.areasSome, { areas: words?.areas ?? texts.areaWord }), testId: 'key-areas-some' },
                     ]}
                   />
                 )}

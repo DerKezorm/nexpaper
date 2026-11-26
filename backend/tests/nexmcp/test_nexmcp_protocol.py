@@ -47,3 +47,16 @@ def test_a_protocol_version_not_spoken_and_a_body_too_large_are_refused(app: Any
     huge = b'{"jsonrpc":"2.0","id":1,"method":"ping","params":{"x":"' + b"a" * app.config().max_body + b'"}}'
     answer = program(app).post(app.config().mcp_path, content=huge, headers=headers)
     assert answer.status_code == 413 and answer.json()["detail"]["code"] == "too_large"
+
+
+def test_a_newer_client_still_agrees_on_a_version_at_initialize(app: Any) -> None:
+    """MCP 31 (1.1.2, nexdeck #79): a client that sends a version we do not speak already in the header of
+    ``initialize`` (the Python SDK 2.0 sends 2026-07-28) is answered with the newest we speak, and has to use it."""
+    secret = mcp_key(app)["secret"]
+    newer = {"MCP-Protocol-Version": "2026-07-28"}
+    agreed = rpc(app, secret, "initialize", {"protocolVersion": "2026-07-28"}, **newer)
+    assert agreed.status_code == 200, agreed.text
+    assert agreed.json()["result"]["protocolVersion"] == "2025-06-18"
+    refused = rpc(app, secret, "tools/list", **newer)
+    assert refused.status_code == 400 and refused.json()["detail"]["code"] == "protocol_version"
+    assert rpc(app, secret, "tools/list", **{"MCP-Protocol-Version": "2025-06-18"}).status_code == 200

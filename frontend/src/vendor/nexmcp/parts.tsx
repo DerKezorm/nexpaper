@@ -1,6 +1,6 @@
 /**
  * What the lists of requests share: the lines about one request (program, tool, what it wants, when it runs out) and its
- * buttons, "Erlauben" (secondary `sm`, several rows share a box) and "Ablehnen" (danger `sm`); a dangerous request
+ * buttons, "Ablehnen" (secondary `sm`, X) left of "Erlauben" (primary `sm`, Check; MCP 20); a dangerous request
  * gets "Ansehen" in place of "Erlauben", since it is allowed only on its own page after a second question. Built only
  * from the ui kit.
  *
@@ -41,7 +41,7 @@ export function RequestDetails({ entry, texts, code, words, when }: { entry: Too
   )
 }
 
-/** "Erlauben" (or "Ansehen" for a dangerous one) and "Ablehnen". */
+/** "Ablehnen", then "Erlauben" (or "Ansehen" for a dangerous one). */
 export function RequestButtons({
   entry,
   texts,
@@ -62,6 +62,9 @@ export function RequestButtons({
   const canView = viewHref !== undefined || onView !== undefined
   return (
     <span className="flex flex-wrap items-center gap-2">
+      <Button kind={MCP_BUTTONS.decline.kind} icon={MCP_BUTTONS.decline.icon} size="sm" disabled={busy} onClick={onDecline} testId="request-decline">
+        {texts.requests.decline}
+      </Button>
       {entry.dangerous
         ? canView && (
             <Button
@@ -80,9 +83,6 @@ export function RequestButtons({
               {texts.requests.approve}
             </Button>
           )}
-      <Button kind={MCP_BUTTONS.decline.kind} icon={MCP_BUTTONS.decline.icon} size="sm" disabled={busy} onClick={onDecline} testId="request-decline">
-        {texts.requests.decline}
-      </Button>
     </span>
   )
 }

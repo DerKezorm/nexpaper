@@ -1,4 +1,4 @@
-// Vorlage nexverbinden 0.1.2
+// Vorlage nexverbinden 0.1.4
 // @vitest-environment jsdom
 /**
  * The parts of the module in the app: the card of a partner app in each state, the cards of all partners, the consent
@@ -18,6 +18,7 @@ import {
   ConsentPage,
   ReturnPage,
   VERBINDEN_TEXTS,
+  areaActions,
   type ConnectionsAdmin,
   type ConsentInfo,
   type PartnerView,
@@ -155,6 +156,49 @@ describe('the card of a partner app', () => {
     expect(calls.at(-1)).toMatchObject({ body: { areas: null } })
   })
 
+  it('asks for the areas by what the partner does there, from its purposes (V-11, V37, 0.1.4)', async () => {
+    const choice = [{ id: 1, name: 'Arbeit' }]
+    const ask = async (key: string, grants: Record<string, string>, areaWord?: string) => {
+      await show(<ConnectionCard key={key} app={APP} view={view({ state: 'none', account: null, areas_choice: choice, grants: Object.keys(grants), grants_levels: grants })} request={request} areaWord={areaWord} defaultOpen />)
+      return byTest('connection-areas-question')?.textContent
+    }
+    // Purposes the module does not know say it by their level.
+    expect(await ask('reads', { 'some.read': 'read' })).toBe(`Wo darf ${PARTNER} lesen?`)
+    expect(await ask('writes', { 'some.read': 'read', 'some.write': 'write' }, 'Adressbücher')).toBe(`Wo darf ${PARTNER} lesen und ändern?`)
+    expect(byTest('connection-all-areas')?.parentElement?.textContent).toContain('Alle Adressbücher, auch spätere')
+    // The app's own purposes in the catalog say what they do with the module's words.
+    const ids = Object.keys((VERBINDEN_TEXTS.de.areaActions as Record<string, Record<string, unknown>>)[APP] ?? {})
+    if (ids.length > 0) {
+      const levels = Object.fromEntries(ids.map((id) => [id, 'read']))
+      expect(await ask('own', levels)).toBe(`Wo darf ${PARTNER} ${areaActions(VERBINDEN_TEXTS.de, APP, ids, levels)}?`)
+      expect(byTest('connection-areas-question')?.textContent).not.toContain(VERBINDEN_TEXTS.de.card.actionRead + '?')
+    }
+  })
+
+  it('says each purpose of the catalog with its own words, the same thing once, in every language', () => {
+    const { de, en, fr } = VERBINDEN_TEXTS
+    // nexmail at nexfolk: reading and changing contacts is one thing.
+    const contacts = ['contacts.read', 'contacts.write']
+    expect(areaActions(de, 'nexfolk', contacts, {})).toBe('Kontakte lesen, anlegen und ändern')
+    expect(areaActions(en, 'nexfolk', contacts, {})).toBe('read, create and change contacts')
+    expect(areaActions(fr, 'nexfolk', contacts, {})).toBe('lire, créer et modifier les contacts')
+    // nextime at nextasks: tasks read and ticked off.
+    const tasks = ['tasks.read', 'tasks.complete']
+    expect(areaActions(de, 'nextasks', tasks, {})).toBe('Aufgaben lesen und abhaken')
+    expect(areaActions(en, 'nextasks', tasks, {})).toBe('read and tick off tasks')
+    expect(areaActions(fr, 'nextasks', tasks, {})).toBe('lire et cocher les tâches')
+    // nexmail at nextime: two things.
+    const events = ['calendars.read', 'events.write', 'invitations.answer']
+    expect(areaActions(de, 'nextime', events, {})).toBe('Termine lesen, anlegen und ändern und Einladungen beantworten')
+    expect(areaActions(en, 'nextime', events, {})).toBe('read, create and change events and answer invitations')
+    expect(areaActions(fr, 'nextime', events, {})).toBe('lire, créer et modifier les rendez-vous et répondre aux invitations')
+    expect(areaActions(de, 'nextasks', ['tasks.read', 'tasks.complete', 'members.read'], {})).toBe('Aufgaben lesen und abhaken und Mitglieder sehen')
+    expect(areaActions(de, 'nexpaper', ['documents.add'], { 'documents.add': 'write' })).toBe('Dokumente ablegen')
+    expect(areaActions(de, 'nexlore', ['notes.add'], {})).toBe('Notizen ablegen')
+    expect(areaActions(de, 'nextasks', ['tasks.read', 'tasks.read'], {})).toBe('Aufgaben lesen')
+    expect(areaActions(de, 'nextasks', ['tasks.read', 'some.write'], { 'some.write': 'write' })).toBe('Aufgaben lesen und lesen und ändern')
+  })
+
   it('a partner too old says so and opens the form by hand', async () => {
     refuse[`POST /api/connect/partners/${PARTNER}/start`] = { code: 'partner_too_old' }
     await show(<ConnectionCard app={APP} view={view({ state: 'none', account: null })} request={request} manual={<p data-testid="own-form">form</p>} defaultOpen />)
@@ -282,6 +326,12 @@ describe('the consent page', () => {
     answers['GET /api/connect/consent'] = info
     answers['POST /api/connect/consent'] = { redirect: 'https://time.example.com/connect/return?error=access_denied' }
     await show(<ConsentPage request={request} search={search} navigate={(url) => went.push(url)} />)
+    // MCP 20 (0.1.4): "Ablehnen" secondary with X on the left, "Verbinden erlauben" primary with a check on the right.
+    const pair = Array.from(box.querySelectorAll<HTMLElement>('[data-testid="consent-decline"], [data-testid="consent-allow"]'))
+    expect(pair.map((found) => [found.dataset.testid, found.dataset.kind, found.dataset.icon, found.textContent])).toEqual([
+      ['consent-decline', 'secondary', 'X', 'Ablehnen'],
+      ['consent-allow', 'primary', 'Check', 'Verbinden erlauben'],
+    ])
     await click('consent-decline')
     expect(calls.at(-1)).toMatchObject({ body: { allow: false } })
     await show(<ConsentPage key="broken" request={request} search="?client_id=x" />)
@@ -310,12 +360,24 @@ describe('the page back from the partner', () => {
 
 describe("the operator's card", () => {
   it('switches connections and keeps the addresses', async () => {
-    const admin: ConnectionsAdmin = { connections: true, partners: [PARTNER], addresses: { [PARTNER]: '' } }
+    const admin: ConnectionsAdmin = { connections: true, partners: [PARTNER], addresses: { [PARTNER]: '' }, local: false }
     answers['GET /api/connect/admin'] = admin
     answers['PUT /api/connect/admin'] = { ...admin, connections: false }
     await show(<ConnectionsOperatorCard app={APP} request={request} />)
+    expect(byTest('connections-saved')).toBeNull()
     await click('connections-switch')
     expect(calls.at(-1)).toMatchObject({ method: 'PUT', body: { connections: false } })
+    expect(byTest('connections-saved')?.textContent).toBe('Gespeichert.')
+    // V-12 (0.1.4): the own network as a box to tick, kept at once (MCP 21).
+    const local = byTest('connections-local') as HTMLInputElement
+    expect(local.checked).toBe(false)
+    expect(local.parentElement!.textContent).toContain('Verbindungen ins eigene Netz')
+    expect(local.parentElement!.textContent).toContain(`Dann kann jedes Konto ${APP} Adressen dort ansprechen lassen.`)
+    answers['PUT /api/connect/admin'] = { ...admin, connections: false, local: true }
+    await click('connections-local')
+    expect(calls.at(-1)).toMatchObject({ method: 'PUT', body: { local: true } })
+    expect((byTest('connections-local') as HTMLInputElement).checked).toBe(true)
+    expect(byTest('connections-saved')?.textContent).toBe('Gespeichert.')
     await click(`connections-save-${PARTNER}`)
     expect(calls.at(-1)).toMatchObject({ method: 'PUT', body: { addresses: { [PARTNER]: '' } } })
   })

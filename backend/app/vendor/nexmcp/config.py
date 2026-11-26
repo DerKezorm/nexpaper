@@ -115,6 +115,12 @@ class AppConfig:
     #: Status and code while the operator has MCP switched off (nexnotes, nextime: 403 ``mcp_off``).
     off_status: int = 404
     off_code: str = "not_found"
+    #: Since 1.1.2 (M-15): the OAuth ways while MCP itself is off. The consent (``GET``/``POST
+    #: <oauth_prefix>/authorize``) answers this status and code, the registration with 403 as OAuth says it
+    #: (``access_denied``) when the status is 403. nexnotes and nexlore answered 403 ``mcp_off``. The operator's
+    #: switch "programs" keeps 404 ``programs_off``.
+    oauth_off_status: int = 404
+    oauth_off_code: str = "programs_off"
     #: The code of 401 for a key that is no key (nextime ``token_invalid``).
     invalid_code: str = "key_invalid"
     #: The largest message (nexnotes 4 MB: a note at its limit).
@@ -193,8 +199,8 @@ class AppConfig:
         for path in (self.mcp_path, self.oauth_prefix, self.consent_path):
             if not _PATH.fullmatch(path) or path.endswith("/"):
                 raise ValueError(f"path {path!r}")
-        if self.off_status not in (403, 404):
-            raise ValueError("off_status: 403 or 404")
+        if self.off_status not in (403, 404) or self.oauth_off_status not in (403, 404):
+            raise ValueError("off_status, oauth_off_status: 403 or 404")
         if not 1024 <= self.max_body <= 64 * 1024 * 1024 or not 1 <= self.per_minute <= 100_000:
             raise ValueError("limits out of range")
         if not 1 <= self.request_minutes <= 7 * 24 * 60 or not 1 <= self.max_waiting_per_key <= self.max_waiting:

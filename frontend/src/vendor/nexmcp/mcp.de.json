@@ -12,7 +12,10 @@
     "ask": "Fragen",
     "deny": "Verweigern",
     "save": "Speichern",
-    "cancel": "Abbrechen"
+    "cancel": "Abbrechen",
+    "search": "Werkzeug suchen",
+    "saved": "Gespeichert.",
+    "close": "Schließen"
   },
   "groups": {
     "read": "Lesen",
@@ -66,7 +69,7 @@
     "decline": "Ablehnen",
     "confirmTitle": "„{tool}“ wirklich erlauben?",
     "confirmText": "{program} führt das sofort aus, genau mit diesen Angaben.",
-    "confirm": "Ja, erlauben",
+    "confirm": "Ja, wirklich erlauben",
     "cancel": "Abbrechen",
     "loading": "Wird geladen …"
   },
@@ -81,12 +84,11 @@
   "consent": {
     "title": "{program} möchte {app} nutzen",
     "text": "Danach geht es zurück zu {host}.",
-    "returnTo": "Zurück zu",
     "unverified": "Den Namen gibt sich das Programm selbst; {app} hat ihn nicht geprüft. Erlaube nur, wenn du diese Anmeldung selbst begonnen hast.",
     "level": "Was das Programm darf",
     "areas": "Was das Programm erreicht",
-    "areasAll": "Alles, auch was später dazukommt",
-    "areasSome": "Nur diese",
+    "areasAll": "Alle {areas}, auch spätere",
+    "areasSome": "Nur diese {areas}",
     "areasNone": "Wähle mindestens eins aus.",
     "extras": "Extras",
     "aiOff": "Der Betreiber erlaubt deinem Konto keine KI. Du kannst die Anmeldung nur ablehnen.",
@@ -105,7 +107,8 @@
     "blocked": "Gesperrte Werkzeuge",
     "blockedHint": "Ein gesperrtes Werkzeug sieht kein Programm, ganz gleich, was ein Mitglied erlaubt.",
     "blockedCount": "{count} gesperrt",
-    "blockedNone": "keins gesperrt"
+    "blockedNone": "keins gesperrt",
+    "saved": "Gespeichert."
   },
   "errors": {
     "key_unknown": "Diesen Zugang gibt es nicht mehr.",
@@ -128,5 +131,6 @@
     "extra_invalid": "Dieses Extra gibt es hier nicht.",
     "mcp_off": "Der Betreiber hat den MCP-Zugang abgeschaltet."
   },
-  "failed": "Das ging gerade nicht. Gleich noch einmal versuchen."
+  "failed": "Das ging gerade nicht. Gleich noch einmal versuchen.",
+  "areaWord": "Bereiche"
 }

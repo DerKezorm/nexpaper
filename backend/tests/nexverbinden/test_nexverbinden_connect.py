@@ -20,7 +20,8 @@ def test_the_description_names_the_app_and_says_whether_it_connects(world: Any) 
 def test_the_partner_of_the_test_is_one_of_the_catalog(world: Any) -> None:
     assert world.app.partner in world.app.config().partners
     cards = world.app.client("owner").get(f"{world.pkg.PREFIX}/partners").json()
-    assert [card["partner"] for card in cards] == world.app.config().partners
+    # V-14 (0.1.4): the cards are the partners in use (``AppConfig.usable``), not every partner of the catalog.
+    assert [card["partner"] for card in cards] == list(world.app.config().usable)
     assert all(card["state"] == "none" for card in cards)
 
 
@@ -225,6 +226,21 @@ def test_the_operator_names_the_addresses_of_the_other_apps(world: Any) -> None:
         operator.put(f"{world.pkg.PREFIX}/admin", json={"addresses": {"nobody": "https://x.example.com"}}).status_code
         == 404
     )
+
+
+def test_the_operator_allows_the_own_network_in_the_card(world: Any) -> None:
+    """V-12 (0.1.4): the switch for connections into the own network is the app's own setting, ticked in the card."""
+    operator = world.app.client("operator")
+    path = f"{world.pkg.PREFIX}/admin"
+    assert operator.get(path).json()["local"] is False
+    assert world.app.client("owner").put(path, json={"local": True}).status_code in (401, 403)
+    turned = operator.put(path, json={"local": True})
+    assert turned.status_code == 200 and turned.json()["local"] is True
+    assert operator.get(path).json()["local"] is True
+    assert operator.put(path, json={"local": "yes"}).status_code == 422
+    assert operator.get(path).json()["local"] is True
+    turned = operator.put(path, json={"local": False})
+    assert turned.status_code == 200 and turned.json()["local"] is False and operator.get(path).json()["local"] is False
 
 
 def test_a_code_needs_the_verifier_the_return_address_and_the_asking_app(world: Any) -> None:

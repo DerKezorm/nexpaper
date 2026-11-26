@@ -1,8 +1,9 @@
 /**
  * The page of one request (the app's route, e.g. `/settings/connections/requests/:id`): program, tool, what it wants,
  * when it was asked and runs out, its state, the arguments as JSON in fixed-width letters, the answer once it ran.
- * While it waits: "Erlauben" (primary) and "Ablehnen" (danger). A dangerous request asks a second time
- * (`ConfirmDialog`) and only then sends `confirm: true`; the server refuses it without.
+ * While it waits: "Ablehnen" (secondary, X) on the left, "Erlauben" (primary, Check) on the right (MCP 20). A dangerous
+ * request asks a second time (`ConfirmDialog`, "Ja, wirklich erlauben" as danger, MCP 22) and only then sends
+ * `confirm: true`; the server refuses it without.
  *
  * Copied unchanged into frontend/src/vendor/nexmcp/ by bauplaene/mcp/tools/sync.py; changed only there.
  */
@@ -142,7 +143,10 @@ export function RequestPage({ request, id, base = MCP_BASE, words, language, whe
         </Block>
       )}
       {entry?.status === 'waiting' && (
-        <Buttons>
+        <Buttons end>
+          <Button kind={MCP_BUTTONS.decline.kind} icon={MCP_BUTTONS.decline.icon} disabled={busy} onClick={() => void decide('decline')} testId="request-decline">
+            {texts.request.decline}
+          </Button>
           <Button
             kind={MCP_BUTTONS.approve.kind}
             icon={MCP_BUTTONS.approve.icon}
@@ -152,9 +156,6 @@ export function RequestPage({ request, id, base = MCP_BASE, words, language, whe
             testId="request-approve"
           >
             {texts.request.approve}
-          </Button>
-          <Button kind={MCP_BUTTONS.decline.kind} icon={MCP_BUTTONS.decline.icon} disabled={busy} onClick={() => void decide('decline')} testId="request-decline">
-            {texts.request.decline}
           </Button>
         </Buttons>
       )}

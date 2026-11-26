@@ -37,7 +37,8 @@
     "appHint": "Désactivé : aucune app n’entre plus, même déjà connectée. Les appareils restent dans la liste.",
     "pairing": "Connecter de nouveaux appareils",
     "pairingHint": "Désactivé : aucun nouvel appareil ne peut se connecter ; ceux déjà connectés continuent.",
-    "docs": "Description de l’interface"
+    "docs": "Description de l’interface",
+    "saved": "Enregistré."
   },
   "allKeys": {
     "title": "Clés d’API de tous les comptes",
@@ -70,8 +71,8 @@
     "nameHint": "Seulement pour la reconnaître, par ex. « n8n météo ».",
     "right": "Droit",
     "areas": "Ce que la clé atteint",
-    "areasAll": "Tout, aussi ce qui viendra plus tard",
-    "areasSome": "Seulement ceux-ci",
+    "areasAll": "Tous les {areas}, aussi les futurs",
+    "areasSome": "Seulement ces {areas}",
     "areasNone": "Tu n’as encore rien qu’une clé pourrait atteindre.",
     "expiry": "Expiration",
     "days": "{days} jours",
@@ -122,5 +123,6 @@
     "mcp_off": "L’exploitant a désactivé l’accès MCP.",
     "option_retired": "Les nouvelles clés n’ont plus cette option. Crée une clé MCP.",
     "ai_not_allowed": "L’opérateur n’autorise pas l’IA pour ton compte."
-  }
+  },
+  "areaWord": "espaces"
 }

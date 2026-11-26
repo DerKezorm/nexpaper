@@ -85,6 +85,11 @@ class StandardAdapter:
         app's bell, or its push or mail where it has no bell. A test reads it after each step."""
         raise NotImplementedError("APP: notified")
 
+    def key_defaults(self, role: str) -> dict[str, Any]:
+        """APP (since 1.1.2, M-17): what the app's page sends with a new MCP key besides name, right and extras, where
+        its key kind needs it (nexmail: ``{"areas": [<the account's mailboxes>]}``, ``areas_required``)."""
+        return {}
+
     def read_call(self) -> tuple[str, dict[str, Any]]:
         """APP: a call of a reading tool that finds something of ``owner`` (name, arguments)."""
         raise NotImplementedError("APP: read_call")
@@ -93,9 +98,16 @@ class StandardAdapter:
         """APP: a call of a changing tool (level above the lowest) that works for ``owner``."""
         raise NotImplementedError("APP: change_call")
 
-    def foreign_call(self) -> tuple[str, dict[str, Any]]:
-        """APP: a call of a reading tool about something of ``other`` that ``owner`` may not read."""
+    def foreign_call(self) -> tuple[str, dict[str, Any]] | None:
+        """APP: a call of a reading tool about something of ``other`` that ``owner`` may not read. Since 1.1.2 (M-16):
+        ``None`` where no tool takes a name of something of another account (a key sees only its own account,
+        nexdiary); then ``foreign_text`` and a ``read_call`` that shows the caller's own data."""
         raise NotImplementedError("APP: foreign_call")
+
+    def foreign_text(self) -> str | None:
+        """APP (since 1.1.2, M-16), where ``foreign_call`` is ``None``: a word that stands only in the data of ``other``
+        and that ``read_call`` shows when ``other`` calls it (a title, a name). ``owner``'s answer must not have it."""
+        return None
 
     def dangerous_call(self) -> tuple[str, dict[str, Any]] | None:
         """APP: a call of a tool that calls it dangerous (``Tool.dangerous``) and works for ``owner``; ``None`` where
@@ -143,7 +155,7 @@ def switch_mcp(app: Any, on: bool) -> None:
 
 def mcp_key(app: Any, *, right: str | None = None, options: dict[str, bool] | None = None, role: str = "owner") -> Any:
     """A new MCP key by hand, through the module ``schluessel`` (decision 6)."""
-    body: dict[str, Any] = {"kind": "mcp", "name": "Probe"}
+    body: dict[str, Any] = {**app.key_defaults(role), "kind": "mcp", "name": "Probe"}
     if right:
         body["right"] = right
     if options:

@@ -23,6 +23,7 @@ import {
   VERBINDEN_BASE,
   VERBINDEN_BUTTONS,
   aboutPair,
+  areaActions,
   defaultDay,
   defaultWhen,
   fillVerbinden,
@@ -194,7 +195,7 @@ export function ConnectionCard({
   const areaChoice =
     choice.length > 0 ? (
       <div className="flex flex-col gap-2" data-testid="connection-areas">
-        <p className="m-0 text-sm font-medium text-[var(--nexui-text)]">{fillVerbinden(texts.card.areasChoice, words)}</p>
+        <p className="m-0 text-sm font-medium text-[var(--nexui-text)]" data-testid="connection-areas-question">{fillVerbinden(texts.card.areasChoice, { ...words, actions: areaActions(texts, app, view.grants, view.grants_levels ?? {}) })}</p>
         <CheckboxRow label={fillVerbinden(texts.card.areasChoiceAll, words)} checked={allAreas} onChange={setAllAreas} testId="connection-all-areas" />
         {!allAreas &&
           choice.map((area) => (

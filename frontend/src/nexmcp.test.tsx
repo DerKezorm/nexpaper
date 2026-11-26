@@ -1,4 +1,4 @@
-// Vorlage nexmcp 1.0.0
+// Vorlage nexmcp 1.1.2
 // @vitest-environment jsdom
 /**
  * The parts of the module in the app: "Rechte je Werkzeug", "Wartende Rückfragen", the page of one request, the row in
@@ -143,8 +143,8 @@ const find = <T extends Element = HTMLElement>(selector: string) => document.que
 const all = (selector: string) => Array.from(document.querySelectorAll<HTMLElement>(selector))
 const byTestId = (testId: string) => find<HTMLButtonElement>(`[data-testid="${testId}"]`)
 const posts = () => calls.filter((call) => call.method !== 'GET')
-/** A row of the rights' table (the wide form; the narrow form holds the same). */
-const rightRow = (tool: string) => find(`[data-part="table"] [data-tool="${tool}"]`)!
+/** A row of the list "Rechte je Werkzeug" (since 1.1.2 a list of rows, no table). */
+const rightRow = (tool: string) => find(`[data-testid="tool-rights-table"] [data-tool="${tool}"]`)!
 const SEARCH = '?client_id=c1&redirect_uri=http%3A%2F%2F127.0.0.1%3A3334%2Fcallback&response_type=code&code_challenge=x1&code_challenge_method=S256&state=s1&resource=https%3A%2F%2Fnotes.example.com%2Fapi%2Fmcp'
 
 beforeEach(() => {
@@ -213,7 +213,9 @@ describe('Rechte je Werkzeug', () => {
     click(open)
     await settle()
     expect(find('[data-testid="tool-rights-dialog"]')!.textContent).toContain('Rechte für „Notebook“')
-    const rows = all('[data-part="table"] [data-testid="tool-right-row"]')
+    expect(find('[data-testid="tool-rights-dialog"] [data-part="table"]')).toBeNull()
+    expect(find('[data-testid="tool-rights-search"]')).toBeNull()
+    const rows = all('[data-testid="tool-rights-table"] [data-testid="tool-right-row"]')
     expect(rows.map((row) => row.dataset.tool)).toEqual(['read_note', 'write_note', 'delete_note', 'list_accounts'])
     expect(rightRow('read_note').textContent).toContain('Notiz lesen')
     expect(rightRow('write_note').textContent).toContain('Ändern')
@@ -239,28 +241,57 @@ describe('Rechte je Werkzeug', () => {
     expect(Array.from(rightRow('read_note').querySelectorAll<HTMLElement>('[role="radio"]')).map((radio) => radio.dataset.value)).toEqual(['allow', 'deny'])
   })
 
-  it('saves the right of every tool at once, and nothing for request_status', async () => {
+  it('keeps a choice at once with the rights of every tool, says so shortly, and nothing for request_status (MCP 21)', async () => {
     show(<ToolRights request={request} keyId={3} base={BASE} words={WORDS} />)
     click(byTestId('tool-rights'))
     await settle()
+    expect(byTestId('tool-rights-save')).toBeNull()
+    expect(find('[data-testid="tool-rights-saved"]')).toBeNull()
     click(rightRow('write_note').querySelector('[data-value="ask"]'))
-    click(rightRow('read_note').querySelector('[data-value="deny"]'))
-    const save = byTestId('tool-rights-save')!
-    expect([save.dataset.kind, save.dataset.icon]).toEqual(['primary', 'Check'])
-    click(save)
     await settle()
-    expect(posts()).toEqual([{ path: `${BASE}/keys/3/rights`, method: 'PUT', body: { rights: { read_note: 'deny', write_note: 'ask', delete_note: 'ask', list_accounts: 'allow' } } }])
+    expect(find('[data-testid="tool-rights-saved"]')!.textContent).toBe('Gespeichert.')
+    click(rightRow('read_note').querySelector('[data-value="deny"]'))
+    await settle()
+    expect(posts()).toEqual([
+      { path: `${BASE}/keys/3/rights`, method: 'PUT', body: { rights: { read_note: 'allow', write_note: 'ask', delete_note: 'ask', list_accounts: 'allow' } } },
+      { path: `${BASE}/keys/3/rights`, method: 'PUT', body: { rights: { read_note: 'deny', write_note: 'ask', delete_note: 'ask', list_accounts: 'allow' } } },
+    ])
+    expect(rightRow('read_note').querySelector<HTMLElement>('[data-value="deny"]')!.getAttribute('aria-checked')).toBe('true')
+    const close = byTestId('tool-rights-close')!
+    expect([close.dataset.kind, close.dataset.icon, close.textContent]).toEqual(['secondary', 'X', 'Schließen'])
+    click(close)
     expect(find('[data-testid="tool-rights-dialog"]')).toBeNull()
   })
 
-  it('says why saving was refused', async () => {
+  it('says why a change was refused and shows the right the server keeps', async () => {
     show(<ToolRights request={request} keyId={3} base={BASE} />)
     click(byTestId('tool-rights'))
     await settle()
     refuse = { code: 'key_unknown' }
-    click(byTestId('tool-rights-save'))
+    click(rightRow('write_note').querySelector('[data-value="deny"]'))
     await settle()
     expect(find('[data-testid="tool-rights-problem"]')!.textContent).toBe('Diesen Zugang gibt es nicht mehr.')
+    expect(find('[data-testid="tool-rights-saved"]')).toBeNull()
+    expect(rightRow('write_note').querySelector<HTMLElement>('[data-value="allow"]')!.getAttribute('aria-checked')).toBe('true')
+  })
+
+  it('has a search field from 15 tools that finds a tool by its word or its name (M-11)', async () => {
+    const many = Array.from({ length: 14 }, (_, at) => ({ name: `tool_${at}`, group: 'read', right: 'allow', asks_never: true, reason: null, always: false }) as const)
+    rights = { ...rights, tools: [...rights.tools, ...many] }
+    show(<ToolRights request={request} keyId={3} base={BASE} words={WORDS} />)
+    click(byTestId('tool-rights'))
+    await settle()
+    const search = find<HTMLInputElement>('[data-testid="tool-rights-search"]')!
+    expect(search.type).toBe('search')
+    const type = (value: string) =>
+      act(() => {
+        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(search, value)
+        search.dispatchEvent(new Event('input', { bubbles: true }))
+      })
+    type('notiz')
+    expect(all('[data-testid="tool-right-row"]').map((row) => row.dataset.tool)).toEqual(['read_note', 'write_note'])
+    type('TOOL_1')
+    expect(all('[data-testid="tool-right-row"]').map((row) => row.dataset.tool)).toEqual(['tool_1', 'tool_10', 'tool_11', 'tool_12', 'tool_13'])
   })
 })
 
@@ -279,7 +310,9 @@ describe('Wartende Rückfragen', () => {
     const view = rows[1]!.querySelector<HTMLAnchorElement>('[data-testid="request-view"]')!
     expect(view.getAttribute('href')).toBe('/settings/connections/requests/2')
     const approve = rows[0]!.querySelector<HTMLElement>('[data-testid="request-approve"]')!
-    expect([approve.dataset.kind, approve.dataset.size, approve.dataset.icon]).toEqual(['secondary', 'sm', 'Check'])
+    expect([approve.dataset.kind, approve.dataset.size, approve.dataset.icon]).toEqual(['primary', 'sm', 'Check'])
+    expect(Array.from(rows[0]!.querySelectorAll<HTMLElement>('[data-size]')).map((found) => found.dataset.testid)).toEqual(['request-decline', 'request-approve'])
+    expect(Array.from(rows[1]!.querySelectorAll<HTMLElement>('[data-size]')).map((found) => found.dataset.testid)).toEqual(['request-decline', 'request-view'])
     click(approve)
     await settle()
     expect(posts()).toEqual([{ path: `${BASE}/requests/1/approve`, method: 'POST', body: undefined }])
@@ -289,7 +322,7 @@ describe('Wartende Rückfragen', () => {
   it('declines, and says when nothing waits', async () => {
     show(<PendingRequests request={request} base={BASE} />)
     await settle()
-    for (const decline of all('[data-testid="request-decline"]')) expect([decline.dataset.kind, decline.dataset.size, decline.dataset.icon]).toEqual(['danger', 'sm', 'Ban'])
+    for (const decline of all('[data-testid="request-decline"]')) expect([decline.dataset.kind, decline.dataset.size, decline.dataset.icon]).toEqual(['secondary', 'sm', 'X'])
     click(all('[data-testid="request-decline"]')[1])
     await settle()
     click(all('[data-testid="request-decline"]')[0])
@@ -310,6 +343,9 @@ describe('the page of one request', () => {
     expect(JSON.parse(find('[data-testid="request-arguments"] pre')!.textContent!)).toEqual({ path: 'Inbox/Plan.md', text: 'Hello' })
     const approve = byTestId('request-approve')!
     expect([approve.dataset.kind, approve.dataset.icon]).toEqual(['primary', 'Check'])
+    const decline = byTestId('request-decline')!
+    expect([decline.dataset.kind, decline.dataset.icon]).toEqual(['secondary', 'X'])
+    expect(all('[data-testid="request-page"] [data-size]').map((found) => found.dataset.testid)).toEqual(['request-decline', 'request-approve'])
     click(approve)
     await settle()
     expect(posts()).toEqual([{ path: `${BASE}/requests/1/approve`, method: 'POST', body: undefined }])
@@ -326,6 +362,8 @@ describe('the page of one request', () => {
     expect(posts()).toEqual([])
     const dialog = find('[data-testid="request-confirm-dialog"]')!
     expect(dialog.textContent).toContain('wirklich erlauben?')
+    const yes = find<HTMLElement>('[data-testid="request-confirm-dialog"] button[type="submit"]')!
+    expect([yes.dataset.kind, yes.dataset.icon, yes.textContent]).toEqual(['danger', 'Check', 'Ja, wirklich erlauben'])
     click(Array.from(dialog.querySelectorAll('button')).find((found) => found.textContent === 'Abbrechen'))
     await settle()
     expect(posts()).toEqual([])
@@ -381,7 +419,10 @@ describe('Programm verbinden', () => {
     const page = find('[data-testid="mcp-consent"]')!
     expect(page.textContent).toContain('Notebook möchte nexapp nutzen')
     expect(find('[data-testid="consent-host"]')!.textContent).toBe('127.0.0.1:3334')
-    expect(find('[data-testid="consent-return"] strong')!.textContent).toBe('127.0.0.1:3334')
+    // M-6: where it goes back to stands once, in the line under the title.
+    expect(page.textContent!.split('127.0.0.1:3334')).toHaveLength(2)
+    expect(find('[data-testid="consent-return-to"]')).toBeNull()
+    expect([byTestId('consent-areas-all')!.textContent, byTestId('consent-areas-some')!.textContent]).toEqual(['Alle Bereiche, auch spätere', 'Nur diese Bereiche'])
     expect(find(`[data-testid="consent-level-${LEVELS[0]}"]`)!.getAttribute('aria-checked')).toBe('true')
     for (const extra of all('[data-testid^="consent-extra-"]')) expect((extra as HTMLInputElement).checked).toBe(false)
     if (EXTRA) expect(page.textContent).toContain(WORDS.extras![EXTRA])
@@ -393,6 +434,7 @@ describe('Programm verbinden', () => {
     show(<ConsentPage request={request} oauthBase={OAUTH} search={SEARCH} areaWord="Ordner" navigate={(url) => went.push(url)} />)
     await settle()
     expect(find('[data-testid="consent-areas"]')!.textContent).toContain('Ordner')
+    expect([byTestId('consent-areas-all')!.textContent, byTestId('consent-areas-some')!.textContent]).toEqual(['Alle Ordner, auch spätere', 'Nur diese Ordner'])
     click(find(`[data-testid="consent-level-${LEVELS.at(-1)}"]`))
     click(byTestId('consent-areas-some'))
     expect(byTestId('consent-allow')!.disabled).toBe(true)
@@ -429,7 +471,8 @@ describe('Programm verbinden', () => {
     show(<ConsentPage request={request} oauthBase={OAUTH} search={SEARCH} navigate={(url) => went.push(url)} />)
     await settle()
     const refuseButton = byTestId('consent-refuse')!
-    expect([refuseButton.dataset.kind, refuseButton.dataset.icon]).toEqual(['secondary', 'Ban'])
+    expect([refuseButton.dataset.kind, refuseButton.dataset.icon]).toEqual(['secondary', 'X'])
+    expect(all('[data-testid="mcp-consent"] [data-size]').filter((found) => found.dataset.testid?.startsWith('consent-')).map((found) => found.dataset.testid)).toEqual(['consent-refuse', 'consent-allow'])
     click(refuseButton)
     await settle()
     expect(posts()[0]!.body).toMatchObject({ allow: false, areas: null })
@@ -466,8 +509,11 @@ describe('the operator', () => {
     await settle()
     const programs = find<HTMLInputElement>('[data-testid="mcp-operator-programs"]')!
     expect([programs.type, programs.checked]).toEqual(['checkbox', true])
+    expect(find('[data-testid="mcp-operator-saved"]')).toBeNull()
     click(programs)
     await settle()
+    // MCP 21 (1.1.2): each change is kept at once and says so shortly.
+    expect(find('[data-testid="mcp-operator-saved"]')!.textContent).toBe('Gespeichert.')
     click(find(`[data-testid="mcp-operator-level-${LEVELS[0]}"]`))
     await settle()
     click(find('[data-testid="mcp-operator-blocked"] button[aria-expanded]'))
@@ -494,14 +540,18 @@ describe('every button of the parts', () => {
     click(byTestId('tool-rights'))
     await settle()
     const buttons = all('[data-size]')
-    expect(buttons.length).toBeGreaterThan(10)
+    expect(buttons.length).toBeGreaterThan(8)
     for (const found of buttons) {
       expect(['primary', 'secondary', 'danger']).toContain(found.dataset.kind)
       expect(['md', 'sm']).toContain(found.dataset.size)
       expect(found.dataset.icon).toBeTruthy()
       expect(found.textContent?.trim()).toBeTruthy()
     }
-    for (const found of buttons.filter((item) => item.textContent?.trim() === 'Ablehnen' && item.closest('[data-testid="mcp-consent"]') === null)) expect(found.dataset.kind).toBe('danger')
+    // MCP 20: "Ablehnen" is secondary with X everywhere, "Erlauben" primary with Check.
+    const declines = buttons.filter((item) => item.textContent?.trim() === 'Ablehnen')
+    expect(declines.length).toBeGreaterThan(2)
+    for (const found of declines) expect([found.dataset.kind, found.dataset.icon]).toEqual(['secondary', 'X'])
+    for (const found of buttons.filter((item) => item.textContent?.trim() === 'Erlauben' && item.dataset.size)) expect([found.dataset.kind, found.dataset.icon]).toEqual(['primary', 'Check'])
   })
 
   it('speak English and French', async () => {

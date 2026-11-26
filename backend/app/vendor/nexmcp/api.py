@@ -15,8 +15,9 @@ The walls of ``POST <mcp_path>``, in this order: an ``Origin`` (403 ``origin_ref
 not, so no web page uses a key and DNS rebinding goes nowhere); MCP switched off (the app's status and code); too many
 wrong keys from this sender (429 with ``Retry-After``); no valid key (401 with the app's code and ``WWW-Authenticate``
 naming the metadata while programs may connect), a key of a resting program or of an account without AI (401); the
-key's rate (429 ``slow_down``); an unknown ``MCP-Protocol-Version`` (400); a body over ``max_body`` (413); JSON that
-does not parse (400, -32700). The session cookie counts for nothing here."""
+key's rate (429 ``slow_down``); a body over ``max_body`` (413); JSON that does not parse (400, -32700); an unknown
+``MCP-Protocol-Version`` (400) on every message but ``initialize`` (since 1.1.2, MCP 31: the version is agreed there).
+The session cookie counts for nothing here."""
 
 # No ``from __future__ import annotations``: the routes name dependencies made inside ``router()``.
 import json
@@ -28,10 +29,10 @@ from urllib.parse import parse_qsl
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Query, Request
 from fastapi.responses import JSONResponse, Response
-from pydantic import BaseModel, ConfigDict, create_model
+from pydantic import BaseModel, ConfigDict, Field, create_model
 
 from . import oauth, requests, rights
-from .brake import BRAKE, sender_of
+from .brake import BRAKE, wrong_key_pot
 from .config import PROTOCOL_VERSIONS, RIGHTS, AppConfig, all_tools
 from .errors import CODES, McpRefused, OAuthError
 from .model import STATES
@@ -73,24 +74,30 @@ class ConsentInfo(BaseModel):
     areas: Any = None
     extras: Any = None
     ai_allowed: Any = None
+    #: Since 1.1.2 (M-14): the program's name as the page of before read it (the same as ``client.name``).
+    client_name: Any = None
 
 
 class ConsentIn(BaseModel):
-    """The account's answer on the consent page (since 1.1.1 a named schema, M-1); every field as it came before."""
+    """The account's answer on the consent page (since 1.1.1 a named schema, M-1). Since 1.1.2 (M-13) with the checks
+    nexnotes had: lengths, ``level`` a word of letters, at most 1000 areas, extras as yes or no (422 otherwise); which
+    level, areas and extras the app has, ``oauth.consent`` checks. ``approve`` is the answer of the page of before,
+    still open in a tab while the app is updated (M-14); ``allow`` wins when both came."""
 
     model_config = ConfigDict(extra="allow")
-    client_id: Any = None
-    redirect_uri: Any = None
-    response_type: Any = None
-    code_challenge: Any = None
-    code_challenge_method: Any = None
-    state: Any = None
-    resource: Any = None
-    scope: Any = None
-    allow: Any = None
-    level: Any = None
-    areas: Any = None
-    options: Any = None
+    client_id: str = Field(default="", max_length=200)
+    redirect_uri: str = Field(default="", max_length=2048)
+    response_type: str = Field(default="code", max_length=40)
+    code_challenge: str = Field(default="", max_length=200)
+    code_challenge_method: str = Field(default="", max_length=20)
+    state: str = Field(default="", max_length=1024)
+    resource: str = Field(default="", max_length=2048)
+    scope: str = Field(default="", max_length=200)
+    allow: bool | None = None
+    approve: bool | None = None
+    level: str | None = Field(default=None, max_length=40, pattern=r"^[a-z][a-z_]*$")
+    areas: list[int | Annotated[str, Field(max_length=200)]] | None = Field(default=None, max_length=1000)
+    options: dict[Annotated[str, Field(max_length=40)], bool] | None = None
 
 
 SCHEMAS = ("ConsentInfo", "ConsentIn")
@@ -195,13 +202,16 @@ def router(
     dependency of a signed-in browser session with a password or a provider (never a key, never a device);
     ``operator``: the app's dependency for operators. ``address(request)``: the app's public address (its setting,
     else the request's through trusted proxies only). ``sender(request)``: the sender's address as the app reads it
-    behind its trusted proxies. ``notify(event, request)``: ``waiting`` and ``decided``, for the app's bell and its
-    channels. ``error``: the app's form of a refusal on its own pages. ``summaries``: the app's older summaries by the
-    route's name (``SUMMARIES``), ``operation_ids`` by the same names, ``schema_names`` for ``ConsentInfo`` and
-    ``ConsentIn`` (``SCHEMAS``), so that its description only adds (E53)."""
+    behind its trusted proxies; ``""`` where it does not know it (since 1.1.2, M-18: wrong keys then count per key).
+    ``notify(event, request)``: ``waiting`` and ``decided``, for the app's bell and its channels. ``error``: the
+    app's form of a refusal on its own pages. ``summaries``: the app's older summaries by the route's name
+    (``SUMMARIES``), ``operation_ids`` by the same names, ``schema_names`` for ``ConsentInfo`` and ``ConsentIn``
+    (``SCHEMAS``), so that its description only adds (E53)."""
     said = SUMMARIES | _checked(summaries, tuple(SUMMARIES), "route")
     ids = _checked(operation_ids, tuple(SUMMARIES), "route")
     names = _checked(schema_names, SCHEMAS, "schema")
+    if config.oauth_off_code not in CODES or config.off_code not in CODES:
+        raise ValueError("off_code and oauth_off_code: a code of nexmcp.CODES")
     consent_out = _named(ConsentInfo, names.get("ConsentInfo"))
     consent_in = _named(ConsentIn, names.get("ConsentIn"))
     routes = APIRouter(tags=tags or ["mcp"])
@@ -223,11 +233,11 @@ def router(
             return wall("origin_refused")
         if not data.mcp_on():
             return wall(config.off_code, status=config.off_status)
-        who = "mcp:" + sender_of(sender_ip(request))
+        token = _bearer(request)
+        who = wrong_key_pot(sender_ip(request), token)
         wait = BRAKE.wait_seconds(who, config.free_wrong_keys)
         if wait:
             return wall("too_many_attempts", headers={"Retry-After": str(wait)})
-        token = _bearer(request)
         caller = data.caller(token) if token else None
         if caller is None:
             BRAKE.failed(who)
@@ -239,9 +249,6 @@ def router(
             return wall("ai_rests", headers={"WWW-Authenticate": "Bearer"})
         if not BRAKE.take(f"key:{caller.key_id}", config.per_minute):
             return wall("slow_down", headers={"Retry-After": "60"})
-        asked = request.headers.get("mcp-protocol-version")
-        if asked is not None and asked not in PROTOCOL_VERSIONS:
-            return wall("protocol_version")
         body = await _limited_body(request, config.max_body)
         if body is None:
             return wall("too_large")
@@ -250,6 +257,13 @@ def router(
         except (ValueError, UnicodeDecodeError, RecursionError):
             # RecursionError: JSON nested deeper than Python's stack, sent to break the server.
             return JSONResponse(_rpc_error(-32700, "Parse error."), status_code=400)
+        # Since 1.1.2 (MCP 31, nexdeck #79): ``initialize`` is where the version is agreed (in the body; an unknown one
+        # gets the newest we speak), so a client that already sends a newer header there may still agree. Every later
+        # message has to send one we speak.
+        asked = request.headers.get("mcp-protocol-version")
+        initializing = isinstance(message, dict) and message.get("method") == "initialize"
+        if asked is not None and asked not in PROTOCOL_VERSIONS and not initializing:
+            return wall("protocol_version")
         blocked, max_level = settings(config, data)
         session = Session(config=config, store=data, caller=caller, blocked=blocked, max_level=max_level, notify=notify)
         answer = await handle(message, session)
@@ -265,6 +279,10 @@ def router(
 
     def _closed() -> JSONResponse:
         return wall("not_found")
+
+    def _off() -> Exception:
+        """M-15 (1.1.2): the consent while MCP itself is off, with the app's status and code."""
+        return refuse(McpRefused(config.oauth_off_code, status=config.oauth_off_status))
 
     def resource_metadata(request: Request, data: Data) -> JSONResponse:
         if not oauth.programs_open(config, data):
@@ -284,6 +302,9 @@ def router(
 
     @routes.post(f"{config.oauth_prefix}/register", include_in_schema=False)
     async def register(request: Request, data: Data) -> JSONResponse:
+        if not data.mcp_on() and config.oauth_off_status == 403:
+            # M-15 (1.1.2): as nexnotes and nexlore answered while MCP was off.
+            return _oauth_answer({"error": "access_denied", "error_description": "MCP is switched off here."}, 403)
         if not oauth.programs_open(config, data):
             return _closed()
         try:
@@ -343,15 +364,25 @@ def router(
             "state": state,
             "resource": resource,
         }
+        if not data.mcp_on():
+            raise _off()
         try:
-            return oauth.consent_info(data, config, account_id(signed_in), params, base_of(request))
+            shown = oauth.consent_info(data, config, account_id(signed_in), params, base_of(request))
         except McpRefused as refusal:
             raise refuse(refusal) from None
+        # M-14 (1.1.2): the name as the page of before read it, besides ``client.name``.
+        return {**shown, "client_name": shown["client"]["name"]}
 
     @routes.post(f"{config.oauth_prefix}/authorize", summary=said["consent"], operation_id=ids.get("consent"))
     def consent(request: Request, signed_in: Own, data: Data, body: Annotated[consent_in, Body()]) -> dict:
         # Only the fields that came: a missing one reads as before (``body.get``), never as a null sent.
         given = body.model_dump(exclude_unset=True)
+        # M-14 (1.1.2): the page of before answered ``approve``.
+        approve = given.pop("approve", None)
+        if given.get("allow") is None:
+            given["allow"] = bool(approve)
+        if not data.mcp_on():
+            raise _off()
         try:
             redirect = oauth.consent(data, config, account_id(signed_in), given, base_of(request), _now())
         except McpRefused as refusal:

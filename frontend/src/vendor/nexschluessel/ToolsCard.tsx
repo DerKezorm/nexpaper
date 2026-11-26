@@ -1,7 +1,8 @@
 /**
  * My account › Connections: the card "KI-Werkzeuge (MCP)" (Sparkles), in all eight apps. First the programs that
  * connected themselves with the account's consent (OAuth), then the MCP keys made by hand (where the app has them,
- * nexlore; nexnotes' older ones), each with "Widerrufen" (danger `sm`); the address AI tools connect to. Where the
+ * nexlore; nexnotes' older ones), each with "Widerrufen" (danger `sm`), the buttons of a row side by side; the address AI
+ * tools connect to stands at the top, under the card's explanation (since 1.1.1, M-7). Where the
  * app's API keys carry the extra "Auch für KI-Werkzeuge (MCP)" (nexnotes, nextime) the card says so. An app without
  * MCP says "{app} hat noch keinen MCP-Zugang."
  *
@@ -76,6 +77,7 @@ export function ToolsCard({ request, base = KEYS_BASE, words, securityHref = '/s
         label={label}
         empty={empty}
         showExpiry={kind !== undefined && kind.expiry_days !== null && rows.some((key) => !key.program)}
+        compact
         onEdit={kind ? (key) => setDialog({ mode: 'edit', kind, key }) : undefined}
         onRevoke={setRevoking}
         extra={extra}
@@ -94,6 +96,9 @@ export function ToolsCard({ request, base = KEYS_BASE, words, securityHref = '/s
         <Notice tone="warn" testId="tools-off">
           {texts.tools.off}
         </Notice>
+      )}
+      {listing?.mcp_path && (
+        <CopyRow value={`${listing.address}${listing.mcp_path}`} label={texts.tools.address} testId="tools-address" />
       )}
       {listing?.mcp !== null && listing?.keys_wait && <KeyFactorHint texts={texts} securityHref={securityHref} />}
       {listing && listing.mcp !== null && listing.ai_allowed === false && (
@@ -142,9 +147,6 @@ export function ToolsCard({ request, base = KEYS_BASE, words, securityHref = '/s
         <p className="m-0 text-xs leading-4 text-[var(--nexui-text-muted)]" data-testid="tools-via-old-api-key">
           {texts.tools.viaOldApiKey}
         </p>
-      )}
-      {listing?.mcp_path && (
-        <CopyRow value={`${listing.address}${listing.mcp_path}`} label={texts.tools.address} testId="tools-address" />
       )}
       {children}
       {dialog && listing && (

@@ -8,7 +8,7 @@
 ``DELETE /api/connect/partners/{partner}``         "Trennen", both directions (account)
 ``GET    /api/connect/consent``                    what the consent page shows (account)
 ``POST   /api/connect/consent``                    the account's answer: ``{"redirect": …}`` (account)
-``GET|PUT /api/connect/admin``                     the operator: switch and addresses of the other nex apps
+``GET|PUT /api/connect/admin``                     the operator: switch, addresses of the other nex apps, own network
 ``POST   /api/connect/token``, ``/revoke``         between the apps (forms, RFC 6749 and 7009)
 ``POST   /api/connect/retire``                     an older API key of this app ends itself (``Authorization``)
 ``GET    /api/connect/hello``                      a partner checks its connection (``Authorization``)
@@ -78,6 +78,7 @@ def router(
     address: Callable[[Request], str] | None = None,
     error: Callable[[Refused], Exception] | None = None,
     on_connected: Callable[[Any, Any, str], None] | None = None,
+    on_disconnected: Callable[[Any, Any, str], None] | None = None,
     old_key: Callable[[Any, Any, str], str | None] | None = None,
     tags: list[str] | None = None,
 ) -> APIRouter:
@@ -85,7 +86,9 @@ def router(
     dependency of a signed-in browser session (never a key, never a device); ``operator``: the app's dependency for
     operators. ``address(request)``: the app's public address (its setting, else the request's through trusted proxies
     only). ``error``: the app's form of a refusal on its own pages. ``on_connected(store, account_id, partner)``: after
-    a connection was made here (load lists, calendars). ``old_key(store, account_id, partner)``: the API key of an
+    a connection was made here (load lists, calendars). ``on_disconnected(store, account_id, partner)`` (since 0.1.4,
+    V-13): after a connection ended here, by "Trennen" in this app or because the partner ended it (drop the app's own
+    rows of it). ``old_key(store, account_id, partner)``: the API key of an
     older connection with this partner, if the app has one; after "Neu verbinden" it ends itself at the partner."""
     routes = APIRouter(tags=tags or ["connect"])
     base_of = address or (lambda request: str(request.base_url).rstrip("/"))
@@ -175,6 +178,8 @@ def router(
             connect.disconnect(data, config, who, _partner(partner), _now())
         except Refused as refusal:
             raise refuse(refusal) from None
+        if on_disconnected is not None:
+            on_disconnected(data, who, partner)
         return connect.view(config, data, who, partner, _now(), None)
 
     # --- the consent page -------------------------------------------------------------------------------------------
@@ -220,6 +225,8 @@ def router(
             "connections": connect.connections_on(data),
             "partners": config.partners,
             "addresses": {partner: str(addresses.get(partner) or "") for partner in config.partners},
+            # Since 0.1.4 (V-12): the switch for connections into the own network, the app's own setting.
+            "local": bool(data.local_allowed()),
         }
 
     @routes.get(f"{PREFIX}/admin", dependencies=[Depends(operator)], summary="Switch and addresses (operator)")
@@ -232,6 +239,10 @@ def router(
             if not isinstance(body["connections"], bool):
                 raise HTTPException(status_code=422, detail={"code": "invalid", "message": "On or off."})
             data.set_setting("connections", body["connections"])
+        if "local" in body:
+            if not isinstance(body["local"], bool):
+                raise HTTPException(status_code=422, detail={"code": "invalid", "message": "On or off."})
+            data.set_local_allowed(body["local"])
         if "addresses" in body:
             given = body["addresses"]
             if not isinstance(given, dict) or not set(given) <= set(config.partners):
@@ -268,7 +279,9 @@ def router(
             form = await _form(request)
         except GrantError as refusal:
             return _grant_answer(refusal.as_dict(), refusal.status)
-        connect.revoke(data, form)
+        ended = connect.revoke(data, form)
+        if ended is not None and on_disconnected is not None:
+            on_disconnected(data, ended.account_id, ended.partner)
         # RFC 7009, 2.2: the same answer for a token that was never there.
         return _grant_answer({})
 

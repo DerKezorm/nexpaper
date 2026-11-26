@@ -259,6 +259,9 @@ class ReferenceStore:
     def local_allowed(self) -> bool:
         return bool(self.setting("connections_local_network"))
 
+    def set_local_allowed(self, on: bool) -> None:
+        self.set_setting("connections_local_network", on)
+
     # The reference seals by encoding only; an app seals with its own key (nexnotes ``encrypt_secret``).
     def seal(self, text: str) -> str:
         return "sealed:" + base64.b64encode(text.encode("utf-8")[::-1]).decode("ascii")
@@ -307,6 +310,8 @@ class ReferenceApp:
             in_use=in_use,
         )
         self.old_key_for: dict[str, str] = {}
+        #: What the app's ``on_disconnected`` heard, as (account id, partner).
+        self.ended: list[tuple[Any, str]] = []
         self.api = self._app()
 
     def _older(self, link_partner: str | None) -> None:
@@ -377,6 +382,7 @@ class ReferenceApp:
                 operator=operator,
                 address=lambda request: self.base,
                 old_key=lambda data, who, partner: self.old_key_for.get(partner),
+                on_disconnected=lambda data, who, partner: self.ended.append((who, partner)),
             )
         )
 

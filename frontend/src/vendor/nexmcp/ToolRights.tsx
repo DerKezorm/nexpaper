@@ -1,15 +1,18 @@
 /**
  * "Rechte je Werkzeug" for one key or connected program, in the place `extra(key)` of schluessel's `ToolsCard`: a `sm`
- * secondary button opens a dialog with a table, per tool its name (the app's word), its group and a `Segment`
- * Erlauben/Fragen/Verweigern (without "Fragen" for a tool that only looks). A tool out of reach whatever its right says
- * (blocked by the operator, above the key's level, only for operators, needs an extra) stands greyed with the reason.
- * The module's own `request_status` is never shown. "Speichern" sends every right of the list at once.
+ * secondary button opens a dialog with one row per tool, its name (the app's word) and group on the left, a `Segment`
+ * Erlauben/Fragen/Verweigern on the right (without "Fragen" for a tool that only looks). A tool out of reach whatever
+ * its right says (blocked by the operator, above the key's level, only for operators, needs an extra) stands greyed
+ * with the reason. The module's own `request_status` is never shown.
+ *
+ * Since 1.1.2: a choice is kept at once (MCP 21: switches save themselves, with a short "Gespeichert."), the rows are
+ * a list, not a table that stacks in a narrow window (M-4), and from 15 tools a search field finds one (M-11).
  *
  * Copied unchanged into frontend/src/vendor/nexmcp/ by bauplaene/mcp/tools/sync.py; changed only there.
  */
 import { useState } from 'react'
 
-import { Button, Dialog, Notice, Segment, Table, useNexuiTexts, type SegmentOption } from '../nexui'
+import { Button, Dialog, Field, Notice, Rows, Segment, useNexuiTexts, type SegmentOption } from '../nexui'
 import {
   MCP_BASE,
   MCP_BUTTONS,
@@ -34,12 +37,13 @@ export type ToolRightsProps = {
   base?: string
   words?: McpWords
   language?: string
-  /** Called with what the server keeps after "Speichern". */
+  /** Called with what the server keeps after each change. */
   onSaved?: (rights: KeyRights) => void
   testId?: string
 }
 
-type Column = 'tool' | 'group' | 'right'
+/** From this many tools the list has a search field (M-11). */
+export const SEARCH_FROM = 15
 
 function rightOptions(texts: McpTexts, row: KeyToolRight): SegmentOption<ToolRight>[] {
   const all: SegmentOption<ToolRight>[] = [
@@ -58,6 +62,8 @@ export function ToolRights({ request, keyId, base = MCP_BASE, words, language, o
   const [chosen, setChosen] = useState<Record<string, ToolRight>>({})
   const [problem, setProblem] = useState<string>()
   const [busy, setBusy] = useState(false)
+  const [saved, setSaved] = useState(false)
+  const [search, setSearch] = useState('')
   const path = `${base}/keys/${encodeURIComponent(String(keyId))}/rights`
 
   const take = (answer: KeyRights) => {
@@ -68,6 +74,8 @@ export function ToolRights({ request, keyId, base = MCP_BASE, words, language, o
   const show = async () => {
     setOpen(true)
     setProblem(undefined)
+    setSaved(false)
+    setSearch('')
     setRights(null)
     try {
       take(await request<KeyRights>(path))
@@ -76,52 +84,30 @@ export function ToolRights({ request, keyId, base = MCP_BASE, words, language, o
     }
   }
 
-  const save = async () => {
+  const save = async (name: string, value: ToolRight) => {
+    const next = { ...chosen, [name]: value }
+    setChosen(next)
     setBusy(true)
     setProblem(undefined)
+    setSaved(false)
     try {
-      const answer = await request<KeyRights>(path, { method: 'PUT', body: { rights: chosen } })
+      const answer = await request<KeyRights>(path, { method: 'PUT', body: { rights: next } })
       take(answer)
       onSaved?.(answer)
-      setOpen(false)
+      setSaved(true)
     } catch (failure) {
       setProblem(refusalText(texts, failure))
+      if (rights) take(rights)
     } finally {
       setBusy(false)
     }
   }
 
   const rows = rights?.tools.filter((row) => !row.always) ?? []
-  const cell = (row: KeyToolRight, column: Column) => {
-    const out = row.reason !== null
-    switch (column) {
-      case 'tool':
-        return (
-          <span className={`flex flex-col gap-0.5${out ? ' opacity-60' : ''}`}>
-            <span className="font-medium">{toolLabel(texts, words, row.name)}</span>
-            {out && (
-              <span className="text-[var(--nexui-text-muted)]" data-testid="tool-right-reason">
-                {texts.reasons[row.reason as keyof McpTexts['reasons']]}
-              </span>
-            )}
-          </span>
-        )
-      case 'group':
-        return <span className={out ? 'text-[var(--nexui-text-muted)] opacity-60' : 'text-[var(--nexui-text-muted)]'}>{groupLabel(texts, row.group)}</span>
-      case 'right':
-        return (
-          <Segment<ToolRight>
-            label={`${texts.rights.right}: ${toolLabel(texts, words, row.name)}`}
-            hideLabel
-            value={chosen[row.name] ?? row.right}
-            onChange={(value) => setChosen({ ...chosen, [row.name]: value })}
-            options={rightOptions(texts, row)}
-            disabled={out || busy}
-            testId="tool-right"
-          />
-        )
-    }
-  }
+  const needle = search.trim().toLowerCase()
+  const shown = needle
+    ? rows.filter((row) => `${toolLabel(texts, words, row.name)} ${row.name}`.toLowerCase().includes(needle))
+    : rows
 
   return (
     <>
@@ -142,33 +128,64 @@ export function ToolRights({ request, keyId, base = MCP_BASE, words, language, o
                 {problem}
               </Notice>
             )}
-            {rights && (
-              <Table<KeyToolRight, Column>
-                label={texts.rights.table}
-                columns={[
-                  { key: 'tool', label: texts.rights.tool },
-                  { key: 'group', label: texts.rights.group, width: '7rem' },
-                  { key: 'right', label: texts.rights.right, width: '17rem' },
-                ]}
-                rows={rows}
-                cell={cell}
-                rowKey={(row) => row.name}
-                rowProps={(row) => ({
-                  'data-testid': 'tool-right-row',
-                  'data-tool': row.name,
-                  'data-group': row.group,
-                  'data-reason': row.reason ?? undefined,
-                  'data-disabled': row.reason !== null ? 'true' : 'false',
-                })}
-                testId="tool-rights-table"
+            {rights && rows.length >= SEARCH_FROM && (
+              <Field
+                label={texts.rights.search}
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                type="search"
+                maxLength={100}
+                data-testid="tool-rights-search"
               />
             )}
+            {rights && (
+              <Rows label={texts.rights.table} testId="tool-rights-table">
+                {shown.map((row) => {
+                  const out = row.reason !== null
+                  return (
+                    <li
+                      key={row.name}
+                      className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2"
+                      data-testid="tool-right-row"
+                      data-tool={row.name}
+                      data-group={row.group}
+                      data-reason={row.reason ?? undefined}
+                      data-disabled={out ? 'true' : 'false'}
+                    >
+                      <span className={`flex min-w-0 flex-1 flex-col gap-0.5 text-sm leading-5${out ? ' opacity-60' : ''}`}>
+                        <span className="font-medium text-[var(--nexui-text)]">{toolLabel(texts, words, row.name)}</span>
+                        <span className="text-xs leading-4 text-[var(--nexui-text-muted)]">
+                          {groupLabel(texts, row.group)}
+                          {out && (
+                            <span data-testid="tool-right-reason">
+                              {' · '}
+                              {texts.reasons[row.reason as keyof McpTexts['reasons']]}
+                            </span>
+                          )}
+                        </span>
+                      </span>
+                      <Segment<ToolRight>
+                        label={`${texts.rights.right}: ${toolLabel(texts, words, row.name)}`}
+                        hideLabel
+                        value={chosen[row.name] ?? row.right}
+                        onChange={(value) => void save(row.name, value)}
+                        options={rightOptions(texts, row)}
+                        disabled={out || busy}
+                        testId="tool-right"
+                      />
+                    </li>
+                  )
+                })}
+              </Rows>
+            )}
+            {saved && (
+              <p className="m-0 text-xs leading-4 text-[var(--nexui-ok)]" role="status" data-testid="tool-rights-saved">
+                {texts.rights.saved}
+              </p>
+            )}
             <div className="flex flex-wrap justify-end gap-2">
-              <Button kind={MCP_BUTTONS.cancel.kind} icon={MCP_BUTTONS.cancel.icon} onClick={() => setOpen(false)} testId="tool-rights-cancel">
-                {texts.rights.cancel}
-              </Button>
-              <Button kind={MCP_BUTTONS.save.kind} icon={MCP_BUTTONS.save.icon} busy={busy} disabled={!rights} onClick={() => void save()} testId="tool-rights-save">
-                {texts.rights.save}
+              <Button kind={MCP_BUTTONS.close.kind} icon={MCP_BUTTONS.close.icon} onClick={() => setOpen(false)} testId="tool-rights-close">
+                {texts.rights.close}
               </Button>
             </div>
           </div>

@@ -207,3 +207,15 @@ def test_a_document_the_person_may_not_see_answers_404(world: Any, nextasks: Fak
     assert found.status_code == 404
     assert nextasks.tasks == []
 
+
+
+def test_an_ended_connection_forgets_the_list_used_last(world: Any, nextasks: FakeNextasks) -> None:
+    """verbinden 0.1.4 ``on_disconnected``: nexpaper's own row of the connection goes with it."""
+    assert world.connect("app").status_code == 200
+    browser = _browser(world)
+    assert browser.post(f"/api/v1/documents/{_document('Electricity')}/nextasks",
+                        json={"list_id": "list-garden"}).status_code == 201
+    assert browser.delete(f"{world.pkg.PREFIX}/partners/nextasks").status_code == 200
+    assert world.app.disconnected() == [(world.app.account_id("owner"), "nextasks")]
+    assert world.connect("app").status_code == 200
+    assert browser.get("/api/v1/nextasks/lists").json()["last_list_id"] is None

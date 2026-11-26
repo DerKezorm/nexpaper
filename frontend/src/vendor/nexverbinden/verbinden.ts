@@ -71,7 +71,13 @@ export type ConsentInfo = {
 }
 
 /** `GET` and `PUT <base>/admin`. */
-export type ConnectionsAdmin = { connections: boolean; partners: string[]; addresses: Record<string, string> }
+export type ConnectionsAdmin = {
+  connections: boolean
+  partners: string[]
+  addresses: Record<string, string>
+  /** Since 0.1.4 (V-12): connections into the own network (the app's setting `connections_local_network`). */
+  local: boolean
+}
 
 /** The values of the consent page's address that go back to the server. */
 export const CONSENT_PARAMS = ['client_id', 'redirect_uri', 'state', 'code_challenge', 'code_challenge_method'] as const
@@ -80,7 +86,8 @@ export const CONSENT_PARAMS = ['client_id', 'redirect_uri', 'state', 'code_chall
  * refusal throws; the parts read its code with `refusalCode`. */
 export type VerbindenRequest = <T>(path: string, init?: { method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'; body?: unknown }) => Promise<T>
 
-/** Kind and symbol of every button (at most one primary per box; what ends something is `danger`). */
+/** Kind and symbol of every button (at most one primary per box; what ends something is `danger`). Since 0.1.4 (MCP 20)
+ * the consent page has "Ablehnen" (secondary, X) on the left and "Verbinden erlauben" (primary, Check) on the right. */
 export const VERBINDEN_BUTTONS = {
   connect: { kind: 'primary', icon: 'Link' },
   manual: { kind: 'secondary', icon: 'KeyRound' },
@@ -172,6 +179,29 @@ export function useVerbindenTexts(language?: string): { texts: VerbindenTexts; c
   }
   const code = (Object.keys(NEXUI_TEXTS) as (keyof typeof NEXUI_TEXTS)[]).find((key) => NEXUI_TEXTS[key] === kit) ?? 'en'
   return { texts: VERBINDEN_TEXTS[code], code }
+}
+
+/** V-11, V37 (0.1.4): what the partner does in this app's areas, from its purposes, for the question "Wo darf {partner}
+ * {actions}?". Each purpose of the catalog has its words under `areaActions` as a thing and what is done with it
+ * (`object`, `verbs`); purposes with the same thing say it once with all their verbs ("Kontakte lesen, anlegen und
+ * ändern", "Termine lesen, anlegen und ändern und Einladungen beantworten"), in the language's order
+ * (`card.actionOrder`). Purposes the module does not know say together "lesen", or "lesen und ändern" when one of them
+ * writes. */
+export function areaActions(texts: VerbindenTexts, app: string, purposes: string[], levels: Record<string, string>): string {
+  type Words = { object: string; verbs: string[] }
+  const own = (texts.areaActions as Record<string, Record<string, Words> | undefined>)[app] ?? {}
+  const list = (items: string[]) => (items.length <= 1 ? (items[0] ?? '') : `${items.slice(0, -1).join(', ')}${texts.card.and}${items.at(-1)}`)
+  const things: { object: string; verbs: string[] }[] = []
+  for (const purpose of purposes) {
+    const words = own[purpose]
+    if (!words) continue
+    const thing = things.find((found) => found.object === words.object) ?? things[things.push({ object: words.object, verbs: [] }) - 1]!
+    for (const verb of words.verbs) if (!thing.verbs.includes(verb)) thing.verbs.push(verb)
+  }
+  const said = things.map((thing) => fillVerbinden(texts.card.actionOrder, { object: thing.object, verbs: list(thing.verbs) }))
+  const unknown = purposes.filter((purpose) => !own[purpose])
+  if (unknown.length > 0) said.push(unknown.some((purpose) => levels[purpose] === 'write') ? texts.card.actionWrite : texts.card.actionRead)
+  return list(said)
 }
 
 /** Whether the page is dark: the luminance of the kit's surface (`--nexui-surface`, which every app sets for light and

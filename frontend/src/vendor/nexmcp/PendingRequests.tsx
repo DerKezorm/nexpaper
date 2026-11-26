@@ -1,8 +1,9 @@
 /**
  * The box "Wartende Rückfragen", in the place `children` of schluessel's `ToolsCard`: per waiting request a row with the
- * program, the tool (the app's word), what it wants and when it runs out, then "Erlauben" (secondary `sm`) and
- * "Ablehnen" (danger `sm`). A dangerous request is allowed only on its own page after a second question, so its row has
- * "Ansehen" (a link with `viewHref`, or `onView`) in place of "Erlauben". Nothing waiting: "Nichts wartet."
+ * program, the tool (the app's word), what it wants and when it runs out, then "Ablehnen" (secondary `sm`, X) on the
+ * left and "Erlauben" (primary `sm`, Check) on the right (MCP 20, since 1.1.2). A dangerous request is allowed only on
+ * its own page after a second question, so its row has "Ansehen" (a link with `viewHref`, or `onView`) in place of
+ * "Erlauben". Nothing waiting: "Nichts wartet."
  *
  * Copied unchanged into frontend/src/vendor/nexmcp/ by bauplaene/mcp/tools/sync.py; changed only there.
  */

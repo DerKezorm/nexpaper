@@ -1,8 +1,10 @@
 /**
  * "Andere nex-Apps" under Server › Allgemein (draft "Apps verbinden", decisions V1 1b and 7a): the operator's switch
  * "Verbindungen mit anderen nex-Apps" (on unless switched off; off, nobody connects anew and existing connections
- * rest, nothing is deleted) and the addresses of the other apps of the server, each with its own "Speichern", filled
- * in for every account in the cards.
+ * rest, nothing is deleted), since 0.1.4 "Verbindungen ins eigene Netz" (V-12, the app's setting
+ * `connections_local_network`); both boxes are kept at once with a short "Gespeichert." (MCP 21). Then the addresses
+ * of the other apps of the server, each a text field with its own "Speichern", filled in for every account in the
+ * cards.
  *
  * Copied unchanged into frontend/src/vendor/nexverbinden/ by bauplaene/verbinden/tools/sync.py; changed only there.
  */
@@ -54,7 +56,19 @@ export function ConnectionsOperatorCard({ app, request, base = VERBINDEN_BASE, l
       {problem && <Notice tone="danger">{problem}</Notice>}
       {admin && (
         <>
-          <CheckboxRow label={texts.operator.switch} hint={texts.operator.switchHint} checked={admin.connections} onChange={(on) => void send({ connections: on })} testId="connections-switch" />
+          <CheckboxRow label={texts.operator.switch} hint={texts.operator.switchHint} checked={admin.connections} onChange={(on) => void send({ connections: on }, 'switches')} testId="connections-switch" />
+          <CheckboxRow
+            label={texts.operator.local}
+            hint={fillVerbinden(texts.operator.localHint, { app })}
+            checked={admin.local}
+            onChange={(on) => void send({ local: on }, 'switches')}
+            testId="connections-local"
+          />
+          {saved === 'switches' && (
+            <p className="m-0 text-xs leading-4 text-[var(--nexui-ok)]" role="status" data-testid="connections-saved">
+              {texts.operator.saved}
+            </p>
+          )}
           <p className="m-0 text-xs text-[var(--nexui-text-muted)]">{texts.operator.addressesHint}</p>
           {admin.partners.map((partner) => (
             <Field

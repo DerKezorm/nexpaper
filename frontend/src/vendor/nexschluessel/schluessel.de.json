@@ -37,7 +37,8 @@
     "appHint": "Aus: keine App kommt mehr herein, auch keine schon verbundene. Die Geräte bleiben in der Liste.",
     "pairing": "Neue Geräte verbinden",
     "pairingHint": "Aus: kein neues Gerät lässt sich verbinden; verbundene arbeiten weiter.",
-    "docs": "Beschreibung der Schnittstelle"
+    "docs": "Beschreibung der Schnittstelle",
+    "saved": "Gespeichert."
   },
   "allKeys": {
     "title": "API-Schlüssel aller Konten",
@@ -70,8 +71,8 @@
     "nameHint": "Nur zum Wiedererkennen, z. B. „n8n Wetterbericht“.",
     "right": "Recht",
     "areas": "Was der Schlüssel erreicht",
-    "areasAll": "Alles, auch was später dazukommt",
-    "areasSome": "Nur diese",
+    "areasAll": "Alle {areas}, auch spätere",
+    "areasSome": "Nur diese {areas}",
     "areasNone": "Du hast noch nichts, was ein Schlüssel erreichen könnte.",
     "expiry": "Ablauf",
     "days": "{days} Tage",
@@ -122,5 +123,6 @@
     "mcp_off": "Der Betreiber hat den MCP-Zugang abgeschaltet.",
     "option_retired": "Das gibt es bei neuen Schlüsseln nicht mehr. Lege einen MCP-Schlüssel an.",
     "ai_not_allowed": "Der Betreiber erlaubt deinem Konto keine KI."
-  }
+  },
+  "areaWord": "Bereiche"
 }

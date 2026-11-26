@@ -63,6 +63,11 @@ class StandardAdapter:
         """APP (since 0.1.2): the id of the account of ``owner`` or ``other`` as the app's Store knows it."""
         raise NotImplementedError("APP: account_id")
 
+    def disconnected(self) -> list[tuple[Any, str]]:
+        """APP (since 0.1.4, V-13): every call of the app's ``on_disconnected`` so far as (account id, partner), in
+        order (the app drops its own rows of the connection there, nexmail its task and calendar link)."""
+        raise NotImplementedError("APP: disconnected")
+
     def block(self, role: str, blocked: bool = True) -> None:
         """APP: block (or free) the account as the operator does."""
         raise NotImplementedError("APP: block")

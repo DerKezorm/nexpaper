@@ -111,20 +111,21 @@ export type McpRequest = <T>(path: string, init?: { method?: 'GET' | 'POST' | 'P
 export const MCP_BASE = '/api/connections/mcp'
 export const OAUTH_BASE = '/api/oauth'
 
-/** Kind and symbol of every button (the rules of the ui kit: at most one primary per box, what turns down is
- * `danger`). In a list of requests "Erlauben" is secondary, since several rows share one box; on the page of one
- * request it is the primary. */
+/** Kind and symbol of every button. Since 1.1.2 (MCP 20) the pair is the same everywhere: "Ablehnen" secondary with X
+ * on the left, "Erlauben" primary with Check on the right, also in the rows of "Wartende Rückfragen". Only the second
+ * question before a dangerous request says yes with `danger` ("Ja, wirklich erlauben", MCP 22). */
 export const MCP_BUTTONS = {
   rights: { kind: 'secondary', icon: 'SlidersHorizontal' },
   save: { kind: 'primary', icon: 'Check' },
   cancel: { kind: 'secondary', icon: 'X' },
+  close: { kind: 'secondary', icon: 'X' },
   approve: { kind: 'primary', icon: 'Check' },
-  approveRow: { kind: 'secondary', icon: 'Check' },
+  approveRow: { kind: 'primary', icon: 'Check' },
   confirmApprove: { kind: 'danger', icon: 'Check' },
-  decline: { kind: 'danger', icon: 'Ban' },
+  decline: { kind: 'secondary', icon: 'X' },
   view: { kind: 'secondary', icon: 'ArrowRight' },
   allow: { kind: 'primary', icon: 'Check' },
-  refuse: { kind: 'secondary', icon: 'Ban' },
+  refuse: { kind: 'secondary', icon: 'X' },
 } as const
 
 export type McpTexts = typeof de

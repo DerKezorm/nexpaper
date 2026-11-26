@@ -50,15 +50,30 @@ class Adapter(StandardAdapter):
                 row = db.get(type(owner), owner.id)
                 _key, self.older_key = apikeys.make(db, row, "Calendar", "read", 90)
                 self.older_key_path = "/api/v1/me"
+        # Every end of a connection as nexpaper's hook hears it (verbinden 0.1.4, ``disconnected``).
+        self._ended: list[tuple[Any, str]] = []
+        self._hook = verbinden_store.on_disconnected
+
+        def heard(store: Any, account_id: Any, partner: str) -> None:
+            self._ended.append((account_id, partner))
+            self._hook(store, account_id, partner)
+
+        verbinden_store.on_disconnected = heard  # type: ignore[assignment]
         self._session = SessionLocal()
         self.store = verbinden_store.VerbindenStore(self._session)
         self._clients: dict[str | None, TestClient] = {}
         self._tab = TAB
 
     def stop(self) -> None:
+        from app.services import verbinden_store
+
+        verbinden_store.on_disconnected = self._hook  # type: ignore[assignment]
         for client in self._clients.values():
             client.close()
         self._session.close()
+
+    def disconnected(self) -> list[tuple[Any, str]]:
+        return list(self._ended)
 
     def asgi(self) -> Any:
         from app.main import app

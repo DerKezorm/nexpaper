@@ -37,7 +37,8 @@
     "appHint": "Off: no app gets in any more, not even one already connected. The devices stay in the list.",
     "pairing": "Connect new devices",
     "pairingHint": "Off: no new device can connect; connected ones keep working.",
-    "docs": "Description of the interface"
+    "docs": "Description of the interface",
+    "saved": "Saved."
   },
   "allKeys": {
     "title": "API keys of all accounts",
@@ -70,8 +71,8 @@
     "nameHint": "Only to recognise it, e.g. “n8n weather report”.",
     "right": "Right",
     "areas": "What the key reaches",
-    "areasAll": "Everything, also what comes later",
-    "areasSome": "Only these",
+    "areasAll": "All {areas}, including later ones",
+    "areasSome": "Only these {areas}",
     "areasNone": "You have nothing yet that a key could reach.",
     "expiry": "Expiry",
     "days": "{days} days",
@@ -122,5 +123,6 @@
     "mcp_off": "The operator has switched MCP access off.",
     "option_retired": "New keys no longer have this. Make an MCP key.",
     "ai_not_allowed": "The operator does not let your account use AI."
-  }
+  },
+  "areaWord": "areas"
 }

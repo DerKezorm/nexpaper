@@ -24,6 +24,22 @@ def test_ending_it_at_the_partner_reaches_the_app(world: Any) -> None:
     assert again.status_code == 404
 
 
+def test_the_app_hears_every_end_once(world: Any) -> None:
+    """V-13 (0.1.4): ``on_disconnected`` after "Trennen" here and after the partner ended it, once each; never for a
+    connection that goes on."""
+    owner = world.app.account_id("owner")
+    assert world.connect("partner").status_code == 200
+    assert world.app.disconnected() == []
+    assert world.app.client("owner").delete(f"{world.pkg.PREFIX}/partners/{world.partner.name}").status_code == 200
+    assert world.app.disconnected() == [(owner, world.partner.name)]
+    assert world.connect("app").status_code == 200
+    assert world.connect("app").status_code == 200
+    assert world.app.disconnected() == [(owner, world.partner.name)]
+    gone = world.partner.client("owner").delete(f"{world.pkg.PREFIX}/partners/{world.app.config().app_name}")
+    assert gone.status_code == 200
+    assert world.app.disconnected() == [(owner, world.partner.name)] * 2
+
+
 def test_a_partner_out_of_reach_hears_the_end_later(world: Any) -> None:
     assert world.connect("partner").status_code == 200
     world.down.add(world.host(world.partner.base))

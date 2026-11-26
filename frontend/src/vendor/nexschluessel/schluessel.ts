@@ -120,6 +120,14 @@ export const ADMIN_COLUMNS = ['account', 'name', 'right', 'used', 'action'] as c
 export type AdminColumn = (typeof ADMIN_COLUMNS)[number]
 export const COLUMN_WIDTHS: Partial<Record<KeyColumn | AdminColumn, string>> = { account: '9rem', expires: '9rem', used: '8rem', action: '13rem' }
 
+/** Since 1.1.1 (M-7): room for the buttons of a row side by side, never one under the other on a wide place: about
+ * 7.5rem for each of the module's `sm` buttons ("Bearbeiten", "Widerrufen"), 11rem for the app's own (`extra`,
+ * "Rechte je Werkzeug"), half a rem between them and 1.5rem for the cell. */
+export function actionWidth(buttons: number, extra = false): string {
+  const count = buttons + (extra ? 1 : 0)
+  return `${1.5 + buttons * 7.5 + (extra ? 11 : 0) + Math.max(0, count - 1) * 0.5}rem`
+}
+
 /** Kind and symbol of every button of the cards (the rules of the ui kit: what ends or removes is `danger`, at most one
  * primary per box). "Neuer MCP-Schlüssel" is secondary (plan E48), "Neuer API-Schlüssel" primary. */
 export const BUTTONS = {
@@ -199,8 +207,10 @@ export type AppWords = {
   rightHints?: Record<string, string>
   options?: Record<string, string>
   optionHints?: Record<string, string>
-  /** The field above the areas ("Ordner", "Bereiche", "Kalender", "Postfächer"). */
+  /** The app's word for its areas, in the plural ("Ordner", "Bereiche", "Kalender", "Postfächer"): above the choice and,
+   * since 1.1.1, in it ("Alle Ordner, auch spätere", "Nur diese Ordner"; M-5, the same words as mcp and verbinden). */
   areas?: string
+  /** Older own words for the two choices; since 1.1.1 not needed (the module says it with `areas`). */
   areasAll?: string
   areasSome?: string
 }

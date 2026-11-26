@@ -1062,43 +1062,130 @@
       },
       "ConsentIn": {
         "additionalProperties": true,
-        "description": "The account's answer on the consent page (since 1.1.1 a named schema, M-1); every field as it came before.",
+        "description": "The account's answer on the consent page (since 1.1.1 a named schema, M-1). Since 1.1.2 (M-13) with the checks\nnexnotes had: lengths, ``level`` a word of letters, at most 1000 areas, extras as yes or no (422 otherwise); which\nlevel, areas and extras the app has, ``oauth.consent`` checks. ``approve`` is the answer of the page of before,\nstill open in a tab while the app is updated (M-14); ``allow`` wins when both came.",
         "properties": {
           "allow": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Allow"
           },
+          "approve": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approve"
+          },
           "areas": {
+            "anyOf": [
+              {
+                "items": {
+                  "anyOf": [
+                    {
+                      "type": "integer"
+                    },
+                    {
+                      "maxLength": 200,
+                      "type": "string"
+                    }
+                  ]
+                },
+                "maxItems": 1000,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Areas"
           },
           "client_id": {
-            "title": "Client Id"
+            "default": "",
+            "maxLength": 200,
+            "title": "Client Id",
+            "type": "string"
           },
           "code_challenge": {
-            "title": "Code Challenge"
+            "default": "",
+            "maxLength": 200,
+            "title": "Code Challenge",
+            "type": "string"
           },
           "code_challenge_method": {
-            "title": "Code Challenge Method"
+            "default": "",
+            "maxLength": 20,
+            "title": "Code Challenge Method",
+            "type": "string"
           },
           "level": {
+            "anyOf": [
+              {
+                "maxLength": 40,
+                "pattern": "^[a-z][a-z_]*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Level"
           },
           "options": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "boolean"
+                },
+                "propertyNames": {
+                  "maxLength": 40
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Options"
           },
           "redirect_uri": {
-            "title": "Redirect Uri"
+            "default": "",
+            "maxLength": 2048,
+            "title": "Redirect Uri",
+            "type": "string"
           },
           "resource": {
-            "title": "Resource"
+            "default": "",
+            "maxLength": 2048,
+            "title": "Resource",
+            "type": "string"
           },
           "response_type": {
-            "title": "Response Type"
+            "default": "code",
+            "maxLength": 40,
+            "title": "Response Type",
+            "type": "string"
           },
           "scope": {
-            "title": "Scope"
+            "default": "",
+            "maxLength": 200,
+            "title": "Scope",
+            "type": "string"
           },
           "state": {
-            "title": "State"
+            "default": "",
+            "maxLength": 1024,
+            "title": "State",
+            "type": "string"
           }
         },
         "title": "ConsentIn",
@@ -1119,6 +1206,9 @@
           },
           "client": {
             "title": "Client"
+          },
+          "client_name": {
+            "title": "Client Name"
           },
           "extras": {
             "title": "Extras"

@@ -482,19 +482,21 @@ def _refresh(store: Any, config: AppConfig, form: dict[str, str], now: datetime)
     return _answer(config, fresh, made.access, made.refresh, store)
 
 
-def revoke(store: Any, form: dict[str, str]) -> None:
+def revoke(store: Any, form: dict[str, str]) -> Connection | None:
     """``POST /api/connect/revoke`` (RFC 7009): a token this app gave ends the whole connection on this side; anything
-    else is ignored (the same answer either way)."""
+    else is ignored (the same answer either way). Returns the connection that ended (since 0.1.4, for
+    ``on_disconnected``)."""
     brought = oauthcore.digest(form.get("token", ""))
     connection = store.by_issued_refresh(brought) or store.by_issued_access(brought)
     if connection is None:
-        return
+        return None
     client = form.get("client_id", "")
     if client and not reach.same_place(client, connection.partner_base):
-        return
+        return None
     store.remove(connection.id)
     store.commit()
     logger.info("%s ended the connection connection=%s", connection.partner, connection.id)
+    return connection
 
 
 # --- checking a token of a partner ------------------------------------------------------------------------------------

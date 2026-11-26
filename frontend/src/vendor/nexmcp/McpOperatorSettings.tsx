@@ -2,7 +2,8 @@
  * The operator's settings of MCP, in the place `after.mcp` of schluessel's `InterfacesCard` (Server › Allgemein ›
  * Schnittstellen): "Programme dürfen sich verbinden" (`CheckboxRow`), "Höchste Stufe" (`Segment`, the app's words for
  * its levels) and "Gesperrte Werkzeuge" (folded, one `CheckboxRow` per tool, ticked = blocked). Like the switches of
- * the card each change is saved at once (`PUT <base>/admin` with just that part); switching off deletes nothing.
+ * the card each change is saved at once (`PUT <base>/admin` with just that part), since 1.1.2 with a short "Gespeichert."
+ * (MCP 21); switching off deletes nothing.
  *
  * Copied unchanged into frontend/src/vendor/nexmcp/ by bauplaene/mcp/tools/sync.py; changed only there.
  */
@@ -26,6 +27,7 @@ export function McpOperatorSettings({ request, base = MCP_BASE, words, language,
   const [state, setState] = useState<McpAdmin | null>(null)
   const [problem, setProblem] = useState<string>()
   const [busy, setBusy] = useState(false)
+  const [saved, setSaved] = useState(false)
 
   const load = useCallback(() => request<McpAdmin>(`${base}/admin`), [request, base])
   useEffect(() => {
@@ -35,8 +37,10 @@ export function McpOperatorSettings({ request, base = MCP_BASE, words, language,
   const change = async (body: Change) => {
     setBusy(true)
     setProblem(undefined)
+    setSaved(false)
     try {
       setState(await request<McpAdmin>(`${base}/admin`, { method: 'PUT', body }))
+      setSaved(true)
     } catch (failure) {
       setProblem(refusalText(texts, failure))
     } finally {
@@ -93,6 +97,11 @@ export function McpOperatorSettings({ request, base = MCP_BASE, words, language,
               />
             ))}
           </Collapsible>
+          {saved && (
+            <p className="m-0 text-xs leading-4 text-[var(--nexui-ok)]" role="status" data-testid="mcp-operator-saved">
+              {texts.operator.saved}
+            </p>
+          )}
         </>
       )}
     </div>
