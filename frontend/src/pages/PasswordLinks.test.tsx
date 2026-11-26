@@ -12,10 +12,11 @@ import type { Me } from '../api/client'
 import '../i18n'
 import { changeLanguage } from '../i18n'
 import { ForgotPage, LoginPage, MailConfirmPage, ResetPage } from './AuthPages'
-import { ReadinessCard } from './settings/ReadinessCards'
-import { PasskeysCard } from './settings/SecurityCards'
 import { AccountsTab } from './settings/AccountsTab'
-import { AllApiKeysCard, BackupsCard, type ServerSettings } from './settings/ServerCards'
+import { AllKeys } from './settings/KeysCards'
+import { PasskeysBox } from './settings/SecurityBoxes'
+import { SignInArea } from './settings/SignInArea'
+import { StorageArea } from './settings/StorageArea'
 import { idle } from '../test/wait'
 
 const me: Me = {
@@ -206,7 +207,7 @@ describe("the operator sends a link instead of setting a password", () => {
     answers['GET /api/v1/accounts'] = rows
     answers['GET /api/v1/invites'] = []
     answers['GET /api/v1/oidc/admin/links'] = []
-    await show(<AccountsTab />, '/einstellungen')
+    await show(<AccountsTab />, '/settings/accounts')
     expect(box.textContent).not.toContain('Passwort geben')
     // As in every nex app, the link sits in the dialog "Verwalten" of the row, not as a button of the list.
     expect(button('Link für ein neues Passwort', box)).toBeUndefined()
@@ -214,6 +215,8 @@ describe("the operator sends a link instead of setting a password", () => {
     await click(button('Link für ein neues Passwort', document.body))
     const dialogs = document.querySelectorAll('[role="dialog"]')
     const dialog = dialogs[dialogs.length - 1]!
+    // The operator's own password in the account module's word.
+    expect(field('Passwort', dialog)!.type).toBe('password')
     await type(dialog.querySelector<HTMLInputElement>('input[type="password"]'), 'the own password')
     await submit(dialog.querySelector('form'))
   }
@@ -230,7 +233,10 @@ describe("the operator sends a link instead of setting a password", () => {
     answers['POST /api/v1/accounts/2/reset-link'] = { sent: false, link: 'https://paper.example.com/reset/abc', expires_at: '2026-10-08T10:00:00Z' }
     await ask()
     expect(document.body.textContent).toContain('Gib diesen Link weiter. Er gilt nur einmal.')
-    expect(document.body.querySelector<HTMLInputElement>('input[readonly]')?.value).toContain('https://paper.example.com/reset/abc')
+    // The kit's row to copy it (`CopyRow`): the link to read and "Kopieren".
+    const copy = document.body.querySelector<HTMLElement>('[data-part="copy-row"]')!
+    expect(copy.querySelector<HTMLInputElement>('input[readonly]')!.value).toContain('https://paper.example.com/reset/abc')
+    expect(button('Kopieren', copy)).toBeTruthy()
     expect(document.body.textContent).not.toContain('Das neue Passwort für')
   })
 })
@@ -241,76 +247,80 @@ describe('what the server offers', () => {
     vi.stubGlobal('PublicKeyCredential', function PublicKeyCredential() {})
     answers['GET /api/v1/auth/passkeys'] = []
     answers['GET /api/v1/auth/methods'] = { password: true, providers: [], passkeys: false }
-    await show(<PasskeysCard me={me} />, '/konto')
+    await show(<PasskeysBox me={me} />, '/settings/security')
     expect(button('Passkey hinzufügen', box)!.disabled).toBe(true)
     act(() => root.unmount())
     box.remove()
     answers['GET /api/v1/auth/methods'] = { password: true, providers: [], passkeys: true }
-    await show(<PasskeysCard me={me} />, '/konto')
+    await show(<PasskeysBox me={me} />, '/settings/security')
     expect(button('Passkey hinzufügen', box)!.disabled).toBe(false)
   })
 
-  it('says why the brake and the proxy are red when public networks are trusted', async () => {
-    answers['GET /api/v1/settings/readiness'] = {
-      open: 2,
-      points: [
-        { key: 'brake', state: 'bad', values: { networks: '0.0.0.0/0' } },
-        { key: 'proxy', state: 'bad', values: { proxies: '0.0.0.0/0', networks: '0.0.0.0/0' } },
-      ],
+  /** Server › Sign-in with "Bereit fürs Internet?" in the module's form; every point opened (all are closed at first). */
+  async function ready(points: unknown[]): Promise<void> {
+    answers['GET /api/v1/server/sign-in'] = {
+      password_login: true, factor_required: true, passkeys_allowed: true, password_may_go_off: false, factor_may_go_on: true,
+      public_url: 'https://paper.example.com', public_url_effective: 'https://paper.example.com', operator_has_password: true,
     }
-    await show(<ReadinessCard />, '/einstellungen')
-    expect([...box.querySelectorAll('li')].map((item) => item.getAttribute('data-state'))).toEqual(['bad', 'bad'])
-    expect(box.textContent).toContain('enthält öffentliche Netze (0.0.0.0/0)')
-    expect(box.textContent).toContain('nicht auf das ganze Internet')
+    answers['GET /api/v1/oidc/admin/providers'] = []
+    answers['GET /api/v1/oidc/authentik/address'] = { public_url: 'https://paper.example.com', seen: 'https://paper.example.com', forwarded_proto: '', forwarded_host: '', proxy_ignored: false, callback_path: '' }
+    answers['GET /api/v1/server/readiness'] = { state: 'bad', open: points.length, points }
+    localStorage.removeItem('nexpaper.fold.ready')
+    await show(<SignInArea />, '/settings/sign-in')
+    for (const head of [...box.querySelectorAll<HTMLElement>('[id^="ready-"] [aria-expanded="false"]')]) await click(head)
+  }
+
+  it('says why the brake and the proxy are red when public networks are trusted', async () => {
+    await ready([
+      { key: 'brake', state: 'bad', title: 'account.ready.brake.title', text: 'account.ready.brake.bad', values: { networks: '0.0.0.0/0' } },
+      { key: 'proxy', state: 'bad', title: 'account.ready.proxy.title', text: 'account.ready.proxy.bad', values: { proxies: '0.0.0.0/0', networks: '0.0.0.0/0', variable: 'NEXPAPER_TRUSTED_PROXIES' } },
+    ])
+    expect([...box.querySelectorAll('[id^="ready-"] [data-state]')].map((item) => item.getAttribute('data-state'))).toEqual(['bad', 'bad'])
+    expect(box.querySelector('[data-testid="ready-text-brake"]')!.textContent).toContain('enthält öffentliche Netze (0.0.0.0/0)')
+    expect(box.querySelector('[data-testid="ready-text-proxy"]')!.textContent).toContain('nicht auf das ganze Internet')
   })
 
   it('says when the protection against guessing fails its own test', async () => {
-    answers['GET /api/v1/settings/readiness'] = { open: 1, points: [{ key: 'brake', state: 'bad', values: { broken: true } }] }
-    await show(<ReadinessCard />, '/einstellungen')
-    expect(box.textContent).toContain('besteht seinen eigenen Test nicht')
+    await ready([{ key: 'brake', state: 'bad', title: 'account.ready.brake.title', text: 'account.ready.brake.broken', values: { broken: true, app: 'nexpaper' } }])
+    expect(box.querySelector('[data-testid="ready-text-brake"]')!.textContent).toContain('besteht seinen eigenen Test nicht')
   })
 })
 
 describe("the operator's pages say what they hold", () => {
-  const settings: ServerSettings = {
-    public_url: 'https://paper.example.com', password_login: true, two_factor_required: true,
-    backup_schedule: 'daily', backup_keep: 7, smtp_host: '', smtp_port: 587, smtp_security: 'starttls', smtp_user: '', smtp_password_set: false, smtp_from: '',
-    api_keys_allowed: true, update_check: true, links_allowed: true, link_max_days: 30,
-    upload_max_mb: 200, upload_max_pages: 2000, upload_max_megapixels: 100, upload_open_count: 10, upload_open_mb: 4096, process_timeout_seconds: 300, process_memory_mb: 2048, cache_max_mb: 1024,
-  }
-  const server = { settings, save: vi.fn(), setSettings: vi.fn(), busy: false, problem: null, done: null, run: vi.fn() } as unknown as Parameters<typeof BackupsCard>[0]['server']
-
   it('tells that a backup holds the secrets of the server and not the documents, in German and in English', async () => {
-    answers['GET /api/v1/backups'] = []
-    await show(<BackupsCard server={server} />, '/einstellungen')
-    expect(box.textContent).toContain('die Zugänge für Mail und KI und die Adressen offener Links. Bewahre sie darum geschützt auf, wie ein Passwort.')
-    const notice = box.querySelector('[data-testid="backup-without-documents"]')!
-    expect(notice.textContent).toContain('Die Dokumente selbst sind nicht in der Sicherung.')
-    expect(notice.textContent).toContain('/data/dokumente')
+    // nexpaper's sentence under the module's card "Sicherung" (`holds`).
+    answers['GET /api/v1/server/storage/backups'] = {
+      schedule: { every: 'daily', time: '03:00', keep: 7 }, zone: 'Europe/Berlin', last: null, count: 0, kept: 7, failure: null, running: false,
+      restore_failure: null, restored: null, restore: 'restart', download_password: false, backups: [],
+    }
+    // The check of the files has its own test (Files.test.tsx); here it does not answer.
+    answers['GET /api/v1/storage'] = { refused: 'not_found' }
+    answers['GET /api/v1/server/storage'] = {
+      app: 'nexpaper', used: 0, parts: [], complete: true, total: 1_000_000, disk_used: 0, free: 1_000_000, nearly_full: false, where: {}, network: [],
+    }
+    await show(<StorageArea />, '/settings/storage')
+    const card = () => box.querySelector('[data-card="backups"]')!
+    expect(card().textContent).toContain('die Zugänge für Mail und KI und die Adressen offener Links, bewahre sie darum geschützt auf, wie ein Passwort.')
+    expect(card().textContent).toContain('nicht die Dokumente selbst')
+    expect(card().textContent).toContain('/data/dokumente')
     act(() => root.unmount())
     box.remove()
     await changeLanguage('en', false)
-    await show(<BackupsCard server={server} />, '/einstellungen')
-    expect(box.textContent).toContain('the mail and AI credentials and the addresses of open links, so keep it protected, like a password.')
-    expect(box.querySelector('[data-testid="backup-without-documents"]')!.textContent).toContain('The documents themselves are not in the backup.')
+    await show(<StorageArea />, '/settings/storage')
+    expect(card().textContent).toContain('the access for mail and AI and the addresses of open links, so keep it protected, like a password.')
+    expect(card().textContent).toContain('not the documents themselves')
+    expect(card().textContent).toContain('/data/dokumente')
   })
 
-  it('points from the list of all keys to where the own keys are made', async () => {
-    await show(<AllApiKeysCard />, '/einstellungen')
-    const link = [...box.querySelectorAll('a')].find((a) => a.textContent === 'Eigene Tokens anlegen')
-    expect(link).toBeTruthy()
-    expect(link!.getAttribute('href')).toBe('/settings/connections')
-  })
-
-  it('shows the operator whose key it is, what it is called and its first characters, never the key', async () => {
-    answers['GET /api/v1/admin/api-keys'] = [
-      { id: 1, account: 'anna', name: 'nexdeck', scope: 'read', prefix: 'npk_Ab3d', created_at: '2026-10-01T10:00:00Z', last_used_at: null, expires_at: null, blocked: false },
-    ]
-    await show(<AllApiKeysCard />, '/einstellungen')
-    const row = box.querySelector('[data-testid="admin-api-keys"] li')!
-    expect(row.textContent).toContain('npk_Ab3d')
+  it('shows the operator whose key it is and what it is called, never the key and never its start (E36)', async () => {
+    answers['GET /api/v1/connections/admin/keys'] = {
+      keys: [{ id: 1, kind: 'api', name: 'nexdeck', right: 'read', options: {}, areas: null, created_at: '2026-10-01T10:00:00Z', last_used_at: null, expires_at: null, expired: false, expiring: false, blocked: false, legacy: null, program: false, account: { id: 2, name: 'anna', display_name: 'Anna', out: false } }],
+    }
+    await show(<AllKeys />, '/settings/accounts')
+    const row = box.querySelector('[data-testid="all-keys-row"]')!
     expect(row.textContent).toContain('nexdeck')
-    expect(row.textContent).toContain('anna')
+    expect(row.textContent).toContain('Anna')
+    expect(row.textContent).not.toContain('npk_')
     expect(row.textContent).not.toContain('undefined')
   })
 })

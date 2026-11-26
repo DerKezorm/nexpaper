@@ -10,17 +10,19 @@
  * address and the key when it is added (Import Questions), and the card warns never to put one's own key into a shortcut
  * that is shared.
  */
-import { Apple, Smartphone, Upload } from 'lucide-react'
+import { Apple, Upload } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 
 import { apiKeysApi, authApi, phoneApi, vaultsApi, type Shortcut, type Vault } from '../api/client'
+import { useAction } from '../pages/settings/actions'
+import { Outcome } from '../pages/settings/Outcome'
+import { useAuth } from '../state/auth'
+import { Box, Button, Card, CopyRow, Notice, Segment } from '../vendor/nexui'
 
 /** Sent on `window` when a card made an API key, so that the list of keys shows it at once. */
 export const KEYS_CHANGED = 'nexpaper:api-keys-changed'
-import { Button, Card, CopyLink, Feedback, useAction } from '../pages/settings/ui'
-import { useAuth } from '../state/auth'
 
 export function ShortcutCard() {
   const { t } = useTranslation()
@@ -36,22 +38,25 @@ export function ShortcutCard() {
   const link = shortcut?.link ?? ''
   const steps = link ? ['link1', 'link2', 'link3'] : ['build1', 'build2', 'build3', 'build4', 'link3']
   return (
-    <Card id="shortcut" icon={Apple} title={t('phone.iphone.title')} text={t('phone.iphone.text')}>
-      {!link && shortcut && <p className="text-sm text-ink-2">{t('phone.iphone.build')}</p>}
-      <ol className="list-decimal space-y-1 pl-5 text-sm text-ink-2" data-testid="shortcut-steps">
+    <Card id="shortcut" icon={Apple} title={t('phone.iphone.title')} subtitle={t('phone.iphone.text')}>
+      {!link && shortcut && <p className="m-0 text-sm">{t('phone.iphone.build')}</p>}
+      <ol className="m-0 list-decimal space-y-1 pl-5 text-sm" data-testid="shortcut-steps">
         {steps.map((step) => (
           <li key={step}>{t(`phone.iphone.${step}`)}</li>
         ))}
       </ol>
       <div className="flex flex-wrap items-center gap-3">
         {link && (
-          <a href={link} target="_blank" rel="noreferrer" className="inline-flex h-10 items-center gap-2 rounded-full border border-line px-4 text-sm font-semibold text-ink-2 hover:bg-sheet-2" data-testid="shortcut-link">
-            <Smartphone size={16} aria-hidden /> {t('phone.iphone.load')}
-          </a>
+          <Button kind="secondary" icon="Download" href={link} testId="shortcut-link">
+            {t('phone.iphone.load')}
+          </Button>
         )}
         {!token && allowed && (
           <Button
+            kind="primary"
+            icon="KeyRound"
             busy={action.busy}
+            testId="shortcut-make-key"
             onClick={() =>
               void action.run(async () => {
                 const made = await apiKeysApi.make(t('phone.iphone.keyName'), null, 'upload')
@@ -63,34 +68,40 @@ export function ShortcutCard() {
             {t('phone.iphone.key')}
           </Button>
         )}
-        <span className="text-xs text-muted">{t('phone.iphone.android')}</span>
+        <span className="text-xs text-[var(--nexui-text-muted)]">{t('phone.iphone.android')}</span>
       </div>
       {allowed === false && (
-        <p className="rounded-xl bg-sheet-2 px-4 py-3 text-sm text-ink-2" data-testid="shortcut-off">
-          {t('phone.iphone.off')}{' '}
-          {me?.role === 'operator' && (
-            <Link to="/settings/general" className="font-semibold text-accent underline decoration-accent/40 underline-offset-4">
-              {t('apiKeys.offOperator')}
-            </Link>
-          )}
-        </p>
-      )}
-      <p className="rounded-xl border border-warn/40 bg-warn-soft px-4 py-3 text-sm text-ink" role="note" data-testid="shortcut-warning">
-        {t('phone.iphone.warning')}
-      </p>
-      {token && shortcut && (
-        <div className="space-y-2 rounded-xl border border-accent/40 bg-accent-soft/50 p-4 text-sm" data-testid="shortcut-key">
-          <p className="font-semibold">{t('phone.iphone.shown')}</p>
-          <p className="text-xs text-muted">{t('phone.iphone.address')}</p>
-          <CopyLink value={shortcut.upload_url} label={t('phone.iphone.address')} />
-          <p className="text-xs text-muted">{t('phone.iphone.header')}</p>
-          <CopyLink value={`Bearer ${token}`} label={t('phone.iphone.header')} />
-          <Button small onClick={() => setToken(null)}>
-            {t('phone.iphone.done')}
-          </Button>
+        <div data-testid="shortcut-off">
+          <Notice tone="warn">
+            {t('phone.iphone.off')}{' '}
+            {me?.role === 'operator' && (
+              <Link to="/settings/general" className="font-semibold underline underline-offset-4">
+                {t('apiKeys.offOperator')}
+              </Link>
+            )}
+          </Notice>
         </div>
       )}
-      <Feedback problem={action.problem} />
+      <div data-testid="shortcut-warning">
+        <Notice tone="warn">{t('phone.iphone.warning')}</Notice>
+      </div>
+      {token && shortcut && (
+        <Box
+          title={t('phone.iphone.shown')}
+          testId="shortcut-key"
+          actions={
+            <Button kind="secondary" icon="Check" onClick={() => setToken(null)}>
+              {t('phone.iphone.done')}
+            </Button>
+          }
+        >
+          <span className="text-xs text-[var(--nexui-text-muted)]">{t('phone.iphone.address')}</span>
+          <CopyRow value={shortcut.upload_url} label={t('phone.iphone.address')} />
+          <span className="text-xs text-[var(--nexui-text-muted)]">{t('phone.iphone.header')}</span>
+          <CopyRow value={`Bearer ${token}`} label={t('phone.iphone.header')} />
+        </Box>
+      )}
+      <Outcome problem={action.problem} />
     </Card>
   )
 }
@@ -109,27 +120,20 @@ export function UploadVaultCard() {
   const own = writable.find((vault) => vault.personal_of === me.id)
   const chosen = writable.some((vault) => vault.id === me.profile.default_vault) ? me.profile.default_vault : (own?.id ?? null)
   return (
-    <Card id="upload-vault" icon={Upload} title={t('phone.vault.title')} text={t('phone.vault.text')}>
-      <div className="flex flex-wrap gap-2" role="radiogroup" aria-label={t('phone.vault.title')}>
-        {writable.map((vault) => (
-          <button
-            key={vault.id}
-            type="button"
-            role="radio"
-            aria-checked={vault.id === chosen}
-            onClick={() => {
-              if (vault.id === chosen) return
-              const before = me
-              setMe({ ...me, profile: { ...me.profile, default_vault: vault.id } })
-              void action.run(async () => setMe({ ...me, profile: await authApi.preferences({ default_vault: vault.id }) })).then((worked) => worked || setMe(before))
-            }}
-            className={`rounded-[9px] border px-4 py-2 text-sm font-semibold ${vault.id === chosen ? 'border-accent/50 bg-accent-soft text-accent' : 'border-line text-ink-2 hover:text-ink'}`}
-          >
-            {vault.personal_of === me.id ? t('phone.quick.mine') : vault.name}
-          </button>
-        ))}
-      </div>
-      <Feedback problem={action.problem} />
+    <Card id="upload-vault" icon={Upload} title={t('phone.vault.title')} subtitle={t('phone.vault.text')}>
+      <Segment
+        label={t('phone.vault.title')}
+        hideLabel
+        value={String(chosen ?? '')}
+        options={writable.map((vault) => ({ value: String(vault.id), label: vault.personal_of === me.id ? t('phone.quick.mine') : vault.name }))}
+        onChange={(value) => {
+          const id = Number(value)
+          const before = me
+          setMe({ ...me, profile: { ...me.profile, default_vault: id } })
+          void action.run(async () => setMe({ ...me, profile: await authApi.preferences({ default_vault: id }) })).then((worked) => worked || setMe(before))
+        }}
+      />
+      <Outcome problem={action.problem} />
     </Card>
   )
 }

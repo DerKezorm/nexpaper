@@ -18,7 +18,8 @@
     "copy": "Copier",
     "copied": "Copié",
     "save": "Enregistrer",
-    "done": "Terminé"
+    "done": "Terminé",
+    "delete": "Supprimer"
   },
   "settings": {
     "title": "Paramètres",
@@ -128,13 +129,18 @@
       "upload": {
         "title": "Téléversement",
         "text": "Où vont vos téléversements, où démarre le téléphone, vos entrées et vos demandes de dépôt."
+      },
+      "aiProvider": {
+        "text": "Quel fournisseur fait des propositions lors du classement, et dans quelles limites."
       }
     },
     "groups": {
       "account": "Mon compte",
       "server": "Serveur"
     },
-    "jump": "Page des paramètres"
+    "jump": "Page des paramètres",
+    "things": "documents",
+    "thingsDative": "documents"
   },
   "auth": {
     "name": "Nom",
@@ -378,7 +384,7 @@
       "takeAddress": "La reprendre",
       "addressTaken": "L'adresse est maintenant celle de votre compte. Confirmez-la sous Profil, elle servira alors aussi pour les documents envoyés par courriel."
     },
-    "keysWait": "Les appareils et les jetons API ne fonctionnent qu'une fois un second facteur configuré.",
+    "keysWait": "Les appareils et les clés d’API ne fonctionnent qu'une fois un second facteur configuré.",
     "keysWaitLink": "Configurer un second facteur",
     "signOut": {
       "title": "Se déconnecter",
@@ -736,7 +742,10 @@
     "logRequest": "N° / compte",
     "logMessage": "Message",
     "logRequestHint": "Afficher seulement cette requête",
-    "documentsFact": "Documents"
+    "documentsFact": "Documents",
+    "backupHolds": "Une sauvegarde contient la base de données (comptes, coffres, attributions, texte reconnu, notes, historique, réglages) et la clé du serveur, pas les documents eux-mêmes : ils se trouvent sous forme de fichiers dans /data/dokumente et relèvent de la sauvegarde de fichiers habituelle du serveur. Avec la clé, elle contient aussi les accès au courriel et à l'IA et les adresses des liens ouverts, garde-la donc protégée, comme un mot de passe. nexpaper reconstruit l'index de recherche après une restauration.",
+    "whatYouSee": "En tant qu'opérateur, tu vois les noms, les noms d'utilisateur, les adresses courriel, les rôles, la façon dont quelqu'un se connecte, la dernière visite d'un compte et combien de documents et d'espace il a, mais jamais les documents dans les coffres des autres, leur texte reconnu, leurs notes ni leurs mots de passe.",
+    "limitText": "Une fois la limite atteinte, nexpaper n'accepte plus de nouveaux fichiers de ce compte et le dit au moment du dépôt. Ce qui est déjà là reste."
   },
   "errors": {
     "ai_not_allowed": "Votre administrateur n'a pas autorisé l'IA pour votre compte.",
@@ -1072,8 +1081,8 @@
     "title": "Appareils",
     "text": "iPhone et iPad avec l'application nexpaper, et vos propres programmes. Chaque appareil a sa propre clé ; la déconnexion la bloque immédiatement.",
     "none": "Aucun appareil jumelé pour l'instant.",
-    "connect": "Jumeler un appareil",
-    "dialogTitle": "Jumeler un appareil",
+    "connect": "Connecter un iPhone ou un iPad",
+    "dialogTitle": "Connecter un iPhone ou un iPad",
     "disconnect": "Déconnecter",
     "disconnectNamed": "Déconnecter {{name}}"
   },
@@ -1128,7 +1137,9 @@
       "readHint": "Lire les documents, les coffres et la recherche, dans la mesure où votre compte le peut. Il ne peut rien modifier.",
       "upload": "Téléversement seul",
       "uploadHint": "Pour un numériseur, un script ou le raccourci : dépose des documents dans une boîte de réception et ne lit rien."
-    }
+    },
+    "keyUploadNote": "Une clé de téléversement ne fait que déposer des documents dans une boîte de réception : celle de ton coffre cible ou, si le programme en indique un autre, celle d'un coffre auquel tu peux ajouter. Elle ne peut rien lire, modifier ni supprimer.",
+    "keyLimits": "Limites par clé : 120 requêtes par minute, 50 téléversements par heure. Les clés erronées comptent comme des mots de passe erronés."
   },
   "rights": {
     "read": {
@@ -1333,7 +1344,8 @@
       "saved": "Enregistré.",
       "invalid": "Les nombres doivent se situer dans la plage autorisée.",
       "cache": "Cache des images de pages (Mo)",
-      "cacheHint": "Quand il dépasse cette taille, nexpaper efface les images inutilisées depuis le plus longtemps. Elles sont recréées au besoin."
+      "cacheHint": "Quand il dépasse cette taille, nexpaper efface les images inutilisées depuis le plus longtemps. Elles sont recréées au besoin.",
+      "perAccount": "Tu fixes l'espace de chaque compte sous « Comptes »."
     },
     "disk": {
       "title": "Comment les fichiers sont rangés sur le disque",
@@ -2758,7 +2770,8 @@
     "uses": "nexpaper occupe",
     "part": "{{name}} {{size}}",
     "bar": "nexpaper occupe {{own}}, {{used}} sur {{total}} sont utilisés sur le disque",
-    "diskFree": "{{free}} sur {{total}} encore libres sur le disque"
+    "diskFree": "{{free}} sur {{total}} encore libres sur le disque",
+    "originalsName": "originaux"
   },
   "order": {
     "title": "Organiser",
@@ -3196,8 +3209,8 @@
       "trashed_one": "nexpaper a mis un document à la corbeille, sa durée de conservation était écoulée. Il peut y être restauré pendant 30 jours.",
       "trashed_other": "nexpaper a mis {{count}} documents à la corbeille, leur durée de conservation était écoulée. Ils peuvent y être restaurés pendant 30 jours."
     },
-    "remindedHow": "Vous êtes averti selon vos réglages sous <account>Mon compte, Rappels</account>.",
-    "datesNote": "Tous ceux qui peuvent modifier dans le coffre sont avertis, chacun selon ses réglages sous <account>Mon compte, Rappels</account>.",
+    "remindedHow": "Vous êtes averti selon vos réglages sous <account>Mon compte, Notifications</account>.",
+    "datesNote": "Tous ceux qui peuvent modifier dans le coffre sont avertis, chacun selon ses réglages sous <account>Mon compte, Notifications</account>.",
     "muted": "en sourdine",
     "mutedTitle": "Vous avez mis en sourdine les rappels de ce coffre.",
     "saved": "Enregistré.",
@@ -3496,7 +3509,8 @@
     },
     "shareNote": "L'original est protégé par un mot de passe. Qui ouvre le lien reçoit la copie ouverte, sans le mot de passe.",
     "shareNoteRestricted": "L'original est verrouillé contre l'impression ou les modifications. Qui ouvre le lien reçoit la copie ouverte, sans ce verrou.",
-    "shareNoteAlso": "Un document choisi a un original protégé. Qui ouvre le lien reçoit sa copie ouverte, sans le mot de passe ni le verrou."
+    "shareNoteAlso": "Un document choisi a un original protégé. Qui ouvre le lien reçoit sa copie ouverte, sans le mot de passe ni le verrou.",
+    "rename": "Renommer"
   },
   "mailText": {
     "toggle": "Accepter les courriels sans pièce jointe comme document",
@@ -3622,5 +3636,16 @@
     "search": "Rechercher",
     "searchKey": "Ctrl K",
     "manageVaults": "Gérer les coffres"
+  },
+  "install": {
+    "title": "Installer sur cet appareil",
+    "text": "Installé, nexpaper démarre comme une app : dans sa propre fenêtre sans la barre du navigateur, avec sa propre icône.",
+    "button": "Installer",
+    "asked": "Le navigateur a demandé. Si tu as accepté, tu trouves nexpaper parmi tes apps.",
+    "ios": "Sur iPhone et iPad : Partager › Sur l'écran d'accueil.",
+    "installed": "nexpaper fonctionne déjà comme app installée sur cet appareil.",
+    "safari": "Dans Safari sur le Mac : Fichier › Ajouter au Dock.",
+    "firefox": "Firefox ne sait pas installer d'apps web. Ouvre nexpaper pour cela dans un autre navigateur, comme Chrome, Edge ou Safari.",
+    "other": "Si ton navigateur ne propose pas de bouton ici, l'installation se trouve dans son menu, par exemple « Installer l'application » ou « Ajouter à l'écran d'accueil »."
   }
 }

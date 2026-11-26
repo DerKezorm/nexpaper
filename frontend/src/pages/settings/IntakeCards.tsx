@@ -3,16 +3,16 @@
  * account, Upload (the addresses a person forwards from, the own subfolder). The folder must be a place nexpaper may take files from, the
  * mailbox is tried with the server, and an address counts once the link mailed to it was opened.
  */
-import { AtSign, FolderInput, Mail, Trash2 } from 'lucide-react'
+import { AtSign, FolderInput, Mail } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { ApiError, intakeApi, type IntakeChange, type IntakeSettings, type MyIntake } from '../../api/client'
-import { useConfirm } from '../../components/useConfirm'
 import { ago } from '../../lib/ago'
 import { errorText } from '../../lib/errors'
 import { iso } from '../../lib/say'
-import { Button, Card, Input, Segment, Select, Toggle } from './ui'
+import { Button, Card, CheckboxRow, CopyRow, Field, Notice, Row, Rows, Segment, SelectField } from '../../vendor/nexui'
+import { useAsk } from './useAsk'
 
 /** The sentence for a code of these cards: their own words, else the app's. */
 // eslint-disable-next-line react-refresh/only-export-components
@@ -37,16 +37,7 @@ function Said({ problem, done }: { problem: string | null; done: string | null }
   if (!problem && !done) return null
   return (
     <div aria-live="polite">
-      {problem && (
-        <p role="alert" className="rounded-xl border border-bad/40 bg-bad/10 px-3 py-2 text-sm text-bad">
-          {say(problem)}
-        </p>
-      )}
-      {done && (
-        <p role="status" className="text-sm font-semibold text-accent">
-          ✓ {done}
-        </p>
-      )}
+      {problem ? <Notice tone="danger">{say(problem)}</Notice> : <Notice tone="ok">{done}</Notice>}
     </div>
   )
 }
@@ -72,10 +63,10 @@ export function IntakeCards() {
   const intake = useIntakeSettings()
   if (!intake.settings) return null
   return (
-    <div className="space-y-6">
+    <>
       <FolderCard intake={intake} settings={intake.settings} />
       <MailboxCard intake={intake} settings={intake.settings} />
-    </div>
+    </>
   )
 }
 
@@ -103,38 +94,42 @@ function FolderCard({ intake, settings }: { intake: Intake; settings: IntakeSett
   const shown = (folder.path || folder.used).replace(/[\\/]+$/, '')
   const changed = path.trim() !== (folder.path || folder.used)
   return (
-    <Card icon={FolderInput} title={t('intake.folder.title')} text={t('intake.folder.text')}>
-      <Toggle label={t('intake.folder.watch')} checked={folder.on} onChange={(folder_on) => void run({ folder_on }, null)} />
+    <Card id="intake-folder" icon={FolderInput} title={t('intake.folder.title')} subtitle={t('intake.folder.text')}>
+      <CheckboxRow label={t('intake.folder.watch')} checked={folder.on} onChange={(folder_on) => void run({ folder_on }, null)} />
       {folder.on && (
-        <div className="mt-4 space-y-3">
+        <>
           <form
-            className="flex flex-wrap items-start gap-2"
             onSubmit={(event) => {
               event.preventDefault()
               void run({ folder_path: path.trim() }, t('intake.folder.saved'))
             }}
           >
-            <Input label={t('intake.folder.path')} value={path} onChange={setPath} hint={t('intake.folder.pathHint')} className="min-w-60 flex-1" />
-            {changed && (
-              <Button type="submit" busy={busy} className="mt-6">
-                {t('intake.folder.save')}
-              </Button>
-            )}
+            <Field
+              label={t('intake.folder.path')}
+              value={path}
+              onChange={(event) => setPath(event.target.value)}
+              hints={[t('intake.folder.pathHint')]}
+              action={
+                <Button kind="secondary" icon="Check" type="submit" busy={busy} disabled={!changed}>
+                  {t('intake.folder.save')}
+                </Button>
+              }
+            />
           </form>
-          <ul className="space-y-1 rounded-xl bg-sheet-2 px-4 py-3 font-mono text-xs text-ink-2">
+          <ul className="m-0 flex list-none flex-col gap-1 rounded-[9px] bg-[var(--nexui-field)] px-4 py-3 font-mono text-xs">
             {folder.people.map((person) => (
               <li key={person.name}>
-                {shown}/{person.name}/ <span className="text-muted">{t('intake.folder.to', { name: person.display_name })}</span>
-                {person.problem === 'folder_readonly' && <span className="ml-2 font-sans font-semibold text-bad">{t('intake.folder.personReadonly')}</span>}
+                {shown}/{person.name}/ <span className="text-[var(--nexui-text-muted)]">{t('intake.folder.to', { name: person.display_name })}</span>
+                {person.problem === 'folder_readonly' && <span className="ml-2 font-sans font-semibold text-[var(--nexui-danger)]">{t('intake.folder.personReadonly')}</span>}
               </li>
             ))}
             <li>
-              {shown}/ <span className="text-muted">{t('intake.folder.toOperator')}</span>
+              {shown}/ <span className="text-[var(--nexui-text-muted)]">{t('intake.folder.toOperator')}</span>
             </li>
           </ul>
-          <p className="text-xs text-muted">{t('intake.folder.quiet')}</p>
-          <p className="text-xs text-muted">{t('intake.folder.aside')}</p>
-        </div>
+          <p className="m-0 text-xs text-[var(--nexui-text-muted)]">{t('intake.folder.quiet')}</p>
+          <p className="m-0 text-xs text-[var(--nexui-text-muted)]">{t('intake.folder.aside')}</p>
+        </>
       )}
       <Said problem={problem ?? (folder.on && folder.problem ? folder.problem : null)} done={done} />
     </Card>
@@ -217,25 +212,25 @@ function MailboxCard({ intake, settings }: { intake: Intake; settings: IntakeSet
   /** The server whose verdict counts for the text of a mail: the trusted one, else the domain of the mailbox. */
   const judge = mail.auth_server || mail.address.split('@')[1] || ''
   return (
-    <Card icon={Mail} title={t('intake.mail.title')} text={t('intake.mail.text', { local })}>
-      <Toggle label={t('intake.mail.fetch')} hint={t('intake.mail.fetchHint')} checked={mail.on} onChange={(mail_on) => void flip({ mail_on })} />
+    <Card id="intake-mail" icon={Mail} title={t('intake.mail.title')} subtitle={t('intake.mail.text', { local })}>
+      <CheckboxRow label={t('intake.mail.fetch')} hint={t('intake.mail.fetchHint')} checked={mail.on} onChange={(mail_on) => void flip({ mail_on })} />
       {mail.on && (
         <form
-          className="mt-4 grid gap-3 sm:grid-cols-2"
+          className="grid gap-3 sm:grid-cols-2"
           onSubmit={(event) => {
             event.preventDefault()
             void saveAndTry()
           }}
         >
-          <Input label={t('intake.mail.host')} value={draft.host} onChange={(host) => set({ host })} placeholder="imap.example.com" hint={t('intake.mail.hostHint', { port: draft.port, security: securityName })} />
-          <Input label={t('intake.mail.address')} value={draft.address} onChange={(address) => set({ address })} placeholder="paper@example.com" />
-          <Input label={t('intake.mail.user')} value={draft.user} onChange={(user) => set({ user })} />
-          <Input label={t('intake.mail.password')} type="password" autoComplete="new-password" value={draft.password} onChange={(password) => set({ password })} placeholder={mail.password_set ? t('intake.mail.passwordKept') : ''} />
-          <Input label={t('intake.mail.port')} type="number" value={draft.port} onChange={(port) => set({ port })} min={1} max={65535} />
-          <Select
+          <Field label={t('intake.mail.host')} value={draft.host} onChange={(event) => set({ host: event.target.value })} placeholder="imap.example.com" hints={[t('intake.mail.hostHint', { port: draft.port, security: securityName })]} />
+          <Field label={t('intake.mail.address')} value={draft.address} onChange={(event) => set({ address: event.target.value })} placeholder="paper@example.com" />
+          <Field label={t('intake.mail.user')} value={draft.user} onChange={(event) => set({ user: event.target.value })} />
+          <Field label={t('intake.mail.password')} type="password" autoComplete="new-password" value={draft.password} onChange={(event) => set({ password: event.target.value })} placeholder={mail.password_set ? t('intake.mail.passwordKept') : ''} />
+          <Field label={t('intake.mail.port')} type="number" value={draft.port} onChange={(event) => set({ port: event.target.value })} min={1} max={65535} />
+          <SelectField
             label={t('intake.mail.security')}
             value={draft.security}
-            onChange={(security) => set({ security })}
+            onChange={(event) => set({ security: event.target.value as MailDraft['security'] })}
             options={[
               { value: 'tls', label: t('intake.mail.tls') },
               { value: 'starttls', label: t('intake.mail.starttls') },
@@ -243,7 +238,6 @@ function MailboxCard({ intake, settings }: { intake: Intake; settings: IntakeSet
             ]}
           />
           <div className="sm:col-span-2">
-            <p className="mb-2 text-sm font-semibold">{t('intake.mail.after')}</p>
             <Segment
               label={t('intake.mail.after')}
               value={mail.after}
@@ -256,32 +250,34 @@ function MailboxCard({ intake, settings }: { intake: Intake; settings: IntakeSet
             />
           </div>
           <div className="sm:col-span-2">
-            <Toggle label={t('intake.mail.private')} hint={t('intake.mail.privateHint')} checked={mail.private} onChange={(mail_private) => void flip({ mail_private })} />
-          </div>
-          <Input label={t('intake.mail.authServer')} value={draft.authServer} onChange={(authServer) => set({ authServer })} placeholder={(draft.address.split('@')[1] || 'example.com')} hint={t('intake.mail.authServerHint')} className="sm:col-span-2" />
-          <div className="sm:col-span-2">
-            <Toggle label={t('intake.mail.dropUnknown')} hint={t('intake.mail.dropUnknownHint')} checked={mail.drop_unknown} onChange={(mail_drop_unknown) => void flip({ mail_drop_unknown })} />
+            <CheckboxRow label={t('intake.mail.private')} hint={t('intake.mail.privateHint')} checked={mail.private} onChange={(mail_private) => void flip({ mail_private })} />
           </div>
           <div className="sm:col-span-2">
-            <Toggle label={t('mailText.toggle')} hint={t('mailText.hint')} checked={mail.text === true} onChange={(mail_text) => void flip({ mail_text })} />
+            <Field label={t('intake.mail.authServer')} value={draft.authServer} onChange={(event) => set({ authServer: event.target.value })} placeholder={draft.address.split('@')[1] || 'example.com'} hints={[t('intake.mail.authServerHint')]} />
+          </div>
+          <div className="sm:col-span-2">
+            <CheckboxRow label={t('intake.mail.dropUnknown')} hint={t('intake.mail.dropUnknownHint')} checked={mail.drop_unknown} onChange={(mail_drop_unknown) => void flip({ mail_drop_unknown })} />
+          </div>
+          <div className="flex flex-col gap-2 sm:col-span-2">
+            <CheckboxRow label={t('mailText.toggle')} hint={t('mailText.hint')} checked={mail.text === true} onChange={(mail_text) => void flip({ mail_text })} />
             {mail.text === true && (
-              <p className="mt-2 text-xs text-muted" data-testid="mail-text-judge">
+              <p className="m-0 text-xs text-[var(--nexui-text-muted)]" data-testid="mail-text-judge">
                 {judge ? t('mailText.judge', { server: judge }) : t('mailText.noJudge')}
               </p>
             )}
           </div>
-          <p className="text-xs text-muted sm:col-span-2">{t('intake.mail.taken')}</p>
-          <p className="text-xs text-muted sm:col-span-2">{t('intake.mail.whole')}</p>
+          <p className="m-0 text-xs text-[var(--nexui-text-muted)] sm:col-span-2">{t('intake.mail.taken')}</p>
+          <p className="m-0 text-xs text-[var(--nexui-text-muted)] sm:col-span-2">{t('intake.mail.whole')}</p>
           <div className="flex flex-wrap gap-2 sm:col-span-2">
-            <Button primary type="submit" busy={busy === 'save'} disabled={busy !== null}>
+            <Button kind="primary" icon="Check" type="submit" busy={busy === 'save'} disabled={busy !== null}>
               {t('intake.mail.saveTry')}
             </Button>
-            <Button onClick={() => void fetchNow()} busy={busy === 'fetch'} disabled={busy !== null || !mail.password_set}>
+            <Button kind="secondary" icon="Download" onClick={() => void fetchNow()} busy={busy === 'fetch'} disabled={busy !== null || !mail.password_set}>
               {t('intake.mail.now')}
             </Button>
           </div>
           {last.at && (
-            <p className="text-xs text-muted sm:col-span-2" data-testid="mail-last">
+            <p className="m-0 text-xs text-[var(--nexui-text-muted)] sm:col-span-2" data-testid="mail-last">
               {last.ok
                 ? t('intake.mail.lastOk', { when: ago(last.at, i18n.language, t('me.justNow')), mails: last.mails, files: last.files })
                 : t('intake.mail.lastFailed', { when: ago(last.at, i18n.language, t('me.justNow')), reason: say(last.code) })}
@@ -308,7 +304,7 @@ export function MyIntakeCards() {
   const [problem, setProblem] = useState<string | null>(null)
   const [done, setDone] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
-  const { ask, dialog } = useConfirm()
+  const { ask, dialog } = useAsk()
   const load = useCallback(() => {
     intakeApi.mine().then(setMine, () => undefined)
   }, [])
@@ -347,56 +343,60 @@ export function MyIntakeCards() {
   return (
     <>
       {mine.mail_on && mine.mail_address && (
-        <Card icon={AtSign} title={t('intake.mine.mailTitle')} text={t('intake.mine.mailText', { address: mine.mail_address })}>
+        <Card id="my-intake-mail" icon={AtSign} title={t('intake.mine.mailTitle')} subtitle={t('intake.mine.mailText', { address: mine.mail_address })}>
           {(mine.account_address || mine.senders.length > 0) && (
-            <ul className="space-y-2">
-              {mine.account_address && (
-                <li className="flex items-center gap-3 rounded-xl border border-line bg-sheet-2/50 px-4 py-2.5 text-sm">
-                  <AtSign size={16} className="text-accent" aria-hidden />
-                  <span className="flex-1 font-semibold">{mine.account_address}</span>
-                  <span className="text-xs text-muted">{t('intake.mine.accountAddress')}</span>
-                </li>
-              )}
+            <Rows label={t('intake.mine.mailTitle')} testId="my-senders">
+              {mine.account_address && <Row icon={AtSign} name={mine.account_address} detail={t('intake.mine.accountAddress')} />}
               {mine.senders.map((sender) => (
-                <li key={sender.id} className="flex items-center gap-3 rounded-xl border border-line bg-sheet-2/50 px-4 py-2.5 text-sm">
-                  <AtSign size={16} className={sender.confirmed ? 'text-accent' : 'text-muted'} aria-hidden />
-                  <span className="flex-1 font-semibold">{sender.address}</span>
-                  {!sender.confirmed && <span className="text-xs text-muted">{t('intake.mine.waiting')}</span>}
-                  <button type="button" onClick={() => remove(sender.id, sender.address)} className="rounded-full p-1 text-muted hover:text-ink" aria-label={`${t('intake.mine.remove')}: ${sender.address}`}>
-                    <Trash2 size={14} aria-hidden />
-                  </button>
-                </li>
+                <Row
+                  key={sender.id}
+                  icon={AtSign}
+                  name={sender.address}
+                  badge={!sender.confirmed ? <span className="text-xs text-[var(--nexui-text-muted)]">{t('intake.mine.waiting')}</span> : undefined}
+                  action={
+                    <Button kind="danger" size="sm" icon="Trash2" onClick={() => remove(sender.id, sender.address)} aria-label={`${t('intake.mine.remove')}: ${sender.address}`}>
+                      {t('intake.mine.remove')}
+                    </Button>
+                  }
+                />
               ))}
-            </ul>
+            </Rows>
           )}
           {mine.can_confirm ? (
             <form
-              className="mt-3 flex flex-wrap items-start gap-2"
               onSubmit={(event) => {
                 event.preventDefault()
                 void add()
               }}
             >
-              <Input label={t('intake.mine.add')} value={address} onChange={setAddress} placeholder="name@example.com" className="min-w-60 flex-1" hint={t('intake.mine.addHint')} />
-              <Button type="submit" className="mt-6" busy={busy} disabled={!address.includes('@')}>
-                {t('intake.mine.addButton')}
-              </Button>
+              <Field
+                label={t('intake.mine.add')}
+                value={address}
+                onChange={(event) => setAddress(event.target.value)}
+                placeholder="name@example.com"
+                hints={[t('intake.mine.addHint')]}
+                action={
+                  <Button kind="secondary" icon="Plus" type="submit" busy={busy} disabled={!address.includes('@')}>
+                    {t('intake.mine.addButton')}
+                  </Button>
+                }
+              />
             </form>
           ) : (
-            <p className="text-sm text-muted">{t('intake.mine.noMailServer')}</p>
+            <p className="m-0 text-sm text-[var(--nexui-text-muted)]">{t('intake.mine.noMailServer')}</p>
           )}
           <Said problem={problem} done={done} />
           {mine.plus_address && (
-            <p className="mt-3 text-sm text-ink-2">
-              {t('intake.mine.plus')} <span className="font-mono text-ink">{mine.plus_address}</span>
+            <p className="m-0 text-sm">
+              {t('intake.mine.plus')} <span className="font-mono">{mine.plus_address}</span>
             </p>
           )}
           <Former mine={mine} kind="@" />
         </Card>
       )}
       {mine.folder_on && mine.folder && (
-        <Card icon={FolderInput} title={t('intake.mine.folderTitle')} text={t('intake.mine.folderText')}>
-          <p className="rounded-xl bg-sheet-2 px-4 py-3 font-mono text-sm">{mine.folder}</p>
+        <Card id="my-intake-folder" icon={FolderInput} title={t('intake.mine.folderTitle')} subtitle={t('intake.mine.folderText')}>
+          <CopyRow label={t('intake.mine.folderTitle')} value={mine.folder} testId="my-folder" />
           <Former mine={mine} kind="/" />
         </Card>
       )}
@@ -412,7 +412,7 @@ function Former({ mine, kind }: { mine: MyIntake; kind: '@' | '/' }) {
   const shown = (mine.former ?? []).filter((entry) => (kind === '@' ? entry.includes('@') : entry.endsWith('/')))
   if (shown.length === 0) return null
   return (
-    <p className="mt-2 text-xs text-muted" data-testid={kind === '@' ? 'former-plus' : 'former-folder'}>
+    <p className="m-0 text-xs text-[var(--nexui-text-muted)]" data-testid={kind === '@' ? 'former-plus' : 'former-folder'}>
       {t('intake.mine.former', { list: shown.join(', ') })}
     </p>
   )

@@ -1,19 +1,23 @@
 /**
- * Settings in areas, as in nexnotes: "My account" for every account, "Server" for the operator, "About nexpaper" for
- * everyone at the end. Each area has its own address (`/settings/<slug>`, `settings/areas.ts`), `/settings` is the
- * profile. An area someone may not open leads on to the profile, so the navigation always marks where one is. The
- * pages of before (`/konto`, `/einstellungen`, `/ueber`, each with its `?tab=`) lead to their area (`FormerAddress`).
+ * Settings (plan "Einstellungen") in the frame of the ui kit: `SettingsLayout` with `SettingsNav` (the account at the
+ * top, "Mein Konto", "Server" for the operator, "Über nexpaper" set apart at the end) and one `SettingsPage` per area:
+ * its title, one line, then only cards. Each area has its own address (`/settings/<slug>`, `settings/areas.ts`).
+ * `/settings` alone is the list on a phone and the profile beside the navigation on a wider page. An area someone may
+ * not open, a slug of before or a page of before (`/konto`, `/einstellungen`, `/ueber`, each with its `?tab=`) leads on
+ * with the address replaced, so the navigation always marks where one is.
  */
 import { useTranslation } from 'react-i18next'
-import { Navigate, useLocation, useParams } from 'react-router-dom'
+import { Link, Navigate, useLocation, useParams } from 'react-router-dom'
 
+import { Avatar } from '../components/Avatar'
+import { APP_NAME } from '../i18n'
 import { useAuth } from '../state/auth'
-import { findArea, formerAddress, resolveArea } from './settings/areas'
+import { areaText, languageOf, NEXUI_TEXTS, NexuiLanguage, SettingsLayout, SettingsNav, SettingsPage as Area, type SettingsGroup } from '../vendor/nexui'
+import { ABOUT_AREA, areaPath, areasFor, findArea, formerAddress, GROUPS, resolveArea, type Area as AreaInfo } from './settings/areas'
 import { AreaContent } from './settings/SettingsAreas'
-import { SettingsJump, SettingsNav } from './settings/SettingsNav'
 
 export function SettingsPage() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const { me } = useAuth()
   const { tab: asked } = useParams()
   const { search } = useLocation()
@@ -22,20 +26,49 @@ export function SettingsPage() {
   if ('redirect' in where) return <Navigate to={where.redirect} replace />
   const area = findArea(where.area)
   if (!area) return null
+  const things = t('settings.things')
+  const thingsDative = t('settings.thingsDative')
+  const shared = (info: AreaInfo) => areaText(NEXUI_TEXTS[languageOf(i18n.language)], info.slug, { app: APP_NAME, things, thingsDative })
+  const words = (info: AreaInfo) => {
+    if (info.own) return { title: t(`settings.areas.${info.key}.title`), text: t(`settings.areas.${info.key}.text`) }
+    const kit = shared(info) ?? { title: info.slug, text: '' }
+    return info.line ? { title: kit.title, text: t(`settings.areas.${info.key}.text`) } : kit
+  }
+  const groups: SettingsGroup[] = GROUPS.map((group) => ({
+    id: group,
+    areas: areasFor(me.role)
+      .filter((entry) => entry.group === group)
+      .map((entry) => ({ slug: entry.slug, icon: entry.icon, href: areaPath(entry.slug), title: entry.own ? words(entry).title : undefined })),
+  }))
+  const shown = me.display_name || me.name
+  const own = area.own || area.line ? words(area) : null
   return (
-    <div className="@container mx-auto w-full max-w-6xl px-4 pt-6 pb-28 sm:px-6 sm:pt-8 lg:pb-12">
-      <div className="flex flex-col gap-5 @min-[700px]:flex-row @min-[700px]:items-start @min-[700px]:gap-8">
-        <SettingsNav me={me} current={area.slug} />
-        <SettingsJump me={me} current={area.slug} />
-        <div className="min-w-0 flex-1 space-y-5" data-testid={`settings-area-${area.slug}`}>
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight">{t(`settings.areas.${area.key}.title`)}</h1>
-            <p className="mt-1 text-sm text-muted">{t(`settings.areas.${area.key}.text`)}</p>
-          </div>
-          <AreaContent key={area.slug} area={area.slug} />
-        </div>
+    <NexuiLanguage language={i18n.language}>
+      {/* Room below for the phone's bar of the app. */}
+      <div className="pb-20 lg:pb-4">
+        <SettingsLayout
+          list={asked === undefined}
+          back="/settings"
+          link={Link}
+          nav={
+            <SettingsNav
+              app={APP_NAME}
+              things={things}
+              thingsDative={thingsDative}
+              groups={groups}
+              about={{ href: areaPath(ABOUT_AREA.slug), slug: ABOUT_AREA.slug }}
+              current={area.slug}
+              account={{ name: shown, role: t(`me.role.${me.role}`), picture: <Avatar person={me} size={40} /> }}
+              link={Link}
+            />
+          }
+        >
+          <Area slug={area.slug} app={APP_NAME} things={things} thingsDative={thingsDative} title={own?.title} subtitle={own?.text}>
+            <AreaContent key={area.slug} area={area.slug} />
+          </Area>
+        </SettingsLayout>
       </div>
-    </div>
+    </NexuiLanguage>
   )
 }
 

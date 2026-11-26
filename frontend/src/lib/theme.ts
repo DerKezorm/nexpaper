@@ -64,3 +64,12 @@ export function followSystem(): void {
     // An old browser: the mode stays as it was at the start.
   }
 }
+
+/** What this browser kept, as it stands (for the account that has no theme yet, konten 1.1.0 `browserTheme`). */
+export function keptTheme(): string | null {
+  try {
+    return localStorage.getItem(KEY)
+  } catch {
+    return null
+  }
+}

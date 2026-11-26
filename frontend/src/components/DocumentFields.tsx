@@ -323,7 +323,7 @@ export function Dates({ dates, onChange, onDraft, start, why, refused, done, onD
         )}
       </div>
       <p className="mt-1.5 text-xs text-muted">
-        <Trans i18nKey="reminders.datesNote" components={{ account: <Link to="/settings/reminders" className="font-semibold text-accent hover:underline" /> }} />
+        <Trans i18nKey="reminders.datesNote" components={{ account: <Link to="/settings/notifications" className="font-semibold text-accent hover:underline" /> }} />
       </p>
     </div>
   )

@@ -1,66 +1,59 @@
 /**
- * The areas of "My account" in the settings (`settings/areas.ts`), as in nexnotes: Profile (picture, display name,
- * name, role, mail address with its link, language, signing out), Security (password, second factor, passkeys, the
- * sign-in providers, the signed-in browsers), Appearance (light or dark, the archive), Connections (in nexnotes' order
- * the paired devices and the API keys, then nexpaper's own: the iPhone shortcut and Web Push on the devices), and nexpaper's own: Upload (where uploads go, where a phone
- * starts), Reminders (of deadlines), AI (the own switch, and what the operator set up).
+ * The areas of "Mein Konto" (`settings/areas.ts`, plan "Einstellungen"): Profile (the account module's card and
+ * "Abmelden"), Security (`SecurityBoxes.tsx`), Appearance (`AppearanceArea.tsx`), nexpaper's own Upload (where uploads go,
+ * where a phone starts, the own inputs, PDF passwords, upload requests) and AI (the own switch and what the operator set
+ * up), Notifications (`NotificationsArea.tsx`) and Connections (`ConnectionsArea.tsx`). Built only from the ui kit.
  */
-import { KeyRound, LogOut, Sparkles, User } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Trans, useTranslation } from 'react-i18next'
 import { Link, useNavigate } from 'react-router-dom'
 
-import { api, authApi, type Me, type ProfileChange, type RemainingAccess } from '../../api/client'
+import { api, ApiError, authApi, type Me, type ProfileChange } from '../../api/client'
 import { AccountButton } from '../../components/AccountButton'
-import { confirmOf } from '../../lib/accountButton'
-import { pageOrder, PAGES, passwordChanged, screenFields } from '../../vendor/nexkonten/konten'
-import { ConfirmDialog, Field, Notice, SelectField } from '../../vendor/nexui'
-import { ApiKeys } from '../../components/ApiKeys'
 import { Avatar } from '../../components/Avatar'
-import { KeysWait } from '../../components/KeysWait'
-import { MyProviders } from '../../components/MyProviders'
-import { PairedDevices } from '../../components/PairedDevices'
-import { useConfirm } from '../../components/useConfirm'
+import { UploadVaultCard } from '../../components/PhoneCards'
+import { UploadRequestsCard } from '../../components/UploadRequests'
 import { changeLanguage, languageOptions, type LanguageOption } from '../../i18n'
-import { ShortcutCard, UploadVaultCard } from '../../components/PhoneCards'
+import { confirmOf } from '../../lib/accountButton'
 import { providerName } from '../../lib/aiProviders'
+import { errorText } from '../../lib/errors'
 import { useAiState } from '../../state/ai'
 import { useAuth } from '../../state/auth'
-import { UploadRequestsCard } from '../../components/UploadRequests'
+import { useWaitingUploads } from '../../state/uploads'
+import { SignOutCard, UnconfirmedEmailBox } from '../../vendor/nexkonten/AccountCards'
+import { FIELDS, PAGES, screenFields } from '../../vendor/nexkonten/konten'
+import { Box, Card, CheckboxRow, ConfirmDialog, Field, Notice, SelectField } from '../../vendor/nexui'
+import { useAction } from './actions'
+import { AppearanceArea } from './AppearanceArea'
+import { ConnectionsArea } from './ConnectionsArea'
 import { MyIntakeCards } from './IntakeCards'
-import { LooksCard, PhoneCard } from './PersonalCards'
+import { NotificationsArea } from './NotificationsArea'
+import { Outcome } from './Outcome'
 import { PdfPasswordsCard } from './PdfPasswordsCard'
-import { PushDevicesCard, SignInNoticeCard } from './PushCards'
-import { RemindersPart } from './RemindersCards'
-import { DevicesCard, PasskeysCard, SecondFactorCard, SESSIONS_CHANGED } from './SecurityCards'
-import { Card, Feedback, Input, Toggle, useAction } from './ui'
+import { PhoneCard } from './PersonalCards'
+import { SecurityArea } from './SecurityBoxes'
+import { useAsk } from './useAsk'
 
-export type AccountPart = 'profile' | 'security' | 'appearance' | 'connections' | 'upload' | 'reminders' | 'ai'
+export type AccountPart = 'profile' | 'security' | 'appearance' | 'upload' | 'ai' | 'notifications' | 'connections'
 
 /** One area of the own account. */
 export function AccountArea({ part }: { part: AccountPart }) {
   const { me } = useAuth()
   if (!me) return null
-  return (
-    <div className="space-y-6" data-testid={`account-${part}`}>
-      {part === 'profile' && (
+  switch (part) {
+    case 'profile':
+      return (
         <>
           <ProfileCard me={me} />
-          <SignOutCard viaProvider={me.sign_in === 'oidc'} />
+          <SignOut viaProvider={me.sign_in === 'oidc'} />
         </>
-      )}
-      {part === 'security' && <Security me={me} />}
-      {part === 'appearance' && <LooksCard />}
-      {part === 'connections' && (
-        <>
-          <KeysWait />
-          <PairedDevices />
-          <ApiKeys />
-          <ShortcutCard />
-          <PushDevicesCard me={me} />
-        </>
-      )}
-      {part === 'upload' && (
+      )
+    case 'security':
+      return <SecurityArea me={me} />
+    case 'appearance':
+      return <AppearanceArea />
+    case 'upload':
+      return (
         <>
           <UploadVaultCard />
           <PhoneCard />
@@ -68,43 +61,35 @@ export function AccountArea({ part }: { part: AccountPart }) {
           <PdfPasswordsCard />
           <UploadRequestsCard />
         </>
-      )}
-      {part === 'reminders' && <RemindersPart me={me} />}
-      {part === 'ai' && <AiPart me={me} />}
+      )
+    case 'ai':
+      return <AiCard me={me} />
+    case 'notifications':
+      return <NotificationsArea me={me} />
+    case 'connections':
+      return <ConnectionsArea me={me} />
+  }
+}
+
+/**
+ * "Abmelden", the module's card (konten 1.1.0, `SignOutCard`): the one button for it, here in the profile. Uploads of
+ * this page that still wait or run are what nexpaper knows as changes not done yet: then it asks first ("Trotzdem
+ * abmelden" or "Warten"). Only nexpaper's session ends; whoever came in through a provider stays signed in there.
+ */
+function SignOut({ viaProvider }: { viaProvider: boolean }) {
+  const { t } = useTranslation()
+  const { signOut } = useAuth()
+  const navigate = useNavigate()
+  const pending = useWaitingUploads()
+  return (
+    <div className="contents" data-testid="sign-out-card">
+      <SignOutCard t={t} things={t('settings.things')} provider={viaProvider} pending={pending} onSignOut={() => void signOut().then(() => navigate('/login', { replace: true }))} />
     </div>
   )
 }
 
-/**
- * "Sign out", as in nexnotes: the one button for it, here in the profile (the account menu of before is gone). Only
- * nexpaper's session ends; whoever came in through a provider stays signed in there.
- */
-function SignOutCard({ viaProvider }: { viaProvider: boolean }) {
-  const { t } = useTranslation()
-  const { signOut } = useAuth()
-  const navigate = useNavigate()
-  const [busy, setBusy] = useState(false)
-  return (
-    <Card id="sign-out" icon={LogOut} title={t('me.signOut.title')} text={t('me.signOut.text')}>
-      <div data-testid="sign-out-card" className="space-y-3">
-        {viaProvider && <p className="text-xs text-muted">{t('me.signOut.provider')}</p>}
-        <AccountButton
-          name="signOut"
-          busy={busy}
-          onClick={() => {
-            setBusy(true)
-            void signOut().then(() => navigate('/login', { replace: true }))
-          }}
-        >
-          {t('me.signOut.button')}
-        </AccountButton>
-      </div>
-    </Card>
-  )
-}
-
 /** "KI beim Einsortieren": the own switch, and below it what the operator set up for everybody. */
-function AiPart({ me }: { me: Me }) {
+function AiCard({ me }: { me: Me }) {
   const { t } = useTranslation()
   const { setMe } = useAuth()
   const ai = useAiState()
@@ -117,55 +102,54 @@ function AiPart({ me }: { me: Me }) {
   const notAllowed = me.ai_allowed === false
   const locked = noProvider || notAllowed
   return (
-    <Card icon={Sparkles} title={t('me.ai.title')} text={t('me.ai.text')}>
-      <Toggle
+    <Card id="my-ai" icon="Sparkles" title={t('me.ai.title')} subtitle={t('me.ai.text')}>
+      <CheckboxRow
         label={t('me.ai.mine')}
         hint={t('me.ai.mineHint')}
         checked={mine && !locked}
         disabled={locked}
+        testId="my-ai-switch"
         onChange={(value) => {
           setMe({ ...me, profile: { ...me.profile, ai: value } })
-          void action.run(async () => setMe({ ...me, profile: await authApi.preferences({ ai: value }) })).then(
-            (worked) => worked || setMe(me),
-          )
+          void action.run(async () => setMe({ ...me, profile: await authApi.preferences({ ai: value }) })).then((worked) => worked || setMe(me))
         }}
       />
       {notAllowed && (
-        <p className="rounded-[12px] border border-warn/40 bg-warn/10 px-4 py-3 text-sm text-warn" role="status" data-ai-not-allowed>
-          {t('me.ai.notAllowed')}
-        </p>
-      )}
-      {!notAllowed && noProvider && (
-        <p className="rounded-[12px] border border-warn/40 bg-warn/10 px-4 py-3 text-sm text-warn" role="status" data-ai-none>
-          {me.role === 'operator' ? (
-            <Trans i18nKey="me.ai.noneOperator" components={{ settings: <Link to="/settings/ai-setup" className="font-semibold underline underline-offset-2" /> }} />
-          ) : (
-            t('me.ai.none')
-          )}
-        </p>
-      )}
-      {ai && !locked && (
-        <div className="rounded-[12px] bg-sheet-2 px-4 py-3 text-sm">
-          <p>
-            <span className="font-semibold">{t('me.ai.byOperator')}</span> {providerName(provider, t)}
-            {provider === 'local' && ai.model && ` (${ai.model})`}
-          </p>
-          <p className="mt-1 text-ink-2">{t(`server.ai.${provider}Note`)}</p>
-          {ai.skip_personal !== false && <p className="mt-1 text-ink-2">{t('sorting.ai.skipNote')}</p>}
+        <div data-ai-not-allowed>
+          <Notice tone="warn">{t('me.ai.notAllowed')}</Notice>
         </div>
       )}
-      <Feedback problem={action.problem} />
+      {!notAllowed && noProvider && (
+        <div data-ai-none>
+          <Notice tone="warn">
+            {me.role === 'operator' ? (
+              <Trans i18nKey="me.ai.noneOperator" components={{ settings: <Link to="/settings/ai-provider" className="font-semibold underline underline-offset-2" /> }} />
+            ) : (
+              t('me.ai.none')
+            )}
+          </Notice>
+        </div>
+      )}
+      {ai && !locked && (
+        <Box title={`${t('me.ai.byOperator')} ${providerName(provider, t)}${provider === 'local' && ai.model ? ` (${ai.model})` : ''}`} testId="my-ai-provider">
+          <p className="m-0 text-sm text-[var(--nexui-text-muted)]">{t(`server.ai.${provider}Note`)}</p>
+          {ai.skip_personal !== false && <p className="m-0 text-sm text-[var(--nexui-text-muted)]">{t('sorting.ai.skipNote')}</p>}
+        </Box>
+      )}
+      <Outcome problem={action.problem} />
     </Card>
   )
 }
 
+/** The files a picture may be (the server takes these). */
+const PICTURES = 'image/jpeg,image/png,image/webp,image/gif,image/bmp,image/heic,image/heif,image/avif,.heic,.heif'
+
 /**
- * "Profil" as the shared account module lays it out (`PAGES.profile`, konten 0.3.9), the same in every nex app: the
- * picture, then display name, username and address one under the other, one "Save" for all (a new username or address
- * asks for the password once, `confirmOnSave`), the address a provider offers, the language, the role small at the end.
- * nexpaper's own beside it, so nothing is lost: under the address whether it is proven by a link (only then does the
- * intake trust it) with "Send link" for one that only counts; a new address waiting for its link with "Send again" and
- * "Withdraw"; the former username under the field after a change.
+ * "Profil" as the shared account module lays it out (`PAGES.profile`, konten 1.1.0), the same in every nex app: the
+ * picture in its box, then display name, username and address one under the other, one "Save" for all (a new username
+ * or address asks for the password once, `confirmOnSave`), a new address waiting for its link with "Send again" and
+ * "Withdraw", the box "Address not confirmed yet" with "Send link" (`email_needs_proof`, E23), the address a provider
+ * offers, the language, the role small at the end. The former username stands under the field after a change.
  */
 function ProfileCard({ me }: { me: Me }) {
   const { t, i18n } = useTranslation()
@@ -174,9 +158,8 @@ function ProfileCard({ me }: { me: Me }) {
   const [password, setPassword] = useState('')
   const [asking, setAsking] = useState(false)
   const [languages, setLanguages] = useState<LanguageOption[]>([])
-  const picker = useRef<HTMLInputElement>(null)
   const action = useAction()
-  const { ask, dialog } = useConfirm()
+  const { ask, dialog } = useAsk()
   useEffect(() => {
     let alive = true
     void languageOptions().then((list) => alive && setLanguages(list))
@@ -206,47 +189,47 @@ function ProfileCard({ me }: { me: Me }) {
       setAsking(false)
       setPassword('')
     }, t('me.profile.saved'))
-  /** "Per Link bestätigen" (the module's `account.emailProve`, `profiles.prove_email`): a link to the address there
-   * is, which counts but is not proven yet; the intake trusts it once the link is opened. */
-  const prove = () => void action.run(async () => setMe(await authApi.emailProve()), t('account.emailProveSent'))
   const fields = screenFields('profile')
   const field = (name: 'displayName' | 'username' | 'email') => fields.find((entry) => entry.field === name)!
+  const picture = PAGES.profile.parts.find((entry) => entry.part === 'picture')!
   return (
-    <Card id="profile" icon={User} title={t(PAGES.profile.title)}>
-      <div className="flex items-center gap-3" data-testid="profile-picture">
-        <Avatar person={me} size={56} />
-        <div className="flex flex-wrap gap-2">
-          <AccountButton name="account.pictureUpload" busy={action.busy} onClick={() => picker.current?.click()} />
-          {me.avatar && (
+    <Card id="profile" icon="UserRound" title={t(PAGES.profile.title)}>
+      <Box
+        title={t(picture.title)}
+        hint={t(picture.hint)}
+        testId="profile-picture"
+        actions={
+          <>
             <AccountButton
-              name="account.pictureRemove"
+              name="account.pictureUpload"
+              accept={PICTURES}
               busy={action.busy}
-              onClick={() =>
-                ask({
-                  title: t('confirm.avatar.title'),
-                  text: t('confirm.avatar.text'),
-                  confirm: t('confirm.avatar.confirm'),
-                  run: async () => {
-                    await action.run(async () => setMe(await api<Me>('/api/v1/auth/avatar', { method: 'DELETE' })), t('me.profile.removed'))
-                  },
-                })
-              }
+              testId="picture"
+              aria-label={t('account.pictureUpload')}
+              onFile={(file) => void action.run(async () => setMe(await api<Me>('/api/v1/auth/avatar', { method: 'PUT', raw: file })), t('me.profile.saved'))}
             />
-          )}
-        </div>
-        <input
-          ref={picker}
-          type="file"
-          accept="image/jpeg,image/png,image/webp,image/gif,image/bmp,image/heic,image/heif,image/avif,.heic,.heif"
-          aria-label={t('account.pictureUpload')}
-          className="hidden"
-          onChange={(event) => {
-            const file = event.target.files?.[0]
-            event.target.value = ''
-            if (file) void action.run(async () => setMe(await api<Me>('/api/v1/auth/avatar', { method: 'PUT', raw: file })), t('me.profile.saved'))
-          }}
-        />
-      </div>
+            {me.avatar && (
+              <AccountButton
+                name="account.pictureRemove"
+                busy={action.busy}
+                onClick={() =>
+                  ask({
+                    title: t('confirm.avatar.title'),
+                    text: t('confirm.avatar.text'),
+                    confirm: t('confirm.avatar.confirm'),
+                    run: async () => {
+                      setMe(await api<Me>('/api/v1/auth/avatar', { method: 'DELETE' }))
+                      void action.run(async () => undefined, t('me.profile.removed'))
+                    },
+                  })
+                }
+              />
+            )}
+          </>
+        }
+      >
+        <Avatar person={me} size={56} />
+      </Box>
       <form
         className="flex flex-col gap-3"
         onSubmit={(event) => {
@@ -260,6 +243,9 @@ function ProfileCard({ me }: { me: Me }) {
           const spec = field(name)
           const hints = spec.hints.map((hint) => t(hint))
           if (name === 'username' && me.former_name) hints.push(t('account.formerUsername'))
+          // An address nobody proved by a link counts, but the mail intake does not trust it; without a server for the
+          // link there is no way to prove it here, and that is said under the field.
+          if (name === 'email' && me.email && !me.email_pending && !me.email_confirmed && !me.mail_links) hints.push(t('mailAddress.off'))
           return (
             <Field
               key={name}
@@ -274,62 +260,59 @@ function ProfileCard({ me }: { me: Me }) {
             />
           )
         })}
-        {me.email && !me.email_pending && (
-          <p className="m-0 text-xs text-muted" data-testid="mail-state">
-            <span className={me.email_confirmed ? 'text-ok' : 'text-warn'}>
-              {me.email_confirmed ? t('mailAddress.confirmedLine') : t('mailAddress.unconfirmedLine')}
-            </span>
-          </p>
-        )}
-        {me.email && !me.email_pending && !me.email_confirmed && me.mail_links && (
-          <div>
-            <AccountButton name="account.emailProve" busy={action.busy} onClick={prove} />
-          </div>
-        )}
         {me.email_pending && (
-          <Notice tone="ok" testId="mail-pending">
-            {t('account.emailPending', { email: me.email_pending })}
-            <span className="mt-2 flex flex-wrap gap-2">
-              <AccountButton name="account.emailResend" busy={action.busy} onClick={() => void action.run(async () => setMe(await authApi.emailResend()), t('mailAddress.sent'))} />
-              <AccountButton
-                name="account.emailWithdraw"
-                busy={action.busy}
-                onClick={() =>
-                  void action.run(async () => {
-                    await authApi.emailWithdraw()
-                    setMe(await authApi.me())
-                  })
-                }
-              />
-            </span>
-          </Notice>
+          <Box
+            title={t('account.emailPending', { email: me.email_pending })}
+            testId="mail-pending"
+            actions={
+              <>
+                <AccountButton name="account.emailResend" busy={action.busy} onClick={() => void action.run(async () => setMe(await authApi.emailResend()), t('mailAddress.sent'))} />
+                <AccountButton
+                  name="account.emailWithdraw"
+                  busy={action.busy}
+                  onClick={() =>
+                    void action.run(async () => {
+                      await authApi.emailWithdraw()
+                      setMe(await authApi.me())
+                    })
+                  }
+                />
+              </>
+            }
+          />
         )}
-        {!me.email_pending && me.email && !me.email_confirmed && !me.mail_links && <p className="m-0 text-xs text-muted">{t('mailAddress.off')}</p>}
+        {me.email_needs_proof && me.email && !me.email_pending && (
+          <UnconfirmedEmailBox t={t} email={me.email} onSend={async () => setMe(await authApi.emailProve())} errorText={(error) => (error instanceof ApiError ? errorText(error.code, error.values) : errorText('internal_error'))} />
+        )}
         <div>
           <AccountButton name="account.save" type="submit" busy={action.busy} disabled={!any} testId="profile-save" />
         </div>
       </form>
       {me.offered_email && (
-        <Notice tone="ok" testId="provider-email-offer">
-          {t('account.providerEmailOffer', { provider: me.offered_email_provider || '' })} {me.offered_email}
-          <span className="mt-2 flex flex-wrap gap-2">
-            <AccountButton
-              name="account.providerEmailTake"
-              busy={action.busy}
-              onClick={() => (withPassword ? setValues({ ...values, email: me.offered_email ?? '' }) : void action.run(async () => setMe(await authApi.takeOffered(''))))}
-            />
-            <AccountButton
-              name="account.providerEmailDismiss"
-              busy={action.busy}
-              onClick={() =>
-                void action.run(async () => {
-                  await authApi.declineOffered()
-                  setMe(await authApi.me())
-                })
-              }
-            />
-          </span>
-        </Notice>
+        <Box
+          title={t('account.providerEmailOffer', { provider: me.offered_email_provider || '' })}
+          hint={me.offered_email}
+          testId="provider-email-offer"
+          actions={
+            <>
+              <AccountButton
+                name="account.providerEmailTake"
+                busy={action.busy}
+                onClick={() => (withPassword ? setValues({ ...values, email: me.offered_email ?? '' }) : void action.run(async () => setMe(await authApi.takeOffered(''))))}
+              />
+              <AccountButton
+                name="account.providerEmailDismiss"
+                busy={action.busy}
+                onClick={() =>
+                  void action.run(async () => {
+                    await authApi.declineOffered()
+                    setMe(await authApi.me())
+                  })
+                }
+              />
+            </>
+          }
+        />
       )}
       <SelectField
         label={t('account.language')}
@@ -344,10 +327,10 @@ function ProfileCard({ me }: { me: Me }) {
         }}
         options={languages.map((option) => ({ value: option.code, label: option.name }))}
       />
-      <p className="m-0 text-xs text-muted" data-testid="account-role">
+      <p className="m-0 text-xs leading-4 text-[var(--nexui-text-muted)]" data-testid="account-role">
         {t('account.role')}: {t(me.role === 'operator' ? 'account.roleOperator' : 'account.roleMember')}
       </p>
-      <Feedback problem={action.problem} done={action.done} values={action.values} />
+      <Outcome problem={action.problem} done={action.done} values={action.values} />
       {asking && (
         <ConfirmDialog
           title={t('account.save')}
@@ -360,6 +343,7 @@ function ProfileCard({ me }: { me: Me }) {
           cancel={t('common.cancel')}
           closeLabel={t('common.close')}
           busy={action.busy}
+          error={action.problem ? errorText(action.problem, action.values) : undefined}
           confirmDisabled={!password}
           onCancel={() => {
             setAsking(false)
@@ -367,190 +351,10 @@ function ProfileCard({ me }: { me: Me }) {
           }}
           onConfirm={() => save(password)}
         >
-          <Field label={t('account.currentPassword')} type="password" autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} />
-          <Feedback problem={action.problem} values={action.values} />
+          <Field label={t(FIELDS.password.label)} type="password" autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} />
         </ConfirmDialog>
       )}
       {dialog}
     </Card>
-  )
-}
-
-/** The parts of "Security", top to bottom: the module's (`PAGES.security`) in its order, then nexpaper's own: the
- * sign-in providers. */
-const SECURITY_PARTS = pageOrder('security', ['providers'])
-
-/**
- * "Sicherheit" as the shared account module lays it out (`PAGES.security`, konten 0.3.10), the same in every nex app:
- * one card per part with the module's title, hint and buttons, in the module's order (password with when it was
- * changed last, second factor, recovery codes, passkeys, signed-in devices with "sign out everywhere else", the mail of
- * a new sign-in), then nexpaper's own: the sign-in providers. Until the second factor is set up the server answers
- * nothing else: only its part and the passkeys are shown.
- */
-function Security({ me }: { me: Me }) {
-  const { t } = useTranslation()
-  const restricted = Boolean(me.second_factor_setup_required)
-  const shown = (part: string): boolean => {
-    if (part === 'secondFactor' || part === 'passkeys') return true
-    if (restricted) return false
-    if (part === 'password') return me.sign_in === 'password'
-    if (part === 'recoveryCodes') return Boolean(me.two_factor)
-    return true
-  }
-  return (
-    <>
-      {!restricted && me.new_password_origin && <RemainingAccessNotice />}
-      {restricted && (
-        <p role="note" className="rounded-[9px] border border-warn/40 bg-warn/10 px-4 py-3 text-sm text-warn">
-          {t('me.setupFirst')}
-        </p>
-      )}
-      {SECURITY_PARTS.filter(shown).map((part) => {
-        switch (part) {
-          case 'password':
-            return <PasswordPart key={part} changedAt={me.password_changed_at ?? null} />
-          case 'secondFactor':
-            return <SecondFactorCard key={part} me={me} part="factor" />
-          case 'recoveryCodes':
-            return <SecondFactorCard key={part} me={me} part="codes" />
-          case 'passkeys':
-            return <PasskeysCard key={part} me={me} />
-          case 'sessions':
-            return <DevicesCard key={part} me={me} everywhereElse={<EverywhereElse />} />
-          case 'newSignInMail':
-            return <SignInNoticeCard key={part} me={me} />
-          case 'providers':
-            return <MyProviders key={part} me={me} />
-          default:
-            return null
-        }
-      })}
-    </>
-  )
-}
-
-/**
- * "These devices still have access" (the shared account module): after a password set through a link, the paired
- * devices, API keys and passkeys that stayed, with "Disconnect all" and putting the list away. After the operator's
- * or the server's link it says so first.
- */
-function RemainingAccessNotice() {
-  const { t } = useTranslation()
-  const { setMe } = useAuth()
-  const [list, setList] = useState<RemainingAccess | null>(null)
-  const action = useAction()
-  useEffect(() => {
-    authApi.access().then(setList, () => undefined)
-  }, [])
-  if (!list) return null
-  return (
-    <Notice tone="warn" testId="remaining-access">
-      {list.origin !== 'self' && <span className="mb-1 block">{t('account.resetByOperator')}</span>}
-      {list.access.length > 0 && (
-        <>
-          <span className="block">{t('account.remainingAccess')}</span>
-          <span className="mb-2 block">{list.access.map((item) => item.label).join(', ')}</span>
-        </>
-      )}
-      <span className="flex flex-wrap gap-2">
-        {list.access.length > 0 && (
-          <AccountButton
-            name="account.disconnectAll"
-            busy={action.busy}
-            onClick={() =>
-              void action.run(async () => {
-                await authApi.disconnectAll()
-                setMe(await authApi.me())
-              })
-            }
-          />
-        )}
-        <AccountButton name="done" busy={action.busy} onClick={() => void action.run(async () => setMe(await authApi.accessSeen()))}>
-          {t('common.done')}
-        </AccountButton>
-      </span>
-      <Feedback problem={action.problem} values={action.values} />
-    </Notice>
-  )
-}
-
-/** The module's part "password": when it was changed last (`passwordChanged`, the module's line) and "Change password",
- * which opens the three fields. */
-function PasswordPart({ changedAt }: { changedAt: string | null }) {
-  const { t, i18n } = useTranslation()
-  const [open, setOpen] = useState(false)
-  const [pw, setPw] = useState({ current: '', next: '', again: '' })
-  const password = useAction()
-  const [unsent, setUnsent] = useState<string | null>(null)
-  const line = passwordChanged(changedAt)
-  return (
-    <Card id="security-password" icon={KeyRound} title={t('account.password')}>
-      <p className="m-0 text-sm text-ink-2" data-testid="password-changed">
-        {t(line.text, { day: line.date ? new Date(line.date).toLocaleDateString(i18n.language) : '' })}
-      </p>
-      {!open && (
-        <div>
-          <AccountButton name="account.passwordChange" onClick={() => setOpen(true)} />
-        </div>
-      )}
-      {open && (
-        <form
-          className="space-y-3"
-          data-testid="password-form"
-          onSubmit={(event) => {
-            event.preventDefault()
-            // Said here, before anything goes to the server.
-            const missing = !pw.current ? 'current_password_missing' : !pw.next ? 'password_missing' : pw.next !== pw.again ? 'password_mismatch' : null
-            setUnsent(missing)
-            if (missing) return
-            void password.run(async () => {
-              await authApi.password(pw.current, pw.next, pw.again)
-              setPw({ current: '', next: '', again: '' })
-            }, t('me.password.done'))
-          }}
-        >
-          <Input label={t('me.password.current')} type="password" value={pw.current} onChange={(current) => setPw({ ...pw, current })} autoComplete="current-password" />
-          <Input label={t('me.password.new')} type="password" value={pw.next} onChange={(next) => setPw({ ...pw, next })} autoComplete="new-password" />
-          <Input label={t('me.password.again')} type="password" value={pw.again} onChange={(again) => setPw({ ...pw, again })} autoComplete="new-password" />
-          <AccountButton name="account.passwordChange" type="submit" busy={password.busy}>
-            {t('me.password.submit')}
-          </AccountButton>
-        </form>
-      )}
-      <Feedback problem={unsent ?? password.problem} done={password.done} />
-    </Card>
-  )
-}
-
-/** "Überall sonst abmelden", the module's button of the part "sessions": every other browser and paired device, after a
- * question. */
-function EverywhereElse() {
-  const { t } = useTranslation()
-  const action = useAction()
-  const { ask, dialog } = useConfirm()
-  return (
-    <div className="space-y-2 text-sm" data-testid="everywhere-else">
-      <div className="flex flex-wrap items-center gap-3">
-        <AccountButton
-          name="account.signOutEverywhere"
-          busy={action.busy}
-          onClick={() =>
-            ask({
-              title: t('confirm.logoutOthers.title'),
-              text: t('confirm.logoutOthers.text'),
-              confirm: t('confirm.logoutOthers.confirm'),
-              run: async () => {
-                await action.run(async () => {
-                  await authApi.logoutOthers()
-                  window.dispatchEvent(new Event(SESSIONS_CHANGED))
-                }, t('me.devices.endedAll'))
-              },
-            })
-          }
-        />
-      </div>
-      <Feedback problem={action.problem} done={action.done} />
-      {dialog}
-    </div>
   )
 }

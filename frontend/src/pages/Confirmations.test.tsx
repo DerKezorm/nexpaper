@@ -5,14 +5,14 @@
  * links, shares, exports (and their links), versions, sessions, devices, members and the connection to Paperless.
  */
 import type { Me } from '../api/client'
-import { ApiKeys } from '../components/ApiKeys'
 import { changeLanguage } from '../i18n'
 import { INBOX, Page, Server, inboxOf, plain } from '../test/harness'
 import { SettingsRoutes } from '../test/settings'
 import { InboxPage } from './InboxPage'
 import { AccountsTab } from './settings/AccountsTab'
-import { LanguagesCard, useServerSettings } from './settings/ServerCards'
-import { SignInPart } from './settings/SignInCards'
+import { ApiKeys } from './settings/KeysCards'
+import { LanguagesCard } from './settings/ServerCards'
+import { SignInArea } from './settings/SignInArea'
 import { Route, Routes } from 'react-router-dom'
 
 const me: Me = {
@@ -36,9 +36,11 @@ beforeEach(async () => {
     'GET /api/v1/auth/passkeys': [],
     'GET /api/v1/auth/sessions': [],
     'GET /api/v1/locales': [{ code: 'es', name: 'Español', keys: 120 }],
-    'GET /api/v1/api-keys': {
-      allowed: true,
-      keys: [{ id: 4, name: 'Scanner im Flur', prefix: 'npk_ab12', scope: 'upload', created_at: '2026-10-01T10:00:00Z', last_used_at: null, expires_at: null, blocked: false }],
+    // The module's list of keys (schluessel 1.0.0, `/api/v1/connections/keys`), with a key that only uploads.
+    'GET /api/v1/connections/keys': {
+      app: 'nexpaper', api: true, mcp: null, programs: false, api_path: '/api/v1', mcp_path: null, keys_wait: false, warn_days: 7, address: 'https://paper.example.com',
+      kinds: [{ id: 'api', prefix: 'npk_', creatable: true, editable: true, rights: ['read', 'upload'], default_right: 'read', options: [], areas: [], areas_required: false, days: [30, 90, 365, null], default_days: 365, default_days_by_right: { upload: null }, max: 20 }],
+      keys: [{ id: 4, kind: 'api', name: 'Scanner im Flur', right: 'upload', options: {}, areas: null, prefix: 'npk_ab12', created_at: '2026-10-01T10:00:00Z', last_used_at: null, expires_at: null, expired: false, expiring: false, blocked: false, legacy: null, program: false }],
     },
     'GET /api/v1/devices': [],
     'GET /api/v1/push': { key: '', devices: [] },
@@ -46,7 +48,7 @@ beforeEach(async () => {
     'DELETE /api/v1/auth/avatar': { ...me, avatar: null },
     'PUT /api/v1/me/email': { ...me, email: '' },
     'DELETE /api/v1/oidc/authentik/link': 204,
-    'DELETE /api/v1/api-keys/4': 204,
+    'DELETE /api/v1/connections/keys/4': 204,
     'DELETE /api/v1/locales/es': 204,
     'DELETE /api/v1/oidc/admin/providers/3': { count: 1, only: 0, only_names: [] },
     'DELETE /api/v1/invites/9': 204,
@@ -90,25 +92,31 @@ describe('my account', () => {
 
   it('asks before the link to the provider is let go', async () => {
     await page.show(<SettingsRoutes />, '/konto?tab=security')
-    await asksFirst(() => page.button('Lösen'), 'Verknüpfung lösen', 'DELETE /api/v1/oidc/authentik/link')
+    // The button of the row names its provider (oidc 1.2.0, "<Aktion>: <Name>").
+    expect(page.box.querySelector('[data-testid="settings-area-security"]')).toBeTruthy()
+    await asksFirst(() => page.button('Lösen: authentik'), 'Verknüpfung lösen', 'DELETE /api/v1/oidc/authentik/link')
   })
 
-  it('asks before an API key is deleted, and names it', async () => {
-    await page.show(<ApiKeys />, '/konto?tab=devices')
-    await page.click(page.button('Token „Scanner im Flur“ löschen') ?? document.querySelector<HTMLElement>('button[aria-label*="Scanner im Flur"]'))
-    expect(plain(page.dialog!.textContent)).toContain('Programme mit dem Token „Scanner im Flur“ kommen danach nicht mehr in nexpaper.')
+  it('asks before an API key is revoked, and names it', async () => {
+    await page.show(<ApiKeys />, '/settings/connections')
+    const revoke = () => page.box.querySelector<HTMLElement>('[data-testid="key-revoke"]') ?? undefined
+    await page.click(revoke())
+    expect(plain(page.dialog!.textContent)).toContain('„Scanner im Flur“ widerrufen?')
+    expect(plain(page.dialog!.textContent)).toContain('Das Programm kommt sofort nicht mehr herein.')
     expect(server.changes()).toEqual([])
     await page.inDialog('Abbrechen')
-    await page.click(document.querySelector<HTMLElement>('button[aria-label*="Scanner im Flur"]'))
-    await page.inDialog('Token löschen')
-    expect(server.changes()).toEqual(['DELETE /api/v1/api-keys/4'])
+    expect(server.changes()).toEqual([])
+    await page.click(revoke())
+    await page.inDialog('Widerrufen')
+    expect(server.changes()).toEqual(['DELETE /api/v1/connections/keys/4'])
   })
 })
 
 describe('the operator', () => {
   it('asks before a language is removed', async () => {
     await page.show(<LanguagesCard />)
-    await asksFirst(() => page.button('Español entfernen') ?? document.querySelector<HTMLElement>('button[aria-label*="Español"]') ?? undefined, 'Sprache entfernen', 'DELETE /api/v1/locales/es')
+    // The chip's own small button, named by the language (ui `Chip`).
+    await asksFirst(() => page.button('Español entfernen'), 'Sprache entfernen', 'DELETE /api/v1/locales/es')
   })
 
   it('asks before an invitation is withdrawn', async () => {
@@ -127,13 +135,14 @@ describe('the operator', () => {
     }]
     server.answers['GET /api/v1/oidc/admin/providers/3/impact'] = { issuer_change: 0, count: 1, only: 0, only_names: [] }
     server.answers['GET /api/v1/oidc/authentik/address'] = { public_url: 'https://paper.example.com', seen: 'https://paper.example.com', forwarded_proto: '', forwarded_host: '', proxy_ignored: false, callback_path: '/api/v1/oidc/authentik/callback', redirect_uri: '', registered_redirect_uri: '', stale: false }
-    server.answers['GET /api/v1/settings'] = { public_url: 'https://paper.example.com', password_login: true, two_factor_required: true }
-    function Cards() {
-      const settings = useServerSettings()
-      return settings.settings ? <SignInPart server={settings} /> : null
+    server.answers['GET /api/v1/server/sign-in'] = {
+      password_login: true, factor_required: true, passkeys_allowed: true, password_may_go_off: true, factor_may_go_on: true,
+      public_url: 'https://paper.example.com', public_url_effective: 'https://paper.example.com', operator_has_password: true,
     }
-    await page.show(<Cards />)
-    await asksFirst(() => page.button('Entfernen'), 'Entfernen', 'DELETE /api/v1/oidc/admin/providers/3')
+    server.answers['GET /api/v1/server/readiness'] = { state: 'ok', open: 0, points: [] }
+    await page.show(<SignInArea />, '/settings/sign-in')
+    // The row's button names its provider (oidc 1.2.0, E37).
+    await asksFirst(() => page.button('Entfernen: authentik'), 'Entfernen', 'DELETE /api/v1/oidc/admin/providers/3')
   })
 })
 

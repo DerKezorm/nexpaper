@@ -138,9 +138,13 @@ describe('the list under My account', () => {
 
   it('renames an entry', async () => {
     await page.show(<PdfPasswordsCard />)
-    await page.click(page.button('Gehaltsabrechnung umbenennen'))
-    await page.type(document.querySelector<HTMLInputElement>('input[aria-label="Name für das gemerkte Passwort"]'), 'Lohn')
-    await page.click(page.button('Namen speichern'))
+    const rename = page.button('Gehaltsabrechnung umbenennen')!
+    // A small button with words in the row (ui kit), the new name in the kit's window.
+    expect([rename.dataset.kind, rename.dataset.size, rename.dataset.icon, rename.textContent]).toEqual(['secondary', 'sm', 'Pencil', 'Umbenennen'])
+    await page.click(rename)
+    const label = [...page.dialog!.querySelectorAll('label')].find((item) => item.textContent === 'Name für das gemerkte Passwort')!
+    await page.type(document.getElementById(label.htmlFor) as HTMLInputElement, 'Lohn')
+    await page.inDialog('Namen speichern')
     expect(server.called('PATCH', '/api/v1/pdf-passwords/1')!.body).toEqual({ name: 'Lohn' })
   })
 

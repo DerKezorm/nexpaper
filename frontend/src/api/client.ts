@@ -210,6 +210,12 @@ export type Me = {
   fresh_sign_in?: boolean
   created_at?: string
   last_seen_at?: string | null
+  // --- Since konten 1.1.0 ---
+  /** Light, dark or as the device says, at the account on every device; `''`: never chosen (the browser's value is
+   * taken over once, `POST /api/v1/me/theme/adopt`). The same as `profile.mode`. */
+  theme?: '' | ThemeChoice
+  /** The box "Address not confirmed yet" stands in the profile (konten `needs_proof`, E23). */
+  email_needs_proof?: boolean
 }
 
 /** A row of the operator's list of accounts (`GET /api/v1/accounts`). */
@@ -225,6 +231,14 @@ export type AccountRow = Me & {
   created_at: string
   last_seen_at: string | null
   ai_allowed: boolean
+  /** Since konten 1.1.0: deleted, and until `purge_at` (30 days) to bring back. */
+  deleted_at?: string | null
+  purge_at?: string | null
+  /** The storage limit of the account in bytes (none: no limit), and what its documents take. */
+  storage_limit?: number | null
+  storage_used?: number
+  /** What the operator allows the account (`ai`). */
+  rights?: string[]
 }
 /** An invitation not used yet, also one that ran out (`expired`). */
 export type Invite = { id: number; email: string; display_name: string; by: string | null; created_at: string; expires_at: string; expired: boolean; mailed: boolean }
@@ -271,6 +285,10 @@ export const authApi = {
   me: () => api<Me>('/api/v1/auth/me'),
   language: (language: string) => api<Me>('/api/v1/me/language', { method: 'PUT', body: { language } }),
   preferences: (change: Partial<Profile>) => api<Profile>('/api/v1/me/preferences', { method: 'PUT', body: change }),
+  /** Light, dark or as the device says, at the account (konten 1.1.0); `adoptTheme` hands over the browser's value of
+   * before once, while the account has none. */
+  theme: (theme: ThemeChoice) => api<{ theme: ThemeChoice }>('/api/v1/me/theme', { method: 'PUT', body: { theme } }),
+  adoptTheme: (theme: ThemeChoice) => api<{ theme: ThemeChoice }>('/api/v1/me/theme/adopt', { method: 'POST', body: { theme } }),
   profile: (change: ProfileChange) => api<Me>('/api/v1/me/profile', { method: 'PUT', body: change }),
   password: (current: string, next: string, confirm?: string) =>
     api<void>('/api/v1/auth/password', { method: 'PUT', body: { current, new: next, ...(confirm !== undefined ? { password_confirm: confirm } : {}) } }),
@@ -346,6 +364,27 @@ export type AddressQuestion = { count: number; address: string; hand: number }
 export type MyProvider = { slug: string; label: string; linked: boolean; address: string | null }
 /** Which account is linked to which provider, for the marks in the operator's account list. */
 export type AccountLink = { account_id: number; provider_id: number; slug: string; label: string }
+
+/** Server › Sign-in from the shared account module (konten 1.1.0): its switches, the public address and "Ready for the
+ * internet?" in the module's form. */
+export type SignInSettingsView = {
+  password_login: boolean
+  factor_required: boolean
+  passkeys_allowed: boolean
+  password_may_go_off: boolean
+  factor_may_go_on: boolean
+  second_factor_off?: boolean
+  public_url: string
+  public_url_effective: string
+  operator_has_password: boolean
+}
+
+export const signInApi = {
+  read: () => api<SignInSettingsView>('/api/v1/server/sign-in'),
+  save: (change: Partial<Pick<SignInSettingsView, 'password_login' | 'factor_required' | 'passkeys_allowed'>>, password = '') =>
+    api<SignInSettingsView>('/api/v1/server/sign-in', { method: 'PUT', body: { ...change, ...(password ? { password } : {}) } }),
+  readiness: () => api<import('../vendor/nexkonten/konten').Readiness>('/api/v1/server/readiness'),
+}
 
 export const oidcApi = {
   providers: () => api<OidcProvider[]>('/api/v1/oidc/admin/providers'),
@@ -803,6 +842,11 @@ export const accountsApi = {
   leaving: (id: number) => api<AccountLeaving>(`/api/v1/accounts/${id}/leaving`),
   remove: (id: number, body: { current_password: string; confirm_name: string; documents?: DocumentsChoice; target_user_id?: number; target_vault_id?: number }) =>
     api<void>(`/api/v1/accounts/${id}`, { method: 'DELETE', body }),
+  /** Since konten 1.1.0: the storage limit of an account in bytes (null: none), and bringing a deleted one back within
+   * its 30 days; both with the operator's own password. */
+  limit: (id: number, limit: number | null, current_password: string) =>
+    api<AccountRow>(`/api/v1/accounts/${id}/storage-limit`, { method: 'PUT', body: { limit, current_password } }),
+  restore: (id: number, current_password: string) => api<AccountRow>(`/api/v1/accounts/${id}/restore`, { method: 'POST', body: { current_password } }),
 }
 
 export const invitesApi = {

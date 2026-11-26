@@ -24,7 +24,7 @@ import type { AccountRow, Me } from './api/client'
 import { ForgotPage, InvitePage, LoginPage, ResetPage, SetupPage } from './pages/AuthPages'
 import { AccountArea } from './pages/settings/AccountArea'
 import { AccountsTab } from './pages/settings/AccountsTab'
-import { APP_CAPS as SHOWN_CAPS, appOwnActions } from './pages/settings/accountList'
+import { APP_CAPS as SHOWN_CAPS } from './pages/settings/accountList'
 import { idle } from './test/wait'
 import {
   ACCOUNT_NAMESPACE,
@@ -153,7 +153,6 @@ const APP_PAGE_RENDER: { security?: () => Promise<Shown> } = {
 // APP (since 0.3.8): the text keys of the buttons the app words itself, by their role in BUTTONS (e.g. signIn: the key
 // of "Sign in").
 const APP_BUTTON_WORDS: Partial<Record<keyof typeof BUTTONS, string>> = {
-  signOut: 'me.signOut.button',
   signIn: 'auth.login.submit',
   setupSubmit: 'auth.setup.submit',
   inviteSubmit: 'auth.invite.submit',
@@ -164,7 +163,8 @@ const APP_BUTTON_WORDS: Partial<Record<keyof typeof BUTTONS, string>> = {
 // emailRemove, resetLink, factorReset, signOut, unlink, blocking, remove, restore) and the app's own buttons and boxes
 // in the dialog "Manage" (OwnAction).
 const APP_CAPS: AccountCaps = SHOWN_CAPS
-const APP_OWN: readonly OwnAction[] = appOwnActions({ ai_allowed: true })
+// nexpaper has none since konten 1.1.0: "KI erlaubt" is the module's right now (capsOf).
+const APP_OWN: readonly OwnAction[] = []
 
 // APP (since 0.3.9): the operator's account list, shown as the app does, like APP_RENDER: signed in as the operator,
 // with the own account first and another one last (a provider "Pocket ID" linked where the app has providers).

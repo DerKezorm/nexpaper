@@ -131,3 +131,10 @@ export function useUploads(): Uploads {
   if (!value) throw new Error('useUploads needs an UploadProvider')
   return value
 }
+
+/** How many uploads of this page still wait or run (signing out now would lose them); 0 outside an UploadProvider. */
+// eslint-disable-next-line react-refresh/only-export-components
+export function useWaitingUploads(): number {
+  const value = useContext(Context)
+  return (value?.entries ?? []).filter((entry) => ['waiting', 'hashing', 'sending', 'finishing', 'paused'].includes(entry.phase)).length
+}

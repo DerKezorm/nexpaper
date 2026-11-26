@@ -1,19 +1,22 @@
 /**
- * "Geräte", under My account, Connections, as nexnotes' card of the same name: every paired device and app with its
- * name, how it was paired and its last use, and "Trennen" after a question (its token stops at once). "Gerät koppeln"
- * opens the code in a dialog: a QR code and the same for typing, valid for five minutes and once. The device trades it
+ * "Geräte", the first card under My account › Connections (plan "Einstellungen", Verbindungen 1, E4), as nexnotes' card: every paired device and app with its
+ * name, how it was paired and its last use, and a small "Trennen" after a question (its token stops at once). "iPhone
+ * oder iPad verbinden" opens the code in a dialog: a QR code and the same for typing, valid for five minutes and once. The device trades it
  * for a token of its own (`POST /api/v1/devices/pair`); the dialog asks the server now and then whether that happened,
  * closes itself then and the new device stands in the list. Apps that sign in through the browser (OAuth with PKCE)
  * need no code here, and appear in the list all the same.
  */
-import { Smartphone } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { authApi, devicesApi, pairingApi, type PairedDevice, type PairingCode } from '../api/client'
 import { ago } from '../lib/ago'
-import { Button, Card, Confirm, Feedback, useAction } from '../pages/settings/ui'
-import { Dialog } from './Dialog'
+import { useAction } from '../pages/settings/actions'
+import { Outcome } from '../pages/settings/Outcome'
+import { useAsk } from '../pages/settings/useAsk'
+import { KeysWait } from './KeysWait'
+import { iso } from '../lib/say'
+import { Button, Card, CopyRow, Dialog, Row, Rows } from '../vendor/nexui'
 
 /** How often the dialog asks whether the code was used. */
 const POLL_MS = 2000
@@ -28,8 +31,8 @@ export function PairedDevices() {
   const [devices, setDevices] = useState<PairedDevice[] | null>(null)
   const [provider, setProvider] = useState<string | null>(null)
   const [pairing, setPairing] = useState(false)
-  const [leaving, setLeaving] = useState<PairedDevice | null>(null)
   const action = useAction()
+  const { ask, dialog } = useAsk()
 
   const load = useCallback(() => {
     devicesApi.list().then((found) => setDevices(Array.isArray(found) ? found : []), () => setDevices([]))
@@ -43,37 +46,57 @@ export function PairedDevices() {
     t(device.via === 'qr' ? 'phone.devices.qr' : device.via === 'device' ? 'phone.devices.device' : device.via?.startsWith('app:') ? 'phone.devices.app' : 'phone.devices.token')
 
   return (
-    <Card id="devices" icon={Smartphone} title={t('pairing.title')} text={t('pairing.text')}>
+    <Card id="devices" icon="Smartphone" title={t('pairing.title')} subtitle={t('pairing.text')}>
+      <KeysWait />
       {devices && devices.length === 0 && (
-        <p className="text-sm text-muted" data-testid="devices-none">
+        <p className="m-0 text-sm text-[var(--nexui-text-muted)]" data-testid="devices-none">
           {t('pairing.none')}
         </p>
       )}
       {devices && devices.length > 0 && (
-        <ul className="flex flex-col" data-testid="devices-list">
+        <Rows label={t('pairing.title')} testId="devices-list">
           {devices.map((device) => (
-            <li key={device.id} className="flex items-center gap-3 border-b border-line py-2.5 last:border-0" data-testid="paired-device">
-              <Smartphone className="h-5 w-5 shrink-0 text-ink-2" strokeWidth={1.8} aria-hidden />
-              <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                <span className="truncate text-sm">{device.name}</span>
-                <span className="text-xs text-muted">
-                  {t('phone.devices.meta', { how: how(device), when: device.last_used_at ? ago(device.last_used_at, i18n.language, t('me.justNow')) : t('phone.devices.never') })}
-                </span>
-              </span>
-              <Button busy={action.busy} onClick={() => setLeaving(device)} label={t('pairing.disconnectNamed', { name: device.name })}>
-                {t('pairing.disconnect')}
-              </Button>
-            </li>
+            <Row
+              key={device.id}
+              icon="Smartphone"
+              name={device.name}
+              sub={t('phone.devices.meta', { how: how(device), when: device.last_used_at ? ago(device.last_used_at, i18n.language, t('me.justNow')) : t('phone.devices.never') })}
+              testId="paired-device"
+              action={
+                <Button
+                  kind="danger"
+                  size="sm"
+                  icon="Unplug"
+                  busy={action.busy}
+                  aria-label={t('pairing.disconnectNamed', { name: device.name })}
+                  onClick={() =>
+                    ask({
+                      title: t('phone.devices.revokeTitle', { name: iso(device.name) }),
+                      text: t('phone.devices.revokeText'),
+                      confirm: t('pairing.disconnect'),
+                      icon: 'Unplug',
+                      run: async () => {
+                        await devicesApi.revoke(device.id)
+                        load()
+                        void action.run(async () => undefined, t('phone.devices.revoked', { name: device.name }))
+                      },
+                    })
+                  }
+                >
+                  {t('pairing.disconnect')}
+                </Button>
+              }
+            />
           ))}
-        </ul>
+        </Rows>
       )}
       <div>
-        <Button primary onClick={() => setPairing(true)}>
+        <Button kind="primary" icon="Smartphone" onClick={() => setPairing(true)} testId="pair">
           {t('pairing.connect')}
         </Button>
       </div>
-      {provider && <p className="text-xs text-muted">{t('phone.pair.provider', { name: provider })}</p>}
-      <Feedback problem={action.problem} done={action.done} />
+      {provider && <p className="m-0 text-xs text-[var(--nexui-text-muted)]">{t('phone.pair.provider', { name: provider })}</p>}
+      <Outcome problem={action.problem} done={action.done} />
       {pairing && (
         <PairDialog
           onDone={(paired) => {
@@ -83,23 +106,7 @@ export function PairedDevices() {
           }}
         />
       )}
-      {leaving && (
-        <Confirm
-          title={t('phone.devices.revokeTitle', { name: leaving.name })}
-          text={t('phone.devices.revokeText')}
-          confirm={t('pairing.disconnect')}
-          danger
-          onCancel={() => setLeaving(null)}
-          onConfirm={async () => {
-            const name = leaving.name
-            await action.run(async () => {
-              await devicesApi.revoke(leaving.id)
-              load()
-            }, t('phone.devices.revoked', { name }))
-            setLeaving(null)
-          }}
-        />
-      )}
+      {dialog}
     </Card>
   )
 }
@@ -161,37 +168,39 @@ function PairDialog({ onDone }: { onDone: (paired: boolean) => void }) {
   }
 
   return (
-    <Dialog title={t('pairing.dialogTitle')} onClose={close} medium>
+    // It shows a code once and asks the server meanwhile: only "Schließen" ends it (ui `dismissable`, E38).
+    <Dialog title={t('pairing.dialogTitle')} onClose={close} closeLabel={t('common.close')} wide dismissable={false}>
       <div className="flex flex-wrap gap-6" data-testid="pairing-dialog">
         <div className="flex w-[11rem] flex-none flex-col items-center gap-2">
           <div className="flex h-44 w-44 items-center justify-center rounded-[12px] bg-white p-2">
             {shown && <img src={'data:image/svg+xml;utf8,' + encodeURIComponent(shown.qr_svg)} alt={t('phone.pair.qr')} className="h-full w-full" />}
             {expired && <p className="px-2 text-center text-sm text-[#222]">{t('phone.pair.expired')}</p>}
           </div>
-          {shown && <span className="text-xs text-muted">{t('phone.pair.left', { time: left(shown.expires_at, now) })}</span>}
+          {shown && <span className="text-xs text-[var(--nexui-text-muted)]">{t('phone.pair.left', { time: left(shown.expires_at, now) })}</span>}
         </div>
-        <div className="flex min-w-[14rem] flex-1 flex-col gap-3 text-sm text-ink-2">
+        <div className="flex min-w-[14rem] flex-1 flex-col gap-3 text-sm">
           {shown && (
-            <div className="space-y-2" data-testid="pairing-code">
-              <p>{t('phone.pair.scan')}</p>
-              <p className="rounded-[10px] border border-line bg-sheet-2/50 px-3 py-2.5">
-                {t('phone.pair.byHand')} {t('phone.pair.address')} <span className="font-mono break-all text-ink">{shown.server}</span>, {t('phone.pair.code')}{' '}
-                <span className="font-mono text-ink" data-testid="pairing-text">
-                  {shown.code}
-                </span>
-              </p>
+            <div className="flex flex-col gap-2" data-testid="pairing-code">
+              <p className="m-0">{t('phone.pair.scan')}</p>
+              <p className="m-0 text-[var(--nexui-text-muted)]">{t('phone.pair.byHand')}</p>
+              <span className="text-xs text-[var(--nexui-text-muted)]">{t('phone.pair.address')}</span>
+              <CopyRow label={t('phone.pair.address')} value={shown.server} testId="pairing-server" />
+              <span className="text-xs text-[var(--nexui-text-muted)]">{t('phone.pair.code')}</span>
+              <CopyRow label={t('phone.pair.code')} value={shown.code} testId="pairing-text" />
             </div>
           )}
           {expired && (
             <div>
-              <Button primary busy={action.busy} onClick={make}>
+              <Button kind="primary" icon="RefreshCw" busy={action.busy} onClick={make}>
                 {t('phone.pair.newCode')}
               </Button>
             </div>
           )}
-          <Feedback problem={action.problem} />
+          <Outcome problem={action.problem} />
           <div className="mt-auto flex justify-end">
-            <Button onClick={close}>{t('common.close')}</Button>
+            <Button kind="secondary" icon="Check" onClick={close}>
+              {t('common.close')}
+            </Button>
           </div>
         </div>
       </div>

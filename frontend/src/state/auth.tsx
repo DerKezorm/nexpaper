@@ -2,13 +2,14 @@
  * Who is signed in. `loading` until the server answered, `setup` while nexpaper has no account yet, `signedOut`,
  * or `signedIn` with the account. A request that finds the session gone sends `SIGNED_OUT_EVENT`.
  */
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 
 import { ApiError, authApi, SIGNED_OUT_EVENT, type Me } from '../api/client'
 import i18n, { changeLanguage } from '../i18n'
 import { browserTimeZone } from '../lib/dates'
 import { forgetPictures } from '../lib/pictures'
-import { applyMode, isMode, storedMode } from '../lib/theme'
+import { applyMode, isMode, keptTheme, storedMode } from '../lib/theme'
+import { browserTheme } from '../vendor/nexkonten/konten'
 
 type Status = 'loading' | 'setup' | 'signedOut' | 'signedIn'
 
@@ -54,14 +55,31 @@ const Context = createContext<Auth | null>(null)
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<Status>('loading')
   const [me, setMeState] = useState<Me | null>(null)
+  const adopting = useRef(false)
 
   const setMe = useCallback((next: Me) => {
     setMeState(next)
     setStatus('signedIn')
     // The account's language and light or dark win over what this browser remembered.
     if (next.language && next.language !== i18n.language) void changeLanguage(next.language)
-    const mode = next.profile?.mode
-    if (isMode(mode) && mode !== storedMode()) applyMode(mode)
+    // Since konten 1.1.0 the theme is the account's (`theme`, the same as `profile.mode`). An account that never chose
+    // one takes over what this browser kept before, once (`adopt`); until then the browser's own stays.
+    if (next.theme === '') {
+      const kept = browserTheme(keptTheme())
+      if (kept && !adopting.current) {
+        adopting.current = true
+        void authApi.adoptTheme(kept).then(
+          ({ theme }) => {
+            if (isMode(theme) && theme !== storedMode()) applyMode(theme)
+            setMeState((current) => (current && current.id === next.id ? { ...current, theme, profile: { ...current.profile, mode: theme } } : current))
+          },
+          () => undefined,
+        )
+      }
+    } else {
+      const mode = next.theme || next.profile?.mode
+      if (isMode(mode) && mode !== storedMode()) applyMode(mode)
+    }
     // "Today" is the date in the person's own time zone; the server learns it from the browser in use.
     const zone = browserTimeZone()
     if (next.profile && !next.second_factor_setup_required && shouldReportZone(zone, next.profile.timezone, next.profile.timezone_source, reportedZone())) {

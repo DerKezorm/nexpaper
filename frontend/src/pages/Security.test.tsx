@@ -12,8 +12,8 @@ import type { Me } from '../api/client'
 import '../i18n'
 import { changeLanguage } from '../i18n'
 import { LoginPage } from './AuthPages'
-import { ReadinessCard } from './settings/ReadinessCards'
-import { DevicesCard, PasskeysCard, SecondFactorCard } from './settings/SecurityCards'
+import { PasskeysBox, SecondFactorBox, SessionsBox } from './settings/SecurityBoxes'
+import { SignInArea } from './settings/SignInArea'
 import { idle } from '../test/wait'
 
 const NOW = Date.now()
@@ -210,12 +210,15 @@ describe('the own account, Security', () => {
     ]
     answers[`DELETE /api/v1/auth/sessions/${'b'.repeat(32)}`] = 204
     answers['POST /api/v1/auth/logout-all'] = 204
-    await show(<DevicesCard me={me} />, '/konto')
+    await show(<SessionsBox />, '/settings/security')
     const rows = [...box.querySelectorAll('[data-testid="sessions"] li')]
     expect(rows[0].textContent).toContain('dieses Gerät')
     expect(rows[1].textContent).toContain('eigenes Netz 192.168.1.0/24 · zuletzt vor 2 Stunden')
     expect(button('Abmelden', rows[0])).toBeUndefined()
-    await click(button('Abmelden', rows[1]))
+    // The module's button in a row: small, red, with its symbol (konten 1.1.0, ui 1.1.0).
+    const end = button('Abmelden', rows[1])!
+    expect([end.dataset.kind, end.dataset.size, end.dataset.icon]).toEqual(['danger', 'sm', 'LogOut'])
+    await click(end)
     // Asked first: Abbrechen sends nothing, the red button sends the one request.
     const sessionCall = (call: { method: string; url: string }) => call.method === 'DELETE' && call.url === `/api/v1/auth/sessions/${'b'.repeat(32)}`
     expect(calls.some(sessionCall)).toBe(false)
@@ -236,10 +239,14 @@ describe('the own account, Security', () => {
     const id = 'c'.repeat(32)
     answers['GET /api/v1/auth/passkeys'] = [{ id, name: 'Windows Hello', created_at: new Date(NOW).toISOString(), last_used_at: null, credential: 'abcdefgh' }]
     answers[`POST /api/v1/auth/passkeys/${id}/remove`] = me
-    await show(<PasskeysCard me={me} />, '/konto')
+    await show(<PasskeysBox me={me} />, '/settings/security')
     expect(box.querySelector('[data-testid="passkeys"]')!.textContent).toContain('angelegt heute · zuletzt noch nie')
-    await click(button('Passkey Windows Hello entfernen', box))
-    const dialog = document.querySelector('[role="dialog"]')!
+    const remove = button('Passkey Windows Hello entfernen', box)!
+    expect([remove.dataset.kind, remove.dataset.size]).toEqual(['danger', 'sm'])
+    await click(remove)
+    const dialog = document.querySelector<HTMLElement>('[role="dialog"]')!
+    // The password field in the account module's words.
+    expect(field('Passwort', dialog)!.type).toBe('password')
     await type(dialog.querySelector<HTMLInputElement>('input[type="password"]'), 'the own password')
     await submit(dialog.querySelector('form'))
     expect(calls.find((call) => call.url === `/api/v1/auth/passkeys/${id}/remove`)!.body).toEqual({ password: 'the own password' })
@@ -251,7 +258,7 @@ describe('the own account, Security', () => {
     it('tells the operator where to enter the public address, with a link there, when the server has none', async () => {
       passkeysInTheBrowser(true)
       answers['GET /api/v1/auth/methods'] = { password: true, providers: [], passkeys: false }
-      await show(<PasskeysCard me={me} />, '/konto')
+      await show(<PasskeysBox me={me} />, '/settings/security')
       expect(hint()!.textContent).toBe('Trag zuerst die öffentliche Adresse ein (Einstellungen → Anmeldung).')
       expect(hint()!.querySelector('a')!.getAttribute('href')).toBe('/settings/sign-in')
       expect(hint()!.textContent).not.toContain('nur über https')
@@ -261,7 +268,7 @@ describe('the own account, Security', () => {
     it('tells a member that the operator has to enter it, and links nowhere', async () => {
       passkeysInTheBrowser(true)
       answers['GET /api/v1/auth/methods'] = { password: true, providers: [], passkeys: false }
-      await show(<PasskeysCard me={{ ...me, role: 'member' }} />, '/konto')
+      await show(<PasskeysBox me={{ ...me, role: 'member' }} />, '/settings/security')
       expect(hint()!.textContent).toBe('Dein Betreiber muss erst die öffentliche Adresse eintragen.')
       expect(hint()!.querySelector('a')).toBeNull()
     })
@@ -270,71 +277,98 @@ describe('the own account, Security', () => {
       await changeLanguage('en', false)
       passkeysInTheBrowser(true)
       answers['GET /api/v1/auth/methods'] = { password: true, providers: [], passkeys: false }
-      await show(<PasskeysCard me={me} />, '/konto')
+      await show(<PasskeysBox me={me} />, '/settings/security')
       expect(hint()!.textContent).toBe('Enter the public address first (Settings → Sign-in).')
       expect(hint()!.querySelector('a')!.getAttribute('href')).toBe('/settings/sign-in')
       act(() => root.unmount())
       box.remove()
-      await show(<PasskeysCard me={{ ...me, role: 'member' }} />, '/konto')
+      await show(<PasskeysBox me={{ ...me, role: 'member' }} />, '/settings/security')
       expect(hint()!.textContent).toBe('Your operator has to enter the public address first.')
     })
 
     it('keeps the old sentence for a browser that cannot (no https, no API), whatever the server says', async () => {
       passkeysInTheBrowser(false)
       answers['GET /api/v1/auth/methods'] = { password: true, providers: [], passkeys: true }
-      await show(<PasskeysCard me={me} />, '/konto')
+      await show(<PasskeysBox me={me} />, '/settings/security')
       expect(hint()!.textContent).toBe('Passkeys gibt es nur über https (oder localhost) und in Browsern, die sie kennen.')
       expect(hint()!.querySelector('a')).toBeNull()
     })
 
     it('says nothing when passkeys can be made', async () => {
       passkeysInTheBrowser(true)
-      await show(<PasskeysCard me={me} />, '/konto')
+      await show(<PasskeysBox me={me} />, '/settings/security')
       expect(hint()).toBeNull()
       expect(button('Passkey hinzufügen', box)!.disabled).toBe(false)
     })
   })
 
   it('cannot turn off the last factor where the operator requires one', async () => {
-    await show(<SecondFactorCard me={me} />, '/konto')
+    await show(<SecondFactorBox me={me} part="factor" />, '/settings/security')
     expect(box.textContent).toContain('Ausschalten geht nicht: Der Betreiber verlangt ihn für alle.')
     expect(button('Authenticator-App entfernen', box)).toBeUndefined()
     act(() => root.unmount())
-    await show(<SecondFactorCard me={{ ...me, passkeys: 1 }} />, '/konto')
+    await show(<SecondFactorBox me={{ ...me, passkeys: 1 }} part="factor" />, '/settings/security')
     expect(button('Authenticator-App entfernen', box)).toBeTruthy()
   })
 })
 
 describe("the operator's checks", () => {
+  /** Server › Sign-in with the server's answers: the module's page, nexpaper's points among the shared ones. */
+  async function signIn(readiness: unknown): Promise<void> {
+    auth.status = 'signedIn'
+    auth.me = me
+    answers['GET /api/v1/server/sign-in'] = {
+      password_login: true, factor_required: false, passkeys_allowed: true, password_may_go_off: false, factor_may_go_on: true,
+      public_url: 'https://paper.example.com', public_url_effective: 'https://paper.example.com', operator_has_password: true,
+    }
+    answers['GET /api/v1/oidc/admin/providers'] = []
+    answers['GET /api/v1/oidc/authentik/address'] = { public_url: 'https://paper.example.com', seen: 'https://paper.example.com', forwarded_proto: '', forwarded_host: '', proxy_ignored: false, callback_path: '/api/v1/oidc/authentik/callback' }
+    answers['GET /api/v1/server/readiness'] = readiness
+    // Which points are open is kept per device; each look starts with all closed.
+    localStorage.removeItem('nexpaper.fold.ready')
+    await show(<SignInArea />, '/settings/sign-in')
+  }
+  /** A point of "Bereit fürs Internet?", opened (all are closed at first): its state and its sentence. */
+  async function opened(key: string): Promise<{ state: string | null; text: string }> {
+    const point = box.querySelector(`#ready-${key}`)!
+    expect(point.querySelector('[aria-expanded]')!.getAttribute('aria-expanded')).toBe('false')
+    await click(point.querySelector<HTMLElement>('[aria-expanded]')!)
+    return { state: point.querySelector('[data-state]')!.getAttribute('data-state'), text: box.querySelector(`[data-testid="ready-text-${key}"]`)!.textContent ?? '' }
+  }
+
   it('shows each point with its state and counts the open ones', async () => {
-    answers['GET /api/v1/settings/readiness'] = {
+    await signIn({
+      state: 'bad',
       open: 2,
       points: [
-        { key: 'https', state: 'ok', values: { address: 'https://paper.example.com' } },
-        { key: 'two_factor', state: 'bad', values: {} },
-        { key: 'proxy', state: 'warn', values: { proxy: '172.18.0.2' } },
+        { key: 'address', state: 'ok', title: 'account.ready.address.title', text: 'account.ready.address.ok', values: { address: 'https://paper.example.com', app: 'nexpaper' } },
+        { key: 'factorForAll', state: 'bad', title: 'account.ready.factorForAll.title', text: 'account.ready.factorForAll.bad', values: {} },
+        { key: 'proxy', state: 'warn', title: 'account.ready.proxy.title', text: 'account.ready.proxy.warn', values: { proxy: '172.18.0.2', variable: 'NEXPAPER_TRUSTED_PROXIES' } },
       ],
-    }
-    await show(<ReadinessCard />, '/einstellungen')
+    })
+    // The module's card, asked of the module's route (the old /api/v1/settings/readiness stays for scripts).
+    expect(calls.some((call) => call.url === '/api/v1/server/readiness')).toBe(true)
+    expect(box.querySelector('[data-card="sign-in-ready"]')).toBeTruthy()
     expect(box.querySelector('[data-testid="ready-summary"]')!.textContent).toBe('2 Punkte offen')
-    const states = [...box.querySelectorAll('li')].map((item) => item.getAttribute('data-state'))
-    expect(states).toEqual(['ok', 'bad', 'warn'])
-    expect(box.textContent).toContain('https://paper.example.com')
-    expect(box.textContent).toContain('Aus: Ein erratenes oder gestohlenes Passwort reicht')
-    expect(box.textContent).toContain('Setze NEXPAPER_TRUSTED_PROXIES auf seine Adresse.')
+    expect([...box.querySelectorAll('[id^="ready-"] [data-state]')].map((item) => item.getAttribute('data-state'))).toEqual(['ok', 'bad', 'warn'])
+    expect((await opened('address')).text).toContain('https://paper.example.com')
+    expect((await opened('factorForAll')).text).toContain('Aus: Ein erratenes oder gestohlenes Passwort reicht')
+    expect((await opened('proxy')).text).toContain('Setze NEXPAPER_TRUSTED_PROXIES auf seine Adresse.')
   })
 
-  it('names the secrets of the server and the backups as two points of their own', async () => {
-    answers['GET /api/v1/settings/readiness'] = {
-      open: 1,
+  it('names the secrets of the server, the backups and the upload requests as points of their own', async () => {
+    await signIn({
+      state: 'warn',
+      open: 2,
       points: [
-        { key: 'secrets', state: 'ok', values: { source: 'environment' } },
-        { key: 'backups', state: 'warn', values: { schedule: 'off' } },
+        { key: 'secrets', state: 'ok', title: 'ready.secrets.title', text: 'ready.secrets.env', values: { source: 'environment' } },
+        { key: 'backups', state: 'warn', title: 'ready.backups.title', text: 'ready.backups.warn', values: { schedule: 'off' } },
+        { key: 'upload_requests', state: 'warn', title: 'uploadRequest.ready.title', text: 'uploadRequest.ready.warn', values: { on: true, count: 2 } },
       ],
-    }
-    await show(<ReadinessCard />, '/einstellungen')
+    })
     expect(box.textContent).toContain('Server-Geheimnisse')
-    expect(box.textContent).toContain('Der Schlüssel kommt aus NEXPAPER_SECRET_KEY, nicht aus einer Datei.')
-    expect(box.textContent).toContain('Keine automatische Sicherung. Schalte sie unter Einstellungen, Sicherung ein.')
+    expect((await opened('secrets')).text).toContain('Der Schlüssel kommt aus NEXPAPER_SECRET_KEY, nicht aus einer Datei.')
+    expect((await opened('backups')).text).toContain('Keine automatische Sicherung. Schalte sie unter Einstellungen, Sicherung ein.')
+    expect((await opened('upload_requests')).text).toContain('Gerade nehmen 2 Bitten etwas an.')
   })
 })

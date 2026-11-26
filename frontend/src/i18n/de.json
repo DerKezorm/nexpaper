@@ -18,7 +18,8 @@
     "copy": "Kopieren",
     "copied": "Kopiert",
     "save": "Speichern",
-    "done": "Fertig"
+    "done": "Fertig",
+    "delete": "Löschen"
   },
   "settings": {
     "title": "Einstellungen",
@@ -128,13 +129,18 @@
       "upload": {
         "title": "Hochladen",
         "text": "Wohin deine Uploads gehen, wo das Handy startet, deine Eingänge und Upload-Bitten."
+      },
+      "aiProvider": {
+        "text": "Welcher Anbieter beim Einsortieren Vorschläge macht, und mit welchen Grenzen."
       }
     },
     "groups": {
       "account": "Mein Konto",
       "server": "Server"
     },
-    "jump": "Seite der Einstellungen"
+    "jump": "Seite der Einstellungen",
+    "things": "Dokumente",
+    "thingsDative": "Dokumenten"
   },
   "auth": {
     "name": "Name",
@@ -378,7 +384,7 @@
       "takeAddress": "Übernehmen",
       "addressTaken": "Die Adresse gilt jetzt für dein Konto. Bestätige sie unter Profil, dann zählt sie auch für Dokumente per Mail."
     },
-    "keysWait": "Geräte und API-Token wirken erst, wenn du einen zweiten Faktor einrichtest.",
+    "keysWait": "Geräte und API-Schlüssel wirken erst, wenn du einen zweiten Faktor einrichtest.",
     "keysWaitLink": "Zweiten Faktor einrichten",
     "signOut": {
       "title": "Abmelden",
@@ -736,7 +742,10 @@
     "logRequest": "Nr. / Konto",
     "logMessage": "Meldung",
     "logRequestHint": "Nur diese Anfrage zeigen",
-    "documentsFact": "Dokumente"
+    "documentsFact": "Dokumente",
+    "backupHolds": "Eine Sicherung enthält die Datenbank (Konten, Tresore, Zuordnungen, erkannter Text, Notizen, Verlauf, Einstellungen) und den Schlüssel des Servers, nicht die Dokumente selbst: Die liegen als Dateien in /data/dokumente und gehören in die übliche Dateisicherung des Servers. Mit dem Schlüssel enthält sie auch die Zugänge für Mail und KI und die Adressen offener Links, bewahre sie darum geschützt auf, wie ein Passwort. Den Suchindex baut nexpaper nach dem Wiederherstellen neu.",
+    "whatYouSee": "Als Betreiber siehst du Namen, Benutzernamen, Mailadressen, Rollen, wie sich jemand anmeldet, wann ein Konto zuletzt da war und wie viele Dokumente und wie viel Speicher es hat, aber nie die Dokumente in den Tresoren anderer, ihren erkannten Text, ihre Notizen oder ihre Passwörter.",
+    "limitText": "Ist die Grenze erreicht, nimmt nexpaper keine neuen Dateien dieses Kontos mehr an und sagt es beim Hochladen. Was schon da ist, bleibt."
   },
   "errors": {
     "ai_not_allowed": "Dein Betreiber hat die KI für dein Konto nicht freigegeben.",
@@ -1072,8 +1081,8 @@
     "title": "Geräte",
     "text": "iPhone und iPad mit der nexpaper-App und eigene Programme. Jedes Gerät hat einen eigenen Schlüssel, Trennen sperrt ihn sofort.",
     "none": "Noch kein Gerät gekoppelt.",
-    "connect": "Gerät koppeln",
-    "dialogTitle": "Gerät koppeln",
+    "connect": "iPhone oder iPad verbinden",
+    "dialogTitle": "iPhone oder iPad verbinden",
     "disconnect": "Trennen",
     "disconnectNamed": "{{name}} trennen"
   },
@@ -1128,7 +1137,9 @@
       "readHint": "Dokumente, Tresore und Suche lesen, so weit dein Konto darf. Ändern kann er nichts.",
       "upload": "Nur hochladen",
       "uploadHint": "Für einen Scanner, ein Skript oder den Kurzbefehl: legt Dokumente in einen Eingang und liest nichts."
-    }
+    },
+    "keyUploadNote": "Ein Schlüssel zum Hochladen legt Dokumente nur in einen Eingang: in den deines Ziel-Tresors oder, wenn das Programm einen anderen nennt, in den eines Tresors, in dem du ablegen darfst. Lesen, ändern oder löschen kann er nichts.",
+    "keyLimits": "Grenzen je Schlüssel: 120 Anfragen in der Minute, 50 Uploads in der Stunde. Falsche Schlüssel zählen wie falsche Passwörter."
   },
   "rights": {
     "read": {
@@ -1333,7 +1344,8 @@
       "saved": "Gespeichert.",
       "invalid": "Die Zahlen müssen in den erlaubten Bereich fallen.",
       "cache": "Zwischenspeicher für Seitenbilder (MB)",
-      "cacheHint": "Wird er größer, räumt nexpaper die Bilder weg, die am längsten nicht gebraucht wurden. Sie entstehen bei Bedarf neu."
+      "cacheHint": "Wird er größer, räumt nexpaper die Bilder weg, die am längsten nicht gebraucht wurden. Sie entstehen bei Bedarf neu.",
+      "perAccount": "Speicher je Konto setzt du unter „Konten“."
     },
     "disk": {
       "title": "So liegen die Dateien auf der Platte",
@@ -2758,7 +2770,8 @@
     "uses": "nexpaper belegt",
     "part": "{{name}} {{size}}",
     "bar": "nexpaper belegt {{own}}, auf dem Laufwerk sind {{used}} von {{total}} belegt",
-    "diskFree": "Auf dem Laufwerk noch {{free}} von {{total}} frei"
+    "diskFree": "Auf dem Laufwerk noch {{free}} von {{total}} frei",
+    "originalsName": "Originale"
   },
   "order": {
     "title": "Ordnung",
@@ -3196,8 +3209,8 @@
       "trashed_one": "Ein Dokument hat nexpaper in den Papierkorb gelegt, seine Aufbewahrungszeit war um. Dort lässt es sich 30 Tage zurückholen.",
       "trashed_other": "{{count}} Dokumente hat nexpaper in den Papierkorb gelegt, ihre Aufbewahrungszeit war um. Dort lassen sie sich 30 Tage zurückholen."
     },
-    "remindedHow": "Erinnert wirst du so, wie du es unter <account>Mein Konto, Erinnerungen</account> eingestellt hast.",
-    "datesNote": "Erinnert werden alle, die im Tresor bearbeiten dürfen, jede Person so, wie sie es unter <account>Mein Konto, Erinnerungen</account> eingestellt hat.",
+    "remindedHow": "Erinnert wirst du so, wie du es unter <account>Mein Konto, Benachrichtigungen</account> eingestellt hast.",
+    "datesNote": "Erinnert werden alle, die im Tresor bearbeiten dürfen, jede Person so, wie sie es unter <account>Mein Konto, Benachrichtigungen</account> eingestellt hat.",
     "muted": "stumm",
     "mutedTitle": "Für diesen Tresor hast du Erinnerungen stumm geschaltet.",
     "saved": "Gespeichert.",
@@ -3496,7 +3509,8 @@
     },
     "shareNote": "Das Original ist mit einem Passwort geschützt. Wer den Link öffnet, bekommt die geöffnete Fassung ohne Passwort.",
     "shareNoteRestricted": "Das Original ist gegen Drucken oder Ändern gesperrt. Wer den Link öffnet, bekommt die geöffnete Fassung ohne diese Sperre.",
-    "shareNoteAlso": "Ein gewähltes Dokument hat ein geschütztes Original. Wer den Link öffnet, bekommt davon die geöffnete Fassung ohne Passwort oder Sperre."
+    "shareNoteAlso": "Ein gewähltes Dokument hat ein geschütztes Original. Wer den Link öffnet, bekommt davon die geöffnete Fassung ohne Passwort oder Sperre.",
+    "rename": "Umbenennen"
   },
   "mailText": {
     "toggle": "Mails ohne Anhang als Dokument nehmen",
@@ -3622,5 +3636,16 @@
     "search": "Suchen",
     "searchKey": "Strg K",
     "manageVaults": "Tresore verwalten"
+  },
+  "install": {
+    "title": "Auf diesem Gerät installieren",
+    "text": "Installiert startet nexpaper wie eine App: im eigenen Fenster ohne Browserleiste und mit eigenem Symbol.",
+    "button": "Installieren",
+    "asked": "Der Browser hat gefragt. Hast du zugestimmt, findest du nexpaper bei deinen Apps.",
+    "ios": "Auf iPhone und iPad: Teilen › Zum Home-Bildschirm.",
+    "installed": "nexpaper läuft auf diesem Gerät schon als installierte App.",
+    "safari": "In Safari auf dem Mac: Ablage › Zum Dock hinzufügen.",
+    "firefox": "Firefox kann Web-Apps nicht installieren. Öffne nexpaper dafür in einem anderen Browser, etwa Chrome, Edge oder Safari.",
+    "other": "Bietet dein Browser hier keinen Knopf an, findest du das Installieren in seinem Menü, etwa unter „App installieren“ oder „Zum Startbildschirm hinzufügen“."
   }
 }

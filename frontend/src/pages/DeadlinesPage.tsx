@@ -47,7 +47,7 @@ export function DeadlinesPage() {
   const [found, setFound] = useState<Deadlines | null>(null)
   const [vaults, setVaults] = useState<Vault[]>([])
   const [problem, setProblem] = useState<string | null>(null)
-  // What the person muted (My account, Reminders): those deadlines stay here, with a mark.
+  // What the person muted (My account, Notifications): those deadlines stay here, with a mark.
   const [quiet, setQuiet] = useState<{ vaults: number[]; shared: boolean }>({ vaults: [], shared: false })
 
   useEffect(() => {
@@ -104,7 +104,7 @@ export function DeadlinesPage() {
       <div className="mb-5">
         <h1 className="text-2xl font-bold tracking-tight">{t('deadlines.title')}</h1>
         <p className="max-w-2xl text-sm text-muted">
-          {t('deadlines.intro')} <Trans i18nKey="reminders.remindedHow" components={{ account: <Link to="/settings/reminders" className="font-semibold text-accent hover:underline" /> }} />
+          {t('deadlines.intro')} <Trans i18nKey="reminders.remindedHow" components={{ account: <Link to="/settings/notifications" className="font-semibold text-accent hover:underline" /> }} />
         </p>
       </div>
 

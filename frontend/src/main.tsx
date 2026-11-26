@@ -6,6 +6,7 @@ import { BrowserRouter } from 'react-router-dom'
 import App from './App'
 import './i18n'
 import './index.css'
+import { listenForInstall } from './lib/install'
 import { openShare, sweepShared } from './lib/shared'
 import { followSystem } from './lib/theme'
 import { bearTranslatedPages } from './lib/translatedPage'
@@ -13,6 +14,7 @@ import { AuthProvider } from './state/auth'
 
 followSystem()
 bearTranslatedPages()
+listenForInstall()
 
 // The service worker from the start, not only for Web Push: Android's share menu sends files to it (`public/sw.js`).
 if ('serviceWorker' in navigator && window.isSecureContext) {

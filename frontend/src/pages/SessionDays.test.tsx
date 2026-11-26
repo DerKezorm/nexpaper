@@ -11,8 +11,8 @@ import type { Me } from '../api/client'
 import '../i18n'
 import { changeLanguage } from '../i18n'
 import { LoginPage } from './AuthPages'
-import { DevicesCard } from './settings/SecurityCards'
-import { ReadinessCard } from './settings/ReadinessCards'
+import { SessionsBox } from './settings/SecurityBoxes'
+import { SignInArea } from './settings/SignInArea'
 import { DiskCard } from './settings/StorageCards'
 import { idle } from '../test/wait'
 
@@ -58,6 +58,26 @@ async function show(element: React.ReactNode, at = '/login'): Promise<void> {
   await idle()
 }
 
+/** Server › Sign-in with "Bereit fürs Internet?" holding the point of the cookies, in the module's form (the server
+ * names how long a sign-in lasts as `count`), the point opened. */
+async function ready(days: number): Promise<string> {
+  answers['GET /api/v1/server/sign-in'] = {
+    password_login: true, factor_required: false, passkeys_allowed: true, password_may_go_off: false, factor_may_go_on: true,
+    public_url: 'https://paper.example.com', public_url_effective: 'https://paper.example.com', operator_has_password: true,
+  }
+  answers['GET /api/v1/oidc/admin/providers'] = []
+  answers['GET /api/v1/oidc/authentik/address'] = { public_url: 'https://paper.example.com', seen: 'https://paper.example.com', forwarded_proto: '', forwarded_host: '', proxy_ignored: false, callback_path: '' }
+  answers['GET /api/v1/server/readiness'] = { state: 'ok', open: 0, points: [{ key: 'cookies', state: 'ok', title: 'account.ready.cookies.title', text: 'account.ready.cookies.ok', values: { count: days } }] }
+  // Which points are open is kept per device; each look starts with all closed.
+  localStorage.removeItem('nexpaper.fold.ready')
+  await show(<SignInArea />, '/settings/sign-in')
+  const head = box.querySelector<HTMLElement>('#ready-cookies [aria-expanded]')!
+  expect(head.getAttribute('aria-expanded')).toBe('false')
+  await act(async () => head.click())
+  await idle()
+  return box.querySelector('[data-testid="ready-text-cookies"]')!.textContent ?? ''
+}
+
 function methods(days?: number): Record<string, unknown> {
   return { password: true, providers: [], passkeys: false, forgot: false, ...(days === undefined ? {} : { session_days: days }) }
 }
@@ -65,6 +85,7 @@ function methods(days?: number): Record<string, unknown> {
 beforeEach(async () => {
   await changeLanguage('de', false)
   auth.status = 'signedOut'
+  auth.me = me
   answers = {}
   serve()
 })
@@ -99,20 +120,18 @@ describe('the length of a sign-in', () => {
   })
 
   it('says one day as one day under Security and in "Ready for the internet?", in German and in English', async () => {
-    for (const [language, devices, ready] of [
+    for (const [language, devices, said] of [
       ['de', 'läuft nach 1 Tag ohne Nutzung von selbst ab.', 'läuft nach 1 Tag ohne Nutzung ab.'],
-      ['en', 'ends by itself after 1 day without use.', 'runs out after 1 day without use.'],
+      ['en', 'ends by itself after 1 day without use.', 'ends after 1 day without use.'],
     ] as const) {
       await act(async () => changeLanguage(language, false))
       answers['GET /api/v1/auth/methods'] = methods(1)
-      answers['GET /api/v1/settings/readiness'] = { open: 0, points: [{ key: 'cookies', state: 'ok', values: { mode: 'auto', days: 1 } }] }
       answers['GET /api/v1/auth/sessions'] = []
-      await show(<DevicesCard me={me} />, '/konto')
+      await show(<SessionsBox />, '/settings/security')
       expect(box.textContent, language).toContain(devices)
       act(() => root.unmount())
       box.remove()
-      await show(<ReadinessCard />, '/einstellungen')
-      expect(box.textContent, language).toContain(ready)
+      expect(await ready(1), language).toContain(said)
       act(() => root.unmount())
       box.remove()
     }
@@ -128,20 +147,18 @@ describe('the length of a sign-in', () => {
   it('under Security, with the signed-in devices', async () => {
     answers['GET /api/v1/auth/methods'] = methods(90)
     answers['GET /api/v1/auth/sessions'] = []
-    await show(<DevicesCard me={me} />, '/konto')
+    await show(<SessionsBox />, '/settings/security')
     expect(box.querySelector('[data-testid="session-days"]')!.textContent).toBe('Eine Anmeldung läuft nach 90 Tagen ohne Nutzung von selbst ab.')
   })
 
   it('in "Ready for the internet?"', async () => {
-    answers['GET /api/v1/settings/readiness'] = { open: 0, points: [{ key: 'cookies', state: 'ok', values: { mode: 'auto', days: 14 } }] }
-    await show(<ReadinessCard />, '/einstellungen')
-    expect(box.textContent).toContain('eine Anmeldung läuft nach 14 Tagen ohne Nutzung ab.')
+    expect(await ready(14)).toContain('eine Anmeldung läuft nach 14 Tagen ohne Nutzung ab.')
   })
 })
 
 describe('the disk', () => {
   it('says that missing parts have English names on the disk', async () => {
-    await show(<DiskCard />, '/einstellungen')
+    await show(<DiskCard />, '/settings/storage')
     expect(box.textContent).toContain('„undated“, „no sender“, „Document“')
     await act(async () => changeLanguage('en', false))
     expect(box.textContent).toContain('the folders and files on the disk have English names')

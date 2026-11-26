@@ -1,12 +1,11 @@
 /**
- * Building blocks of the settings, account and about pages, the same as nexnotes' (`pages/settings/ui.tsx` there) in
- * nexpaper's colours: whoever knows one app finds the same card, row with its checkbox, field and button in the other.
+ * nexpaper's own building blocks of before, for the pages outside the settings that still use them (the settings take
+ * theirs from the ui kit, `vendor/nexui`). `useAction` and `saveAsFile` live in `actions.ts` and are named here too.
  */
 import type { LucideIcon } from 'lucide-react'
-import { useCallback, useId, useState, type ReactNode } from 'react'
+import { useId, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import { ApiError } from '../../api/client'
 import { ConfirmDialog } from '../../components/ConfirmDialog'
 import { copyText } from '../../lib/copy'
 import { errorText } from '../../lib/errors'
@@ -215,38 +214,6 @@ export function CopyLink({ value, label }: { value: string; label: string }) {
   )
 }
 
-/** Runs a change, remembers whether it worked; the card shows it with `Feedback`. */
-// eslint-disable-next-line react-refresh/only-export-components
-export function useAction() {
-  const [busy, setBusy] = useState(false)
-  const [problem, setProblem] = useState<string | null>(null)
-  const [done, setDone] = useState<string | null>(null)
-  /** What the server said along with the problem (a limit, a number), for the sentence. */
-  const [values, setValues] = useState<Record<string, unknown>>({})
-  const run = useCallback(async (work: () => Promise<unknown>, success?: string): Promise<boolean> => {
-    setBusy(true)
-    setProblem(null)
-    setValues({})
-    setDone(null)
-    try {
-      await work()
-      if (success) setDone(success)
-      return true
-    } catch (error) {
-      setProblem(error instanceof ApiError ? error.code : 'internal_error')
-      setValues(error instanceof ApiError ? error.values : {})
-      return false
-    } finally {
-      setBusy(false)
-    }
-  }, [])
-  const clear = useCallback(() => {
-    setProblem(null)
-    setDone(null)
-  }, [])
-  return { busy, problem, values, done, run, clear }
-}
-
 /** "Really?" with the operator's password where the server asks for it again: the dialog of the whole interface
  * (``components/ConfirmDialog``), here with the words of the settings (its button is the quiet one unless ``danger``). */
 export function Confirm({ title, text, confirm, danger = false, password = false, onCancel, onConfirm }: {
@@ -315,13 +282,4 @@ export function Segment<T extends string>({ options, value, onChange, label }: {
 }
 
 // eslint-disable-next-line react-refresh/only-export-components
-export function saveAsFile(name: string, data: Blob) {
-  const url = URL.createObjectURL(data)
-  const link = document.createElement('a')
-  link.href = url
-  link.download = name
-  document.body.appendChild(link)
-  link.click()
-  link.remove()
-  URL.revokeObjectURL(url)
-}
+export { saveAsFile, useAction } from './actions'

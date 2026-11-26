@@ -199,31 +199,85 @@ function group(name: 'account' | 'server'): (string | undefined)[] {
 }
 
 describe('the settings', () => {
-  it('are the areas of nexnotes for the operator, nexpaper\'s own between them, each with its address', async () => {
+  it('are the areas of the plan for the operator, nexpaper\'s own at their places, each with its address', async () => {
     answers['GET /api/v1/settings/push'] = { devices: 0, key: '', contact: '', contact_used: '', known: [], hosts: [] }
     answers['GET /api/v1/about'] = { version: '0.0.1', license: 'AGPL-3.0', repo_url: 'https://example.com/nexpaper', releases_url: 'https://example.com/nexpaper/releases', project_url: '' }
     await show('/settings/general')
-    expect(group('account')).toEqual(['Profil', 'Sicherheit', 'Darstellung', 'Verbindungen', 'Hochladen', 'Erinnerungen', 'KI'])
-    expect(group('server')).toEqual(['Allgemein', 'Anmeldung', 'Mail', 'Speicher und Sicherung', 'Texterkennung', 'Ablage', 'KI', 'Eingänge', 'Import', 'API', 'Konten', 'Log'])
+    // Plan "Einstellungen": Mein Konto with nexpaper's Upload and AI before Notifications and Connections; Server with
+    // nexpaper's own between Storage and Accounts, the server's AI as "KI-Anbieter"; no area "API" any more.
+    expect(group('account')).toEqual(['Profil', 'Sicherheit', 'Darstellung', 'Hochladen', 'KI', 'Benachrichtigungen', 'Verbindungen'])
+    expect(group('server')).toEqual(['Allgemein', 'Anmeldung', 'Mail', 'Speicher und Sicherung', 'Texterkennung', 'KI-Anbieter', 'Ablage', 'Eingänge', 'Import', 'Konten', 'Log'])
+    expect([...box.querySelectorAll('[aria-labelledby="settings-group-server"] a')].map((a) => a.getAttribute('href'))).toEqual(
+      ['general', 'sign-in', 'mail', 'storage', 'ocr', 'ai-provider', 'filing', 'inputs', 'import', 'accounts', 'log'].map((slug) => `/settings/${slug}`),
+    )
+    // The frame of the ui kit: its navigation, the area's title and line, then only cards.
+    expect(box.querySelector('[data-testid="settings-nav"]')).toBeTruthy()
     expect(box.querySelector('h1')!.textContent).toBe('Allgemein')
+    expect(box.querySelector('[data-testid="settings-area-general"] p')!.textContent).toBe('Grenzen, Funktionen für alle Konten, Schnittstellen und eigene Sprachen.')
+    expect(box.querySelector('[data-testid="settings-about"], [data-part="settings-about"] a')!.textContent).toContain('Über nexpaper')
     act(() => root.unmount())
     box.remove()
-    // An address of before leads to its area.
+    // An address of before leads to its area: the interface is a card under General now.
     await show('/einstellungen?tab=api')
-    expect(box.querySelector('[data-testid^="settings-nav-"][aria-current="page"]')!.textContent).toContain('API')
-    expect(box.textContent).toContain('Schnittstelle')
-    expect(box.textContent).toContain('/api/v1/docs')
+    expect(box.querySelector('[data-testid^="settings-nav-"][aria-current="page"]')!.getAttribute('data-testid')).toBe('settings-nav-general')
     act(() => root.unmount())
     box.remove()
     await show('/ueber')
     expect(box.querySelector('h1')!.textContent).toBe('Über nexpaper')
   })
 
-  it('show a member only the own account, and an area of the server leads to the profile', async () => {
+  it('show a member only the own account, and an area of the server leads to the settings\' start', async () => {
     auth.me = { ...operator, role: 'member' }
     await show('/settings/general')
     expect(box.querySelector('h1')!.textContent).toBe('Profil')
     expect(box.querySelector('[aria-labelledby="settings-group-server"]')).toBeNull()
+  })
+
+  it('are a list on a phone at /settings, with the way back from an area', async () => {
+    await show('/settings')
+    expect(box.querySelector('[data-testid="settings"]')!.getAttribute('data-list')).toBe('true')
+    act(() => root.unmount())
+    box.remove()
+    await show('/settings/profile')
+    expect(box.querySelector('[data-testid="settings"]')!.hasAttribute('data-list')).toBe(false)
+    expect(box.querySelector('[data-testid="settings-back"]')!.getAttribute('href')).toBe('/settings')
+  })
+})
+
+/** Where the app is after opening an address (the area marked in the navigation). */
+async function landing(at: string): Promise<string | null> {
+  await show(at)
+  const here = box.querySelector('[data-testid^="settings-nav-"][aria-current="page"]')?.getAttribute('data-testid') ?? null
+  act(() => root.unmount())
+  box.remove()
+  return here
+}
+
+describe('the addresses of before lead on for good', () => {
+  // Deadlines off: Notifications then shows its cards without the reminders the stand-in does not answer.
+  beforeEach(() => {
+    auth.me = { ...operator, profile: { ...operator.profile, deadlines: false } }
+  })
+
+  // Each mapping is held by `settings/areas.test.ts`; here the app routes them, once per kind of address.
+  it('a slug of before, a tab of "Mein Konto" and a provider\'s answer', async () => {
+    answers['GET /api/v1/auth/sessions'] = []
+    answers['GET /api/v1/auth/passkeys'] = []
+    answers['GET /api/v1/oidc/me'] = []
+    expect(await landing('/settings/reminders')).toBe('settings-nav-notifications')
+    expect(await landing('/konto?tab=erinnerungen')).toBe('settings-nav-notifications')
+    expect(await landing('/konto?linked=authentik')).toBe('settings-nav-security')
+  })
+
+  it('a tab of the settings of before', async () => {
+    answers['GET /api/v1/settings/push'] = { devices: 0, key: '', contact: '', contact_used: '', known: [], hosts: [] }
+    expect(await landing('/einstellungen?tab=push')).toBe('settings-nav-general')
+    expect(await landing('/settings/api')).toBe('settings-nav-general')
+  })
+
+  it('a member sent to a server slug of before lands on the settings\' start', async () => {
+    auth.me = { ...operator, role: 'member', profile: { ...operator.profile, deadlines: false } }
+    expect(await landing('/settings/ai-setup')).toBe('settings-nav-profile')
   })
 })
 

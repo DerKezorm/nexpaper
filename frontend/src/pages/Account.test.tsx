@@ -101,6 +101,7 @@ beforeEach(async () => {
     'GET /api/v1/auth/sessions': [],
     'GET /api/v1/locales': [],
     'GET /api/v1/api-keys': { allowed: false, keys: [] },
+    'GET /api/v1/connections/keys': listing(false),
     'GET /api/v1/devices': [],
     'GET /api/v1/push': { key: '', devices: [] },
     'GET /api/v1/ai': { provider: 'none', to: '', model: '', mine: true, allowed: true, available: false },
@@ -115,6 +116,22 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
+/** The account's keys as the key module lists them (`GET /api/v1/connections/keys`, schluessel 1.0.0) with nexpaper's
+ * kind: read or upload, 30, 90, 365 days or never, a year from the start, never for a key that only uploads. */
+function listing(api: boolean, keys: unknown[] = []) {
+  return {
+    app: 'nexpaper', api, mcp: null, programs: false, api_path: '/api/v1', mcp_path: null, keys_wait: false, warn_days: 7, address: 'https://paper.example.com',
+    kinds: [{
+      id: 'api', prefix: 'npk_', creatable: true, editable: true, rights: ['read', 'upload'], default_right: 'read', options: [], areas: null, areas_required: false,
+      expiry_days: [30, 90, 365, null], default_days: 365, default_days_by_right: { upload: null }, max_keys: 20, count: keys.length, name_max: 100,
+    }],
+    keys,
+  }
+}
+function keyOf(id: number, name: string, right: string, prefix: string) {
+  return { id, kind: 'api', name, right, options: {}, areas: null, prefix, created_at: '2026-10-08T10:00:00Z', last_used_at: null, expires_at: null, expired: false, expiring: false, blocked: false, legacy: null, program: false }
+}
+
 /** The names in the group "Mein Konto" of the settings' navigation, in their order. */
 function accountAreas(): (string | undefined)[] {
   return [...box.querySelectorAll('[aria-labelledby="settings-group-account"] a')].map((item) => item.textContent?.trim())
@@ -127,7 +144,8 @@ function current(): string | undefined {
 describe('the areas of my account', () => {
   it('are those of nexnotes in its order, then nexpaper\'s own, and the profile opens first', async () => {
     await show('/settings')
-    expect(accountAreas()).toEqual(['Profil', 'Sicherheit', 'Darstellung', 'Verbindungen', 'Hochladen', 'Erinnerungen', 'KI'])
+    // Plan "Einstellungen": Profil, Sicherheit, Darstellung, nexpaper's own (Hochladen, KI), Benachrichtigungen, Verbindungen.
+    expect(accountAreas()).toEqual(['Profil', 'Sicherheit', 'Darstellung', 'Hochladen', 'KI', 'Benachrichtigungen', 'Verbindungen'])
     expect(current()).toBe('Profil')
     expect(box.querySelector('h1')!.textContent).toBe('Profil')
     // "Über nexpaper" at the end, outside the groups, as "Über nexnotes".
@@ -137,7 +155,16 @@ describe('the areas of my account', () => {
   it('stand in the address, and the addresses of before lead to their area', async () => {
     await show('/konto?tab=devices')
     expect(current()).toBe('Verbindungen')
-    expect(box.textContent).toContain('Gerät koppeln')
+    expect(box.querySelector('[data-testid="settings-area-connections"]')).toBeTruthy()
+    expect(box.textContent).toContain('iPhone oder iPad verbinden')
+    act(() => root.unmount())
+    box.remove()
+    // The slug of before, "Erinnerungen", leads to "Benachrichtigungen" (E1); the deadlines' own cards have their test.
+    auth.me = { ...baseMe, profile: { ...baseMe.profile, deadlines: false } }
+    await show('/settings/reminders')
+    expect(current()).toBe('Benachrichtigungen')
+    expect(box.querySelector('[data-testid="settings-area-notifications"]')).toBeTruthy()
+    auth.me = baseMe
     act(() => root.unmount())
     box.remove()
     await show('/konto?tab=nonsense')
@@ -151,19 +178,24 @@ describe('the areas of my account', () => {
   it('come in English too, with the same seven', async () => {
     await changeLanguage('en', false)
     await show('/settings')
-    expect(accountAreas()).toEqual(['Profile', 'Security', 'Appearance', 'Connections', 'Upload', 'Reminders', 'AI'])
+    expect(accountAreas()).toEqual(['Profile', 'Security', 'Appearance', 'Upload', 'AI', 'Notifications', 'Connections'])
   })
 
   it("lay out Security as the shared account module's parts in its order, and sign out everywhere else after a question", async () => {
     auth.me = { ...baseMe, password_changed_at: '2026-11-20T08:00:00Z' }
     await show('/settings/security')
-    // The module's parts (PAGES.security) in its order, nexpaper's own (the providers) after them.
-    const parts = [...box.querySelectorAll('[id^="security-"]')].map((part) => part.id).filter((id) => /^security-[A-Za-z]+$/.test(id))
-    expect(parts).toEqual(['security-password', 'security-secondFactor', 'security-recoveryCodes', 'security-passkeys', 'security-sessions', 'security-newSignInMail'])
-    expect(box.querySelector('#security-password')!.textContent).toContain('Zuletzt geändert am 20.11.2026')
-    const card = box.querySelector<HTMLElement>('#security-sessions')!
+    // One card "Sicherheit" (konten 1.1.0, as nexnotes), the module's parts (PAGES.security) as its boxes in its order.
+    const security = box.querySelector<HTMLElement>('[data-card="security"]')!
+    expect(security.querySelector('h2')!.textContent).toBe('Sicherheit')
+    const parts = [...security.querySelectorAll('[data-testid]')].map((part) => part.getAttribute('data-testid'))
+    const order = ['password-row', 'second-factor', 'recovery-codes-part', 'passkeys-part', 'sessions-part', 'security-newSignInMail']
+    expect(parts.filter((id) => order.includes(id!))).toEqual(order)
+    expect(box.querySelector('[data-testid="password-row"]')!.textContent).toContain('Zuletzt geändert am 20.11.2026')
+    const card = box.querySelector<HTMLElement>('[data-testid="sessions-part"]')!
     expect(card.textContent).toContain('Angemeldete Geräte')
-    await click(button('Überall sonst abmelden', card))
+    const everywhere = button('Überall sonst abmelden', card)!
+    expect([everywhere.dataset.kind, everywhere.dataset.icon]).toEqual(['danger', 'LogOut'])
+    await click(everywhere)
     expect(calls.some((call) => call.url === '/api/v1/auth/logout-all')).toBe(false)
     await click(button('Überall sonst abmelden', document.body.querySelector<HTMLElement>('[role="dialog"]')!))
     expect(calls.some((call) => call.url === '/api/v1/auth/logout-all')).toBe(true)
@@ -172,19 +204,22 @@ describe('the areas of my account', () => {
   it('lock the own AI switch while no AI is set up, say why, and lead the operator there', async () => {
     auth.me = { ...baseMe, role: 'operator' }
     await show('/settings/ai')
-    const own = box.querySelector<HTMLInputElement>('[role="switch"][aria-label="KI-Vorschläge für meine Dokumente"]')!
+    const own = field('KI-Vorschläge für meine Dokumente')!
+    expect([own.type, own.getAttribute('role')]).toEqual(['checkbox', null])
     expect(own.disabled).toBe(true)
     expect(own.checked).toBe(false)
     const note = box.querySelector('[data-ai-none]')!
     expect(note.textContent).toContain('Es ist keine KI eingerichtet.')
-    expect(note.querySelector('a')!.getAttribute('href')).toBe('/settings/ai-setup')
+    // To the operator's area of the AI, called "KI-Anbieter" now (E10).
+    expect(note.querySelector('a')!.getAttribute('href')).toBe('/settings/ai-provider')
   })
 
   it('let the own AI switch work once the operator set one up', async () => {
     answers['GET /api/v1/ai'] = { provider: 'local', to: 'http://ollama:11434', model: 'llama3.1:8b', mine: true, allowed: true, available: true }
     answers['PUT /api/v1/me/preferences'] = { ...baseMe.profile, ai: false }
     await show('/settings/ai')
-    const own = box.querySelector<HTMLInputElement>('[role="switch"][aria-label="KI-Vorschläge für meine Dokumente"]')!
+    const own = field('KI-Vorschläge für meine Dokumente')!
+    expect(own.type).toBe('checkbox')
     expect(own.disabled).toBe(false)
     expect(own.checked).toBe(true)
     expect(box.querySelector('[data-ai-none]')).toBeNull()
@@ -194,7 +229,14 @@ describe('the areas of my account', () => {
 
   it('end the profile with signing out, the one place for it', async () => {
     await show('/settings/profile')
-    expect(box.querySelector('[data-testid="sign-out-card"]')!.textContent).toContain('Abmelden')
+    const card = box.querySelector('[data-testid="sign-out-card"]')!
+    expect(card.querySelector('[data-card="sign-out"]')).toBeTruthy()
+    // The module's sentence with nexpaper's word for its things (konten 1.1.0, `SignOutCard`).
+    expect(card.textContent).toContain('Beendet deine Sitzung in diesem Browser. Deine Dokumente bleiben, wie sie sind.')
+    expect(button('Abmelden', card)).toBeTruthy()
+    // The last card of the profile.
+    const cards = [...box.querySelectorAll('[data-card]')].map((item) => item.getAttribute('data-card'))
+    expect(cards.at(-1)).toBe('sign-out')
   })
 })
 
@@ -204,13 +246,16 @@ describe('the mail address', () => {
     answers['PUT /api/v1/me/profile'] = { ...baseMe, email: 'old@example.com', email_confirmed: true, email_pending: 'new@example.com' }
     await show()
     expect(field('E-Mail')!.value).toBe('old@example.com')
-    expect(box.querySelector('[data-testid="mail-state"]')!.textContent).toBe('Mailadresse bestätigt')
+    // A confirmed address needs no box (konten 1.1.0, E23).
+    expect(box.querySelector('[data-testid="email-unconfirmed"]')).toBeNull()
     // The shared account module's profile: one "Speichern" for all; a new address asks for the password once.
     expect(button('Speichern')!.disabled).toBe(true)
     await type(field('E-Mail'), 'new@example.com')
     await click(button('Speichern'))
     expect(calls.some((call) => call.method === 'PUT' && call.url === '/api/v1/me/profile')).toBe(false)
-    await type(field('Aktuelles Passwort', lastDialog()) ?? lastDialog().querySelector<HTMLInputElement>('input[type="password"]'), 'the own password')
+    // The password field in the account module's word.
+    expect(field('Passwort', lastDialog())!.type).toBe('password')
+    await type(field('Passwort', lastDialog()), 'the own password')
     await click(button('Speichern', lastDialog()))
     expect(calls.find((call) => call.method === 'PUT' && call.url === '/api/v1/me/profile')!.body).toEqual({ email: 'new@example.com', password: 'the own password' })
     expect(auth.setMe).toHaveBeenCalled()
@@ -227,13 +272,18 @@ describe('the mail address', () => {
     expect(calls.some((call) => call.method === 'DELETE' && call.url === '/api/v1/me/email/pending')).toBe(true)
   })
 
-  it('marks an address nobody confirmed and offers "Per Link bestätigen"', async () => {
-    auth.me = { ...baseMe, email: 'typed@example.com', email_confirmed: false, mail_links: true }
+  it('marks an address nobody confirmed and offers "Link schicken"', async () => {
+    auth.me = { ...baseMe, email: 'typed@example.com', email_confirmed: false, mail_links: true, email_needs_proof: true }
     answers['POST /api/v1/me/email/prove'] = { ...baseMe, email: 'typed@example.com', email_confirmed: false, email_pending: 'typed@example.com' }
     await show()
-    expect(box.querySelector('[data-testid="mail-state"]')!.textContent).toContain('Mailadresse nicht bestätigt')
-    // The module's button (konten 0.3.10, profiles.prove_email): the link goes to the address there is.
-    await click(button('Per Link bestätigen'))
+    // The module's box (konten 1.1.0, `UnconfirmedEmailBox`, where the server says `email_needs_proof`, E23).
+    const unconfirmed = box.querySelector<HTMLElement>('[data-testid="email-unconfirmed"]')!
+    expect(unconfirmed.textContent).toContain('Adresse noch nicht bestätigt')
+    expect(unconfirmed.textContent).toContain('typed@example.com')
+    const send = button('Link schicken', unconfirmed)!
+    expect([send.dataset.kind, send.dataset.size, send.dataset.icon]).toEqual(['secondary', 'sm', 'Send'])
+    // The link goes to the address there is (profiles.prove_email).
+    await click(send)
     expect(calls.some((call) => call.method === 'POST' && call.url === '/api/v1/me/email/prove')).toBe(true)
     expect(auth.setMe).toHaveBeenCalled()
   })
@@ -250,8 +300,8 @@ describe('the mail address', () => {
 })
 
 describe('devices and apps', () => {
-  /** The open dialog, inside the page (the settings draw it there). */
-  const dialog = () => box.querySelector<HTMLElement>('[role="dialog"]')
+  /** The open dialog (the kit's dialogs stand outside the page's box). */
+  const dialog = () => document.body.querySelector<HTMLElement>('[role="dialog"]')
   async function choose(select: HTMLSelectElement | null | undefined, value: string): Promise<void> {
     expect(select).toBeTruthy()
     const setter = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value')!.set!
@@ -261,8 +311,12 @@ describe('devices and apps', () => {
     })
     await idle()
   }
-  const expiry = () => [...dialog()!.querySelectorAll('label')].find((item) => item.textContent?.startsWith('Ablauf'))!.querySelector('select')!
-  const right = (name: string) => [...dialog()!.querySelectorAll('label')].find((item) => item.textContent?.startsWith(name))!.querySelector<HTMLInputElement>('input[type="radio"]')!
+  /** The key module's fields of its dialog (schluessel 1.0.0). */
+  const expiry = () => dialog()!.querySelector<HTMLSelectElement>('[data-testid="key-expiry"]')!
+  const right = (value: 'read' | 'upload') => dialog()!.querySelector<HTMLButtonElement>(`[data-testid="key-right-${value}"]`)!
+  const made = () => calls.find((call) => call.method === 'POST' && call.url === '/api/v1/connections/keys')
+  /** The connections in the plan's order (Verbindungen 1, 2, 4, 5). */
+  const cards = () => [...box.querySelectorAll('[data-testid="settings-area-connections"] section[data-card]')].map((card) => card.getAttribute('data-card'))
 
   it('pairs a device by a code shown as a QR code in a dialog, and lists it once the device took it', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true })
@@ -273,17 +327,25 @@ describe('devices and apps', () => {
       }
       answers['GET /api/v1/devices/pairing'] = { state: 'open', expires_at: null, device: null }
       await show('/konto?tab=devices')
-      const card = box.querySelector<HTMLElement>('#devices')!
-      expect(card.textContent).toContain('Geräte')
+      const card = box.querySelector<HTMLElement>('[data-card="devices"]')!
+      expect(card.querySelector('h2')!.textContent).toBe('Geräte')
       expect(card.textContent).toContain('iPhone und iPad mit der nexpaper-App und eigene Programme.')
       expect(card.querySelector('[data-testid="devices-none"]')!.textContent).toBe('Noch kein Gerät gekoppelt.')
-      // As in nexnotes: one accent button, the code in a dialog.
-      expect(box.querySelector('[data-testid="pairing-code"]')).toBeNull()
-      await click(button('Gerät koppeln', card))
+      // As in nexnotes: one primary button "iPhone oder iPad verbinden", the code in a window.
+      expect(dialog()).toBeNull()
+      const pair = button('iPhone oder iPad verbinden', card)!
+      expect([pair.dataset.kind, pair.dataset.icon]).toEqual(['primary', 'Smartphone'])
+      await click(pair)
       const shown = dialog()!.querySelector('[data-testid="pairing-code"]')!
       expect(shown.textContent).toContain('Mit dem Gerät scannen. Der Code gilt 5 Minuten und nur einmal.')
-      expect(shown.textContent).toContain('Oder von Hand: Adresse https://paper.example.com, Code KRAF-T7Q2-K9XW')
+      expect(shown.textContent).toContain('Oder von Hand:')
+      // Address and code in the kit's rows to copy.
+      expect(shown.querySelector<HTMLInputElement>('[data-testid="pairing-server"] input')!.value).toBe('https://paper.example.com')
+      expect(shown.querySelector<HTMLInputElement>('[data-testid="pairing-text"] input')!.value).toBe('KRAF-T7Q2-K9XW')
       expect(dialog()!.querySelector('img')!.getAttribute('alt')).toBe('QR-Code zum Koppeln')
+      // It shows a code and asks meanwhile: Escape leaves it open (ui `dismissable`, E38).
+      await act(async () => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })))
+      expect(dialog()).toBeTruthy()
       answers['GET /api/v1/devices/pairing'] = { state: 'used', expires_at: null, device: { id: 'a'.repeat(32), name: 'iPhone von jule', prefix: 'npd_AbCd', created_at: '2026-10-08T10:00:00Z', last_used_at: null, via: 'qr' } }
       answers['GET /api/v1/devices'] = [{ id: 'a'.repeat(32), name: 'iPhone von jule', prefix: 'npd_AbCd', created_at: '2026-10-08T10:00:00Z', last_used_at: null, via: 'qr' }]
       await act(async () => vi.advanceTimersByTime(2100))
@@ -303,11 +365,11 @@ describe('devices and apps', () => {
       answers['POST /api/v1/devices/pairing'] = { code: 'KRAF-T7Q2-K9XW', expires_at: new Date(Date.now() + 300_000).toISOString(), server: 'https://paper.example.com', link: '', qr_svg: '<svg/>' }
       answers['POST /api/v1/devices/pairing/cancel'] = 204
       await show('/konto?tab=devices')
-      await click(button('Gerät koppeln'))
+      await click(button('iPhone oder iPad verbinden'))
       await click(button('Schließen', dialog()!.querySelector('[data-testid="pairing-dialog"]')!))
       expect(calls.some((call) => call.method === 'POST' && call.url === '/api/v1/devices/pairing/cancel')).toBe(true)
       expect(dialog()).toBeNull()
-      await click(button('Gerät koppeln'))
+      await click(button('iPhone oder iPad verbinden'))
       answers['GET /api/v1/devices/pairing'] = { state: 'expired', expires_at: null, device: null }
       await act(async () => vi.advanceTimersByTime(2100))
       await idle()
@@ -329,8 +391,12 @@ describe('devices and apps', () => {
     const row = box.querySelector<HTMLElement>('[data-testid="paired-device"]')!
     expect(row.textContent).toContain('von einem anderen Gerät hinzugefügt')
     const sent = () => calls.some((call) => call.method === 'DELETE' && call.url === `/api/v1/devices/${id}`)
-    await click(button('iPad von jule trennen', row))
-    expect(document.body.querySelector('[role="dialog"]')!.textContent).toContain('„iPad von jule“ trennen?')
+    const end = button('iPad von jule trennen', row)!
+    // Small and red in the row, with words (ui 1.1.0).
+    expect([end.dataset.kind, end.dataset.size, end.textContent]).toEqual(['danger', 'sm', 'Trennen'])
+    await click(end)
+    // The name stands isolated from the words around it (`iso`), as everywhere a person's text is said.
+    expect(document.body.querySelector('[role="dialog"]')!.textContent!.replace(/[\u2068\u2069]/g, '')).toContain('„iPad von jule“ trennen?')
     expect(sent()).toBe(false)
     await click(button('Abbrechen', document.body.querySelector<HTMLElement>('[role="dialog"]')!))
     expect(sent()).toBe(false)
@@ -345,6 +411,7 @@ describe('devices and apps', () => {
   it('makes a key that only uploads for the iPhone shortcut, once, and shows the address and the header to copy', async () => {
     answers['GET /api/v1/shortcut'] = { link: '', address: 'https://paper.example.com', upload_url: 'https://paper.example.com/api/v1/documents?source=share' }
     answers['GET /api/v1/api-keys'] = { allowed: true, keys: [] }
+    answers['GET /api/v1/connections/keys'] = listing(true)
     answers['POST /api/v1/api-keys'] = {
       key: { id: 5, name: 'iPhone-Kurzbefehl', scope: 'upload', prefix: 'npk_Xy12', created_at: '2026-10-08T10:00:00Z', last_used_at: null, expires_at: null, blocked: false },
       secret: 'npk_' + 'k'.repeat(43),
@@ -354,15 +421,16 @@ describe('devices and apps', () => {
     expect(steps.textContent).toContain('Aktion „Inhalte von URL abrufen“')
     expect(box.querySelector('[data-testid="shortcut-link"]')).toBeNull()
     expect(box.querySelector('[data-testid="shortcut-warning"]')!.textContent).toContain('Trag deinen Token nie in einen Kurzbefehl ein, den du mit anderen teilst')
-    answers['GET /api/v1/api-keys'] = { allowed: true, keys: [(answers['POST /api/v1/api-keys'] as { key: unknown }).key] }
+    answers['GET /api/v1/connections/keys'] = listing(true, [keyOf(5, 'iPhone-Kurzbefehl', 'upload', 'npk_Xy12')])
+    // The old way of the shortcut's key stays (nexpaper-ios and the shortcut must not notice).
     await click(button('Token für den Kurzbefehl'))
     expect(calls.find((call) => call.method === 'POST' && call.url === '/api/v1/api-keys')!.body).toEqual({ name: 'iPhone-Kurzbefehl', days: null, scope: 'upload' })
     expect(calls.some((call) => call.method === 'POST' && call.url === '/api/v1/devices')).toBe(false)
     const shown = box.querySelector('[data-testid="shortcut-key"]')!
     const values = [...shown.querySelectorAll('input')].map((input) => input.value)
     expect(values).toEqual(['https://paper.example.com/api/v1/documents?source=share', 'Bearer npk_' + 'k'.repeat(43)])
-    // The list of keys shows it at once.
-    expect(box.querySelector('[data-testid="api-key"]')!.textContent).toContain('iPhone-Kurzbefehl')
+    // The list of keys (the module's card) shows it at once.
+    expect(box.querySelector('[data-card="api-keys"] [data-testid="key-row"]')!.textContent).toContain('iPhone-Kurzbefehl')
     await click(button('Fertig', shown))
     expect(box.textContent).not.toContain('k'.repeat(43))
   })
@@ -372,7 +440,7 @@ describe('devices and apps', () => {
     answers['GET /api/v1/api-keys'] = { allowed: false, keys: [] }
     await show('/konto?tab=devices')
     expect(box.querySelector('[data-testid="shortcut-off"]')!.textContent).toContain('API-Token hat der Betreiber nicht freigegeben')
-    // The switch stands under General now, with the other switches for all accounts.
+    // The switch stands under General (Schnittstellen) now.
     expect(box.querySelector('[data-testid="shortcut-off"] a')!.getAttribute('href')).toBe('/settings/general')
     expect(button('Token für den Kurzbefehl')).toBeUndefined()
   })
@@ -385,160 +453,139 @@ describe('devices and apps', () => {
     expect(box.querySelector('[data-testid="shortcut-steps"]')!.textContent).toContain('Auf dem iPhone „Kurzbefehl laden“ antippen und hinzufügen.')
   })
 
-  it('stands in the order of nexnotes, devices before keys, then nexpaper\'s own', async () => {
+  it('stands in the order of the plan: devices, installing, nexpaper\'s own, then the keys', async () => {
     answers['GET /api/v1/shortcut'] = { link: '', address: 'https://paper.example.com', upload_url: 'https://paper.example.com/api/v1/documents?source=share' }
+    answers['GET /api/v1/phone/shortcut-link'] = { link: '' }
     await show('/konto?tab=devices')
-    const cards = [...box.querySelectorAll('[data-testid="account-connections"] > section')].map((card) => card.id)
-    expect(cards.indexOf('devices')).toBeLessThan(cards.indexOf('api-keys'))
-    expect(cards.indexOf('api-keys')).toBeLessThan(cards.indexOf('shortcut'))
+    // The operator sees the card of the shared shortcut too (from the area "API" of before); no MCP card (E27).
+    expect(cards()).toEqual(['devices', 'install', 'shortcut', 'shortcut-link', 'api-keys'])
+    act(() => root.unmount())
+    box.remove()
+    auth.me = { ...baseMe, role: 'member' }
+    await show('/settings/connections')
+    expect(cards()).toEqual(['devices', 'install', 'shortcut', 'api-keys'])
   })
 
   it('keeps API keys off until the operator allows them, and says where', async () => {
     await show('/konto?tab=devices')
-    expect(box.querySelector('[data-testid="api-keys-off"]')!.textContent).toContain('API-Token sind noch nicht freigegeben.')
-    expect(box.querySelector('[data-testid="api-keys-off"] a')!.getAttribute('href')).toBe('/settings/general')
-    expect(button('Neuer API-Token')!.disabled).toBe(true)
-  })
-
-  it('lets the operator allow API keys right there, after asking what it means', async () => {
-    answers['PUT /api/v1/settings'] = { api_keys_allowed: true }
-    await show('/konto?tab=devices')
-    await click(button('Jetzt freigeben'))
-    const asked = document.querySelector('[role="dialog"]')!
-    expect(asked.textContent).toContain('Danach kann jede Person auf diesem Server unter Mein Konto Tokens anlegen.')
-    expect(asked.textContent).toContain('jederzeit wieder ausschalten')
-    // Nothing was sent before the answer.
-    expect(calls.some((call) => call.method === 'PUT')).toBe(false)
-    answers['GET /api/v1/api-keys'] = { allowed: true, keys: [] }
-    await click(button('Freigeben', asked as HTMLElement))
-    expect(calls.find((call) => call.method === 'PUT' && call.url === '/api/v1/settings')!.body).toEqual({ api_keys_allowed: true })
-    expect(box.querySelector('[data-testid="api-keys-off"]')).toBeNull()
-    expect(button('Neuer API-Token')!.disabled).toBe(false)
-  })
-
-  it('asks first and sends nothing when the operator says no', async () => {
-    await show('/konto?tab=devices')
-    await click(button('Jetzt freigeben'))
-    await click(button('Abbrechen', document.querySelector<HTMLElement>('[role="dialog"]')!))
-    expect(calls.some((call) => call.method === 'PUT')).toBe(false)
-    expect(box.querySelector('[data-testid="api-keys-off"]')).toBeTruthy()
+    const off = box.querySelector('[data-card="api-keys"] [data-testid="api-keys-off"]')!
+    expect(off.textContent).toContain('Der Betreiber hat die Programmschnittstelle abgeschaltet.')
+    // The operator is told where the switch is (Server › Allgemein › Schnittstellen).
+    expect(off.textContent).toContain('Einschalten unter Server › Allgemein › Schnittstellen.')
+    expect(button('Neuer API-Schlüssel')!.disabled).toBe(true)
   })
 
   it('offers no way to allow API keys to somebody who is not the operator', async () => {
     auth.me = { ...baseMe, role: 'member' }
     await show('/konto?tab=devices')
-    expect(box.querySelector('[data-testid="api-keys-off"]')!.textContent).toContain('Der Betreiber hat API-Token nicht freigegeben.')
+    const off = box.querySelector('[data-testid="api-keys-off"]')!
+    expect(off.textContent).toContain('Der Betreiber hat die Programmschnittstelle abgeschaltet.')
+    expect(off.textContent).not.toContain('Einschalten unter')
     expect(button('Jetzt freigeben')).toBeUndefined()
   })
 
-  it('has one button for a new key, with what it may as two cards to choose, and says what an upload key may do', async () => {
-    answers['GET /api/v1/api-keys'] = { allowed: true, keys: [] }
+  it('has one button for a new key, with what it may as a choice of two, and says what an upload key may do', async () => {
+    answers['GET /api/v1/connections/keys'] = listing(true)
     await show('/konto?tab=devices')
-    expect(button('Token zum Hochladen (für Scanner und Apps)')).toBeUndefined()
-    expect(box.querySelector('[data-testid="api-keys-upload-note"]')!.textContent).toContain('legt Dokumente nur in einen Eingang: in den deines Ziel-Tresors oder, wenn das Programm einen anderen nennt, in den eines Tresors, in dem du ablegen darfst')
-    // As nexnotes' card: the address for programs, how they send the key, and the documentation.
-    expect(box.textContent).toContain(`Adresse für Programme: ${window.location.origin}/api/v1`)
-    expect(box.textContent).toContain('Programme schicken den Token als „Authorization: Bearer …“.')
-    expect([...box.querySelectorAll('a')].find((a) => a.textContent === 'API-Dokumentation')!.getAttribute('href')).toBe('/api/v1/docs')
-    await click(button('Neuer API-Token'))
-    expect(dialog()!.textContent).toContain('Nur lesen')
-    expect(dialog()!.textContent).toContain('Nur hochladen')
+    const card = box.querySelector<HTMLElement>('[data-card="api-keys"]')!
+    // nexpaper's word in the module's line ("mit deinen Dokumenten").
+    expect(card.textContent).toContain('mit deinen Dokumenten arbeiten')
+    // The address for programs, how they send the key, and the description of the interface.
+    expect(card.querySelector<HTMLInputElement>('[data-testid="api-keys-address"] input')!.value).toBe('https://paper.example.com/api/v1')
+    expect(card.textContent).toContain('Programme schicken den Schlüssel als „Authorization: Bearer …“.')
+    expect(card.querySelector('[data-testid="api-keys-docs"]')!.getAttribute('href')).toBe('/api/v1/docs')
+    const add = button('Neuer API-Schlüssel', card)!
+    expect([add.dataset.kind, add.dataset.icon]).toEqual(['primary', 'Plus'])
+    await click(add)
+    expect(right('read').textContent).toBe('Nur lesen')
+    expect(right('upload').textContent).toBe('Nur hochladen')
+    expect(right('read').getAttribute('aria-checked')).toBe('true')
+    // nexpaper's sentence of each right (words.rightHints).
+    expect(dialog()!.textContent).toContain('Dokumente, Tresore und Suche lesen, so weit dein Konto darf.')
+    await click(right('upload'))
     expect(dialog()!.textContent).toContain('legt Dokumente in einen Eingang und liest nichts')
-    expect(right('Nur lesen').checked).toBe(true)
   })
 
   it('makes a key that is shown once, with its header line, and lists only its first characters after', async () => {
-    answers['GET /api/v1/api-keys'] = { allowed: true, keys: [] }
-    answers['POST /api/v1/api-keys'] = {
-      key: { id: 1, name: 'nexdeck', scope: 'read', prefix: 'npk_AbCd', created_at: '2026-10-08T10:00:00Z', last_used_at: null, expires_at: null, blocked: false },
-      secret: 'npk_' + 's'.repeat(43),
-    }
+    answers['GET /api/v1/connections/keys'] = listing(true)
+    answers['POST /api/v1/connections/keys'] = { key: keyOf(1, 'nexdeck', 'read', 'npk_AbCd'), secret: 'npk_' + 's'.repeat(43) }
     await show('/konto?tab=devices')
-    await click(button('Neuer API-Token'))
+    await click(button('Neuer API-Schlüssel'))
     await type(field('Name', dialog()!), 'nexdeck')
-    answers['GET /api/v1/api-keys'] = { allowed: true, keys: [(answers['POST /api/v1/api-keys'] as { key: unknown }).key] }
-    await click(button('Token anlegen', dialog()!))
-    expect(calls.find((call) => call.method === 'POST' && call.url === '/api/v1/api-keys')!.body).toEqual({ name: 'nexdeck', days: 365, scope: 'read' })
+    answers['GET /api/v1/connections/keys'] = listing(true, [keyOf(1, 'nexdeck', 'read', 'npk_AbCd')])
+    await click(dialog()!.querySelector<HTMLElement>('[data-testid="key-submit"]')!)
+    expect(made()!.body).toEqual(expect.objectContaining({ kind: 'api', name: 'nexdeck', right: 'read', days: 365 }))
     expect(dialog()).toBeNull()
-    const shown = box.querySelector('[data-testid="api-key-shown"]')!
+    const shown = box.querySelector('[data-testid="key-made"]')!
     expect(shown.textContent).toContain('„nexdeck“ angelegt')
-    expect(shown.textContent).toContain('Kopiere den Token jetzt. Er wird nur dieses eine Mal angezeigt.')
-    expect(shown.textContent).toContain('Authorization: Bearer npk_' + 's'.repeat(43))
-    await click(button('Fertig'))
+    expect(shown.textContent).toContain('Kopiere den Schlüssel jetzt. Er wird nur dieses eine Mal angezeigt; nexpaper speichert nur eine Prüfsumme.')
+    expect(shown.querySelector<HTMLInputElement>('[data-testid="key-header"] input')!.value).toBe('Authorization: Bearer npk_' + 's'.repeat(43))
+    await click(button('Fertig', shown as HTMLElement))
     expect(box.textContent).not.toContain('s'.repeat(43))
-    expect(box.querySelector('[data-testid="api-key"]')!.textContent).toContain('npk_AbCd')
+    expect(box.querySelector('[data-testid="key-row"]')!.textContent).toContain('npk_AbCd')
   })
 
-  it('offers a year as the default lifetime, says why, and still lets the key run without an end', async () => {
-    answers['GET /api/v1/api-keys'] = { allowed: true, keys: [] }
-    answers['POST /api/v1/api-keys'] = {
-      key: { id: 3, name: 'forever', scope: 'read', prefix: 'npk_Ever', created_at: '2026-10-08T10:00:00Z', last_used_at: null, expires_at: null, blocked: false },
-      secret: 'npk_' + 'e'.repeat(43),
-    }
+  it('offers a year as the default lifetime, and still lets the key run without an end', async () => {
+    answers['GET /api/v1/connections/keys'] = listing(true)
+    answers['POST /api/v1/connections/keys'] = { key: keyOf(3, 'forever', 'read', 'npk_Ever'), secret: 'npk_' + 'e'.repeat(43) }
     await show('/konto?tab=devices')
-    await click(button('Neuer API-Token'))
-    expect(dialog()!.textContent).toContain('Ein Token, der nie abläuft, ist der, an den sich niemand mehr erinnert')
+    await click(button('Neuer API-Schlüssel'))
     expect(expiry().value).toBe('365')
-    expect([...expiry().options].map((option) => option.textContent)).toEqual(['365 Tage', '90 Tage', '30 Tage', 'Ohne Ablauf'])
+    expect([...expiry().options].map((option) => option.textContent)).toEqual(['30 Tage', '90 Tage', '1 Jahr', 'Nie'])
     await type(field('Name', dialog()!), 'forever')
     await choose(expiry(), 'never')
-    await click(button('Token anlegen', dialog()!))
-    expect(calls.find((call) => call.method === 'POST' && call.url === '/api/v1/api-keys')!.body).toEqual({ name: 'forever', days: null, scope: 'read' })
+    await click(dialog()!.querySelector<HTMLElement>('[data-testid="key-submit"]')!)
+    expect(made()!.body).toEqual(expect.objectContaining({ name: 'forever', days: null, right: 'read' }))
   })
 
   it('offers no end as the default for a key that only uploads, and a year for one that reads; both stay a choice', async () => {
-    answers['GET /api/v1/api-keys'] = { allowed: true, keys: [] }
-    answers['POST /api/v1/api-keys'] = {
-      key: { id: 4, name: 'Scanner', scope: 'upload', prefix: 'npk_Sc12', created_at: '2026-10-08T10:00:00Z', last_used_at: null, expires_at: null, blocked: false },
-      secret: 'npk_' + 'c'.repeat(43),
-    }
+    answers['GET /api/v1/connections/keys'] = listing(true)
+    answers['POST /api/v1/connections/keys'] = { key: keyOf(4, 'Scanner', 'upload', 'npk_Sc12'), secret: 'npk_' + 'c'.repeat(43) }
     await show('/konto?tab=devices')
-    await click(button('Neuer API-Token'))
-    await click(right('Nur hochladen'))
+    await click(button('Neuer API-Schlüssel'))
+    await click(right('upload'))
     expect(expiry().value).toBe('never')
-    expect(dialog()!.textContent).toContain('läuft er von sich aus nicht ab')
-    // The person's own pick is kept when the kind of key changes afterwards; a pick of none is not overridden.
+    // The person's own pick is kept when the kind of key changes afterwards.
     await choose(expiry(), '365')
     expect(expiry().value).toBe('365')
-    await click(right('Nur lesen'))
+    await click(right('read'))
     expect(expiry().value).toBe('365')
-    await click(right('Nur hochladen'))
+    await click(right('upload'))
     await type(field('Name', dialog()!), 'Scanner')
-    await click(button('Token anlegen', dialog()!))
-    expect(calls.find((call) => call.method === 'POST' && call.url === '/api/v1/api-keys')!.body).toEqual({ name: 'Scanner', days: 365, scope: 'upload' })
+    await click(dialog()!.querySelector<HTMLElement>('[data-testid="key-submit"]')!)
+    expect(made()!.body).toEqual(expect.objectContaining({ name: 'Scanner', days: 365, right: 'upload' }))
   })
 
-  it('makes a key for uploading, with the command that uploads and the limits', async () => {
-    answers['GET /api/v1/api-keys'] = { allowed: true, keys: [] }
-    answers['POST /api/v1/api-keys'] = {
-      key: { id: 2, name: 'Scanner im Flur', scope: 'upload', prefix: 'npk_Up12', created_at: '2026-10-08T10:00:00Z', last_used_at: null, expires_at: null, blocked: false },
-      secret: 'npk_' + 'u'.repeat(43),
-    }
+  it('makes a key for uploading, and lists it as one that only uploads', async () => {
+    answers['GET /api/v1/connections/keys'] = listing(true)
+    answers['POST /api/v1/connections/keys'] = { key: keyOf(2, 'Scanner im Flur', 'upload', 'npk_Up12'), secret: 'npk_' + 'u'.repeat(43) }
     await show('/konto?tab=devices')
-    expect(box.textContent).toContain('Grenzen je Token: 120 Anfragen in der Minute, 50 Uploads in der Stunde.')
-    await click(button('Neuer API-Token'))
-    await click(right('Nur hochladen'))
-    expect(right('Nur hochladen').checked).toBe(true)
+    await click(button('Neuer API-Schlüssel'))
+    await click(right('upload'))
+    expect(right('upload').getAttribute('aria-checked')).toBe('true')
     await type(field('Name', dialog()!), 'Scanner im Flur')
-    answers['GET /api/v1/api-keys'] = { allowed: true, keys: [(answers['POST /api/v1/api-keys'] as { key: unknown }).key] }
-    await click(button('Token anlegen', dialog()!))
-    expect(calls.find((call) => call.method === 'POST' && call.url === '/api/v1/api-keys')!.body).toEqual({ name: 'Scanner im Flur', days: null, scope: 'upload' })
-    expect(box.querySelector('[data-testid="api-key-shown"]')!.textContent).toContain('-F file=@Rechnung.pdf')
+    answers['GET /api/v1/connections/keys'] = listing(true, [keyOf(2, 'Scanner im Flur', 'upload', 'npk_Up12')])
+    await click(dialog()!.querySelector<HTMLElement>('[data-testid="key-submit"]')!)
+    expect(made()!.body).toEqual(expect.objectContaining({ kind: 'api', name: 'Scanner im Flur', days: null, right: 'upload' }))
     await click(button('Fertig'))
-    expect(box.querySelector('[data-testid="api-key"]')!.textContent).toContain('nur hochladen')
+    expect(box.querySelector('[data-testid="key-row"]')!.textContent).toContain('Nur hochladen')
   })
 })
 
 describe('the look', () => {
   it('keeps light or dark and the view of the archive with the account', async () => {
-    answers['PUT /api/v1/me/preferences'] = { ...baseMe.profile, mode: 'dark' }
+    answers['PUT /api/v1/me/theme'] = { theme: 'dark' }
     await show('/konto?tab=looks')
-    expect(box.textContent).toContain('Aussehen')
+    // First the card "Aussehen" of every app (konten 1.1.0), then nexpaper's own "Archiv".
+    expect([...box.querySelectorAll('section[data-card]')].map((card) => card.getAttribute('data-card'))).toEqual(['appearance', 'archive-look'])
+    expect(box.querySelector('[data-card="appearance"] h2')!.textContent).toBe('Aussehen')
     expect(box.textContent).toContain('Darstellung des Archivs')
-    await click(button('Dunkel'))
-    expect(calls.find((call) => call.url === '/api/v1/me/preferences')!.body).toEqual({ mode: 'dark' })
+    const dark = [...box.querySelectorAll<HTMLElement>('[data-card="appearance"] [role="radio"]')].find((item) => item.textContent === 'Dunkel')!
+    await click(dark)
+    // Kept at the account on every device (`PUT /api/v1/me/theme`, E5).
+    expect(calls.find((call) => call.url === '/api/v1/me/theme')!.body).toEqual({ theme: 'dark' })
     answers['PUT /api/v1/me/preferences'] = { ...baseMe.profile, view: 'grid' }
-    await click(button('Kacheln'))
+    await click([...box.querySelectorAll<HTMLElement>('[data-card="archive-look"] [role="radio"]')].find((item) => item.textContent === 'Kacheln'))
     expect(calls.filter((call) => call.url === '/api/v1/me/preferences').at(-1)!.body).toEqual({ view: 'grid' })
     // There is one accent and no palette to choose.
     expect(box.textContent).not.toMatch(/Salbei|Terrakotta|Pflaume|Altrosa|Tinte/)
@@ -547,7 +594,9 @@ describe('the look', () => {
   it('has the phone start under Upload', async () => {
     await show('/konto?tab=upload')
     expect(box.textContent).toContain('Auf dem Handy mit dem Schnell-Upload starten')
-    expect(box.querySelector('[role="switch"]')!.getAttribute('aria-checked')).toBe('true')
+    const start = field('Auf dem Handy mit dem Schnell-Upload starten')!
+    expect([start.type, start.checked]).toEqual(['checkbox', true])
+    expect(box.querySelector('[role="switch"]')).toBeNull()
   })
 
   it('chooses where uploads go among the vaults one may add to', async () => {

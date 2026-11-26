@@ -18,7 +18,8 @@
     "copy": "Copy",
     "copied": "Copied",
     "save": "Save",
-    "done": "Done"
+    "done": "Done",
+    "delete": "Delete"
   },
   "settings": {
     "title": "Settings",
@@ -128,13 +129,18 @@
       "upload": {
         "title": "Upload",
         "text": "Where your uploads go, where the phone starts, your inputs and upload requests."
+      },
+      "aiProvider": {
+        "text": "Which provider makes suggestions when filing, and within which limits."
       }
     },
     "groups": {
       "account": "My account",
       "server": "Server"
     },
-    "jump": "Page of the settings"
+    "jump": "Page of the settings",
+    "things": "documents",
+    "thingsDative": "documents"
   },
   "auth": {
     "name": "Name",
@@ -378,7 +384,7 @@
       "takeAddress": "Take it",
       "addressTaken": "The address is your account's now. Confirm it under Profile, then it counts for documents by mail too."
     },
-    "keysWait": "Devices and API tokens work only once you set up a second factor.",
+    "keysWait": "Devices and API keys work only once you set up a second factor.",
     "keysWaitLink": "Set up a second factor",
     "signOut": {
       "title": "Sign out",
@@ -736,7 +742,10 @@
     "logRequest": "No. / account",
     "logMessage": "Message",
     "logRequestHint": "Show only this request",
-    "documentsFact": "Documents"
+    "documentsFact": "Documents",
+    "backupHolds": "A backup holds the database (accounts, vaults, assignments, recognised text, notes, history, settings) and the server's key, not the documents themselves: they lie as files in /data/dokumente and belong in the server's usual file backup. With the key it also holds the access for mail and AI and the addresses of open links, so keep it protected, like a password. nexpaper builds the search index anew after a restore.",
+    "whatYouSee": "As the operator you see names, usernames, mail addresses, roles, how somebody signs in, when an account was last here and how many documents and how much storage it has, but never the documents in other people's vaults, their recognised text, their notes or their passwords.",
+    "limitText": "Once the limit is reached, nexpaper takes no new files of this account and says so at the upload. What is there stays."
   },
   "errors": {
     "ai_not_allowed": "Your operator has not allowed the AI for your account.",
@@ -1072,8 +1081,8 @@
     "title": "Devices",
     "text": "iPhone and iPad with the nexpaper app, and programs of your own. Each device has a key of its own; disconnecting blocks it at once.",
     "none": "No device paired yet.",
-    "connect": "Pair a device",
-    "dialogTitle": "Pair a device",
+    "connect": "Connect iPhone or iPad",
+    "dialogTitle": "Connect iPhone or iPad",
     "disconnect": "Disconnect",
     "disconnectNamed": "Disconnect {{name}}"
   },
@@ -1128,7 +1137,9 @@
       "readHint": "Read documents, vaults and the search, as far as your account may. It cannot change anything.",
       "upload": "Upload only",
       "uploadHint": "For a scanner, a script or the shortcut: puts documents into an inbox and reads nothing."
-    }
+    },
+    "keyUploadNote": "A key for uploading only puts documents into an inbox: the one of your target vault or, when the program names another, the one of a vault you may add to. It cannot read, change or delete anything.",
+    "keyLimits": "Limits per key: 120 requests a minute, 50 uploads an hour. Wrong keys count like wrong passwords."
   },
   "rights": {
     "read": {
@@ -1333,7 +1344,8 @@
       "saved": "Saved.",
       "invalid": "The numbers must lie in the allowed range.",
       "cache": "Cache for page pictures (MB)",
-      "cacheHint": "When it grows past this, nexpaper clears the pictures that were not used for the longest time. They are made again when needed."
+      "cacheHint": "When it grows past this, nexpaper clears the pictures that were not used for the longest time. They are made again when needed.",
+      "perAccount": "You set the storage of each account under “Accounts”."
     },
     "disk": {
       "title": "How the files lie on the disk",
@@ -2758,7 +2770,8 @@
     "uses": "nexpaper takes",
     "part": "{{name}} {{size}}",
     "bar": "nexpaper takes {{own}}, {{used}} of {{total}} on the drive are in use",
-    "diskFree": "{{free}} of {{total}} still free on the drive"
+    "diskFree": "{{free}} of {{total}} still free on the drive",
+    "originalsName": "originals"
   },
   "order": {
     "title": "Organise",
@@ -3196,8 +3209,8 @@
       "trashed_one": "nexpaper put one document in the trash, its keeping time was over. It can be restored there for 30 days.",
       "trashed_other": "nexpaper put {{count}} documents in the trash, their keeping time was over. They can be restored there for 30 days."
     },
-    "remindedHow": "You are reminded the way you set it under <account>My account, Reminders</account>.",
-    "datesNote": "Everybody who may change things in the vault is reminded, each the way they set it under <account>My account, Reminders</account>.",
+    "remindedHow": "You are reminded the way you set it under <account>My account, Notifications</account>.",
+    "datesNote": "Everybody who may change things in the vault is reminded, each the way they set it under <account>My account, Notifications</account>.",
     "muted": "muted",
     "mutedTitle": "You muted the reminders of this vault.",
     "saved": "Saved.",
@@ -3496,7 +3509,8 @@
     },
     "shareNote": "The original is protected by a password. Whoever opens the link gets the opened copy, without the password.",
     "shareNoteRestricted": "The original is locked against printing or changes. Whoever opens the link gets the opened copy, without that lock.",
-    "shareNoteAlso": "A chosen document has a protected original. Whoever opens the link gets its opened copy, without the password or lock."
+    "shareNoteAlso": "A chosen document has a protected original. Whoever opens the link gets its opened copy, without the password or lock.",
+    "rename": "Rename"
   },
   "mailText": {
     "toggle": "Take mails without an attachment as a document",
@@ -3622,5 +3636,16 @@
     "search": "Search",
     "searchKey": "Ctrl K",
     "manageVaults": "Manage vaults"
+  },
+  "install": {
+    "title": "Install on this device",
+    "text": "Installed, nexpaper starts like an app: in its own window without the browser's bar, with its own icon.",
+    "button": "Install",
+    "asked": "The browser asked. If you agreed, you find nexpaper among your apps.",
+    "ios": "On iPhone and iPad: Share › Add to Home Screen.",
+    "installed": "nexpaper runs as an installed app on this device already.",
+    "safari": "In Safari on the Mac: File › Add to Dock.",
+    "firefox": "Firefox cannot install web apps. Open nexpaper in another browser for it, such as Chrome, Edge or Safari.",
+    "other": "If your browser offers no button here, installing is in its menu, such as “Install app” or “Add to Home screen”."
   }
 }

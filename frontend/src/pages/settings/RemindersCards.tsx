@@ -1,5 +1,6 @@
 /**
- * My account, Reminders: how and when the person hears of deadlines, and for which vaults.
+ * My account › Notifications, nexpaper's own cards after "Auf welchem Weg" (plan "Einstellungen"): whether the person
+ * uses deadlines, how and when they hear of them, how early, for which vaults, and a preview.
  * Each person sets it for themselves; who is reminded at all is everybody who may change things in the vault. A change
  * is saved at once. Mail (and the weekly overview, which is a mail) is greyed out with its reason when it cannot go.
  */
@@ -9,12 +10,14 @@ import { Trans, useTranslation } from 'react-i18next'
 
 import { authApi, deadlinesApi, remindersApi, type Deadline, type Me, type ReminderLead, type Reminders, type RemindersChange } from '../../api/client'
 import { LogoMark } from '../../components/Logo'
-import { useConfirm } from '../../components/useConfirm'
 import { VaultIcon } from '../../components/VaultIcon'
 import { usesDeadlines, weekday } from '../../lib/deadlines'
 import { useSay } from '../../lib/say'
 import { useAuth } from '../../state/auth'
-import { Button, Card, Feedback, Segment, SubHead, Toggle, useAction } from './ui'
+import { Box, Button, Card, CheckboxRow, Notice, Segment, SelectField } from '../../vendor/nexui'
+import { useAction } from './actions'
+import { Outcome } from './Outcome'
+import { useAsk } from './useAsk'
 
 const LEADS: (keyof ReminderLead)[] = ['due', 'cancel', 'warranty']
 
@@ -35,7 +38,7 @@ export function RemindersPart({ me }: { me: Me }) {
   const { t } = useTranslation()
   const say = useSay()
   const { setMe } = useAuth()
-  const { ask, dialog } = useConfirm()
+  const { ask, dialog } = useAsk()
   const [r, setR] = useState<Reminders | null>(null)
   const action = useAction()
   const probe = useAction()
@@ -65,6 +68,7 @@ export function RemindersPart({ me }: { me: Me }) {
       text: t('reminders.use.askText'),
       confirm: t('reminders.use.askConfirm'),
       danger: false,
+      icon: 'Check',
       run: () => switchDeadlines(false),
     })
 
@@ -72,11 +76,13 @@ export function RemindersPart({ me }: { me: Me }) {
   if (!on) {
     return (
       <>
-        <Card icon={CalendarClock} title={t('reminders.use.offTitle')} text={t('reminders.use.offText')}>
-          <Button primary onClick={() => void action.run(() => switchDeadlines(true))} busy={action.busy}>
-            {t('reminders.use.offButton')}
-          </Button>
-          <Feedback problem={action.problem} values={action.values} />
+        <Card id="deadlines-off" icon={CalendarClock} title={t('reminders.use.offTitle')} subtitle={t('reminders.use.offText')}>
+          <div>
+            <Button kind="primary" icon="Check" onClick={() => void action.run(() => switchDeadlines(true))} busy={action.busy} testId="deadlines-on">
+              {t('reminders.use.offButton')}
+            </Button>
+          </div>
+          <Outcome problem={action.problem} values={action.values} />
         </Card>
         {dialog}
       </>
@@ -107,15 +113,15 @@ export function RemindersPart({ me }: { me: Me }) {
   const mailWhy = r.mail_problem ? t(`reminders.mailWhy.${r.mail_problem}`) : ''
   return (
     <>
-      <Card icon={CalendarClock} title={t('reminders.use.title')} text={t('reminders.use.text')}>
-        <Toggle label={t('reminders.use.label')} hint={t('reminders.use.hint')} checked onChange={askOff} />
+      <Card id="deadlines-use" icon={CalendarClock} title={t('reminders.use.title')} subtitle={t('reminders.use.text')}>
+        <CheckboxRow label={t('reminders.use.label')} hint={t('reminders.use.hint')} checked onChange={askOff} />
       </Card>
 
-      <Card icon={Bell} title={t('reminders.how.title')} text={t('reminders.how.text')}>
-        <SubHead title={t('reminders.when')} />
+      <Card id="deadlines-how" icon={Bell} title={t('reminders.how.title')} subtitle={t('reminders.how.text')}>
         <div>
           <Segment
-            label={t('reminders.rhythmLabel')}
+            label={t('reminders.when')}
+            hints={[t(`reminders.rhythmHint.${r.rhythm}`)]}
             value={r.rhythm}
             onChange={(rhythm) => save({ rhythm })}
             options={[
@@ -124,13 +130,11 @@ export function RemindersPart({ me }: { me: Me }) {
               { value: 'both', label: t('reminders.rhythm.both'), disabled: !mailOk && r.rhythm !== 'both' },
             ]}
           />
-          <p className="mt-2 text-sm text-muted">{t(`reminders.rhythmHint.${r.rhythm}`)}</p>
         </div>
-        {!mailOk && r.rhythm === 'single' && <p className="text-xs text-muted">{mailWhy}</p>}
-        <SubHead title={t('reminders.where')} />
-        <div className="space-y-2">
+        {!mailOk && r.rhythm === 'single' && <p className="m-0 text-xs text-[var(--nexui-text-muted)]">{mailWhy}</p>}
+        <Box title={t('reminders.where')} testId="deadlines-where">
           {single && (
-            <Toggle
+            <CheckboxRow
               label={t('reminders.push')}
               hint={r.push_devices ? t('reminders.pushHint', { count: r.push_devices }) : t('reminders.pushNone')}
               checked={r.push}
@@ -138,7 +142,7 @@ export function RemindersPart({ me }: { me: Me }) {
             />
           )}
           {single && (
-            <Toggle
+            <CheckboxRow
               label={mailOk ? t('reminders.mailTo', { address: r.mail_address }) : t('reminders.mail')}
               hint={mailOk ? t('reminders.mailHint') : mailWhy}
               checked={r.mail}
@@ -148,54 +152,50 @@ export function RemindersPart({ me }: { me: Me }) {
           )}
           {weekly &&
             (mailOk ? (
-              <p className="flex items-center gap-2 rounded-xl border border-line bg-sheet-2/50 px-4 py-3 text-sm">
-                <Mail size={16} className="shrink-0 text-accent" aria-hidden />
+              <p className="m-0 flex items-center gap-2 text-sm">
+                <Mail size={16} className="shrink-0 text-[var(--nexui-accent-text)]" aria-hidden />
                 <span>
                   <Trans i18nKey="reminders.weeklyTo" values={{ address: r.mail_address }} components={{ b: <span className="font-semibold" /> }} />
                 </span>
               </p>
             ) : (
-              <p className="flex items-center gap-2 rounded-xl border border-line bg-sheet-2/50 px-4 py-3 text-sm text-warn">
-                <Mail size={16} className="shrink-0" aria-hidden /> {t('reminders.weeklyNot')} {mailWhy}
-              </p>
+              <Notice tone="warn">
+                <span className="inline-flex items-center gap-2">
+                  <Mail size={16} className="shrink-0" aria-hidden /> {t('reminders.weeklyNot')} {mailWhy}
+                </span>
+              </Notice>
             ))}
-          {single && !r.push && !(r.mail && mailOk) && <p className="text-sm font-semibold text-warn">{t('reminders.nothingWay')}</p>}
-        </div>
-        <div className="pt-1">
-          <Button onClick={test} busy={probe.busy}>
+          {single && !r.push && !(r.mail && mailOk) && <Notice tone="warn">{t('reminders.nothingWay')}</Notice>}
+        </Box>
+        <div>
+          <Button kind="secondary" icon="Send" onClick={test} busy={probe.busy} testId="reminders-test">
             {t('reminders.test')}
           </Button>
         </div>
-        <Feedback problem={action.problem ?? probe.problem} values={action.problem ? action.values : probe.values} />
+        <Outcome problem={action.problem ?? probe.problem} values={action.problem ? action.values : probe.values} />
       </Card>
 
       {single && (
-        <Card icon={Clock} title={t('reminders.early.title')} text={t('reminders.early.text', { zone: r.time_zone })}>
-          <div className="space-y-2">
-            {LEADS.map((key) => {
-              const label = t(`reminders.lead.${key}`)
-              return (
-                <div key={key} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-sheet-2/50 px-4 py-2.5 text-sm">
-                  <span className="font-semibold">{label}</span>
-                  <select value={r.lead[key]} onChange={(event) => save({ lead: { [key]: Number(event.target.value) } })} className="input h-9 w-auto" aria-label={t('reminders.leadAria', { label })}>
-                    {r.options[key].map((n) => (
-                      <option key={n} value={n}>
-                        {t('reminders.before', { count: n })}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )
-            })}
-            <Toggle label={t('reminders.sameDay')} hint={t('reminders.sameDayHint')} checked={r.same_day} onChange={(same_day) => save({ same_day })} />
+        <Card id="deadlines-early" icon={Clock} title={t('reminders.early.title')} subtitle={t('reminders.early.text', { zone: r.time_zone })}>
+          <div className="grid gap-3 sm:grid-cols-3">
+            {LEADS.map((key) => (
+              <SelectField
+                key={key}
+                label={t(`reminders.lead.${key}`)}
+                value={String(r.lead[key])}
+                onChange={(event) => save({ lead: { [key]: Number(event.target.value) } })}
+                options={r.options[key].map((n) => ({ value: String(n), label: t('reminders.before', { count: n }) }))}
+              />
+            ))}
           </div>
+          <CheckboxRow label={t('reminders.sameDay')} hint={t('reminders.sameDayHint')} checked={r.same_day} onChange={(same_day) => save({ same_day })} />
         </Card>
       )}
 
-      <Card icon={FolderLock} title={t('reminders.vaults.title')} text={t('reminders.vaults.text')}>
-        <div className="space-y-2">
+      <Card id="deadlines-vaults" icon={FolderLock} title={t('reminders.vaults.title')} subtitle={t('reminders.vaults.text')}>
+        <div className="flex flex-col gap-2">
           {r.vaults.map((v) => (
-            <Toggle
+            <CheckboxRow
               key={v.id}
               label={v.personal ? t('reminders.myVault') : v.name}
               hint={v.personal ? t('reminders.myVaultHint') : v.others ? t('reminders.othersToo') : t('reminders.onlyYou')}
@@ -204,11 +204,11 @@ export function RemindersPart({ me }: { me: Me }) {
             />
           ))}
           {r.shared > 0 && (
-            <Toggle label={t('reminders.shared')} hint={t('reminders.sharedHint', { count: r.shared })} checked={!r.muted_shared} onChange={(on) => save({ muted_shared: !on })} />
+            <CheckboxRow label={t('reminders.shared')} hint={t('reminders.sharedHint', { count: r.shared })} checked={!r.muted_shared} onChange={(on) => save({ muted_shared: !on })} />
           )}
         </div>
         {r.read_only.length > 0 && (
-          <p className="flex flex-wrap items-center gap-x-2 pt-1 text-sm text-muted">
+          <p className="m-0 flex flex-wrap items-center gap-x-2 text-sm text-[var(--nexui-text-muted)]">
             {t('reminders.readOnly')}
             {r.read_only.map((v) => (
               <span key={v.id} className="inline-flex items-center gap-1">
@@ -219,7 +219,7 @@ export function RemindersPart({ me }: { me: Me }) {
         )}
       </Card>
 
-      <Card icon={Eye} title={t('reminders.preview.title')} text={t('reminders.preview.text')}>
+      <Card id="deadlines-preview" icon={Eye} title={t('reminders.preview.title')} subtitle={t('reminders.preview.text')}>
         <Preview me={me} r={r} />
       </Card>
       {dialog}

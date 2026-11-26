@@ -16,7 +16,8 @@ import { ApiError, uploadRequestsApi, type RequestRules, type UploadRequestInfo 
 import { copyText } from '../lib/copy'
 import { dayInDays, daysUntil, shortDate } from '../lib/dates'
 import { iso, moment } from '../lib/say'
-import { Card, CopyLink, Feedback } from '../pages/settings/ui'
+import { CopyLink } from '../pages/settings/ui'
+import { Button as KitButton, Card as KitCard, CopyRow as KitCopyRow, Notice, Row, Rows } from '../vendor/nexui'
 import { Button } from './Button'
 import { Dialog } from './Dialog'
 import { useConfirm } from './useConfirm'
@@ -87,41 +88,45 @@ function RequestList({ state, say }: { state: Shared; say?: (text: string) => vo
         say?.(t('uploadRequest.withdrawn'))
       },
     })
-  if (state.items.length === 0) return <p className="text-sm text-muted">{t('uploadRequest.listEmpty')}</p>
+  if (state.items.length === 0) return <p className="m-0 text-sm text-[var(--nexui-text-muted)]">{t('uploadRequest.listEmpty')}</p>
   return (
     <>
-      <ul className="space-y-2" aria-label={t('uploadRequest.listTitle')} data-testid="request-list">
+      <Rows label={t('uploadRequest.listTitle')} testId="request-list">
         {state.items.map((item) => {
           const live = item.status === 'active'
           return (
-            <li key={item.id} className="rounded-xl bg-sheet-2/60 px-3 py-2 text-sm">
-              <div className="flex items-center gap-2">
-                <span className="min-w-0 flex-1 truncate font-semibold">
-                  <bdi>{item.name}</bdi>
+            <Row
+              key={item.id}
+              icon="Link"
+              name={<bdi>{item.name}</bdi>}
+              sub={
+                <>
+                  {t('uploadRequest.meta', { until: shortDate(item.until, i18n.language), received: item.received, count: item.max_files })}
+                  {item.last_used_at && ` · ${t('uploadRequest.lastUsed', { when: moment(item.last_used_at, i18n.language) })}`}
+                  {!live && ` · ${t(`uploadRequest.status.${item.status}`)}`}
+                  {shown?.id === item.id && (
+                    <span className="mt-2 block">
+                      <KitCopyRow value={shown.url} label={t('uploadRequest.copyHere')} />
+                    </span>
+                  )}
+                </>
+              }
+              action={
+                <span className="flex flex-wrap items-center gap-2">
+                  {live && (
+                    <KitButton kind="secondary" size="sm" icon="Copy" onClick={() => void copy(item)} aria-label={t('uploadRequest.copyFor', { name: item.name })}>
+                      {t('uploadRequest.copy')}
+                    </KitButton>
+                  )}
+                  <KitButton kind="danger" size="sm" icon="Undo2" onClick={() => withdraw(item)} aria-label={t('uploadRequest.withdrawFor', { name: item.name })}>
+                    {t('uploadRequest.withdraw')}
+                  </KitButton>
                 </span>
-                {live && (
-                  <button type="button" onClick={() => void copy(item)} className="text-xs font-semibold text-accent" aria-label={t('uploadRequest.copyFor', { name: item.name })}>
-                    {t('uploadRequest.copy')}
-                  </button>
-                )}
-                <button type="button" onClick={() => withdraw(item)} className="text-xs font-semibold text-muted hover:text-ink" aria-label={t('uploadRequest.withdrawFor', { name: item.name })}>
-                  {t('uploadRequest.withdraw')}
-                </button>
-              </div>
-              <p className="text-xs text-muted">
-                {t('uploadRequest.meta', { until: shortDate(item.until, i18n.language), received: item.received, count: item.max_files })}
-                {item.last_used_at && ` · ${t('uploadRequest.lastUsed', { when: moment(item.last_used_at, i18n.language) })}`}
-                {!live && ` · ${t(`uploadRequest.status.${item.status}`)}`}
-              </p>
-              {shown?.id === item.id && (
-                <div className="mt-2">
-                  <CopyLink value={shown.url} label={t('uploadRequest.copyHere')} />
-                </div>
-              )}
-            </li>
+              }
+            />
           )
         })}
-      </ul>
+      </Rows>
       {dialog}
     </>
   )
@@ -241,15 +246,15 @@ export function UploadRequestsCard() {
   const [open, setOpen] = useState(false)
   const [done, setDone] = useState<string | null>(null)
   return (
-    <Card icon={Inbox} title={t('uploadRequest.cardTitle')} text={t('uploadRequest.cardText')}>
+    <KitCard id="upload-requests" icon={Inbox} title={t('uploadRequest.cardTitle')} subtitle={t('uploadRequest.cardText')}>
       <RequestList state={state} say={setDone} />
       <div>
-        <Button variant="soft" size="sm" onClick={() => setOpen(true)}>
-          <Send size={14} aria-hidden /> {t('uploadRequest.button')}
-        </Button>
+        <KitButton kind="secondary" icon="Send" onClick={() => setOpen(true)} testId="request-open-card">
+          {t('uploadRequest.button')}
+        </KitButton>
       </div>
       <Problem state={state} />
-      <Feedback problem={null} done={done} />
+      {done && <Notice tone="ok">{done}</Notice>}
       {open && (
         <UploadRequestDialog
           onClose={() => {
@@ -259,6 +264,6 @@ export function UploadRequestsCard() {
           say={setDone}
         />
       )}
-    </Card>
+    </KitCard>
   )
 }

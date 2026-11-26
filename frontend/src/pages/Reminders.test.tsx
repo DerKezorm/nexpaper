@@ -1,6 +1,6 @@
 /**
- * My account, Reminders against a stand-in of the server: the four cards with the choices
- * from the start, a change goes out at once with only what changed, mail greyed out with its reason, the weekly overview
+ * My account › Notifications (before "Erinnerungen", whose address leads there) against a stand-in of the server: after
+ * the kit's "Auf welchem Weg" nexpaper's cards with the choices from the start, a change goes out at once with only what changed, mail greyed out with its reason, the weekly overview
  * alone, the test message; and the mark of a muted vault and the way to these choices on the deadlines page.
  */
 import { act } from 'react'
@@ -80,22 +80,36 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-const toggle = (label: string) => page.box.querySelector<HTMLButtonElement>(`[role="switch"][aria-label="${label}"]`)
-const cards = () => [...page.box.querySelectorAll('section h2')].map((h) => plain(h.textContent))
+/** The kit's box to tick (`CheckboxRow`, never a sliding switch) named by exactly its label. */
+const toggle = (label: string) => {
+  const named = [...page.box.querySelectorAll('label')].find((item) => item.textContent === label)
+  const box = named ? (document.getElementById(named.htmlFor) as HTMLInputElement | null) : null
+  if (box) expect([box.type, box.getAttribute('role')]).toEqual(['checkbox', null])
+  return box
+}
+const cards = () => [...page.box.querySelectorAll('section[data-card] h2')].map((h) => plain(h.textContent))
+/** The words of a field's label (the kit joins them by `for`). */
+const labelOf = (field: HTMLElement) => [...page.box.querySelectorAll('label')].find((item) => item.htmlFor === field.id)?.textContent
+/** The choices of "Wie früh": each a field of the kit with its label and value. */
+const leads = () =>
+  [...page.box.querySelectorAll<HTMLSelectElement>('[data-card="deadlines-early"] select')].map((select) => [labelOf(select), select.value])
+const NOTIFICATIONS = '/settings/notifications'
 
 describe('my account, reminders', () => {
   it('has the four cards with the choices from the start', async () => {
     await page.show(<SettingsRoutes />, '/konto?tab=erinnerungen')
-    expect(page.box.querySelector('[aria-current="page"][data-testid^="settings-nav-"]')!.textContent).toContain('Erinnerungen')
-    expect(cards()).toEqual(['Fristen verwenden', 'Wie du erinnert wirst', 'Wie früh', 'Welche Tresore', 'So sieht es aus'])
+    // The address of before leads to "Benachrichtigungen" (E1); the first card is the kit's "Auf welchem Weg", then nexpaper's.
+    expect(page.box.querySelector('[aria-current="page"][data-testid^="settings-nav-"]')!.textContent).toContain('Benachrichtigungen')
+    expect(page.box.querySelector('[data-testid="settings-area-notifications"]')).toBeTruthy()
+    expect(cards()).toEqual(['Auf welchem Weg', 'Fristen verwenden', 'Wie du erinnert wirst', 'Wie früh', 'Welche Tresore', 'So sieht es aus'])
+    expect([...page.box.querySelectorAll('section[data-card]')].map((card) => card.getAttribute('data-card'))).toEqual(['notify-ways', 'deadlines-use', 'deadlines-how', 'deadlines-early', 'deadlines-vaults', 'deadlines-preview'])
     expect(page.text).toContain('Je Frist eine Nachricht, so früh wie unten eingestellt.')
-    expect(toggle('Push aufs Handy und in den Browser')!.getAttribute('aria-checked')).toBe('true')
+    expect(toggle('Push aufs Handy und in den Browser')!.checked).toBe(true)
     expect(page.text).toContain('Auf 2 Geräten eingeschaltet. Tippen öffnet das Dokument.')
-    expect(toggle('Mail an jule@example.com')!.getAttribute('aria-checked')).toBe('false')
+    expect(toggle('Mail an jule@example.com')!.checked).toBe(false)
     expect(page.text).toContain('Um 8 Uhr morgens in deiner Zeitzone (Europe/Berlin).')
-    const leads = [...page.box.querySelectorAll<HTMLSelectElement>('[data-testid="account-reminders"] select')].map((s) => [s.getAttribute('aria-label'), s.value])
-    expect(leads).toEqual([['Rechnung fällig, wie früh', '3'], ['Letzter Kündigungstag, wie früh', '14'], ['Garantie läuft ab, wie früh', '30']])
-    expect(toggle('Mein Tresor')!.getAttribute('aria-checked')).toBe('true')
+    expect(leads()).toEqual([['Rechnung fällig', '3'], ['Letzter Kündigungstag', '14'], ['Garantie läuft ab', '30']])
+    expect(toggle('Mein Tresor')!.checked).toBe(true)
     expect(page.text).toContain('Auch die anderen mit Bearbeiten-Recht werden erinnert.')
     expect(page.text).toContain('Nur lesen, darum keine Erinnerungen:')
     expect(page.text).toContain('Tom (persönlich)')
@@ -113,33 +127,33 @@ describe('my account, reminders', () => {
 
   it('shows the documents that may go in the preview of the weekly overview, the number the server gives', async () => {
     answer({ may_go: 5 })
-    await page.show(<SettingsRoutes />, '/konto?tab=erinnerungen')
+    await page.show(<SettingsRoutes />, NOTIFICATIONS)
     expect(page.text).toContain('Darf weg')
     expect(page.text).toContain('Bei 5 Dokumenten ist die Aufbewahrungszeit um.')
     page.close()
     answer({ may_go: 1 })
-    await page.show(<SettingsRoutes />, '/konto?tab=erinnerungen')
+    await page.show(<SettingsRoutes />, NOTIFICATIONS)
     expect(page.text).toContain('Bei einem Dokument ist die Aufbewahrungszeit um.')
   })
 
   it('says in the preview what nexpaper put in the trash by itself in the last week', async () => {
-    await page.show(<SettingsRoutes />, '/konto?tab=erinnerungen')
+    await page.show(<SettingsRoutes />, NOTIFICATIONS)
     expect(page.text).not.toContain('hat nexpaper in den Papierkorb gelegt')
     page.close()
     answer({ trashed: 3 })
-    await page.show(<SettingsRoutes />, '/konto?tab=erinnerungen')
+    await page.show(<SettingsRoutes />, NOTIFICATIONS)
     expect(page.text).toContain('3 Dokumente hat nexpaper in den Papierkorb gelegt, ihre Aufbewahrungszeit war um. Dort lassen sie sich 30 Tage zurückholen.')
     page.close()
     answer({ trashed: 1 })
-    await page.show(<SettingsRoutes />, '/konto?tab=erinnerungen')
+    await page.show(<SettingsRoutes />, NOTIFICATIONS)
     expect(page.text).toContain('Ein Dokument hat nexpaper in den Papierkorb gelegt')
   })
 
   it('sends only what changed, at once', async () => {
-    await page.show(<SettingsRoutes />, '/konto?tab=erinnerungen')
+    await page.show(<SettingsRoutes />, NOTIFICATIONS)
     await page.click(toggle('Haushalt'))
     expect(server.called('PUT', '/api/v1/me/reminders')!.body).toEqual({ muted: [2] })
-    const due = page.box.querySelector<HTMLSelectElement>('select[aria-label="Rechnung fällig, wie früh"]')!
+    const due = [...page.box.querySelectorAll<HTMLSelectElement>('[data-card="deadlines-early"] select')].find((select) => labelOf(select) === 'Rechnung fällig')!
     await act(async () => {
       due.value = '7'
       due.dispatchEvent(new Event('change', { bubbles: true }))
@@ -152,11 +166,11 @@ describe('my account, reminders', () => {
 
   it('says why mail cannot go and offers no weekly overview then', async () => {
     answer({ mail_problem: 'no_server', mail_address: '' })
-    await page.show(<SettingsRoutes />, '/konto?tab=erinnerungen')
+    await page.show(<SettingsRoutes />, NOTIFICATIONS)
     const mail = toggle('Mail')!
     expect(mail.disabled).toBe(true)
     expect(page.text).toContain('Der Betreiber hat keinen Mailserver eingerichtet, darum geht das nicht.')
-    const weekly = [...page.box.querySelectorAll<HTMLButtonElement>('[role="radio"]')].find((b) => b.textContent === 'Einmal die Woche')!
+    const weekly = [...page.box.querySelectorAll<HTMLButtonElement>('[data-card="deadlines-how"] [role="radio"]')].find((b) => b.textContent === 'Einmal die Woche')!
     expect(weekly.disabled).toBe(true)
     await page.click(mail)
     expect(server.changes()).toEqual([])
@@ -164,41 +178,43 @@ describe('my account, reminders', () => {
 
   it('with the weekly overview alone shows where it goes and no single ways', async () => {
     answer({ rhythm: 'weekly' })
-    await page.show(<SettingsRoutes />, '/konto?tab=erinnerungen')
+    await page.show(<SettingsRoutes />, NOTIFICATIONS)
     expect(page.text).toContain('Die Wochenübersicht geht per Mail an jule@example.com.')
     expect(page.text).toContain('Montags um 8 Uhr eine Mail mit allem, was in dieser Woche ansteht.')
     expect(toggle('Push aufs Handy und in den Browser')).toBeNull()
-    expect(cards()).toEqual(['Fristen verwenden', 'Wie du erinnert wirst', 'Welche Tresore', 'So sieht es aus'])
+    expect(cards()).toEqual(['Auf welchem Weg', 'Fristen verwenden', 'Wie du erinnert wirst', 'Welche Tresore', 'So sieht es aus'])
   })
 
   it('warns when no single reminder can reach the person', async () => {
     answer({ push: false })
-    await page.show(<SettingsRoutes />, '/konto?tab=erinnerungen')
+    await page.show(<SettingsRoutes />, NOTIFICATIONS)
     expect(page.text).toContain('So bekommst du keine einzelnen Erinnerungen. Die Seite Fristen zeigt trotzdem alles.')
   })
 
   it('sends a test message', async () => {
-    await page.show(<SettingsRoutes />, '/konto?tab=erinnerungen')
-    await page.click(page.button('Testnachricht schicken'))
+    await page.show(<SettingsRoutes />, NOTIFICATIONS)
+    const test = page.button('Testnachricht schicken')!
+    expect([test.dataset.kind, test.dataset.icon]).toEqual(['secondary', 'Send'])
+    await page.click(test)
     expect(server.changes()).toEqual(['POST /api/v1/me/reminders/test'])
   })
 
   it('shows a refused change with its reason and the choices as they stand', async () => {
     server.fails['PUT /api/v1/me/reminders'] = { status: 409, code: 'mail_unavailable' }
-    await page.show(<SettingsRoutes />, '/konto?tab=erinnerungen')
+    await page.show(<SettingsRoutes />, NOTIFICATIONS)
     await page.click(toggle('Mail an jule@example.com'))
     expect(page.text).toContain('Erinnerungen per Mail brauchen einen Mailserver und eine bestätigte Adresse.')
-    expect(toggle('Mail an jule@example.com')!.getAttribute('aria-checked')).toBe('false')
+    expect(toggle('Mail an jule@example.com')!.checked).toBe(false)
   })
 
   it('comes in English too', async () => {
     await changeLanguage('en', false)
-    await page.show(<SettingsRoutes />, '/konto?tab=erinnerungen')
-    expect(cards()).toEqual(['Use deadlines', 'How you are reminded', 'How early', 'Which vaults', 'What it looks like'])
+    await page.show(<SettingsRoutes />, NOTIFICATIONS)
+    expect(cards()).toEqual(['Which way', 'Use deadlines', 'How you are reminded', 'How early', 'Which vaults', 'What it looks like'])
     expect(page.text).toContain('Cancel by Thu, Oct 22: Handyvertrag Telekom')
     page.close()
     answer({ may_go: 2 })
-    await page.show(<SettingsRoutes />, '/konto?tab=erinnerungen')
+    await page.show(<SettingsRoutes />, NOTIFICATIONS)
     expect(page.text).toContain('The keeping time of 2 documents is over.')
   })
 })
@@ -208,8 +224,8 @@ describe('deadlines on or off for the person', () => {
 
   it('is on from the start, with a switch at the top that asks before it switches off', async () => {
     server.answers['PUT /api/v1/me/preferences'] = { ...me.profile, deadlines: false }
-    await page.show(<SettingsRoutes />, '/konto?tab=erinnerungen')
-    expect(toggle('Fristen verwenden')!.getAttribute('aria-checked')).toBe('true')
+    await page.show(<SettingsRoutes />, NOTIFICATIONS)
+    expect(toggle('Fristen verwenden')!.checked).toBe(true)
     expect(page.text).toContain('Gilt nur für dich. Die anderen im Haushalt behalten ihre Einstellungen.')
     await page.click(toggle('Fristen verwenden'))
     await until(() => page.dialog)
@@ -232,14 +248,16 @@ describe('deadlines on or off for the person', () => {
   it('says that deadlines are off, with the way to switch them on again, and nothing else', async () => {
     auth.me = off
     server.answers['PUT /api/v1/me/preferences'] = { ...me.profile, deadlines: true }
-    await page.show(<SettingsRoutes />, '/konto?tab=erinnerungen')
-    expect(cards()).toEqual(['Fristen sind aus'])
+    await page.show(<SettingsRoutes />, NOTIFICATIONS)
+    expect(cards()).toEqual(['Auf welchem Weg', 'Fristen sind aus'])
     expect(page.text).toContain('Im Menü steht kein Punkt Fristen, du bekommst keine Erinnerungen und keine Wochenübersicht.')
     expect(page.text).toContain('Die Termine an den Dokumenten bleiben, und die anderen Personen sind nicht betroffen.')
     expect(toggle('Fristen verwenden')).toBeNull()
     expect(page.button('Testnachricht schicken')).toBeUndefined()
     // Switching on needs no question; it goes back to the choices.
-    await page.click(page.button('Fristen einschalten'))
+    const on = page.button('Fristen einschalten')!
+    expect([on.dataset.kind, on.dataset.icon]).toEqual(['primary', 'Check'])
+    await page.click(on)
     expect(server.called('PUT', '/api/v1/me/preferences')!.body).toEqual({ deadlines: true })
     expect(auth.setMe).toHaveBeenCalledWith(expect.objectContaining({ profile: expect.objectContaining({ deadlines: true }) }))
     auth.me = me
@@ -247,7 +265,7 @@ describe('deadlines on or off for the person', () => {
 
   it('shows a refusal of the server and stays as it is', async () => {
     server.fails['PUT /api/v1/me/preferences'] = { status: 422, code: 'bad_preference' }
-    await page.show(<SettingsRoutes />, '/konto?tab=erinnerungen')
+    await page.show(<SettingsRoutes />, NOTIFICATIONS)
     await page.click(toggle('Fristen verwenden'))
     await until(() => page.dialog)
     await page.inDialog('Ausschalten')
@@ -258,8 +276,8 @@ describe('deadlines on or off for the person', () => {
   it('reads the same in English', async () => {
     await changeLanguage('en', false)
     auth.me = off
-    await page.show(<SettingsRoutes />, '/konto?tab=erinnerungen')
-    expect(cards()).toEqual(['Deadlines are off'])
+    await page.show(<SettingsRoutes />, NOTIFICATIONS)
+    expect(cards()).toEqual(['Which way', 'Deadlines are off'])
     expect(page.button('Switch deadlines on')).toBeTruthy()
     auth.me = me
   })
@@ -271,7 +289,7 @@ describe('the deadlines page', () => {
     await page.show(<DeadlinesPage />, '/fristen')
     const rows = [...page.box.querySelectorAll('[data-testid="deadline"]')]
     expect(rows.map((row) => plain(row.textContent).includes('stumm'))).toEqual([true, false])
-    const link = [...page.box.querySelectorAll('a')].find((a) => a.textContent === 'Mein Konto, Erinnerungen')!
-    expect(link.getAttribute('href')).toBe('/settings/reminders')
+    const link = [...page.box.querySelectorAll('a')].find((a) => a.textContent === 'Mein Konto, Benachrichtigungen')!
+    expect(link.getAttribute('href')).toBe('/settings/notifications')
   })
 })

@@ -405,7 +405,9 @@ function SecondFactorSetup({ me, next }: { me: Me; next: string }) {
       <AuthFrame wide title={t('auth.codes.title')} text={t('auth.codes.text')}>
         <Problem code={problem} />
         <RecoveryCodes codes={codes} />
-        <KeepCodes codes={codes} account={me.name} className="mt-4" />
+        <div className="mt-4 flex flex-wrap gap-2">
+          <KeepCodes codes={codes} account={me.name} />
+        </div>
         <div className="mt-4">
           <button
             type="button"
