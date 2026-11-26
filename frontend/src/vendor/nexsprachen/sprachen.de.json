@@ -1,0 +1,33 @@
+{
+  "title": "Sprachen",
+  "hint": "{builtIn} sind eingebaut. Weitere als JSON-Datei hinzufügen, fehlende Texte fallen auf Englisch zurück.",
+  "hintOne": "{builtIn} ist eingebaut. Weitere als JSON-Datei hinzufügen, fehlende Texte fallen auf Englisch zurück.",
+  "builtIn": "eingebaut",
+  "textsOne": "ein Text",
+  "textsOther": "{count} Texte",
+  "template": "Vorlage herunterladen",
+  "code": "Sprachcode",
+  "upload": "Sprache hochladen",
+  "added": "Sprache hinzugefügt. Sie steht nach dem Neuladen in der Sprachauswahl.",
+  "errors": {
+    "not_found": "Diese Sprache gibt es nicht mehr.",
+    "locale_unusable": "Diese Sprachdatei geht nicht: {reason}.",
+    "locale_unusable_plain": "Diese Sprachdatei geht nicht.",
+    "too_large": "Die Datei ist größer als erlaubt ({max_kb} KB).",
+    "locale_not_saved": "Die Sprachdatei ließ sich nicht speichern. Platz und Rechte des Datenordners prüfen.",
+    "unknown": "Das ging gerade nicht. Gleich noch einmal versuchen."
+  },
+  "reasons": {
+    "code": "kein Sprachcode wie nl, pt-BR oder zh-Hant",
+    "not_utf8": "kein Text in UTF-8",
+    "not_json": "kein gültiges JSON",
+    "not_object": "ganz oben steht kein Objekt",
+    "too_deep": "tiefer als 8 Ebenen verschachtelt",
+    "not_text": "nur Texte und Gruppen von Texten sind erlaubt",
+    "key_invalid": "ein Schlüssel ist leer, länger als 120 Zeichen oder reserviert",
+    "no_texts": "sie enthält keine Texte",
+    "meta_invalid": "„_meta“ braucht einen Text „name“",
+    "too_large": "größer als 512 KB",
+    "not_a_file": "an ihrer Stelle liegt keine einfache Datei"
+  }
+}

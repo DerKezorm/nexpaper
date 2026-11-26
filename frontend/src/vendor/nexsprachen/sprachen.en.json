@@ -1,0 +1,33 @@
+{
+  "title": "Languages",
+  "hint": "{builtIn} are built in. Add more as a JSON file; missing texts fall back to English.",
+  "hintOne": "{builtIn} is built in. Add more as a JSON file; missing texts fall back to English.",
+  "builtIn": "built in",
+  "textsOne": "one text",
+  "textsOther": "{count} texts",
+  "template": "Download template",
+  "code": "Language code",
+  "upload": "Upload language",
+  "added": "Language added. It shows in the language menus after reloading.",
+  "errors": {
+    "not_found": "This language is no longer there.",
+    "locale_unusable": "This language file cannot be used: {reason}.",
+    "locale_unusable_plain": "This language file cannot be used.",
+    "too_large": "The file is larger than allowed ({max_kb} KB).",
+    "locale_not_saved": "The language file could not be saved. Check the space and the rights of the data folder.",
+    "unknown": "That did not work just now. Try again in a moment."
+  },
+  "reasons": {
+    "code": "not a language code such as nl, pt-BR or zh-Hant",
+    "not_utf8": "not text in UTF-8",
+    "not_json": "not valid JSON",
+    "not_object": "the top level is not an object",
+    "too_deep": "nested deeper than 8 levels",
+    "not_text": "only texts and groups of texts are allowed",
+    "key_invalid": "a key is empty, longer than 120 characters or reserved",
+    "no_texts": "it holds no texts",
+    "meta_invalid": "“_meta” needs a text “name”",
+    "too_large": "larger than 512 KB",
+    "not_a_file": "something other than a plain file is in its place"
+  }
+}

@@ -6,7 +6,7 @@ line-length = 120
 extend-exclude = [
     "app/vendor/nexoidc", "tests/nexoidc", "app/vendor/nexkonten", "tests/nexkonten", "app/vendor/nexpost",
     "tests/nexpost", "app/vendor/nexlog", "tests/nexlog", "app/vendor/nexsicherung", "tests/nexsicherung",
-    "app/vendor/nexschluessel", "tests/nexschluessel",
+    "app/vendor/nexschluessel", "tests/nexschluessel", "app/vendor/nexsprachen", "tests/nexsprachen",
 ]
 
 [tool.ruff.lint]

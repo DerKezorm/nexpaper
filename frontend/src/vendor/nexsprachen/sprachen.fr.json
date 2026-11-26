@@ -1,0 +1,33 @@
+{
+  "title": "Langues",
+  "hint": "Langues intégrées : {builtIn}. Ajoutez-en d’autres en fichier JSON ; les textes manquants s’affichent en anglais.",
+  "hintOne": "Langue intégrée : {builtIn}. Ajoutez-en d’autres en fichier JSON ; les textes manquants s’affichent en anglais.",
+  "builtIn": "intégrée",
+  "textsOne": "un texte",
+  "textsOther": "{count} textes",
+  "template": "Télécharger le modèle",
+  "code": "Code de langue",
+  "upload": "Envoyer la langue",
+  "added": "Langue ajoutée. Elle apparaît dans le choix de la langue après rechargement.",
+  "errors": {
+    "not_found": "Cette langue n’existe plus.",
+    "locale_unusable": "Ce fichier de langue est inutilisable : {reason}.",
+    "locale_unusable_plain": "Ce fichier de langue est inutilisable.",
+    "too_large": "Le fichier dépasse la taille permise ({max_kb} Ko).",
+    "locale_not_saved": "Le fichier de langue n’a pas pu être enregistré. Vérifiez la place et les droits du dossier de données.",
+    "unknown": "Cela n’a pas fonctionné. Réessayez dans un instant."
+  },
+  "reasons": {
+    "code": "ce n’est pas un code de langue comme nl, pt-BR ou zh-Hant",
+    "not_utf8": "ce n’est pas du texte en UTF-8",
+    "not_json": "ce n’est pas du JSON valide",
+    "not_object": "le niveau supérieur n’est pas un objet",
+    "too_deep": "imbriqué sur plus de 8 niveaux",
+    "not_text": "seuls des textes et des groupes de textes sont permis",
+    "key_invalid": "une clé est vide, dépasse 120 caractères ou est réservée",
+    "no_texts": "il ne contient aucun texte",
+    "meta_invalid": "« _meta » demande un texte « name »",
+    "too_large": "plus de 512 Ko",
+    "not_a_file": "autre chose qu’un simple fichier se trouve à sa place"
+  }
+}
