@@ -1,7 +1,7 @@
 {
   "apiKeys": {
     "title": "Clés d’API",
-    "hint": "Une clé d’API permet à un programme de travailler avec tes {things}, par exemple n8n, Home Assistant ou un script. Elle ne peut jamais plus que ton compte.",
+    "hint": "Une clé d’API permet à un programme de travailler avec tes {thingsDative}, par exemple n8n, Home Assistant ou un script. Elle ne peut jamais plus que ton compte.",
     "new": "Nouvelle clé d’API",
     "empty": "Pas encore de clé d’API.",
     "count": "{count} clés sur {max}",

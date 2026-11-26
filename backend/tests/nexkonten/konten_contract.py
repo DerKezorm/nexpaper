@@ -226,6 +226,12 @@ class StandardAdapter:
         with the app's own points in ``extra``."""
         raise NotImplementedError("APP: readiness")
 
+    def push_ready(self, account_id: Any) -> bool | None:
+        """APP (since E38): whether a push to ``account_id`` would go out now, with one subscription of the account
+        (the adapter makes one where the app needs it); None for an app without pushes or one that cannot tell (then
+        the contract test checks only that ``on_shut_out`` and ``on_back`` are called, not what the app does)."""
+        return None
+
 
 def konten_package(adapter: Any) -> ModuleType:
     package = importlib.import_module(adapter.package)

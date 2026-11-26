@@ -166,21 +166,25 @@ def overview(store: Store, config: AppConfig, now: datetime | None = None) -> li
     for key in store.all_keys():
         if key.account_id not in holders:
             holders[key.account_id] = store.holder(key.account_id)
-        holder = holders[key.account_id]
-        row = entry(key, config, None, moment)
-        row["areas"] = None if key.areas is None else len(key.areas)
-        row["account"] = (
-            {
-                "id": holder.id,
-                "name": holder.name,
-                "display_name": holder.display_name or holder.name,
-                "out": holder.out,
-            }
-            if holder
-            else {"id": key.account_id, "name": "", "display_name": "", "out": True}
-        )
-        rows.append(row)
+        rows.append(_operator_row(store, config, key, holders[key.account_id], moment))
     return rows
+
+
+def _operator_row(
+    store: Store, config: AppConfig, key: Key, holder: Holder | None, now: datetime | None = None
+) -> dict:
+    """A key as the operator's list shows it: the account, the number of areas, the app's own columns (``extra``), and
+    never the start of the key (since E36, as nexnotes had it: the operator does not see even the prefix)."""
+    row = entry(key, config, None, now)
+    del row["prefix"]
+    row["areas"] = None if key.areas is None else len(key.areas)
+    row["account"] = (
+        {"id": holder.id, "name": holder.name, "display_name": holder.display_name or holder.name, "out": holder.out}
+        if holder
+        else {"id": key.account_id, "name": "", "display_name": "", "out": True}
+    )
+    row["extra"] = dict(config.admin_extra(store, key)) if config.admin_extra is not None else {}
+    return row
 
 
 # --- an account's own keys ----------------------------------------------------------------------------------------
@@ -390,16 +394,7 @@ def unblock(store: Store, config: AppConfig, key_id: KeyId) -> dict:
 def _entry_of(store: Store, config: AppConfig, key_id: KeyId) -> dict:
     key = store.key(key_id)
     assert key is not None
-    holder = store.holder(key.account_id)
-    row = entry(key, config)
-    row["areas"] = None if key.areas is None else len(key.areas)
-    row["account"] = {
-        "id": key.account_id,
-        "name": holder.name if holder else "",
-        "display_name": (holder.display_name or holder.name) if holder else "",
-        "out": holder.out if holder else True,
-    }
-    return row
+    return _operator_row(store, config, key, store.holder(key.account_id))
 
 
 # --- a program presents a key -------------------------------------------------------------------------------------

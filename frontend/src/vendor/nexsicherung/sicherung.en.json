@@ -142,7 +142,8 @@
       "keep_invalid": "Between 1 and 365.",
       "wrong_password": "The password is wrong.",
       "unknown": "That did not work.",
-      "archive_password_short": "The file's password needs at least 8 characters."
+      "archive_password_short": "The file's password needs at least 8 characters.",
+      "restore_options_invalid": "These answers do not fit the questions of the restore."
     }
   }
 }

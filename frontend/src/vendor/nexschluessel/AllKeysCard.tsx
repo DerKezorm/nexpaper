@@ -1,11 +1,11 @@
 /**
  * Server › Accounts: the card "API-Schlüssel aller Konten" (KeyRound), for operators. A `Table` of account, name,
- * right, last use and the button: "Sperren" (danger `sm`, asks first) or "Entsperren" (secondary `sm`). Never the key
- * itself, never what it reached. Replaces nextime's line of counts, nextasks' table and nexdiary's card.
+ * right, last use, the app's own columns (`extra`, since E36) and the button: "Sperren" (danger `sm`, asks first) or
+ * "Entsperren" (secondary `sm`). Never the key itself, not even its start (since E36), never what it reached. Replaces nextime's line of counts, nextasks' table and nexdiary's card.
  *
  * Copied unchanged into frontend/src/vendor/nexschluessel/ by bauplaene/schluessel/tools/sync.py; changed only there.
  */
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState, type ReactNode } from 'react'
 
 import { Badge, Button, Card, ConfirmDialog, Notice, Table, useNexuiTexts } from '../nexui'
 import { useKeyTexts } from './hooks'
@@ -19,6 +19,7 @@ import {
   refusalText,
   rightLabel,
   type AdminColumn,
+  type AdminExtraColumn,
   type AdminKey,
   type AppWords,
   type KeyRequest,
@@ -31,10 +32,12 @@ export type AllKeysCardProps = {
   words?: AppWords
   language?: string
   when?: WhenFormat
+  /** Since E36: the app's own columns, before the button; each shows `row.extra[key]` unless it has its own `cell`. */
+  extra?: readonly AdminExtraColumn[]
   testId?: string
 }
 
-export function AllKeysCard({ request, base = KEYS_BASE, words, language, when = defaultWhen, testId = 'all-keys-card' }: AllKeysCardProps) {
+export function AllKeysCard({ request, base = KEYS_BASE, words, language, when = defaultWhen, extra = [], testId = 'all-keys-card' }: AllKeysCardProps) {
   const { texts, code } = useKeyTexts(language)
   const kit = useNexuiTexts()
   const [rows, setRows] = useState<AdminKey[] | null>(null)
@@ -65,7 +68,10 @@ export function AllKeysCard({ request, base = KEYS_BASE, words, language, when =
     }
   }
 
-  const cell = (row: AdminKey, column: AdminColumn) => {
+  const own = new Map(extra.map((column) => [column.key, column]))
+  const cell = (row: AdminKey, column: AdminColumn | string): ReactNode => {
+    const app = own.get(column)
+    if (app) return app.cell ? app.cell(row) : <span>{String(row.extra?.[app.key] ?? '')}</span>
     switch (column) {
       case 'account':
         return <span className="font-medium">{row.account.display_name || row.account.name}</span>
@@ -79,7 +85,6 @@ export function AllKeysCard({ request, base = KEYS_BASE, words, language, when =
               {row.blocked && <Badge tone="danger">{texts.key.blocked}</Badge>}
               {row.expired && <Badge tone="off">{texts.key.expired}</Badge>}
             </span>
-            {!row.program && <span className="font-mono text-[var(--nexui-text-muted)]">{row.prefix}…</span>}
           </span>
         )
       case 'right':
@@ -107,9 +112,13 @@ export function AllKeysCard({ request, base = KEYS_BASE, words, language, when =
         </Notice>
       )}
       {rows && (
-        <Table<AdminKey, AdminColumn>
+        <Table<AdminKey, string>
           label={texts.allKeys.title}
-          columns={ADMIN_COLUMNS.map((key) => ({ key, label: texts.columns[key], width: COLUMN_WIDTHS[key] }))}
+          columns={[
+            ...ADMIN_COLUMNS.filter((key) => key !== 'action').map((key) => ({ key: key as string, label: texts.columns[key], width: COLUMN_WIDTHS[key] })),
+            ...extra.map((column) => ({ key: column.key, label: column.label, width: column.width })),
+            { key: 'action', label: texts.columns.action, width: COLUMN_WIDTHS.action },
+          ]}
           rows={rows}
           cell={cell}
           rowKey={(row) => String(row.id)}
@@ -120,7 +129,7 @@ export function AllKeysCard({ request, base = KEYS_BASE, words, language, when =
       )}
       {asking && (
         <ConfirmDialog
-          title={fillKeys(texts.allKeys.askBlock, { name: asking.name ?? asking.prefix, account: asking.account.display_name || asking.account.name })}
+          title={fillKeys(texts.allKeys.askBlock, { name: asking.name ?? texts.allKeys.hidden, account: asking.account.display_name || asking.account.name })}
           text={texts.allKeys.askBlockText}
           confirm={{ label: texts.allKeys.block, kind: BUTTONS.block.kind, icon: BUTTONS.block.icon }}
           cancel={texts.key.cancel}

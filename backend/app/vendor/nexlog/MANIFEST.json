@@ -14,11 +14,11 @@
     "backend/tests/nexlog/test_nexlog_routes.py": "sha256-LHcD9eCiw/pUIrAxN1g1tGXLF+MKPD+5cKKLWv1tGRY=",
     "backend/tests/nexlog/test_nexlog_vendored.py": "sha256-rRMWWQdYK4ouVBjor0qYaoB65MrxWiQ+bz1fl4LuwQ0=",
     "backend/tests/nexlog/test_nexlog_writing.py": "sha256-w4RvFZvSlGTkSEPy4fGGNZRnxPcd0zNwi4yQfuuBCFY=",
-    "frontend/src/vendor/nexlog/LogCard.tsx": "sha256-1WKmafD04YK9osg2QYO4/ynYhGfWGWB1+BRZ8whyyTw=",
-    "frontend/src/vendor/nexlog/log.de.json": "sha256-dLTK+FRvGYyNRkZSDL+JhzsxahTcNgZxdCjTEmiDXsc=",
-    "frontend/src/vendor/nexlog/log.en.json": "sha256-tUrmSWstkrqrlXvFBP8ffTblnIPk9naddRClGWtZaNg=",
-    "frontend/src/vendor/nexlog/log.fr.json": "sha256-zF6Urojn7tiTnlUZtTL8bp4mGFrv7EuB/ZPIrmyWGWE=",
-    "frontend/src/vendor/nexlog/log.ts": "sha256-1KuRY175fETbCICnEmQ8jbQd2R+KuXMfsjwZQaS5xvY="
+    "frontend/src/vendor/nexlog/LogCard.tsx": "sha256-0K4w864N9PBouda/qqfdzmP7bsXeFj4ku5OhWbqiVpE=",
+    "frontend/src/vendor/nexlog/log.de.json": "sha256-TDdVyaBclTKwqu1x5CFwglaOgozYeaNp773TSmMVfE0=",
+    "frontend/src/vendor/nexlog/log.en.json": "sha256-tnqz4WRHypXj+KnLH/rV8ekLQiMSmp9ss2Lg/LCq3zY=",
+    "frontend/src/vendor/nexlog/log.fr.json": "sha256-ykFO4CV23hRrK2sLOvM8Oi7pITQrqMFJ4FwxBQz39yg=",
+    "frontend/src/vendor/nexlog/log.ts": "sha256-EOYg3W9KMdqS4Rrz/NcJgv/5xe4fqeO4Up+Df9QsIRQ="
   },
   "module": "log",
   "requires": {

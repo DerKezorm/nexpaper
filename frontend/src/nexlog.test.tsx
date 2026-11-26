@@ -1,3 +1,4 @@
+// Vorlage nexlog 1.0.0
 // @vitest-environment jsdom
 /**
  * The card "Log" of the module in the app: built from the ui kit (Segment, Table, Button, ConfirmDialog), the module's
@@ -55,11 +56,11 @@ const request: LogRequest = async <T,>(path: string, init: { method?: string; qu
   return ALL.slice(offset, offset + Number(init.query?.limit)) as T
 }
 
-function show(language = 'de'): void {
+function show(language = 'de', words: { things: string; thingsDative?: string } = { things: THINGS }): void {
   act(() =>
     root.render(
       <NexuiLanguage language={language}>
-        <LogCard request={request} base={BASE} things={THINGS} />
+        <LogCard request={request} base={BASE} {...words} />
       </NexuiLanguage>,
     ),
   )
@@ -94,6 +95,15 @@ afterEach(() => {
 })
 
 describe('the card Log', () => {
+  it('says "von" with the dative form of the app\'s word (since E34), the plain form without one', async () => {
+    show('de', { things: 'Kalender', thingsDative: 'Kalendern' })
+    await wait()
+    expect(find('[data-card="log"]').textContent).toContain('Nie Inhalte von Kalendern, Passwörter oder Schlüssel.')
+    show('de', { things: 'Kalender' })
+    await wait()
+    expect(find('[data-card="log"]').textContent).toContain('Nie Inhalte von Kalender, Passwörter oder Schlüssel.')
+  })
+
   it('is the card "Log" with its hint, the levels as a segment, the search, the level of detail and two buttons', async () => {
     show()
     await wait()

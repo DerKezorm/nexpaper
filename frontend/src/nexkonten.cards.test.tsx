@@ -1,3 +1,4 @@
+// Vorlage nexkonten 1.1.0
 // @vitest-environment jsdom
 /**
  * Since 1.1.0: the module's cards in the app (``SignInPage.tsx``, ``AccountCards.tsx``): built from the ui kit, in the
@@ -31,6 +32,7 @@ const OIDC: Record<string, string> = {
   'oidc.admin.addressChangeConfirm': 'authentik kennt noch {{address}}.',
   'oidc.admin.addressChangeHand_one': '{{count}} von Hand.',
   'oidc.admin.addressChangeHand_other': '{{count}} von Hand.',
+  'oidc.admin.trustsSecondFactor': 'Der Anbieter prüft den zweiten Faktor selbst',
 }
 
 function leaves(tree: Record<string, unknown>, prefix = ''): Record<string, string> {
@@ -187,6 +189,20 @@ describe('Server › Sign-in (konten 1.1.0)', () => {
     const boxes = [...document.querySelectorAll('[data-card="sign-in"] input[type="checkbox"]')] as HTMLInputElement[]
     expect(boxes.map((entry) => entry.disabled)).toEqual([true, true, false])
     expect(document.querySelector('[data-card="sign-in"]')?.textContent).toContain(t('account.ownSecondFactorFirst'))
+  })
+
+  it('names at the switch who is not affected: accounts whose provider checks the second factor itself (since E36)', () => {
+    const trusts = t('oidc.admin.trustsSecondFactor')
+    page()
+    const locked = document.querySelector('[data-card="sign-in"]')?.textContent ?? ''
+    expect(locked).toContain(`${t('account.ownSecondFactorFirst')} ${t('account.factorRequiredExemptLocked', { trusts })}`)
+    expect(locked).toContain('„Der Anbieter prüft den zweiten Faktor selbst“')
+    act(() => root.unmount())
+    root = createRoot(box)
+    page({ view: { ...VIEW, factor_required: false, factor_may_go_on: true } })
+    const open = document.querySelector('[data-card="sign-in"]')?.textContent ?? ''
+    expect(open).toContain(`${t('account.factorRequiredSwitchHint')} ${t('account.factorRequiredExempt', { trusts })}`)
+    expect(open).toContain('Konten von einem Anmeldeanbieter bringen dessen eigenen mit.')
   })
 
   it('asks for the password before the second factor goes off', async () => {

@@ -45,6 +45,10 @@ class AppConfig:
     #: A download asks for a password of its own and the app's ``download`` hook encrypts with it (nexmail's slim,
     #: encrypted archive); every other app hands out the backup itself.
     download_password: bool = False
+    #: Since E38: the keys of the app's own questions in the dialog "Wiederherstellen" (nexmail ``address``: whether the
+    #: public address from the archive applies); the answers go to the app's ``unpack``/``restore_now`` as ``options``
+    #: and lie in the staged folder for ``apply`` (``restore.staged_options``). Others are refused.
+    restore_options: tuple[str, ...] = ()
 
     @property
     def backups(self) -> Path:

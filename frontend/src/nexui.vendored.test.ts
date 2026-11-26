@@ -1,3 +1,4 @@
+// Vorlage nexui 0.1.0
 /**
  * The ui kit is in the app unchanged: every file of `src/vendor/nexui/` has the checksum its MANIFEST.json names (line
  * ends counted as LF), none is missing, none was added. Copied once by `bauplaene/ui/tools/sync.py`; then the app's file.

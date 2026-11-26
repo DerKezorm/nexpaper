@@ -1,3 +1,4 @@
+// Vorlage nexpost 1.1.0
 /**
  * Every text of the post module is in the app, in German and English, through the app's own i18n, and the mail
  * server card shows the module's fields in the module's order. Copied once by the module's `tools/sync.py` to
@@ -34,7 +35,7 @@ describe('the post texts', () => {
     it(`are all in the app in ${language}, word for word`, async () => {
       await i18n.changeLanguage(language)
       for (const [key, text] of leaves(tree as Tree)) {
-        const expected = text.replace(/\{\{(\w+)\}\}/g, (_, name: string) => fill[name] ?? '')
+        const expected = text.replace(/\{\{(\w+)\}\}/g, (_, name: string) => String(fill[name] ?? ''))
         expect(i18n.t(key, values), key).toBe(expected)
       }
     })

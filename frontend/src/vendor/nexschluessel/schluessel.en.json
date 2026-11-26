@@ -1,7 +1,7 @@
 {
   "apiKeys": {
     "title": "API keys",
-    "hint": "An API key lets a program work with your {things}, such as n8n, Home Assistant or a script. It can never do more than your account.",
+    "hint": "An API key lets a program work with your {thingsDative}, such as n8n, Home Assistant or a script. It can never do more than your account.",
     "new": "New API key",
     "empty": "No API key yet.",
     "count": "{count} of {max} keys",

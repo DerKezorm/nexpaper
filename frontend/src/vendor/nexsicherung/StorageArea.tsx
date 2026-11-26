@@ -12,21 +12,24 @@
  */
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
 
-import { Badge, Box, Button, Card, ConfirmDialog, Field, Notice, Row, Rows, Segment, type Confirm } from '../nexui'
+import { Badge, Box, Button, Card, CheckboxRow, ConfirmDialog, Field, Notice, Row, Rows, Segment, SelectField, type Confirm } from '../nexui'
 import {
   bytes,
   errorText,
   fill,
+  initialAnswers,
   partName,
   shares,
   useSicherungTexts,
-  when,
+  when as defaultWhen,
   type Backups,
   type Brief,
   type Entry,
   type Every,
   type Language,
   type Overview,
+  type RestoreAnswers,
+  type RestoreOption,
   type SicherungApi,
   type SicherungTexts,
 } from './sicherung'
@@ -51,7 +54,33 @@ export type StorageAreaProps = {
   onRestarting?: () => void
   /** Language of numbers and dates (de, en, fr). */
   language: Language
+  /** Since E34: how the app writes a moment (its clock and zone, "heute 3:00 AM"), as LogCard's `clock`; every time of
+   * the card goes through it: "Zuletzt: …", the list, the result of a check, the failure lines. Default: day and time
+   * in the browser's zone (`when`). */
+  when?: (iso: string, language: Language) => string
+  /** Since E37: the app's own words for its own codes that block a restore (nexdiary `backup_other_master_key`), code →
+   * sentence per language (`{ backup_other_master_key: { de: '…', en: '…' } }`); in the result of a check and when a
+   * restore is refused, before the server's `blocked_text` and the module's words. Without it all stays as before. */
+  blockedText?: BlockedTexts
+  /** Since E38: the app's own questions in the dialog "Wiederherstellen", in its words (nexmail: whether the public
+   * address of the archive applies); the answers go to the server as `options` and on to the app's hook. */
+  restoreOptions?: readonly RestoreOption[]
   children?: ReactNode
+}
+
+/** The app's words for its own blocking codes, per language (English stands in for a language it lacks). */
+export type BlockedTexts = Readonly<Record<string, Partial<Record<Language, string>>>>
+
+/** The app's sentence for a code, in the page's language, or null. */
+export function blockedWords(blockedText: BlockedTexts | undefined, code: string | null | undefined, language: Language): string | null {
+  const found = code ? blockedText?.[code] : undefined
+  return found?.[language] ?? found?.en ?? null
+}
+
+/** The code of a refusal, if it has one. */
+function codeOf(error: unknown): string | null {
+  const given = error && typeof error === 'object' && 'code' in error ? (error as { code: unknown }).code : null
+  return typeof given === 'string' ? given : null
 }
 
 export function StorageArea(props: StorageAreaProps) {
@@ -132,8 +161,9 @@ type Asking =
   | { kind: 'check'; entry: Entry }
 
 /** Card "Sicherung": the schedule, the last one, failures, "Jetzt sichern", "Sicherung hochladen", the list. */
-export function BackupCard({ app, holds, api, password, facts, details, onRestarting, language }: StorageAreaProps) {
+export function BackupCard({ app, holds, api, password, facts, details, onRestarting, language, when = defaultWhen, blockedText, restoreOptions }: StorageAreaProps) {
   const texts = useSicherungTexts()
+  const refusal = (error: unknown) => blockedWords(blockedText, codeOf(error), language) ?? errorText(texts, error, app)
   const t = texts.backup
   const [state, setState] = useState<Backups | null>(null)
   const [time, setTime] = useState<string | null>(null)
@@ -142,6 +172,7 @@ export function BackupCard({ app, holds, api, password, facts, details, onRestar
   const [asking, setAsking] = useState<Asking | null>(null)
   const [typed, setTyped] = useState('')
   const [archiveTyped, setArchiveTyped] = useState('')
+  const [answers, setAnswers] = useState<RestoreAnswers>(() => initialAnswers(restoreOptions))
   const [againTyped, setAgainTyped] = useState('')
   const [dialogProblem, setDialogProblem] = useState<string | null>(null)
   const [problem, setProblem] = useState<string | null>(null)
@@ -162,7 +193,7 @@ export function BackupCard({ app, holds, api, password, facts, details, onRestar
       await work()
       if (success) setDone(success)
     } catch (error) {
-      setProblem(errorText(texts, error, app))
+      setProblem(refusal(error))
     } finally {
       setBusy(null)
     }
@@ -191,6 +222,7 @@ export function BackupCard({ app, holds, api, password, facts, details, onRestar
     setTyped('')
     setArchiveTyped('')
     setAgainTyped('')
+    setAnswers(initialAnswers(restoreOptions))
     setDialogProblem(null)
     setAsking(next)
   }
@@ -224,7 +256,7 @@ export function BackupCard({ app, holds, api, password, facts, details, onRestar
         setDone(t.uploadedHint)
         load()
       } else if (asking.kind === 'restore') {
-        const result = await api.restore(asking.entry.name, typed, archive)
+        const result = restoreOptions?.length ? await api.restore(asking.entry.name, typed, archive, answers) : await api.restore(asking.entry.name, typed, archive)
         if (result.restarting) {
           setRestarting('restart')
           if (onRestarting) onRestarting()
@@ -235,7 +267,7 @@ export function BackupCard({ app, holds, api, password, facts, details, onRestar
       }
       setAsking(null)
     } catch (error) {
-      setDialogProblem(errorText(texts, error, app))
+      setDialogProblem(refusal(error))
     } finally {
       setBusy(null)
     }
@@ -383,7 +415,7 @@ export function BackupCard({ app, holds, api, password, facts, details, onRestar
           })}
         </Rows>
       )}
-      {brief && <BriefBox brief={brief} app={app} texts={texts} details={details} language={language} />}
+      {brief && <BriefBox brief={brief} app={app} texts={texts} details={details} language={language} when={when} blockedText={blockedText} />}
       {asking && (
         <ConfirmDialog
           title={t.confirm[asking.kind].title}
@@ -399,6 +431,29 @@ export function BackupCard({ app, holds, api, password, facts, details, onRestar
           testId={`backup-confirm-${asking.kind}`}
         >
           {asking.kind === 'restore' && asking.brief && details && <div className="text-sm">{details(asking.brief)}</div>}
+          {asking.kind === 'restore' &&
+            (restoreOptions ?? []).map((question) =>
+              question.choices ? (
+                <SelectField
+                  key={question.key}
+                  label={question.label}
+                  hints={question.hint ? [question.hint] : undefined}
+                  value={String(answers[question.key] ?? '')}
+                  onChange={(event) => setAnswers({ ...answers, [question.key]: event.target.value })}
+                  options={question.choices}
+                  data-testid={`restore-option-${question.key}`}
+                />
+              ) : (
+                <CheckboxRow
+                  key={question.key}
+                  label={question.label}
+                  hint={question.hint}
+                  checked={answers[question.key] === true}
+                  onChange={(checked) => setAnswers({ ...answers, [question.key]: checked })}
+                  testId={`restore-option-${question.key}`}
+                />
+              ),
+            )}
           {needsArchivePassword && <Field label={t.archivePassword} type="password" autoComplete="off" value={archiveTyped} onChange={(event) => setArchiveTyped(event.target.value)} hints={[t.archivePasswordHint]} />}
           {needsFilePassword && (
             <>
@@ -421,11 +476,27 @@ export function BackupCard({ app, holds, api, password, facts, details, onRestar
 }
 
 /** The result of a check, as a box: whole or not, too new, blocked, damaged members, the app's findings. */
-export function BriefBox({ brief, app, texts, details, language }: { brief: Brief; app: string; texts: SicherungTexts; details?: (brief: Brief) => ReactNode; language: Language }) {
+export function BriefBox({
+  brief,
+  app,
+  texts,
+  details,
+  language,
+  when = defaultWhen,
+  blockedText,
+}: {
+  brief: Brief
+  app: string
+  texts: SicherungTexts
+  details?: (brief: Brief) => ReactNode
+  language: Language
+  when?: (iso: string, language: Language) => string
+  blockedText?: BlockedTexts
+}) {
   const t = texts.backup
   let line: string
   if (brief.too_new) line = fill(t.checkNewer, { app, version: brief.version })
-  else if (brief.blocked) line = brief.blocked_text || errorText(texts, { code: brief.blocked }, app)
+  else if (brief.blocked) line = blockedWords(blockedText, brief.blocked, language) ?? (brief.blocked_text || errorText(texts, { code: brief.blocked }, app))
   else line = brief.usable ? t.checkOk : t.checkBad
   return (
     <Box

@@ -61,8 +61,10 @@ export type LogCardProps = {
   base?: string
   /** The address of the download, if the app needs another (a base path in front). */
   downloadHref?: string
-  /** The app's word for what it keeps, in the form of the hint ("Notizen", "Terminen"; "notes"). */
+  /** The app's word for what it keeps ("Notizen", "Kalender"; "notes"). */
   things: string
+  /** Since E34: the same after "von" in the hint ("Kalendern"); default `things`. */
+  thingsDative?: string
   /** `de`, `en` or `fr`; default the kit's. */
   language?: string
   /** How a line's time is written (the app's own, in the account's zone); default the browser's. */
@@ -72,7 +74,17 @@ export type LogCardProps = {
   testId?: string
 }
 
-export function LogCard({ request, base = '/api/logs', downloadHref, things, language, when = defaultWhen, clock = defaultClock, testId = 'log-card' }: LogCardProps) {
+export function LogCard({
+  request,
+  base = '/api/logs',
+  downloadHref,
+  things,
+  thingsDative = things,
+  language,
+  when = defaultWhen,
+  clock = defaultClock,
+  testId = 'log-card',
+}: LogCardProps) {
   const texts = useLogTexts(language)
   const kit = useNexuiTexts()
   const shownIn = language ?? (Object.keys(LOG_TEXTS) as (keyof typeof LOG_TEXTS)[]).find((key) => LOG_TEXTS[key] === texts) ?? 'en'
@@ -176,7 +188,7 @@ export function LogCard({ request, base = '/api/logs', downloadHref, things, lan
       : []
 
   return (
-    <Card id="log" icon="ScrollText" title={texts.title} subtitle={fillLog(texts.hint, { things })} testId={testId}>
+    <Card id="log" icon="ScrollText" title={texts.title} subtitle={fillLog(texts.hint, { things, thingsDative })} testId={testId}>
       <div className="flex flex-col gap-3" data-testid="log-bar">
         <Segment<LevelFilter>
           label={texts.level}

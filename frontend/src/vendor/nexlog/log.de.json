@@ -1,6 +1,6 @@
 {
   "title": "Log",
-  "hint": "Vier Stufen. Die beiden tiefen schalten sich nach einer Stunde selbst ab. Nie Inhalte von {things}, Passwörter oder Schlüssel.",
+  "hint": "Vier Stufen. Die beiden tiefen schalten sich nach einer Stunde selbst ab. Nie Inhalte von {thingsDative}, Passwörter oder Schlüssel.",
   "level": "Stufe",
   "all": "Alle",
   "levelHint": "Ein Filter zeigt immer auch die höheren Stufen: „WARNING“ enthält also die Fehler.",

@@ -142,7 +142,8 @@
       "keep_invalid": "Zwischen 1 und 365.",
       "wrong_password": "Das Passwort stimmt nicht.",
       "unknown": "Das hat nicht geklappt.",
-      "archive_password_short": "Das Passwort der Datei braucht mindestens 8 Zeichen."
+      "archive_password_short": "Das Passwort der Datei braucht mindestens 8 Zeichen.",
+      "restore_options_invalid": "Diese Antworten passen nicht zu den Fragen beim Wiederherstellen."
     }
   }
 }

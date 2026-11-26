@@ -19,6 +19,7 @@ CODES: dict[str, int] = {
     "archive_password_needed": 400,
     "archive_password_wrong": 400,
     "archive_password_short": 400,
+    "restore_options_invalid": 422,
     "schedule_invalid": 422,
     "time_invalid": 422,
     "keep_invalid": 422,

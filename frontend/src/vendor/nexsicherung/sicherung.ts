@@ -134,9 +134,32 @@ export type SicherungApi = {
   upload(file: Blob, password: string): Promise<{ name: string }>
   check(name: string, archivePassword?: string): Promise<Brief>
   download(name: string, password: string, archivePassword?: string): Promise<Blob>
-  restore(name: string, password: string, archivePassword?: string): Promise<Restored>
+  /** `options` (since E38): the answers to the app's questions in the dialog (`StorageArea restoreOptions`). */
+  restore(name: string, password: string, archivePassword?: string, options?: RestoreAnswers): Promise<Restored>
   remove(name: string, password: string): Promise<void>
   dismissFailed(): Promise<void>
+}
+
+/** Since E38: a question of the app in the dialog "Wiederherstellen" (nexmail: whether the public address of the
+ * archive applies), in the app's words: a box to tick without `choices`, else one of them. The answer goes to the
+ * server under `key` (`AppConfig.restore_options`) and on to the app's hook. */
+export type RestoreOption = {
+  key: string
+  label: string
+  hint?: string
+  choices?: readonly { value: string; label: string }[]
+  /** The answer before the operator changes it: false, or the first choice. */
+  initial?: string | boolean
+}
+
+/** The answers, by the key of each question. */
+export type RestoreAnswers = Record<string, string | boolean>
+
+/** What the questions answer before anybody touches them. */
+export function initialAnswers(questions: readonly RestoreOption[] | undefined): RestoreAnswers {
+  const found: RestoreAnswers = {}
+  for (const question of questions ?? []) found[question.key] = question.initial ?? (question.choices ? (question.choices[0]?.value ?? '') : false)
+  return found
 }
 
 /** The calls to the module's routes under `prefix` (where the app mounted `routes.router`). */
@@ -163,8 +186,17 @@ export function makeSicherungApi(fetcher: Fetcher, prefix: string = PREFIX): Sic
       (await call(`${part(name)}/check`, json('POST', archivePassword === undefined ? {} : { archive_password: archivePassword }))).json() as Promise<Brief>,
     download: async (name, password, archivePassword) =>
       (await call(`${part(name)}/download`, json('POST', archivePassword === undefined ? { password } : { password, archive_password: archivePassword }))).blob(),
-    restore: async (name, password, archivePassword) =>
-      (await call(`${part(name)}/restore`, json('POST', archivePassword === undefined ? { password } : { password, archive_password: archivePassword }))).json() as Promise<Restored>,
+    restore: async (name, password, archivePassword, options) =>
+      (
+        await call(
+          `${part(name)}/restore`,
+          json('POST', {
+            password,
+            ...(archivePassword === undefined ? {} : { archive_password: archivePassword }),
+            ...(options && Object.keys(options).length > 0 ? { options } : {}),
+          }),
+        )
+      ).json() as Promise<Restored>,
     remove: async (name, password) => {
       await call(part(name), json('DELETE', { password }))
     },

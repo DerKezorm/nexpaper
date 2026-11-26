@@ -88,16 +88,24 @@ def test_only_the_operator_reaches_any_route(app: Any) -> None:
     assert any(item["name"] == name for item in _entries(client, app))
 
 
-def test_download_and_upload_bring_a_backup_to_another_server(app: Any, sicherung: Any) -> None:
+def test_download_and_upload_bring_a_backup_to_another_server(
+        app: Any, sicherung: Any, restarts: list) -> None:
     app.add_content("travels")
+    held = app.content()
     client = app.operator()
     name = _make(client, app)
-    assert client.post(f"{app.prefix}/backups/{name}/download", json={"password": "wrong-one"}).status_code in (
+    # An app that encrypts its downloads (download_password, nexmail) gets the file's own password (since E38).
+    locked = sicherung.current().download_password
+    own = {"archive_password": "travel-pass-2026"} if locked else {}
+    assert client.post(f"{app.prefix}/backups/{name}/download", json={"password": "wrong-one", **own}).status_code in (
         400, 401, 403)
-    response = client.post(f"{app.prefix}/backups/{name}/download", json={"password": app.password})
+    response = client.post(f"{app.prefix}/backups/{name}/download", json={"password": app.password, **own})
     assert response.status_code == 200 and response.headers["cache-control"] == "no-store"
     data = response.content
-    assert data == sicherung.archives.path_of(name).read_bytes()
+    if not locked:
+        assert data == sicherung.archives.path_of(name).read_bytes()
+    else:
+        assert data != sicherung.archives.path_of(name).read_bytes()
     refused = client.post(f"{app.prefix}/backups/upload", content=data, headers={"x-backup-password": header("no")})
     assert refused.status_code in (400, 401, 403)
     uploaded = client.post(f"{app.prefix}/backups/upload", content=data,
@@ -107,7 +115,21 @@ def test_download_and_upload_bring_a_backup_to_another_server(app: Any, sicherun
     assert new.endswith("-upload.zip") and new != name
     entry = next(item for item in _entries(client, app) if item["name"] == new)
     assert entry["uploaded"] and entry["readable"]
-    assert client.post(f"{app.prefix}/backups/{new}/check", json={}).json()["usable"]
+    if not locked:
+        assert client.post(f"{app.prefix}/backups/{new}/check", json={}).json()["usable"]
+        return
+    # The file's own password checks and restores it; without it, or with a wrong one, nothing happens.
+    assert entry["locked"]
+    assert code_of(client.post(f"{app.prefix}/backups/{new}/check", json={})) == "archive_password_needed"
+    wrong = client.post(f"{app.prefix}/backups/{new}/check", json={"archive_password": "not-the-one"})
+    assert code_of(wrong) == "archive_password_wrong"
+    assert client.post(f"{app.prefix}/backups/{new}/check", json=own).json()["usable"]
+    app.add_content("made later")
+    restored = client.post(f"{app.prefix}/backups/{new}/restore", json={"password": app.password, **own})
+    restarting = sicherung.current().restore == "restart"
+    assert restored.status_code == (202 if restarting else 200), restored.text
+    app.restart()
+    assert app.content() == held
 
 
 def test_an_upload_that_is_no_backup_of_the_app_is_refused(app: Any) -> None:

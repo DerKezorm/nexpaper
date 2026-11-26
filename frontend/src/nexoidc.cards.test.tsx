@@ -1,3 +1,4 @@
+// Vorlage nexoidc 1.2.0
 // @vitest-environment jsdom
 /**
  * Since 1.2.0: the cards "Sign-in providers" and "authentik in one step" (``SignInProviders.tsx``) in the app: built
@@ -11,7 +12,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { NexuiLanguage } from './vendor/nexui'
 import { SignInProviders, type OidcAdminCalls, type OidcProviderRow, type Translate } from './vendor/nexoidc/SignInProviders'
-import { issuerPlaceholder, oidcVariables } from './vendor/nexoidc/oidc'
+import { AUTHENTIK_STEPS, issuerPlaceholder, oidcVariables } from './vendor/nexoidc/oidc'
 import german from './vendor/nexoidc/oidc.de.json'
 
 // APP: the app's name and where its API lives (nexpaper '/api/v1').
@@ -177,5 +178,65 @@ describe('Sign-in providers and authentik (oidc 1.2.0)', () => {
     expect(document.body.textContent).not.toContain(t('oidc.authentik.why.coupled'))
     const run = document.querySelector('[data-testid="authentik-run"]') as HTMLButtonElement
     expect([run.dataset.kind, run.dataset.icon, run.disabled]).toEqual(['primary', 'Sparkles', true])
+  })
+
+  it('names Edit and Remove of each row "<action>: <provider>" (as before 1.2.0, since E37), the words unchanged', async () => {
+    await cards()
+    for (const [action, words] of [['oidc.admin.edit', 'Bearbeiten'], ['oidc.admin.remove', 'Entfernen']] as const) {
+      const found = buttons(words)
+      expect(found.map((entry) => entry.getAttribute('aria-label'))).toEqual([`${t(action)}: Pocket ID`, `${t(action)}: authentik`])
+      expect(found[0]?.getAttribute('aria-label')).toBe(`${words}: Pocket ID`)
+    }
+  })
+
+  // Since E33 (found in nextasks): the token goes after a run that worked all through, stays after a failure, and a
+  // run that stops at another issuer only asks, without a line of steps behind the question.
+  async function runAuthentik(): Promise<HTMLInputElement> {
+    await cards()
+    const url = document.querySelector('input[placeholder="https://auth.example.com"]') as HTMLInputElement
+    const token = [...document.querySelectorAll<HTMLInputElement>('[data-card="sign-in-authentik"] input[type="password"]')].at(-1)
+    if (!token) throw new Error('no token field')
+    await act(async () => {
+      for (const [field, value] of [[url, 'https://auth.example.com'], [token, 'the-token']] as const) {
+        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set?.call(field, value)
+        field.dispatchEvent(new Event('input', { bubbles: true }))
+      }
+    })
+    await act(async () => (document.querySelector('[data-testid="authentik-run"]') as HTMLButtonElement).click())
+    for (let i = 0; i < 6; i++) await act(async () => await Promise.resolve())
+    return token
+  }
+
+  const rows = () => [...document.querySelectorAll('[data-testid="authentik-steps"] li')]
+
+  it('authentik: after a run that worked all through the token goes, even when the answer names only the steps', async () => {
+    for (const answer of [
+      { ok: true, steps: AUTHENTIK_STEPS.map((key) => ({ key, ok: true })) },
+      { steps: AUTHENTIK_STEPS.map((key) => ({ key, ok: true })) },
+    ]) {
+      calls.authentik = vi.fn(async () => answer as Awaited<ReturnType<OidcAdminCalls['authentik']>>)
+      const token = await runAuthentik()
+      expect(rows()).toHaveLength(AUTHENTIK_STEPS.length)
+      expect(token.value).toBe('')
+      act(() => root.unmount())
+      root = createRoot(box)
+    }
+  })
+
+  it('authentik: a step that failed keeps the token and says why', async () => {
+    calls.authentik = vi.fn(async () => ({ ok: false, steps: [{ key: 'reached', ok: true }, { key: 'signingKey', ok: false, reason: 'token', status: 403 }] }))
+    const token = await runAuthentik()
+    expect(rows()).toHaveLength(2)
+    expect(rows()[1]?.textContent).toContain(t('oidc.authentik.why.token', { status: 403 }))
+    expect(token.value).toBe('the-token')
+  })
+
+  it('authentik: another issuer only asks, with no line of steps behind the question', async () => {
+    calls.authentik = vi.fn(async () => ({ ok: false, count: 3, steps: [{ key: 'reached', ok: false, reason: 'issuer_change', status: 0 }] }))
+    const token = await runAuthentik()
+    expect(document.querySelector('[role="dialog"]')?.textContent).toContain(t('oidc.admin.issuerChangeConfirm', { count: 3 }))
+    expect(document.querySelector('[data-testid="authentik-steps"]')).toBeNull()
+    expect(rows()).toEqual([])
+    expect(token.value).toBe('the-token')
   })
 })

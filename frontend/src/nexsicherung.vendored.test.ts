@@ -1,3 +1,4 @@
+// Vorlage nexsicherung 1.0.0
 /**
  * The page of the module sicherung is in the app unchanged: every file of `src/vendor/nexsicherung/` has the checksum
  * the module's MANIFEST.json names (line ends counted as LF), none is missing, none was added. Copied once by

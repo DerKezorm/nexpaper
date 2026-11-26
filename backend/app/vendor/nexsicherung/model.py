@@ -80,7 +80,9 @@ class Checked:
     ``database_ok``/``files_ok``: whole or not (``damaged`` names the first broken members). ``blocked``: a code that
     forbids the restore although the archive is whole (nexdiary ``backup_other_master_key``), with ``blocked_text``.
     ``details``: the app's own findings, flat (``would_add``, ``notes_add_titles``, ``revived_keys`` …), as its check
-    answered them before; the page shows them through the app's own words."""
+    answered them before; the page shows them through the app's own words. ``too_new`` (since E37): the app finds the
+    archive newer than itself by its own measure (its schema), beside the module's comparison of versions; it counts
+    like the module's (never restored, ``backup_too_new``)."""
 
     database_ok: bool
     files_ok: bool = True
@@ -88,6 +90,7 @@ class Checked:
     blocked: str = ""
     blocked_text: str = ""
     details: dict[str, Any] = field(default_factory=dict)
+    too_new: bool = False
 
 
 @dataclass
@@ -128,7 +131,12 @@ class Brief:
         own = self.view()
         own.pop("facts")
         own.pop("details")
-        return {**self.facts, **self.details, **own}
+        flat = {**self.facts, **self.details, **own}
+        # An app's own "too new" among its findings is never overwritten by the module's (since E37).
+        if self.details.get("too_new") is True:
+            flat["too_new"] = True
+            flat["usable"] = False
+        return flat
 
 
 @dataclass(frozen=True)

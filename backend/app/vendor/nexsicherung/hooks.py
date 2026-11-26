@@ -44,7 +44,9 @@ class AppHooks:
     def unpack(self, path: Path, pending: Path, *, archive_password: str | None = None) -> None:
         """**Required for restore = "restart".** Lay the archive out in the empty folder ``pending`` (database, key,
         files), each member checked again by name and size. The module writes its marker after this returns; a
-        folder without it is thrown away at the start, never applied."""
+        folder without it is thrown away at the start, never applied. Since E38 an app with questions in the dialog
+        (``AppConfig.restore_options``) takes ``options`` too: the answers, only passed when there are any; ``apply``
+        reads them again with ``restore.staged_options(pending)``."""
         raise NotImplementedError("APP: unpack")
 
     def apply(self, pending: Path) -> None:
@@ -61,7 +63,8 @@ class AppHooks:
 
     def restore_now(self, path: Path, *, archive_password: str | None = None) -> dict[str, Any]:
         """**Required for restore = "now"** (nexmail): put the archive's state in place while the app runs (close the
-        database, swap, open again, end every session). Returns what the page may show (flat)."""
+        database, swap, open again, end every session). Returns what the page may show (flat). Since E38 with
+        ``options`` (the answers to the app's questions, nexmail ``address``) where the app has questions."""
         raise NotImplementedError("APP: restore_now")
 
     # --- The list ---------------------------------------------------------------------------------------------------

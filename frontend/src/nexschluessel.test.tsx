@@ -1,3 +1,4 @@
+// Vorlage nexschluessel 1.0.0
 // @vitest-environment jsdom
 /**
  * The cards of the module in the app: "API-Schlüssel", "KI-Werkzeuge (MCP)", "Schnittstellen" and "API-Schlüssel aller
@@ -105,8 +106,8 @@ function freshListing(): KeyListing {
     keys: [
       key(1),
       key(2, { legacy: 'card', right: 'read' }),
-      key(3, { kind: 'mcp', name: 'Desk assistant', program: true, right: 'write', expires_at: null }),
-      key(4, { kind: 'mcp', name: 'Cursor', prefix: 'nxl_Abcd', expires_at: null }),
+      key(3, { kind: 'mcp', name: 'Notebook', program: true, right: 'write', expires_at: null }),
+      key(4, { kind: 'mcp', name: 'Editor', prefix: 'nxl_Abcd', expires_at: null }),
     ],
   }
 }
@@ -173,9 +174,15 @@ beforeEach(() => {
   refuse = null
   listing = freshListing()
   switches = { api: true, mcp: false }
+  // As the operator's route answers since E36: no start of the key, the app's own values in `extra`.
+  const operatorRow = (entry: KeyEntry, account: AdminKey['account'], extra: Record<string, unknown>): AdminKey => {
+    const { prefix, ...row } = entry
+    void prefix
+    return { ...row, account, extra }
+  }
   admin = [
-    { ...key(1), account: { id: 1, name: 'anna', display_name: 'Anna', out: false } },
-    { ...key(5, { blocked: true, name: null }), account: { id: 2, name: 'ben', display_name: 'Ben', out: false } },
+    operatorRow(key(1), { id: 1, name: 'anna', display_name: 'Anna', out: false }, { folders: 3 }),
+    operatorRow(key(5, { blocked: true, name: null }), { id: 2, name: 'ben', display_name: 'Ben', out: false }, { folders: 0 }),
   ]
   box = document.createElement('div')
   document.body.append(box)
@@ -210,6 +217,15 @@ describe('the words of the module', () => {
 })
 
 describe('the card API-Schlüssel', () => {
+  it('says "mit deinen" with the dative form of the app\'s word (since E34), the plain form without one', async () => {
+    show(<ApiKeysCard request={request} base={BASE} things="Kalender" thingsDative="Kalendern" />)
+    await settle()
+    expect(find('[data-card="api-keys"]')!.textContent).toContain('mit deinen Kalendern arbeiten')
+    show(<ApiKeysCard request={request} base={BASE} things="Kalender" />)
+    await settle()
+    expect(find('[data-card="api-keys"]')!.textContent).toContain('mit deinen Kalender arbeiten')
+  })
+
   it('lists the API keys with their start, never a secret, with small buttons', async () => {
     show(<ApiKeysCard request={request} base={BASE} things={THINGS} />)
     await settle()
@@ -307,7 +323,7 @@ describe('the card KI-Werkzeuge (MCP)', () => {
     expect(card.textContent).toContain('KI-Werkzeuge (MCP)')
     expect(all('[data-testid="tools-programs-table"] [data-part="table-row"]').map((row) => row.dataset.program)).toEqual(['true'])
     expect(all('[data-testid="tools-keys-table"] [data-part="table-row"]')).toHaveLength(1)
-    expect(card.textContent).toContain('Desk assistant')
+    expect(card.textContent).toContain('Notebook')
     expect(find<HTMLInputElement>('[data-testid="tools-address"] input')!.value).toBe('https://notes.example.com/api/mcp')
     expect(button('tools-new')!.dataset.kind).toBe('primary')
   })
@@ -339,6 +355,26 @@ describe('the card Schnittstellen', () => {
 })
 
 describe('the card API-Schlüssel aller Konten', () => {
+  it("never shows the start of a key, and shows the app's own columns before the button (since E36)", async () => {
+    show(<AllKeysCard request={request} base={BASE} extra={[{ key: 'folders', label: 'Ordner', width: '6rem' }]} />)
+    await settle()
+    const card = find('[data-card="all-api-keys"]')!
+    expect(card.textContent).not.toContain('nn_api_')
+    const heads = all('[data-testid="all-keys-table"] thead th').map((cell) => cell.textContent)
+    expect(heads.indexOf('Ordner')).toBe(heads.length - 2)
+    const rows = all('[data-testid="all-keys-table"] [data-part="table-row"]')
+    expect(rows.map((row) => row.textContent?.includes('3'))).toEqual([true, false])
+    click(button('all-keys-block')!)
+    expect(find('[data-testid="all-keys-block-dialog"]')!.textContent).toContain('„Key 1“ von Anna sperren?')
+  })
+
+  it('shows no start of a key even when a server still sends one', async () => {
+    admin = admin.map((row) => ({ ...row, prefix: 'nn_api_Zz9' }) as AdminKey)
+    show(<AllKeysCard request={request} base={BASE} />)
+    await settle()
+    expect(find('[data-card="all-api-keys"]')!.textContent).not.toContain('nn_api_Zz9')
+  })
+
   it('locks after asking and unlocks at once', async () => {
     show(<AllKeysCard request={request} base={BASE} />)
     await settle()

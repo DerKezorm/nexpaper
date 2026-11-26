@@ -138,6 +138,7 @@
       "archive_password_needed": "Cette sauvegarde est chiffrée. Saisissez son mot de passe.",
       "archive_password_wrong": "Le mot de passe de la sauvegarde est incorrect.",
       "archive_password_short": "Le mot de passe du fichier doit comporter au moins 8 caractères.",
+      "restore_options_invalid": "Ces réponses ne correspondent pas aux questions de la restauration.",
       "schedule_invalid": "Désactivée, chaque nuit, chaque semaine ou chaque mois.",
       "time_invalid": "Saisissez une heure comme 03:00.",
       "keep_invalid": "Entre 1 et 365.",

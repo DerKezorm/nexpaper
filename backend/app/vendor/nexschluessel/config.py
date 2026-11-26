@@ -7,10 +7,11 @@ the operator it has. The rows themselves stay in the app's tables; the module re
 from __future__ import annotations
 
 import re
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from datetime import timedelta
 from types import MappingProxyType
+from typing import Any
 
 #: The kinds of the module: keys for the programming interface, keys for AI tools (MCP).
 KIND_API = "api"
@@ -155,6 +156,10 @@ class AppConfig:
     error_codes: Mapping[str, str] = field(default_factory=lambda: MappingProxyType({}))
     #: The app's own status for a refusal, where it answered otherwise (nextasks ``api_off`` on use: 401).
     error_status: Mapping[str, int] = field(default_factory=lambda: MappingProxyType({}))
+    #: Since E36: the values of the app's own columns in "API-Schlüssel aller Konten" (nexnotes: the number of folders
+    #: a key reaches), ``(store, key) -> {column: value}``; they go into each row of the operator's list as ``extra``,
+    #: the card shows them through its ``extra`` columns. ``None``: no columns of the app.
+    admin_extra: Callable[[Any, Any], Mapping[str, Any]] | None = None
 
     def __post_init__(self) -> None:
         if not _APP_NAME.fullmatch(self.app_name):

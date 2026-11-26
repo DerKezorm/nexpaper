@@ -128,6 +128,20 @@ def set_role(
     return reload(store, account_id)
 
 
+def _follow(store: Any, hook: str, account: Account) -> None:
+    """Since E38: the app's ``store.on_shut_out(account)`` when an account goes out (blocked or deleted while it could
+    sign in) and ``store.on_back(account)`` when it can sign in again (unblocked, or brought back unblocked); once per
+    change, after the commit. The app holds its pushes and its syncs there (README, "Gesperrt und gelöscht"). Optional
+    for an app of an older version; never raises."""
+    follow = getattr(store, hook, None)
+    if not callable(follow):
+        return
+    try:
+        follow(account)
+    except Exception as error:  # noqa: BLE001 (what the app does then cannot undo the outcome)
+        log().warning("The app's %s failed for account %s: %r", hook, account.id, error)
+
+
 def block(
     store: Any, account_id: AccountId, *, actor_id: AccountId, password: str = "", actor_confirmed: bool = False
 ) -> Account:
@@ -144,7 +158,9 @@ def block(
     store.commit()
     log().info("Account blocked account=%s", account_id)
     tell(store, Event(EVENT_BLOCKED, account_id))
-    return reload(store, account_id)
+    blocked = reload(store, account_id)
+    _follow(store, "on_shut_out", blocked)
+    return blocked
 
 
 def unblock(
@@ -162,7 +178,9 @@ def unblock(
     store.commit()
     log().info("Account unblocked account=%s", account_id)
     tell(store, Event(EVENT_UNBLOCKED, account_id))
-    return reload(store, account_id)
+    back = reload(store, account_id)
+    _follow(store, "on_back", back)
+    return back
 
 
 def remove(
@@ -184,7 +202,11 @@ def remove(
     store.commit()
     log().info("Account deleted account=%s days=%s", account_id, DELETE_DAYS)
     tell(store, Event(EVENT_DELETED, account_id))
-    return Removed(reload(store, account_id), purge_at(moment))
+    removed = reload(store, account_id)
+    if target.blocked_at is None:
+        # A blocked account was out already: its app heard on_shut_out when it was blocked.
+        _follow(store, "on_shut_out", removed)
+    return Removed(removed, purge_at(moment))
 
 
 def restore(
@@ -201,7 +223,11 @@ def restore(
     store.commit()
     log().info("Account restored account=%s", account_id)
     tell(store, Event(EVENT_RESTORED, account_id))
-    return reload(store, account_id)
+    back = reload(store, account_id)
+    if target.blocked_at is None:
+        # Blocked before, blocked after: still out, no on_back.
+        _follow(store, "on_back", back)
+    return back
 
 
 def purge_due(store: Any, *, now: datetime | None = None) -> list[AccountId]:

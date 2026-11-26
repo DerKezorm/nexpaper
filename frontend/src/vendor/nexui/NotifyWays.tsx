@@ -5,8 +5,9 @@
  * - "Mail": the address, a badge confirmed or not, `sm` "Change in profile".
  * - "This browser": a badge On/Off, "Turn on notifications" (primary) or "Turn off" (danger), "Send a test
  *   notification" (secondary); `note` says what stands in the way (blocked, no service worker, not on the Home Screen).
- * - "Browsers with notifications": the list, this browser marked, `sm` danger "Remove" per browser; `action` adds the
- *   app's own button to a row (rename, its own switch).
+ * - "Browsers with notifications": the list, this browser marked, `sm` danger "Remove" per browser (named
+ *   "Remove <name>" for a screen reader since E33); `action` adds the app's own button to a row (rename, its own
+ *   switch).
  * - "iPhone and iPad": where the app on the phone is connected (under Connections).
  *
  * Only words and buttons: whether a way is on and what a click does are the caller's. `children` adds the app's own
@@ -16,7 +17,7 @@ import type { ReactNode } from 'react'
 
 import { Button } from './Button'
 import { Badge, Box, Card, Row, Rows } from './Card'
-import { useNexuiTexts, type NexuiTexts } from './texts'
+import { fill, useNexuiTexts, type NexuiTexts } from './texts'
 
 export type NotifyBrowser = {
   id: string
@@ -114,7 +115,15 @@ export function NotifyWays({
                   action={
                     <span className="flex flex-wrap items-center gap-2">
                       {item.action}
-                      <Button kind="danger" size="sm" icon="Trash2" busy={browsers.busy} onClick={() => browsers.onRemove(item.id)} testId={`notify-remove-${item.id}`}>
+                      <Button
+                        kind="danger"
+                        size="sm"
+                        icon="Trash2"
+                        busy={browsers.busy}
+                        onClick={() => browsers.onRemove(item.id)}
+                        testId={`notify-remove-${item.id}`}
+                        aria-label={fill(texts.removeName, { name: item.name })}
+                      >
                         {texts.remove}
                       </Button>
                     </span>

@@ -22,11 +22,13 @@ import {
   Chip,
   Collapsible,
   ConfirmDialog,
+  Dialog,
   CopyRow,
   Facts,
   Field,
   IconButton,
   NEXUI_TEXTS,
+  areaText,
   NexuiLanguage,
   NotifyWays,
   Row,
@@ -250,6 +252,45 @@ describe('ConfirmDialog', () => {
     fireEvent.keyDown(window, { key: 'Escape' })
     expect(cancelled).toHaveBeenCalledTimes(1)
     expect(queryByRole(dialog, 'button', { name: 'Close' })).not.toBeNull()
+  })
+
+  it.each([true, false])('with dismissable %s: Escape and a click beside it close only when dismissable (since E38)', (dismissable) => {
+    const cancelled = vi.fn()
+    show(
+      <ConfirmDialog
+        title="Restore"
+        confirm={{ label: 'Restore', kind: 'primary', icon: 'RotateCcw' }}
+        cancel="Cancel"
+        closeLabel="Close"
+        onConfirm={() => undefined}
+        onCancel={cancelled}
+        dismissable={dismissable}
+      />,
+    )
+    const dialog = getByRole(document.body, 'dialog', { name: 'Restore' })
+    fireEvent.keyDown(window, { key: 'Escape' })
+    fireEvent.pointerDown(dialog.parentElement as HTMLElement)
+    expect(cancelled).toHaveBeenCalledTimes(dismissable ? 2 : 0)
+    // The buttons always end it: "Cancel" and the close button.
+    fireEvent.click(getByRole(dialog, 'button', { name: 'Cancel' }))
+    fireEvent.click(getByRole(dialog, 'button', { name: 'Close' }))
+    expect(cancelled).toHaveBeenCalledTimes(dismissable ? 4 : 2)
+  })
+
+  it('a Dialog that is not dismissable stays on Escape and a click beside it, its close button still closes', () => {
+    const closed = vi.fn()
+    show(
+      <Dialog title="Pairing" onClose={closed} closeLabel="Close" dismissable={false}>
+        <p>Scan the code</p>
+      </Dialog>,
+    )
+    const dialog = getByRole(document.body, 'dialog', { name: 'Pairing' })
+    fireEvent.keyDown(window, { key: 'Escape' })
+    fireEvent.pointerDown(dialog.parentElement as HTMLElement)
+    fireEvent.pointerDown(dialog)
+    expect(closed).not.toHaveBeenCalled()
+    fireEvent.click(getByRole(dialog, 'button', { name: 'Close' }))
+    expect(closed).toHaveBeenCalledTimes(1)
   })
 })
 
@@ -485,7 +526,7 @@ describe('the parts of the settings (since 1.1.0)', () => {
       expect(NEXUI_TEXTS[language].areas.profile.text).not.toBe('')
     }
     // The plan's words, word for word.
-    expect(NEXUI_TEXTS.de.areas.connections.text).toBe('Geräte, andere Apps, API-Schlüssel und KI-Werkzeuge, die mit deinen {things} arbeiten.')
+    expect(NEXUI_TEXTS.de.areas.connections.text).toBe('Geräte, andere Apps, API-Schlüssel und KI-Werkzeuge, die mit deinen {thingsDative} arbeiten.')
     expect(NEXUI_TEXTS.de.themeHint).toBe('Gilt auf allen deinen Geräten. „Wie das System“ folgt dem Gerät.')
   })
 
@@ -661,9 +702,16 @@ describe('the parts of the settings (since 1.1.0)', () => {
     expect(Array.from(nav.querySelectorAll('[data-group]')).map((group) => group.getAttribute('data-group'))).toEqual(['account', 'mail', 'server'])
     expect(getAllByRole(nav, 'link').map((link) => link.textContent)).toEqual(['Profil', 'Regeln', 'Allgemein', 'Über nexmail'])
     expect(getByRole(nav, 'link', { name: 'Regeln' }).getAttribute('aria-current')).toBe('page')
+    // Every entry carries its whole name as title: a long one is cut off on screen (since E34).
+    expect(getAllByRole(nav, 'link').map((link) => link.getAttribute('title'))).toEqual(['Profil', 'Regeln', 'Allgemein', 'Über nexmail'])
     expect(getByRole(nav, 'list', { name: 'Mein Konto' })).toBeTruthy()
     expect(getByRole(root, 'heading', { level: 1, name: 'Verbindungen' })).toBeTruthy()
     expect(root.textContent).toContain('Geräte, andere Apps, API-Schlüssel und KI-Werkzeuge, die mit deinen Mails arbeiten.')
+    // Two forms since E34: the line of Connections takes the dative ("mit deinen Kalendern"), the plain form stands in.
+    expect(areaText(NEXUI_TEXTS.de, 'connections', { app: 'nextime', things: 'Kalender', thingsDative: 'Kalendern' })?.text).toBe(
+      'Geräte, andere Apps, API-Schlüssel und KI-Werkzeuge, die mit deinen Kalendern arbeiten.',
+    )
+    expect(areaText(NEXUI_TEXTS.de, 'connections', { app: 'nextime', things: 'Kalender' })?.text).toContain('mit deinen Kalender arbeiten')
     // A phone in an area: the list is hidden, the way back is there; on the list it is the other way round.
     const side = root.querySelector('[data-part="settings-side"]')
     expect(side?.className.split(' ')).toContain('hidden')
@@ -747,10 +795,27 @@ describe('the parts of the settings (since 1.1.0)', () => {
     expect(said('Im Profil ändern')).toEqual(['secondary', 'sm', 'UserPen'])
     expect(said('Ausschalten')).toEqual(['danger', 'md', 'BellOff'])
     expect(said('Probemeldung schicken')).toEqual(['secondary', 'md', 'Send'])
-    expect(said('Entfernen')).toEqual(['danger', 'sm', 'Trash2'])
-    fireEvent.click(getByRole(card, 'button', { name: 'Entfernen' }))
+    // The button says "Entfernen" and is named after its browser (since E33), so that a screen reader tells them apart.
+    expect(said('Firefox unter Linux entfernen')).toEqual(['danger', 'sm', 'Trash2'])
+    expect(getByRole(card, 'button', { name: 'Firefox unter Linux entfernen' }).textContent).toBe('Entfernen')
+    fireEvent.click(getByRole(card, 'button', { name: 'Firefox unter Linux entfernen' }))
     expect(removed).toHaveBeenCalledWith('a')
     expect(queryByRole(card, 'heading', { name: 'iPhone und iPad' })).toBeNull()
+  })
+
+  it.each([
+    ['de', 'Firefox unter Linux entfernen', 'Entfernen'],
+    ['en', 'Remove Firefox unter Linux', 'Remove'],
+    ['fr', 'Retirer Firefox unter Linux', 'Retirer'],
+  ] as const)('names the button "Remove" of each browser after the browser (%s)', (language, name, words) => {
+    const root = show(
+      <NexuiLanguage language={language}>
+        <NotifyWays browsers={{ items: [{ id: 'a', name: 'Firefox unter Linux' }, { id: 'b', name: 'Safari' }], onRemove: () => undefined }} />
+      </NexuiLanguage>,
+    )
+    const button = getByRole(root, 'button', { name })
+    expect([button.textContent, button.getAttribute('aria-label')]).toEqual([words, name])
+    expect(getAllByRole(root, 'button').map((entry) => entry.getAttribute('aria-label'))).toHaveLength(2)
   })
 
   it('every button of the kit has a symbol and words, a size and one of the three kinds (the symbol-only ones excepted)', () => {

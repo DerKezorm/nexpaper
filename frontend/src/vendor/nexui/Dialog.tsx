@@ -2,6 +2,8 @@
  * A dialog over the page (nexnotes' `Dialog`: 16 px corners, a head with the title and a close button, the inside
  * scrolls), and on it `ConfirmDialog`: "Really?" with an optional field (the own password), the problem in red, and the
  * buttons right below, "Cancel" first. Escape and the scrim close it, focus starts inside and comes back afterwards.
+ * `dismissable={false}` (since E38): Escape and a click beside it do nothing; the close button and the dialog's own
+ * buttons ("Cancel", "Done") stay.
  */
 import { useEffect, useId, useRef, type ReactNode } from 'react'
 import { X } from 'lucide-react'
@@ -16,6 +18,7 @@ export function Dialog({
   closeLabel,
   children,
   wide = false,
+  dismissable = true,
   testId,
 }: {
   title: string
@@ -24,14 +27,18 @@ export function Dialog({
   closeLabel: string
   children: ReactNode
   wide?: boolean
+  /** False: Escape and a click beside the dialog leave it open (a step that must be finished). */
+  dismissable?: boolean
   testId?: string
 }) {
   const titleId = useId()
   const panel = useRef<HTMLDivElement>(null)
   const close = useRef(onClose)
+  const leave = useRef(dismissable)
   useEffect(() => {
     close.current = onClose
-  }, [onClose])
+    leave.current = dismissable
+  }, [onClose, dismissable])
   useEffect(() => {
     const before = document.activeElement as HTMLElement | null
     const first = panel.current?.querySelector<HTMLElement>('input:not([type="hidden"]), textarea, select, button:not([data-close])')
@@ -39,7 +46,7 @@ export function Dialog({
     const key = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         event.stopPropagation()
-        close.current()
+        if (leave.current) close.current()
       }
     }
     window.addEventListener('keydown', key, true)
@@ -49,7 +56,7 @@ export function Dialog({
     }
   }, [])
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-[var(--nexui-scrim)] p-4" onPointerDown={(event) => event.target === event.currentTarget && onClose()}>
+    <div className="fixed inset-0 z-50 grid place-items-center bg-[var(--nexui-scrim)] p-4" onPointerDown={(event) => dismissable && event.target === event.currentTarget && onClose()}>
       <div
         ref={panel}
         role="dialog"
@@ -94,6 +101,7 @@ export function ConfirmDialog({
   busy = false,
   error,
   confirmDisabled = false,
+  dismissable = true,
   testId,
 }: {
   title: string
@@ -109,10 +117,12 @@ export function ConfirmDialog({
   busy?: boolean
   error?: ReactNode
   confirmDisabled?: boolean
+  /** False: only "Cancel", the confirming button and the close button end it (since E38). */
+  dismissable?: boolean
   testId?: string
 }) {
   return (
-    <Dialog title={title} onClose={onCancel} closeLabel={closeLabel} testId={testId}>
+    <Dialog title={title} onClose={onCancel} closeLabel={closeLabel} dismissable={dismissable} testId={testId}>
       <form
         className="flex flex-col gap-4"
         onSubmit={(event) => {

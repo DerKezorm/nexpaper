@@ -1,6 +1,6 @@
 {
   "title": "Journal",
-  "hint": "Quatre niveaux. Les deux plus détaillés se désactivent d'eux-mêmes au bout d'une heure. Jamais le contenu des {things}, ni mots de passe, ni clés.",
+  "hint": "Quatre niveaux. Les deux plus détaillés se désactivent d'eux-mêmes au bout d'une heure. Jamais le contenu des {thingsDative}, ni mots de passe, ni clés.",
   "level": "Niveau",
   "all": "Tous",
   "levelHint": "Un filtre affiche toujours aussi les niveaux supérieurs : « WARNING » inclut donc les erreurs.",

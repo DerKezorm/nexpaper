@@ -3,8 +3,9 @@
  * comes from the caller. Which language: the one a `NexuiLanguage` above says, else the page's (`<html lang>`), else
  * English. A caller may still hand over its own words for a part (`texts` on `AboutPage` and `NotifyWays`).
  *
- * `{app}`, `{version}`, `{name}` are filled by the kit; `{things}` is the app's word for what its accounts keep, in the
- * form the sentence needs ("Notizen", "Mails", "Kalendern"; "notes", "mails", "calendars").
+ * `{app}`, `{version}`, `{name}` are filled by the kit; `{things}` is the app's word for what its accounts keep as
+ * subject or object ("Kalender"), `{thingsDative}` the same after a word that asks for the dative ("Kalendern"; since
+ * E34; in English and French both the same: "calendars").
  *
  * `areas` holds the title and line of each shared area of the settings (plan "Einstellungen", the table under
  * "Navigation"); an app's own areas keep their own words.
@@ -79,7 +80,7 @@ const DE = {
     'security': { title: 'Sicherheit', text: 'Passwort, zweiter Faktor, Passkeys, Anmeldeanbieter und wo du angemeldet bist.' },
     'appearance': { title: 'Darstellung', text: 'Hell oder dunkel und wie {app} bei dir aussieht.' },
     'notifications': { title: 'Benachrichtigungen', text: 'Was dich auf welchem Weg erreicht.' },
-    'connections': { title: 'Verbindungen', text: 'Geräte, andere Apps, API-Schlüssel und KI-Werkzeuge, die mit deinen {things} arbeiten.' },
+    'connections': { title: 'Verbindungen', text: 'Geräte, andere Apps, API-Schlüssel und KI-Werkzeuge, die mit deinen {thingsDative} arbeiten.' },
     'general': { title: 'Allgemein', text: 'Grenzen, Funktionen für alle Konten, Schnittstellen und eigene Sprachen.' },
     'sign-in': { title: 'Anmeldung', text: 'Wie sich alle anmelden: Passwort, öffentliche Adresse, zweiter Faktor und Anbieter.' },
     'mail': { title: 'Mail', text: 'Der Mailserver, über den {app} Einladungen, Links und Benachrichtigungen verschickt.' },
@@ -159,7 +160,7 @@ const EN: NexuiTexts = {
     'security': { title: 'Security', text: 'Password, second factor, passkeys, sign-in providers and where you are signed in.' },
     'appearance': { title: 'Appearance', text: 'Light or dark and how {app} looks for you.' },
     'notifications': { title: 'Notifications', text: 'What reaches you, and which way.' },
-    'connections': { title: 'Connections', text: 'Devices, other apps, API keys and AI tools that work with your {things}.' },
+    'connections': { title: 'Connections', text: 'Devices, other apps, API keys and AI tools that work with your {thingsDative}.' },
     'general': { title: 'General', text: 'Limits, features for every account, interfaces and added languages.' },
     'sign-in': { title: 'Sign-in', text: 'How everyone signs in: password, public address, second factor and providers.' },
     'mail': { title: 'Mail', text: 'The mail server {app} sends invitations, links and notifications through.' },
@@ -237,7 +238,7 @@ const FR: NexuiTexts = {
     'security': { title: 'Sécurité', text: 'Mot de passe, second facteur, clés d’accès, fournisseurs de connexion et où tu es connecté.' },
     'appearance': { title: 'Apparence', text: 'Clair ou sombre et l’allure de {app} chez toi.' },
     'notifications': { title: 'Notifications', text: 'Ce qui te parvient, et par quel moyen.' },
-    'connections': { title: 'Connexions', text: 'Appareils, autres apps, clés API et outils d’IA qui travaillent avec tes {things}.' },
+    'connections': { title: 'Connexions', text: 'Appareils, autres apps, clés API et outils d’IA qui travaillent avec tes {thingsDative}.' },
     'general': { title: 'Général', text: 'Limites, fonctions pour tous les comptes, interfaces et langues ajoutées.' },
     'sign-in': { title: 'Connexion', text: 'Comment tout le monde se connecte : mot de passe, adresse publique, second facteur et fournisseurs.' },
     'mail': { title: 'E-mail', text: 'Le serveur de messagerie par lequel {app} envoie invitations, liens et notifications.' },
@@ -280,9 +281,15 @@ export function fill(text: string, values: Record<string, string | number>): str
 export type SharedAreaSlug = keyof NexuiTexts['areas']
 
 /** Title and line of a shared area, filled with the app's name and word for its things; null for an app's own area. */
-export function areaText(texts: NexuiTexts, slug: string, values: { app: string; things?: string }): { title: string; text: string } | null {
+export function areaText(
+  texts: NexuiTexts,
+  slug: string,
+  values: { app: string; things?: string; thingsDative?: string },
+): { title: string; text: string } | null {
   const area = (texts.areas as Record<string, { title: string; text: string } | undefined>)[slug]
   if (!area) return null
-  const filled = { app: values.app, things: values.things ?? '' }
+  // Since E34 two forms: `things` ("Deine Kalender") and `thingsDative` ("mit deinen Kalendern"); without the second
+  // the first stands in.
+  const filled = { app: values.app, things: values.things ?? '', thingsDative: values.thingsDative ?? values.things ?? '' }
   return { title: fill(area.title, filled), text: fill(area.text, filled) }
 }

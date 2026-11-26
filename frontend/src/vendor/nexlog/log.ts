@@ -70,7 +70,7 @@ export function modeChange(mode: string): { mode: string; minutes: number } {
 export type LogTexts = typeof de
 export const LOG_TEXTS: Record<'de' | 'en' | 'fr', LogTexts> = { de, en, fr }
 
-/** Fills `{things}`, `{time}`, `{variable}`. */
+/** Fills `{things}`, `{thingsDative}` (since E34), `{time}`, `{variable}`. */
 export function fillLog(text: string, values: Record<string, string>): string {
   return text.replace(/\{(\w+)\}/g, (whole, key: string) => (key in values ? (values[key] ?? '') : whole))
 }

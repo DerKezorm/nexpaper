@@ -89,6 +89,8 @@ class CheckIn(BaseModel):
 
 class RestoreIn(PasswordIn):
     archive_password: str | None = Field(default=None, max_length=200)
+    #: Since E38: the answers to the app's questions in the dialog (``AppConfig.restore_options``).
+    options: dict[str, str | bool | int] | None = Field(default=None, max_length=20)
 
 
 class ScheduleIn(BaseModel):
@@ -159,9 +161,10 @@ class _Kit:
         try:
             if current().restore == NOW:
                 brief, result = restore.restore_now(name, viewer=self.viewer(account),
-                                                    archive_password=body.archive_password)
+                                                    archive_password=body.archive_password, options=body.options)
                 return brief, result, False
-            brief = restore.stage_restore(name, viewer=self.viewer(account), archive_password=body.archive_password)
+            brief = restore.stage_restore(name, viewer=self.viewer(account), archive_password=body.archive_password,
+                                          options=body.options)
         except BackupError as exc:
             raise self.fail(exc) from exc
         restore.restart_soon()

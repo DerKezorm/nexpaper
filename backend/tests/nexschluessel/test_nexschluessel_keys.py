@@ -138,3 +138,21 @@ def test_a_presented_key_of_the_wrong_shape_or_unknown_is_refused(app: Any, conf
         assert not ok(app.probe(kind.id, kind.prefix + "x" * 43))
         assert not ok(app.probe(kind.id, kind.prefix + "y" * 400))
         assert not ok(app.probe(kind.id, "nothing"))
+
+
+def test_the_operator_never_sees_the_start_of_a_key_its_owner_does(app: Any, config: Any) -> None:
+    """Since E36 (nexnotes showed it to nobody but the owner): the operator's list and the answers of locking and
+    unlocking carry no ``prefix``, no part of the secret; the owner's own list keeps it."""
+    for kind in _kinds(config):
+        made = _make(app, kind).json()
+        start = made["key"]["prefix"]
+        assert start and start in app.client("owner").get(f"{app.prefix}/keys").text
+        operator = app.client("operator")
+        listing = operator.get(f"{app.prefix}/admin/keys")
+        row = next(found for found in listing.json()["keys"] if str(found["id"]) == str(made["key"]["id"]))
+        assert "prefix" not in row and isinstance(row["extra"], dict)
+        locked = operator.post(f"{app.prefix}/admin/keys/{made['key']['id']}/block")
+        unlocked = operator.post(f"{app.prefix}/admin/keys/{made['key']['id']}/unblock")
+        for answer in (listing, locked, unlocked):
+            assert answer.status_code == 200 and start not in answer.text and made["secret"] not in answer.text
+        assert "prefix" not in locked.json() and "prefix" not in unlocked.json()

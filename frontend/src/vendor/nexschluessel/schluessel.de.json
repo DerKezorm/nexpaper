@@ -1,7 +1,7 @@
 {
   "apiKeys": {
     "title": "API-Schlüssel",
-    "hint": "Ein API-Schlüssel lässt ein Programm mit deinen {things} arbeiten, etwa n8n, Home Assistant oder ein Skript. Er darf nie mehr als dein Konto.",
+    "hint": "Ein API-Schlüssel lässt ein Programm mit deinen {thingsDative} arbeiten, etwa n8n, Home Assistant oder ein Skript. Er darf nie mehr als dein Konto.",
     "new": "Neuer API-Schlüssel",
     "empty": "Noch kein API-Schlüssel.",
     "count": "{count} von {max} Schlüsseln",

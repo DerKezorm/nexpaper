@@ -24,6 +24,8 @@ export type SettingsLink = ComponentType<{
   children?: ReactNode
   'aria-current'?: 'page'
   'data-testid'?: string
+  /** Since E34: the whole name of the entry (a long one is cut off on screen). */
+  title?: string
 }>
 
 export type SettingsArea = {
@@ -42,7 +44,7 @@ export type SettingsGroup = {
   areas: readonly SettingsArea[]
 }
 
-function PlainLink({ to, className, children, ...rest }: { to: string; className?: string; children?: ReactNode; 'aria-current'?: 'page'; 'data-testid'?: string }) {
+function PlainLink({ to, className, children, ...rest }: { to: string; className?: string; children?: ReactNode; 'aria-current'?: 'page'; 'data-testid'?: string; title?: string }) {
   return (
     <a href={to} className={className} {...rest}>
       {children}
@@ -63,6 +65,7 @@ function ordered(groups: readonly SettingsGroup[]): SettingsGroup[] {
 export function SettingsNav({
   app,
   things,
+  thingsDative,
   groups,
   about,
   current,
@@ -72,8 +75,10 @@ export function SettingsNav({
 }: {
   /** The app's name ("nexnotes"), for "About nexnotes". */
   app: string
-  /** The app's word for its things, for the lines of the shared areas (`areaText`). */
+  /** The app's word for its things, for the lines of the shared areas (`areaText`): `things` as subject ("Kalender"),
+   * `thingsDative` after "mit deinen" ("Kalendern", since E34; default `things`). */
   things?: string
+  thingsDative?: string
   groups: readonly SettingsGroup[]
   /** "About <app>", set apart at the end. */
   about: { href: string; title?: string; slug?: string }
@@ -91,7 +96,7 @@ export function SettingsNav({
     const here = slug === current
     const { Icon } = iconOf(icon)
     return (
-      <Link to={href} aria-current={here ? 'page' : undefined} className={`${ENTRY} ${here ? ENTRY_HERE : ENTRY_QUIET}`} data-testid={`settings-nav-${slug}`}>
+      <Link to={href} aria-current={here ? 'page' : undefined} className={`${ENTRY} ${here ? ENTRY_HERE : ENTRY_QUIET}`} data-testid={`settings-nav-${slug}`} title={title}>
         <Icon aria-hidden className="h-4 w-4 shrink-0" strokeWidth={1.8} />
         <span className="min-w-0 truncate">{title}</span>
       </Link>
@@ -117,7 +122,7 @@ export function SettingsNav({
           </p>
           <ul aria-labelledby={`settings-group-${group.id}`} className="m-0 flex list-none flex-col gap-0.5 p-0">
             {group.areas.map((area) => (
-              <li key={area.slug}>{entry(area.slug, area.title ?? areaText(texts, area.slug, { app, things })?.title ?? area.slug, area.icon, area.href)}</li>
+              <li key={area.slug}>{entry(area.slug, area.title ?? areaText(texts, area.slug, { app, things, thingsDative })?.title ?? area.slug, area.icon, area.href)}</li>
             ))}
           </ul>
         </div>
@@ -179,19 +184,21 @@ export function SettingsPage({
   subtitle,
   app,
   things,
+  thingsDative,
   children,
 }: {
   slug: string
   /** For a shared area the kit's title when left out. */
   title?: string
   subtitle?: ReactNode
-  /** The app's name and word for its things, for a shared area's title and line. */
+  /** The app's name and word for its things, for a shared area's title and line (`thingsDative` since E34). */
   app?: string
   things?: string
+  thingsDative?: string
   children?: ReactNode
 }) {
   const texts = useNexuiTexts()
-  const shared = areaText(texts, slug, { app: app ?? '', things })
+  const shared = areaText(texts, slug, { app: app ?? '', things, thingsDative })
   const line = subtitle ?? (shared?.text || null)
   return (
     <div className="flex min-w-0 flex-col gap-5" data-testid={`settings-area-${slug}`} data-area={slug}>

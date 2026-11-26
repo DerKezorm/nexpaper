@@ -1,6 +1,6 @@
 {
   "title": "Log",
-  "hint": "Four levels. The two deep ones switch themselves off after an hour. Never the content of {things}, passwords or keys.",
+  "hint": "Four levels. The two deep ones switch themselves off after an hour. Never the content of {thingsDative}, passwords or keys.",
   "level": "Level",
   "all": "All",
   "levelHint": "A filter always shows the higher levels too: “WARNING” includes the errors.",

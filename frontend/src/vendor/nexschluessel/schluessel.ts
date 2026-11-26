@@ -3,6 +3,8 @@
 // the ui kit). Copied unchanged into frontend/src/vendor/nexschluessel/ by bauplaene/schluessel/tools/sync.py; changed
 // only there.
 
+import type { ReactNode } from 'react'
+
 import de from './schluessel.de.json'
 import en from './schluessel.en.json'
 import fr from './schluessel.fr.json'
@@ -68,7 +70,15 @@ export type KeyListing = {
 }
 
 /** One row of `GET <base>/admin/keys`. */
-export type AdminKey = KeyEntry & { account: { id: number | string; name: string; display_name: string; out: boolean } }
+/** A row of `GET <base>/admin/keys`: never the start of the key (no `prefix`, since E36); `extra` holds the values of
+ * the app's own columns (`AppConfig.admin_extra`). */
+export type AdminKey = Omit<KeyEntry, 'prefix'> & {
+  account: { id: number | string; name: string; display_name: string; out: boolean }
+  extra?: Record<string, unknown>
+}
+
+/** A column of the app in "API-Schlüssel aller Konten" (nexnotes: the folders a key reaches), before the button. */
+export type AdminExtraColumn = { key: string; label: string; width?: string; cell?: (row: AdminKey) => ReactNode }
 
 /** `GET <base>/interfaces`: the switches the app has. */
 export type Interfaces = Partial<Record<'api' | 'mcp' | 'app' | 'pairing', boolean>>
@@ -162,7 +172,7 @@ export function newClientRef(): string {
 export type KeyTexts = typeof de
 export const KEY_TEXTS: Record<'de' | 'en' | 'fr', KeyTexts> = { de, en, fr }
 
-/** Fills `{things}`, `{name}`, `{count}` … */
+/** Fills `{things}`, `{thingsDative}` (since E34), `{name}`, `{count}` … */
 export function fillKeys(text: string, values: Record<string, string | number>): string {
   return text.replace(/\{(\w+)\}/g, (whole, key: string) => (key in values ? String(values[key] ?? '') : whole))
 }

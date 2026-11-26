@@ -20,8 +20,10 @@ export type ApiKeysCardProps = {
   request: KeyRequest
   /** Where the module's routes are mounted. */
   base?: string
-  /** The app's word for what it keeps, in the form of the card's sentence ("Notizen", "Kalendern"). */
+  /** The app's word for what it keeps ("Notizen", "Kalender"). */
   things: string
+  /** Since E34: the same after "mit deinen" in the card's sentence ("Kalendern"); default `things`. */
+  thingsDative?: string
   /** The app's own rights, extras and the word for its areas. */
   words?: AppWords
   /** Where the description of the interface lives (`/api/v1/docs`, a page of the app). */
@@ -43,6 +45,7 @@ export function ApiKeysCard({
   request,
   base = KEYS_BASE,
   things,
+  thingsDative = things,
   words,
   docsHref,
   securityHref = '/settings/security',
@@ -87,7 +90,7 @@ export function ApiKeysCard({
   }
 
   return (
-    <Card id="api-keys" icon="KeyRound" title={texts.apiKeys.title} subtitle={fillKeys(texts.apiKeys.hint, { things })} testId={testId}>
+    <Card id="api-keys" icon="KeyRound" title={texts.apiKeys.title} subtitle={fillKeys(texts.apiKeys.hint, { things, thingsDative })} testId={testId}>
       {listing && !listing.api && (
         <Notice tone="warn" testId="api-keys-off">
           {texts.apiKeys.off}

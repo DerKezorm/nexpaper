@@ -49,6 +49,8 @@ def check(name: str, *, viewer: Any = None, archive_password: str | None = None)
         # A deflated member the app's check read without ``tools.DAMAGE``: damaged, never a 500.
         config.logger.info("A backup could not be inflated name=%s: %s", name, exc)
         checked = Checked(database_ok=False, files_ok=False)
+    # The app's own "too new" (its schema, since E37) counts like the module's comparison of versions.
+    too_new = too_new or checked.too_new or checked.details.get("too_new") is True
     return Brief(
         name=name, created=described.created or "", kind=described.kind, note=described.note,
         version=described.version, uploaded=name.endswith(archives.UPLOADED), database_ok=checked.database_ok,
@@ -76,9 +78,44 @@ def failed_folder() -> Path:
     return archives.folder() / archives.FAILED
 
 
-def stage_restore(name: str, *, viewer: Any = None, archive_password: str | None = None) -> Brief:
-    """Check, keep the current state as a copy, and lay the archive out for the next start."""
+#: What one answer of the app's questions may be (since E38).
+Answer = str | bool | int
+
+
+def checked_options(options: dict[str, Any] | None) -> dict[str, Answer]:
+    """The answers to the app's questions (``AppConfig.restore_options``), or ``restore_options_invalid``: only the
+    app's keys, each a word (at most 500 characters), a yes/no or a number."""
+    allowed = set(current().restore_options)
+    found: dict[str, Answer] = {}
+    for key, value in (options or {}).items():
+        too_long = isinstance(value, str) and len(value) > 500
+        if key not in allowed or not isinstance(value, str | bool | int) or too_long:
+            raise BackupError("restore_options_invalid", "the answers do not fit the questions of this app", 422)
+        found[key] = value
+    return found
+
+
+def _with_options(options: dict[str, Answer]) -> dict[str, Any]:
+    """The keyword for the app's hook: only when there are answers, so that an app without questions keeps its hooks."""
+    return {"options": options} if options else {}
+
+
+def staged_options(pending: Path) -> dict[str, Answer]:
+    """In the app's ``apply``: the answers given when the restore was staged (``{}`` without)."""
+    try:
+        marker = json.loads((pending / MARKER).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    found = marker.get("options")
+    return dict(found) if isinstance(found, dict) else {}
+
+
+def stage_restore(name: str, *, viewer: Any = None, archive_password: str | None = None,
+                  options: dict[str, Any] | None = None) -> Brief:
+    """Check, keep the current state as a copy, and lay the archive out for the next start. ``options``: the answers
+    to the app's questions (since E38), for ``unpack`` and, in the marker, for ``apply``."""
     config = current()
+    answers = checked_options(options)
     if config.restore != RESTART:
         raise RuntimeError("this app restores at once: restore_now")
     with archives.lock:
@@ -89,8 +126,10 @@ def stage_restore(name: str, *, viewer: Any = None, archive_password: str | None
         tools.remove_tree(pending)
         tools.private_folder(pending)
         try:
-            config.hooks.unpack(archives.path_of(name), pending, archive_password=archive_password)
-            marker = {"name": name, "created": brief.created, "version": brief.version, "at": tools.now_iso()}
+            config.hooks.unpack(archives.path_of(name), pending, archive_password=archive_password,
+                                **_with_options(answers))
+            marker = {"name": name, "created": brief.created, "version": brief.version, "at": tools.now_iso(),
+                      "options": answers}
             # Last: the marker says the folder is complete.
             (pending / MARKER).write_text(json.dumps(marker), encoding="utf-8")
         except BaseException:
@@ -178,16 +217,20 @@ def report_failed_restore() -> bool:
     return True
 
 
-def restore_now(name: str, *, viewer: Any = None, archive_password: str | None = None) -> tuple[Brief, dict[str, Any]]:
-    """For restore = "now": check, keep the current state, and put the archive's in place while the app runs."""
+def restore_now(name: str, *, viewer: Any = None, archive_password: str | None = None,
+                options: dict[str, Any] | None = None) -> tuple[Brief, dict[str, Any]]:
+    """For restore = "now": check, keep the current state, and put the archive's in place while the app runs.
+    ``options``: the answers to the app's questions (since E38), for its ``restore_now``."""
     config = current()
+    answers = checked_options(options)
     if config.restore != NOW:
         raise RuntimeError("this app restores at the next start: stage_restore")
     with archives.lock:
         brief = check(name, viewer=viewer, archive_password=archive_password)
         _refuse_unless_usable(brief)
         archives.create(kind=UPDATE, note=f"before restoring {name}")
-        result = config.hooks.restore_now(archives.path_of(name), archive_password=archive_password)
+        result = config.hooks.restore_now(archives.path_of(name), archive_password=archive_password,
+                                          **_with_options(answers))
     state.update(restored={"at": tools.now_iso(), "name": name})
     config.logger.warning("Backup restored name=%s", name)
     return brief, dict(result or {})

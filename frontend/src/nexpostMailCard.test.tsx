@@ -1,3 +1,4 @@
+// Vorlage nexpost 1.1.0
 // @vitest-environment jsdom
 /**
  * Since post 1.1.0: the card "Mail" of the module in the app (page Server › Mail): built from the ui kit, the fields,

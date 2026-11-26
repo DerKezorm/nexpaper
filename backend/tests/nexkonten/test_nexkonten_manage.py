@@ -162,6 +162,52 @@ def test_deleting_lets_every_open_password_link_lapse_and_bringing_back_brings_n
         konten.resets.use_reset(store, fresh, password())
 
 
+def test_the_app_hears_when_an_account_goes_out_and_comes_back_once_each(
+    app: Any, konten: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Since E38: ``Store.on_shut_out(account)`` when the account is blocked or deleted while it could sign in,
+    ``Store.on_back(account)`` when it can sign in again; once per change. While it is out no push goes out (where the
+    adapter can tell, ``push_ready``); the subscriptions stay, so that it comes back whole. An app whose adapter answers
+    None for ``push_ready`` is checked only for the calls, not for what it does with them."""
+    boss, secret = _operator(app)
+    kim = app.seed("kim", email="kim@example.com", password=password())
+    heard: list[tuple[str, str]] = []
+    with app.store() as store:
+        kind = type(store)
+        for hook in ("on_shut_out", "on_back"):
+            assert callable(getattr(kind, hook, None)), f"the app's Store has no {hook} (konten 1.1.0, E38)"
+            original = getattr(kind, hook)
+
+            def recorded(self: Any, account: Any, hook: str = hook, original: Any = original) -> None:
+                heard.append((hook, str(account.id)))
+                original(self, account)
+
+            monkeypatch.setattr(kind, hook, recorded)
+    ready = app.push_ready(kim)
+    def act(name: str) -> Any:
+        return lambda store: getattr(konten.manage, name)(store, kim, actor_id=boss, password=secret)
+
+    steps = [
+        ("block", act("block"), "on_shut_out", False),
+        ("block again", act("block"), None, False),
+        ("unblock", act("unblock"), "on_back", True),
+        ("delete", act("remove"), "on_shut_out", False),
+        ("restore", act("restore"), "on_back", True),
+        ("block", act("block"), "on_shut_out", False),
+        # Blocked before, deleted and brought back blocked: out all along, nothing more to hear.
+        ("delete blocked", act("remove"), None, False),
+        ("restore blocked", act("restore"), None, False),
+    ]
+    assert ready in (True, None)
+    for label, step, expected, pushes in steps:
+        before = len(heard)
+        with app.store() as store:
+            step(store)
+        assert heard[before:] == ([(expected, str(kim))] if expected else []), label
+        if ready is not None:
+            assert app.push_ready(kim) is pushes, label
+
+
 def test_after_its_days_a_deleted_account_goes_for_good_and_its_name_stays_reserved(app: Any, konten: Any) -> None:
     boss, secret = _operator(app)
     kim = app.seed("kim", password=password())

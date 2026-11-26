@@ -12,7 +12,7 @@ import { createRoot } from 'react-dom/client'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { NexuiLanguage } from '../nexui'
-import { SICHERUNG_TEXTS, StorageArea, makeSicherungApi, passwordHeader, shares, bytes, type Backups, type Brief, type Entry, type Overview, type SicherungApi } from './index'
+import { SICHERUNG_TEXTS, StorageArea, blockedWords, makeSicherungApi, passwordHeader, shares, bytes, type Backups, type Brief, type Entry, type Overview, type SicherungApi } from './index'
 
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
@@ -173,6 +173,104 @@ describe('the area "Speicher und Sicherung"', () => {
     expect(row.textContent).toContain('12 Notizen')
     await act(async () => fireEvent.click(now))
     expect(api.calls).toContain('make')
+  })
+
+  it('writes every time of the card through the app\'s when (since E34), and as before without it', async () => {
+    const api = fakeApi()
+    api.backups = vi.fn(async () => ({
+      ...BACKUPS,
+      failure: { at: '2026-11-25T04:00:00+00:00', reason: 'disk_full' },
+      restore_failure: { at: '2026-11-25T05:00:00+00:00', name: 'nexnotes-2026-11-24-120000-upload.zip' },
+    }))
+    const asked: string[] = []
+    const root = await show(
+      <StorageArea app="nexnotes" things="Notizen" holds="h" api={api} password language="de"
+        when={(iso, language) => (asked.push(`${iso} ${language}`), `heute 3:00 AM <${iso.slice(11, 16)}>`)} />,
+    )
+    await waitFor(() => expect(root.querySelector('[data-testid="backup-list"]')).not.toBeNull())
+    expect(root.querySelector('[data-testid="backup-last"]')?.textContent).toContain('heute 3:00 AM <03:00>')
+    expect(root.querySelector('[data-testid="backup-failure"]')?.textContent).toContain('heute 3:00 AM <04:00>')
+    expect(root.querySelector('[data-testid="restore-failure"]')?.textContent).toContain('heute 3:00 AM <05:00>')
+    const row = root.querySelector('[data-testid="backup-nexnotes-2026-11-24-120000-upload.zip"]') as HTMLElement
+    expect(row.textContent).toContain('heute 3:00 AM <03:00>')
+    const first = root.querySelector('[data-testid="backup-nexnotes-2026-11-25-030000.zip"]') as HTMLElement
+    await act(async () => fireEvent.click(getByRole(first, 'button', { name: /^Prüfen/ })))
+    expect(root.querySelector('[data-testid="backup-brief"]')?.textContent).toContain('heute 3:00 AM <03:00>')
+    expect(asked.every((call) => call.endsWith(' de'))).toBe(true)
+    // No time of the card in the browser's own way.
+    const plain = new Date('2026-11-25T03:00:00+00:00').toLocaleString('de-DE', { dateStyle: 'medium', timeStyle: 'short' })
+    expect(root.textContent).not.toContain(plain)
+    shown?.unmount()
+    const before = await area(fakeApi())
+    expect(before.querySelector('[data-testid="backup-last"]')?.textContent).toContain(plain)
+  })
+
+  it("says an app's own blocking reason in the app's words and the page's language (since E37), as before without", async () => {
+    const api = fakeApi()
+    const blocked = { ...brief(), blocked: 'backup_other_master_key', blocked_text: 'This backup comes from another server.' }
+    api.check = vi.fn(async () => blocked)
+    api.restore = vi.fn(async () => Promise.reject({ code: 'backup_other_master_key' }))
+    const words = { backup_other_master_key: { de: 'Diese Sicherung stammt von einem anderen Server.', en: 'From another server.' } }
+    const root = await show(
+      <StorageArea app="nexdiary" things="Einträge" holds="h" api={api} password language="de" blockedText={words} />,
+    )
+    await waitFor(() => expect(root.querySelector('[data-testid="backup-list"]')).not.toBeNull())
+    const row = root.querySelector('[data-testid="backup-nexnotes-2026-11-25-030000.zip"]') as HTMLElement
+    await act(async () => fireEvent.click(getByRole(row, 'button', { name: /^Prüfen/ })))
+    const box = root.querySelector('[data-testid="backup-brief"]') as HTMLElement
+    expect(box.textContent).toContain('Diese Sicherung stammt von einem anderen Server.')
+    expect(box.textContent).not.toContain('This backup comes from another server.')
+    shown?.unmount()
+    // Without the app's words: the server's sentence, as before.
+    const plain = await show(<StorageArea app="nexdiary" things="Einträge" holds="h" api={api} password language="de" />)
+    await waitFor(() => expect(plain.querySelector('[data-testid="backup-list"]')).not.toBeNull())
+    const again = plain.querySelector('[data-testid="backup-nexnotes-2026-11-25-030000.zip"]') as HTMLElement
+    await act(async () => fireEvent.click(getByRole(again, 'button', { name: /^Prüfen/ })))
+    expect(plain.querySelector('[data-testid="backup-brief"]')?.textContent).toContain('This backup comes from another server.')
+  })
+
+  it('takes English for a language the app has no words in, and leaves other codes to the module', () => {
+    const words = { backup_other_master_key: { en: 'From another server.' } }
+    expect(blockedWords(words, 'backup_other_master_key', 'fr')).toBe('From another server.')
+    expect(blockedWords(words, 'backup_damaged', 'de')).toBeNull()
+    expect(blockedWords(undefined, 'backup_other_master_key', 'de')).toBeNull()
+  })
+
+  it("asks the app's own questions when restoring and sends the answers (since E38)", async () => {
+    const api = fakeApi()
+    const answered: unknown[] = []
+    api.restore = vi.fn(async (name, password, archivePassword, options) => (answered.push(options), { ...brief(), result: {}, restarting: false }))
+    const root = await show(
+      <StorageArea app="nexmail" things="Mails" holds="h" api={api} password language="de"
+        restoreOptions={[
+          { key: 'address', label: 'Öffentliche Adresse aus der Sicherung übernehmen', hint: 'Sonst bleibt die jetzige.' },
+          { key: 'mode', label: 'Postfächer', choices: [{ value: 'keep', label: 'Behalten' }, { value: 'replace', label: 'Ersetzen' }] },
+        ]} />,
+    )
+    await waitFor(() => expect(root.querySelector('[data-testid="backup-list"]')).not.toBeNull())
+    const row = root.querySelector('[data-testid="backup-nexnotes-2026-11-25-030000.zip"]') as HTMLElement
+    await act(async () => fireEvent.click(getByRole(row, 'button', { name: /^Wiederherstellen/ })))
+    const dialog = await waitFor(() => root.ownerDocument.querySelector('[data-testid="backup-confirm-restore"]') as HTMLElement)
+    expect(dialog.textContent).toContain('Sonst bleibt die jetzige.')
+    await act(async () => fireEvent.click(getByLabelText(dialog, 'Öffentliche Adresse aus der Sicherung übernehmen')))
+    await act(async () => fireEvent.change(getByLabelText(dialog, 'Postfächer'), { target: { value: 'replace' } }))
+    await act(async () => fireEvent.change(getByLabelText(dialog, 'Dein Passwort'), { target: { value: 'secret' } }))
+    await act(async () => fireEvent.click(getByRole(dialog, 'button', { name: /^Wiederherstellen/ })))
+    await waitFor(() => expect(answered).toEqual([{ address: true, mode: 'replace' }]))
+  })
+
+  it('sends no answers without questions, as before', async () => {
+    const api = fakeApi()
+    const restored: unknown[][] = []
+    api.restore = vi.fn(async (...given: unknown[]) => (restored.push(given), { ...brief(), result: {}, restarting: false }))
+    const root = await area(api)
+    const row = root.querySelector('[data-testid="backup-nexnotes-2026-11-25-030000.zip"]') as HTMLElement
+    await act(async () => fireEvent.click(getByRole(row, 'button', { name: /^Wiederherstellen/ })))
+    const dialog = await waitFor(() => root.ownerDocument.querySelector('[data-testid="backup-confirm-restore"]') as HTMLElement)
+    await act(async () => fireEvent.change(getByLabelText(dialog, 'Dein Passwort'), { target: { value: 'secret' } }))
+    await act(async () => fireEvent.click(getByRole(dialog, 'button', { name: /^Wiederherstellen/ })))
+    await waitFor(() => expect(restored).toHaveLength(1))
+    expect(restored[0]).toHaveLength(3)
   })
 
   it('shows the result of a check as a box', async () => {
