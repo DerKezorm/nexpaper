@@ -18,7 +18,5 @@
     "noFallthroughCasesInSwitch": true,
     "types": ["vite/client", "vitest/globals"]
   },
-  "include": ["src"],
-  // The shared modules' own tests come unchanged from their repository and are checked there (vitest runs them here).
-  "exclude": ["src/vendor/**/*.test.ts", "src/vendor/**/*.test.tsx"]
+  "include": ["src"]
 }

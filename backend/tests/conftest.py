@@ -148,6 +148,21 @@ def clean_db(schema: None) -> Iterator[None]:
     app.dependency_overrides.clear()
 
 
+@pytest.fixture(autouse=True)
+def bestand_mail_caught(request: pytest.FixtureRequest) -> Iterator[None]:
+    """The test "Bestand" catches the reset links its own way (``kontenpost.send_reset``); the notice of a new sign-in
+    after the new password goes out at once through the shared post module. It is caught
+    here with the module's catcher, so that no test reaches a mail server (post 1.1.0 as of a374e3c: a real attempt
+    fails loudly). The file itself stays as it is (only its block ``AFTER_THE_CHANGE`` may change)."""
+    if request.module.__name__.rsplit(".", 1)[-1] != "test_bestand":
+        yield
+        return
+    from app.vendor.nexpost import testing as post_testing
+
+    with post_testing.catch_mail():
+        yield
+
+
 PASSWORD = "correct horse battery"
 
 

@@ -168,6 +168,11 @@ def test_tokens_in_addresses_never_reach_the_log() -> None:
         shown = logs.redact(line)
         assert invite not in shown and key not in shown and code not in shown, shown
         assert "…" in shown
+    # After "Bearer" the known start of a key or device token stays readable, the rest goes (log 1.0.0 as of a374e3c);
+    # an unknown token goes whole.
+    assert logs.redact(f"Authorization: Bearer {key}") == "Authorization: Bearer npk_…"
+    assert logs.redact(f"Authorization: Bearer npd_{invite}") == "Authorization: Bearer npd_…"
+    assert logs.redact(f"Authorization: Bearer {invite}") == "Authorization: Bearer …"
     # What is no token stays as it was.
     assert logs.redact("GET /api/v1/about/updates -> 200") == "GET /api/v1/about/updates -> 200"
 
