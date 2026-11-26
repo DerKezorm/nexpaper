@@ -92,11 +92,18 @@ OPEN = {
     ("POST", "/api/oauth/register"),
     ("POST", "/api/oauth/token"),
     ("POST", "/api/oauth/revoke"),
+    # Another nex app (the shared module verbinden): what nexpaper is, and trading, revoking, retiring with its token;
+    # the module's walls (tests/nexverbinden).
+    ("GET", "/.well-known/nex-app"),
+    ("POST", "/api/connect/token"),
+    ("POST", "/api/connect/revoke"),
+    ("POST", "/api/connect/retire"),
+    ("GET", "/api/connect/hello"),
 }
 
-#: The fixed places of the shared MCP module, the same in every nex app (Entwurf MCP-Modul: one address for all): the
+#: The fixed places of the shared MCP and verbinden modules, the same in every nex app (Entwurf MCP-Modul: one address for all): the
 #: only routes outside ``/api/v1``.
-MODULE_PLACES = ("/api/mcp", "/api/oauth/", "/.well-known/oauth-")
+MODULE_PLACES = ("/api/mcp", "/api/oauth/", "/.well-known/oauth-", "/api/connect/", "/.well-known/nex-app")
 
 
 def concrete(path: str) -> str:
@@ -442,8 +449,10 @@ def test_the_description_is_served_and_names_the_ways_in() -> None:
         answer = client.get("/api/v1/openapi.json")
         assert answer.status_code == 200 and answer.json()["info"]["title"] == "nexpaper"
         assert all(path.startswith("/api/v1/") or path.startswith(MODULE_PLACES) for path in answer.json()["paths"])
-        assert [path for path in answer.json()["paths"] if path.startswith(MODULE_PLACES)] == [
-            "/api/mcp", "/api/oauth/authorize"], "only the MCP endpoint and the consent of the shared module"
+        assert sorted(path for path in answer.json()["paths"] if path.startswith(MODULE_PLACES)) == sorted([
+            "/api/mcp", "/api/oauth/authorize", "/api/connect/partners", "/api/connect/partners/{partner}/start",
+            "/api/connect/return", "/api/connect/partners/{partner}/check", "/api/connect/partners/{partner}",
+            "/api/connect/consent", "/api/connect/admin"]), "only the shared modules' places for people and programs"
         assert "HTTPBearer" in str(answer.json()["components"]["securitySchemes"])
 
 

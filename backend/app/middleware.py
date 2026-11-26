@@ -209,7 +209,7 @@ def _refuse(status: int, code: str, text: str, **values: object) -> tuple[dict, 
 
 #: The start of a device token and of an API key (``services.devices.TOKEN_PREFIX``, ``services.apikeys.KEY_PREFIX``;
 #: a test keeps the two in step).
-TOKEN_STARTS = (b"npd_", b"npk_", b"npm_")
+TOKEN_STARTS = (b"npd_", b"npk_", b"npm_", b"npv_")
 
 
 #: Routes a program calls without a browser and without a token yet: a device trades a pairing code, an app trades the
@@ -220,6 +220,9 @@ PROGRAM_PATHS = frozenset({
     # The shared MCP module: programs speak there with a token or none at all, never with a cookie that counts (its own
     # walls: no ``Origin``, a key in ``Authorization``).
     "/api/mcp", "/api/oauth/register", "/api/oauth/token", "/api/oauth/revoke",
+    # The shared module verbinden: another nex app trades a code, revokes or retires an old key with its token or none
+    # (never a cookie); each answers ``origin_refused`` to a page.
+    "/api/connect/token", "/api/connect/revoke", "/api/connect/retire",
 })
 
 

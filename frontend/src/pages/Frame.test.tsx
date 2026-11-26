@@ -66,7 +66,7 @@ beforeEach(async () => {
   await changeLanguage('de', false)
   auth.status = 'signedIn'
   auth.me = operator
-  answers = {}
+  answers = { 'GET /api/connect/partners': [], 'GET /api/connect/admin': { connections: true, addresses: {}, partners: ['nexmail', 'nextasks', 'nextime'] }, 'GET /api/v1/connections/mcp/requests?status=waiting': [] }
   fails = {}
   sessionStorage.removeItem('nexpaper.startShown')
   serve()
@@ -215,9 +215,10 @@ describe('the settings', () => {
     expect(box.querySelector('h1')!.textContent).toBe('Allgemein')
     expect(box.querySelector('[data-testid="settings-area-general"] p')!.textContent).toBe('Grenzen, Funktionen für alle Konten, Schnittstellen und eigene Sprachen.')
     expect(box.querySelector('[data-testid="settings-about"], [data-part="settings-about"] a')!.textContent).toContain('Über nexpaper')
-    // The cards of General in the plan's order, under the plan's names (Bauplan Allgemein, E48: `features`, `web-push`).
+    // The cards of General in the plan's order, under the plan's names (Bauplan Allgemein, E48: `features`, `web-push`);
+    // the operator's card of the other nex apps (verbinden 0.1.1, V14) after the interfaces.
     expect([...box.querySelectorAll('[data-testid="settings-area-general"] section[data-card]')].map((card) => card.getAttribute('data-card'))).toEqual(
-      ['limits', 'features', 'interfaces', 'web-push', 'languages'],
+      ['limits', 'features', 'interfaces', 'nex-apps', 'web-push', 'languages'],
     )
     act(() => root.unmount())
     box.remove()

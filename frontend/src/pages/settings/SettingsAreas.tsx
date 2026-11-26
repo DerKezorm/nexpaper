@@ -11,6 +11,7 @@ import { FeaturesCard } from './FeaturesCard'
 import { ImportCard } from './ImportCard'
 import { IntakeCards } from './IntakeCards'
 import { AllKeys, Interfaces } from './KeysCards'
+import { OtherAppsOperator } from './VerbindenCards'
 import { OcrCard } from './OcrCard'
 import { PushServerCard } from './PushCards'
 import { LanguagesCard, LogArea, MailArea } from './ServerCards'
@@ -37,6 +38,7 @@ export function AreaContent({ area }: { area: AreaSlug }) {
           <LimitsCard />
           <FeaturesCard />
           <Interfaces />
+          <OtherAppsOperator />
           <PushServerCard />
           <LanguagesCard />
         </>

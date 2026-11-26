@@ -1440,5 +1440,6 @@ __all__ += ["UploadRequest"]
 
 
 # The tables of the shared account and post modules belong to every schema (``models_accounts``), and those of the
-# shared MCP and AI modules (``models_mcp``, ``models_ki``), made at every start like them.
-from . import models_accounts, models_ki, models_mcp  # noqa: E402, F401
+# shared MCP, AI and connection modules (``models_mcp``, ``models_ki``, ``models_verbinden``), made at every start like
+# them.
+from . import models_accounts, models_ki, models_mcp, models_verbinden  # noqa: E402, F401

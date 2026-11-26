@@ -13,6 +13,7 @@ import { ExportLinkPage } from './pages/ExportLinkPage'
 import { LinkPage } from './pages/LinkPage'
 import { OAuthPage } from './pages/OAuthPage'
 import { McpConsentPage, McpRequestPage } from './pages/settings/McpCards'
+import { ConnectConsentPage, ConnectReturnPage } from './pages/settings/VerbindenCards'
 import { OrderPage } from './pages/OrderPage'
 import { QuickPage } from './pages/QuickPage'
 import { FormerAddress, SettingsPage } from './pages/SettingsPage'
@@ -142,6 +143,9 @@ export default function App() {
         <Route path="oauth/authorize" element={<OAuthPage />} />
         {/* AI tools (mcp 1.1.0): a program asks to connect; one of its requests waits for a yes. */}
         <Route path="mcp/authorize" element={<McpConsentPage />} />
+        {/* Another nex app asks to connect (verbinden 0.1.1), and the way back from one. */}
+        <Route path="connect/app" element={<ConnectConsentPage />} />
+        <Route path="connect/return" element={<ConnectReturnPage />} />
         <Route element={<AppShell />}>
           <Route index element={<ArchivePage />} />
           <Route path="eingang" element={<InboxPage />} />

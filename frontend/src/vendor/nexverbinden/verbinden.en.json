@@ -1,0 +1,160 @@
+{
+  "states": {
+    "none": "Not connected",
+    "connected": "Connected",
+    "unreachable": "Unreachable",
+    "refused": "Disconnected",
+    "resting": "Resting",
+    "off": "Switched off",
+    "legacy": "Connected",
+    "expiring": "Expiring",
+    "tooOld": "Too old",
+    "usesUs": "Uses {app}"
+  },
+  "card": {
+    "appMay": "{app} may in {partner}",
+    "partnerMay": "{partner} may in {app}",
+    "wouldFlow": "What would flow",
+    "onlyCheck": "only check the connection",
+    "address": "Address of {partner}",
+    "addressHint": "e.g. https://{partner}.example.com",
+    "fromOperator": "Set by the operator. You may use another address.",
+    "how": "“Connect” opens {partner}. You sign in there, see what both apps get from each other, and agree. Then you are back here.",
+    "account": "Account in {partner}",
+    "areasThere": "{areas} in {partner}",
+    "areasHere": "{areas} here",
+    "allAreas": "all, including later ones",
+    "lastOk": "Last reached",
+    "lastUsed": "Last used by {partner}",
+    "since": "Connected since",
+    "viaKey": "Connected with",
+    "key": "API key {shown}",
+    "byHand": "entered by hand",
+    "until": "Valid until",
+    "unreachableTitle": "{partner} does not answer right now",
+    "unreachableText": "You see the state of {when}. {app} asks again on its own; the connection stays as it is.",
+    "refusedTitle": "{partner} no longer accepts the connection",
+    "refusedText": "It was ended in {partner}. Until you connect again, {app} lacks what comes from there.",
+    "restingTitle": "The connection rests",
+    "restingText": "Your account in {partner} rests, or the connection was not used for half a year. “Renew” wakes it.",
+    "offTitle": "Switched off in {partner}",
+    "offText": "The operator of {partner} has switched connections with other nex apps off. Nothing is deleted.",
+    "expiringTitle": "The API key expires on {day}",
+    "expiringText": "Connect once more. Afterwards the connection keeps itself fresh, and you never enter a key again.",
+    "legacyText": "Connected with an API key you entered by hand. It keeps working as before.",
+    "tooOld": "{partner} at this address cannot connect this way yet. Connect by hand or ask the operator for an update.",
+    "areasChoice": "Which {areas} may {partner} read?",
+    "areasChoiceAll": "All {areas}, including later ones"
+  },
+  "buttons": {
+    "connect": "Connect with {partner}",
+    "manual": "Connect by hand",
+    "renew": "Renew",
+    "check": "Check now",
+    "disconnect": "Disconnect",
+    "endAccess": "End access",
+    "reconnect": "Connect again",
+    "remove": "Remove",
+    "allow": "Allow connecting",
+    "decline": "Decline",
+    "cancel": "Cancel",
+    "save": "Save",
+    "back": "To the connections"
+  },
+  "disconnect": {
+    "title": "Disconnect {partner}?",
+    "text": "Both directions end, in {app} and in {partner}. What you created yourself stays in both apps."
+  },
+  "consent": {
+    "title": "{partner} wants to connect with {app}",
+    "subtitle": "Signed in as {account}. {partner} at {host} and {app} then get their own access to each other.",
+    "areas": "Which {areas}",
+    "allAreas": "All {areas}, including later ones",
+    "replaces": "An earlier connection with {partner} is replaced.",
+    "footer": "You can disconnect at any time under My account › Connections, here or in {partner}.",
+    "loading": "Loading …",
+    "failed": "That did not work",
+    "broken": "This request is incomplete. Start connecting again in the other app."
+  },
+  "return": {
+    "working": "Finishing the connection …",
+    "failed": "The connection was not made",
+    "declined": "You declined connecting."
+  },
+  "operator": {
+    "title": "Other nex apps",
+    "subtitle": "How the apps of this server connect with each other.",
+    "switch": "Connections with other nex apps",
+    "switchHint": "Off: nobody connects anew, existing connections rest. Nothing is deleted.",
+    "addressesHint": "An address set here is prefilled in the card for every account.",
+    "address": "Address of {partner}",
+    "saved": "Saved."
+  },
+  "areaWord": "areas",
+  "failed": "That did not work. Try again in a moment.",
+  "errors": {
+    "partner_unknown": "{app} does not connect with this app.",
+    "not_connected": "Not connected.",
+    "address_invalid": "This is not an address of a nex app.",
+    "address_port": "{app} asks only on port 80, 443 or from 1024 on.",
+    "address_refused": "{app} never asks this address.",
+    "wrong_app": "Another app answers at this address.",
+    "partner_too_old": "The app at this address cannot connect this way yet. Connect by hand.",
+    "partner_off": "The operator of the other app has switched connections off.",
+    "unreachable": "The other app cannot be reached right now.",
+    "refused": "The other app no longer accepts the connection.",
+    "resting": "The other app lets the connection rest.",
+    "consent_failed": "The other app did not confirm the connection. Connect again.",
+    "slow_down": "Too many tries. Wait a minute.",
+    "return_invalid": "This return belongs to no connection started here. Connect again.",
+    "connections_off": "The operator has switched connections with other nex apps off.",
+    "client_invalid": "The app that asks cannot be checked.",
+    "redirect_invalid": "This return address does not belong to the app that asks.",
+    "pkce_required": "The app that asks must use PKCE with S256.",
+    "areas_invalid": "One of them is not yours."
+  },
+  "purposes": {
+    "nextasks": {
+      "tasks.read": "Read your tasks and those assigned to you",
+      "tasks.write": "Create and change tasks",
+      "tasks.complete": "Tick tasks off",
+      "members.read": "See the members of your spaces"
+    },
+    "nextime": {
+      "calendars.read": "Read your calendars and events",
+      "events.write": "Create, change and delete events",
+      "invitations.answer": "Answer invitations"
+    },
+    "nexpaper": {
+      "deadlines.read": "Read the deadlines of your documents",
+      "documents.add": "Put documents into the inbox"
+    },
+    "nexnotes": {
+      "notes.add": "Create notes"
+    },
+    "nexlore": {
+      "notes.add": "Put notes into your spaces"
+    },
+    "nexfolk": {
+      "birthdays.read": "Read birthdays and anniversaries",
+      "contacts.read": "Read contacts",
+      "contacts.write": "Create and change contacts"
+    }
+  },
+  "about": {
+    "nexnotes+nextasks": "Lines of a note as tasks, with a link back.",
+    "nexmail+nextasks": "Mails as tasks; ticks and due dates come back.",
+    "nextasks+nextime": "Tasks with a due date in the calendar, ticked off in the calendar.",
+    "nexpaper+nextime": "Deadlines from documents as all-day entries.",
+    "nexmail+nextime": "Calendars in nexmail, events from mails, answering invitations.",
+    "nexfolk+nextime": "Birthdays as a calendar, guests from contacts.",
+    "nexfolk+nexmail": "Contacts while writing, new addresses into the address book.",
+    "nexmail+nexpaper": "Attachments of mails as documents in the inbox.",
+    "nexpaper+nextasks": "Tasks from documents, with a link back.",
+    "nexlore+nexnotes": "Notes into the knowledge of nexlore.",
+    "nexdiary+nextime": "The day's events in the review of the day.",
+    "nexdiary+nextasks": "The day's finished tasks in the review of the day.",
+    "nexdiary+nexfolk": "People from your contacts in the entry.",
+    "nexnotes+nextime": "A note for the event, with a link back."
+  }
+}

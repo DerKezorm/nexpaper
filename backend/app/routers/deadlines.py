@@ -17,7 +17,7 @@ from fastapi import APIRouter, Query, Request, Response
 from pydantic import BaseModel, ConfigDict
 
 from ..deps import Account as Caller
-from ..deps import DbSession, Reader
+from ..deps import DbSession, Reader, connection_areas
 from ..services import deadlines, documents
 from .pages import document_pages
 from .schemas import DocumentOut, DoneOut, NoticeOut, document_out, person
@@ -126,12 +126,27 @@ def listing(
     found = deadlines.listing(db, account.id, today, deadlines.Narrow(vault_id=vault_id, shared=shared, what=what),
                               with_done=done, limit=limit)
     page = document_pages(db, request)
-    return DeadlinesOut(
+    answer = DeadlinesOut(
         today=today, soon_days=deadlines.SOON_DAYS, overdue=_section(found.overdue, page),
         soon=_section(found.soon, page),
         later=_section(found.later, page), done=_section(found.done, page) if found.done is not None else None,
         counts={str(v): n for v, n in found.counts.items()}, shared=found.shared,
     )
+    areas = connection_areas(request)
+    if areas is not None:
+        # Another nex app with a connection limited to some vaults (verbinden 0.1.1) sees only their deadlines.
+        def kept(section: SectionOut | None) -> SectionOut | None:
+            if section is None:
+                return None
+            items = [item for item in section.items if item.vault_id in areas and not item.via_share]
+            return SectionOut(total=len(items), items=items)
+
+        answer = answer.model_copy(update={
+            "overdue": kept(answer.overdue), "soon": kept(answer.soon), "later": kept(answer.later),
+            "done": kept(answer.done), "counts": {key: n for key, n in answer.counts.items() if int(key) in areas},
+            "shared": 0,
+        })
+    return answer
 
 
 @router.post("/documents/{document_id}/dates/{kind}/done", response_model=DocumentOut,

@@ -29,8 +29,9 @@ from ..vendor.nexlog import handlers as _handlers
 
 #: A device token or an API key that ended up in a line (pasted into an address by mistake): devices ``npd_``, keys
 #: ``npk_``, the links to a document ``lnk_``, to an export ``lnx_``, the upload requests ``upr_``; MCP keys and
-#: programs ``npm_``, their refresh tokens ``npmr_`` and codes ``npmc_`` (mcp 1.1.0).
-KEY_PREFIXES = ("npd_", "npk_", "lnk_", "lnx_", "upr_", "npm_", "npmr_", "npmc_")
+#: programs ``npm_``, their refresh tokens ``npmr_`` and codes ``npmc_`` (mcp 1.1.0); connections with other nex apps
+#: ``npv_``, ``npvr_``, ``npvc_`` (verbinden 0.1.1).
+KEY_PREFIXES = ("npd_", "npk_", "lnk_", "lnx_", "upr_", "npm_", "npmr_", "npmc_", "npv_", "npvr_", "npvc_")
 #: Tokens that stand in an address without a prefix of their own, on top of the module's (``invite``, ``reset`` …):
 #: links that confirm a mail address (the page ``/mail/<token>`` and the route ``/api/v1/email/confirm/<token>``), the
 #: links to a document (``/l/<token>``), the links that confirm a sender address (the page ``/absender/<token>`` and

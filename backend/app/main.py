@@ -97,6 +97,7 @@ from .services import (
     settings_service,
     storage,
     totp,
+    verbinden_store,
 )
 from .services import deadlines as deadlines_service
 from .services import intake as intake_service
@@ -113,6 +114,7 @@ from .vendor.nexkonten import manage as konten_manage
 from .vendor.nexkonten import setup as konten_setup
 from .vendor.nexmcp import api as mcp_api
 from .vendor.nexschluessel import api as schluessel_api
+from .vendor.nexverbinden import api as verbinden_api
 
 logger = logging.getLogger("nexpaper")
 
@@ -157,8 +159,25 @@ def _write_log_mode(mode: str, until: datetime | None) -> None:
 
 
 def _purge_deleted() -> list[Any]:
+    from .vendor import nexverbinden
+
     with SessionLocal() as db:
-        return konten_manage.purge_due(KontenStore(db))
+        gone = konten_manage.purge_due(KontenStore(db))
+    # Connections of an account deleted for good end, and their partners hear it (verbinden 0.1.1).
+    for account_id in gone:
+        with SessionLocal() as db:
+            nexverbinden.end_all(verbinden_store.VerbindenStore(db), verbinden_store.CONFIG, account_id,
+                                 datetime.now(UTC))
+            db.commit()
+    return gone
+
+
+def _retry_revocations() -> None:
+    from .vendor import nexverbinden
+
+    with SessionLocal() as db:
+        nexverbinden.retry_waiting(verbinden_store.VerbindenStore(db), verbinden_store.CONFIG, datetime.now(UTC))
+        db.commit()
 
 
 async def _sweep_forever(stop: asyncio.Event) -> None:
@@ -184,6 +203,11 @@ async def _sweep_forever(stop: asyncio.Event) -> None:
                 await asyncio.to_thread(_purge_deleted)
             except Exception:
                 logger.exception("Removing deleted accounts for good failed")
+            # Revocations another nex app has not heard yet, tried again.
+            try:
+                await asyncio.to_thread(_retry_revocations)
+            except Exception:
+                logger.exception("Telling other nex apps of ended connections failed")
         rounds += 1
         try:
             await asyncio.wait_for(stop.wait(), 60)
@@ -366,6 +390,11 @@ app.include_router(schluessel_api.router(
 app.include_router(ki_api.router(
     config=ki_store.CONFIG, store=mcp_store.store, account=require_browser_account, operator=require_operator,
     server_prefix="/api/v1/server/ai", me_prefix="/api/v1/me/ai"))
+# Connections with other nex apps (verbinden 0.1.1): the fixed places ``/.well-known/nex-app``, ``/api/connect/…``;
+# starting, the consent and the cards only in a signed-in browser, the switch and the addresses for the operator.
+app.include_router(verbinden_api.router(
+    config=verbinden_store.CONFIG, store=verbinden_store.store, account=require_browser_account,
+    operator=require_operator, address=schluessel_store.address))
 # AI tools (the shared MCP module, mcp 1.1.0): ``POST /api/mcp`` with an MCP key or a program's token, OAuth for
 # programs under ``/api/oauth`` and ``/.well-known``, the account's rights per tool and requests under
 # ``/api/v1/connections/mcp``. Consent and requests only in a signed-in browser, the settings for the operator.

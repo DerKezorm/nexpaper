@@ -1,0 +1,160 @@
+{
+  "states": {
+    "none": "Non connecté",
+    "connected": "Connecté",
+    "unreachable": "Injoignable",
+    "refused": "Déconnecté",
+    "resting": "En pause",
+    "off": "Désactivé",
+    "legacy": "Connecté",
+    "expiring": "Expire bientôt",
+    "tooOld": "Trop ancien",
+    "usesUs": "Utilise {app}"
+  },
+  "card": {
+    "appMay": "{app} peut dans {partner}",
+    "partnerMay": "{partner} peut dans {app}",
+    "wouldFlow": "Ce qui circulerait",
+    "onlyCheck": "seulement vérifier la connexion",
+    "address": "Adresse de {partner}",
+    "addressHint": "p. ex. https://{partner}.example.com",
+    "fromOperator": "Saisie par l'administrateur. Tu peux prendre une autre adresse.",
+    "how": "« Connecter » ouvre {partner}. Tu t'y connectes, vois ce que les deux apps reçoivent l'une de l'autre et acceptes. Puis tu reviens ici.",
+    "account": "Compte dans {partner}",
+    "areasThere": "{areas} dans {partner}",
+    "areasHere": "{areas} ici",
+    "allAreas": "tous, aussi les futurs",
+    "lastOk": "Dernier contact",
+    "lastUsed": "Dernière utilisation par {partner}",
+    "since": "Connecté depuis",
+    "viaKey": "Connecté avec",
+    "key": "clé API {shown}",
+    "byHand": "saisie à la main",
+    "until": "Valable jusqu'au",
+    "unreachableTitle": "{partner} ne répond pas pour le moment",
+    "unreachableText": "Tu vois l'état de {when}. {app} redemande de lui-même ; la connexion reste telle quelle.",
+    "refusedTitle": "{partner} n'accepte plus la connexion",
+    "refusedText": "Elle a été coupée dans {partner}. Jusqu'à une nouvelle connexion, il manque dans {app} ce qui vient de là-bas.",
+    "restingTitle": "La connexion est en pause",
+    "restingText": "Ton compte dans {partner} est en pause, ou la connexion n'a pas servi depuis six mois. « Renouveler » la réveille.",
+    "offTitle": "Désactivé dans {partner}",
+    "offText": "L'administrateur de {partner} a désactivé les connexions avec d'autres apps nex. Rien n'est supprimé.",
+    "expiringTitle": "La clé API expire le {day}",
+    "expiringText": "Connecte une fois de plus. Ensuite la connexion se renouvelle seule et tu ne saisis plus jamais de clé.",
+    "legacyText": "Connecté avec une clé API saisie à la main. Elle reste valable comme avant.",
+    "tooOld": "{partner} à cette adresse ne peut pas encore se connecter ainsi. Connecte à la main ou demande une mise à jour à l'administrateur.",
+    "areasChoice": "Quels {areas} {partner} peut-il lire ?",
+    "areasChoiceAll": "Tous les {areas}, aussi les futurs"
+  },
+  "buttons": {
+    "connect": "Connecter avec {partner}",
+    "manual": "Connecter à la main",
+    "renew": "Renouveler",
+    "check": "Vérifier",
+    "disconnect": "Déconnecter",
+    "endAccess": "Retirer l'accès",
+    "reconnect": "Reconnecter",
+    "remove": "Retirer",
+    "allow": "Autoriser la connexion",
+    "decline": "Refuser",
+    "cancel": "Annuler",
+    "save": "Enregistrer",
+    "back": "Aux connexions"
+  },
+  "disconnect": {
+    "title": "Déconnecter {partner} ?",
+    "text": "Les deux sens prennent fin, dans {app} et dans {partner}. Ce que tu as créé toi-même reste dans les deux apps."
+  },
+  "consent": {
+    "title": "{partner} veut se connecter avec {app}",
+    "subtitle": "Connecté en tant que {account}. {partner} à {host} et {app} reçoivent ensuite un accès l'un à l'autre.",
+    "areas": "Quels {areas}",
+    "allAreas": "Tous les {areas}, aussi les futurs",
+    "replaces": "Une connexion antérieure avec {partner} est remplacée.",
+    "footer": "Tu peux déconnecter à tout moment sous Mon compte › Connexions, ici ou dans {partner}.",
+    "loading": "Chargement …",
+    "failed": "Cela n'a pas marché",
+    "broken": "Cette demande est incomplète. Recommence la connexion dans l'autre app."
+  },
+  "return": {
+    "working": "La connexion se termine …",
+    "failed": "La connexion n'a pas abouti",
+    "declined": "Tu as refusé la connexion."
+  },
+  "operator": {
+    "title": "Autres apps nex",
+    "subtitle": "Comment les apps de ce serveur se connectent entre elles.",
+    "switch": "Connexions avec d'autres apps nex",
+    "switchHint": "Désactivé : personne ne se connecte à nouveau, les connexions existantes sont en pause. Rien n'est supprimé.",
+    "addressesHint": "Une adresse saisie ici est préremplie dans la carte de chaque compte.",
+    "address": "Adresse de {partner}",
+    "saved": "Enregistré."
+  },
+  "areaWord": "espaces",
+  "failed": "Cela n'a pas marché. Réessaie dans un instant.",
+  "errors": {
+    "partner_unknown": "{app} ne se connecte pas avec cette app.",
+    "not_connected": "Non connecté.",
+    "address_invalid": "Ce n'est pas l'adresse d'une app nex.",
+    "address_port": "{app} n'interroge que les ports 80, 443 ou à partir de 1024.",
+    "address_refused": "{app} n'interroge jamais cette adresse.",
+    "wrong_app": "Une autre app répond à cette adresse.",
+    "partner_too_old": "L'app à cette adresse ne peut pas encore se connecter ainsi. Connecte à la main.",
+    "partner_off": "L'administrateur de l'autre app a désactivé les connexions.",
+    "unreachable": "L'autre app est injoignable pour le moment.",
+    "refused": "L'autre app n'accepte plus la connexion.",
+    "resting": "L'autre app met la connexion en pause.",
+    "consent_failed": "L'autre app n'a pas confirmé la connexion. Connecte à nouveau.",
+    "slow_down": "Trop d'essais. Attends une minute.",
+    "return_invalid": "Ce retour n'appartient à aucune connexion commencée ici. Connecte à nouveau.",
+    "connections_off": "L'administrateur a désactivé les connexions avec d'autres apps nex.",
+    "client_invalid": "L'app qui demande ne peut pas être vérifiée.",
+    "redirect_invalid": "Cette adresse de retour n'appartient pas à l'app qui demande.",
+    "pkce_required": "L'app qui demande doit utiliser PKCE avec S256.",
+    "areas_invalid": "L'un d'eux ne t'appartient pas."
+  },
+  "purposes": {
+    "nextasks": {
+      "tasks.read": "Lire tes tâches et celles qui te sont attribuées",
+      "tasks.write": "Créer et modifier des tâches",
+      "tasks.complete": "Cocher des tâches",
+      "members.read": "Voir les membres de tes espaces"
+    },
+    "nextime": {
+      "calendars.read": "Lire tes calendriers et rendez-vous",
+      "events.write": "Créer, modifier et supprimer des rendez-vous",
+      "invitations.answer": "Répondre aux invitations"
+    },
+    "nexpaper": {
+      "deadlines.read": "Lire les échéances de tes documents",
+      "documents.add": "Déposer des documents dans l'entrée"
+    },
+    "nexnotes": {
+      "notes.add": "Créer des notes"
+    },
+    "nexlore": {
+      "notes.add": "Déposer des notes dans tes espaces"
+    },
+    "nexfolk": {
+      "birthdays.read": "Lire les anniversaires",
+      "contacts.read": "Lire les contacts",
+      "contacts.write": "Créer et modifier des contacts"
+    }
+  },
+  "about": {
+    "nexnotes+nextasks": "Les lignes d'une note comme tâches, avec un lien retour.",
+    "nexmail+nextasks": "Des e-mails comme tâches ; coches et échéances reviennent.",
+    "nextasks+nextime": "Les tâches à échéance dans le calendrier, cochées dans le calendrier.",
+    "nexpaper+nextime": "Les échéances des documents comme entrées sur la journée.",
+    "nexmail+nextime": "Les calendriers dans nexmail, des rendez-vous depuis les e-mails, répondre aux invitations.",
+    "nexfolk+nextime": "Les anniversaires comme calendrier, des invités depuis les contacts.",
+    "nexfolk+nexmail": "Les contacts en écrivant, les nouvelles adresses dans le carnet.",
+    "nexmail+nexpaper": "Les pièces jointes comme documents dans l'entrée.",
+    "nexpaper+nextasks": "Des tâches depuis des documents, avec un lien retour.",
+    "nexlore+nexnotes": "Des notes dans le savoir de nexlore.",
+    "nexdiary+nextime": "Les rendez-vous du jour dans le bilan du jour.",
+    "nexdiary+nextasks": "Les tâches terminées du jour dans le bilan du jour.",
+    "nexdiary+nexfolk": "Des personnes de tes contacts dans l'entrée.",
+    "nexnotes+nextime": "Une note pour le rendez-vous, avec un lien retour."
+  }
+}

@@ -105,6 +105,11 @@ DEFAULTS: dict[str, Any] = {
     "ai_hosts_adopted": None,
     "ai_per_minute": None,
     "ai_per_day": None,
+    #: Connections with other nex apps (verbinden 0.1.1, ``services/verbinden_store.py``): the operator's switch
+    #: (None: never set, on, V1 7a), the addresses of the other apps (V1 1b), into the own network only when allowed.
+    "connections_enabled": None,
+    "connections_addresses": None,
+    "connections_local_network": False,
     #: Web Push (``services/webpush.py``, ``services/push.py``): nexpaper's own key pair, made at the first need and
     #: sealed with the server's secret; who the push services may contact (empty: the public https address, else a
     #: placeholder); and push services beyond the known ones, as host names.

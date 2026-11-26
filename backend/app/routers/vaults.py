@@ -9,11 +9,11 @@ from __future__ import annotations
 
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, Request
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 
-from ..deps import BrowserAccount, DbSession, OperatorAccount, Reader
+from ..deps import BrowserAccount, DbSession, OperatorAccount, Reader, connection_areas
 from ..models import Account
 from ..services import vaults
 from .schemas import PersonRef
@@ -81,8 +81,10 @@ def _out(item: vaults.VaultView) -> VaultOut:
 
 
 @router.get("/vaults", response_model=list[VaultOut], summary="The vaults the caller is a member of")
-def listing(account: Reader, db: DbSession) -> list[VaultOut]:
-    return [_out(item) for item in vaults.listing(db, account.id)]
+def listing(request: Request, account: Reader, db: DbSession) -> list[VaultOut]:
+    # Another nex app with a connection limited to some vaults sees only those (verbinden 0.1.1).
+    areas = connection_areas(request)
+    return [_out(item) for item in vaults.listing(db, account.id) if areas is None or item.vault.id in areas]
 
 
 @router.get("/vaults/{vault_id}", response_model=VaultOut, summary="One vault, with its members")

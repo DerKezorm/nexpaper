@@ -751,8 +751,43 @@ def _additions_ki(connection: Connection) -> None:
         connection.exec_driver_sql(statement)
 
 
+def _additions_verbinden(connection: Connection) -> None:
+    """1.13.0, the shared module verbinden (``services/verbinden_store.py``, ``models_verbinden.py``): connections with
+    other nex apps, in the module's form. New and empty; written out as the tables stood in 1.13.0, like a step."""
+    for statement in (
+        (
+            "CREATE TABLE IF NOT EXISTS vb_connections ( id TEXT NOT NULL, account_id INTEGER NOT NULL, "
+            "partner TEXT NOT NULL, partner_base TEXT NOT NULL, partner_account TEXT NOT NULL, uses TEXT NOT NULL, "
+            "grants TEXT NOT NULL, areas_granted TEXT, areas_used TEXT, held TEXT NOT NULL, "
+            "issued_access_hash TEXT NOT NULL, issued_refresh_hash TEXT NOT NULL, issued_access_expires TEXT NOT NULL, "
+            "created_at TEXT NOT NULL, used_at TEXT, ok_at TEXT, state TEXT NOT NULL, stale_since TEXT, problem TEXT, "
+            "partner_version TEXT DEFAULT '' NOT NULL, PRIMARY KEY (id), UNIQUE (account_id, partner), "
+            "UNIQUE (issued_access_hash), UNIQUE (issued_refresh_hash) )"
+        ),
+        (
+            "CREATE TABLE IF NOT EXISTS vb_pending ( state_hash TEXT NOT NULL, account_id INTEGER, partner TEXT, "
+            "partner_base TEXT, verifier TEXT, areas_granted TEXT, created_at TEXT, PRIMARY KEY (state_hash) )"
+        ),
+        (
+            "CREATE TABLE IF NOT EXISTS vb_codes ( code_hash TEXT NOT NULL, account_id INTEGER, partner TEXT, "
+            "partner_base TEXT, redirect_uri TEXT, challenge TEXT, areas_granted TEXT, expires_at TEXT, "
+            "PRIMARY KEY (code_hash) )"
+        ),
+        (
+            "CREATE TABLE IF NOT EXISTS vb_spent ( token_hash TEXT NOT NULL, connection_id TEXT, at INTEGER, "
+            "PRIMARY KEY (token_hash) )"
+        ),
+        (
+            "CREATE TABLE IF NOT EXISTS vb_waiting ( id INTEGER NOT NULL, account_id INTEGER, partner_base TEXT, "
+            "token TEXT, since TEXT, PRIMARY KEY (id) )"
+        ),
+    ):
+        connection.exec_driver_sql(statement)
+
+
 #: Made at every start when missing, without a new version (see the top of this file). Each is idempotent.
-ADDITIONS: list[Callable[[Connection], None]] = [_additions_signin, _additions_konten, _additions_mcp, _additions_ki]
+ADDITIONS: list[Callable[[Connection], None]] = [_additions_signin, _additions_konten, _additions_mcp, _additions_ki,
+                                                 _additions_verbinden]
 
 #: The schema the additions are made on: the one of 1.0.1. From there on they run before every step too, so that a
 #: step of a later version finds their tables on a database 1.0.1 made (it would stop with "no such table" else).

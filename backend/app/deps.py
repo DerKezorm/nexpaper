@@ -271,14 +271,65 @@ def signed_in_viewer(request: Request) -> int | None:
         return found[1].id
 
 
+#: What a connection with another nex app (verbinden 0.1.1) opens: the route that reads and its purpose. Every other
+#: route that reads answers a connection's token with 403 ``purpose_missing``.
+CONNECTION_READS = {
+    "/api/v1/deadlines": "deadlines.read",
+    # Who adds documents learns the vaults it may put them into.
+    "/api/v1/vaults": "documents.add",
+}
+#: The prefix of a connection's token (``services/verbinden_store.CONFIG``).
+CONNECTION_PREFIX = "npv_"
+
+
+def _connection_account(request: Request, token: str, purpose: str | None) -> AccountRow:
+    """The account a connection's token acts for, on a route of its purpose (the module's ``authenticate`` and
+    ``require``); the vaults it was given in ``request.state.connection_areas`` (``None``: all)."""
+    from datetime import UTC, datetime
+
+    from .services import verbinden_store
+    from .vendor import nexverbinden
+
+    if request.headers.get("origin"):
+        raise error("origin_refused", "The API is for programs, not web pages.", 403)
+    with SessionLocal() as db:
+        try:
+            caller = nexverbinden.authenticate(verbinden_store.VerbindenStore(db), verbinden_store.CONFIG, token,
+                                               datetime.now(UTC))
+            if purpose is None:
+                raise nexverbinden.Refused("purpose_missing")
+            nexverbinden.require(caller, purpose)
+        except nexverbinden.Refused as refusal:
+            db.rollback()
+            raise HTTPException(status_code=refusal.status, detail=refusal.as_dict()) from None
+        db.commit()
+        account = db.get(AccountRow, caller.account_id)
+        if account is None:
+            raise error("token_invalid", "No valid token.", 401)
+        db.expunge(account)
+    request.state.session = SessionInfo(f"connection:{caller.connection_id}", STAGE_FULL, True, account.created_at)
+    request.state.api_key = True
+    request.state.connection_areas = None if caller.areas is None else {int(str(area)) for area in caller.areas}
+    logs.set_actor(account.name)
+    return account
+
+
+def connection_areas(request: Request) -> set[int] | None:
+    """The vaults a connection's token may reach on this request; ``None`` for everyone else (all they reach)."""
+    return getattr(request.state, "connection_areas", None)
+
+
 def require_reader(
     request: Request, _scheme: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer_scheme)] = None
 ) -> AccountRow:
     """For routes that only read: the signed-in browser or a device (``require_account``), or a program with an API key
-    (``npk_``, scope ``read``). A route that changes something takes ``require_account``, which turns a key away."""
+    (``npk_``, scope ``read``), or another nex app with a connection on the route of its purpose (``npv_``). A route
+    that changes something takes ``require_account``, which turns a key away."""
     token = bearer_token(request)
     if token is not None and token.startswith(apikeys.KEY_PREFIX):
         return _key_account(request, token)
+    if token is not None and token.startswith(CONNECTION_PREFIX):
+        return _connection_account(request, token, CONNECTION_READS.get(request.url.path))
     return require_account(request)
 
 
@@ -291,6 +342,8 @@ def require_uploader(
     token = bearer_token(request)
     if token is not None and token.startswith(apikeys.KEY_PREFIX):
         return _key_account(request, token, "upload")
+    if token is not None and token.startswith(CONNECTION_PREFIX):
+        return _connection_account(request, token, "documents.add")
     return require_account(request)
 
 

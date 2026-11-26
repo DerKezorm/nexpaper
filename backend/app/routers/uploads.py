@@ -15,7 +15,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict, Field, StrictInt
 
 from ..db import SessionLocal
-from ..deps import DbSession, Uploader, bearer_token
+from ..deps import DbSession, Uploader, bearer_token, connection_areas
 from ..errors import error
 from ..models import Account as AccountRow
 from ..models import Document
@@ -115,6 +115,10 @@ async def upload(request: Request, account: Uploader, db: DbSession, vault_id: V
     if key_id is not None and apikeys.upload_room(key_id) == 0:
         raise _hour_full()
     target = receiving.resolve_vault(db, account.id, vault_id)
+    areas = connection_areas(request)
+    if areas is not None and int(target) not in areas:
+        # A connection of another nex app limited to some vaults brings documents into those only (verbinden 0.1.1).
+        raise error("not_found", "Not found.", 404)
     current = limits.current(db)
     db.rollback()
     form = await receiving.read_form(request.stream(), request.headers.get("content-type", ""), current.max_file,

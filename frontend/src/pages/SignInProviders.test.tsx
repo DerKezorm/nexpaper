@@ -46,6 +46,8 @@ beforeEach(async () => {
   auth.status = 'signedOut'
   auth.me = me
   server.answers = {
+    'GET /api/connect/partners': [],
+    'GET /api/v1/connections/mcp/requests?status=waiting': [],
     'GET /api/v1/auth/methods': { password: true, providers: [{ slug: 'authentik', label: 'authentik' }, { slug: 'entra', label: 'Microsoft' }], passkeys: false },
     'GET /api/v1/settings': { public_url: 'https://paper.example.com', password_login: true, two_factor_required: true },
     'GET /api/v1/server/sign-in': signIn(),

@@ -1,0 +1,160 @@
+{
+  "states": {
+    "none": "Nicht verbunden",
+    "connected": "Verbunden",
+    "unreachable": "Nicht erreichbar",
+    "refused": "Getrennt",
+    "resting": "Ruht",
+    "off": "Abgeschaltet",
+    "legacy": "Verbunden",
+    "expiring": "Läuft ab",
+    "tooOld": "Zu alt",
+    "usesUs": "Nutzt {app}"
+  },
+  "card": {
+    "appMay": "{app} darf bei {partner}",
+    "partnerMay": "{partner} darf bei {app}",
+    "wouldFlow": "Was fließen würde",
+    "onlyCheck": "nur die Verbindung prüfen",
+    "address": "Adresse von {partner}",
+    "addressHint": "z. B. https://{partner}.example.com",
+    "fromOperator": "Vom Betreiber eingetragen. Du kannst eine andere Adresse nehmen.",
+    "how": "„Verbinden“ öffnet {partner}. Dort meldest du dich an, siehst, was beide Apps voneinander bekommen, und stimmst zu. Danach bist du wieder hier.",
+    "account": "Konto in {partner}",
+    "areasThere": "{areas} in {partner}",
+    "areasHere": "{areas} hier",
+    "allAreas": "alle, auch spätere",
+    "lastOk": "Zuletzt verbunden",
+    "lastUsed": "Zuletzt benutzt von {partner}",
+    "since": "Verbunden seit",
+    "viaKey": "Verbunden über",
+    "key": "API-Schlüssel {shown}",
+    "byHand": "von Hand eingetragen",
+    "until": "Gilt bis",
+    "unreachableTitle": "{partner} antwortet gerade nicht",
+    "unreachableText": "Du siehst den Stand von {when}. {app} fragt selbst wieder nach; die Verbindung bleibt, wie sie ist.",
+    "refusedTitle": "{partner} nimmt die Verbindung nicht mehr an",
+    "refusedText": "Sie wurde in {partner} getrennt. Bis du neu verbindest, fehlt in {app}, was von dort kommt.",
+    "restingTitle": "Die Verbindung ruht",
+    "restingText": "Dein Konto in {partner} ruht, oder die Verbindung wurde ein halbes Jahr nicht benutzt. „Erneuern“ weckt sie.",
+    "offTitle": "In {partner} abgeschaltet",
+    "offText": "Der Betreiber von {partner} hat Verbindungen mit anderen nex-Apps ausgeschaltet. Nichts ist gelöscht.",
+    "expiringTitle": "Der API-Schlüssel läuft am {day} ab",
+    "expiringText": "Verbinde einmal neu. Danach hält sich die Verbindung selbst frisch, und du trägst nie wieder einen Schlüssel ein.",
+    "legacyText": "Verbunden über einen API-Schlüssel, den du von Hand eingetragen hast. Er gilt weiter wie bisher.",
+    "tooOld": "{partner} unter dieser Adresse kann so noch nicht verbinden. Verbinde von Hand oder bitte den Betreiber um ein Update.",
+    "areasChoice": "Welche {areas} darf {partner} lesen?",
+    "areasChoiceAll": "Alle {areas}, auch spätere"
+  },
+  "buttons": {
+    "connect": "Mit {partner} verbinden",
+    "manual": "Von Hand verbinden",
+    "renew": "Erneuern",
+    "check": "Jetzt prüfen",
+    "disconnect": "Trennen",
+    "endAccess": "Zugriff beenden",
+    "reconnect": "Neu verbinden",
+    "remove": "Entfernen",
+    "allow": "Verbinden erlauben",
+    "decline": "Ablehnen",
+    "cancel": "Abbrechen",
+    "save": "Speichern",
+    "back": "Zu den Verbindungen"
+  },
+  "disconnect": {
+    "title": "{partner} trennen?",
+    "text": "Beide Richtungen enden, in {app} und in {partner}. Was du selbst angelegt hast, bleibt in beiden Apps."
+  },
+  "consent": {
+    "title": "{partner} möchte sich mit {app} verbinden",
+    "subtitle": "Angemeldet als {account}. {partner} unter {host} und {app} bekommen danach einen eigenen Zugang zueinander.",
+    "areas": "Welche {areas}",
+    "allAreas": "Alle {areas}, auch spätere",
+    "replaces": "Eine frühere Verbindung mit {partner} wird dabei ersetzt.",
+    "footer": "Trennen kannst du jederzeit unter Mein Konto › Verbindungen, hier oder in {partner}.",
+    "loading": "Wird geladen …",
+    "failed": "Das hat nicht geklappt",
+    "broken": "Dieser Aufruf ist unvollständig. Starte das Verbinden noch einmal in der anderen App."
+  },
+  "return": {
+    "working": "Die Verbindung wird fertig …",
+    "failed": "Die Verbindung kam nicht zustande",
+    "declined": "Du hast das Verbinden abgelehnt."
+  },
+  "operator": {
+    "title": "Andere nex-Apps",
+    "subtitle": "Wie sich die Apps dieses Servers miteinander verbinden.",
+    "switch": "Verbindungen mit anderen nex-Apps",
+    "switchHint": "Aus: niemand verbindet neu, bestehende Verbindungen ruhen. Nichts wird gelöscht.",
+    "addressesHint": "Steht hier eine Adresse, finden alle Konten sie in der Karte schon vorbelegt.",
+    "address": "Adresse von {partner}",
+    "saved": "Gespeichert."
+  },
+  "areaWord": "Bereiche",
+  "failed": "Das hat nicht geklappt. Versuch es gleich noch einmal.",
+  "errors": {
+    "partner_unknown": "Mit dieser App verbindet sich {app} nicht.",
+    "not_connected": "Nicht verbunden.",
+    "address_invalid": "Das ist keine Adresse einer nex-App.",
+    "address_port": "{app} fragt nur auf Port 80, 443 oder ab 1024.",
+    "address_refused": "Diese Adresse fragt {app} nie.",
+    "wrong_app": "Unter dieser Adresse antwortet eine andere App.",
+    "partner_too_old": "Die App unter dieser Adresse kann so noch nicht verbinden. Verbinde von Hand.",
+    "partner_off": "Der Betreiber der anderen App hat Verbindungen ausgeschaltet.",
+    "unreachable": "Die andere App ist gerade nicht erreichbar.",
+    "refused": "Die andere App nimmt die Verbindung nicht mehr an.",
+    "resting": "Die andere App lässt die Verbindung ruhen.",
+    "consent_failed": "Die andere App hat die Verbindung nicht bestätigt. Verbinde noch einmal.",
+    "slow_down": "Zu viele Versuche. Warte eine Minute.",
+    "return_invalid": "Dieser Rücksprung gehört zu keinem Verbinden, das hier begonnen hat. Verbinde noch einmal.",
+    "connections_off": "Der Betreiber hat Verbindungen mit anderen nex-Apps ausgeschaltet.",
+    "client_invalid": "Die App, die fragt, lässt sich nicht prüfen.",
+    "redirect_invalid": "Diese Rücksprungadresse gehört nicht zu der App, die fragt.",
+    "pkce_required": "Die App, die fragt, muss PKCE mit S256 verwenden.",
+    "areas_invalid": "Einer davon gehört nicht dir."
+  },
+  "purposes": {
+    "nextasks": {
+      "tasks.read": "Deine und dir zugewiesene Aufgaben lesen",
+      "tasks.write": "Aufgaben anlegen und ändern",
+      "tasks.complete": "Aufgaben abhaken",
+      "members.read": "Die Mitglieder deiner Bereiche sehen"
+    },
+    "nextime": {
+      "calendars.read": "Deine Kalender und Termine lesen",
+      "events.write": "Termine anlegen, ändern und löschen",
+      "invitations.answer": "Einladungen beantworten"
+    },
+    "nexpaper": {
+      "deadlines.read": "Die Fristen deiner Dokumente lesen",
+      "documents.add": "Dokumente in den Eingang legen"
+    },
+    "nexnotes": {
+      "notes.add": "Notizen anlegen"
+    },
+    "nexlore": {
+      "notes.add": "Notizen in deine Bereiche legen"
+    },
+    "nexfolk": {
+      "birthdays.read": "Geburtstage und Jahrestage lesen",
+      "contacts.read": "Kontakte lesen",
+      "contacts.write": "Kontakte anlegen und ändern"
+    }
+  },
+  "about": {
+    "nexnotes+nextasks": "Zeilen einer Notiz als Aufgaben, mit Rücklink.",
+    "nexmail+nextasks": "Mails als Aufgaben; Haken und Fälligkeit kommen zurück.",
+    "nextasks+nextime": "Aufgaben mit Fälligkeit im Kalender, abhaken im Kalender.",
+    "nexpaper+nextime": "Fristen aus Dokumenten als ganztägige Einträge.",
+    "nexmail+nextime": "Kalender in nexmail, Termine aus Mails, Einladungen beantworten.",
+    "nexfolk+nextime": "Geburtstage als Kalender, Teilnehmer aus Kontakten.",
+    "nexfolk+nexmail": "Kontakte beim Schreiben, neue Adressen ins Adressbuch.",
+    "nexmail+nexpaper": "Anhänge aus Mails als Dokumente in den Eingang.",
+    "nexpaper+nextasks": "Aufgaben aus Dokumenten, mit Rücklink.",
+    "nexlore+nexnotes": "Notizen ins Wissen von nexlore.",
+    "nexdiary+nextime": "Die Termine des Tages im Tagesrückblick.",
+    "nexdiary+nextasks": "Erledigte Aufgaben des Tages im Tagesrückblick.",
+    "nexdiary+nexfolk": "Personen aus deinen Kontakten im Eintrag.",
+    "nexnotes+nextime": "Eine Notiz zum Termin, mit Rücklink."
+  }
+}

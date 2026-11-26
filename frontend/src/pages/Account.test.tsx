@@ -97,6 +97,7 @@ beforeEach(async () => {
   auth.setMe.mockClear()
   answers = {
     'GET /api/v1/connections/mcp/requests?status=waiting': [],
+    'GET /api/connect/partners': [],
     'GET /api/v1/auth/methods': { password: true, providers: [], passkeys: true },
     'GET /api/v1/auth/passkeys': [],
     'GET /api/v1/auth/sessions': [],
