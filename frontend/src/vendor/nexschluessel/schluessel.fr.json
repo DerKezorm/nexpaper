@@ -23,7 +23,9 @@
     "address": "Adresse pour les outils d’IA",
     "off": "L’exploitant a désactivé l’accès MCP. Les programmes connectés et les clés fonctionneront de nouveau quand il le réactivera.",
     "none": "{app} n’a pas encore d’accès MCP.",
-    "viaApiKey": "Une clé d’API avec « Aussi pour les outils d’IA (MCP) » vaut aussi pour les outils d’IA. Tu la crées sous « Clés d’API »."
+    "viaApiKey": "Une clé d’API avec « Aussi pour les outils d’IA (MCP) » vaut aussi pour les outils d’IA. Tu la crées sous « Clés d’API ».",
+    "aiOff": "L’opérateur n’autorise pas l’IA pour ton compte. Les programmes connectés et les clés MCP sont en pause jusqu’à ce qu’il l’autorise de nouveau.",
+    "viaOldApiKey": "Les anciennes clés API avec « Aussi pour les outils d’IA (MCP) » restent valables. Crée les nouveaux accès ici comme clé MCP."
   },
   "interfaces": {
     "title": "Interfaces",
@@ -117,6 +119,8 @@
     "days_invalid": "Cette expiration n’est pas proposée ici.",
     "too_many_keys": "Tu as déjà {max} clés. Révoque-en une avant d’en créer une nouvelle.",
     "api_off": "L’exploitant a désactivé l’interface de programmation.",
-    "mcp_off": "L’exploitant a désactivé l’accès MCP."
+    "mcp_off": "L’exploitant a désactivé l’accès MCP.",
+    "option_retired": "Les nouvelles clés n’ont plus cette option. Crée une clé MCP.",
+    "ai_not_allowed": "L’opérateur n’autorise pas l’IA pour ton compte."
   }
 }

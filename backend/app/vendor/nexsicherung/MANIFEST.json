@@ -1,6 +1,6 @@
 {
   "files": {
-    "backend/app/vendor/nexsicherung/__init__.py": "sha256-+r9ElzRd3hzSoCmkj2uyCBUnz93FmwWCJUc+UtJvGZY=",
+    "backend/app/vendor/nexsicherung/__init__.py": "sha256-TvOrrB5E5YShQNOdG5ZlBv5NhjrhrNq9vY9Zmf/PWbU=",
     "backend/app/vendor/nexsicherung/archives.py": "sha256-jLGiu7aAFr6Xx+63KaSWz/IjJnlB9OeFEAHzZFfpRtM=",
     "backend/app/vendor/nexsicherung/config.py": "sha256-NjOI2ciR9xZcgMsvvzflkDlXrsTG9za1QidH0ssbx4w=",
     "backend/app/vendor/nexsicherung/errors.py": "sha256-voQIqfWrHk5OX57dMPJmVjTsaZPRmHnkQI9ZRth+v3w=",
@@ -22,10 +22,10 @@
     "backend/tests/nexsicherung/test_nexsicherung_vendored.py": "sha256-lCeGYHplTeBEl42liLw4n13bnHfX4knDS/3oTYy2QpE=",
     "frontend/src/vendor/nexsicherung/StorageArea.tsx": "sha256-kzLWVEbAAfYFKUb3eEQj4AJzGJP+2d3jXa3Df+FzJDo=",
     "frontend/src/vendor/nexsicherung/index.ts": "sha256-9iuoXGQ04gjf7HnWc8nVTsouwz2OfAbNJ5nlwMQYKys=",
-    "frontend/src/vendor/nexsicherung/sicherung.de.json": "sha256-zlCkHrl2NjqRdwglsrbBFE2F6oM4FZglFeQGsT9Jlkc=",
-    "frontend/src/vendor/nexsicherung/sicherung.en.json": "sha256-4fnR3n4X9+AHCN88hNXBdWjlu+rnJL3vjZacn6WHvPk=",
-    "frontend/src/vendor/nexsicherung/sicherung.fr.json": "sha256-VhLiJVfLIqUUet+x3mMIAt8SaImAL65FjOuckh4ihMo=",
-    "frontend/src/vendor/nexsicherung/sicherung.test.tsx": "sha256-+p7LzeehyAsgZg0+6H61+/Fx+0nnEOGpJOIQixRjz7U=",
+    "frontend/src/vendor/nexsicherung/sicherung.de.json": "sha256-ythZ8g04MChaA2wLCqfhCodyknBB87oj/3m3GYMgrjE=",
+    "frontend/src/vendor/nexsicherung/sicherung.en.json": "sha256-RQfRspUJKTL88kVprkiYo2aRwrohpD7GezUJn8/Z0ng=",
+    "frontend/src/vendor/nexsicherung/sicherung.fr.json": "sha256-XImaYFEqGSQKancp9g4KuSgm4lG9AjNYi7yvZ9ug20w=",
+    "frontend/src/vendor/nexsicherung/sicherung.test.tsx": "sha256-npVLToKtQSB+N3mXBh+8jaKFtbjkk+vri+FwuIpkTsg=",
     "frontend/src/vendor/nexsicherung/sicherung.ts": "sha256-10KV8lXUVIGRrY1MttsrPBbBJZsfsNXMVOxBbFRBjks=",
     "frontend/src/vendor/nexsicherung/storage.ts": "sha256-BtAMoURHWaTECFXZCKbPUvPieBvux1Q/cNykT4F3OHg="
   },
@@ -34,5 +34,5 @@
     "fastapi": ">=0.121.0"
   },
   "vendor_path": "backend/app/vendor/nexsicherung",
-  "version": "1.0.1"
+  "version": "1.0.2"
 }

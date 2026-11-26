@@ -41,7 +41,7 @@ def test_the_form_learns_what_the_app_offers(app: Any, config: Any) -> None:
     for kind in config.kinds:
         offered = next(found for found in listed["kinds"] if found["id"] == kind.id)
         assert offered["prefix"] == kind.prefix and offered["rights"] == list(kind.rights)
-        assert offered["options"] == list(kind.options)
+        assert offered["options"] == list(kind.offered_options)
         assert (offered["expiry_days"] is None) == (kind.expiry_days is None)
         assert (offered["areas"] is None) == (not kind.areas)
 

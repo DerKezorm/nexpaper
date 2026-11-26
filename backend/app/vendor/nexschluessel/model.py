@@ -172,3 +172,11 @@ class RightsStore(Protocol):
     for MCP keys). Returns a part of the kind's rights."""
 
     def rights_allowed(self, account_id: AccountId, kind: str) -> tuple[str, ...]: ...
+
+
+class AiStore(Protocol):
+    """Optional, since 1.1.0 (MCP decision 10): a store that says whether the operator lets the account use AI ("KI
+    erlaubt" under Server › Konten: nexmail, nexpaper, nexdiary, nexlore). Without it an account makes no MCP key and
+    its MCP keys and programs rest (refused, kept) until AI is allowed again. Apps without the switch leave it out."""
+
+    def ai_allowed(self, account_id: AccountId) -> bool: ...

@@ -46,6 +46,8 @@ export function ToolsCard({ request, base = KEYS_BASE, words, securityHref = '/s
   const reload = () => setRound((value) => value + 1)
   const kind = listing?.kinds.find((found) => found.id === 'mcp')
   const viaApiKey = listing?.kinds.some((found) => found.id === 'api' && found.options.includes('mcp'))
+  // 1.1.0: the extra is retired; older API keys that have it keep working, the card says so where one exists.
+  const viaOldApiKey = listing?.kinds.some((found) => found.id === 'api' && (found.retired_options ?? []).includes('mcp')) && listing.keys.some((key) => key.kind === 'api' && key.options.mcp === true)
 
   const revoke = async () => {
     if (!revoking) return
@@ -94,6 +96,11 @@ export function ToolsCard({ request, base = KEYS_BASE, words, securityHref = '/s
         </Notice>
       )}
       {listing?.mcp !== null && listing?.keys_wait && <KeyFactorHint texts={texts} securityHref={securityHref} />}
+      {listing && listing.mcp !== null && listing.ai_allowed === false && (
+        <Notice tone="warn" testId="tools-ai-off">
+          {texts.tools.aiOff}
+        </Notice>
+      )}
       {problem && (
         <Notice tone="danger" testId="tools-problem">
           {problem}
@@ -131,6 +138,11 @@ export function ToolsCard({ request, base = KEYS_BASE, words, securityHref = '/s
         </Box>
       )}
       {viaApiKey && listing?.mcp !== null && <p className="m-0 text-xs leading-4 text-[var(--nexui-text-muted)]">{texts.tools.viaApiKey}</p>}
+      {viaOldApiKey && listing?.mcp !== null && (
+        <p className="m-0 text-xs leading-4 text-[var(--nexui-text-muted)]" data-testid="tools-via-old-api-key">
+          {texts.tools.viaOldApiKey}
+        </p>
+      )}
       {listing?.mcp_path && (
         <CopyRow value={`${listing.address}${listing.mcp_path}`} label={texts.tools.address} testId="tools-address" />
       )}

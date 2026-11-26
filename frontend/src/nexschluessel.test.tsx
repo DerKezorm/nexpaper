@@ -1,4 +1,4 @@
-// Vorlage nexschluessel 1.0.2
+// Vorlage nexschluessel 1.1.0
 // @vitest-environment jsdom
 /**
  * The cards of the module in the app: "API-Schlüssel", "KI-Werkzeuge (MCP)", "Schnittstellen" and "API-Schlüssel aller
@@ -265,6 +265,29 @@ describe('the card API-Schlüssel', () => {
     expect(document.body.textContent).not.toContain(SECRET)
   })
 
+  it('offers a retired extra only on a key that has it, and only to switch it off (since 1.1.0)', async () => {
+    const api = listing.kinds.find((found) => found.id === 'api')!
+    listing.kinds = listing.kinds.map((found) => (found.id === 'api' ? { ...api, options: [], retired_options: ['mcp'] } : found))
+    listing.keys = [key(1, { options: { mcp: true } }), key(2, { options: { mcp: false } })]
+    show(<ApiKeysCard request={request} base={BASE} things={THINGS} />)
+    await settle()
+    click(button('api-keys-new'))
+    expect(find('[data-testid="key-option-mcp"]')).toBeNull()
+    click(find('[data-testid="key-dialog"] [data-testid="key-cancel"]') ?? find('[data-testid="key-dialog"] button[aria-label]'))
+    await settle()
+    click(all('[data-testid="key-edit"]')[1]!)
+    expect(find('[data-testid="key-option-mcp"]')).toBeNull()
+    click(find('[data-testid="key-dialog"] [data-testid="key-cancel"]') ?? find('[data-testid="key-dialog"] button[aria-label]'))
+    await settle()
+    click(all('[data-testid="key-edit"]')[0]!)
+    const box = find<HTMLInputElement>('[data-testid="key-option-mcp"] input') ?? find<HTMLInputElement>('input[data-testid="key-option-mcp"]')
+    expect(box!.checked).toBe(true)
+    act(() => box!.click())
+    click(button('key-submit'))
+    await settle()
+    expect(calls.find((call) => call.method === 'PATCH')!.body).toMatchObject({ options: { mcp: false } })
+  })
+
   it('says why a key was refused', async () => {
     show(<ApiKeysCard request={request} base={BASE} things={THINGS} />)
     await settle()
@@ -365,6 +388,22 @@ describe('the card KI-Werkzeuge (MCP)', () => {
     expect([button('tools-new')!.dataset.kind, button('tools-new')!.dataset.size, button('tools-new')!.dataset.icon]).toEqual(['secondary', 'md', 'Plus'])
     expect(button('tools-new')!.textContent).toBe('Neuer MCP-Schlüssel')
     expect(all('[data-testid="tools-keys"] [data-kind="primary"]')).toHaveLength(0)
+  })
+
+  it('says when the operator takes AI from the account (since 1.1.0, MCP decision 10)', async () => {
+    listing.ai_allowed = false
+    show(<ToolsCard request={request} base={BASE} />)
+    await settle()
+    expect(find('[data-testid="tools-ai-off"]')!.textContent).toContain('Der Betreiber erlaubt deinem Konto keine KI.')
+  })
+
+  it('says older API keys with the retired extra keep working, and no longer offers it (since 1.1.0)', async () => {
+    const api = listing.kinds.find((found) => found.id === 'api')!
+    listing.kinds = listing.kinds.map((found) => (found.id === 'api' ? { ...api, options: [], retired_options: ['mcp'] } : found))
+    listing.keys = [key(1, { options: { mcp: true } }), ...listing.keys]
+    show(<ToolsCard request={request} base={BASE} />)
+    await settle()
+    expect(find('[data-testid="tools-via-old-api-key"]')!.textContent).toContain('Ältere API-Schlüssel')
   })
 
   it('names an app without MCP', async () => {

@@ -838,6 +838,28 @@ describe('the parts of the settings (since 1.1.0)', () => {
     expect(root.querySelector('[data-card="about-built-with"]')?.textContent).toContain('React(MIT)')
   })
 
+  it('the about page leaves the card "Aktualisierungen" out for a member (since 1.1.1)', () => {
+    const root = show(
+      <NexuiLanguage language="de">
+        <AboutPage
+          app="nexnotes"
+          logo="/logo.svg"
+          tagline="Schnelle Notizen, selbst gehostet."
+          version="1.1.0"
+          licence={{ name: 'AGPL-3.0', href: 'https://www.gnu.org/licenses/agpl-3.0.html' }}
+          source="https://github.com/example/nexnotes"
+          updates={{ checkDaily: true, checked: true, latest: 'v1.2.0', newer: true }}
+          showUpdates={false}
+          builtWith={[{ name: 'React', url: 'https://react.dev', licence: 'MIT' }]}
+        />
+      </NexuiLanguage>,
+    )
+    expect(root.querySelector('[data-card="about-updates"]')).toBeNull()
+    expect(root.textContent).not.toContain('1.2.0')
+    expect(root.querySelector('[data-card="about"]')?.textContent).toContain('1.1.0')
+    expect(root.querySelector('[data-card="about-built-with"]')).not.toBeNull()
+  })
+
   it("the ways of notifications show only the ways an app has, with the plan's buttons", () => {
     const removed = vi.fn()
     const root = show(

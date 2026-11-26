@@ -23,7 +23,9 @@
     "address": "Adresse für KI-Werkzeuge",
     "off": "Der Betreiber hat den MCP-Zugang abgeschaltet. Verbundene Programme und Schlüssel arbeiten erst wieder, wenn er ihn einschaltet.",
     "none": "{app} hat noch keinen MCP-Zugang.",
-    "viaApiKey": "Ein API-Schlüssel mit „Auch für KI-Werkzeuge (MCP)“ gilt auch für KI-Werkzeuge. Du legst ihn unter „API-Schlüssel“ an."
+    "viaApiKey": "Ein API-Schlüssel mit „Auch für KI-Werkzeuge (MCP)“ gilt auch für KI-Werkzeuge. Du legst ihn unter „API-Schlüssel“ an.",
+    "aiOff": "Der Betreiber erlaubt deinem Konto keine KI. Verbundene Programme und MCP-Schlüssel ruhen, bis er sie wieder erlaubt.",
+    "viaOldApiKey": "Ältere API-Schlüssel mit „Auch für KI-Werkzeuge (MCP)“ gelten weiter. Neue Zugänge legst du hier als MCP-Schlüssel an."
   },
   "interfaces": {
     "title": "Schnittstellen",
@@ -117,6 +119,8 @@
     "days_invalid": "Diesen Ablauf gibt es hier nicht.",
     "too_many_keys": "Du hast schon {max} Schlüssel. Widerrufe einen, bevor du einen neuen anlegst.",
     "api_off": "Der Betreiber hat die Programmschnittstelle abgeschaltet.",
-    "mcp_off": "Der Betreiber hat den MCP-Zugang abgeschaltet."
+    "mcp_off": "Der Betreiber hat den MCP-Zugang abgeschaltet.",
+    "option_retired": "Das gibt es bei neuen Schlüsseln nicht mehr. Lege einen MCP-Schlüssel an.",
+    "ai_not_allowed": "Der Betreiber erlaubt deinem Konto keine KI."
   }
 }

@@ -88,6 +88,26 @@ class StandardAdapter:
         module's form; an app with its own form of errors reads it here)."""
         return answer.json()["detail"]
 
+    # --- since 1.1.0 (MCP decisions 6, 10, 11, 12) -----------------------------------------------------------------
+
+    #: Whether the operator can take AI from an account ("KI erlaubt": nexmail, nexpaper, nexdiary, nexlore); then
+    #: the store has ``ai_allowed`` and ``take_ai``/``give_ai`` below are the app's.
+    has_ai = False
+
+    def take_ai(self, account: str = "owner") -> None:
+        """APP (only with ``has_ai``): the operator takes AI from ``account`` (Server › Konten › Verwalten)."""
+        raise NotImplementedError("APP: take_ai")
+
+    def give_ai(self, account: str = "owner") -> None:
+        """APP (only with ``has_ai``): the operator allows AI for ``account`` again."""
+        raise NotImplementedError("APP: give_ai")
+
+    def old_route_key(self, options: dict[str, bool]) -> str:
+        """APP (only where a kind has ``retired_options``): make a key for ``owner`` over the app's older route with
+        these extras, as a script would (nexnotes ``POST /api/tokens``, nextime ``POST /api/keys``), and return its
+        secret."""
+        raise NotImplementedError("APP: old_route_key")
+
     def foreign_area(self) -> Any:
         """APP: the id of an area of ``other`` that ``owner`` cannot reach (where the app limits keys to areas)."""
         raise NotImplementedError("APP: foreign_area")

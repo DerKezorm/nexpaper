@@ -12,6 +12,14 @@ The rules are the ones the eight apps already had, the same in every app now:
   "Works only once you set up a second factor" (decided 24.11.2026);
 - a key is refused when it is unknown, locked, expired, of a blocked or deleted account, while its switch is off, and
   while its account's keys rest; ``last used`` is written at most once a minute.
+
+Since 1.1.0 (MCP decisions 6, 10, 11, 12):
+
+- an extra in ``KeyKind.retired_options`` is no longer offered: the module's routes refuse to switch it on
+  (``option_retired``), switching it off stays possible; the app's older routes pass ``retired=True`` and set it as
+  before;
+- where the store says the operator does not let an account use AI (``ai_allowed``, optional), the account makes no
+  MCP key (``ai_not_allowed``), and its MCP keys and programs rest where MCP is asked for (``ai_rests``).
 """
 
 from __future__ import annotations
@@ -115,6 +123,12 @@ def rights_for(store: Store, kind: KeyKind, account_id: AccountId) -> tuple[str,
     return tuple(right for right in kind.rights if right in allowed)
 
 
+def ai_allowed(store: Store, account_id: AccountId) -> bool:
+    """Whether the operator lets the account use AI (``Store.ai_allowed``, optional; without it: yes)."""
+    check = getattr(store, "ai_allowed", None)
+    return bool(check(account_id)) if callable(check) else True
+
+
 def _kind_choice(store: Store, config: AppConfig, kind: KeyKind, account_id: AccountId) -> dict:
     areas = store.areas_of(account_id, kind.id) if kind.areas else []
     rights = rights_for(store, kind, account_id)
@@ -125,7 +139,8 @@ def _kind_choice(store: Store, config: AppConfig, kind: KeyKind, account_id: Acc
         "editable": kind.editable,
         "rights": list(rights),
         "default_right": kind.default_right if kind.default_right in rights else (rights[0] if rights else None),
-        "options": list(kind.options),
+        "options": list(kind.offered_options),
+        "retired_options": list(kind.retired_options),
         "areas": [{"id": area.id, "name": area.name} for area in areas] if kind.areas else None,
         "areas_required": kind.areas_required,
         "expiry_days": list(kind.expiry_days) if kind.expiry_days is not None else None,
@@ -151,6 +166,7 @@ def listing(store: Store, config: AppConfig, account_id: AccountId, now: datetim
         "api_path": config.api_path,
         "mcp_path": config.mcp_path,
         "keys_wait": bool(store.keys_wait(account_id)),
+        "ai_allowed": ai_allowed(store, account_id),
         "warn_days": config.warn_days,
         "kinds": [_kind_choice(store, config, kind, account_id) for kind in config.kinds],
         "keys": keys,
@@ -214,11 +230,25 @@ def _right(raw: str | None, kind: KeyKind, config: AppConfig, store: Store, acco
     return right
 
 
-def _options(raw: dict[str, bool] | None, kind: KeyKind, config: AppConfig, store: Store) -> dict[str, bool]:
+def _options(
+    raw: dict[str, bool] | None,
+    kind: KeyKind,
+    config: AppConfig,
+    store: Store,
+    *,
+    before: dict[str, bool] | None = None,
+    retired: bool = False,
+) -> dict[str, bool]:
+    """The extras of a new or changed key. ``before``: the key's extras so far (a change); a retired extra may stay on
+    or go off, never come on, unless ``retired`` (the app's older routes)."""
     chosen = {name: bool(on) for name, on in (raw or {}).items()}
     for name in chosen:
         if name not in kind.options:
             raise KeyRefused("option_invalid", config=config)
+    if not retired:
+        for name in kind.retired_options:
+            if chosen.get(name) and not (before or {}).get(name):
+                raise KeyRefused("option_retired", config=config)
     if chosen.get(OPTION_MCP) and not store.switch(SWITCH_MCP):
         raise KeyRefused("mcp_off", config=config)
     return {name: chosen.get(name, False) for name in kind.options}
@@ -277,13 +307,17 @@ def make(
     days: int | None | str = "default",
     client_ref: str | None = None,
     now: datetime | None = None,
+    retired: bool = False,
 ) -> Made:
-    """Make a key for ``account_id``. ``days="default"``: the app's lifetime for this right."""
+    """Make a key for ``account_id``. ``days="default"``: the app's lifetime for this right. ``retired=True`` only for
+    the app's older routes: they may still switch on a retired extra (decision 12)."""
     chosen = _kind(config, kind)
     if not chosen.creatable:
         raise KeyRefused("kind_not_creatable", config=config)
     if not store.switch(chosen.switch):
         raise KeyRefused(f"{chosen.switch}_off", config=config)
+    if chosen.id == "mcp" and not ai_allowed(store, account_id):
+        raise KeyRefused("ai_not_allowed", config=config)
     moment = now or now_utc()
     if client_ref:
         finder = getattr(store, "key_by_client_ref", None)
@@ -293,7 +327,7 @@ def make(
                 return Made(key=earlier, secret="", new=False)
     clean = clean_name(name, chosen, config)
     picked = _right(right, chosen, config, store, account_id)
-    extras = _options(options, chosen, config, store)
+    extras = _options(options, chosen, config, store, retired=retired)
     limited = _areas(areas, chosen, config, store, account_id)
     end = _expires(days, chosen, config, picked, moment)
     if _count(store, config, chosen, account_id) >= chosen.max_keys:
@@ -336,6 +370,7 @@ def change(
     areas: list | str | None = None,
     options: dict[str, bool] | None = None,
     areas_given: bool = False,
+    retired: bool = False,
 ) -> Key:
     """Change name, right, areas or extras of a key of the account's own (nexmail could; now every app). A program's
     key is changed by its next consent, not here. ``areas_given``: ``areas`` was sent (``None`` then means all)."""
@@ -351,7 +386,11 @@ def change(
             if areas_given and kind.areas
             else None
         ),
-        options=_options({**key.options, **options}, kind, config, store) if options is not None else None,
+        options=(
+            _options({**key.options, **options}, kind, config, store, before=key.options, retired=retired)
+            if options is not None
+            else None
+        ),
     )
     changed = store.change_key(key.id, update)
     store.commit()
@@ -432,6 +471,8 @@ def authenticate(
         raise KeyRefused("token_invalid", config=config)
     if store.keys_wait(key.account_id):
         raise KeyRefused("second_factor_required", config=config)
+    if SWITCH_MCP in kinds and key.kind == "mcp" and not ai_allowed(store, key.account_id):
+        raise KeyRefused("ai_rests", config=config)
     last = _aware(key.last_used_at)
     if last is None or moment - last >= config.used_every:
         store.touch(key.id, moment)
@@ -443,6 +484,7 @@ def authenticate(
 __all__ = [
     "Caller",
     "Made",
+    "ai_allowed",
     "authenticate",
     "block",
     "change",

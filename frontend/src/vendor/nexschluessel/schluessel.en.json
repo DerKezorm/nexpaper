@@ -23,7 +23,9 @@
     "address": "Address for AI tools",
     "off": "The operator has switched MCP access off. Connected programs and keys work again once it is switched on.",
     "none": "{app} has no MCP access yet.",
-    "viaApiKey": "An API key with “Also for AI tools (MCP)” works for AI tools too. You make it under “API keys”."
+    "viaApiKey": "An API key with “Also for AI tools (MCP)” works for AI tools too. You make it under “API keys”.",
+    "aiOff": "The operator does not let your account use AI. Connected programs and MCP keys rest until AI is allowed again.",
+    "viaOldApiKey": "Older API keys with “Also for AI tools (MCP)” keep working. Make new access here as an MCP key."
   },
   "interfaces": {
     "title": "Interfaces",
@@ -117,6 +119,8 @@
     "days_invalid": "This expiry is not offered here.",
     "too_many_keys": "You have {max} keys already. Revoke one before you make a new one.",
     "api_off": "The operator has switched the programming interface off.",
-    "mcp_off": "The operator has switched MCP access off."
+    "mcp_off": "The operator has switched MCP access off.",
+    "option_retired": "New keys no longer have this. Make an MCP key.",
+    "ai_not_allowed": "The operator does not let your account use AI."
   }
 }

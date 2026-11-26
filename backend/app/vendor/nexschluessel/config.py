@@ -60,6 +60,10 @@ class KeyKind:
     default_right: str = RIGHT_READ
     #: Extras to tick (``mcp``; nexmail ``tasks``, ``tags``), each on or off.
     options: tuple[str, ...] = ()
+    #: Since 1.1.0: extras of ``options`` the page no longer offers (nexnotes and nextime ``mcp`` on an API key, MCP
+    #: decision 6): a key that has one keeps it and may switch it off, but the module's routes never switch it on. The
+    #: app's older routes may still set it (``retired=True``, decision 12), so scripts notice nothing.
+    retired_options: tuple[str, ...] = ()
     #: Whether a key is limited to some of the account's areas (folders, spaces, calendars, mailboxes).
     areas: bool = False
     #: Only with ``areas``: a key must name its areas, "all" is not offered (nexmail's mailboxes).
@@ -104,6 +108,9 @@ class KeyKind:
         for name in (*self.rights, *self.options):
             if not _ID.fullmatch(name):
                 raise ValueError(f"{self.id}: {name!r} is no name for a right or an extra")
+        for name in self.retired_options:
+            if name not in self.options:
+                raise ValueError(f"{self.id}: retired option {name!r} must be one of the options")
         if self.areas_required and not self.areas:
             raise ValueError(f"{self.id}: areas_required needs areas")
         if self.expiry_days is not None:
@@ -118,6 +125,11 @@ class KeyKind:
             raise ValueError(f"{self.id}: limits out of range")
         if not 16 <= self.secret_bytes <= 64:
             raise ValueError(f"{self.id}: secret_bytes out of range")
+
+    @property
+    def offered_options(self) -> tuple[str, ...]:
+        """The extras the page offers on a new key: ``options`` without the retired ones."""
+        return tuple(name for name in self.options if name not in self.retired_options)
 
     @property
     def prefixes(self) -> tuple[str, ...]:

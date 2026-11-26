@@ -220,7 +220,9 @@ export function KeyDialog({
   const [daysTouched, setDaysTouched] = useState(false)
   const [allAreas, setAllAreas] = useState(editing ? editing.areas === null : !kind.areas_required)
   const [areas, setAreas] = useState<string[]>(Array.isArray(editing?.areas) ? editing.areas.map((area) => String(area.id)) : [])
-  const [options, setOptions] = useState<Record<string, boolean>>(Object.fromEntries(kind.options.map((option) => [option, editing?.options[option] ?? false])))
+  // A retired extra (1.1.0) shows only on a key that has it, to switch it off; a new key never gets it here.
+  const shownOptions = [...kind.options, ...(kind.retired_options ?? []).filter((option) => editing?.options[option] === true)]
+  const [options, setOptions] = useState<Record<string, boolean>>(Object.fromEntries(shownOptions.map((option) => [option, editing?.options[option] ?? false])))
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string>()
   const [clientRef] = useState(newClientRef)
@@ -308,13 +310,14 @@ export function KeyDialog({
             )}
           </div>
         )}
-        {kind.options.map((option) => (
+        {shownOptions.map((option) => (
           <CheckboxRow
             key={option}
             label={optionLabel(texts, words, option)}
             hint={optionHint(texts, words, option)}
             checked={options[option] ?? false}
             onChange={(on) => setOptions({ ...options, [option]: on })}
+            disabled={(kind.retired_options ?? []).includes(option) && !options[option]}
             testId={`key-option-${option}`}
           />
         ))}

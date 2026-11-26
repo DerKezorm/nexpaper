@@ -67,6 +67,7 @@ export function AboutPage({
   report,
   whatsNew,
   updates,
+  showUpdates = true,
   operator = false,
   onDaily,
   onCheck,
@@ -94,6 +95,8 @@ export function AboutPage({
   /** The text of the running version; without, no row "What's new". */
   whatsNew?: WhatsNewEntry | null
   updates?: AboutUpdates | null
+  /** Since 1.1.1: false leaves the card "Aktualisierungen" and the badge out (a member sees only the own version). */
+  showUpdates?: boolean
   /** Only the operator switches the daily check and checks now. */
   operator?: boolean
   onDaily?: (on: boolean) => void
@@ -111,7 +114,7 @@ export function AboutPage({
   const texts = { ...useNexuiTexts(), ...own }
   const [reading, setReading] = useState(false)
   const latest = updates?.latest?.replace(/^v/, '') ?? ''
-  const newer = updates?.newer ? fill(texts.aboutNewer, { version: latest }) : null
+  const newer = showUpdates && updates?.newer ? fill(texts.aboutNewer, { version: latest }) : null
   const facts: Fact[] = [
     {
       label: texts.aboutVersion,
@@ -153,36 +156,38 @@ export function AboutPage({
         <Facts items={facts} label={fill(texts.aboutApp, { app })} testId="about-facts" />
       </Card>
 
-      <Card id="about-updates" icon="RefreshCw" title={texts.updatesTitle} subtitle={fill(texts.updatesText, { app })}>
-        {operator && updates && onDaily && <CheckboxRow label={texts.updatesDaily} hint={texts.updatesDailyHint} checked={updates.checkDaily} onChange={onDaily} testId="about-daily" />}
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm leading-5" aria-live="polite">
-          {operator && onCheck && (
-            <Button kind="secondary" icon="RefreshCw" busy={checking} onClick={onCheck} testId="about-check">
-              {texts.updatesNow}
-            </Button>
-          )}
-          <span data-testid="about-update-state" className={MUTED}>
-            {state ??
-              (updates?.newer ? (
-                <>
-                  {newer}
-                  {updates.releaseUrl && (
-                    <>
-                      {' · '}
-                      <Out href={updates.releaseUrl}>{texts.updatesToRelease}</Out>
-                    </>
-                  )}
-                </>
-              ) : updates?.latest ? (
-                texts.updatesCurrent
-              ) : (
-                texts.updatesNone
-              ))}
-          </span>
-          {updates?.checkedAt && <span className={`${PLAIN} text-xs leading-4 ${MUTED}`}>{fill(texts.updatesCheckedAt, { when: updates.checkedAt })}</span>}
-        </div>
-        <p className={HINT}>{fill(texts.updatesWhatGoesOut, { app })}</p>
-      </Card>
+      {showUpdates && (
+        <Card id="about-updates" icon="RefreshCw" title={texts.updatesTitle} subtitle={fill(texts.updatesText, { app })}>
+          {operator && updates && onDaily && <CheckboxRow label={texts.updatesDaily} hint={texts.updatesDailyHint} checked={updates.checkDaily} onChange={onDaily} testId="about-daily" />}
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm leading-5" aria-live="polite">
+            {operator && onCheck && (
+              <Button kind="secondary" icon="RefreshCw" busy={checking} onClick={onCheck} testId="about-check">
+                {texts.updatesNow}
+              </Button>
+            )}
+            <span data-testid="about-update-state" className={MUTED}>
+              {state ??
+                (updates?.newer ? (
+                  <>
+                    {newer}
+                    {updates.releaseUrl && (
+                      <>
+                        {' · '}
+                        <Out href={updates.releaseUrl}>{texts.updatesToRelease}</Out>
+                      </>
+                    )}
+                  </>
+                ) : updates?.latest ? (
+                  texts.updatesCurrent
+                ) : (
+                  texts.updatesNone
+                ))}
+            </span>
+            {updates?.checkedAt && <span className={`${PLAIN} text-xs leading-4 ${MUTED}`}>{fill(texts.updatesCheckedAt, { when: updates.checkedAt })}</span>}
+          </div>
+          <p className={HINT}>{fill(texts.updatesWhatGoesOut, { app })}</p>
+        </Card>
+      )}
 
       <Card id="about-built-with" icon="BookOpen" title={texts.builtWith}>
         <ul className="m-0 flex list-none flex-wrap gap-x-3 gap-y-1.5 p-0 text-sm leading-5" data-testid="about-built-with">

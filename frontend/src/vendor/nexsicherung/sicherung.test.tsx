@@ -430,3 +430,69 @@ describe('the calls', () => {
     expect(passwordHeader('Grüße')).toBe('R3LDvMOfZQ==')
   })
 })
+
+describe('a time inside a sentence (E62)', () => {
+  /** The three forms an app's `when` gives: today, yesterday, a date; each must read right in every sentence. */
+  const FORMS: Record<'de' | 'en' | 'fr', string[]> = {
+    de: ['heute, 17:15', 'gestern, 17:15', '26.11.2026, 17:15'],
+    en: ['today, 5:15 PM', 'yesterday, 5:15 PM', 'Nov 26, 2026, 5:15 PM'],
+    fr: ['aujourd’hui, 17:15', 'hier, 17:15', '26 nov. 2026, 17:15'],
+  }
+  /** What each language says around the time, written out here, not read from the module's words. */
+  const SAID = {
+    de: {
+      row: (action: string, at: string) => `${action}: Sicherung (${at})`,
+      actions: ['Prüfen', 'Herunterladen', 'Wiederherstellen', 'Löschen'],
+      brief: (at: string) => `Prüfung der Sicherung (${at})`,
+      failed: (at: string) => `Die Sicherung ist gescheitert (${at}):`,
+      restoreFailed: (at: string) => `Das Wiederherstellen ist gescheitert (${at}).`,
+    },
+    en: {
+      row: (action: string, at: string) => `${action}: backup (${at})`,
+      actions: ['Check', 'Download', 'Restore', 'Delete'],
+      brief: (at: string) => `Check of the backup (${at})`,
+      failed: (at: string) => `The backup failed (${at}):`,
+      restoreFailed: (at: string) => `Restoring failed (${at}).`,
+    },
+    fr: {
+      row: (action: string, at: string) => `${action} : sauvegarde (${at})`,
+      actions: ['Vérifier', 'Télécharger', 'Restaurer', 'Supprimer'],
+      brief: (at: string) => `Vérification de la sauvegarde (${at})`,
+      failed: (at: string) => `La sauvegarde a échoué (${at}) :`,
+      restoreFailed: (at: string) => `La restauration a échoué (${at}).`,
+    },
+  }
+
+  it('never puts a word before the time that fits only one of its forms', () => {
+    // "vom heute", "on today", "du aujourd’hui": a preposition before {when} is right for one form and wrong for another.
+    const before = /(?<!\p{L})(?:am|an|um|vom|von|im|seit|on|of|at|from|since|du|le|de|depuis|à)\s*\{when\}/giu
+    for (const language of ['de', 'en', 'fr'] as const) {
+      const found = JSON.stringify(SICHERUNG_TEXTS[language]).match(before)
+      expect(found, language).toBeNull()
+    }
+  })
+
+  for (const language of ['de', 'en', 'fr'] as const) {
+    for (const at of FORMS[language]) {
+      it(`reads right in ${language} with "${at}": the row's buttons, the check, both failures`, async () => {
+        const said = SAID[language]
+        const api = fakeApi()
+        api.backups = vi.fn(async () => ({
+          ...BACKUPS,
+          backups: [entry('nexnotes-2026-11-25-030000.zip')],
+          failure: { at: '2026-11-25T04:00:00+00:00', reason: 'disk_full' },
+          restore_failure: { at: '2026-11-25T05:00:00+00:00', name: 'nexnotes-2026-11-25-030000.zip' },
+        }))
+        const root = await show(<StorageArea app="nexnotes" things="Notizen" holds="h" api={api} password language={language} when={() => at} />, language)
+        await waitFor(() => expect(root.querySelector('[data-testid="backup-list"]')).not.toBeNull())
+        const row = root.querySelector('[data-testid="backup-nexnotes-2026-11-25-030000.zip"]') as HTMLElement
+        const names = Array.from(row.querySelectorAll('button')).map((button) => button.getAttribute('aria-label'))
+        expect(names).toEqual(said.actions.map((action) => said.row(action, at)))
+        expect(root.querySelector('[data-testid="backup-failure"]')?.textContent).toContain(said.failed(at))
+        expect(root.querySelector('[data-testid="restore-failure"]')?.textContent).toContain(said.restoreFailed(at))
+        await act(async () => fireEvent.click(getByRole(row, 'button', { name: said.row(said.actions[0]!, at) })))
+        expect(root.querySelector('[data-testid="backup-brief"]')?.textContent).toContain(said.brief(at))
+      })
+    }
+  }
+})

@@ -41,7 +41,10 @@ export type KindChoice = {
   editable: boolean
   rights: string[]
   default_right: string | null
+  /** The extras offered on a new key. */
   options: string[]
+  /** Since 1.1.0: extras no longer offered; a key that has one may switch it off. */
+  retired_options?: string[]
   areas: AreaRef[] | null
   areas_required: boolean
   /** `null`: the app knows no end of a key. A `null` inside: never. */
@@ -63,6 +66,8 @@ export type KeyListing = {
   api_path: string
   mcp_path: string | null
   keys_wait: boolean
+  /** Since 1.1.0: whether the operator lets the account use AI (MCP keys and programs rest without it). */
+  ai_allowed?: boolean
   warn_days: number
   kinds: KindChoice[]
   keys: KeyEntry[]

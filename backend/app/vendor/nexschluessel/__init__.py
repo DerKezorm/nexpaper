@@ -37,10 +37,23 @@ from .config import (
 )
 from .errors import CODES, KeyRefused
 from .keys import Caller, Made, authenticate, block, change, entry, listing, make, overview, revoke, unblock
-from .model import ALL_AREAS, AccountId, Area, AreaId, ClientRefStore, Holder, Key, KeyChange, KeyId, NewKey, Store
+from .model import (
+    ALL_AREAS,
+    AccountId,
+    AiStore,
+    Area,
+    AreaId,
+    ClientRefStore,
+    Holder,
+    Key,
+    KeyChange,
+    KeyId,
+    NewKey,
+    Store,
+)
 from .tokens import bearer, digest, make_secret, plausible, shown_prefix
 
-__version__ = "1.0.2"
+__version__ = "1.1.0"
 
 __all__ = [
     "ALL_AREAS",
@@ -59,6 +72,7 @@ __all__ = [
     "SWITCH_MCP",
     "SWITCH_PAIRING",
     "AccountId",
+    "AiStore",
     "AppConfig",
     "Area",
     "AreaId",
