@@ -75,8 +75,10 @@ doppelt; jetzt prüft er Pfad, h1 und h2 je einmal und die Knopfnamen). `sync.py
 - E48: Karte `web-push` (Reihenfolge Grenzen, Funktionen, Schnittstellen, Web Push, Sprachen), Satz unter Grenzen
   „Was nexpaper annimmt … Die Grenze eines Kontos setzt du unter Server › Konten › Verwalten.“, Satz unter Funktionen,
   „Schriften im Abbild“; „Verwalten“ bleibt `sm` wie aus konten.
-- E47: `tests/test_bestand.py` wieder wie auf `konten`, dünne Hülle `services/mailer.py` (`send_reset` →
-  `kontenpost`); der Fänger `bestand_mail_caught` bleibt (ohne ihn sechs Versuche an mail.example.com:587).
+- E47/E51: `tests/test_bestand.py` wie auf `konten`, nur die Anbindung an die Post wandert in den Block
+  `AFTER_THE_CHANGE` (`from app.services import kontenpost as mailer`; eine Zeile Import davor ohne `mailer`), die
+  Hülle `services/mailer.py` ist weg, `routers/resets.py` ruft `kontenpost.send_reset`; der Fänger
+  `bestand_mail_caught` bleibt (ohne ihn sechs Versuche an mail.example.com:587).
   Speichergrenze an jedem Eingang (`services/quota.py`): Ordner (Datei bleibt liegen), Postfach (Mail bleibt
   ungelesen, `mail_state.full` mit Person, Zahl, Bytes, wird mit Platz geholt), Paperless (`storage_full`, ein späterer
   Lauf holt nach), Upload-Bitten (507 `request_no_room`); Mitteilung „Speicher voll, x Dokumente warten“ über `tell`
