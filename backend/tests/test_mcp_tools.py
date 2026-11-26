@@ -142,7 +142,12 @@ def test_changing_tools_change_only_what_the_account_may_change(people: dict[str
 def test_a_waiting_request_tells_the_account_on_its_devices(people: dict[str, Any],
                                                            monkeypatch: pytest.MonkeyPatch) -> None:
     told: list[tuple[int, Any]] = []
-    monkeypatch.setattr(tell, "person", lambda account_id, notice: told.append((account_id, notice)))
+    # MCP decision 14: no bell in nexpaper, so a push to the account's devices (no mail).
+    monkeypatch.setattr(mcp_store, "push_waiting", lambda account_id, notice: told.append((account_id, notice)))
+    monkeypatch.setattr(tell, "person", lambda *args: pytest.fail("no mail and no tell for a waiting request"))
+    from app.services import notices
+
+    monkeypatch.setattr(notices, "later", lambda job, *args: job(*args))
     browser = people["browser"]
     secret = key(browser)
     key_id = next(entry["id"] for entry in browser.get("/api/v1/connections/keys").json()["keys"]
@@ -189,3 +194,18 @@ def test_the_page_has_words_for_every_tool(language: str) -> None:
     words = json.loads((FRONTEND / f"{language}.json").read_text(encoding="utf-8"))["mcp"]
     assert list(words["tools"]) == [tool.name for tool in mcp_store.MCP.tools]
     assert set(words["levels"]) >= set(mcp_store.MCP.levels)
+
+
+def test_the_waiting_notice_goes_as_a_push_in_the_language_of_each_device(monkeypatch: pytest.MonkeyPatch) -> None:
+    from types import SimpleNamespace
+
+    from app.services import push
+
+    sent: list[Any] = []
+    monkeypatch.setattr(push, "send_to_person", lambda account_id, message_for: sent.append(
+        (account_id, message_for("de"), message_for("en"))))
+    notice = mcp_store.waiting_notice(SimpleNamespace(id=7, key_name="Notebook", account_id=3))
+    mcp_store.push_waiting(3, notice)
+    account_id, german, english = sent[0]
+    assert account_id == 3 and german.url == "/mcp/requests/7" and "Notebook" in german.body
+    assert german.title == "Ein KI-Programm wartet auf dein Ja" and english.title == "An AI program waits for your yes"

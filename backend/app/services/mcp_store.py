@@ -589,13 +589,24 @@ def store() -> Iterator[McpStore]:
 
 
 def notify(event: str, request: Any) -> None:
-    """``waiting``: the account hears on its devices (push, and mail where it has a confirmed address) that a program
-    waits for its yes, with the way to the page of the request; ``decided`` needs no word."""
+    """``waiting``: the account hears on its devices that a program waits for its yes, with the way to the page of the
+    request (MCP decision 14: nexpaper has no bell but push, so push); ``decided`` needs no word."""
     if event != "waiting":
         return
-    from . import tell
+    from . import notices
 
-    tell.person(int(request.account_id), waiting_notice(request))
+    notices.later(push_waiting, int(request.account_id), waiting_notice(request))
+
+
+def push_waiting(account_id: int, notice: Any) -> None:
+    """The notice of a waiting request as a push to every device of the account, in each device's language."""
+    from . import push, tell
+
+    def message_for(language: str) -> push.Message:
+        title, body = tell.words(notice, language)
+        return push.Message(title=title, body=body, url=notice.url, desk=notice.url, tag=notice.tag)
+
+    push.send_to_person(account_id, message_for)
 
 
 def waiting_notice(request: Any) -> Any:
@@ -623,4 +634,4 @@ def waiting_notice(request: Any) -> Any:
     )
 
 
-__all__ = ["MCP", "McpStore", "notify", "store", "waiting_notice"]
+__all__ = ["MCP", "McpStore", "notify", "push_waiting", "store", "waiting_notice"]
