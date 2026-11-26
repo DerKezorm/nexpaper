@@ -238,6 +238,9 @@ describe("the operator sends a link instead of setting a password", () => {
     expect(copy.querySelector<HTMLInputElement>('input[readonly]')!.value).toContain('https://paper.example.com/reset/abc')
     expect(button('Kopieren', copy)).toBeTruthy()
     expect(document.body.textContent).not.toContain('Das neue Passwort für')
+    // The link shows once: Escape does not close the window (ui `dismissable`, E38), only "Fertig" does.
+    await act(async () => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })))
+    expect(document.body.querySelector('[data-testid="reset-link-dialog"]')).toBeTruthy()
   })
 })
 

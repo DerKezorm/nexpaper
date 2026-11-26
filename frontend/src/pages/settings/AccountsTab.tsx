@@ -294,7 +294,8 @@ function ManageDialog({ row, ownId, links, operatorHasPassword, mailServer, onCl
 
   return (
     <>
-      <Dialog title={t(MANAGE_DIALOG.title, { name })} onClose={onClose} closeLabel={t('common.close')} testId="manage-dialog">
+      {/* While a window of an act stands above it, Escape belongs to that one: "Verwalten" stays (ui `dismissable`). */}
+      <Dialog title={t(MANAGE_DIALOG.title, { name })} onClose={onClose} closeLabel={t('common.close')} testId="manage-dialog" dismissable={!pending && !naming && !resetting && !removing && !limiting}>
         <div className="flex flex-col gap-4">
           <Rows>
             <Row lead={<Picture row={listed} size={48} />} name={name} badge={<Badges shown={accountBadges(listed)} />} sub={accountLine(listed)} />
@@ -696,7 +697,8 @@ function CopyField({ value, label, hint }: { value: string; label: string; hint?
 }
 
 /** "Link for a new password" (`RESET_LINK_DIALOG`): the operator never sets another account's password; with a mail
- * server and an address that counts the link goes there, else it shows once to hand on. Also for a blocked account. */
+ * server and an address that counts the link goes there, else it shows once to hand on (then only "Fertig" or the close
+ * button end the window, ui `dismissable`, E38). Also for a blocked account. */
 function ResetLinkDialog({ row, name, mailServer, operatorHasPassword, onClose }: {
   row: AccountRow
   name: string
@@ -712,7 +714,7 @@ function ResetLinkDialog({ row, name, mailServer, operatorHasPassword, onClose }
   const action = useAction()
   const sends = mailServer && Boolean(row.email) && row.email_counts !== false
   return (
-    <Dialog title={t(RESET_LINK_DIALOG.title)} onClose={onClose} closeLabel={t('common.close')} testId="reset-link-dialog">
+    <Dialog title={t(RESET_LINK_DIALOG.title)} onClose={onClose} closeLabel={t('common.close')} testId="reset-link-dialog" dismissable={!link && sent === null}>
       {sent !== null ? (
         <div className="flex flex-col gap-3" data-testid="reset-link">
           <Notice tone="ok">{t(RESET_LINK_DIALOG.sent, { email: sent, name })}</Notice>
@@ -780,7 +782,7 @@ function InviteDialog({ onClose, onMade }: { onClose: () => void; onMade: () => 
   const fields = inviteFields({ ...APP_CAPS, roles: false }, { mailServer: Boolean(me?.mail), email })
   const sends = fields.includes('sendMail') && send
   return (
-    <Dialog title={t(INVITE_DIALOG.title)} onClose={onClose} closeLabel={t('common.close')} testId="invite-dialog">
+    <Dialog title={t(INVITE_DIALOG.title)} onClose={onClose} closeLabel={t('common.close')} testId="invite-dialog" dismissable={!made}>
       {made ? (
         <div className="flex flex-col gap-3">
           {made.sent && (
