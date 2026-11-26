@@ -4,7 +4,7 @@
     "sections": [
       {
         "title": "Français",
-        "where": "Einstellungen, Profil, Sprache",
+        "where": "Mein Konto › Profil, Sprache",
         "body": "Französisch ist jetzt eingebaut, neben Deutsch und Englisch. Es steht in der Sprachwahl und folgt von selbst einem französischen Browser, und ein auf Französisch eingerichteter Server nennt seine Arten französisch. Danke, 3dRikal, für die Übersetzung: dein erster Beitrag zu einem offenen Projekt, und ein sehr willkommener."
       }
     ],
@@ -58,7 +58,7 @@
     "sections": [
       {
         "title": "iPad ohne neues Koppeln",
-        "where": "iPhone- und iPad-App ab Version 1.3.0; Mein Konto, Geräte und Apps",
+        "where": "iPhone- und iPad-App ab Version 1.3.0; Mein Konto › Verbindungen › Geräte",
         "body": "Ist die App auf deinem iPhone gekoppelt, verbindet sich die App auf deinem iPad mit derselben Apple-ID von selbst über den iCloud-Schlüsselbund. Das iPad bekommt dabei einen eigenen Schlüssel und steht unter Geräte und Apps als eigenes Gerät, „von einem anderen Gerät hinzugefügt“. Du kannst es dort allein sperren, das iPhone bleibt verbunden. Ein Gerät kann so höchstens fünf weitere in der Stunde hinzufügen, und nichts davon darf mehr als jedes andere gekoppelte Gerät."
       }
     ],
@@ -87,7 +87,7 @@
     "sections": [
       {
         "title": "Neuere Modelle von OpenAI",
-        "where": "Einstellungen, KI; Vorschläge im Eingang",
+        "where": "Server › KI-Anbieter; Vorschläge im Eingang",
         "body": "Mit einem neueren Modell von OpenAI wie GPT-5 scheiterte jede Anfrage mit dem Fehler 400, schon beim Prüfen der Einstellung. Diese Modelle wollen die Grenze für die Antwort unter einem anderen Namen. nexpaper fragt jetzt so, wie das Modell es verlangt, gibt ihm Platz zum Nachdenken und bittet es, sich dabei kurz zu fassen. Ältere Modelle wie GPT-4o laufen wie bisher."
       }
     ],
@@ -104,7 +104,7 @@
       },
       {
         "title": "Je Speicherpfad ein Tresor",
-        "where": "Einstellungen, Import, Wohin",
+        "where": "Server › Import, Wohin",
         "body": "Hat dein Paperless Speicherpfade, kann jeder davon ein gemeinsamer Tresor mit seinem Namen werden. Vorher siehst du jeden Pfad mit der Zahl seiner Dokumente und ob es den Tresor schon gibt. Neue Tresore verwaltest du, wem dort Dokumente gehören, darf sie bearbeiten. Ein Tresor mit dem Namen, den es schon gibt, wird genommen und behält seine Mitglieder. Dokumente ohne Speicherpfad kommen in die persönlichen Tresore. Ein späterer Lauf füllt dieselben Tresore, auch wenn du sie umbenannt hast."
       }
     ],
@@ -143,7 +143,7 @@
       },
       {
         "title": "Lokale Modelle, die erst nachdenken",
-        "where": "Einstellungen, KI",
+        "where": "Server › KI-Anbieter",
         "body": "Ein Modell wie Qwen3 über Ollama verbrauchte den kurzen Platz für die Antwort mit Nachdenken und gab nichts zurück. nexpaper bittet ein lokales Modell jetzt, nicht nachzudenken. Ein lokaler Server, der das nicht kennt, wird einmal ohne die Bitte gefragt, und hat ein Modell seinen Platz trotzdem aufgebraucht, sagt die Meldung das."
       }
     ],
@@ -182,7 +182,7 @@
       },
       {
         "title": "PDFs mit Passwort",
-        "where": "Eingang, Mein Konto, Hochladen",
+        "where": "Eingang; Mein Konto › Hochladen",
         "body": "Ein PDF, das ein Passwort braucht, wartet jetzt im Eingang mit einem Feld dafür. Nach „Öffnen“ liest nexpaper es wie jedes andere Dokument. Das Original bleibt, wie es kam, geschützt; daneben legt nexpaper eine geöffnete Fassung ohne Passwort auf dem Server ab, die Ansicht, Suche, Seitenwerkzeuge, Links und Exporte nehmen. Mit „Für künftige Dokumente merken“ bekommt das Passwort einen Namen, und geschützte PDFs, die du später selbst hochlädst oder die über Eingangsordner oder Postfach in deinen eigenen Tresor kommen, öffnen sich von selbst. Bis zu 10 je Person, nie wieder angezeigt, und die von anderen werden nie probiert."
       },
       {
@@ -192,12 +192,12 @@
       },
       {
         "title": "Um ein Dokument bitten",
-        "where": "Eingang; Einstellungen, Teilen",
-        "body": "Mit „Um ein Dokument bitten“ bekommst du eine Adresse, die du jemandem ohne Konto gibst, dem Steuerbüro oder der Hausverwaltung, und dort legt er Dateien ab. Sie landen in deinem Eingang in deinem eigenen Tresor, mit dem Namen, den du der Bitte gegeben hast; abgelegt wird nichts von selbst. Eine Bitte gilt höchstens so lange wie ein Link, nimmt 10 Dateien, wenn du nichts anderes sagst, und lässt sich jederzeit zurückziehen. Die Seite hinter der Adresse zeigt, wer bittet und wie viele Dateien noch gehen, nie, was schon angekommen ist. Ab Werk aus: Der Betreiber schaltet Upload-Bitten unter Einstellungen, Teilen ein, und sie brauchen die öffentliche Adresse des Servers."
+        "where": "Eingang; Server › Allgemein › Funktionen für alle Konten",
+        "body": "Mit „Um ein Dokument bitten“ bekommst du eine Adresse, die du jemandem ohne Konto gibst, dem Steuerbüro oder der Hausverwaltung, und dort legt er Dateien ab. Sie landen in deinem Eingang in deinem eigenen Tresor, mit dem Namen, den du der Bitte gegeben hast; abgelegt wird nichts von selbst. Eine Bitte gilt höchstens so lange wie ein Link, nimmt 10 Dateien, wenn du nichts anderes sagst, und lässt sich jederzeit zurückziehen. Die Seite hinter der Adresse zeigt, wer bittet und wie viele Dateien noch gehen, nie, was schon angekommen ist. Ab Werk aus: Der Betreiber schaltet Upload-Bitten unter Server › Allgemein › Funktionen für alle Konten ein, und sie brauchen die öffentliche Adresse des Servers."
       },
       {
         "title": "Der Text einer Mail als Dokument",
-        "where": "Einstellungen, Eingänge, Postfach",
+        "where": "Server › Eingänge › E-Mail-Postfach",
         "body": "Eine Mail ohne Anhang, etwa eine weitergeleitete Bestellbestätigung, kann jetzt zum Dokument werden: ein PDF mit ihrem Text im Eingang der Person, die sie geschickt hat, mit dem Betreff als Titel. Ab Werk aus. Nur für Mails von einer bestätigten Adresse einer Person, und nur, wenn dein Mailserver sagt, dass die Mail DMARC bestanden hat; nie für unbekannte Absender, und höchstens 50 am Tag je Person."
       }
     ],
@@ -217,7 +217,7 @@
     "sections": [
       {
         "title": "nexpaper im App Store",
-        "where": "Mein Konto, Geräte und Apps, Gerät koppeln",
+        "where": "Mein Konto › Verbindungen › Geräte, iPhone oder iPad verbinden",
         "body": "Mit der App scannst du Briefe mit der Kamera, schickst PDFs und Fotos aus anderen Apps über Teilen in deinen Eingang, legst ab, suchst im Volltext und behältst deine Fristen im Blick, auf Wunsch mit Erinnerung. Ohne Verbindung wartet jeder Scan auf dem Gerät und geht von selbst hoch, sobald dein Server erreichbar ist. Die App ist kostenlos und spricht nur mit deinem eigenen nexpaper. Zum Verbinden zeigst du unter „Gerät koppeln“ den QR-Code und scannst ihn mit der App, oder du meldest dich in der App über den Browser an.",
         "link": {
           "label": "nexpaper im App Store",
@@ -256,7 +256,7 @@
     "sections": [
       {
         "title": "Fristen je Person ausschalten",
-        "where": "Mein Konto, Erinnerungen",
+        "where": "Mein Konto › Benachrichtigungen",
         "body": "Wer Fristen nicht nutzt, schaltet sie dort für sich aus. Dann fehlt der Menüpunkt Fristen samt Zahl (am Handy steht in der Leiste wieder Ordnung), es kommen keine Erinnerungen und keine Wochenübersicht, und im Archiv gibt es den Filter Frist nicht. Die Termine an den Dokumenten bleiben, nur „bezahlt“ und „später“ fehlen für dich; die Suchwörter mit frist: gehen weiter. Die anderen im Haushalt sind nicht betroffen. Ab Werk sind Fristen an."
       },
       {
@@ -290,8 +290,8 @@
       },
       {
         "title": "Erinnerungen per Push und Mail",
-        "where": "Mein Konto, Erinnerungen",
-        "body": "nexpaper erinnert jetzt rechtzeitig: an eine fällige Rechnung drei Tage vorher, an den letzten Kündigungstag 14 Tage vorher, an eine ablaufende Garantie 30 Tage vorher, jeweils noch einmal am Tag selbst, um 8 Uhr in deiner Zeitzone. Wie früh, ob per Push aufs Handy oder per Mail, ob einzeln, einmal die Woche oder beides, stellst du unter Mein Konto, Erinnerungen ein. Dort lassen sich auch einzelne Tresore stumm schalten, und eine Testnachricht zeigt, dass alles ankommt. Die Wochenübersicht kommt montags um 8 Uhr per Mail und nur, wenn etwas ansteht. Erinnert werden alle, die im Tresor bearbeiten dürfen; wer nur liest, bekommt nichts. In der Nachricht stehen Art, Datum und Titel des Dokuments, nie Betrag, Text oder Notizen. Ab Werk kommen Erinnerungen einzeln per Push, Mail und Wochenübersicht sind aus."
+        "where": "Mein Konto › Benachrichtigungen",
+        "body": "nexpaper erinnert jetzt rechtzeitig: an eine fällige Rechnung drei Tage vorher, an den letzten Kündigungstag 14 Tage vorher, an eine ablaufende Garantie 30 Tage vorher, jeweils noch einmal am Tag selbst, um 8 Uhr in deiner Zeitzone. Wie früh, ob per Push aufs Handy oder per Mail, ob einzeln, einmal die Woche oder beides, stellst du unter Mein Konto › Benachrichtigungen ein. Dort lassen sich auch einzelne Tresore stumm schalten, und eine Testnachricht zeigt, dass alles ankommt. Die Wochenübersicht kommt montags um 8 Uhr per Mail und nur, wenn etwas ansteht. Erinnert werden alle, die im Tresor bearbeiten dürfen; wer nur liest, bekommt nichts. In der Nachricht stehen Art, Datum und Titel des Dokuments, nie Betrag, Text oder Notizen. Ab Werk kommen Erinnerungen einzeln per Push, Mail und Wochenübersicht sind aus."
       },
       {
         "title": "Aufbewahrung je Art",
@@ -317,12 +317,12 @@
       },
       {
         "title": "Eigene Anweisungen an die KI",
-        "where": "Einstellungen, KI",
+        "where": "Server › KI-Anbieter",
         "body": "Als Betreiber kannst du der KI zusätzliche Anweisungen geben, etwa wie eure Titel aussehen sollen oder in welcher Sprache. Sie kommen zu den festen Regeln hinzu und ändern nichts daran, welche Felder die KI füllt und was nexpaper prüft. Leer bleibt alles wie bisher."
       },
       {
         "title": "Eingangsordner an jedem eingebundenen Ort",
-        "where": "Einstellungen, Eingänge",
+        "where": "Server › Eingänge",
         "body": "Im Container nahm nexpaper als Eingangsordner nur /data/eingang an; jeder andere Pfad hieß „darf nicht“, auch ein eigens eingebundener wie /scans. Jetzt geht jeder eingebundene Ordner, der nicht im Programm, in den Daten oder in einem Systemordner liegt."
       }
     ],
@@ -371,7 +371,7 @@
       },
       {
         "title": "Sehr große Postfächer als Eingang",
-        "where": "Einstellungen, Eingänge, E-Mail-Postfach",
+        "where": "Server › Eingänge › E-Mail-Postfach",
         "body": "Wer ein Postfach mit weit über 100.000 Mails als Eingang einträgt, bei dem blieb der Abruf nach dem ersten Durchgang bei jedem Lauf an derselben Stelle stehen. Der Server schickte die Liste aller Mails in einer Zeile, und die war länger, als nexpaper las. Jetzt fragt nexpaper nur noch nach der neuesten Mail und liest auch lange Antworten."
       }
     ],
@@ -383,7 +383,7 @@
     "sections": [
       {
         "title": "X-Forwarded-Proto nur von vertrauten Proxys",
-        "where": "Einstellungen, Anmeldung, Bereit fürs Internet?",
+        "where": "Server › Anmeldung › Bereit fürs Internet?",
         "body": "Ob Cookies das Secure-Flag bekommen und ob „Bereit fürs Internet?“ https als in Ordnung zeigt, richtet sich jetzt nur noch nach einem Proxy, der in NEXPAPER_TRUSTED_PROXIES steht. Bisher zählte dafür der Kopf X-Forwarded-Proto von jedem Absender. Läuft nexpaper hinter einem Proxy, trag ihn dort ein oder setz NEXPAPER_COOKIE_SECURE auf on, sonst bleiben die Cookies im Modus auto ohne Secure."
       }
     ],
@@ -399,23 +399,23 @@
       {
         "title": "Mehrere Anmeldeanbieter",
         "body": "Jeder Anbieter bekommt einen Knopf auf der Anmeldeseite, in der Reihenfolge deiner Liste. Je Anbieter stellst du ein, ob neue Personen ein Konto bekommen und ob er den zweiten Faktor selbst prüft. Microsoft Entra ID geht auch mit mehreren Mandanten.",
-        "where": "Einstellungen, Anmeldung"
+        "where": "Server › Anmeldung"
       },
       {
         "title": "authentik in einem Schritt",
         "body": "Mit einem API-Token richtet nexpaper Anbieter und Anwendung in authentik selbst ein und sagt bei jedem Schritt, was geklappt hat und was nicht. Wer kein Token aus der Hand gibt, lädt stattdessen einen Blueprint herunter.",
-        "where": "Einstellungen, Anmeldung"
+        "where": "Server › Anmeldung"
       },
       {
         "title": "Verknüpfen in deinem Konto",
         "body": "Jedes Konto verknüpft sich selbst mit den Anbietern, mit deinem Passwort als Bestätigung, und löst die Verknüpfung dort wieder. Eine Mailadresse vom Anbieter verknüpft nichts mehr von selbst; eine Einladung wirkt auch über den Anbieter.",
-        "where": "Mein Konto, Sicherheit"
+        "where": "Mein Konto › Sicherheit"
       }
     ],
     "smallTitle": "Außerdem",
     "small": [
       "Dein bisheriger Anbieter ist der erste Eintrag der Liste, alle Verknüpfungen bleiben, seine Rückleitadresse auch",
-      "Eine Adresse vom Anbieter zählt für Dokumente per Mail erst, wenn du sie bestätigt hast, auch eine, die 1.0.1 als bestätigt übernommen hatte: einmal unter Mein Konto, Profil bestätigen",
+      "Eine Adresse vom Anbieter zählt für Dokumente per Mail erst, wenn du sie bestätigt hast, auch eine, die 1.0.1 als bestätigt übernommen hatte: einmal unter Mein Konto › Profil bestätigen",
       "Hinter einem Proxy, dem nexpaper traut, gilt auch das Schema, das er meldet",
       "„Zweiten Faktor verlangen“ gilt für die Anmeldung mit Passwort: Konten ohne Passwort und wer über einen Anbieter kommt, dessen Eintrag „Der Anbieter prüft den zweiten Faktor selbst“ hat, müssen keinen einrichten; die Hinweise sagen es",
       "Eine Dashboard-Karte kann nexpaper über einen API-Schlüssel lesen: was im Eingang wartet, was abgelegt ist und was in den nächsten 14 Tagen fällig wird.",
@@ -430,7 +430,7 @@
       {
         "title": "Am besten zu Hause",
         "body": "Deine Papiere bleiben am besten im eigenen Netz, und von unterwegs gehst du über ein VPN hinein. Die Texte zur Schnittstelle versprechen keine Apps mehr, die erst noch kommen.",
-        "where": "Einstellungen, API"
+        "where": "Server › Allgemein › Schnittstellen"
       }
     ],
     "smallTitle": "Außerdem",
@@ -474,7 +474,7 @@
       {
         "title": "Sicherung und Dateien prüfen",
         "body": "Die Sicherung enthält Datenbank, Einstellungen und Server-Geheimnisse, nicht die Dokumente und nicht den Suchindex. Einmal in der Woche prüft nexpaper die Prüfsummen aller Dateien und warnt am Dokument, wenn eine fehlt oder sich verändert hat.",
-        "where": "Einstellungen, Sicherung"
+        "where": "Server › Speicher und Sicherung"
       }
     ],
     "smallTitle": "Außerdem",

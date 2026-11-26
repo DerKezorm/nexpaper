@@ -4,7 +4,7 @@
     "sections": [
       {
         "title": "Français",
-        "where": "Settings, Profile, Language",
+        "where": "My account › Profile, Language",
         "body": "French is built in now, next to German and English. It is in the language choice and follows a French browser by itself, and a server set up in French names its kinds in French. Thank you, 3dRikal, for the translation: your first contribution to an open project, and a very welcome one."
       }
     ],
@@ -58,7 +58,7 @@
     "sections": [
       {
         "title": "iPad without pairing again",
-        "where": "iPhone and iPad app from version 1.3.0; My account, Devices and apps",
+        "where": "iPhone and iPad app from version 1.3.0; My account › Connections › Devices",
         "body": "Once the app on your iPhone is paired, the app on your iPad with the same Apple Account connects on its own through iCloud Keychain. The iPad gets a key of its own and stands under Devices and apps as a device of its own, “added by another device”. You can lock it there alone, and the iPhone stays connected. A device can add at most five others an hour this way, and none of them may do more than any other paired device."
       }
     ],
@@ -87,7 +87,7 @@
     "sections": [
       {
         "title": "Newer OpenAI models",
-        "where": "Settings, AI; suggestions in the inbox",
+        "where": "Server › AI provider; suggestions in the inbox",
         "body": "With a newer OpenAI model such as GPT-5, every request failed with error 400, already when the setting was checked. These models want the limit for the answer under another name. nexpaper now asks the way the model wants it, gives it room to think and asks it to keep that short. Older models such as GPT-4o work as before."
       }
     ],
@@ -104,7 +104,7 @@
       },
       {
         "title": "A vault for each storage path",
-        "where": "Settings, Import, Where to",
+        "where": "Server › Import, Where to",
         "body": "If your Paperless has storage paths, each can become a shared vault with its name. Before the start you see each path with its number of documents and whether the vault is here already. You manage the new vaults, and whoever owns documents in one may change them. A vault of that name that is here already is used and keeps its members. Documents without a storage path go to the personal vaults. A later run fills the same vaults, even when you renamed them."
       }
     ],
@@ -143,7 +143,7 @@
       },
       {
         "title": "Local models that think first",
-        "where": "Settings, AI",
+        "where": "Server › AI provider",
         "body": "A model such as Qwen3 through Ollama spent the short room for the answer on thinking and gave back nothing. nexpaper now asks a local model not to think. A local server that does not know the request is asked once more without it, and when a model used up its room all the same, the message says so."
       }
     ],
@@ -182,7 +182,7 @@
       },
       {
         "title": "PDFs with a password",
-        "where": "Inbox, My account, Upload",
+        "where": "Inbox; My account › Upload",
         "body": "A PDF that needs a password now waits in the inbox with a field for it. After “Open” nexpaper reads it like any other document. The original stays as it came, protected; beside it nexpaper keeps an opened copy without the password on the server, which the view, the search, the page tools, links and exports use. With “Remember for future documents” the password gets a name, and protected PDFs that you upload yourself later, or that come into your own vault through the intake folder or the mailbox, open by themselves. Up to 10 per person, never shown again, and nobody else's are ever tried."
       },
       {
@@ -192,12 +192,12 @@
       },
       {
         "title": "Ask for a document",
-        "where": "Inbox; Settings, Sharing",
-        "body": "With “Ask for a document” you get an address that you give to somebody without an account, the tax office or the property manager, who drops files there. The files land in your inbox in your own vault, marked with the name you gave the request; nothing is filed by itself. A request lasts at most as long as a link, takes 10 files unless you say otherwise, and can be withdrawn at any time. The page behind the address shows who asks and how many files still go, never what has arrived. Off from the start: the operator switches upload requests on under Settings, Sharing, and they need the public address of the server."
+        "where": "Inbox; Server › General › Features for all accounts",
+        "body": "With “Ask for a document” you get an address that you give to somebody without an account, the tax office or the property manager, who drops files there. The files land in your inbox in your own vault, marked with the name you gave the request; nothing is filed by itself. A request lasts at most as long as a link, takes 10 files unless you say otherwise, and can be withdrawn at any time. The page behind the address shows who asks and how many files still go, never what has arrived. Off from the start: the operator switches upload requests on under Server › General › Features for all accounts, and they need the public address of the server."
       },
       {
         "title": "A mail's text as a document",
-        "where": "Settings, Inputs, Mailbox",
+        "where": "Server › Inputs › Mailbox",
         "body": "A mail without an attachment, such as a forwarded order confirmation, can now become a document: a PDF of its text in the inbox of the person who sent it, titled with the subject. Off from the start. Only for mails from a confirmed address of a person, and only when your mail server says the mail passed DMARC; never for unknown senders, and at most 50 a day per person."
       }
     ],
@@ -217,7 +217,7 @@
     "sections": [
       {
         "title": "nexpaper on the App Store",
-        "where": "My account, Devices and apps, Pair a device",
+        "where": "My account › Connections › Devices, Connect iPhone or iPad",
         "body": "With the app you scan letters with the camera, send PDFs and photos from other apps into your inbox through Share, file them, search the full text and keep an eye on your deadlines, with reminders if you like. Without a connection every scan waits on the device and uploads by itself once your server is reachable. The app is free and talks only to your own nexpaper. To connect it, show the QR code under “Pair a device” and scan it with the app, or sign in from the app through the browser.",
         "link": {
           "label": "nexpaper on the App Store",
@@ -256,7 +256,7 @@
     "sections": [
       {
         "title": "Switch deadlines off per person",
-        "where": "My account, Reminders",
+        "where": "My account › Notifications",
         "body": "If you do not use deadlines, switch them off there, for yourself. Then the menu has no Deadlines item and no number (on the phone the bar has Organise again), there are no reminders and no weekly overview, and the archive has no Deadline filter. The dates on the documents stay, only “paid” and “later” are gone for you; the search words with deadline: keep working. The others in the household are not affected. Deadlines are on from the start."
       },
       {
@@ -290,8 +290,8 @@
       },
       {
         "title": "Reminders by push and mail",
-        "where": "My account, Reminders",
-        "body": "nexpaper now reminds you in good time: of an invoice that falls due three days ahead, of the last day to cancel 14 days ahead, of a warranty that runs out 30 days ahead, each once more on the day itself, at 8 in the morning in your time zone. How early, whether by push to the phone or by mail, whether one by one, once a week or both, you set under My account, Reminders. There you can also mute single vaults, and a test message shows that everything arrives. The weekly overview comes on Mondays at 8 by mail and only when something is coming up. Everybody who may edit in the vault is reminded; somebody who only reads gets nothing. The message holds the kind, the date and the title of the document, never the amount, the text or the notes. From the start, reminders come one by one by push; mail and the weekly overview are off."
+        "where": "My account › Notifications",
+        "body": "nexpaper now reminds you in good time: of an invoice that falls due three days ahead, of the last day to cancel 14 days ahead, of a warranty that runs out 30 days ahead, each once more on the day itself, at 8 in the morning in your time zone. How early, whether by push to the phone or by mail, whether one by one, once a week or both, you set under My account › Notifications. There you can also mute single vaults, and a test message shows that everything arrives. The weekly overview comes on Mondays at 8 by mail and only when something is coming up. Everybody who may edit in the vault is reminded; somebody who only reads gets nothing. The message holds the kind, the date and the title of the document, never the amount, the text or the notes. From the start, reminders come one by one by push; mail and the weekly overview are off."
       },
       {
         "title": "Keeping times for kinds",
@@ -317,12 +317,12 @@
       },
       {
         "title": "Your own instructions for the AI",
-        "where": "Settings, AI",
+        "where": "Server › AI provider",
         "body": "As the operator you can give the AI additional instructions, for example how your titles should look or in which language. They are added to the fixed rules and change nothing in which fields the AI fills and what nexpaper checks. Left empty, everything stays as it was."
       },
       {
         "title": "An intake folder wherever it is mounted",
-        "where": "Settings, Inputs",
+        "where": "Server › Inputs",
         "body": "In the container nexpaper took only /data/eingang as the intake folder; any other path was refused, a mounted one like /scans too. Now any mounted folder will do that does not lie in the program, in the data or in a system folder."
       }
     ],
@@ -371,7 +371,7 @@
       },
       {
         "title": "Very large mailboxes as an input",
-        "where": "Settings, Inputs, Mailbox",
+        "where": "Server › Inputs › Mailbox",
         "body": "With a mailbox of well over 100,000 mails as the input, fetching stopped at the same place on every run after the first pass. The server sent the list of all mails in one line, and that line was longer than nexpaper would read. Now nexpaper asks for the newest mail alone and reads long answers too."
       }
     ],
@@ -383,7 +383,7 @@
     "sections": [
       {
         "title": "X-Forwarded-Proto only from trusted proxies",
-        "where": "Settings, Sign-in, Ready for the internet?",
+        "where": "Server › Sign-in › Ready for the internet?",
         "body": "Whether cookies get the Secure flag and whether “Ready for the internet?” shows https as fine now depends only on a proxy listed in NEXPAPER_TRUSTED_PROXIES. Until now the X-Forwarded-Proto header of any sender counted for this. If nexpaper runs behind a proxy, list it there or set NEXPAPER_COOKIE_SECURE to on; otherwise cookies in auto mode stay without Secure."
       }
     ],
@@ -399,23 +399,23 @@
       {
         "title": "Several sign-in providers",
         "body": "Each provider gets a button on the sign-in page, in the order of your list. Per provider you choose whether new people get an account and whether it checks the second factor itself. Microsoft Entra ID works with several tenants too.",
-        "where": "Settings, Sign-in"
+        "where": "Server › Sign-in"
       },
       {
         "title": "authentik in one step",
         "body": "With an API token nexpaper sets up provider and application in authentik itself and says for each step what worked and what did not. Who would rather not hand out a token downloads a blueprint instead.",
-        "where": "Settings, Sign-in"
+        "where": "Server › Sign-in"
       },
       {
         "title": "Linking in your account",
         "body": "Every account links itself to the providers, with your password as confirmation, and undoes the link there. A mail address from the provider no longer links anything by itself; an invitation works through the provider too.",
-        "where": "My account, Security"
+        "where": "My account › Security"
       }
     ],
     "smallTitle": "Also",
     "small": [
       "Your provider so far is the first entry of the list, every link stays, its redirect address too",
-      "An address from the provider counts for documents by mail only once you confirmed it, also one 1.0.1 took over as confirmed: confirm it once under My account, Profile",
+      "An address from the provider counts for documents by mail only once you confirmed it, also one 1.0.1 took over as confirmed: confirm it once under My account › Profile",
       "Behind a proxy nexpaper trusts, the scheme it reports counts too",
       "“Require a second factor” is for signing in with a password: an account without a password, and whoever comes in through a provider whose entry has “The provider checks the second factor itself” on, is not made to set one up; the hints say so",
       "A dashboard card can read nexpaper through an API key: what waits in the inbox, what is filed, and what falls due in the next 14 days.",
@@ -430,7 +430,7 @@
       {
         "title": "Best kept at home",
         "body": "Your papers are best kept in your own network, and from on the way you come in through a VPN. The texts about the API no longer promise apps that are still to come.",
-        "where": "Settings, API"
+        "where": "Server › General › Interfaces"
       }
     ],
     "smallTitle": "Also",
@@ -474,7 +474,7 @@
       {
         "title": "Backup and checking the files",
         "body": "The backup holds the database, the settings and the server secrets, not the documents and not the search index. Once a week nexpaper checks the checksums of all files and warns at the document when one is missing or has changed.",
-        "where": "Settings, Backups"
+        "where": "Server › Storage and backups"
       }
     ],
     "smallTitle": "Also",

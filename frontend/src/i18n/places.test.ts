@@ -13,6 +13,8 @@ import schluesselEn from '../vendor/nexschluessel/schluessel.en.json'
 import de from './de.json'
 import en from './en.json'
 import fr from './fr.json'
+import newsDe from './whatsnew/de.json'
+import newsEn from './whatsnew/en.json'
 
 type Tree = { [key: string]: string | Tree }
 
@@ -82,13 +84,21 @@ describe('the places the texts name', () => {
     const escape = (word: string) => word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
     const words = [kit.groupAccount, kit.groupServer, kit.settings, ...titles].map(escape).join('|')
     const areas = titles.map(escape).join('|')
+    const groups = [kit.groupAccount, kit.groupServer].map(escape).join('|')
 
     it(`write a place group › area, with no comma, arrow or "card" as a separator (E46, ${name})`, () => {
       const wrong: string[] = []
-      for (const [key, text] of texts(tree)) {
+      // "Was ist neu" of every version names the places as they are now, too (E46).
+      const news = ({ de: newsDe, en: newsEn } as Record<string, unknown>)[name]
+      for (const [key, text] of [...texts(tree), ...texts((news ?? {}) as Tree, 'whatsnew.')]) {
         // Safari's own menus ("Teilen › Zum Home-Bildschirm", "Ablage › Zum Dock hinzufügen") keep its words (E46).
         if (FOREIGN.test(key)) continue
-        if (new RegExp(`(^|[^\\p{L}])(${words})\\s*(,|→|->)\\s*(${words})($|[^\\p{L}])`, 'u').test(text)) wrong.push(`${key}: ${text}`)
+        // A comma after a group or "Einstellungen" leading into a place, or an arrow anywhere between places; a list of
+        // areas ("Profil, Sicherheit, Darstellung") or of the groups is no place.
+        if (
+          new RegExp(`(^|[^\\p{L}])((${groups})\\s*,\\s*(${areas})|${escape(kit.settings)}\\s*,\\s*(${words})|(${words})\\s*(→|->)\\s*(${words}))($|[^\\p{L}])`, 'u').test(text)
+        )
+          wrong.push(`${key}: ${text}`)
         if (new RegExp(`(Karte|card|carte) [„“"«]\\s?(${words})|(,|in der|in the|dans la) (Karte|card|carte) [„“"«]`).test(text)) wrong.push(`${key}: ${text}`)
         // An area at the start of a path needs its group before it; E48 sets "Konten › Verwalten" in "Grenzen".
         for (const found of text.matchAll(new RegExp(`(^|[^›] )(${areas}) › `, 'g'))) {
