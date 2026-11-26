@@ -1,0 +1,35 @@
+/**
+ * U1: the box on the setup of a new installation, "Nach neuen Versionen sehen", ticked by default. The app keeps the
+ * value with its setup form and sends it along; the server stores it only where nothing is stored yet
+ * (`nexupdates.at_setup`). Built only from the ui kit (`CheckboxRow`); the hint names the address asked.
+ *
+ * Copied unchanged into frontend/src/vendor/nexupdates/ by bauplaene/updates/tools/sync.py; changed only there.
+ */
+import { CheckboxRow, fill } from '../nexui'
+import { GITHUB, hostOf, useUpdatesTexts } from './updates'
+
+export type UpdateSetupRowProps = {
+  app: string
+  /** Ticked by default (U1): the app starts its form with `true`. */
+  checked: boolean
+  onChange: (on: boolean) => void
+  /** The address asked, where the app names its own (`<APP>_UPDATE_URL`). */
+  url?: string
+  disabled?: boolean
+  language?: string
+  testId?: string
+}
+
+export function UpdateSetupRow({ app, checked, onChange, url = GITHUB, disabled, language, testId = 'setup-update-check' }: UpdateSetupRowProps) {
+  const texts = useUpdatesTexts(language)
+  return (
+    <CheckboxRow
+      label={texts.setupLabel}
+      hint={fill(texts.setupHint, { app, host: hostOf(url) })}
+      checked={checked}
+      onChange={onChange}
+      disabled={disabled}
+      testId={testId}
+    />
+  )
+}

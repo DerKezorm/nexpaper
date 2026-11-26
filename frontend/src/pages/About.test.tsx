@@ -78,7 +78,10 @@ describe('the daily question', () => {
     server.answers['PUT /api/v1/about/updates'] = { ...current, update_check: false }
     server.answers['POST /api/v1/about/updates/check'] = current
     await page.show(<AboutArea />)
-    expect(page.text).toContain('Hinaus geht nur die Frage')
+    // The module's sentence (updates U11): the address, and nexpaper's other calls by itself instead of "the only call".
+    expect(page.text).toContain('Hinaus geht nur eine Frage: eine Anfrage an api.github.com')
+    expect(page.text).toContain('Von sich aus ruft nexpaper außerdem: den Mailserver')
+    expect(page.text).not.toContain('der einzige Ruf')
     // The kit's About page (ui AboutPage): the card of the updates, "Jetzt nachsehen" secondary, the daily question a box.
     expect(document.querySelector('[data-card="about-updates"]')).toBeTruthy()
     const now = page.button('Jetzt nachsehen')!
@@ -90,13 +93,17 @@ describe('the daily question', () => {
     expect(server.called('PUT', '/api/v1/about/updates')?.body).toEqual({ update_check: false })
   })
 
-  it('is only shown, not changed, to a member', async () => {
+  it('is neither shown nor changed to a member, whose page asks for nothing but its version (U2, U15)', async () => {
     auth.me = { ...me, role: 'member' } as Me
+    server.answers['GET /api/v1/about/updates'] = { ...current, latest: 'v9.9.9', newer: true }
     await page.show(<AboutArea />)
-    expect(document.querySelector('[data-testid="about-updates"]') ?? document.querySelector('[data-card="about-updates"]')).toBeTruthy()
+    expect(document.querySelector('[data-testid="about-version"]')?.textContent).toBe('1.0.0')
+    expect(document.querySelector('[data-card="about-updates"]')).toBeNull()
     expect(document.querySelector('[data-testid="about-daily"]')).toBeNull()
     expect(page.button('Jetzt nachsehen')).toBeUndefined()
-    expect(document.querySelector('[data-testid="about-update-state"]')?.textContent).toBe('Das ist die neueste Version.')
+    expect(document.querySelector('[data-testid="about-update-state"]')).toBeNull()
+    expect(page.text).not.toContain('9.9.9')
+    expect(server.called('GET', '/api/v1/about/updates')).toBeUndefined()
   })
 })
 

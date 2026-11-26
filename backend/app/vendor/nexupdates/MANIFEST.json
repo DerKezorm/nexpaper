@@ -1,0 +1,26 @@
+{
+  "files": {
+    "backend/app/vendor/nexupdates/__init__.py": "sha256-dMycX11koS5GlWj4+LpphYVe7KcXO9oKgoER3XX+xso=",
+    "backend/app/vendor/nexupdates/api.py": "sha256-e1yVmHLP4i4FfYJ/Q15btplpAavBgRdywJeV4FrhUu4=",
+    "backend/app/vendor/nexupdates/check.py": "sha256-enT380ad7PK8dmeVSd4RdoTuoRfztuCbSxiXQZfG5g4=",
+    "backend/app/vendor/nexupdates/config.py": "sha256-YUEquoxN480SCTZKgGZOW8q8k7Sb6/m8W0NBb+4Nn2k=",
+    "backend/app/vendor/nexupdates/words.py": "sha256-+AU+Jbnr8aYsId2l7/jOf4ln4teLrZr+5w5thWECSq8=",
+    "backend/tests/nexupdates/conftest.py": "sha256-6W1GKPY1WaffpHcmyxMlK9a+CAQwl2b7hq9VXlMqglM=",
+    "backend/tests/nexupdates/test_nexupdates_routes.py": "sha256-z2rzyn5uAIiNccDNx+iTqdb8tsJky8y/hm/I8Ms5eb4=",
+    "backend/tests/nexupdates/test_nexupdates_vendored.py": "sha256-2sWdfud2fIEl+6X6lWUMMQUlXUuQ4eCTCzm3sNdzw+8=",
+    "backend/tests/nexupdates/updates_contract.py": "sha256-lXkzMVO5N4bq2TDGbAAYS4hJw6zuoeg5gFNHlV7HOrc=",
+    "frontend/src/vendor/nexupdates/UpdateSetupRow.tsx": "sha256-7/FV2EQoZM6GZRDVIICIfGRM5qnfqM7fYFALD7SNwdY=",
+    "frontend/src/vendor/nexupdates/index.ts": "sha256-66V0pHZ7XnbCsv9MZ2wJZ8WwJUcVy1SVYmwNrNE2m8s=",
+    "frontend/src/vendor/nexupdates/updates.de.json": "sha256-ScVY9xNjzfcLPIdDOEN09VbFb750N7OSJxFSuZ8F+1o=",
+    "frontend/src/vendor/nexupdates/updates.en.json": "sha256-7tHESYPAGJO4p6dpRgqoY7Y64P1LjcIjFcRa7TfHBak=",
+    "frontend/src/vendor/nexupdates/updates.fr.json": "sha256-q/mrIF9tQ3I5f9MJqrpG1VZVMPB5hFCNAIEAAwtUF2I=",
+    "frontend/src/vendor/nexupdates/updates.ts": "sha256-qalZBoZEA+FAaGmje4Fv1ReTg/2j0c4ZkmDxP2wu1Pk="
+  },
+  "module": "updates",
+  "requires": {
+    "fastapi": ">=0.121.0",
+    "httpx": ">=0.28.0"
+  },
+  "vendor_path": "backend/app/vendor/nexupdates",
+  "version": "0.1.1"
+}

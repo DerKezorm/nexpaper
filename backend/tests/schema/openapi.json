@@ -10773,6 +10773,11 @@
             ],
             "title": "Checked At"
           },
+          "hidden": {
+            "default": false,
+            "title": "Hidden",
+            "type": "boolean"
+          },
           "latest": {
             "anyOf": [
               {
@@ -11340,6 +11345,17 @@
               }
             ],
             "title": "Password Confirm"
+          },
+          "update_check": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Update Check"
           }
         },
         "required": [

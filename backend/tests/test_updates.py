@@ -1,7 +1,9 @@
-"""The about page and the update check (block X2), after nexmail.
+"""The about page and the update check (block X2), since the shared module ``nexupdates`` (updates 0.1.1).
 
 The check is a side matter: when GitHub is slow, gone or answers rubbish, the page shows no answer and nothing else
-changes. No test here reaches GitHub; the conftest points the address at a port that refuses.
+changes. No test here reaches GitHub; the conftest points the address at a port that refuses. Only an operator sees the
+state (U15, U21): a member's page gets the form of before with every field empty and ``hidden`` true. The contract
+tests of the module (``tests/nexupdates``) hold the rest; these keep what nexpaper's own tests held before.
 """
 
 from __future__ import annotations
@@ -16,6 +18,7 @@ from fastapi.testclient import TestClient
 from app import __version__
 from app.models import Account
 from app.services import updates
+from app.vendor.nexupdates import check
 
 from .conftest import person
 
@@ -30,7 +33,7 @@ def answers(monkeypatch: pytest.MonkeyPatch, tag: str | None) -> list[int]:
         asked.append(1)
         return tag
 
-    monkeypatch.setattr(updates, "_ask", ask)
+    monkeypatch.setattr(check, "ask", ask)
     return asked
 
 
@@ -58,17 +61,27 @@ def test_the_about_page_names_version_licence_and_where_it_comes_from(client: Te
     assert about["license"] == "AGPL-3.0"
     assert about["repo_url"] == "https://github.com/DerKezorm/nexpaper"
     assert about["releases_url"] == "https://github.com/DerKezorm/nexpaper/releases"
-    assert about["project_url"] == "https://nexpaper.nexapps.dev"
+    # The project pages are switched off: no project page, the about page leaves the row out (U18).
+    assert about["project_url"] == ""
 
 
-def test_every_account_sees_the_answer_and_only_the_operator_switches_or_asks(
+def test_only_the_operator_sees_the_answer_switches_or_asks(
     client: TestClient, account: Account, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    answers(monkeypatch, "v99.0.0")
-    anna = person("anna")
-    seen = anna.get("/api/v1/about/updates").json()
+    asked = answers(monkeypatch, "v99.0.0")
+    seen = client.get("/api/v1/about/updates").json()
     assert (seen["update_check"], seen["checked"], seen["latest"], seen["newer"]) == (True, True, "v99.0.0", True)
     assert seen["release_url"] == "https://github.com/DerKezorm/nexpaper/releases/tag/v99.0.0"
+    assert seen["hidden"] is False
+    # A member gets the form of before, every field empty, and its page never asks (U15, U21).
+    anna = person("anna")
+    hidden = anna.get("/api/v1/about/updates")
+    assert hidden.status_code == 200
+    assert hidden.json() == {"update_check": False, "checked": False, "latest": None, "newer": False,
+                             "checked_at": None, "release_url": None, "hidden": True}
+    updates.forget()
+    anna.get("/api/v1/about/updates")
+    assert len(asked) == 1
     assert anna.post("/api/v1/about/updates/check").status_code == 403
     assert anna.put("/api/v1/about/updates", json={"update_check": False}).status_code == 403
     # Without an account: nothing.
@@ -85,9 +98,9 @@ def test_on_by_default_asked_once_a_day_and_again_when_a_day_is_over(
     client.get("/api/v1/about/updates")
     assert len(asked) == 1
     # A day later the next look asks again.
-    old = updates._known
+    old = check._known
     assert old is not None and old.checked_at is not None
-    updates._known = updates.State(
+    check._known = updates.State(
         current=old.current, latest=old.latest, checked_at=old.checked_at - timedelta(hours=25)
     )
     client.get("/api/v1/about/updates")
@@ -144,7 +157,10 @@ def test_a_failure_at_github_breaks_nothing(
         def get(self, *args: object, **kwargs: object) -> httpx.Response:
             raise failure
 
-    monkeypatch.setattr(updates.httpx, "Client", Broken)
+        def stream(self, *args: object, **kwargs: object) -> httpx.Response:
+            raise failure
+
+    monkeypatch.setattr(check.httpx, "Client", Broken)
     answer = client.get("/api/v1/about/updates")
     assert answer.status_code == 200
     assert (answer.json()["checked"], answer.json()["latest"], answer.json()["newer"]) == (True, None, False)
@@ -161,17 +177,17 @@ def test_a_private_repository_or_an_error_page_is_no_answer(
         return make  # type: ignore[return-value]
 
     # While the repository is private GitHub says "not found".
-    monkeypatch.setattr(updates.httpx, "Client", transport(404, {"message": "Not Found"}))
+    monkeypatch.setattr(check.httpx, "Client", transport(404, {"message": "Not Found"}))
     assert client.post("/api/v1/about/updates/check").json()["latest"] is None
-    monkeypatch.setattr(updates.httpx, "Client", transport(200, {"tag_name": "v9.9.9"}))
+    monkeypatch.setattr(check.httpx, "Client", transport(200, {"tag_name": "v9.9.9"}))
     shown = client.post("/api/v1/about/updates/check").json()
     assert (shown["latest"], shown["newer"]) == ("v9.9.9", True)
     # An error page is no answer, whatever it carries; what the last good check found stays (review before 1.0.0).
-    monkeypatch.setattr(updates.httpx, "Client", transport(503, {"tag_name": "v1.2.3"}))
+    monkeypatch.setattr(check.httpx, "Client", transport(503, {"tag_name": "v1.2.3"}))
     assert client.post("/api/v1/about/updates/check").json()["latest"] == "v9.9.9"
     updates.forget()
     assert client.post("/api/v1/about/updates/check").json()["latest"] is None
-    monkeypatch.setattr(updates.httpx, "Client", transport(200, ["not", "a", "release"]))
+    monkeypatch.setattr(check.httpx, "Client", transport(200, ["not", "a", "release"]))
     assert client.post("/api/v1/about/updates/check").json()["latest"] is None
 
 
@@ -180,16 +196,34 @@ def test_the_question_goes_to_the_releases_of_nexpaper_and_carries_nothing_else(
 ) -> None:
     seen: list[httpx.Request] = []
 
-    def make(*args: object, **kwargs: object) -> httpx.Client:
+    def make(*args: object, headers: dict[str, str] | None = None, **kwargs: object) -> httpx.Client:
         def handle(request: httpx.Request) -> httpx.Response:
             seen.append(request)
             return httpx.Response(200, json={"tag_name": "v0.0.1"})
 
-        return REAL_CLIENT(transport=httpx.MockTransport(handle))
+        # The headers the module gives its client, the rest of the network a stand-in.
+        return REAL_CLIENT(transport=httpx.MockTransport(handle), headers=headers)
 
-    monkeypatch.setattr(updates.httpx, "Client", make)
+    monkeypatch.setattr(check.httpx, "Client", make)
     monkeypatch.setattr(updates, "get_settings", lambda: type("S", (), {"update_url": ""})())
     client.post("/api/v1/about/updates/check")
     assert [str(request.url) for request in seen] == ["https://api.github.com/repos/DerKezorm/nexpaper/releases/latest"]
     assert seen[0].method == "GET" and seen[0].content == b""
     assert "cookie" not in seen[0].headers and "authorization" not in seen[0].headers
+    # A neutral name, without the version of this server (U10).
+    assert seen[0].headers["user-agent"] == "nex-update-check"
+
+
+def test_a_setup_page_of_before_stores_nothing_and_the_check_stays_on(client: TestClient) -> None:
+    """U1 for an old page (1.12.0 sends no box): nothing is stored, the daily check stays on as before; the box of the
+    new page is stored as given (the contract tests hold that)."""
+    from app.db import SessionLocal
+    from app.models import Setting
+
+    from .conftest import PASSWORD, SETUP_CODE
+
+    made = client.post("/api/v1/setup", json={"code": SETUP_CODE, "name": "boss", "password": PASSWORD})
+    assert made.status_code == 200
+    with SessionLocal() as db:
+        assert db.get(Setting, "update_check") is None
+    assert client.get("/api/v1/about/updates").json()["update_check"] is True

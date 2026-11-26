@@ -76,7 +76,8 @@
       "text": "Das erste Konto betreibt diesen Server: Es lädt Leute ein und darf jede Einstellung ändern. In die persönlichen Tresore der anderen sieht es nicht.",
       "code": "Einrichtungscode",
       "codeHint": "Er steht im Log des Servers (docker logs nexpaper), oder NEXPAPER_SETUP_TOKEN setzen.",
-      "submit": "Konto anlegen"
+      "submit": "Konto anlegen",
+      "updateCheckHint": "Öffnet ein Betreiber Einstellungen › Über nexpaper, fragt nexpaper höchstens einmal am Tag bei {host} nach, ob eine neuere Version erschienen ist. Dort später änderbar."
     },
     "login": {
       "title": "Anmelden",
@@ -169,7 +170,7 @@
     "fontsText": "nexpaper bringt seine Schrift mit, damit beim Öffnen kein anderer Server gefragt wird.",
     "updates": {
       "current": "Das ist die neueste Version.",
-      "whatGoesOut": "Hinaus geht nur die Frage: eine Anfrage an api.github.com nach der neuesten Veröffentlichung von nexpaper, ohne Namen, Dokumente oder Einstellungen. Neben dem Mailserver, der KI und dem Postfach, wenn ihr sie eingerichtet habt, den Push-Diensten der Browser, dem Import aus Paperless, wenn ihn jemand startet, und den Anmeldeanbietern, wenn sich jemand über sie anmeldet, ist es der einzige Ruf, den nexpaper von sich aus macht."
+      "otherCalls": "den Mailserver, die KI und das Postfach, wenn ihr sie eingerichtet habt, die Push-Dienste der Browser, Paperless beim Import, wenn ihn jemand startet, und die Anmeldeanbieter, wenn sich jemand über sie anmeldet"
     }
   },
   "me": {

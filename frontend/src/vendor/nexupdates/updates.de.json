@@ -1,0 +1,8 @@
+{
+  "whatGoesOut": "Hinaus geht nur eine Frage: eine Anfrage an {host} nach der neuesten Veröffentlichung von {app}, ohne Namen, Inhalte, Einstellungen oder die Version dieses Servers.",
+  "otherCalls": "Von sich aus ruft {app} außerdem: {others}.",
+  "noOtherCalls": "Sonst ruft {app} von sich aus niemanden an.",
+  "setupLabel": "Nach neuen Versionen sehen",
+  "setupHint": "Einmal am Tag fragt {app} bei {host} nach, ob eine neuere Version erschienen ist, und sagt es dir in der Glocke. Später unter Einstellungen › Über {app} änderbar.",
+  "failed": "Das ging gerade nicht. Gleich noch einmal versuchen."
+}

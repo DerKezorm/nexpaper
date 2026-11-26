@@ -1,0 +1,8 @@
+{
+  "whatGoesOut": "Une seule question sort : une demande à {host} sur la dernière publication de {app}, sans noms, contenus, réglages ni la version de ce serveur.",
+  "otherCalls": "De lui-même, {app} appelle aussi : {others}.",
+  "noOtherCalls": "À part cela, {app} n’appelle personne de lui-même.",
+  "setupLabel": "Rechercher les nouvelles versions",
+  "setupHint": "Une fois par jour, {app} demande à {host} si une nouvelle version est parue et te le dit dans la cloche. Modifiable plus tard sous Réglages › À propos de {app}.",
+  "failed": "Cela n’a pas fonctionné. Réessaie dans un instant."
+}

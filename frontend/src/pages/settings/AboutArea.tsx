@@ -3,22 +3,19 @@
  * neu" from nexpaper's own file, licence, where it comes from, whether a newer one is out, and what it is built with.
  * The last area of the settings, `/settings/about`; the old address `/ueber` leads there.
  *
- * The switch for the daily check stands here, where its answer shows, and the page says what goes out. Every account
- * sees the answer; switching and asking now belong to the operator, because the question goes out for the whole
- * installation.
+ * The card "Aktualisierungen" comes from the shared module `nexupdates` (updates 0.1.1): only an operator sees it,
+ * switches the daily question and asks now (U2, U15), because the question goes out for the whole installation; a
+ * member's page shows the own version and asks for nothing else. The sentence on what goes out names the address and
+ * nexpaper's other calls by itself (U11).
  */
-import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import { api, ApiError } from '../../api/client'
+import { tabFetch } from '../../api/client'
 import { APP_NAME } from '../../i18n'
-import { errorText } from '../../lib/errors'
 import { useWhatsNew } from '../../lib/whatsNew'
 import { useAuth } from '../../state/auth'
 import { AboutPage, Notice, type BuiltWith } from '../../vendor/nexui'
-
-type About = { version: string; license: string; repo_url: string; releases_url: string; project_url: string }
-type Updates = { update_check: boolean; checked: boolean; latest: string | null; newer: boolean; checked_at: string | null; release_url: string | null }
+import { useUpdates, useUpdatesTexts, whatGoesOut } from '../../vendor/nexupdates/updates'
 
 const PARTS: BuiltWith[] = [
   { name: 'FastAPI', url: 'https://fastapi.tiangolo.com', licence: 'MIT' },
@@ -41,50 +38,27 @@ const PARTS: BuiltWith[] = [
 ]
 const FONTS = ['Inter']
 
-function code(error: unknown): string {
-  return error instanceof ApiError ? error.code : 'internal_error'
+/** "26.11.2026, 09:12" in the reader's language. */
+function when(language: string): (iso: string) => string {
+  return (iso) => new Date(iso).toLocaleString(language)
 }
 
 export function AboutArea() {
   const { t, i18n } = useTranslation()
   const { me } = useAuth()
-  const [about, setAbout] = useState<About | null>(null)
-  const [updates, setUpdates] = useState<Updates | null>(null)
-  const [problem, setProblem] = useState<string | null>(null)
-  const [busy, setBusy] = useState(false)
+  const operator = me?.role === 'operator'
   // The written text of the running version, to read again at any time.
   const { entry } = useWhatsNew(me?.version, i18n.language)
+  const texts = useUpdatesTexts(i18n.language)
+  const { about, updates, showUpdates, onDaily, onCheck, checking, problem } = useUpdates({
+    fetcher: tabFetch,
+    base: '/api/v1/about',
+    operator,
+    when: when(i18n.language),
+    language: i18n.language,
+  })
 
-  const load = useCallback(() => {
-    api<About>('/api/v1/about').then(setAbout, (error: unknown) => setProblem(code(error)))
-    // The answer is a side matter: when it does not come, the page simply shows none.
-    api<Updates>('/api/v1/about/updates').then(setUpdates, () => setUpdates(null))
-  }, [])
-  useEffect(load, [load])
-
-  async function checkNow() {
-    setBusy(true)
-    try {
-      setUpdates(await api<Updates>('/api/v1/about/updates/check', { method: 'POST' }))
-      setProblem(null)
-    } catch (error) {
-      setProblem(code(error))
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  async function switchCheck(on: boolean) {
-    if (updates) setUpdates({ ...updates, update_check: on })
-    try {
-      setUpdates(await api<Updates>('/api/v1/about/updates', { method: 'PUT', body: { update_check: on } }))
-    } catch (error) {
-      setProblem(code(error))
-      load()
-    }
-  }
-
-  if (!about) return problem ? <Notice tone="danger">{errorText(problem)}</Notice> : null
+  if (!about) return problem ? <Notice tone="danger">{problem}</Notice> : null
   return (
     <AboutPage
       app={APP_NAME}
@@ -96,22 +70,12 @@ export function AboutArea() {
       releases={about.releases_url}
       project={about.project_url || null}
       whatsNew={entry}
-      updates={
-        updates
-          ? {
-              checkDaily: updates.update_check,
-              checked: updates.checked,
-              latest: updates.latest,
-              newer: updates.newer,
-              checkedAt: updates.checked_at ? new Date(updates.checked_at).toLocaleString(i18n.language) : null,
-              releaseUrl: updates.release_url,
-            }
-          : null
-      }
-      operator={me?.role === 'operator'}
-      onDaily={(on) => void switchCheck(on)}
-      onCheck={() => void checkNow()}
-      checking={busy}
+      updates={updates}
+      showUpdates={showUpdates}
+      operator={operator}
+      onDaily={onDaily}
+      onCheck={onCheck}
+      checking={checking}
       builtWith={PARTS}
       builtWithMore={
         <div className="flex flex-col gap-1" data-testid="about-fonts">
@@ -127,8 +91,8 @@ export function AboutArea() {
           </ul>
         </div>
       }
-      problem={problem ? errorText(problem) : null}
-      texts={{ updatesWhatGoesOut: t('about.updates.whatGoesOut') }}
+      problem={problem}
+      texts={{ updatesWhatGoesOut: whatGoesOut(texts, APP_NAME, undefined, [t('about.updates.otherCalls')]) }}
     />
   )
 }

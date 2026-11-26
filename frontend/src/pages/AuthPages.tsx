@@ -24,7 +24,8 @@ import { errorText } from '../lib/errors'
 import { answerWithPasskey, passkeysAvailable } from '../lib/webauthn'
 import { safeNext, useAuth } from '../state/auth'
 import { fieldLabel, followUsername, newPasswordProblem, screenFields, SETUP_PAGE, setupNotes, type AccountField, type AccountScreen, type ButtonName } from '../vendor/nexkonten/konten'
-import { Field } from '../vendor/nexui'
+import { CheckboxRow, Field, fill } from '../vendor/nexui'
+import { GITHUB, hostOf, useUpdatesTexts } from '../vendor/nexupdates/updates'
 import { Input } from './settings/ui'
 
 function AuthFrame({ title, text, children, wide = false }: { title: string; text?: string; children: ReactNode; wide?: boolean }) {
@@ -114,6 +115,9 @@ export function SetupPage() {
   const [busy, setBusy] = useState(false)
   const [problem, setProblem] = useState<string | null>(null)
   const [factorRequired, setFactorRequired] = useState(false)
+  // U1: "Nach neuen Versionen sehen", ticked by default.
+  const [updateCheck, setUpdateCheck] = useState(true)
+  const updateTexts = useUpdatesTexts(i18n.language)
   useEffect(() => {
     void authApi.setupState().then((state) => setFactorRequired(Boolean(state.factor_required)), () => undefined)
   }, [])
@@ -139,6 +143,7 @@ export function SetupPage() {
                 password: values.newPassword ?? '',
                 password_confirm: values.passwordRepeat ?? '',
                 language: i18n.language,
+                update_check: updateCheck,
               }),
             )
           } catch (error) {
@@ -150,6 +155,15 @@ export function SetupPage() {
       >
         <Problem code={problem} />
         <AccountFields screen="setup" values={values} onChange={setValues} />
+        {/* TODO updates 0.1.1: the module's UpdateSetupRow says "tells you in the bell"; nexpaper has no bell (U19),
+            so the kit's row with the module's label and nexpaper's hint until the module takes a hint of the app. */}
+        <CheckboxRow
+          label={updateTexts.setupLabel}
+          hint={fill(t('auth.setup.updateCheckHint'), { host: hostOf(GITHUB) })}
+          checked={updateCheck}
+          onChange={setUpdateCheck}
+          testId="setup-update-check"
+        />
         {setupNotes({ factorRequired }).map((note) => (
           <p key={note} className="text-xs text-muted">
             {t(note)}

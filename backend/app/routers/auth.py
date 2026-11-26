@@ -82,6 +82,7 @@ from ..services import (
     settings_service,
     timezones,
     totp,
+    updates,
 )
 from ..services import vaults as vaults_service
 from ..services.accounts import AccountError
@@ -114,6 +115,9 @@ class SetupIn(BaseModel):
     language: str = Field(default="", max_length=16)
     #: The setup code from the server's log (or NEXPAPER_SETUP_TOKEN).
     code: str = Field(default="", max_length=200)
+    #: The box "Nach neuen Versionen sehen" (updates U1, ticked on the page); left out (a page of 1.12.0), nothing is
+    #: stored and the daily check stays on as before.
+    update_check: bool | None = None
 
 
 class LoginIn(BaseModel):
@@ -444,6 +448,9 @@ def setup(payload: SetupIn, request: Request, response: Response, db: DbSession)
     # The kinds that come with nexpaper in the language of the one who sets it up (renamed ones stay as they are).
     catalog.name_kinds_for(db, language)
     db.commit()
+    if payload.update_check is not None:
+        # U1: asked once at setup; an installation that has a stored value keeps it.
+        updates.at_setup(payload.update_check)
     return sign_in(db, request, response, account)
 
 

@@ -76,7 +76,8 @@
       "text": "The first account runs this server: it invites people and may change every setting. It does not look into the personal vaults of the others.",
       "code": "Setup code",
       "codeHint": "It stands in the server log (docker logs nexpaper), or set NEXPAPER_SETUP_TOKEN.",
-      "submit": "Create account"
+      "submit": "Create account",
+      "updateCheckHint": "When an operator opens Settings › About nexpaper, nexpaper asks {host} at most once a day whether a newer version is out. You can change this there later."
     },
     "login": {
       "title": "Sign in",
@@ -169,7 +170,7 @@
     "fontsText": "nexpaper brings its font along, so that opening it asks no other server.",
     "updates": {
       "current": "This is the newest version.",
-      "whatGoesOut": "Only the question goes out: a request to api.github.com for the newest release of nexpaper, with no names, documents or settings. Besides the mail server, the AI and the mailbox, if you set them up, the push services of the browsers, the import from Paperless when somebody starts it, and the sign-in providers when somebody signs in through them, it is the only call nexpaper makes on its own."
+      "otherCalls": "the mail server, the AI and the mailbox, if you set them up, the push services of the browsers, Paperless during an import somebody starts, and the sign-in providers when somebody signs in through them"
     }
   },
   "me": {

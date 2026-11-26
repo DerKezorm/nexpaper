@@ -1,0 +1,8 @@
+{
+  "whatGoesOut": "Only one question goes out: a request to {host} for the newest release of {app}, without names, contents, settings or the version of this server.",
+  "otherCalls": "By itself {app} also calls: {others}.",
+  "noOtherCalls": "Apart from that {app} calls nobody by itself.",
+  "setupLabel": "Look for new versions",
+  "setupHint": "Once a day {app} asks {host} whether a newer version is out and tells you in the bell. You can change this later under Settings › About {app}.",
+  "failed": "That did not work just now. Try again in a moment."
+}

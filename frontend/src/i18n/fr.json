@@ -76,7 +76,8 @@
       "text": "Le premier compte administre ce serveur : il invite des personnes et peut modifier tous les paramètres. Il ne voit pas les coffres personnels des autres.",
       "code": "Code de configuration",
       "codeHint": "Il figure dans le journal du serveur (docker logs nexpaper), ou définissez NEXPAPER_SETUP_TOKEN.",
-      "submit": "Créer le compte"
+      "submit": "Créer le compte",
+      "updateCheckHint": "Quand un opérateur ouvre Paramètres › À propos de nexpaper, nexpaper demande au plus une fois par jour à {host} si une nouvelle version est parue. Modifiable plus tard au même endroit."
     },
     "login": {
       "title": "Connexion",
@@ -169,7 +170,7 @@
     "fontsText": "nexpaper apporte sa propre police, de sorte que son ouverture ne sollicite aucun autre serveur.",
     "updates": {
       "current": "C'est la version la plus récente.",
-      "whatGoesOut": "Seule la question sort : une requête à api.github.com pour la version la plus récente de nexpaper, sans noms, documents ni paramètres. Outre le serveur de courriel, l'IA et la boîte aux lettres, si vous les configurez, les services push des navigateurs, l'importation depuis Paperless quand quelqu'un la lance, et les fournisseurs de connexion quand quelqu'un se connecte par leur intermédiaire, c'est le seul appel que nexpaper fait de lui-même."
+      "otherCalls": "le serveur de courriel, l'IA et la boîte aux lettres, si vous les configurez, les services push des navigateurs, Paperless pendant une importation que quelqu'un lance, et les fournisseurs de connexion quand quelqu'un se connecte par leur intermédiaire"
     }
   },
   "me": {

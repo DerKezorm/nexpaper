@@ -258,7 +258,7 @@ export type RemainingAccess = { origin: string; access: { id: string; kind: stri
 /** The form of an invitation as it starts. */
 export type InviteForm = { min_password: number; signed_in_as: string | null; display_name: string; name: string; email: string }
 /** The setup: display name, username, address, the password twice and the code. */
-export type SetupForm = { display_name: string; name: string; email: string; password: string; password_confirm: string; code: string; language: string }
+export type SetupForm = { display_name: string; name: string; email: string; password: string; password_confirm: string; code: string; language: string; update_check?: boolean }
 /** The profile's one "Save": what changed, with the own password for a new username or address. */
 export type ProfileChange = { display_name?: string; name?: string; email?: string; password?: string }
 

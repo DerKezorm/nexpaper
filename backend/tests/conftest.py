@@ -132,7 +132,8 @@ def clean_db(schema: None) -> Iterator[None]:
     brake.forget()
     brakes.forget()
     totp.forget()
-    updates.forget()
+    # The shared update module on nexpaper's settings again (a contract test points it at a stand-in).
+    updates.configure()
     ai.forget()
     apikeys.forget()
     devices.forget()
