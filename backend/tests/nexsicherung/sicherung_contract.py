@@ -32,6 +32,9 @@ class StandardAdapter:
     operation_ids: dict[str, str] = {}
     summaries: dict[str, str] = {}
     schema_names: dict[str, str] = {}
+    #: Since E53: the old routes check ``{name}`` against the app's names before anything else (``legacy_router(...,
+    #: name_pattern=True)``, part of ``routes.former_names``), as the app's own routes did.
+    name_pattern = False
     #: Where the app publishes the description of its interface; only read by the default ``description``.
     openapi_path = "/openapi.json"
 

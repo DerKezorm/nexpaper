@@ -39,7 +39,7 @@ from collections.abc import Callable
 from typing import Annotated, Any, get_origin
 
 import anyio
-from fastapi import APIRouter, Body, Depends, HTTPException, Request
+from fastapi import APIRouter, Body, Depends, HTTPException, Path, Request
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field, create_model
 from starlette.background import BackgroundTask
@@ -130,10 +130,14 @@ FORMER_SCHEMAS: dict[str, str] = {
 }
 
 
-def former_names(prefix: str) -> dict[str, dict[str, str]]:
+#: The longest backup name the apps' own routes took (``maxLength`` of their ``name``).
+NAME_MAX = 64
+
+
+def former_names(prefix: str) -> dict[str, Any]:
     """The names the apps' own routes under ``prefix`` had before the module (``legacy_router(...,
-    **former_names(prefix))``): the restore's operationId and summary, the summaries of upload and download, and
-    ``FORMER_SCHEMAS``."""
+    **former_names(prefix))``): the restore's operationId and summary, the summaries of upload and download,
+    ``FORMER_SCHEMAS``, and the pattern and length of ``{name}`` (``name_pattern``)."""
     restore = re.sub(r"\W", "_", f"restore{prefix}/{{name}}/restore") + "_post"
     return {
         "operation_ids": {"restore_route": restore},
@@ -143,6 +147,7 @@ def former_names(prefix: str) -> dict[str, dict[str, str]]:
             "restore_route": "Restore",
         },
         "schema_names": dict(FORMER_SCHEMAS),
+        "name_pattern": True,
     }
 
 
@@ -353,14 +358,26 @@ def legacy_router(*, prefix: str, password_header: str, operator: Any, confirm: 
                   viewer: Callable[[Any], Any] = lambda account: getattr(account, "id", None),
                   check_raises_too_new: bool = False, tags: list[str] | None = None,
                   operation_ids: dict[str, str] | None = None, summaries: dict[str, str] | None = None,
-                  schema_names: dict[str, str] | None = None) -> APIRouter:
+                  schema_names: dict[str, str] | None = None, name_pattern: bool | str = False) -> APIRouter:
     """The app's old ways (``/api/backups``, nexpaper ``/api/v1/backups``) with its old password header
     (``x-<app>-password``), in the old shapes: the list as an array of flat entries, ``{name}`` after making or
     bringing in, the check flat with ``usable``, the restore 202 with ``restarting``. ``check_raises_too_new``: the
     app's old check refused an archive of a newer version with 400 ``backup_too_new`` (nexnotes, nextime, nexfolk)
     instead of answering it. ``operation_ids``, ``summaries`` (by ``LEGACY_ROUTES``), ``schema_names`` (by
-    ``SCHEMAS``): the names the app's routes had in its description (E53; ``**former_names(prefix)``)."""
+    ``SCHEMAS``): the names the app's routes had in its description (E53; ``**former_names(prefix)``).
+    ``name_pattern``: ``{name}`` of check, restore, download and delete must match the module's names of the app
+    (``AppConfig.name_pattern``; or this pattern) and is at most ``NAME_MAX`` long, as the apps' own routes had it: a
+    name with ``../``, a hidden or foreign file is refused with 422 before the password is asked (it never counts as a
+    wrong password), and the description shows the pattern again. ``True`` needs ``configure`` before."""
     kit = _Kit(error, confirm, viewer)
+    if name_pattern is True:
+        try:
+            config = current()
+        except RuntimeError as exc:
+            raise RuntimeError("legacy_router(name_pattern=True) reads the app's name: configure the module first"
+                               ) from exc
+        name_pattern = config.name_pattern.pattern
+    Name = Annotated[str, Path(max_length=NAME_MAX, pattern=name_pattern)] if name_pattern else str
     Operator = _operator(operator)
     api = APIRouter(prefix=prefix, tags=tags or ["backups"])
     ids = _checked(operation_ids, LEGACY_ROUTES, "route")
@@ -387,7 +404,7 @@ def legacy_router(*, prefix: str, password_header: str, operator: Any, confirm: 
         return {"name": await kit.upload(request, account, password_header)}
 
     @api.post("/{name}/check", **named("check"))
-    def check(name: str, account: Operator) -> dict[str, Any]:
+    def check(name: Name, account: Operator) -> dict[str, Any]:  # type: ignore[valid-type]
         try:
             brief = restore.check(name, viewer=kit.viewer(account))
         except BackupError as exc:
@@ -398,7 +415,7 @@ def legacy_router(*, prefix: str, password_header: str, operator: Any, confirm: 
         return brief.flat()
 
     @api.post("/{name}/restore", status_code=202, **named("restore_route"))
-    def restore_route(name: str, body: Restore, request: Request, account: Operator) -> Any:  # type: ignore[valid-type]
+    def restore_route(name: Name, body: Restore, request: Request, account: Operator) -> Any:  # type: ignore[valid-type]
         brief, result, restarting = kit.restore(name, body, request, account)
         from fastapi.responses import JSONResponse
 
@@ -406,12 +423,12 @@ def legacy_router(*, prefix: str, password_header: str, operator: Any, confirm: 
                             status_code=202 if restarting else 200)
 
     @api.post("/{name}/download", **named("download"))
-    def download(name: str, body: Download, request: Request, account: Operator) -> FileResponse:  # type: ignore[valid-type]
+    def download(name: Name, body: Download, request: Request, account: Operator) -> FileResponse:  # type: ignore[valid-type]
         kit.confirm(request, account, body.password)
         return kit.download(name, account, body.archive_password)
 
     @api.delete("/{name}", status_code=204, **named("delete"))
-    def delete(name: str, body: Password, request: Request, account: Operator) -> None:  # type: ignore[valid-type]
+    def delete(name: Name, body: Password, request: Request, account: Operator) -> None:  # type: ignore[valid-type]
         kit.confirm(request, account, body.password)
         try:
             archives.remove(name)
