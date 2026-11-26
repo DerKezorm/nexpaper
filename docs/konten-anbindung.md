@@ -39,7 +39,10 @@ Gastgeberin nextime fertig; Teil B Gastgeberin nexmail fertig, Gast nextasks off
 | ki | 0.1.1 | Store über die alten Einstellungen (`services/ki_store.py`, nichts wandert), Vorschläge über `nexki.ask`, `adopt` beim Start (Hauptschalter an, wo ein Dienst stand), beide Wege, eigene Zugänge `ai_own_access`, „Was ging hinaus“ `ai_events`, Wege `/api/v1/server/ai`, `/api/v1/me/ai`; Server › KI-Anbieter und Mein Konto › KI aus dem Modul, nexpapers Karte „Vorschläge im Eingang“ (persönliche Tresore, eigene Anweisungen) | alte Wege `/api/v1/ai`, `/api/v1/settings/ai…` in alter Form mit alten Prüfungen; Schemanamen über `schema_names` (0.1.1); `manual` der Vertragstests übersprungen (Frage 7) |
 | verbinden | 0.1.3 | `in_use=(nextime, nexmail)`; Gastgeberin für nextime (`deadlines.read`) und nexmail (`documents.add`, dazu `GET /api/v1/vaults`), Token `npv_` in `deps.py`, nur gegebene Tresore; Tabellen `vb_*`; Karten Verbindungen (Platz 3) und Server › Allgemein „Andere nex-Apps“; Seiten `/connect/app`, `/connect/return` | keine alten Verbindungen in nexpaper; nextasks (Gast) nicht gebaut, keine Karte (V20 über `in_use`); ein Vertragstest rot (Modulfehler, Frage 17) |
 
-Läufe: siehe unten „Endlauf Module“.
+Endlauf `reihe.sh nexpaper module-nexpaper-r2` (Stand `28bbff9`, Module 9bc9f73): ruff sauber; pytest 4083 grün, 40
+übersprungen (u. a. 28 ki-Vertragstests ohne Knopf-Auftrag, Frage 7), 1 rot (`test_nexverbinden_connect.py::
+test_the_partner_of_the_test_is_one_of_the_catalog`, Modulfehler, Frage 17); lint sauber; vitest 1324 grün in 116 Dateien;
+build grün. Start-Probe: Gesundheit 200, keine Tracebacks, 20 s gelaufen.
 
 
 ### Durchgang „Einstellungen“ (25./26.11.2026, Zweig `einst-desktop`)
