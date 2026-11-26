@@ -316,7 +316,7 @@ describe('the switches for all accounts (links to the outside, upload requests, 
     await page.click(toggle)
     expect(server.called('PUT', '/api/v1/settings')!.body).toEqual({ upload_requests_allowed: true })
     expect(document.querySelector('[data-testid="request-overview"]')!.textContent).toBe('Offen: 3 Bitten von 2 Personen.')
-    expect(page.text).toContain('Ohne öffentliche Adresse (Einstellungen, Anmeldung) lässt sich keine Bitte erstellen.')
+    expect(page.text).toContain('Ohne öffentliche Adresse (Server › Anmeldung) lässt sich keine Bitte erstellen.')
   })
 
   it('switch API keys for everybody under "Schnittstellen" now, no longer among the features', async () => {

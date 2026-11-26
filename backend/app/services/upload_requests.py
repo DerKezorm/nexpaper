@@ -165,7 +165,7 @@ def create(db: Session, uid: int, name: str, days: int, max_files: int) -> tuple
         raise error("requests_off", "The operator has not switched upload requests on.", 409)
     if not current.address:
         raise error("public_url_missing", "Upload requests need the public address of the server. The operator sets "
-                    "it under Settings.", 409)
+                    "it under Server › Sign-in.", 409)
     if not 1 <= days <= current.max_days:
         raise error("invalid_days", f"A request lasts 1 to {current.max_days} days.", 422, max_days=current.max_days)
     if not 1 <= max_files <= MAX_FILES:

@@ -29,7 +29,7 @@ STYLE = (
 
 
 def _rows(schema: dict[str, Any]) -> dict[str, list[tuple[str, str, str, bool]]]:
-    """Per tag: (method, path, summary, needs a token) for every route, in the order of the description."""
+    """Per tag: (method, path, summary, needs a key) for every route, in the order of the description."""
     found: dict[str, list[tuple[str, str, str, bool]]] = {}
     for path, methods in schema.get("paths", {}).items():
         for method, operation in methods.items():
@@ -47,7 +47,7 @@ def docs(request: Request) -> HTMLResponse:
     schema = request.app.openapi()
     intro = (
         "<p>Everything the web app does goes through this interface. Browsers sign in with a session cookie; "
-        "devices and programs send <code>Authorization: Bearer &lt;token&gt;</code>. "
+        "a paired device sends its own key, a program an API key, as <code>Authorization: Bearer &lt;key&gt;</code>. "
         'The machine-readable description is <a href="/api/v1/openapi.json">openapi.json</a>. '
         "What is under <code>/api/v1</code> stays as it is: new fields may come, nothing is renamed or "
         "taken away.</p>"
@@ -59,7 +59,7 @@ def docs(request: Request) -> HTMLResponse:
             body.append(
                 f'<div class="row"><span class="m">{escape(method)}</span><code class="p">{escape(path)}</code>'
                 f'<span class="s">{escape(summary)}</span>'
-                f'<span class="k">{"token or session" if secured else "open"}</span></div>'
+                f'<span class="k">{"key or session" if secured else "open"}</span></div>'
             )
     html = (f'<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" '
             f'content="width=device-width,initial-scale=1"><title>nexpaper API</title><style>{STYLE}</style></head>'

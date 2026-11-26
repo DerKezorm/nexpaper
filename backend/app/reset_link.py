@@ -100,7 +100,7 @@ def main(argv: list[str] | None = None) -> int:
             print(f"No account named '{args.name}'. Accounts: {names}", file=sys.stderr)
             return 1
         if account.blocked_at is not None:
-            print(f"The account '{account.name}' is blocked. An operator can unblock it in Settings, Accounts.",
+            print(f"The account '{account.name}' is blocked. An operator can unblock it under Server › Accounts.",
                   file=sys.stderr)
             return 1
         if account.role != OPERATOR and not settings_service.get(db, "password_login"):

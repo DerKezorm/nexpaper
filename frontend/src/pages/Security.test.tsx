@@ -259,7 +259,7 @@ describe('the own account, Security', () => {
       passkeysInTheBrowser(true)
       answers['GET /api/v1/auth/methods'] = { password: true, providers: [], passkeys: false }
       await show(<PasskeysBox me={me} />, '/settings/security')
-      expect(hint()!.textContent).toBe('Trag zuerst die öffentliche Adresse ein (Einstellungen → Anmeldung).')
+      expect(hint()!.textContent).toBe('Trag zuerst die öffentliche Adresse ein (Server › Anmeldung).')
       expect(hint()!.querySelector('a')!.getAttribute('href')).toBe('/settings/sign-in')
       expect(hint()!.textContent).not.toContain('nur über https')
       expect(button('Passkey hinzufügen', box)!.disabled).toBe(true)
@@ -278,7 +278,7 @@ describe('the own account, Security', () => {
       passkeysInTheBrowser(true)
       answers['GET /api/v1/auth/methods'] = { password: true, providers: [], passkeys: false }
       await show(<PasskeysBox me={me} />, '/settings/security')
-      expect(hint()!.textContent).toBe('Enter the public address first (Settings → Sign-in).')
+      expect(hint()!.textContent).toBe('Enter the public address first (Server › Sign-in).')
       expect(hint()!.querySelector('a')!.getAttribute('href')).toBe('/settings/sign-in')
       act(() => root.unmount())
       box.remove()

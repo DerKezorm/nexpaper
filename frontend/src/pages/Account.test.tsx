@@ -420,10 +420,10 @@ describe('devices and apps', () => {
     const steps = box.querySelector('[data-testid="shortcut-steps"]')!
     expect(steps.textContent).toContain('Aktion „Inhalte von URL abrufen“')
     expect(box.querySelector('[data-testid="shortcut-link"]')).toBeNull()
-    expect(box.querySelector('[data-testid="shortcut-warning"]')!.textContent).toContain('Trag deinen Token nie in einen Kurzbefehl ein, den du mit anderen teilst')
+    expect(box.querySelector('[data-testid="shortcut-warning"]')!.textContent).toContain('Trag deinen Schlüssel nie in einen Kurzbefehl ein, den du mit anderen teilst')
     answers['GET /api/v1/connections/keys'] = listing(true, [keyOf(5, 'iPhone-Kurzbefehl', 'upload', 'npk_Xy12')])
     // The old way of the shortcut's key stays (nexpaper-ios and the shortcut must not notice).
-    await click(button('Token für den Kurzbefehl'))
+    await click(button('Schlüssel für den Kurzbefehl'))
     expect(calls.find((call) => call.method === 'POST' && call.url === '/api/v1/api-keys')!.body).toEqual({ name: 'iPhone-Kurzbefehl', days: null, scope: 'upload' })
     expect(calls.some((call) => call.method === 'POST' && call.url === '/api/v1/devices')).toBe(false)
     const shown = box.querySelector('[data-testid="shortcut-key"]')!
@@ -439,10 +439,10 @@ describe('devices and apps', () => {
     answers['GET /api/v1/shortcut'] = { link: '', address: 'https://paper.example.com', upload_url: 'https://paper.example.com/api/v1/documents?source=share' }
     answers['GET /api/v1/api-keys'] = { allowed: false, keys: [] }
     await show('/konto?tab=devices')
-    expect(box.querySelector('[data-testid="shortcut-off"]')!.textContent).toContain('API-Token hat der Betreiber nicht freigegeben')
+    expect(box.querySelector('[data-testid="shortcut-off"]')!.textContent).toContain('die Programmschnittstelle (API) hat der Betreiber nicht freigegeben. Unter Server › Allgemein › Schnittstellen freigeben.')
     // The switch stands under General (Schnittstellen) now.
     expect(box.querySelector('[data-testid="shortcut-off"] a')!.getAttribute('href')).toBe('/settings/general')
-    expect(button('Token für den Kurzbefehl')).toBeUndefined()
+    expect(button('Schlüssel für den Kurzbefehl')).toBeUndefined()
   })
 
   it('offers the shortcut the operator shared', async () => {

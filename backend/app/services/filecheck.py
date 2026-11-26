@@ -57,8 +57,9 @@ EVERY_DAYS = 7
 TICK_SECONDS = 30
 #: How long a check waits for a document that is being worked on, in seconds (none: it is skipped at once).
 WAIT_FOR_DOCUMENT = 0.0
-#: Where a tap leads: the settings, backups and storage (the cards of the check and of the storage are there).
-PATH = "/einstellungen?tab=backups"
+#: Where a tap leads: Server › Storage and backups, where the check of the files is (``/einstellungen?tab=backups`` of
+#: before still leads there).
+PATH = "/settings/storage"
 _CHUNK = 1024 * 1024
 
 DEFAULT_STATE: dict[str, Any] = {
@@ -352,7 +353,7 @@ def _tell_operators(new: int, total: int) -> None:
         url=PATH, tag="files-check",
         mail_subject="nexpaper: files are missing or changed",
         mail_body=(f"The check of the files found {count} documents with missing or changed files "
-                   "(new since the last check: " + str(new) + ").\n\nSee the storage card in the settings: {where}\n"),
+                   "(new since the last check: " + str(new) + ").\n\nSee Server › Storage and backups: {where}\n"),
     ))
 
 

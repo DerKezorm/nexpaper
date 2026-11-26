@@ -85,7 +85,7 @@ def test_a_new_device_is_told_to_the_others_and_by_mail(anna: Account, push_serv
     [came] = push_service.received
     assert came.message["title"] == "Neue Anmeldung bei nexpaper"
     assert came.message["body"] == "Safari unter iPhone, 7. Oktober, 21:14. Warst du das nicht? Tippe hier."
-    assert came.message["url"] == came.message["desk"] == "/konto?tab=security"
+    assert came.message["url"] == came.message["desk"] == "/settings/security"
     [mail] = mails
     # The shared post module's mail: the browser and its system, nothing more (no address, no network).
     assert mail["To"] == "anna@example.com" and "nexpaper" in mail["Subject"]
@@ -190,7 +190,7 @@ def test_the_link_in_the_mail_is_the_public_address_never_the_one_asked_by(anna:
     with browser("203.0.113.58") as another:
         log_in(another)
     notices.settle()
-    assert "https://paper.example.com/konto?tab=security" in mails[1].get_content()
+    assert "https://paper.example.com/settings/security" in mails[1].get_content()
 
 
 def test_a_flood_of_sign_ins_is_no_flood_of_notices(anna: Account, push_service: FakePushService,

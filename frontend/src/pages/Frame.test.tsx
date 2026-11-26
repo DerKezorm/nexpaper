@@ -303,6 +303,6 @@ describe('the page of the link to a new mail address', () => {
     fails['GET /api/v1/email/confirm/' + 'b'.repeat(30)] = 404
     await show('/mail/' + 'b'.repeat(30))
     expect(box.querySelector('h1')!.textContent).toBe('Link nicht gültig')
-    expect(box.textContent).toContain('Schick dir unter Mein Konto einen neuen.')
+    expect(box.textContent).toContain('Schick dir unter Mein Konto › Profil einen neuen.')
   })
 })

@@ -30,8 +30,8 @@ logger = logging.getLogger("nexpaper.notices")
 
 #: Notices per account and hour, at most: a flood of sign-ins does not become a flood of mails.
 PER_HOUR = 10
-#: Where the link leads: the own account, Security.
-SECURITY_PATH = "/konto?tab=security"
+#: Where the link leads: My account › Security (``/konto?tab=security`` of before still leads there).
+SECURITY_PATH = "/settings/security"
 TAG = "sign-in"
 
 #: The networks of a home or an office: there, a new sign-in came from within.

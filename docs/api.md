@@ -32,7 +32,7 @@ list (`/me`, `/<short name>/link`, `/me/address`, `/admin/…`, `/authentik/…`
 
 ### Devices
 
-Made in the web app (**My account, Devices and apps**, or `POST /api/v1/devices` from a signed-in browser):
+Made in the web app (**Settings › My account › Connections › Devices**, or `POST /api/v1/devices` from a signed-in browser):
 
 - The token is shown once; nexpaper keeps only a checksum. It acts with the rights of its account.
 - Only a signed-in browser may pair, list or revoke devices, make API keys, change the password, the second factor or
@@ -58,7 +58,8 @@ Made in the web app (**My account, Devices and apps**, or `POST /api/v1/devices`
 
 ### API keys
 
-Off until the operator switches them on (**Settings, API**). A key reads as its account, never more (`scope: read`); a
+Off until the operator switches them on (**Settings › Server › General › Interfaces**, "Programming interface (API) for
+members"). A member makes a key under **Settings › My account › Connections › API keys**. A key reads as its account, never more (`scope: read`); a
 key of scope `upload` (a scanner, a script, the iPhone shortcut), which only the routes that take files accept, can
 upload and reads nothing: `GET /uploads` lists only the uploads this key started, and an upload of another key or of a
 browser answers `404`; a file the account has already answers `exists: true` with no `document` (no title, no id), and
@@ -130,7 +131,7 @@ amount or tag leaves.
   cancelled, claimed) is left out. A document with two such terms shows twice. "Today" is today in the time zone of the
   account.
 - `url`: the page of the document in the web app: `/eingang/<id>` while it waits in the inbox, `/dokument/<id>` once
-  filed. It starts with the public address when the operator set one (**Settings**), else with the address the request
+  filed. It starts with the public address when the operator set one (**Settings › Server › Sign-in**), else with the address the request
   came to.
 
 A key of scope `upload` gets `403 key_scope`. The other answers are those of every route for programs (see the table
@@ -267,7 +268,7 @@ answers `404 not_found`, exactly like one that does not exist; one they see but 
 ## Bringing files in
 
 A file becomes a document in the vault named by `vault_id` (one the caller may add to: `403` when they may only read
-there, `404` for a vault they cannot see), else in the vault they chose for their uploads (My account), else in their own.
+there, `404` for a vault they cannot see), else in the vault they chose for their uploads (Settings › My account › Upload), else in their own.
 The kind of a file is read from its **content**, never from its name or the type a browser claims: PDF, JPEG, PNG, TIFF,
 HEIC, WebP, AVIF (an animation counts by its first frame), and XML only when it is an e-invoice (UBL or CII; reading it comes later). Anything else is `415`, a program called
 `.pdf`, a web page called `.png` and an SVG included. The name is only a proposal for the title. A new document stands
@@ -298,7 +299,7 @@ waits in the inbox. A browser, a device and a key of scope `upload` may upload; 
 - **Never across vaults**: whether the caller already has a file is decided only from the documents they may see. A
   file somebody else keeps where the caller cannot look is treated like a new one, in the answer, in the time it takes and in
   the errors.
-- **Limits** (the operator, **Settings, Storage**): the size of a file (200 MB), the pages of a document (2000), the pixels
+- **Limits** (the operator, **Settings › Server › General › Limits**): the size of a file (200 MB), the pages of a document (2000), the pixels
   of a picture (100 million), how many uploads in pieces and how many bytes of them an account may have open (10, 4 GB),
   the time the worker may take for one document (5 minutes) and its memory (2 GB, where the system allows a limit), and the
   size of the cache of page pictures (1 GB; the pictures used longest ago go first). The accounts take turns for the worker:
@@ -346,7 +347,7 @@ where its original lies, from the folder for documents on (vault, year, sender, 
 document only through a share gets it without the vault (year, sender, file), and a place that would lead out of the
 folder is given as an empty `path`. A document of
 more than 30 pages has its small pictures drawn in the background after it was read (the job `pages`, in batches of 20,
-only while no document waits to be read), up to the operator's limit `prerender_max_pages` (**Settings, Storage**, 500;
+only while no document waits to be read), up to the operator's limit `prerender_max_pages` (`PUT /api/v1/settings`, no field on the page, 500;
 0: none); the pages after it are drawn when somebody asks. The same rights
 as reading the document; the pictures are `Cache-Control: private, no-cache` with an `ETag`, so a browser asks again and
 is told "unchanged" (the tag is made with the server's secret, never from the checksum of the file). The preview and the small
@@ -518,12 +519,12 @@ says from how many pages a document waits long for its text (`long_document_page
 
 A device (a phone, a later app, a script) gets a token of its own (`npd_…`) for an account. Only a signed-in browser with a
 full session makes a code or allows an app, so the second factor was met there; the device never needs it. Every paired
-device stands with the signed-in devices under **My account, Security** and in `GET /api/v1/devices` (`via`: `qr`,
+device stands under **Settings › My account › Connections › Devices** and in `GET /api/v1/devices` (`via`: `qr`,
 `app:<client_id>` or `token`), and can be revoked one by one.
 
 ### With a code (QR code)
 
-1. The person opens **My account, Devices and apps, Pair a device** in the browser: `POST /api/v1/devices/pairing` (browser
+1. The person opens **Settings › My account › Connections › Devices, "Connect iPhone or iPad"** in the browser: `POST /api/v1/devices/pairing` (browser
    only) makes a code of twelve letters and digits (`code`, e.g. `KRAF-T7Q2-K9XW`), valid for **5 minutes and once**; a new
    code ends the one before. The QR code holds `nexpaper://pair?server=<address>&code=<code>`; the page shows address and code
    for typing as well.
@@ -582,7 +583,7 @@ There is no refresh token: the device token holds until it is revoked.
   /teilen`) is never read, because it carries the cookie and no header of nexpaper's own.
 - **iPhone**: a shortcut sends shared PDFs and pictures to `POST /api/v1/documents?source=share` with a key for
   uploading (scope `upload`). iOS takes
-  only shortcuts signed by Apple, so nexpaper cannot ship the file; **My account, Devices and apps** explains how to build it
+  only shortcuts signed by Apple, so nexpaper cannot ship the file; **Settings › My account › Connections** explains how to build it
   in a few steps (see `docs/iphone-shortcut.md`), and the operator may share a finished one by an iCloud link
   (`PUT /api/v1/settings/shortcut`, read by everybody at `GET /api/v1/shortcut`).
 
@@ -1122,7 +1123,7 @@ none of it, a link to the outside never.
 ## Upload requests
 
 A person asks somebody without an account for files (U1). Off from the start: the operator's `upload_requests_allowed`
-(`PUT /settings`, Settings, Sharing). A request needs the public address of the server.
+(`PUT /settings`, **Settings › Server › General › Features for all accounts**). A request needs the public address of the server.
 
 - `GET /upload-requests/rules`: `{"allowed", "public_url_set", "max_days", "max_files", "default_files", "max_open"}`.
 - `POST /upload-requests` `{"name", "days", "max_files"}` (name 1 to 100 characters, days up to the longest a link may

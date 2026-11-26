@@ -25,19 +25,6 @@
     "title": "Paramètres",
     "saved": "Enregistré.",
     "ownPassword": "Votre propre mot de passe",
-    "parts": {
-      "accounts": "Comptes",
-      "signin": "Connexion",
-      "mail": "Courriel",
-      "api": "API",
-      "backups": "Sauvegarde",
-      "languages": "Langues",
-      "log": "Journal",
-      "ai": "IA",
-      "push": "Web Push",
-      "sharing": "Partage",
-      "storage": "Stockage"
-    },
     "language": {
       "hint": "(s'applique sur tous vos appareils)"
     },
@@ -48,37 +35,9 @@
       "quickStartHint": "« Tout » mène de là à l'application complète."
     },
     "areas": {
-      "about": {
-        "title": "À propos de nexpaper",
-        "text": "Version, licence, provenance et s'il existe une version plus récente."
-      },
-      "accounts": {
-        "title": "Comptes",
-        "text": "Qui utilise nexpaper, avec son rôle, les invitations en attente et les jetons API de tous les comptes."
-      },
-      "aiSetup": {
-        "title": "IA",
-        "text": "Quel fournisseur fait des propositions lors du classement, et dans quelles limites."
-      },
-      "api": {
-        "title": "API",
-        "text": "L'interface pour les applications et les scripts, et le raccourci iPhone."
-      },
-      "appearance": {
-        "title": "Apparence",
-        "text": "L'apparence de nexpaper sur tous vos appareils, et l'affichage de l'archive à l'ouverture."
-      },
-      "connections": {
-        "title": "Appareils et applications",
-        "text": "Les appareils, applications et jetons qui travaillent avec vos documents, et les notifications sur vos appareils."
-      },
       "filing": {
         "title": "Classement",
         "text": "Les types pour tout le monde et les règles du serveur."
-      },
-      "general": {
-        "title": "Général",
-        "text": "Limites, fonctions pour tous les comptes, Web Push et langues ajoutées."
       },
       "import": {
         "title": "Importation",
@@ -88,14 +47,6 @@
         "title": "Entrées",
         "text": "Le dossier d'entrée et la boîte aux lettres, par lesquels les documents arrivent d'eux-mêmes."
       },
-      "log": {
-        "title": "Journal",
-        "text": "Ce que le serveur consigne, à consulter quand quelque chose ne va pas."
-      },
-      "mail": {
-        "title": "Courriel",
-        "text": "Le serveur de courriel par lequel nexpaper envoie les invitations, les liens de réinitialisation et les avis."
-      },
       "myAi": {
         "title": "IA",
         "text": "Si l'IA aide à classer vos documents."
@@ -103,26 +54,6 @@
       "ocr": {
         "title": "Reconnaissance de texte",
         "text": "Dans quelles langues nexpaper lit le texte des numérisations, des photos et des PDF."
-      },
-      "profile": {
-        "title": "Profil",
-        "text": "Photo, nom, adresse courriel et langue de votre compte."
-      },
-      "reminders": {
-        "title": "Rappels",
-        "text": "Si et comment nexpaper vous rappelle les échéances."
-      },
-      "security": {
-        "title": "Sécurité",
-        "text": "Mot de passe, second facteur, clés d'accès, fournisseurs et appareils connectés."
-      },
-      "signIn": {
-        "title": "Connexion",
-        "text": "Comment tout le monde se connecte : mot de passe, adresse publique, second facteur et fournisseurs."
-      },
-      "storage": {
-        "title": "Stockage et sauvegardes",
-        "text": "L'espace occupé, les sauvegardes du serveur et la vérification des fichiers."
       },
       "upload": {
         "title": "Téléversement",
@@ -184,7 +115,7 @@
       "title": "Configurez votre second facteur",
       "text": "L'administrateur exige un second facteur pour chaque compte qui se connecte avec un mot de passe. Configurez-le pour continuer.",
       "scan": "Scannez le code avec une application d'authentification, ou saisissez la clé. Puis le code affiché par l'application.",
-      "passkeyLater": "Plutôt sans application ? Vous pourrez ajouter une clé d'accès ensuite sous Mon compte → Sécurité.",
+      "passkeyLater": "Plutôt sans application ? Vous pourrez ajouter une clé d'accès ensuite sous Mon compte › Sécurité.",
       "leave": "Se déconnecter"
     },
     "codes": {
@@ -218,7 +149,7 @@
       "doneText": "{{address}} est désormais l'adresse de votre compte.",
       "oldTold": "Nous avons informé l'ancienne adresse du changement.",
       "invalidTitle": "Lien non valide",
-      "invalidText": "Ce lien ne fonctionne plus : il a été utilisé, a expiré ou a été retiré. Envoyez-vous-en un nouveau sous Mon compte.",
+      "invalidText": "Ce lien ne fonctionne plus : il a été utilisé, a expiré ou a été retiré. Envoyez-vous-en un nouveau sous Mon compte › Profil.",
       "toAccount": "Vers Mon compte"
     }
   },
@@ -242,16 +173,6 @@
     }
   },
   "me": {
-    "title": "Mon compte",
-    "tabs": {
-      "profile": "Profil",
-      "security": "Sécurité",
-      "looks": "Apparence",
-      "ai": "IA",
-      "devices": "Appareils et applications",
-      "upload": "Téléversement",
-      "reminders": "Rappels"
-    },
     "profile": {
       "text": "Comment les autres vous voient sur vos documents, vos notes et dans l'historique.",
       "displayName": "Nom affiché",
@@ -286,7 +207,7 @@
       "mineHint": "Désactivé : vos téléversements ne reçoivent que les règles et ce que nexpaper lit lui-même, et votre texte ne va jamais à un modèle.",
       "byOperator": "Défini par l'administrateur :",
       "none": "L'administrateur n'a pas configuré d'IA. D'ici là, il n'y a que les règles et ce que nexpaper lit lui-même dans le texte ; votre choix ici est conservé pour plus tard.",
-      "noneOperator": "Aucune IA n'est configurée. Vous choisissez un fournisseur sous <settings>Serveur › IA</settings> ; votre choix ici est conservé d'ici là."
+      "noneOperator": "Aucune IA n'est configurée. Vous choisissez un fournisseur sous <settings>Serveur › Fournisseur d’IA</settings> ; votre choix ici est conservé d'ici là."
     },
     "push": {
       "title": "Notifications sur vos appareils",
@@ -341,7 +262,7 @@
       "removed": "Clé d'accès retirée.",
       "added": "Clé d'accès ajoutée.",
       "unavailable": "Les clés d'accès ne fonctionnent qu'en https (ou localhost) et dans les navigateurs qui les prennent en charge.",
-      "noAddressOperator": "Saisissez d'abord l'adresse publique (<settings>Paramètres → Connexion</settings>).",
+      "noAddressOperator": "Saisissez d'abord l'adresse publique (<settings>Serveur › Connexion</settings>).",
       "noAddressMember": "Votre administrateur doit d'abord saisir l'adresse publique."
     },
     "oidc": {
@@ -400,7 +321,7 @@
     "template": "Télécharger le modèle",
     "languageCode": "Code de langue",
     "upload": "Téléverser une langue",
-    "languageAdded": "Langue ajoutée. Elle apparaît sous Mon compte, Profil.",
+    "languageAdded": "Langue ajoutée. Elle apparaît sous Mon compte › Profil.",
     "ai": {
       "title": "Propositions de l'IA dans la boîte de réception",
       "text": "S'applique à tout le monde. L'IA propose le titre, l'expéditeur, le type, la date et le montant ; seul ce qu'une personne confirme est classé. Les règles passent toujours en premier.",
@@ -436,7 +357,7 @@
       "keysText": "nexpaper a créé sa propre paire de clés. En créer une nouvelle désinscrit tous les appareils ; chaque personne doit les inscrire de nouveau.",
       "renew": "En créer une nouvelle",
       "renewTitle": "Créer une nouvelle paire de clés ?",
-      "renewText": "Tous les appareils sont désinscrits. Chaque personne doit les inscrire de nouveau sous Mon compte, Appareils et applications.",
+      "renewText": "Tous les appareils sont désinscrits. Chaque personne doit les inscrire de nouveau sous Mon compte › Notifications.",
       "renewed": "Nouvelle paire de clés créée. Tous les appareils sont désinscrits.",
       "probe": "Test vers mes appareils",
       "hosts": "Autres services push",
@@ -479,8 +400,8 @@
       "index": "La recherche est reconstruite ensuite. Cela prend un moment, et d'ici là elle trouve de plus en plus.",
       "revivedDevices_one": "La restauration rend de nouveau valide {{count}} appareil verrouillé ou retiré depuis la sauvegarde.",
       "revivedDevices_other": "La restauration rend de nouveau valides {{count}} appareils verrouillés ou retirés depuis la sauvegarde.",
-      "revivedKeys_one": "La restauration rend de nouveau valide {{count}} jeton bloqué depuis la sauvegarde.",
-      "revivedKeys_other": "La restauration rend de nouveau valides {{count}} jetons bloqués depuis la sauvegarde.",
+      "revivedKeys_one": "La restauration rend de nouveau valide {{count}} clé d’API bloquée depuis la sauvegarde.",
+      "revivedKeys_other": "La restauration rend de nouveau valides {{count}} clés d’API bloquées depuis la sauvegarde.",
       "revivedLinks_one": "La restauration rend de nouveau valide {{count}} lien retiré depuis la sauvegarde.",
       "revivedLinks_other": "La restauration rend de nouveau valides {{count}} liens retirés depuis la sauvegarde.",
       "revivedPdfPasswords_one": "La restauration ramène {{count}} mot de passe PDF mémorisé supprimé depuis la sauvegarde.",
@@ -495,7 +416,7 @@
       "schema": "Lisible par machine",
       "schemaText": "OpenAPI, pour les outils et générateurs de code",
       "pair": "Connecter un iPhone ou un iPad",
-      "pairText": "Code QR depuis Mon compte, une clé propre à chaque appareil",
+      "pairText": "Code QR depuis Mon compte › Connexions, une clé propre à chaque appareil",
       "auth": "Comment les programmes se connectent",
       "authText": "appareil ou clé dans l'en-tête de chaque requête ; ils n'ont besoin ni de mot de passe ni de session"
     }
@@ -505,7 +426,7 @@
     "account_blocked": "Ce compte est bloqué.",
     "account_locked": "Trop de tentatives erronées. Le compte attend un quart d'heure.",
     "already_set_up": "nexpaper est déjà configuré.",
-    "api_off": "L'administrateur n'a pas activé les jetons API.",
+    "api_off": "L'administrateur n'a pas activé l'interface de programmation (API).",
     "avatar_not_a_picture": "Ce n'est pas une image que nexpaper accepte (JPEG, PNG, WebP, GIF, HEIC ou AVIF).",
     "backup_damaged": "La sauvegarde est endommagée. Rien n'a été modifié.",
     "backup_invalid": "Ce n'est pas une sauvegarde nexpaper.",
@@ -551,16 +472,16 @@
     "password_missing": "Indiquez le mot de passe.",
     "password_too_short": "Le mot de passe est trop court, au moins 12 caractères.",
     "provider_first": "Configurez d'abord un fournisseur de connexion, sinon personne d'autre que vous ne pourra plus entrer.",
-    "public_url_missing": "Pour le courriel, nexpaper a besoin de son adresse publique ; l'administrateur la définit sous Paramètres.",
+    "public_url_missing": "Pour le courriel, nexpaper a besoin de son adresse publique ; l'administrateur la définit sous Serveur › Connexion.",
     "second_factor_expired": "Trop de codes erronés, ou attente trop longue. Recommencez avec le mot de passe.",
     "second_factor_setup_required": "Configurez d'abord votre second facteur.",
     "second_factor_unavailable": "Le second facteur ne peut pas être vérifié sur cette installation. Demandez à l'administrateur de le réinitialiser.",
     "secret_required": "Saisissez le secret client.",
     "setup_code_wrong": "Le code de configuration est erroné. Il figure dans le journal du serveur.",
     "sign_in_required": "Connectez-vous d'abord.",
-    "slow_down": "Trop de requêtes avec ce jeton. Attendez une minute.",
+    "slow_down": "Trop de requêtes avec cette clé. Attendez une minute.",
     "token_invalid": "Aucun jeton d'appareil valide.",
-    "token_wrong_kind": "Ce n'est pas le bon type de jeton pour cette route : les jetons d'appareil et les jetons API sont deux choses différentes.",
+    "token_wrong_kind": "Ce n'est pas le bon type d'accès pour cette route : un appareil et une clé d’API sont deux choses différentes.",
     "too_large": "Le fichier dépasse la taille autorisée, au plus {{max_mb}} Mo.",
     "too_many_attempts": "Trop de tentatives. Attendez un peu et réessayez.",
     "totp_code_wrong": "Le code n'est pas correct. Pour un code de l'application : vérifiez l'heure du téléphone. Un code de récupération ne fonctionne qu'une fois.",
@@ -573,7 +494,7 @@
     "wrong_credentials": "Le nom ou le mot de passe est erroné.",
     "wrong_password": "Le mot de passe est erroné.",
     "ai_off": "Aucune IA n'est configurée sur ce serveur.",
-    "ai_switched_off": "Vous avez désactivé l'IA pour vous-même (Mon compte, IA).",
+    "ai_switched_off": "Vous avez désactivé l'IA pour vous-même (Mon compte › IA).",
     "ai_incomplete": "L'IA n'est pas encore entièrement configurée. L'administrateur doit saisir l'adresse et le modèle.",
     "ai_provider_unknown": "Ce type de service d'IA n'existe pas.",
     "ai_address_missing": "Indiquez l'adresse du service.",
@@ -598,7 +519,7 @@
     "ai_server_busy": "L'IA est occupée en ce moment. Réessayez dans un instant.",
     "push_endpoint_invalid": "Ce n'est pas l'adresse d'un service push.",
     "push_endpoint_refused": "Cette adresse n'est jamais jointe.",
-    "push_service_unknown": "nexpaper n'envoie rien à ce service push. L'administrateur peut l'ajouter sous Paramètres → Web Push.",
+    "push_service_unknown": "nexpaper n'envoie rien à ce service push. L'administrateur peut l'ajouter sous Serveur › Général › Web Push.",
     "push_unreachable": "Le serveur ne peut pas joindre le service push.",
     "push_keys_invalid": "Les clés de cet appareil ne sont pas valides.",
     "push_too_many_devices": "Au plus {{max}} appareils. Désinscrivez-en un d'abord.",
@@ -623,12 +544,12 @@
     "passkey_unsupported": "Ce navigateur ne peut pas utiliser de clés d'accès ici.",
     "reset_invalid": "Ce lien ne fonctionne plus.",
     "reset_off": "Ce n'est pas configuré sur ce serveur. Adressez-vous à l'administrateur.",
-    "use_account_page": "Vous changez votre propre mot de passe sous Mon compte.",
-    "key_invalid": "Aucun jeton API valide.",
+    "use_account_page": "Vous changez votre propre mot de passe sous Mon compte › Sécurité.",
+    "key_invalid": "Aucune clé d’API valide.",
     "browser_only": "Cela nécessite un navigateur connecté, pas un appareil.",
     "device_name_invalid": "Le nom d'un appareil compte de 1 à 80 caractères, sans caractères de contrôle.",
     "too_many_devices": "Il y a assez d'appareils : bloquez-en un d'abord.",
-    "too_many_keys": "Il y a assez de jetons : supprimez-en un d'abord.",
+    "too_many_keys": "Il y a assez de clés d’API : supprimez-en une d'abord.",
     "email_same": "C'est déjà votre adresse confirmée.",
     "email_link_invalid": "Ce lien ne fonctionne plus.",
     "forbidden": "Votre droit ne le permet pas.",
@@ -683,7 +604,7 @@
     "incomplete": "Tout n'est pas encore arrivé.",
     "checksum_mismatch": "Le fichier n'est pas arrivé entier, sa somme de contrôle est erronée. Réessayez.",
     "upload_expired": "Ce téléversement a expiré. Recommencez-le.",
-    "key_scope": "Ce jeton n'est pas prévu pour cela.",
+    "key_scope": "Cette clé d’API n'est pas prévue pour cela.",
     "not_ready": "Le document est encore en cours de lecture.",
     "render_failed": "Cette page n'a pas pu être dessinée.",
     "nothing_to_retry": "Ce document a été lu sans problème.",
@@ -695,7 +616,7 @@
     "oauth_redirect_refused": "nexpaper ne peut pas renvoyer l'application vers cette adresse.",
     "oauth_invalid_request": "La requête de l'application est incomplète.",
     "oauth_pkce_required": "L'application fait sa demande sans la protection nécessaire (PKCE avec S256).",
-    "upload_limit": "Ce jeton a déjà apporté {{per_hour}} fichiers cette heure-ci.",
+    "upload_limit": "Cette clé d’API a déjà apporté {{per_hour}} fichiers cette heure-ci.",
     "shortcut_link_invalid": "Saisissez le lien iCloud du raccourci (https://www.icloud.com/shortcuts/…).",
     "query_too_long": "La recherche est trop longue. Au plus {{max}} caractères.",
     "too_many_terms": "Trop de mots et de filtres dans une seule recherche. Au plus {{max}}.",
@@ -725,7 +646,7 @@
     "invalid_memo": "Une note compte au plus {{max}} caractères.",
     "wrong_pdf_password": "Ce mot de passe n'ouvre pas le PDF. Le document reste tel quel.",
     "pdf_password_too_often": "Trop de tentatives pour ce PDF. Réessayez dans une heure.",
-    "too_many_pdf_passwords": "Vous mémorisez déjà {{max}} mots de passe. Supprimez-en un sous Mon compte, Téléversement.",
+    "too_many_pdf_passwords": "Vous mémorisez déjà {{max}} mots de passe. Supprimez-en un sous Mon compte › Téléversement.",
     "not_protected": "Ce document n'attend plus de mot de passe.",
     "invalid_pdf_password": "Le mot de passe peut compter de 1 à {{max}} caractères.",
     "invalid_pdf_password_name": "Le nom peut compter de 1 à {{max}} caractères, sans caractères de contrôle.",
@@ -788,7 +709,7 @@
     "disconnectNamed": "Déconnecter {{name}}"
   },
   "apiKeys": {
-    "offOperator": "Autorisez-les sous Paramètres, Général.",
+    "offOperator": "Autorisez-les sous Serveur › Général › Interfaces.",
     "scope": {
       "readHint": "Lire les documents, les coffres et la recherche, dans la mesure où votre compte le peut. Il ne peut rien modifier.",
       "uploadHint": "Pour un numériseur, un script ou le raccourci : dépose des documents dans une boîte de réception et ne lit rien."
@@ -1098,22 +1019,22 @@
       "text": "Sur l'iPhone, nexpaper n'apparaît pas dans le menu de partage, car Safari ne le permet pas aux applications web. Un raccourci prend le relais : il figure alors dans le menu de partage de chaque application et envoie les PDF et photos directement dans votre boîte de réception.",
       "load": "Charger le raccourci",
       "link1": "Sur l'iPhone, touchez « Charger le raccourci » et ajoutez-le.",
-      "link2": "Pendant l'ajout, il demande l'adresse et un jeton : « Jeton pour le raccourci » ci-dessous affiche les deux.",
+      "link2": "Pendant l'ajout, il demande l'adresse et une clé : « Clé pour le raccourci » ci-dessous affiche les deux.",
       "link3": "Dans Mail, Fichiers ou l'application bancaire : Partager, puis « Nach nexpaper ».",
       "build": "L'administrateur n'a pas encore partagé de raccourci prêt à l'emploi. Voici comment le créer en deux minutes :",
-      "build1": "Touchez « Jeton pour le raccourci » ci-dessous. L'adresse et un jeton de téléversement y restent alors à copier.",
+      "build1": "Touchez « Clé pour le raccourci » ci-dessous. L'adresse et une clé de téléversement y restent alors à copier.",
       "build2": "Dans l'application Raccourcis, créez un nouveau raccourci « Nach nexpaper », activez « Afficher dans la feuille de partage » sous Détails, avec les PDF et les images comme entrée.",
       "build3": "Action « Obtenir le contenu de l'URL » : l'adresse ci-dessous, méthode POST, en-tête « Authorization » avec la valeur ci-dessous, corps de la requête Formulaire, champ « file » de type fichier avec l'entrée du raccourci.",
       "build4": "Action « Afficher la notification » avec « C'est dans la boîte de réception. » ensuite, terminé.",
       "android": "Sur Android, nexpaper apparaît de lui-même dans le menu de partage une fois sur l'écran d'accueil.",
-      "key": "Jeton pour le raccourci",
-      "shown": "Un jeton de téléversement, pour le raccourci, affiché seulement maintenant. Il ne peut que téléverser et figure ensuite parmi les jetons API, où vous pouvez le supprimer.",
+      "key": "Clé pour le raccourci",
+      "shown": "Une clé d’API de téléversement, pour le raccourci, affichée seulement maintenant. Elle ne peut que téléverser et figure ensuite sous « Clés d’API », où vous pouvez la supprimer.",
       "address": "Adresse",
       "header": "Valeur de l'en-tête Authorization",
       "done": "Terminé",
       "keyName": "Raccourci iPhone",
-      "warning": "Ne mettez jamais votre jeton dans un raccourci que vous partagez avec d'autres : quiconque l'a peut téléverser dans votre compte. Pour partager un raccourci, configurez l'adresse et le jeton comme questions d'importation.",
-      "off": "Le raccourci a besoin d'un jeton de téléversement, et l'administrateur n'a pas activé les jetons API."
+      "warning": "Ne mettez jamais votre clé dans un raccourci que vous partagez avec d'autres : quiconque l'a peut téléverser dans votre compte. Pour partager un raccourci, configurez l'adresse et la clé comme questions d'importation.",
+      "off": "Le raccourci a besoin d'une clé d’API de téléversement, et l'administrateur n'a pas activé l'interface de programmation (API)."
     },
     "vault": {
       "title": "Où vont vos téléversements",
@@ -1122,7 +1043,7 @@
     },
     "oauth": {
       "title": "Jumeler {{app}} avec votre compte ?",
-      "text": "L'application reçoit sa propre clé pour votre compte et peut faire tout ce que vous pouvez faire, sauf modifier les paramètres et jumeler d'autres appareils. Vous pouvez la bloquer à tout moment sous Mon compte, Sécurité.",
+      "text": "L'application reçoit sa propre clé pour votre compte et peut faire tout ce que vous pouvez faire, sauf modifier les paramètres et jumeler d'autres appareils. Vous pouvez la déconnecter à tout moment sous Mon compte › Connexions.",
       "device": "L'appareil s'appellera « {{name}} ».",
       "allow": "Autoriser",
       "deny": "Refuser",
@@ -1146,14 +1067,12 @@
       "revoked": "{{name}} est déconnecté."
     },
     "keys": {
-      "upload": "Jeton de téléversement",
-      "uploadButton": "Jeton de téléversement (pour numériseurs et applications)",
       "scope": "Peut",
       "read": "lecture seule"
     },
     "settings": {
       "title": "Raccourci pour l'iPhone",
-      "text": "Un raccourci « Nach nexpaper » prêt à l'emploi pour tout le monde : créez-le sur un iPhone, partagez-le dans Raccourcis sous forme de lien iCloud et saisissez le lien ici. Mon compte propose alors « Charger le raccourci ». Sans lien, la page explique comment le créer.",
+      "text": "Un raccourci « Nach nexpaper » prêt à l'emploi pour tout le monde : créez-le sur un iPhone, partagez-le dans Raccourcis sous forme de lien iCloud et saisissez le lien ici. Mon compte › Connexions propose alors « Charger le raccourci ». Sans lien, la page explique comment le créer.",
       "link": "Lien iCloud",
       "save": "Enregistrer",
       "saved": "Enregistré.",
@@ -1247,7 +1166,7 @@
       "doneTitle": "Confirmée",
       "doneText": "Les courriels de {{address}} arrivent maintenant dans la boîte de réception de {{name}}.",
       "invalidTitle": "Ce lien n'est plus valide",
-      "invalidText": "Il a déjà été utilisé ou a expiré. Un nouveau peut être envoyé sous Mon compte, Téléversement."
+      "invalidText": "Il a déjà été utilisé ou a expiré. Un nouveau peut être envoyé sous Mon compte › Téléversement."
     },
     "origin": {
       "folder": "Depuis le dossier d'entrée",
@@ -2139,11 +2058,6 @@
       "text": "« {{name}} » ne pourra plus accéder à nexpaper. Pour l'utiliser de nouveau, jumelez-le à nouveau.",
       "confirm": "Exclure l'appareil"
     },
-    "apiKey": {
-      "title": "Supprimer le jeton ?",
-      "text": "Les programmes utilisant le jeton « {{name}} » ne pourront plus accéder à nexpaper. Cette action est irréversible.",
-      "confirm": "Supprimer le jeton"
-    },
     "session": {
       "title": "Terminer la session ?",
       "text": "Le navigateur de cette session est déconnecté et devra se reconnecter.",
@@ -2406,7 +2320,6 @@
     "index": "dont index de recherche {{size}}",
     "cache": "Images de pages (cache)",
     "exports": "Exportations",
-    "backups": "Sauvegardes",
     "partial": "Le décompte a été interrompu au bout d'un moment. Les chiffres sont au moins aussi élevés.",
     "local": {
       "title": "La base de données se trouve sur un disque local.",
@@ -2759,7 +2672,6 @@
     }
   },
   "reminders": {
-    "tab": "Rappels",
     "how": {
       "title": "Comment vous êtes averti",
       "text": "Des factures, des délais de résiliation et des garanties dans vos coffres. Ce qu'un message indique : le type, le jour et le titre du document, jamais un montant ni son contenu."
@@ -2779,7 +2691,7 @@
     "push": "Notification push sur le téléphone et le navigateur",
     "pushHint_one": "Activé sur {{count}} appareil. Un toucher ouvre le document.",
     "pushHint_other": "Activé sur {{count}} appareils. Un toucher ouvre le document.",
-    "pushNone": "Pas encore activé sur aucun appareil. Cela se trouve sous Mon compte, Appareils et applications.",
+    "pushNone": "Pas encore activé sur aucun appareil. Cela se trouve sous Mon compte › Notifications.",
     "mailTo": "Courriel à {{address}}",
     "mail": "Courriel",
     "mailHint": "Votre adresse confirmée. Sans le serveur de courriel de l'administrateur, cela ne fonctionne pas.",
@@ -2849,7 +2761,7 @@
       "mayGo_one": "La durée de conservation d'un document est écoulée. Il figure dans les archives sous « Peut partir ».",
       "mayGo_other": "La durée de conservation de {{count}} documents est écoulée. Ils figurent dans les archives sous « Peut partir ».",
       "all": "Ouvrir toutes les échéances dans nexpaper",
-      "why": "Vous recevez ce courriel parce que vous avez activé le récapitulatif hebdomadaire sous Mon compte, Rappels.",
+      "why": "Vous recevez ce courriel parce que vous avez activé le récapitulatif hebdomadaire sous Mon compte › Notifications.",
       "short": {
         "pay": "Payer",
         "cancel": "Résilier",
@@ -2861,8 +2773,8 @@
       "trashed_one": "nexpaper a mis un document à la corbeille, sa durée de conservation était écoulée. Il peut y être restauré pendant 30 jours.",
       "trashed_other": "nexpaper a mis {{count}} documents à la corbeille, leur durée de conservation était écoulée. Ils peuvent y être restaurés pendant 30 jours."
     },
-    "remindedHow": "Vous êtes averti selon vos réglages sous <account>Mon compte, Notifications</account>.",
-    "datesNote": "Tous ceux qui peuvent modifier dans le coffre sont avertis, chacun selon ses réglages sous <account>Mon compte, Notifications</account>.",
+    "remindedHow": "Vous êtes averti selon vos réglages sous <account>Mon compte › Notifications</account>.",
+    "datesNote": "Tous ceux qui peuvent modifier dans le coffre sont avertis, chacun selon ses réglages sous <account>Mon compte › Notifications</account>.",
     "muted": "en sourdine",
     "mutedTitle": "Vous avez mis en sourdine les rappels de ce coffre.",
     "saved": "Enregistré.",
@@ -3211,8 +3123,8 @@
       "text": "L'adresse pour {{name}} n'accepte plus rien dès lors. Ce qui est arrivé reste dans votre boîte de réception. La demande ne peut pas être rétablie, mais vous pouvez en créer une nouvelle.",
       "confirm": "Retirer"
     },
-    "off": "Les demandes de dépôt sont désactivées sur ce serveur. L'administrateur les active sous Paramètres, Général.",
-    "noAddress": "Une demande de dépôt nécessite l'adresse publique du serveur. L'administrateur la saisit sous Paramètres, Connexion.",
+    "off": "Les demandes de dépôt sont désactivées sur ce serveur. L'administrateur les active sous Serveur › Général › Fonctions pour tous les comptes.",
+    "noAddress": "Une demande de dépôt nécessite l'adresse publique du serveur. L'administrateur la saisit sous Serveur › Connexion.",
     "cardTitle": "Demandes de dépôt",
     "cardText": "Des adresses par lesquelles quelqu'un sans compte vous envoie des fichiers. Tout arrive dans votre boîte de réception.",
     "source": "Lien de dépôt",
@@ -3232,7 +3144,7 @@
       "title": "Demandes de dépôt",
       "allow": "Autoriser les demandes de dépôt",
       "allowHint": "Chaque personne peut alors créer une adresse par laquelle quelqu'un sans compte envoie des fichiers dans sa boîte de réception. Désactivé signifie : personne n'en crée, et celles qui existent n'acceptent plus rien immédiatement.",
-      "noAddress": "Sans adresse publique (Paramètres, Connexion), aucune demande ne peut être créée.",
+      "noAddress": "Sans adresse publique (Serveur › Connexion), aucune demande ne peut être créée.",
       "overview": "Ouvertes : {{requests}} de {{people}}.",
       "requestCount_one": "{{count}} demande",
       "requestCount_other": "{{count}} demandes",
@@ -3241,8 +3153,8 @@
     "ready": {
       "title": "Demandes de dépôt",
       "ok": "Désactivées. Personne sans compte ne peut envoyer de fichiers.",
-      "warn_one": "Activées : quiconque a une adresse peut déposer des fichiers dans la boîte de réception d'une personne. Actuellement, {{count}} demande accepte des fichiers. Désactivez-les sous Paramètres, Général.",
-      "warn_other": "Activées : quiconque a une adresse peut déposer des fichiers dans la boîte de réception d'une personne. Actuellement, {{count}} demandes acceptent des fichiers. Désactivez-les sous Paramètres, Général."
+      "warn_one": "Activées : quiconque a une adresse peut déposer des fichiers dans la boîte de réception d'une personne. Actuellement, {{count}} demande accepte des fichiers. Désactivez-les sous Serveur › Général › Fonctions pour tous les comptes.",
+      "warn_other": "Activées : quiconque a une adresse peut déposer des fichiers dans la boîte de réception d'une personne. Actuellement, {{count}} demandes acceptent des fichiers. Désactivez-les sous Serveur › Général › Fonctions pour tous les comptes."
     },
     "page": {
       "asks": "<name>{{name}}</name> vous demande des documents",

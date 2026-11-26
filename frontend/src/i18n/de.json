@@ -25,19 +25,6 @@
     "title": "Einstellungen",
     "saved": "Gespeichert.",
     "ownPassword": "Dein eigenes Passwort",
-    "parts": {
-      "accounts": "Konten",
-      "signin": "Anmeldung",
-      "mail": "Mail",
-      "api": "API",
-      "backups": "Sicherung",
-      "languages": "Sprachen",
-      "log": "Log",
-      "ai": "KI",
-      "push": "Web Push",
-      "sharing": "Teilen",
-      "storage": "Ablage"
-    },
     "language": {
       "hint": "(gilt auf allen deinen Geräten)"
     },
@@ -48,37 +35,9 @@
       "quickStartHint": "„Alles“ führt von dort in die ganze App."
     },
     "areas": {
-      "about": {
-        "title": "Über nexpaper",
-        "text": "Version, Lizenz, Herkunft und ob es eine neuere Version gibt."
-      },
-      "accounts": {
-        "title": "Konten",
-        "text": "Wer nexpaper nutzt, mit Rolle, offene Einladungen und die API-Token aller Konten."
-      },
-      "aiSetup": {
-        "title": "KI",
-        "text": "Welcher Anbieter beim Einsortieren Vorschläge macht, und mit welchen Grenzen."
-      },
-      "api": {
-        "title": "API",
-        "text": "Die Schnittstelle für Apps und Skripte und der iPhone-Kurzbefehl."
-      },
-      "appearance": {
-        "title": "Darstellung",
-        "text": "Wie nexpaper auf allen deinen Geräten aussieht, und wie das Archiv beginnt."
-      },
-      "connections": {
-        "title": "Verbindungen",
-        "text": "Geräte, Apps und Token, die mit deinen Dokumenten arbeiten, und Mitteilungen auf deinen Geräten."
-      },
       "filing": {
         "title": "Ablage",
         "text": "Die Arten für alle und die Regeln des Servers."
-      },
-      "general": {
-        "title": "Allgemein",
-        "text": "Grenzen, Funktionen für alle Konten, Web Push und eigene Sprachen."
       },
       "import": {
         "title": "Import",
@@ -88,14 +47,6 @@
         "title": "Eingänge",
         "text": "Eingangsordner und Postfach, über die Dokumente von selbst ankommen."
       },
-      "log": {
-        "title": "Log",
-        "text": "Was der Server mitschreibt, zum Nachsehen bei Fehlern."
-      },
-      "mail": {
-        "title": "Mail",
-        "text": "Der Mailserver, über den nexpaper Einladungen, Links zum Zurücksetzen und Bescheide verschickt."
-      },
       "myAi": {
         "title": "KI",
         "text": "Ob die KI beim Einsortieren deiner Dokumente hilft."
@@ -103,26 +54,6 @@
       "ocr": {
         "title": "Texterkennung",
         "text": "In welchen Sprachen nexpaper Text in Scans, Fotos und PDFs liest."
-      },
-      "profile": {
-        "title": "Profil",
-        "text": "Bild, Name, Mailadresse und Sprache deines Kontos."
-      },
-      "reminders": {
-        "title": "Erinnerungen",
-        "text": "Ob und wie nexpaper dich an Fristen erinnert."
-      },
-      "security": {
-        "title": "Sicherheit",
-        "text": "Passwort, zweiter Faktor, Passkeys, Anbieter und angemeldete Geräte."
-      },
-      "signIn": {
-        "title": "Anmeldung",
-        "text": "Wie sich alle anmelden: Passwort, öffentliche Adresse, zweiter Faktor und Anbieter."
-      },
-      "storage": {
-        "title": "Speicher und Sicherung",
-        "text": "Der belegte Platz, die Backups des Servers und die Prüfung der Dateien."
       },
       "upload": {
         "title": "Hochladen",
@@ -184,7 +115,7 @@
       "title": "Zweiten Faktor einrichten",
       "text": "Der Betreiber verlangt einen zweiten Faktor für jedes Konto, das sich mit Passwort anmeldet. Richte ihn ein, um weiterzumachen.",
       "scan": "Scanne den Code mit einer Authenticator-App oder tippe den Schlüssel ein. Dann den Code, den die App zeigt.",
-      "passkeyLater": "Lieber ohne App? Einen Passkey kannst du danach unter Mein Konto → Sicherheit anlegen.",
+      "passkeyLater": "Lieber ohne App? Einen Passkey kannst du danach unter Mein Konto › Sicherheit anlegen.",
       "leave": "Abmelden"
     },
     "codes": {
@@ -218,7 +149,7 @@
       "doneText": "{{address}} gilt jetzt für dein Konto.",
       "oldTold": "Die bisherige Adresse haben wir über die Änderung benachrichtigt.",
       "invalidTitle": "Link nicht gültig",
-      "invalidText": "Dieser Link gilt nicht mehr: Er ist benutzt, abgelaufen oder zurückgezogen. Schick dir unter Mein Konto einen neuen.",
+      "invalidText": "Dieser Link gilt nicht mehr: Er ist benutzt, abgelaufen oder zurückgezogen. Schick dir unter Mein Konto › Profil einen neuen.",
       "toAccount": "Zu Mein Konto"
     }
   },
@@ -242,16 +173,6 @@
     }
   },
   "me": {
-    "title": "Mein Konto",
-    "tabs": {
-      "profile": "Profil",
-      "security": "Sicherheit",
-      "looks": "Aussehen",
-      "ai": "KI",
-      "devices": "Geräte und Apps",
-      "upload": "Hochladen",
-      "reminders": "Erinnerungen"
-    },
     "profile": {
       "text": "So sehen dich die anderen an deinen Dokumenten, Notizen und im Verlauf.",
       "displayName": "Anzeigename",
@@ -286,7 +207,7 @@
       "mineHint": "Aus: Für deine Uploads gibt es nur Regeln und was nexpaper selbst liest, und dein Text geht nie an ein Modell.",
       "byOperator": "Vom Betreiber eingestellt:",
       "none": "Der Betreiber hat keine KI eingerichtet. Solange gibt es nur Regeln und was nexpaper selbst aus dem Text liest; deine Wahl hier bleibt für später gespeichert.",
-      "noneOperator": "Es ist keine KI eingerichtet. Einen Anbieter wählst du unter <settings>Server › KI</settings>; deine Wahl hier bleibt bis dahin gespeichert."
+      "noneOperator": "Es ist keine KI eingerichtet. Einen Anbieter wählst du unter <settings>Server › KI-Anbieter</settings>; deine Wahl hier bleibt bis dahin gespeichert."
     },
     "push": {
       "title": "Benachrichtigungen auf deinen Geräten",
@@ -341,7 +262,7 @@
       "removed": "Passkey entfernt.",
       "added": "Passkey angelegt.",
       "unavailable": "Passkeys gibt es nur über https (oder localhost) und in Browsern, die sie kennen.",
-      "noAddressOperator": "Trag zuerst die öffentliche Adresse ein (<settings>Einstellungen → Anmeldung</settings>).",
+      "noAddressOperator": "Trag zuerst die öffentliche Adresse ein (<settings>Server › Anmeldung</settings>).",
       "noAddressMember": "Dein Betreiber muss erst die öffentliche Adresse eintragen."
     },
     "oidc": {
@@ -400,7 +321,7 @@
     "template": "Vorlage herunterladen",
     "languageCode": "Sprachcode",
     "upload": "Sprache hochladen",
-    "languageAdded": "Sprache hinzugefügt. Sie erscheint unter Mein Konto, Profil.",
+    "languageAdded": "Sprache hinzugefügt. Sie erscheint unter Mein Konto › Profil.",
     "ai": {
       "title": "KI-Vorschläge im Eingang",
       "text": "Gilt für alle. Die KI schlägt Titel, Absender, Art, Datum und Betrag vor; abgelegt wird nur, was ein Mensch bestätigt. Regeln gehen immer vor.",
@@ -436,7 +357,7 @@
       "keysText": "nexpaper hat ein eigenes Schlüsselpaar erzeugt. Neu erzeugen meldet alle Geräte ab; jede Person muss sie neu anmelden.",
       "renew": "Neu erzeugen",
       "renewTitle": "Neues Schlüsselpaar erzeugen?",
-      "renewText": "Alle Geräte werden abgemeldet. Jede Person muss sie unter Mein Konto, Verbindungen neu anmelden.",
+      "renewText": "Alle Geräte werden abgemeldet. Jede Person muss sie unter Mein Konto › Benachrichtigungen neu anmelden.",
       "renewed": "Neues Schlüsselpaar erzeugt. Alle Geräte sind abgemeldet.",
       "probe": "Probe an meine Geräte",
       "hosts": "Weitere Push-Dienste",
@@ -479,8 +400,8 @@
       "index": "Die Suche wird danach neu aufgebaut. Das dauert eine Weile, bis dahin findet sie nach und nach alles.",
       "revivedDevices_one": "Zurückspielen macht {{count}} Gerät wieder gültig, das seit der Sicherung gesperrt oder entfernt wurde.",
       "revivedDevices_other": "Zurückspielen macht {{count}} Geräte wieder gültig, die seit der Sicherung gesperrt oder entfernt wurden.",
-      "revivedKeys_one": "Zurückspielen macht {{count}} Token wieder gültig, der seit der Sicherung gesperrt wurde.",
-      "revivedKeys_other": "Zurückspielen macht {{count}} Tokens wieder gültig, die seit der Sicherung gesperrt wurden.",
+      "revivedKeys_one": "Zurückspielen macht {{count}} API-Schlüssel wieder gültig, der seit der Sicherung gesperrt wurde.",
+      "revivedKeys_other": "Zurückspielen macht {{count}} API-Schlüssel wieder gültig, die seit der Sicherung gesperrt wurden.",
       "revivedLinks_one": "Zurückspielen macht {{count}} Link wieder gültig, der seit der Sicherung zurückgezogen wurde.",
       "revivedLinks_other": "Zurückspielen macht {{count}} Links wieder gültig, die seit der Sicherung zurückgezogen wurden.",
       "revivedPdfPasswords_one": "Zurückspielen bringt {{count}} gemerktes PDF-Passwort zurück, das seit der Sicherung gelöscht wurde.",
@@ -495,7 +416,7 @@
       "schema": "Maschinenlesbar",
       "schemaText": "OpenAPI, für Werkzeuge und Code-Erzeuger",
       "pair": "iPhone oder iPad verbinden",
-      "pairText": "QR-Code aus Mein Konto, eigener Schlüssel je Gerät",
+      "pairText": "QR-Code aus Mein Konto › Verbindungen, eigener Schlüssel je Gerät",
       "auth": "Anmelden von Programmen",
       "authText": "Gerät oder API-Schlüssel in der Kopfzeile jeder Anfrage; Passwort und Sitzung brauchen sie nicht"
     }
@@ -505,7 +426,7 @@
     "account_blocked": "Dieses Konto ist gesperrt.",
     "account_locked": "Zu viele falsche Versuche. Das Konto wartet eine Viertelstunde.",
     "already_set_up": "nexpaper ist schon eingerichtet.",
-    "api_off": "Der Betreiber hat API-Token nicht eingeschaltet.",
+    "api_off": "Der Betreiber hat die Programmschnittstelle (API) nicht eingeschaltet.",
     "avatar_not_a_picture": "Das ist kein Bild, das nexpaper annimmt (JPEG, PNG, WebP, GIF, HEIC oder AVIF).",
     "backup_damaged": "Die Sicherung ist beschädigt. Nichts wurde geändert.",
     "backup_invalid": "Das ist keine nexpaper-Sicherung.",
@@ -551,16 +472,16 @@
     "password_missing": "Gib das Passwort an.",
     "password_too_short": "Das Passwort ist zu kurz, mindestens 12 Zeichen.",
     "provider_first": "Richte zuerst einen Anmeldeanbieter ein, sonst kommt außer dir niemand mehr herein.",
-    "public_url_missing": "Für Mails braucht nexpaper seine öffentliche Adresse; der Betreiber trägt sie unter Einstellungen ein.",
+    "public_url_missing": "Für Mails braucht nexpaper seine öffentliche Adresse; der Betreiber trägt sie unter Server › Anmeldung ein.",
     "second_factor_expired": "Zu viele falsche Codes oder zu lange gewartet. Fang mit dem Passwort neu an.",
     "second_factor_setup_required": "Richte zuerst deinen zweiten Faktor ein.",
     "second_factor_unavailable": "Der zweite Faktor lässt sich auf dieser Installation nicht prüfen. Bitte den Betreiber, ihn zurückzusetzen.",
     "secret_required": "Bitte das Client-Geheimnis eintragen.",
     "setup_code_wrong": "Der Einrichtungscode stimmt nicht. Er steht im Log des Servers.",
     "sign_in_required": "Bitte erst anmelden.",
-    "slow_down": "Zu viele Anfragen mit diesem Token. Eine Minute warten.",
+    "slow_down": "Zu viele Anfragen mit diesem Schlüssel. Eine Minute warten.",
     "token_invalid": "Kein gültiges Gerät-Token.",
-    "token_wrong_kind": "Das ist die falsche Art Token für diesen Weg: Geräte-Token und API-Token sind zwei verschiedene Dinge.",
+    "token_wrong_kind": "Das ist die falsche Art Zugang für diesen Weg: Ein Gerät und ein API-Schlüssel sind zwei verschiedene Dinge.",
     "too_large": "Die Datei ist größer als erlaubt, höchstens {{max_mb}} MB.",
     "too_many_attempts": "Zu viele Versuche. Kurz warten und noch einmal.",
     "totp_code_wrong": "Der Code stimmt nicht. Ein Code aus der App: Uhrzeit auf dem Handy prüfen. Ein Wiederherstellungscode gilt nur einmal.",
@@ -573,7 +494,7 @@
     "wrong_credentials": "Name oder Passwort stimmt nicht.",
     "wrong_password": "Das Passwort stimmt nicht.",
     "ai_off": "Auf diesem Server ist keine KI eingerichtet.",
-    "ai_switched_off": "Du hast die KI für dich abgeschaltet (Mein Konto, KI).",
+    "ai_switched_off": "Du hast die KI für dich abgeschaltet (Mein Konto › KI).",
     "ai_incomplete": "Die KI ist noch nicht ganz eingerichtet. Der Betreiber muss Adresse und Modell eintragen.",
     "ai_provider_unknown": "Diese Art von KI-Dienst gibt es nicht.",
     "ai_address_missing": "Gib die Adresse des Dienstes an.",
@@ -598,7 +519,7 @@
     "ai_server_busy": "Die KI ist gerade beschäftigt. Versuch es gleich noch einmal.",
     "push_endpoint_invalid": "Diese Adresse ist keine eines Push-Dienstes.",
     "push_endpoint_refused": "Diese Adresse wird nie erreicht.",
-    "push_service_unknown": "An diesen Push-Dienst schickt nexpaper nichts. Der Betreiber kann ihn unter Einstellungen → Web Push eintragen.",
+    "push_service_unknown": "An diesen Push-Dienst schickt nexpaper nichts. Der Betreiber kann ihn unter Server › Allgemein › Web Push eintragen.",
     "push_unreachable": "Der Server erreicht den Push-Dienst nicht.",
     "push_keys_invalid": "Die Schlüssel dieses Geräts sind nicht gültig.",
     "push_too_many_devices": "Höchstens {{max}} Geräte. Melde zuerst eines ab.",
@@ -623,12 +544,12 @@
     "passkey_unsupported": "Dieser Browser kann hier keine Passkeys.",
     "reset_invalid": "Dieser Link gilt nicht mehr.",
     "reset_off": "Das ist auf diesem Server nicht eingerichtet. Frag den Betreiber.",
-    "use_account_page": "Dein eigenes Passwort änderst du unter Mein Konto.",
-    "key_invalid": "Kein gültiger API-Token.",
+    "use_account_page": "Dein eigenes Passwort änderst du unter Mein Konto › Sicherheit.",
+    "key_invalid": "Kein gültiger API-Schlüssel.",
     "browser_only": "Das geht nur in einem angemeldeten Browser, nicht mit einem Gerät.",
     "device_name_invalid": "Der Name eines Geräts hat 1 bis 80 Zeichen, ohne Steuerzeichen.",
     "too_many_devices": "So viele Geräte sind genug: Sperre zuerst eines.",
-    "too_many_keys": "So viele Tokens sind genug: Lösche zuerst einen.",
+    "too_many_keys": "So viele API-Schlüssel sind genug: Lösche zuerst einen.",
     "email_same": "Das ist schon deine bestätigte Adresse.",
     "email_link_invalid": "Dieser Link gilt nicht mehr.",
     "forbidden": "Dein Recht reicht dafür nicht.",
@@ -683,7 +604,7 @@
     "incomplete": "Es ist noch nicht alles angekommen.",
     "checksum_mismatch": "Die Datei ist nicht vollständig angekommen, die Prüfsumme stimmt nicht. Versuche es noch einmal.",
     "upload_expired": "Dieser Upload ist abgelaufen. Starte ihn neu.",
-    "key_scope": "Dieser Token ist dafür nicht gedacht.",
+    "key_scope": "Dieser API-Schlüssel ist dafür nicht gedacht.",
     "not_ready": "Das Dokument wird noch eingelesen.",
     "render_failed": "Diese Seite ließ sich nicht darstellen.",
     "nothing_to_retry": "Dieses Dokument wurde ohne Fehler eingelesen.",
@@ -695,7 +616,7 @@
     "oauth_redirect_refused": "Zu dieser Adresse darf nexpaper die App nicht zurückschicken.",
     "oauth_invalid_request": "Die Anfrage der App ist unvollständig.",
     "oauth_pkce_required": "Die App fragt ohne die nötige Absicherung (PKCE mit S256).",
-    "upload_limit": "Dieser Token hat in dieser Stunde schon {{per_hour}} Dateien gebracht.",
+    "upload_limit": "Dieser API-Schlüssel hat in dieser Stunde schon {{per_hour}} Dateien gebracht.",
     "shortcut_link_invalid": "Bitte den iCloud-Link des Kurzbefehls eintragen (https://www.icloud.com/shortcuts/…).",
     "query_too_long": "Die Suche ist zu lang. Höchstens {{max}} Zeichen.",
     "too_many_terms": "Zu viele Wörter und Filter in einer Suche. Höchstens {{max}}.",
@@ -725,7 +646,7 @@
     "invalid_memo": "Ein Merkzettel hat höchstens {{max}} Zeichen.",
     "wrong_pdf_password": "Dieses Passwort öffnet das PDF nicht. Das Dokument bleibt, wie es war.",
     "pdf_password_too_often": "Zu viele Versuche für dieses PDF. Versuch es in einer Stunde wieder.",
-    "too_many_pdf_passwords": "Du hast schon {{max}} Passwörter gemerkt. Lösch eines unter Mein Konto, Hochladen.",
+    "too_many_pdf_passwords": "Du hast schon {{max}} Passwörter gemerkt. Lösch eines unter Mein Konto › Hochladen.",
     "not_protected": "Dieses Dokument wartet auf kein Passwort mehr.",
     "invalid_pdf_password": "Das Passwort darf 1 bis {{max}} Zeichen haben.",
     "invalid_pdf_password_name": "Der Name darf 1 bis {{max}} Zeichen haben, ohne Steuerzeichen.",
@@ -788,7 +709,7 @@
     "disconnectNamed": "{{name}} trennen"
   },
   "apiKeys": {
-    "offOperator": "Unter Einstellungen, Allgemein freigeben.",
+    "offOperator": "Unter Server › Allgemein › Schnittstellen freigeben.",
     "scope": {
       "readHint": "Dokumente, Tresore und Suche lesen, so weit dein Konto darf. Ändern kann er nichts.",
       "uploadHint": "Für einen Scanner, ein Skript oder den Kurzbefehl: legt Dokumente in einen Eingang und liest nichts."
@@ -1098,22 +1019,22 @@
       "text": "Auf dem iPhone fehlt nexpaper im Teilen-Menü, weil Safari das Web-Apps nicht erlaubt. Ein Kurzbefehl springt ein: Er steht danach im Teilen-Menü jeder App und schickt PDFs und Fotos direkt in deinen Eingang.",
       "load": "Kurzbefehl laden",
       "link1": "Auf dem iPhone „Kurzbefehl laden“ antippen und hinzufügen.",
-      "link2": "Beim Hinzufügen fragt er nach Adresse und Token: beides zeigt „Token für den Kurzbefehl“ hier unten.",
+      "link2": "Beim Hinzufügen fragt er nach Adresse und Schlüssel: Beides zeigt „Schlüssel für den Kurzbefehl“ hier unten.",
       "link3": "In Mail, Dateien oder der Banking-App: Teilen, dann „Nach nexpaper“.",
       "build": "Einen fertigen Kurzbefehl hat der Betreiber noch nicht hinterlegt. So baust du ihn in zwei Minuten selbst:",
-      "build1": "Unten „Token für den Kurzbefehl“ antippen. Adresse und Token zum Hochladen bleiben dann zum Kopieren stehen.",
+      "build1": "Unten „Schlüssel für den Kurzbefehl“ antippen. Adresse und Schlüssel zum Hochladen bleiben dann zum Kopieren stehen.",
       "build2": "In der App Kurzbefehle einen neuen Kurzbefehl „Nach nexpaper“ anlegen, unter Details „Im Share-Sheet anzeigen“ einschalten, als Eingabe PDFs und Bilder.",
       "build3": "Aktion „Inhalte von URL abrufen“: die Adresse von unten, Methode POST, Header „Authorization“ mit dem Wert von unten, Anfragetext Formular, Feld „file“ als Datei mit der Kurzbefehleingabe.",
       "build4": "Aktion „Mitteilung anzeigen“ mit „Liegt im Eingang.“ dahinter, fertig.",
       "android": "Unter Android steht nexpaper von selbst im Teilen-Menü, sobald es auf dem Startbildschirm liegt.",
-      "key": "Token für den Kurzbefehl",
-      "shown": "Token zum Hochladen für den Kurzbefehl, wird nur jetzt gezeigt. Er kann nur hochladen und steht danach bei den API-Tokens, wo du ihn löschen kannst.",
+      "key": "Schlüssel für den Kurzbefehl",
+      "shown": "API-Schlüssel zum Hochladen für den Kurzbefehl, wird nur jetzt gezeigt. Er kann nur hochladen und steht danach unter „API-Schlüssel“, wo du ihn löschen kannst.",
       "address": "Adresse",
       "header": "Wert für den Header Authorization",
       "done": "Fertig",
       "keyName": "iPhone-Kurzbefehl",
-      "warning": "Trag deinen Token nie in einen Kurzbefehl ein, den du mit anderen teilst: Wer ihn hat, kann in dein Konto hochladen. Wer einen Kurzbefehl teilt, legt Adresse und Tokens als Import-Fragen an.",
-      "off": "Der Kurzbefehl braucht einen Token zum Hochladen, und API-Token hat der Betreiber nicht freigegeben."
+      "warning": "Trag deinen Schlüssel nie in einen Kurzbefehl ein, den du mit anderen teilst: Wer ihn hat, kann in dein Konto hochladen. Wer einen Kurzbefehl teilt, legt Adresse und Schlüssel als Import-Fragen an.",
+      "off": "Der Kurzbefehl braucht einen API-Schlüssel zum Hochladen, und die Programmschnittstelle (API) hat der Betreiber nicht freigegeben."
     },
     "vault": {
       "title": "Wohin deine Uploads gehen",
@@ -1122,7 +1043,7 @@
     },
     "oauth": {
       "title": "{{app}} mit deinem Konto koppeln?",
-      "text": "Die App bekommt einen eigenen Schlüssel für dein Konto und darf damit alles, was du darfst, außer Einstellungen ändern und weitere Geräte koppeln. Du kannst ihn jederzeit unter Mein Konto, Sicherheit sperren.",
+      "text": "Die App bekommt einen eigenen Schlüssel für dein Konto und darf damit alles, was du darfst, außer Einstellungen ändern und weitere Geräte koppeln. Du kannst sie jederzeit unter Mein Konto › Verbindungen trennen.",
       "device": "Das Gerät heißt dann „{{name}}“.",
       "allow": "Erlauben",
       "deny": "Ablehnen",
@@ -1146,14 +1067,12 @@
       "revoked": "{{name}} ist getrennt."
     },
     "keys": {
-      "upload": "Token zum Hochladen",
-      "uploadButton": "Token zum Hochladen (für Scanner und Apps)",
       "scope": "Darf",
       "read": "nur lesen"
     },
     "settings": {
       "title": "Kurzbefehl fürs iPhone",
-      "text": "Ein fertiger Kurzbefehl „Nach nexpaper“ für alle: auf einem iPhone bauen, in Kurzbefehle per iCloud-Link teilen und den Link hier eintragen. Unter Mein Konto steht dann „Kurzbefehl laden“. Ohne Link erklärt die Seite, wie man ihn selbst baut.",
+      "text": "Ein fertiger Kurzbefehl „Nach nexpaper“ für alle: auf einem iPhone bauen, in Kurzbefehle per iCloud-Link teilen und den Link hier eintragen. Unter Mein Konto › Verbindungen steht dann „Kurzbefehl laden“. Ohne Link erklärt die Seite, wie man ihn selbst baut.",
       "link": "iCloud-Link",
       "save": "Speichern",
       "saved": "Gespeichert.",
@@ -1247,7 +1166,7 @@
       "doneTitle": "Bestätigt",
       "doneText": "Mails von {{address}} kommen jetzt in den Eingang von {{name}}.",
       "invalidTitle": "Dieser Link gilt nicht mehr",
-      "invalidText": "Er wurde schon benutzt oder ist abgelaufen. Unter Mein Konto, Hochladen lässt sich ein neuer schicken."
+      "invalidText": "Er wurde schon benutzt oder ist abgelaufen. Unter Mein Konto › Hochladen lässt sich ein neuer schicken."
     },
     "origin": {
       "folder": "Aus dem Eingangsordner",
@@ -2139,11 +2058,6 @@
       "text": "„{{name}}“ kommt danach nicht mehr in nexpaper. Wer es wieder nutzen will, koppelt es neu.",
       "confirm": "Gerät sperren"
     },
-    "apiKey": {
-      "title": "Token löschen?",
-      "text": "Programme mit dem Token „{{name}}“ kommen danach nicht mehr in nexpaper. Das lässt sich nicht zurückholen.",
-      "confirm": "Token löschen"
-    },
     "session": {
       "title": "Sitzung beenden?",
       "text": "Der Browser dieser Sitzung ist danach abgemeldet und muss sich neu anmelden.",
@@ -2406,7 +2320,6 @@
     "index": "davon Suchindex {{size}}",
     "cache": "Seitenbilder (Zwischenspeicher)",
     "exports": "Exporte",
-    "backups": "Sicherungen",
     "partial": "Das Zählen wurde nach einer Weile abgebrochen. Die Zahlen sind mindestens so groß.",
     "local": {
       "title": "Die Datenbank liegt auf einem lokalen Laufwerk.",
@@ -2759,7 +2672,6 @@
     }
   },
   "reminders": {
-    "tab": "Erinnerungen",
     "how": {
       "title": "Wie du erinnert wirst",
       "text": "An Rechnungen, Kündigungen und Garantien in deinen Tresoren. Was in der Nachricht steht: Art, Datum und Titel des Dokuments, nie Betrag oder Inhalt."
@@ -2779,7 +2691,7 @@
     "push": "Push aufs Handy und in den Browser",
     "pushHint_one": "Auf {{count}} Gerät eingeschaltet. Tippen öffnet das Dokument.",
     "pushHint_other": "Auf {{count}} Geräten eingeschaltet. Tippen öffnet das Dokument.",
-    "pushNone": "Noch auf keinem Gerät eingeschaltet. Das geht unter Mein Konto, Verbindungen.",
+    "pushNone": "Noch auf keinem Gerät eingeschaltet. Das geht unter Mein Konto › Benachrichtigungen.",
     "mailTo": "Mail an {{address}}",
     "mail": "Mail",
     "mailHint": "Deine bestätigte Adresse. Ohne Mailserver des Betreibers geht das nicht.",
@@ -2849,7 +2761,7 @@
       "mayGo_one": "Bei einem Dokument ist die Aufbewahrungszeit um. Es steht im Archiv unter „Darf weg“.",
       "mayGo_other": "Bei {{count}} Dokumenten ist die Aufbewahrungszeit um. Sie stehen im Archiv unter „Darf weg“.",
       "all": "Alle Fristen in nexpaper öffnen",
-      "why": "Diese Mail kommt, weil du unter Mein Konto, Erinnerungen die Wochenübersicht eingeschaltet hast.",
+      "why": "Diese Mail kommt, weil du unter Mein Konto › Benachrichtigungen die Wochenübersicht eingeschaltet hast.",
       "short": {
         "pay": "Zahlen",
         "cancel": "Kündigen",
@@ -2861,8 +2773,8 @@
       "trashed_one": "Ein Dokument hat nexpaper in den Papierkorb gelegt, seine Aufbewahrungszeit war um. Dort lässt es sich 30 Tage zurückholen.",
       "trashed_other": "{{count}} Dokumente hat nexpaper in den Papierkorb gelegt, ihre Aufbewahrungszeit war um. Dort lassen sie sich 30 Tage zurückholen."
     },
-    "remindedHow": "Erinnert wirst du so, wie du es unter <account>Mein Konto, Benachrichtigungen</account> eingestellt hast.",
-    "datesNote": "Erinnert werden alle, die im Tresor bearbeiten dürfen, jede Person so, wie sie es unter <account>Mein Konto, Benachrichtigungen</account> eingestellt hat.",
+    "remindedHow": "Erinnert wirst du so, wie du es unter <account>Mein Konto › Benachrichtigungen</account> eingestellt hast.",
+    "datesNote": "Erinnert werden alle, die im Tresor bearbeiten dürfen, jede Person so, wie sie es unter <account>Mein Konto › Benachrichtigungen</account> eingestellt hat.",
     "muted": "stumm",
     "mutedTitle": "Für diesen Tresor hast du Erinnerungen stumm geschaltet.",
     "saved": "Gespeichert.",
@@ -3211,8 +3123,8 @@
       "text": "Die Adresse für {{name}} nimmt danach nichts mehr an. Was schon angekommen ist, bleibt in deinem Eingang. Zurückholen lässt sich die Bitte nicht, du kannst aber eine neue erstellen.",
       "confirm": "Zurückziehen"
     },
-    "off": "Upload-Bitten sind auf diesem Server ausgeschaltet. Der Betreiber schaltet sie unter Einstellungen, Allgemein ein.",
-    "noAddress": "Für eine Upload-Bitte braucht der Server seine öffentliche Adresse. Der Betreiber trägt sie unter Einstellungen, Anmeldung ein.",
+    "off": "Upload-Bitten sind auf diesem Server ausgeschaltet. Der Betreiber schaltet sie unter Server › Allgemein › Funktionen für alle Konten ein.",
+    "noAddress": "Für eine Upload-Bitte braucht der Server seine öffentliche Adresse. Der Betreiber trägt sie unter Server › Anmeldung ein.",
     "cardTitle": "Upload-Bitten",
     "cardText": "Adressen, über die dir jemand ohne Konto Dateien schickt. Alles landet in deinem Eingang.",
     "source": "Upload-Link",
@@ -3232,7 +3144,7 @@
       "title": "Upload-Bitten",
       "allow": "Upload-Bitten erlauben",
       "allowHint": "Jede Person kann dann eine Adresse erstellen, über die ihr jemand ohne Konto Dateien in den Eingang schickt. Aus heißt: niemand erstellt eine, und vorhandene nehmen sofort nichts mehr an.",
-      "noAddress": "Ohne öffentliche Adresse (Einstellungen, Anmeldung) lässt sich keine Bitte erstellen.",
+      "noAddress": "Ohne öffentliche Adresse (Server › Anmeldung) lässt sich keine Bitte erstellen.",
       "overview": "Offen: {{requests}} von {{people}}.",
       "requestCount_one": "{{count}} Bitte",
       "requestCount_other": "{{count}} Bitten",
@@ -3241,8 +3153,8 @@
     "ready": {
       "title": "Upload-Bitten",
       "ok": "Ausgeschaltet. Niemand ohne Konto kann Dateien schicken.",
-      "warn_one": "Eingeschaltet: wer eine Adresse hat, kann Dateien in den Eingang einer Person legen. Gerade nimmt {{count}} Bitte etwas an. Ausschalten unter Einstellungen, Allgemein.",
-      "warn_other": "Eingeschaltet: wer eine Adresse hat, kann Dateien in den Eingang einer Person legen. Gerade nehmen {{count}} Bitten etwas an. Ausschalten unter Einstellungen, Allgemein."
+      "warn_one": "Eingeschaltet: wer eine Adresse hat, kann Dateien in den Eingang einer Person legen. Gerade nimmt {{count}} Bitte etwas an. Ausschalten unter Server › Allgemein › Funktionen für alle Konten.",
+      "warn_other": "Eingeschaltet: wer eine Adresse hat, kann Dateien in den Eingang einer Person legen. Gerade nehmen {{count}} Bitten etwas an. Ausschalten unter Server › Allgemein › Funktionen für alle Konten."
     },
     "page": {
       "asks": "<name>{{name}}</name> bittet dich um Dokumente",

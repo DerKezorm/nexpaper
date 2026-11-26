@@ -284,7 +284,7 @@ describe('the trial run before a restore', () => {
     await check()
     const lines = preview()
     expect(lines).toContain('Zurückspielen macht 2 Geräte wieder gültig, die seit der Sicherung gesperrt oder entfernt wurden.')
-    expect(lines).toContain('Zurückspielen macht 1 Token wieder gültig, der seit der Sicherung gesperrt wurde.')
+    expect(lines).toContain('Zurückspielen macht 1 API-Schlüssel wieder gültig, der seit der Sicherung gesperrt wurde.')
     expect(lines).toContain('Zurückspielen macht 3 Links wieder gültig, die seit der Sicherung zurückgezogen wurden.')
   })
 

@@ -110,7 +110,7 @@ shows the code, new at every start until nexpaper is set up. To choose it yourse
 least 16 characters; a shorter one is passed over and the log says so). The setup asks a display name, a username, an
 address (optional) and the password twice; then the operator invites the others by link. People sign in with their
 username or their address. Everything
-personal is under "My account" for everybody; "Settings" is the operator's and holds the server.
+personal is in the settings under "My account" for everybody; "Server" there is the operator's and holds the server.
 
 ## Reaching nexpaper from outside
 
@@ -124,21 +124,21 @@ with care and at least this:
 3. **Tell nexpaper about the proxy**: `NEXPAPER_PUBLIC_URL` (the address people use), `NEXPAPER_TRUSTED_PROXIES` (the
    proxy's address or network; without it every sign-in seems to come from the proxy and the brake against guessing
    cannot tell people apart) and `NEXPAPER_COOKIE_SECURE: "on"`.
-4. **Require a second factor** (Settings, Sign-in): right after the password every account then sets one up (a code
+4. **Require a second factor** (Settings › Server › Sign-in): right after the password every account then sets one up (a code
    from an app, or a passkey) and keeps the recovery codes. A new installation does not require it; an installation
    updated from 1.12.0 keeps the setting it had. If a lost phone ever locks everybody out, `NEXPAPER_SECOND_FACTOR_OFF=1`
    switches the second factor off until it is removed again (the pages say so plainly).
-5. **Look at "Ready for the internet?"** (Settings, Sign-in). It checks the points above for itself: https, the
+5. **Look at "Ready for the internet?"** (Settings › Server › Sign-in). It checks the points above for itself: https, the
    second factor, your own account with one, the brake, the server secrets, the cookies, the proxy and the backups.
 6. **Backups somewhere else**, as carefully as the data folder. A backup holds every account and the server's secrets
    (`secret.key`) but **not the documents**: those are plain files in `/data/dokumente` and belong in the backup your
    server makes anyway. Try a restore with "Check" now and then.
-7. **Leave the switches closed that you do not need**: API tokens, upload requests and the AI are off until the operator
+7. **Leave the switches closed that you do not need**: API keys, upload requests and the AI are off until the operator
    opens them. Pin a version instead of `latest`, update on purpose, back up before. An upload request is the one way
    in for somebody without an account that takes files: whoever holds its address can put up to its number of files
    into one person's inbox, nothing else (see Inputs, and [SECURITY.md](SECURITY.md)).
 8. Nobody, the operator included, sets a password for somebody else. Whoever forgot theirs gets a link to set a new
-   one: the operator sends it (Settings, Accounts), or, where a mail server and the public address are set, the
+   one: the operator sends it (Settings › Server › Accounts), or, where a mail server and the public address are set, the
    person asks for it on the sign-in page. The link works once and for 24 hours. An operator without a mail server
    who forgot their own password makes one in the container (below).
 9. Passkeys work under the public https address, or on localhost.
@@ -149,8 +149,8 @@ anywhere else (behind a proxy only together with `NEXPAPER_TRUSTED_PROXIES`).
 ## Sign-in with a provider
 
 Besides the password, people can sign in through any provider that speaks OpenID Connect: authentik, Microsoft Entra ID,
-Keycloak, Authelia, Pocket ID. Settings, Sign-in has three cards: the sign-in itself (password sign-in, the public
-address, the second factor), the list of **sign-in providers** (each gets a button on the sign-in page, in the order of
+Keycloak, Authelia, Pocket ID. Settings › Server › Sign-in has, after "Ready for the internet?", three cards: the
+sign-in itself (password sign-in, the public address, the second factor), the list of **sign-in providers** (each gets a button on the sign-in page, in the order of
 the list), and **authentik in one step**.
 
 - **authentik in one step**: give the address of authentik and an API token that may create applications; nexpaper sets
@@ -161,20 +161,20 @@ the list), and **authentik in one step**.
   For Microsoft Entra ID the issuer is `https://login.microsoftonline.com/<tenant>/v2.0`, or `common` or
   `organizations` for several tenants.
 - **Who comes in**: an identity is known by its provider and its subject only, never by its mail address. An account
-  links itself on its own page (Security, with its password); new people come in by invitation, or, where the operator
-  switches "New people get an account" on for a provider, as members. Everybody gets a vault of their own.
+  links itself on its own page (Settings › My account › Security, with its password); new people come in by invitation,
+  or, where the operator switches "New people get an account" on for a provider, as members. Everybody gets a vault of their own.
 - **Addresses from a provider** are shown and can be taken, but they are never confirmed by that alone: a mail to the
   intake counts only for an address the person confirmed by the link nexpaper sends. An address 1.0.1 took from the
-  provider as confirmed waits for that link once after the update (My account, Profile); it needs the mail server.
+  provider as confirmed waits for that link once after the update (Settings › My account › Profile); it needs the mail server.
 - **The second factor**: "The provider checks the second factor itself" is on for a new provider. Off, whoever has a
   second factor in nexpaper is asked for its code after the provider. "Require a second factor" is for signing in with
   a password: an account without a password, and whoever comes in through a provider whose entry has "The provider
-  checks the second factor itself" on, is not made to set one up (a change from 1.0.1). Device tokens and API tokens of
+  checks the second factor itself" on, is not made to set one up (a change from 1.0.1). Paired devices and API keys of
   an account with a password and no second factor of its own wait until it sets one up, also when it signs in through a
   provider that checks one.
 - **Password sign-in** can go off once a provider is active; the operator can always sign in with the password.
 
-**Behind a reverse proxy** the redirect address is the public address (set it in Settings, Sign-in, or the authentik
+**Behind a reverse proxy** the redirect address is the public address (set it in Settings › Server › Sign-in, or the authentik
 card offers the address the browser uses). For the authentik card and the `Secure` flag to see `https`, name the proxy in
 `NEXPAPER_TRUSTED_PROXIES`: nexpaper then believes its `X-Forwarded-For` and its `X-Forwarded-Proto` (the last value the
 proxy wrote), and nobody else's.
@@ -189,7 +189,7 @@ next start of the newer version.
 ## Forgot your password, and no mail server
 
 Whoever can run a command in the container holds the database and the secrets anyway, so a link made there gives
-nothing away. It is the same link the operator makes in Settings, Accounts: it works once and for one day (`--days 7`
+nothing away. It is the same link the operator makes in Settings › Server › Accounts: it works once and for one day (`--days 7`
 or `--days 30` for longer), a new one replaces the one before, and using it ends every browser session and lifts a lock
 after failed sign-ins; paired devices, API keys and passkeys stay, and the account page lists them at the next sign-in
 with "Disconnect all". A link asked for with "Forgot your password?" holds one hour. The second factor
@@ -206,7 +206,7 @@ docker exec -it -u nexpaper nexpaper python -m app.reset_link <account>
 `-u nexpaper` runs it as the user the server runs as (with the ids of `PUID` and `PGID`); as root it refuses, because a
 file root makes in `/data` the server could not open any more. Where the compose file starts the container with a
 `user:` of its own, give that instead. Without an account name it lists the accounts. It prints the whole link when
-the public address is set (Settings, Sign-in, or `NEXPAPER_PUBLIC_URL`), otherwise the path `/reset/...` to open at the
+the public address is set (Settings › Server › Sign-in, or `NEXPAPER_PUBLIC_URL`), otherwise the path `/reset/...` to open at the
 address you use. An unknown or blocked account gets no link and a message, and the command ends with an error. The log
 notes that a link was made this way, and for whom, never the link itself.
 
@@ -221,7 +221,7 @@ Everything lives in `/data`:
 | `backups/`, `logs/`, `locales/` | Backups, the log, extra languages as JSON files. |
 | `dokumente/` | The documents themselves, as readable files (below). Readable without nexpaper. |
 | `cache/`, `uploads/`, `exports/` | Pictures of pages (trimmed to a size you set), uploads in progress, ZIPs for the tax adviser. |
-| `eingang/` | The intake folder, when it is switched on (Settings, Inputs): one subfolder per person. |
+| `eingang/` | The intake folder, when it is switched on (Settings › Server › Inputs): one subfolder per person. |
 
 The documents lie as `<vault>/<year>/<sender>/<date> <kind>.<ending>`, the original as it came, for example
 `Household/2026/City Utilities/2026-10-07 Invoice.pdf`. Beside it lie the searchable copy (`2026-10-07 Invoice
@@ -246,7 +246,8 @@ the largest part of the database, and it is built anew from the recognised text 
 that goes on, with more and more hits). Together with `secret.key` it opens the mail and AI credentials, the addresses
 of open links and the kept PDF passwords, so keep backups protected.
 
-Settings, Storage and backups: automatic daily or weekly with a number to keep, "Back up now", upload, download, check and restore.
+Settings › Server › Storage and backups: automatic every night, every week or every month at a time of day, with a
+number to keep, "Back up now", upload, download, check and restore.
 The **trial run** ("Check", and again in the dialog before a restore) starts the database of the archive the way the
 server would, on a scratch copy, and says whether the archive is whole (a damaged one is told as damaged) and can be
 started, which version made it (one from a newer nexpaper is refused), how many documents it knows, which of their files
@@ -259,7 +260,7 @@ restore it, and copy the documents folder along.
 
 ### Checking the files, and the storage card
 
-Every file has a checksum. Once a week, and on a click (Settings, Storage and backups, "Check files"), nexpaper reads them all in
+Every file has a checksum. Once a week, and on a click (Settings › Server › Storage and backups, card "Check files"), nexpaper reads them all in
 small portions with pauses and compares. A document whose file is missing or changed gets a warning sign in the archive,
 the inbox and on its page, a line in its history, and the operator a notice. The sign goes at the next check, or at once
 when the operator asks for that one document on its page, when a new version of it was read, when a version that could
@@ -271,7 +272,7 @@ left. It warns, here and in the log at the start, when the database lies on a ne
 
 With an image: `docker compose pull && docker compose up -d`. Built from source: pull the new code and run
 `docker compose up -d --build`. nexpaper adds what the database lacks at the start and makes a backup first; nothing
-needs doing by hand. The way back is under Settings, Storage and backups.
+needs doing by hand. The way back is under Settings › Server › Storage and backups.
 
 Going back from 1.1.0 to 1.0.1: there, the sign-in through the provider works only if its entry had "The provider
 checks the second factor itself" on; otherwise only the password does. Coming up to 1.1.0 again brings everything back.
@@ -279,7 +280,7 @@ checks the second factor itself" on; otherwise only the password does. Coming up
 **From 1.4.0 on there is no way back to an older version.** 1.4.0 changes the database (schema 11 to 13: deadlines,
 keeping times, reminders; 1.4.1 adds the switch of the kinds, schema 14), and an older nexpaper does not open it: it
 stops at the start with a message that the database is newer. That includes going back to 1.1.0 or 1.0.1, which was possible until 1.3.0. Make a backup before you
-update (Settings, Storage and backups; nexpaper also makes one itself before it changes the database). The only way back is to
+update (Settings › Server › Storage and backups; nexpaper also makes one itself before it changes the database). The only way back is to
 restore that backup with the older version, and what was entered after the update is lost with it. The first start after
 the update sends no wave of reminders for deadlines that were entered before.
 
@@ -315,9 +316,9 @@ already there once, in the background; nothing needs doing by hand.
 
 ## AI
 
-The AI is off until the operator chooses a service, for everybody (Settings, AI): none, a **local model** in your own
+The AI is off until the operator chooses a service, for everybody (Settings › Server › AI provider): none, a **local model** in your own
 network (Ollama or anything that speaks `/v1/chat/completions`), a service on the internet that speaks the same, or one
-that speaks the Messages API. Every person can switch it off for their account. It proposes title, sender, kind, date and
+that speaks the Messages API. Every person can switch it off for their account (Settings › My account › AI). It proposes title, sender, kind, date and
 amount for a new document where nothing surer (an e-invoice, a rule, the same sender as last time, the text itself)
 knew them; a proposal is only a proposal, and the inbox says where each field came from.
 
@@ -325,7 +326,7 @@ knew them; a proposal is only a proposal, and the inbox says where each field ca
   would otherwise spend the short answer on its thoughts and give back nothing. A local server that does not know the
   field is asked once more without it.
 - A local service must lie in your own network and a service on the internet must be reached over https: an address
-  that points elsewhere is refused, when it is saved and at every request. The API token is sealed and never shown again.
+  that points elsewhere is refused, when it is saved and at every request. The key of the service is sealed and never shown again.
 - What goes out is the text of the first two pages and the list of kinds the document can have, nothing else. Documents
   in personal vaults stay away from it unless the operator lets them in.
 - The operator sets a **limit of documents per day** for the whole server (200 from the start, 0 for none), so that a
@@ -399,7 +400,7 @@ Dates on a document come with a kind: due, contract until, warranty until, keep 
 Archive and Vaults, with the number for the next 14 days) lists what falls due, what has to be cancelled and what a
 warranty still covers, from every vault where you may edit: overdue, the next two weeks, later. A deadline can be marked
 as done (paid, cancelled) and opened again, or put off for you alone by a day, three days or a week. Whoever does not
-use deadlines switches them off for themselves (My account, Reminders): no menu item, no number, no reminders, no
+use deadlines switches them off for themselves (Settings › My account › Notifications, "Use deadlines"): no menu item, no number, no reminders, no
 weekly overview, no filter "Deadline" in the archive, and no "paid" or "later" on a document. The dates on the
 documents stay, the search words with `deadline:` keep working, and everybody else is unaffected. They are on from the
 start.
@@ -408,7 +409,7 @@ start.
   nexpaper works out the last day to cancel and shows it beside the field. Without a cancellation the end moves on by the
   renewal after it has passed, once per end, with a line in the history. When a notice has to arrive is written in the
   contract; nexpaper only does the sums.
-- **Reminders** (My account, Reminders). Everybody who may edit in a vault is reminded of its deadlines, at 8 in the
+- **Reminders** (Settings › My account › Notifications). Everybody who may edit in a vault is reminded of its deadlines, at 8 in the
   morning in their own time zone: an invoice 3 days ahead, the last day to cancel 14 days ahead, a warranty 30 days
   ahead (each changeable), and once more on the day itself unless it is done. Way: push, mail, or a **weekly overview**
   by mail on Mondays, only when something is coming up. A person can mute single vaults; somebody who may only read gets
@@ -438,7 +439,7 @@ start.
 
 ## Push
 
-Notices arrive by Web Push, to every device a person signs up (My account, Connections): of a new sign-in, of an
+Notices arrive by Web Push, to every device a person signs up (Settings › My account › Notifications): of a new sign-in, of an
 export that is ready or failed or a finished import from Paperless, of a second factor the operator reset or an account
 the operator unlinked from a sign-in provider; operators also hear when the check of the files finds something wrong or
 a restore fails. It needs https (or localhost). On an iPhone it works only for the app added to the home screen (Share,
@@ -448,7 +449,7 @@ the title (see Deadlines, reminders and keeping times).
 
 ## On the phone
 
-A phone opens on the **quick upload** (once per visit; a switch under My account, Upload): take a photo, choose a file,
+A phone opens on the **quick upload** (once per visit; a switch under Settings › My account › Upload): take a photo, choose a file,
 see what was uploaded last and what waits in the inbox, and choose the vault files go to. **The camera** finds the edges
 of the page by itself (OpenCV in the browser, served by nexpaper itself and loaded only on that page), takes the picture
 once the page holds still, lets the corners be pulled by hand, offers colour, greyscale and black and white, and makes
@@ -457,15 +458,15 @@ one PDF of several pages. It needs https (or localhost), like every camera in a 
 - **Android**: nexpaper added to the home screen stands in the share menu of every app. The shared files stay on the
   phone until the person taps "Upload".
 - **iPhone**: Safari puts no web app into the share menu, so a shortcut steps in. iOS imports only shortcuts signed by
-  Apple, so nexpaper cannot ship the file: My account explains how to build it in four steps with a key that only
+  Apple, so nexpaper cannot ship the file: Settings › My account › Connections explains how to build it in four steps with a key that only
   uploads, and the operator can share a finished one by an iCloud link
   ([docs/iphone-shortcut.md](docs/iphone-shortcut.md)).
-- **Pairing a device**: a QR code under My account, valid for five minutes and once, or OAuth 2 with PKCE for apps. Each
-  device gets a token of its own and stands with the signed-in devices, where it can be signed out.
+- **Pairing a device**: a QR code under Settings › My account › Connections › Devices, valid for five minutes and once,
+  or OAuth 2 with PKCE for apps. Each device gets a key of its own and stands in that list, where it can be disconnected.
 
 ## Inputs
 
-Besides the browser and the phone, documents come in two more ways (Settings, Inputs). Nothing from either is filed by
+Besides the browser and the phone, documents come in two more ways (Settings › Server › Inputs). Nothing from either is filed by
 itself: it all waits in an inbox.
 
 - **Intake folder**: a folder in the container (`/data/eingang` unless you name another one, mounted as a volume for a
@@ -474,7 +475,7 @@ itself: it all waits in an inbox.
   `abgelehnt/` beside it with the reason. Files in the folder itself or in a subfolder nobody has go to the operator,
   marked unknown. Links are not followed, hidden and temporary files are left alone. After a person changes their
   username, the subfolder and the plus address of the former name keep reaching them (a former name never goes to
-  anybody else); My account, Upload lists them.
+  anybody else); Settings › My account › Upload lists them.
 - **Mailbox**: one IMAP mailbox for the whole server, fetched every 5 minutes. PDF, pictures and e-invoices as XML are
   taken from the mails, also from forwarded ones; the mails themselves do not become documents, unless you switch on
   "Take mails without an attachment as a document" (off from the start): then a mail without any attachment that comes
@@ -483,7 +484,7 @@ itself: it all waits in an inbox.
   only, nothing in it is loaded) in that person's inbox, titled with the subject. Never for unknown senders, never
   through `paper+<account>@` alone, at most 50 a day per person and 200 KB of text each. Without such a verdict of your
   mail server no text is taken. A mail belongs to the
-  person whose confirmed address it comes from (My account, Upload) or who is named in `paper+<account>@`; everything
+  person whose confirmed address it comes from (Settings › My account › Upload) or who is named in `paper+<account>@`; everything
   else goes to the operator, marked unknown (or stays in the mailbox, if you choose so). Once every part was taken the
   mail is marked read, moved to `nexpaper` or deleted; a mail with parts over the limits stays and is flagged. The first
   start takes only the unread mails. TLS or STARTTLS is required (without it only for a server on the same machine), a
@@ -493,8 +494,8 @@ itself: it all waits in an inbox.
   tax office or the property manager, who drops files there. They land in your inbox in your own vault, from the name
   you gave the request and marked unknown; nothing is filed by itself, and a rule may propose fields but never moves
   such a document to another vault. A request lasts at most as long as a link, takes 10 files unless you say otherwise
-  (50 at most), and you withdraw it whenever you like (My account, Upload, or the dialog). **Off from the start**: the
-  operator switches them on under Settings, General, and they need the public address of the server. The page behind
+  (50 at most), and you withdraw it whenever you like (Settings › My account › Upload, or the dialog). **Off from the
+  start**: the operator switches them on under Settings › Server › General › Features for all accounts, and they need the public address of the server. The page behind
   the address shows who asks, for whom, and how many files still go; never what arrived already. You get a notice (at
   most one per request and hour) with the name of the request and the number of files, never a file name.
 
@@ -507,13 +508,14 @@ protected file and says so. A PDF that only locks printing or changes is opened 
 
 Tick "Remember for future documents" and give it a name ("Payslip"): protected PDFs you upload yourself later, or that
 come into your own vault through the intake folder or the mailbox, are opened with it by themselves. Up to 10 per
-person, stored encrypted with the server's secret and never shown again; My account, Upload lists them by name to
+person, stored encrypted with the server's secret and never shown again; Settings › My account › Upload lists them by name to
 rename or delete. Nobody else's are ever tried, also not on a file somebody else uploads to your document, and the
 operator sees none of them. A backup together with `secret.key` can open them, see [SECURITY.md](SECURITY.md).
 
 ## From Paperless, and for the tax adviser
 
-- **Import from Paperless-ngx** (Settings, Import; the operator): give the address and an API token, look first (how
+- **Import from Paperless-ngx** (Settings › Server › Import; the operator): give the address and an API token of
+  Paperless, look first (how
   many documents, tags, correspondents and types, who owns what), choose a person here for each owner and whether each
   document goes into the own vault of its person, everything into one vault, or a shared vault for each storage path
   (named after it; a vault of that name that is here already is used, documents without a path go to the own vault of
@@ -527,7 +529,7 @@ operator sees none of them. A backup together with `secret.key` can open them, s
   archive: the searchable PDFs, the originals if wanted, e-invoices as XML and a list as CSV (Excel opens it as it is),
   in folders as on the disk. It is made and fetched in the browser, packed in the background, and a notice says when it
   is ready. Instead of downloading
-  it, the ZIP can go to the tax adviser as a link without an account, valid as long as links are (Settings, General);
+  it, the ZIP can go to the tax adviser as a link without an account, valid as long as links are (Settings › Server › General › Features for all accounts);
   it shows when it was opened and can be revoked. With "Take the documents that go with them" the delivery note comes
   along with its invoice even outside the period (only what you see in your vaults), and the list names them in a
   column of its own.
@@ -549,8 +551,9 @@ changing its pages: the page tools, joining, splitting, a new version or an old 
 ## For programs
 
 Everything the web app does goes through `/api/v1`; the web app uses nothing else. A phone or a later app pairs with a
-**device token** (My account, Connections) and acts with the rights of its account; scripts use an **API token** that
-only reads or only uploads, never more than its account may (off until the operator switches it on; 120 requests a
+**device token** (Settings › My account › Connections › Devices) and acts with the rights of its account; scripts use an
+**API key** (Settings › My account › Connections › API keys) that
+only reads or only uploads, never more than its account may (off until the operator switches it on under Settings › Server › General › Interfaces; 120 requests a
 minute, 50 uploads an hour). The description is served at `/api/v1/docs` and, for machines, at `/api/v1/openapi.json`;
 [docs/api.md](docs/api.md) says how to sign in.
 
@@ -559,7 +562,7 @@ minute, 50 uploads an hour). The description is served at `/api/v1/docs` and, fo
 - Passwords are hashed with Argon2id. Five failed sign-ins lock an account and an address for 15 minutes; with a second
   factor, the password alone opens nothing. A session ends after 30 days without use (`NEXPAPER_SESSION_DAYS`), or after
   12 hours when "stay signed in" was not ticked, and every device can be signed out on its own.
-- Rights are checked on the server for every request. A wrong device token or API token counts against the sender like a
+- Rights are checked on the server for every request. A wrong device token or API key counts against the sender like a
   wrong password. A device token never changes the way into the account (password, second factor, passkeys), never
   reaches the operator's side (settings, accounts, backups, the log) and never pairs another device; a lost phone is
   blocked in the list and stops at once.

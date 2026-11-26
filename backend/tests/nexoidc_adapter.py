@@ -56,7 +56,7 @@ class Adapter(StandardAdapter):
     trusted_before = False
     old_callback_paths: tuple[str, ...] = ()
     operator_name = OPERATOR_NAME
-    account_page = "/konto"
+    account_page = "/settings/security"
 
     def start(self) -> None:
         # tests/conftest.py emptied the database before this test.

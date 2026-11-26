@@ -46,7 +46,8 @@ APP_NAME = "nexpaper"
 API_PREFIX = "/api/v1"
 #: Where nexpaper's sign-in and account pages are, as the module sends the browser there.
 LOGIN_PAGE = "/login"
-ACCOUNT_PAGE = "/konto"
+#: My account › Security, where the providers are (``/konto`` of before still leads there).
+ACCOUNT_PAGE = "/settings/security"
 HOME = "/"
 
 

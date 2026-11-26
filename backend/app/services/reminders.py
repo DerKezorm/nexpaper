@@ -304,8 +304,8 @@ WORDS: dict[str, dict[str, str]] = {
         "test_title": "Testnachricht von nexpaper",
         "test_body": "So kommen deine Erinnerungen an. Tippen öffnet die Seite Fristen.",
         "open": "Öffnen: {link}",
-        "single_why": "Diese Mail kommt, weil du unter Mein Konto, Erinnerungen die Erinnerung per Mail eingeschaltet "
-                      "hast.",
+        "single_why": "Diese Mail kommt, weil du unter Mein Konto › Benachrichtigungen die Erinnerung per Mail "
+                      "eingeschaltet hast.",
         "week_subject": "Diese Woche: {n} {fristen}", "week_none": "Diese Woche: keine Fristen",
         "frist": "Frist", "fristen": "Fristen", "overdue_part": ", {n} überfällig",
         "hello": "Guten Morgen {name}, das steht diese Woche an:",
@@ -319,7 +319,8 @@ WORDS: dict[str, dict[str, str]] = {
                         "Dort lassen sie sich 30 Tage zurückholen.",
         "and_more": "und {n} weitere",
         "all": "Alle Fristen in nexpaper öffnen",
-        "week_why": "Diese Mail kommt, weil du unter Mein Konto, Erinnerungen die Wochenübersicht eingeschaltet hast.",
+        "week_why": "Diese Mail kommt, weil du unter Mein Konto › Benachrichtigungen die Wochenübersicht eingeschaltet "
+                    "hast.",
     },
     "en": {
         "pay": "Pay by {day}", "cancel": "Cancel by {day}", "ends": "Contract ends {day}",
@@ -335,7 +336,7 @@ WORDS: dict[str, dict[str, str]] = {
         "test_title": "Test message from nexpaper",
         "test_body": "This is how your reminders arrive. A tap opens the deadlines.",
         "open": "Open: {link}",
-        "single_why": "This mail comes because you switched on reminders by mail under My account, Reminders.",
+        "single_why": "This mail comes because you switched on reminders by mail under My account › Notifications.",
         "week_subject": "This week: {n} {fristen}", "week_none": "This week: no deadlines",
         "frist": "deadline", "fristen": "deadlines", "overdue_part": ", {n} overdue",
         "hello": "Good morning {name}, this is what comes up this week:",
@@ -349,7 +350,7 @@ WORDS: dict[str, dict[str, str]] = {
                         "there for 30 days.",
         "and_more": "and {n} more",
         "all": "Open all deadlines in nexpaper",
-        "week_why": "This mail comes because you switched on the weekly overview under My account, Reminders.",
+        "week_why": "This mail comes because you switched on the weekly overview under My account › Notifications.",
     },
 }
 

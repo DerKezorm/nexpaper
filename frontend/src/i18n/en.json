@@ -25,19 +25,6 @@
     "title": "Settings",
     "saved": "Saved.",
     "ownPassword": "Your own password",
-    "parts": {
-      "accounts": "Accounts",
-      "signin": "Sign-in",
-      "mail": "Mail",
-      "api": "API",
-      "backups": "Backup",
-      "languages": "Languages",
-      "log": "Log",
-      "ai": "AI",
-      "push": "Web Push",
-      "sharing": "Sharing",
-      "storage": "Storage"
-    },
     "language": {
       "hint": "(applies on all your devices)"
     },
@@ -48,37 +35,9 @@
       "quickStartHint": "\"All\" leads from there into the whole app."
     },
     "areas": {
-      "about": {
-        "title": "About nexpaper",
-        "text": "Version, licence, source and whether there is a newer version."
-      },
-      "accounts": {
-        "title": "Accounts",
-        "text": "Who uses nexpaper, with their role, open invitations and the API tokens of all accounts."
-      },
-      "aiSetup": {
-        "title": "AI",
-        "text": "Which provider makes suggestions when filing, and within which limits."
-      },
-      "api": {
-        "title": "API",
-        "text": "The interface for apps and scripts, and the iPhone shortcut."
-      },
-      "appearance": {
-        "title": "Appearance",
-        "text": "How nexpaper looks on all your devices, and how the archive starts."
-      },
-      "connections": {
-        "title": "Connections",
-        "text": "Devices, apps and tokens that work with your documents, and notifications on your devices."
-      },
       "filing": {
         "title": "Filing",
         "text": "The kinds for everyone and the rules of the server."
-      },
-      "general": {
-        "title": "General",
-        "text": "Limits, features for all accounts, Web Push and own languages."
       },
       "import": {
         "title": "Import",
@@ -88,14 +47,6 @@
         "title": "Inputs",
         "text": "Intake folder and mailbox, through which documents arrive on their own."
       },
-      "log": {
-        "title": "Log",
-        "text": "What the server writes down, to look up when something goes wrong."
-      },
-      "mail": {
-        "title": "Mail",
-        "text": "The mail server nexpaper sends invitations, reset links and notices through."
-      },
       "myAi": {
         "title": "AI",
         "text": "Whether the AI helps filing your documents."
@@ -103,26 +54,6 @@
       "ocr": {
         "title": "Text recognition",
         "text": "In which languages nexpaper reads text in scans, photos and PDFs."
-      },
-      "profile": {
-        "title": "Profile",
-        "text": "Picture, name, mail address and language of your account."
-      },
-      "reminders": {
-        "title": "Reminders",
-        "text": "Whether and how nexpaper reminds you of deadlines."
-      },
-      "security": {
-        "title": "Security",
-        "text": "Password, second factor, passkeys, providers and signed-in devices."
-      },
-      "signIn": {
-        "title": "Sign-in",
-        "text": "How everyone signs in: password, public address, second factor and providers."
-      },
-      "storage": {
-        "title": "Storage and backups",
-        "text": "The space in use, the backups of the server and the check of the files."
       },
       "upload": {
         "title": "Upload",
@@ -184,7 +115,7 @@
       "title": "Set up your second factor",
       "text": "The operator requires a second factor for every account that signs in with a password. Set it up to go on.",
       "scan": "Scan the code with an authenticator app, or type in the key. Then the code the app shows.",
-      "passkeyLater": "Rather without an app? You can add a passkey afterwards under My account → Security.",
+      "passkeyLater": "Rather without an app? You can add a passkey afterwards under My account › Security.",
       "leave": "Sign out"
     },
     "codes": {
@@ -218,7 +149,7 @@
       "doneText": "{{address}} counts for your account now.",
       "oldTold": "We told the old address about the change.",
       "invalidTitle": "Link not valid",
-      "invalidText": "This link does not work any more: it was used, has run out or was withdrawn. Send yourself a new one under My account.",
+      "invalidText": "This link does not work any more: it was used, has run out or was withdrawn. Send yourself a new one under My account › Profile.",
       "toAccount": "To My account"
     }
   },
@@ -242,16 +173,6 @@
     }
   },
   "me": {
-    "title": "My account",
-    "tabs": {
-      "profile": "Profile",
-      "security": "Security",
-      "looks": "Look",
-      "ai": "AI",
-      "devices": "Devices and apps",
-      "upload": "Upload",
-      "reminders": "Reminders"
-    },
     "profile": {
       "text": "How the others see you on your documents, notes and in the history.",
       "displayName": "Display name",
@@ -286,7 +207,7 @@
       "mineHint": "Off: your uploads get only rules and what nexpaper reads itself, and your text never goes to a model.",
       "byOperator": "Set by the operator:",
       "none": "The operator has not set up an AI. Until then there are only rules and what nexpaper reads from the text itself; your choice here is kept for later.",
-      "noneOperator": "No AI is set up. You choose a provider under <settings>Server › AI</settings>; your choice here is kept until then."
+      "noneOperator": "No AI is set up. You choose a provider under <settings>Server › AI provider</settings>; your choice here is kept until then."
     },
     "push": {
       "title": "Notifications on your devices",
@@ -341,7 +262,7 @@
       "removed": "Passkey removed.",
       "added": "Passkey added.",
       "unavailable": "Passkeys work only over https (or localhost) and in browsers that know them.",
-      "noAddressOperator": "Enter the public address first (<settings>Settings → Sign-in</settings>).",
+      "noAddressOperator": "Enter the public address first (<settings>Server › Sign-in</settings>).",
       "noAddressMember": "Your operator has to enter the public address first."
     },
     "oidc": {
@@ -400,7 +321,7 @@
     "template": "Download the template",
     "languageCode": "Language code",
     "upload": "Upload a language",
-    "languageAdded": "Language added. It appears under My account, Profile.",
+    "languageAdded": "Language added. It appears under My account › Profile.",
     "ai": {
       "title": "AI proposals in the inbox",
       "text": "Applies to everybody. The AI proposes title, sender, kind, date and amount; only what a person confirms is filed. Rules always come first.",
@@ -436,7 +357,7 @@
       "keysText": "nexpaper made a key pair of its own. Making a new one signs every device off; each person has to sign them up again.",
       "renew": "Make new",
       "renewTitle": "Make a new key pair?",
-      "renewText": "Every device is signed off. Each person has to sign them up again under My account, Connections.",
+      "renewText": "Every device is signed off. Each person has to sign them up again under My account › Notifications.",
       "renewed": "New key pair made. Every device is signed off.",
       "probe": "Test to my devices",
       "hosts": "More push services",
@@ -479,8 +400,8 @@
       "index": "The search is built anew afterwards. That takes a while, and until then it finds more and more.",
       "revivedDevices_one": "Restoring makes {{count}} device valid again that was locked out or removed since the backup.",
       "revivedDevices_other": "Restoring makes {{count}} devices valid again that were locked out or removed since the backup.",
-      "revivedKeys_one": "Restoring makes {{count}} token valid again that was blocked since the backup.",
-      "revivedKeys_other": "Restoring makes {{count}} tokens valid again that were blocked since the backup.",
+      "revivedKeys_one": "Restoring makes {{count}} API key valid again that was blocked since the backup.",
+      "revivedKeys_other": "Restoring makes {{count}} API keys valid again that were blocked since the backup.",
       "revivedLinks_one": "Restoring makes {{count}} link valid again that was withdrawn since the backup.",
       "revivedLinks_other": "Restoring makes {{count}} links valid again that were withdrawn since the backup.",
       "revivedPdfPasswords_one": "Restoring brings back {{count}} remembered PDF password that was deleted since the backup.",
@@ -495,7 +416,7 @@
       "schema": "Machine readable",
       "schemaText": "OpenAPI, for tools and code generators",
       "pair": "Connect iPhone or iPad",
-      "pairText": "QR code from My account, a key of its own for each device",
+      "pairText": "QR code from My account › Connections, a key of its own for each device",
       "auth": "How programs sign in",
       "authText": "device or API key in the header of every request; they need no password and no session"
     }
@@ -505,7 +426,7 @@
     "account_blocked": "This account is blocked.",
     "account_locked": "Too many wrong tries. The account waits a quarter of an hour.",
     "already_set_up": "nexpaper is set up already.",
-    "api_off": "The operator has not switched API tokens on.",
+    "api_off": "The operator has not switched the programming interface (API) on.",
     "avatar_not_a_picture": "This is not a picture nexpaper takes (JPEG, PNG, WebP, GIF, HEIC or AVIF).",
     "backup_damaged": "The backup is damaged. Nothing was changed.",
     "backup_invalid": "This is not a nexpaper backup.",
@@ -551,16 +472,16 @@
     "password_missing": "Give the password.",
     "password_too_short": "The password is too short, at least 12 characters.",
     "provider_first": "Set up a sign-in provider first, or nobody but you gets in any more.",
-    "public_url_missing": "For mail, nexpaper needs its public address; the operator sets it under Settings.",
+    "public_url_missing": "For mail, nexpaper needs its public address; the operator sets it under Server › Sign-in.",
     "second_factor_expired": "Too many wrong codes, or waited too long. Start over with the password.",
     "second_factor_setup_required": "Set up your second factor first.",
     "second_factor_unavailable": "The second factor cannot be checked on this installation. Ask the operator to reset it.",
     "secret_required": "Enter the client secret.",
     "setup_code_wrong": "The setup code is wrong. It stands in the server's log.",
     "sign_in_required": "Sign in first.",
-    "slow_down": "Too many requests with this token. Wait a minute.",
+    "slow_down": "Too many requests with this key. Wait a minute.",
     "token_invalid": "No valid device token.",
-    "token_wrong_kind": "This is the wrong kind of token for this route: device tokens and API tokens are two different things.",
+    "token_wrong_kind": "This is the wrong kind of access for this route: a device and an API key are two different things.",
     "too_large": "The file is larger than allowed, at most {{max_mb}} MB.",
     "too_many_attempts": "Too many attempts. Wait a little and try again.",
     "totp_code_wrong": "The code is not right. A code from the app: check the time on the phone. A recovery code works once only.",
@@ -573,7 +494,7 @@
     "wrong_credentials": "Name or password is wrong.",
     "wrong_password": "The password is wrong.",
     "ai_off": "No AI is set up on this server.",
-    "ai_switched_off": "You switched the AI off for yourself (My account, AI).",
+    "ai_switched_off": "You switched the AI off for yourself (My account › AI).",
     "ai_incomplete": "The AI is not set up completely yet. The operator has to enter the address and the model.",
     "ai_provider_unknown": "There is no such kind of AI service.",
     "ai_address_missing": "Give the address of the service.",
@@ -598,7 +519,7 @@
     "ai_server_busy": "The AI is busy right now. Try again in a moment.",
     "push_endpoint_invalid": "This is not the address of a push service.",
     "push_endpoint_refused": "This address is never reached.",
-    "push_service_unknown": "nexpaper sends nothing to this push service. The operator can add it under Settings → Web Push.",
+    "push_service_unknown": "nexpaper sends nothing to this push service. The operator can add it under Server › General › Web Push.",
     "push_unreachable": "The server cannot reach the push service.",
     "push_keys_invalid": "The keys of this device are not valid.",
     "push_too_many_devices": "At most {{max}} devices. Sign one off first.",
@@ -623,12 +544,12 @@
     "passkey_unsupported": "This browser cannot use passkeys here.",
     "reset_invalid": "This link does not work any more.",
     "reset_off": "This is not set up on this server. Ask the operator.",
-    "use_account_page": "You change your own password under My account.",
-    "key_invalid": "No valid API token.",
+    "use_account_page": "You change your own password under My account › Security.",
+    "key_invalid": "No valid API key.",
     "browser_only": "This needs a signed-in browser, not a device.",
     "device_name_invalid": "The name of a device has 1 to 80 characters, without control characters.",
     "too_many_devices": "That is enough devices: block one first.",
-    "too_many_keys": "That is enough tokens: delete one first.",
+    "too_many_keys": "That is enough API keys: delete one first.",
     "email_same": "This is your confirmed address already.",
     "email_link_invalid": "This link does not work any more.",
     "forbidden": "Your right does not allow this.",
@@ -683,7 +604,7 @@
     "incomplete": "Not everything has arrived yet.",
     "checksum_mismatch": "The file did not arrive whole, its checksum is wrong. Try again.",
     "upload_expired": "This upload has run out. Start it again.",
-    "key_scope": "This token is not meant for this.",
+    "key_scope": "This API key is not meant for this.",
     "not_ready": "The document is still being read.",
     "render_failed": "This page could not be drawn.",
     "nothing_to_retry": "This document was read without a problem.",
@@ -695,7 +616,7 @@
     "oauth_redirect_refused": "nexpaper may not send the app back to this address.",
     "oauth_invalid_request": "The app’s request is incomplete.",
     "oauth_pkce_required": "The app asks without the protection it needs (PKCE with S256).",
-    "upload_limit": "This token has brought {{per_hour}} files this hour already.",
+    "upload_limit": "This API key has brought {{per_hour}} files this hour already.",
     "shortcut_link_invalid": "Enter the iCloud link of the shortcut (https://www.icloud.com/shortcuts/…).",
     "query_too_long": "The search is too long. At most {{max}} characters.",
     "too_many_terms": "Too many words and filters in one search. At most {{max}}.",
@@ -725,7 +646,7 @@
     "invalid_memo": "A note has at most {{max}} characters.",
     "wrong_pdf_password": "This password does not open the PDF. The document stays as it was.",
     "pdf_password_too_often": "Too many tries for this PDF. Try again in an hour.",
-    "too_many_pdf_passwords": "You already remember {{max}} passwords. Delete one under My account, Upload.",
+    "too_many_pdf_passwords": "You already remember {{max}} passwords. Delete one under My account › Upload.",
     "not_protected": "This document no longer waits for a password.",
     "invalid_pdf_password": "The password may have 1 to {{max}} characters.",
     "invalid_pdf_password_name": "The name may have 1 to {{max}} characters, without control characters.",
@@ -788,7 +709,7 @@
     "disconnectNamed": "Disconnect {{name}}"
   },
   "apiKeys": {
-    "offOperator": "Allow them under Settings, General.",
+    "offOperator": "Allow them under Server › General › Interfaces.",
     "scope": {
       "readHint": "Read documents, vaults and the search, as far as your account may. It cannot change anything.",
       "uploadHint": "For a scanner, a script or the shortcut: puts documents into an inbox and reads nothing."
@@ -1098,22 +1019,22 @@
       "text": "On the iPhone nexpaper is missing from the share menu, because Safari does not allow it for web apps. A shortcut steps in: it then stands in the share menu of every app and sends PDFs and photos straight to your inbox.",
       "load": "Load the shortcut",
       "link1": "On the iPhone, tap “Load the shortcut” and add it.",
-      "link2": "While it is added it asks for the address and a token: “Token for the shortcut” below shows both.",
+      "link2": "While it is added it asks for the address and a key: “Key for the shortcut” below shows both.",
       "link3": "In Mail, Files or the banking app: Share, then “Nach nexpaper”.",
       "build": "The operator has not shared a finished shortcut yet. This is how you build it in two minutes:",
-      "build1": "Tap “Token for the shortcut” below. The address and a token for uploading then stay there to copy.",
+      "build1": "Tap “Key for the shortcut” below. The address and a key for uploading then stay there to copy.",
       "build2": "In the Shortcuts app, make a new shortcut “Nach nexpaper”, switch on “Show in Share Sheet” under Details, with PDFs and images as input.",
       "build3": "Action “Get Contents of URL”: the address from below, method POST, header “Authorization” with the value from below, request body Form, field “file” as a file with the Shortcut Input.",
       "build4": "Action “Show Notification” with “It is in the inbox.” after it, done.",
       "android": "On Android nexpaper stands in the share menu by itself once it is on the home screen.",
-      "key": "Token for the shortcut",
-      "shown": "A token for uploading, for the shortcut, shown only now. It can only upload and then stands with the API tokens, where you can delete it.",
+      "key": "Key for the shortcut",
+      "shown": "An API key for uploading, for the shortcut, shown only now. It can only upload and then stands under “API keys”, where you can delete it.",
       "address": "Address",
       "header": "Value of the header Authorization",
       "done": "Done",
       "keyName": "iPhone shortcut",
-      "warning": "Never put your token into a shortcut you share with others: whoever has it can upload into your account. To share a shortcut, set up the address and the token as Import Questions.",
-      "off": "The shortcut needs a token for uploading, and the operator has not switched API tokens on."
+      "warning": "Never put your key into a shortcut you share with others: whoever has it can upload into your account. To share a shortcut, set up the address and the key as Import Questions.",
+      "off": "The shortcut needs an API key for uploading, and the operator has not switched the programming interface (API) on."
     },
     "vault": {
       "title": "Where your uploads go",
@@ -1122,7 +1043,7 @@
     },
     "oauth": {
       "title": "Pair {{app}} with your account?",
-      "text": "The app gets a key of its own for your account and may do everything you may, except change settings and pair more devices. You can block it any time under My account, Security.",
+      "text": "The app gets a key of its own for your account and may do everything you may, except change settings and pair more devices. You can disconnect it any time under My account › Connections.",
       "device": "The device will be called “{{name}}”.",
       "allow": "Allow",
       "deny": "Refuse",
@@ -1146,14 +1067,12 @@
       "revoked": "{{name}} is disconnected."
     },
     "keys": {
-      "upload": "Token for uploading",
-      "uploadButton": "Token for uploading (for scanners and apps)",
       "scope": "May",
       "read": "read only"
     },
     "settings": {
       "title": "Shortcut for the iPhone",
-      "text": "A finished shortcut “Nach nexpaper” for everybody: build it on an iPhone, share it in Shortcuts as an iCloud link and enter the link here. My account then offers “Load the shortcut”. Without a link the page explains how to build it.",
+      "text": "A finished shortcut “Nach nexpaper” for everybody: build it on an iPhone, share it in Shortcuts as an iCloud link and enter the link here. My account › Connections then offers “Load the shortcut”. Without a link the page explains how to build it.",
       "link": "iCloud link",
       "save": "Save",
       "saved": "Saved.",
@@ -1247,7 +1166,7 @@
       "doneTitle": "Confirmed",
       "doneText": "Mails from {{address}} now come into the inbox of {{name}}.",
       "invalidTitle": "This link is not valid any more",
-      "invalidText": "It was used already or has run out. A new one can be sent under My account, Upload."
+      "invalidText": "It was used already or has run out. A new one can be sent under My account › Upload."
     },
     "origin": {
       "folder": "From the intake folder",
@@ -2139,11 +2058,6 @@
       "text": "\"{{name}}\" can no longer reach nexpaper afterwards. To use it again, pair it anew.",
       "confirm": "Lock out device"
     },
-    "apiKey": {
-      "title": "Delete the token?",
-      "text": "Programs with the token \"{{name}}\" can no longer reach nexpaper afterwards. This cannot be undone.",
-      "confirm": "Delete token"
-    },
     "session": {
       "title": "End the session?",
       "text": "The browser of this session is signed out afterwards and has to sign in again.",
@@ -2406,7 +2320,6 @@
     "index": "of which search index {{size}}",
     "cache": "Page pictures (cache)",
     "exports": "Exports",
-    "backups": "Backups",
     "partial": "Counting was cut off after a while. The numbers are at least this large.",
     "local": {
       "title": "The database lies on a local drive.",
@@ -2759,7 +2672,6 @@
     }
   },
   "reminders": {
-    "tab": "Reminders",
     "how": {
       "title": "How you are reminded",
       "text": "Of bills, notice periods and warranties in your vaults. What a message says: the kind, the day and the title of the document, never an amount or its contents."
@@ -2779,7 +2691,7 @@
     "push": "Push to the phone and the browser",
     "pushHint_one": "Switched on on {{count}} device. A tap opens the document.",
     "pushHint_other": "Switched on on {{count}} devices. A tap opens the document.",
-    "pushNone": "Not switched on on any device yet. That is under My account, Connections.",
+    "pushNone": "Not switched on on any device yet. That is under My account › Notifications.",
     "mailTo": "Mail to {{address}}",
     "mail": "Mail",
     "mailHint": "Your confirmed address. Without the operator's mail server this does not work.",
@@ -2849,7 +2761,7 @@
       "mayGo_one": "The keeping time of one document is over. It is in the archive under “May go”.",
       "mayGo_other": "The keeping time of {{count}} documents is over. They are in the archive under “May go”.",
       "all": "Open all deadlines in nexpaper",
-      "why": "This mail comes because you switched on the weekly overview under My account, Reminders.",
+      "why": "This mail comes because you switched on the weekly overview under My account › Notifications.",
       "short": {
         "pay": "Pay",
         "cancel": "Cancel",
@@ -2861,8 +2773,8 @@
       "trashed_one": "nexpaper put one document in the trash, its keeping time was over. It can be restored there for 30 days.",
       "trashed_other": "nexpaper put {{count}} documents in the trash, their keeping time was over. They can be restored there for 30 days."
     },
-    "remindedHow": "You are reminded the way you set it under <account>My account, Notifications</account>.",
-    "datesNote": "Everybody who may change things in the vault is reminded, each the way they set it under <account>My account, Notifications</account>.",
+    "remindedHow": "You are reminded the way you set it under <account>My account › Notifications</account>.",
+    "datesNote": "Everybody who may change things in the vault is reminded, each the way they set it under <account>My account › Notifications</account>.",
     "muted": "muted",
     "mutedTitle": "You muted the reminders of this vault.",
     "saved": "Saved.",
@@ -3211,8 +3123,8 @@
       "text": "The address for {{name}} takes nothing from then on. What arrived stays in your inbox. The request cannot be brought back, but you can make a new one.",
       "confirm": "Withdraw"
     },
-    "off": "Upload requests are switched off on this server. The operator switches them on under Settings, General.",
-    "noAddress": "An upload request needs the public address of the server. The operator enters it under Settings, Sign-in.",
+    "off": "Upload requests are switched off on this server. The operator switches them on under Server › General › Features for all accounts.",
+    "noAddress": "An upload request needs the public address of the server. The operator enters it under Server › Sign-in.",
     "cardTitle": "Upload requests",
     "cardText": "Addresses through which somebody without an account sends you files. Everything lands in your inbox.",
     "source": "Upload link",
@@ -3232,7 +3144,7 @@
       "title": "Upload requests",
       "allow": "Allow upload requests",
       "allowHint": "Each person can then make an address through which somebody without an account sends files into their inbox. Off means: nobody makes one, and the ones there are take nothing any more at once.",
-      "noAddress": "Without a public address (Settings, Sign-in) no request can be made.",
+      "noAddress": "Without a public address (Server › Sign-in) no request can be made.",
       "overview": "Open: {{requests}} of {{people}}.",
       "requestCount_one": "{{count}} request",
       "requestCount_other": "{{count}} requests",
@@ -3241,8 +3153,8 @@
     "ready": {
       "title": "Upload requests",
       "ok": "Switched off. Nobody without an account can send files.",
-      "warn_one": "Switched on: whoever has an address can put files into a person's inbox. Right now {{count}} request takes files. Switch it off under Settings, General.",
-      "warn_other": "Switched on: whoever has an address can put files into a person's inbox. Right now {{count}} requests take files. Switch it off under Settings, General."
+      "warn_one": "Switched on: whoever has an address can put files into a person's inbox. Right now {{count}} request takes files. Switch it off under Server › General › Features for all accounts.",
+      "warn_other": "Switched on: whoever has an address can put files into a person's inbox. Right now {{count}} requests take files. Switch it off under Server › General › Features for all accounts."
     },
     "page": {
       "asks": "<name>{{name}}</name> asks you for documents",

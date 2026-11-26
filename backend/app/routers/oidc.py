@@ -519,7 +519,7 @@ def _unlinked_notice(provider: str, by: str) -> tell.Notice:
         "en": ("Link removed", f"{by} removed the link of your account to {provider}."),
     }
     return tell.Notice(
-        texts=texts, url="/konto?tab=sicherheit", tag="oidc-unlinked",
+        texts=texts, url="/settings/security", tag="oidc-unlinked",
         mail_subject="nexpaper: a sign-in link of your account was removed",
         mail_body=(f"{by} removed the link of your nexpaper account to the sign-in provider {provider}.\n\n"
                    "See your account: {where}\n"),

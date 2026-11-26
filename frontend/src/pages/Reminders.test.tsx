@@ -289,7 +289,7 @@ describe('the deadlines page', () => {
     await page.show(<DeadlinesPage />, '/fristen')
     const rows = [...page.box.querySelectorAll('[data-testid="deadline"]')]
     expect(rows.map((row) => plain(row.textContent).includes('stumm'))).toEqual([true, false])
-    const link = [...page.box.querySelectorAll('a')].find((a) => a.textContent === 'Mein Konto, Benachrichtigungen')!
+    const link = [...page.box.querySelectorAll('a')].find((a) => a.textContent === 'Mein Konto › Benachrichtigungen')!
     expect(link.getAttribute('href')).toBe('/settings/notifications')
   })
 })
