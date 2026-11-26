@@ -9,6 +9,10 @@
   "code": "Code de langue",
   "upload": "Envoyer la langue",
   "added": "Langue ajoutée. Elle apparaît dans le choix de la langue après rechargement.",
+  "removeTitle": "Supprimer la langue ?",
+  "removeText": "La langue envoyée « {name} » est supprimée. Qui l’avait choisie revoit ensuite la langue par défaut.",
+  "removeConfirm": "Supprimer la langue",
+  "cancel": "Annuler",
   "errors": {
     "not_found": "Cette langue n’existe plus.",
     "locale_unusable": "Ce fichier de langue est inutilisable : {reason}.",

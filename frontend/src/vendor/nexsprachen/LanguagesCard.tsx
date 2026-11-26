@@ -2,7 +2,7 @@
  * Server › General: the card "Sprachen" (Globe) as nexnotes has it (plan "Einstellungen", Allgemein 5, E48), built only
  * from the ui kit. The line names the languages the app has built in; below, each built-in one as a `Chip` ("Deutsch ·
  * eingebaut"), each of the operator's files as a `Chip` with removing (E19: the symbol alone, named "<Name>
- * entfernen"); "Vorlage herunterladen" (secondary, Download); the field "Sprachcode" with its own button "Sprache
+ * entfernen"), which asks first (E57: „Sprache entfernen?“, danger Trash2; cancelling keeps the language); "Vorlage herunterladen" (secondary, Download); the field "Sprachcode" with its own button "Sprache
  * hochladen" (`Field action`, secondary, Upload), which opens the choice of a file.
  *
  * The app hands over how it calls its server (`fetcher`), where the routes are (`base`), its name (the template's
@@ -14,11 +14,12 @@
  */
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
-import { Button, Buttons, Card, Chip, Field, Notice, NEXUI_TEXTS, useNexuiTexts } from '../nexui'
+import { Button, Buttons, Card, Chip, ConfirmDialog, Field, Notice, NEXUI_TEXTS, useNexuiTexts } from '../nexui'
 import {
   BASE,
   CODE,
   errorText,
+  fill,
   hintOf,
   makeSprachenApi,
   plainFetch,
@@ -58,6 +59,8 @@ export function LanguagesCard({ fetcher = plainFetch, base = BASE, app, template
   const [busy, setBusy] = useState(false)
   const [problem, setProblem] = useState<string | null>(null)
   const [done, setDone] = useState<string | null>(null)
+  /** The language whose removing is being asked about (E57). */
+  const [asking, setAsking] = useState<LanguageEntry | null>(null)
 
   const load = useCallback(() => api.list().then(setList, (error: unknown) => setProblem(errorText(texts, error))), [api, texts])
   useEffect(() => {
@@ -105,7 +108,7 @@ export function LanguagesCard({ fetcher = plainFetch, base = BASE, app, template
           <Chip key={`built-in-${entry.code}`} testId={`language-built-in-${entry.code}`}>{`${entry.name} · ${texts.builtIn}`}</Chip>
         ))}
         {own.map((entry) => (
-          <Chip key={entry.code} name={entry.name} disabled={busy} testId={`language-${entry.code}`} onRemove={() => remove(entry)}>
+          <Chip key={entry.code} name={entry.name} disabled={busy} testId={`language-${entry.code}`} onRemove={() => setAsking(entry)}>
             {`${entry.name} (${entry.code}) · ${textsCount(texts, entry.keys)}`}
           </Chip>
         ))}
@@ -138,6 +141,23 @@ export function LanguagesCard({ fetcher = plainFetch, base = BASE, app, template
         <Notice tone="ok" testId="languages-done">
           {done}
         </Notice>
+      )}
+      {asking && (
+        <ConfirmDialog
+          title={texts.removeTitle}
+          text={fill(texts.removeText, { name: asking.name })}
+          confirm={{ label: texts.removeConfirm, kind: 'danger', icon: 'Trash2' }}
+          cancel={texts.cancel}
+          closeLabel={kit.close}
+          busy={busy}
+          onCancel={() => setAsking(null)}
+          onConfirm={() => {
+            // The dialog closes; how it went shows in the card, as for an upload.
+            setAsking(null)
+            remove(asking)
+          }}
+          testId="language-remove-dialog"
+        />
       )}
     </Card>
   )

@@ -4,7 +4,8 @@
  * "Neuer API-Schlüssel" (primary) with the app's rights, areas, extras and lifetimes, the new key shown once to copy,
  * the address for programs and the description of the interface. While the operator has the interface switched off
  * it says so; while the account's keys rest until it sets up a second factor it says "Wirkt erst, wenn du einen
- * zweiten Faktor einrichtest." (making stays, decided 24.11.2026).
+ * zweiten Faktor einrichtest." (making stays, decided 24.11.2026). Places for the app (since 1.0.1, E57): `extra` per
+ * key, `offAction` in the note "switched off", `made` in the box of a new key, `children` at the end.
  *
  * Copied unchanged into frontend/src/vendor/nexschluessel/ by bauplaene/schluessel/tools/sync.py; changed only there.
  */
@@ -36,7 +37,12 @@ export type ApiKeysCardProps = {
   when?: WhenFormat
   /** The app's own button per key, before the module's. */
   extra?: (key: KeyEntry) => ReactNode
-  /** The app's own parts at the end of the card. */
+  /** Since 1.0.1 (E57): the app's own part in the note "switched off" (an operator's button to switch it on). */
+  offAction?: ReactNode
+  /** Since 1.0.1 (E57): the app's own parts in the box of a new key, under its copy rows, while the key is shown once
+   * (a command to try it, with the key in it). */
+  made?: (made: { name: string; secret: string }) => ReactNode
+  /** The app's own parts at the end of the card (a link to more, hints on lifetimes). */
   children?: ReactNode
   testId?: string
 }
@@ -53,6 +59,8 @@ export function ApiKeysCard({
   language,
   when,
   extra,
+  offAction,
+  made: madeExtra,
   children,
   testId = 'api-keys-card',
 }: ApiKeysCardProps) {
@@ -95,6 +103,7 @@ export function ApiKeysCard({
         <Notice tone="warn" testId="api-keys-off">
           {texts.apiKeys.off}
           {operator ? ` ${texts.apiKeys.offOperator}` : ''}
+          {offAction && <div className="mt-2">{offAction}</div>}
         </Notice>
       )}
       {listing?.keys_wait && <KeyFactorHint texts={texts} securityHref={securityHref} />}
@@ -113,7 +122,9 @@ export function ApiKeysCard({
             setMade(null)
             reload()
           }}
-        />
+        >
+          {madeExtra?.(made)}
+        </MadeBox>
       )}
       {listing && kind && (
         <KeysTable

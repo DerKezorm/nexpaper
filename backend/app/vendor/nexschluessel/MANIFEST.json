@@ -1,6 +1,6 @@
 {
   "files": {
-    "backend/app/vendor/nexschluessel/__init__.py": "sha256-W+qZdisbSyHB+wtU9lOT9zgrtxfFB6i4dhMOYNHxVw4=",
+    "backend/app/vendor/nexschluessel/__init__.py": "sha256-6PYTOaK+EQ+TR83+CygS2LANfp4v7PzKYFDvxM7jSYA=",
     "backend/app/vendor/nexschluessel/api.py": "sha256-v5K+51/ZKbsgcFd2hGVGvz9g8JBv0GadOy8pDn2Zx2s=",
     "backend/app/vendor/nexschluessel/config.py": "sha256-2EcpueiIH3EBTWx1zICkM0MiwB99/cKDSgRlOBFrwds=",
     "backend/app/vendor/nexschluessel/errors.py": "sha256-bEBeh7/ONH32w/t/wbo20XPLLyqzOvXQsNbEWdAFq6s=",
@@ -15,12 +15,12 @@
     "backend/tests/nexschluessel/test_nexschluessel_routes.py": "sha256-mnC/3w/PRptZS/Gi0JB7kEnJA5lAH2KxE9Okq99B/54=",
     "backend/tests/nexschluessel/test_nexschluessel_vendored.py": "sha256-rC7o6I70A0SCobDm1FJ03ndE/DDk0BEdVZCTlBifUIg=",
     "frontend/src/vendor/nexschluessel/AllKeysCard.tsx": "sha256-Y/pwGZaSqyvSxj5Qt5315cYYTOR0cFD35OTtz78X3VM=",
-    "frontend/src/vendor/nexschluessel/ApiKeysCard.tsx": "sha256-/QBLJSLtDkF2DGMgOvCHX0j97pbquqj//J4QTDD9MXU=",
+    "frontend/src/vendor/nexschluessel/ApiKeysCard.tsx": "sha256-sLx1Uis1RTXcODBODkea3wLNJk3Ia4Zb73lCM4bmBhg=",
     "frontend/src/vendor/nexschluessel/InterfacesCard.tsx": "sha256-hFdgl5B1Iq9LIuMOtX0p52o5jvfXSvEhu9o3O5AKPQA=",
     "frontend/src/vendor/nexschluessel/ToolsCard.tsx": "sha256-mKa1NGVeO1rcNGtHfain0NHKQQXLuXaP2O8hbWXpPss=",
     "frontend/src/vendor/nexschluessel/hooks.ts": "sha256-tKBwkLv5ama+L6EDNf1ixfAXvXLiElc0ZthUI37nEKk=",
     "frontend/src/vendor/nexschluessel/index.ts": "sha256-/9LKooIjfM/8AGM9wJCGqFeqsEA4ey9xBa9NIHjSodI=",
-    "frontend/src/vendor/nexschluessel/parts.tsx": "sha256-hMsG3OQACbU8Em/I/2tDwCGu7eIU8MNsxL9tYIoDYFc=",
+    "frontend/src/vendor/nexschluessel/parts.tsx": "sha256-J+7XHrQwoIhnBvTSje82vGD/qK5mDqIz5CcGitq+V2Y=",
     "frontend/src/vendor/nexschluessel/schluessel.de.json": "sha256-sxzZ6BCE/wbbxnPQZ17Otk9CsM2CD/qxU8GE9jXAfiU=",
     "frontend/src/vendor/nexschluessel/schluessel.en.json": "sha256-0dtVZ7NfAnKx82syHKVjEhb8sEMlKuXgG7xUaooFoOU=",
     "frontend/src/vendor/nexschluessel/schluessel.fr.json": "sha256-WPc3WxR9pQRvV0MdviaNA5QWLbnMqL14ztZMkWLZgNk=",
@@ -31,5 +31,5 @@
     "fastapi": ">=0.121.0"
   },
   "vendor_path": "backend/app/vendor/nexschluessel",
-  "version": "1.0.0"
+  "version": "1.0.1"
 }

@@ -1442,6 +1442,14 @@ export const PUBLIC_URL_PLACEHOLDERS = {
   nexfolk: 'https://folk.example.com',
 } as const satisfies Record<string, string>
 
+/** Since 1.1.1 (E57): the hint of "Mail bei neuer Anmeldung" (``account.newSignInMailHint``, in the app's words already)
+ * with an optional sentence of the app after it, where its notice goes further (nexpaper: "Auch als Mitteilung auf
+ * deinen Geräten."). Without a sentence the module's hint alone, as before. */
+export function newSignInMailHint(hint: string, sentence?: string | null): string {
+  const more = (sentence ?? '').trim()
+  return more ? `${hint.trim()} ${more}` : hint
+}
+
 export function publicUrlPlaceholder(app: string): string {
   const name = app.trim().toLowerCase()
   return (PUBLIC_URL_PLACEHOLDERS as Record<string, string>)[name] ?? `https://${name.replace(/^nex/, '') || 'app'}.example.com`

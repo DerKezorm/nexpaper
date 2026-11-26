@@ -150,11 +150,12 @@ export function KeysTable({
 }
 
 /** The box that shows a new key this once: the key and the header to copy, then "Done". */
-export function MadeBox({ texts, name, secret, app, onDone }: { texts: KeyTexts; name: string; secret: string; app: string; onDone: () => void }) {
+export function MadeBox({ texts, name, secret, app, onDone, children }: { texts: KeyTexts; name: string; secret: string; app: string; onDone: () => void; children?: ReactNode }) {
   return (
     <Box title={fillKeys(texts.key.made, { name })} hint={fillKeys(texts.key.madeText, { app })} testId="key-made">
       <CopyRow value={secret} label={texts.key.secret} testId="key-secret" />
       <CopyRow value={`Authorization: Bearer ${secret}`} label={texts.key.header} testId="key-header" />
+      {children}
       <Buttons>
         <Button kind={BUTTONS.done.kind} icon={BUTTONS.done.icon} onClick={onDone} testId="key-done">
           {texts.key.done}

@@ -40,7 +40,7 @@ from .keys import Caller, Made, authenticate, block, change, entry, listing, mak
 from .model import ALL_AREAS, AccountId, Area, AreaId, ClientRefStore, Holder, Key, KeyChange, KeyId, NewKey, Store
 from .tokens import bearer, digest, make_secret, plausible, shown_prefix
 
-__version__ = "1.0.0"
+__version__ = "1.0.1"
 
 __all__ = [
     "ALL_AREAS",

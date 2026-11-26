@@ -9,6 +9,10 @@
   "code": "Language code",
   "upload": "Upload language",
   "added": "Language added. It shows in the language menus after reloading.",
+  "removeTitle": "Remove the language?",
+  "removeText": "The uploaded language “{name}” is deleted. Whoever chose it sees the default language afterwards.",
+  "removeConfirm": "Remove language",
+  "cancel": "Cancel",
   "errors": {
     "not_found": "This language is no longer there.",
     "locale_unusable": "This language file cannot be used: {reason}.",

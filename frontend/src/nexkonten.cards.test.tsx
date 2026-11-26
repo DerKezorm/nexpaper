@@ -1,4 +1,4 @@
-// Vorlage nexkonten 1.1.0
+// Vorlage nexkonten 1.1.1
 // @vitest-environment jsdom
 /**
  * Since 1.1.0: the module's cards in the app (``SignInPage.tsx``, ``AccountCards.tsx``): built from the ui kit, in the
@@ -13,7 +13,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { NexuiLanguage } from './vendor/nexui'
 import { AppearanceCard, PasskeyAddition, SignOutCard, UnconfirmedEmailBox, WhatYouSeeCard } from './vendor/nexkonten/AccountCards'
 import { SignInPage, type SignInView, type Translate } from './vendor/nexkonten/SignInPage'
-import { kontenVariables, publicUrlPlaceholder, type Readiness } from './vendor/nexkonten/konten'
+import { kontenVariables, newSignInMailHint, publicUrlPlaceholder, type Readiness } from './vendor/nexkonten/konten'
 import german from './vendor/nexkonten/konten.de.json'
 import english from './vendor/nexkonten/konten.en.json'
 
@@ -314,5 +314,16 @@ describe('the box Passkeys without a public https address (since E49)', () => {
     expect(note.textContent).toBe(t('account.passkeysNeedAddressMember'))
     expect(note.querySelector('a')).toBeNull()
     expect(document.querySelectorAll('button')).toHaveLength(0)
+  })
+})
+
+describe('"Mail bei neuer Anmeldung" with a sentence of the app (since 1.1.1, E57)', () => {
+  it('keeps the module hint alone without a sentence and puts the app sentence after it', () => {
+    const hint = t('account.newSignInMailHint')
+    expect(hint).toContain(APP)
+    expect(newSignInMailHint(hint)).toBe(hint)
+    expect(newSignInMailHint(hint, '  ')).toBe(hint)
+    expect(newSignInMailHint(hint, null)).toBe(hint)
+    expect(newSignInMailHint(hint, ' Auch als Mitteilung auf deinen Geräten. ')).toBe(`${hint} Auch als Mitteilung auf deinen Geräten.`)
   })
 })

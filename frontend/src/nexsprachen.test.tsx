@@ -1,4 +1,4 @@
-// Vorlage nexsprachen 1.0.0
+// Vorlage nexsprachen 1.0.1
 // @vitest-environment jsdom
 /**
  * The card "Sprachen" of the module in the app and its i18n helper: built from the ui kit (Card, Chip, Button, Field
@@ -145,13 +145,29 @@ describe('the card "Sprachen"', () => {
     expect(own.querySelector('button')?.getAttribute('aria-label')).toBe('Nederlands entfernen')
   })
 
-  it('removes a file of the operator and tells the app', async () => {
+  it('asks before removing a file of the operator: cancelling keeps it, confirming removes it and tells the app', async () => {
     const changed = vi.fn()
     await show('de', { onChange: changed })
+    const dialog = () => document.querySelector<HTMLElement>('[data-testid="language-remove-dialog"]')
     await act(async () => find<HTMLButtonElement>('[data-testid="language-nl"] button').click())
+    await settle()
+    expect(dialog()?.textContent).toContain('Sprache entfernen?')
+    expect(dialog()?.textContent).toContain('„Nederlands“')
+    const cancel = Array.from(dialog()!.querySelectorAll<HTMLButtonElement>('button')).find((button) => button.textContent === 'Abbrechen')!
+    await act(async () => cancel.click())
+    await settle()
+    expect(dialog()).toBeNull()
+    expect(calls.some((call) => call.method === 'DELETE')).toBe(false)
+    expect(box.querySelector('[data-testid="language-nl"]')).not.toBeNull()
+    await act(async () => find<HTMLButtonElement>('[data-testid="language-nl"] button').click())
+    await settle()
+    const confirm = dialog()!.querySelector<HTMLButtonElement>('button[type="submit"]')!
+    expect([confirm.dataset.kind, confirm.dataset.icon, confirm.textContent]).toEqual(['danger', 'Trash2', 'Sprache entfernen'])
+    await act(async () => confirm.click())
     await settle()
     expect(calls.some((call) => call.method === 'DELETE' && call.path === `${BASE}/nl`)).toBe(true)
     expect(box.querySelector('[data-testid="language-nl"]')).toBeNull()
+    expect(dialog()).toBeNull()
     expect(changed).toHaveBeenCalledTimes(1)
   })
 

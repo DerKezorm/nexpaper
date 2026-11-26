@@ -107,7 +107,7 @@ from .model import (
     Taken,
 )
 
-__version__ = "1.1.0"
+__version__ = "1.1.1"
 
 __all__ = [
     "ACCESS_API_KEY",

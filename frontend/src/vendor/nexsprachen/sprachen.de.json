@@ -9,6 +9,10 @@
   "code": "Sprachcode",
   "upload": "Sprache hochladen",
   "added": "Sprache hinzugefügt. Sie steht nach dem Neuladen in der Sprachauswahl.",
+  "removeTitle": "Sprache entfernen?",
+  "removeText": "Die hochgeladene Sprache „{name}“ wird gelöscht. Wer sie gewählt hat, sieht danach wieder die Standardsprache.",
+  "removeConfirm": "Sprache entfernen",
+  "cancel": "Abbrechen",
   "errors": {
     "not_found": "Diese Sprache gibt es nicht mehr.",
     "locale_unusable": "Diese Sprachdatei geht nicht: {reason}.",

@@ -1,4 +1,4 @@
-// Vorlage nexschluessel 1.0.0
+// Vorlage nexschluessel 1.0.1
 // @vitest-environment jsdom
 /**
  * The cards of the module in the app: "API-Schlüssel", "KI-Werkzeuge (MCP)", "Schnittstellen" and "API-Schlüssel aller
@@ -303,6 +303,42 @@ describe('the card API-Schlüssel', () => {
     await settle()
     expect(find('[data-testid="api-keys-off"]')!.textContent).toContain('Server › Allgemein › Schnittstellen')
     expect(button('api-keys-new')!.disabled).toBe(true)
+  })
+
+  it('has places for the app: a button per key, one in the note "switched off", parts with a new key, and at the end (E57)', async () => {
+    const curl = (secret: string) => <span data-testid="app-curl">{`curl -H "Authorization: Bearer ${secret}" …`}</span>
+    show(
+      <ApiKeysCard
+        request={request}
+        base={BASE}
+        things={THINGS}
+        extra={(key) => <span data-testid="app-per-key">{key.name}</span>}
+        made={(made) => curl(made.secret)}
+        offAction={<span data-testid="app-switch-on">on</span>}
+      >
+        <span data-testid="app-end">own tokens</span>
+      </ApiKeysCard>,
+    )
+    await settle()
+    expect(all('[data-testid="api-keys-table"] [data-testid="app-per-key"]').length).toBeGreaterThan(0)
+    expect(find('[data-card="api-keys"] [data-testid="app-end"]')).not.toBeNull()
+    expect(find('[data-testid="app-switch-on"]')).toBeNull()
+    expect(find('[data-testid="app-curl"]')).toBeNull()
+    click(button('api-keys-new'))
+    type(find<HTMLInputElement>('[data-testid="key-name"]')!, 'curl')
+    click(button('key-submit'))
+    await settle()
+    expect(find('[data-testid="key-made"] [data-testid="app-curl"]')!.textContent).toContain(SECRET)
+    click(button('key-done'))
+    await settle()
+    expect(find('[data-testid="app-curl"]')).toBeNull()
+  })
+
+  it('shows the app part in the note "switched off" only while it is off', async () => {
+    listing.api = false
+    show(<ApiKeysCard request={request} base={BASE} things={THINGS} operator offAction={<span data-testid="app-switch-on">on</span>} />)
+    await settle()
+    expect(find('[data-testid="api-keys-off"] [data-testid="app-switch-on"]')).not.toBeNull()
   })
 
   it('speaks English and French', async () => {
