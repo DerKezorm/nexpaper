@@ -30,7 +30,7 @@ import ownFr from './fr.json'
 import oidcFr from './oidc.fr.json'
 import { tabFetch } from '../api/client'
 import { ownLanguages, type BuiltIn } from '../vendor/nexsprachen/languages'
-import { CODE, type Texts as SprachenTexts } from '../vendor/nexsprachen/sprachen'
+import { CODE } from '../vendor/nexsprachen/sprachen'
 
 type Texts = Record<string, unknown>
 
@@ -64,24 +64,10 @@ export const BUILT_IN: BuiltIn = [
   { code: 'en', name: SHIPPED.en.name },
   { code: 'fr', name: SHIPPED.fr.name },
 ]
-/** Only texts and groups of texts, as the server takes a language file (module sprachen, ``not_text``): nexpaper's
- * English holds a few lists (the weekdays and months of the deadlines, the search help of the archive), which a file
- * cannot carry. A language file without them shows them in English, as every text it leaves out. */
-export function textsOnly(tree: Record<string, unknown>): SprachenTexts {
-  const kept: Record<string, unknown> = {}
-  for (const [key, value] of Object.entries(tree)) {
-    if (typeof value === 'string') kept[key] = value
-    else if (value && typeof value === 'object' && !Array.isArray(value)) {
-      const group = textsOnly(value as Record<string, unknown>)
-      if (Object.keys(group).length) kept[key] = group
-    }
-  }
-  return kept as SprachenTexts
-}
-
-/** The English texts as the template to translate (the card "Sprachen" makes the file on the page): what downloads
- * there is taken back by the upload. */
-export const TEMPLATE = textsOnly(en as Record<string, unknown>)
+/** The English texts the card "Sprachen" makes its template from. The module keeps only what a language file may
+ * carry (sprachen 1.0.2, ``textsOnly``): nexpaper's English holds a few lists (the weekdays and months of the
+ * deadlines, the search help of the archive), which a language file shows in English. */
+export const TEMPLATE = en
 
 const FALLBACK = 'en'
 const STORAGE_KEY = 'nexpaper.language'

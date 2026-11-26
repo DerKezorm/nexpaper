@@ -9,6 +9,7 @@ the template made on the page (the server has none). The database is the one of 
 
 from __future__ import annotations
 
+import json
 import shutil
 import tempfile
 from pathlib import Path
@@ -60,6 +61,18 @@ class Adapter(StandardAdapter):
 
         locales.start()
         locales.forget()
+
+    def offered_template(self) -> dict[str, Any]:
+        """The template the card "Sprachen" offers (sprachen 1.0.2): nexpaper's English with the words of the account,
+        post and sign-in modules, as ``frontend/src/i18n/index.ts`` puts them together, through ``texts_only``."""
+        from app.vendor import nexsprachen
+
+        source = Path(__file__).parents[2] / "frontend" / "src"
+        english: dict[str, Any] = {}
+        for part in ("i18n/en.json", "vendor/nexoidc/oidc.en.json", "vendor/nexkonten/konten.en.json",
+                     "vendor/nexpost/post.en.json"):
+            english.update(json.loads((source / part).read_text(encoding="utf-8")))
+        return {"_meta": {"name": "Nederlands"}, **nexsprachen.texts_only(english)}
 
     def stop(self) -> None:
         from app.services import locales

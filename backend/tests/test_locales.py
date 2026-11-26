@@ -261,28 +261,17 @@ def test_the_profile_takes_a_built_in_or_an_added_language_only(client: TestClie
     assert client.put("/api/v1/me/language", json={"language": "it"}).json()["language"] == "it"
 
 
-def _texts_only(tree: dict) -> dict:
-    """What the card "Sprachen" hands out as the template (``textsOnly`` in ``frontend/src/i18n/index.ts``): the
-    English texts without what a language file cannot carry (nexpaper's English has a few lists)."""
-    kept: dict = {}
-    for key, value in tree.items():
-        if isinstance(value, str):
-            kept[key] = value
-        elif isinstance(value, dict) and (group := _texts_only(value)):
-            kept[key] = group
-    return kept
-
-
 def test_the_template_of_the_page_is_taken_back_and_the_english_as_it_is_is_not(client: TestClient,
                                                                                  folder: Path) -> None:
-    """Download, rename, upload: the template the page makes from nexpaper's English goes in whole; the English file
-    as it is (with its lists) is refused with ``not_text``, as nexpaper always refused it."""
+    """Download, rename, upload: the template the page makes from nexpaper's English (through the module's
+    ``textsOnly``, ``texts_only`` here, sprachen 1.0.2) goes in whole; the English file as it is (with its lists) is
+    refused with ``not_text``, as nexpaper always refused it."""
     from .conftest import make_account, sign_in
 
     english = json.loads((Path(__file__).parents[2] / "frontend" / "src" / "i18n" / "en.json").read_text("utf-8"))
-    assert json.dumps(_texts_only(english)) != json.dumps(english), "the English has values that are no text"
+    assert json.dumps(locales.texts_only(english)) != json.dumps(english), "the English has values that are no text"
     sign_in(client, make_account("boss", "operator"))
-    template = {"_meta": {"name": "Nederlands"}, **_texts_only(english)}
+    template = {"_meta": {"name": "Nederlands"}, **locales.texts_only(english)}
     saved = client.put("/api/v1/locales/nl", content=json.dumps(template, ensure_ascii=False).encode("utf-8"))
     assert saved.status_code == 200, saved.text
     assert saved.json()["name"] == "Nederlands" and saved.json()["keys"] > 1000

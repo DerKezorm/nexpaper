@@ -11,7 +11,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import i18n, { BUILT_IN, own, TEMPLATE } from '../../i18n'
 import en from '../../i18n/en.json'
-import { isTexts } from '../../vendor/nexsprachen/sprachen'
+import { isTexts, templateFile } from '../../vendor/nexsprachen/sprachen'
 import { NexuiLanguage } from '../../vendor/nexui'
 import { LanguagesCard } from './ServerCards'
 
@@ -82,19 +82,21 @@ describe('the card "Sprachen" of nexpaper', () => {
     expect(forget).toHaveBeenCalled()
   })
 
-  it('hands out a template the upload takes back: only texts and groups of texts, every text of the English', () => {
-    // The server refuses anything else in a language file (``not_text``); nexpaper's English has lists.
-    const file = JSON.parse(JSON.stringify({ _meta: { name: 'Nederlands' }, ...TEMPLATE })) as unknown
+  it('hands out a template the upload takes back: only texts and groups of texts, every text of the English', async () => {
+    // The server refuses anything else in a language file (``not_text``); nexpaper's English has lists. The module's
+    // file (sprachen 1.0.2) keeps only what a file may carry.
+    const file = JSON.parse(await templateFile(TEMPLATE as Record<string, unknown>).text()) as Record<string, unknown>
     expect(isTexts(file)).toBe(true)
+    expect(isTexts(TEMPLATE)).toBe(false)
     const leaves = (tree: unknown, at = ''): string[] =>
       tree && typeof tree === 'object' && !Array.isArray(tree)
         ? Object.entries(tree).flatMap(([key, value]) => leaves(value, at ? `${at}.${key}` : key))
         : typeof tree === 'string'
           ? [at]
           : []
-    const kept = new Set(leaves(TEMPLATE))
+    const kept = new Set(leaves(file))
     expect(leaves(en).filter((key) => !kept.has(key))).toEqual([])
-    expect(leaves(TEMPLATE).length).toBeGreaterThan(1000)
+    expect(kept.size).toBeGreaterThan(1000)
   })
 
   it('hands out nexpaper English texts as the template', () => {

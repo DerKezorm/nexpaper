@@ -1,4 +1,4 @@
-// Vorlage nexsprachen 1.0.1
+// Vorlage nexsprachen 1.0.2
 // @vitest-environment jsdom
 /**
  * The card "Sprachen" of the module in the app and its i18n helper: built from the ui kit (Card, Chip, Button, Field
@@ -15,7 +15,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { NexuiLanguage } from './vendor/nexui'
 import { LanguagesCard } from './vendor/nexsprachen/LanguagesCard'
 import { ownLanguages } from './vendor/nexsprachen/languages'
-import { SPRACHEN_TEXTS, hintOf, mergeTexts, type Fetcher, type LanguageEntry, type Texts } from './vendor/nexsprachen/sprachen'
+import { TEMPLATE } from './i18n'
+import { SPRACHEN_TEXTS, hintOf, isTexts, mergeTexts, templateFile, textsOnly, type Fetcher, type LanguageEntry, type Texts } from './vendor/nexsprachen/sprachen'
 
 // APP: where the app mounts the routes, its name and the languages it ships (as AppConfig.built_in, in its order;
 // nexpaper adds { code: 'fr', name: 'Français' }).
@@ -26,6 +27,10 @@ const BUILT_IN = [
   { code: 'en', name: 'English' },
   { code: 'fr', name: 'Français' },
 ]
+// APP (since 1.0.2): the English texts the page makes the template from (what it hands `LanguagesCard template`), e.g.
+// `import ENGLISH from './i18n/en.json'`; an app whose server makes the template may leave this sample.
+// APP (nexpaper): what the card Sprachen hands `template`, its English with the modules' words (`TEMPLATE`).
+const ENGLISH: Record<string, unknown> = TEMPLATE
 
 /** How the card's line names the built-in languages: each in the page's language, as a person writes a list
  * ("Deutsch und Englisch sind eingebaut.", "German, English and French are built in."). */
@@ -241,6 +246,29 @@ describe('the card "Sprachen"', () => {
     await show('fr')
     expect(card().querySelector('h2')?.textContent).toBe('Langues')
     expect(find('[data-testid="language-upload"]').textContent).toBe('Envoyer la langue')
+  })
+})
+
+describe('the template the page offers (since 1.0.2, E59)', () => {
+  it('holds only texts and groups of texts, so the server takes it back', async () => {
+    const offered = JSON.parse(await templateFile(ENGLISH).text()) as Record<string, unknown>
+    const { _meta: meta, ...texts } = offered
+    expect(meta).toEqual({ name: 'Name of the language in itself, for example Nederlands' })
+    expect(isTexts(texts)).toBe(true)
+    expect(Object.keys(texts).length).toBeGreaterThan(0)
+  })
+
+  it('leaves out lists, numbers, null, empty groups, bad keys and what is nested too deep', () => {
+    let deep: Record<string, unknown> = { k: 'deep' }
+    for (let level = 0; level < 12; level += 1) deep = { k: deep }
+    const mixed = JSON.parse(
+      '{"_meta": {"name": "x"}, "a": "A", "days": ["Mo"], "n": 3, "none": null, "empty": {}, "": "x", "__proto__": {"b": "B"}, "group": {"b": "B", "list": [1]}}',
+    ) as Record<string, unknown>
+    const kept = textsOnly({ ...mixed, ['k'.repeat(121)]: 'long', deep })
+    expect(kept).toEqual({ a: 'A', group: { b: 'B' }, deep: textsOnly({ deep }).deep })
+    let depth = 0
+    for (let node: unknown = kept.deep; node && typeof node === 'object'; node = (node as Record<string, unknown>).k) depth += 1
+    expect(depth).toBeLessThanOrEqual(7)
   })
 })
 
