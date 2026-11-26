@@ -7,13 +7,15 @@ from __future__ import annotations
 import json
 import shutil
 import zipfile
+from datetime import UTC, datetime, timedelta
 
+import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import select
 
 from app import middleware
 from app.db import SessionLocal
-from app.models import Account
+from app.models import OPERATOR, Account
 from app.services import backup_hooks, backups
 
 from .conftest import make_account
@@ -106,3 +108,46 @@ def test_the_notice_of_a_failed_restore_opens_the_new_page() -> None:
     notice = backup_hooks.restore_failed_notice()
     assert notice.url == "/settings/storage" and notice.tag == "restore-failed"
     assert json.dumps(notice.texts, ensure_ascii=False).count("–") == 0
+
+
+def test_a_failed_scheduled_backup_tells_the_operators_once_and_never_a_member(
+    operator: Account, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The module says ``tell("backup_failed")`` when a scheduled copy fails (Bauplan E57); nexpaper tells every operator
+    by push and mail, with the page of the backups, as it tells of a failed restore. Once, until a copy works again."""
+    from app.services import tell
+    from app.vendor import nexsicherung
+
+    make_account("jule")
+    second = make_account("boss2", role=OPERATOR)
+    told: list[tuple[int, tell.Notice]] = []
+    monkeypatch.setattr(tell, "person", lambda account_id, notice: told.append((account_id, notice)))
+
+    def broken(*_args: object, **_kwargs: object) -> None:
+        raise OSError("disk gone")
+
+    monkeypatch.setattr(backup_hooks, "write_archive", broken)
+    nexsicherung.plan.save(nexsicherung.plan.checked("daily", "03:00", 7))
+    assert nexsicherung.plan.run_job() is False
+    assert sorted(account_id for account_id, _ in told) == sorted([operator.id, second.id])
+    notice = told[0][1]
+    assert notice.url == "/settings/storage" and notice.tag == "backup-failed"
+    assert set(notice.texts) == {"de", "en", "fr"}
+    assert notice.texts["de"][0] == "Sicherung gescheitert" and notice.mail_body.endswith("{where}\n")
+    words = json.dumps(notice.texts, ensure_ascii=False) + notice.mail_subject + notice.mail_body
+    assert "–" not in words and "disk gone" not in words
+    # An hour later it fails again: the operators know already.
+    later = datetime.now(UTC) + timedelta(hours=2)
+    assert nexsicherung.plan.run_job(later) is False
+    assert len(told) == 2
+
+
+def test_a_scheduled_backup_that_works_tells_nobody(operator: Account, monkeypatch: pytest.MonkeyPatch) -> None:
+    from app.services import tell
+    from app.vendor import nexsicherung
+
+    told: list[int] = []
+    monkeypatch.setattr(tell, "person", lambda account_id, notice: told.append(account_id))
+    nexsicherung.plan.save(nexsicherung.plan.checked("daily", "03:00", 7))
+    assert nexsicherung.plan.run_job() is True
+    assert told == []

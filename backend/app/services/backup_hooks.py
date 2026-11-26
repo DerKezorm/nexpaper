@@ -475,6 +475,14 @@ FAILED_TEXTS = {
     "en": ("Restore failed",
            "The backup could not be put in place at the restart. The server went on with the data it had."),
 }
+#: A scheduled backup failed (the module tells once, until one succeeds again; it tries again after an hour).
+BACKUP_FAILED_TEXTS = {
+    "de": ("Sicherung gescheitert",
+           "Die geplante Sicherung ist nicht fertig geworden. Unter Speicher und Sicherung steht, warum."),
+    "en": ("Backup failed", "The scheduled backup did not finish. Storage and backups says why."),
+    "fr": ("Échec de la sauvegarde",
+           "La sauvegarde planifiée n'a pas abouti. Stockage et sauvegardes indique pourquoi."),
+}
 
 
 
@@ -646,6 +654,19 @@ def restore_failed_notice() -> Any:
     )
 
 
+def backup_failed_notice() -> Any:
+    """The notice to the operators when a scheduled backup failed (``tell("backup_failed")``): where to look, never
+    what the backup holds."""
+    from . import tell
+
+    return tell.Notice(
+        texts=BACKUP_FAILED_TEXTS, url="/settings/storage", tag="backup-failed",
+        mail_subject="nexpaper: a scheduled backup failed",
+        mail_body=("The scheduled backup of nexpaper could not be made. nexpaper tries again in an hour; the page "
+                   "and the log say why.\n\nThe backups and the log: {where}\n"),
+    )
+
+
 class NexpaperHooks(nexsicherung.AppHooks):
     # --- What goes in
 
@@ -768,11 +789,12 @@ class NexpaperHooks(nexsicherung.AppHooks):
     # --- Telling
 
     def tell(self, event: str, details: dict[str, Any]) -> None:
-        if event != "restore_failed":
-            return
         from . import tell
 
-        tell.operator(restore_failed_notice())
+        if event == "backup_failed":
+            tell.operator(backup_failed_notice())
+        elif event == "restore_failed":
+            tell.operator(restore_failed_notice())
 
 
 def configure() -> NexpaperHooks:
