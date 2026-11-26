@@ -167,6 +167,8 @@ TODO weg). P4: unter „Mail bei neuer Anmeldung“ nexpapers Satz „Auch als M
 (`newSignInMailHint`, DE/EN/FR). P5: in `ApiKeysCard` „Jetzt freigeben“ des Betreibers (`offAction`, Rückfrage, schaltet
 `api` unter `/api/v1/connections/interfaces`), „Zum Ausprobieren“ mit dem curl-Befehl je Recht (`made`), Ablauf-Hinweise
 am Ende (`children`); der Link „Eigene Tokens anlegen“ wartet auf einen Platz in `AllKeysCard` (Frage Q3).
+Endlauf `reihe.sh nexpaper ende9` (Stand `f289749`, mit P1 bis P5): ruff sauber; pytest 3925 grün, 5 übersprungen, 0 rot;
+lint sauber; vitest 1231 grün in 109 Dateien; build grün; Playwright 2 von 2 grün.
 
 **Endlauf (26.11.2026, `reihe.sh nexpaper ende4`, Stand `29ba6c2`, nach Passkeys E49, Grenzen-Satz E46, Bestand E51,
 sprachen):** ruff sauber; pytest 3879 grün, 5 übersprungen, 1 rot: `test_routes.py::test_the_description_of_the_interface_is_the_snapshot`
