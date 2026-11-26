@@ -161,6 +161,13 @@ grün in 109 Dateien; build grün; Playwright 2 von 2 grün.
   `test_places.py`, `test_openapi_names.py`, `test_routes.py`; Schnappschuss unverändert), ruff sauber; neue Tests je
   einmal gegen Mutationen rot (Rückgabecode 1). Oberfläche nicht berührt.
 
+**E57 Nachzug der Module (26.11.2026, `bauplaene-stand` dcbd5d1: sprachen 1.0.1, konten 1.1.1, schluessel 1.0.1):**
+Entfernen einer eigenen Sprache fragt wieder (Tests `languagesCard.test.tsx`, `Confirmations.test.tsx` mit `asksFirst`,
+TODO weg). P4: unter „Mail bei neuer Anmeldung“ nexpapers Satz „Auch als Mitteilung auf deinen Geräten.“
+(`newSignInMailHint`, DE/EN/FR). P5: in `ApiKeysCard` „Jetzt freigeben“ des Betreibers (`offAction`, Rückfrage, schaltet
+`api` unter `/api/v1/connections/interfaces`), „Zum Ausprobieren“ mit dem curl-Befehl je Recht (`made`), Ablauf-Hinweise
+am Ende (`children`); der Link „Eigene Tokens anlegen“ wartet auf einen Platz in `AllKeysCard` (Frage Q3).
+
 **Endlauf (26.11.2026, `reihe.sh nexpaper ende4`, Stand `29ba6c2`, nach Passkeys E49, Grenzen-Satz E46, Bestand E51,
 sprachen):** ruff sauber; pytest 3879 grün, 5 übersprungen, 1 rot: `test_routes.py::test_the_description_of_the_interface_is_the_snapshot`
 (OpenAPI-Schnappschuss, die alten Wege `/api/v1/locales…` tragen über das Modul andere `operationId` und den Schemanamen
