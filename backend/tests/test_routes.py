@@ -185,6 +185,9 @@ TOKEN_ROUTES = {
     ("POST", "/api/v1/me/whats-new/seen"),
     ("PUT", "/api/v1/me/language"),
     ("PUT", "/api/v1/me/preferences"),
+    # konten 1.1.0: light or dark for the account on every device, as ``mode`` in the preferences above.
+    ("PUT", "/api/v1/me/theme"),
+    ("POST", "/api/v1/me/theme/adopt"),
     ("PUT", "/api/v1/auth/avatar"),
     ("DELETE", "/api/v1/auth/avatar"),
     ("GET", "/api/v1/avatars/{account_id}"),

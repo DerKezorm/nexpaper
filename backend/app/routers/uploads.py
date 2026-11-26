@@ -17,8 +17,9 @@ from pydantic import BaseModel, ConfigDict, Field, StrictInt
 from ..db import SessionLocal
 from ..deps import DbSession, Uploader, bearer_token
 from ..errors import error
+from ..models import Account as AccountRow
 from ..models import Document
-from ..services import apikeys, filetypes, limits, receiving, uploads
+from ..services import apikeys, filetypes, limits, quota, receiving, uploads
 from .schemas import DocumentOut, DuplicateOut, document_out
 
 router = APIRouter(prefix="/api/v1", tags=["uploads"])
@@ -131,6 +132,16 @@ async def upload(request: Request, account: Uploader, db: DbSession, vault_id: V
                     info["max_mb"] = current.max_file // limits.MB
                 results.append(FileResult(filename=received.filename, status="rejected", http_status=status,
                                           error=info))
+                continue
+            with SessionLocal() as own:
+                # The account's storage limit (konten 1.1.0, ``services/quota.py``): the file is not taken when it would
+                # go past it, the others of the request still may.
+                holder = own.get(AccountRow, account.id)
+                taken, limit = quota.used(own, account.id), holder.storage_limit if holder is not None else None
+            if quota.full(taken, limit, received.size):
+                results.append(FileResult(filename=received.filename, status="rejected", http_status=507, error={
+                    "code": "storage_limit_reached", "message": "The storage of the account is full.", "used": taken,
+                    "limit": limit}))
                 continue
             if key_id is not None and not apikeys.take_upload(key_id):
                 results.append(FileResult(filename=received.filename, status="rejected", http_status=429, error={

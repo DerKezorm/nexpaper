@@ -12,6 +12,7 @@ from typing import Any, ClassVar
 
 from sqlalchemy import (
     JSON,
+    BigInteger,
     Boolean,
     Date,
     DateTime,
@@ -150,6 +151,17 @@ class Account(Base):
     new_password_origin: Mapped[str] = mapped_column(String(16), default="", server_default=text("''"))
     #: When the password was last set (Security, "last changed"); empty for passwords of 1.12.0.
     password_changed_at: Mapped[datetime | None] = mapped_column(UtcDateTime, nullable=True)
+    # --- Since konten 1.1.0 (the settings), added the same way.
+    #: Deleted by the operator (``nexkonten.manage.remove``): gone for everybody, brought back within 30 days
+    #: (``restore``), then removed for good (``purge_due``, ``KontenStore.purge_account``). A deletion blocks the
+    #: account at the same moment when it was not blocked (``blocked_at`` = ``deleted_at``), so that every check of
+    #: ``blocked_at`` keeps a deleted account out and 1.12.0, which does not read this column, sees it blocked.
+    deleted_at: Mapped[datetime | None] = mapped_column(UtcDateTime, nullable=True)
+    #: The operator's limit for the documents the account owns, in bytes; empty: none (the default for every account).
+    storage_limit: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    #: Where the documents of the account's own vault go when the deleted account is removed for good, as the operator
+    #: chose in the dialog (``documents``, ``target_user_id``, ``target_vault_id``, ``by``); empty while not deleted.
+    leaving: Mapped[Any] = mapped_column(JSON, nullable=True)
     #: Not a column: whether the session that asks came in through a provider that checks the second factor itself
     #: (``AuthSession.second_factor_by_provider``), set by ``deps.require_account`` for ``totp.setup_required``.
     second_factor_by_provider: ClassVar[bool] = False

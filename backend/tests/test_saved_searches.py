@@ -23,7 +23,7 @@ from app.main import app
 from app.models import Account, SavedSearch
 from app.services import backups, brakes, saved, vaults
 
-from .conftest import PASSWORD, make_account, new_client
+from .conftest import PASSWORD, make_account, new_client, remove_for_good
 from .papers import add_document, own_vault, shared_vault
 from .searching import give_text
 from .test_search_rights import raw_key
@@ -310,6 +310,7 @@ def test_the_entries_go_with_the_account(client: TestClient, town: dict[str, Any
     answer = client.request("DELETE", f"/api/v1/accounts/{town['tom'].id}",
                             json={"current_password": PASSWORD, "confirm_name": "tom", "documents": "delete_documents"})
     assert answer.status_code == 204, answer.text
+    remove_for_good(town["tom"])
     with SessionLocal() as db:
         assert db.scalar(select(func.count()).select_from(SavedSearch)) == 0
 

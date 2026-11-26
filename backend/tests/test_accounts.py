@@ -15,7 +15,7 @@ from app.models import OPERATOR, Account, AuthSession, utcnow
 from app.security import MAX_FAILURES, SESSION_COOKIE, decrypt_secret, encrypt_secret, hash_token
 from app.services import settings_service
 
-from .conftest import PASSWORD, SETUP_CODE, TAB, make_account, sign_in
+from .conftest import PASSWORD, SETUP_CODE, TAB, make_account, remove_for_good, sign_in
 
 GOOD = "a long enough password"
 
@@ -241,6 +241,10 @@ def test_the_operator_manages_accounts(client: TestClient, operator: Account) ->
     assert anna_client.get("/api/v1/auth/me").status_code == 401
     assert client.put(f"/api/v1/accounts/{anna.id}/role", json={"role": "operator", "current_password": PASSWORD}).json()["role"] == OPERATOR
     assert client.request("DELETE", f"/api/v1/accounts/{anna.id}", json={"confirm_name": "anna", "current_password": PASSWORD}).status_code == 204
+    # Deleted, anna is out at once and waits 30 days in the list (konten 1.1.0); then she is gone.
+    assert anna_client.get("/api/v1/auth/me").status_code == 401
+    assert [row["name"] for row in client.get("/api/v1/accounts").json() if row["deleted_at"] is None] == ["tester"]
+    remove_for_good(anna)
     assert [row["name"] for row in client.get("/api/v1/accounts").json()] == ["tester"]
 
 

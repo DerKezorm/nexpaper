@@ -13,7 +13,7 @@ from app.db import SessionLocal
 from app.models import Account, Device, utcnow
 from app.services import devices
 
-from .conftest import make_account, new_client, require_second_factor, sign_in
+from .conftest import make_account, new_client, remove_for_good, require_second_factor, sign_in
 
 
 def bearer(token: str) -> dict[str, str]:
@@ -160,6 +160,7 @@ def test_a_blocked_locked_or_deleted_account_has_dead_devices(client: TestClient
         assert client.request("DELETE", f"/api/v1/accounts/{noor.id}", json={"confirm_name": "noor", "current_password": "correct horse battery"}
                               ).status_code == 204
         assert device.get("/api/v1/auth/me", headers=bearer(token)).status_code == 401
+    remove_for_good(noor)
     with SessionLocal() as db:
         assert db.query(Device).count() == 0, "the rows go with the account"
 

@@ -17,7 +17,7 @@ from app.models import Account
 from app.services import push, webpush
 
 from .clear import deep_log, found_in, journal_kept, word  # noqa: F401 - fixtures
-from .conftest import DATA_DIR, PASSWORD, make_account, new_client
+from .conftest import DATA_DIR, PASSWORD, make_account, new_client, remove_for_good
 from .fake_push import ADDRESS, HOST, FakePushService, public_resolver
 
 FIREFOX = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:131.0) Gecko/20100101 Firefox/131.0"}
@@ -377,6 +377,7 @@ def test_deleting_an_account_takes_its_devices(client: TestClient, account: Acco
         assert browser.post("/api/v1/push/devices", json=push_service.device().subscription()).status_code == 201
     assert client.get("/api/v1/settings/push").json()["devices"] == 1
     assert client.request("DELETE", f"/api/v1/accounts/{rike.id}", json={"confirm_name": "rike", "current_password": PASSWORD}).status_code == 204
+    remove_for_good(rike)
     assert client.get("/api/v1/settings/push").json()["devices"] == 0
 
 

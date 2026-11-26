@@ -20,7 +20,7 @@ from app.security import brake
 from app.services import documents, settings_service, sharing
 
 from . import files
-from .conftest import new_client
+from .conftest import new_client, remove_for_good
 from .intake import upload_and_read
 from .papers import add_document, own_vault, shared_vault
 
@@ -584,6 +584,10 @@ def test_after_the_maker_s_account_is_deleted_nothing_of_the_link_is_reachable(
     answer = client.request("DELETE", f"/api/v1/accounts/{tom.id}",
                             json={"current_password": PASSWORD, "confirm_name": "tom", "documents": "delete_documents"})
     assert answer.status_code == 204, answer.text
+    with public() as outside:
+        # Deleted, the link answers like none at once.
+        assert outside.get(f"/api/v1/l/{link['token']}").status_code == 404
+    remove_for_good(tom)
     with public() as outside:
         assert outside.get(f"/api/v1/l/{link['token']}").status_code == 404
         assert reachable(outside, link["token"], 1) == [404] * 4

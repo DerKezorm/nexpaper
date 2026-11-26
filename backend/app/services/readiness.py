@@ -180,3 +180,9 @@ def check(db: Session, request: Request, operator: Account, unknown_proxy: bool)
         _upload_requests(db),
     ]
     return {"points": [point.as_dict() for point in points], "open": sum(point.state != OK for point in points)}
+
+
+def own_points(db: Session) -> dict[str, Point]:
+    """The points only nexpaper has, for "Ready for the internet?" of the shared account module (konten 1.1.0,
+    ``routers/signin_page.py``); the module checks the common ones itself."""
+    return {point.key: point for point in (_secrets(), _backups(db), _upload_requests(db))}

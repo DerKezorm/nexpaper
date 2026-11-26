@@ -15,7 +15,7 @@ from app.db import SessionLocal
 from app.models import Account, Document, Event, Related, RelatedDismissed
 from app.services import related, settings_service
 
-from .conftest import PASSWORD, make_account, new_client
+from .conftest import PASSWORD, make_account, new_client, remove_for_good
 from .intake import upload_key
 from .papers import add_document, own_vault, shared_vault
 from .test_numbers import give_text
@@ -443,6 +443,7 @@ def test_an_account_that_goes_leaves_its_pairs_without_a_name(client: TestClient
     answer = client.request("DELETE", f"/api/v1/accounts/{tom.id}",
                             json={"current_password": PASSWORD, "confirm_name": tom.name})
     assert answer.status_code == 204, answer.text
+    remove_for_good(tom)
     with SessionLocal() as db:
         assert db.execute(select(Related.low_id, Related.high_id, Related.created_by)).all() == [
             (min(h1, h2), max(h1, h2), None)]

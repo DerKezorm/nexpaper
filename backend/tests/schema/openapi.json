@@ -9690,6 +9690,51 @@
         "title": "ShownThrough",
         "type": "object"
       },
+      "SignInIn": {
+        "properties": {
+          "factor_required": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Factor Required"
+          },
+          "passkeys_allowed": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Passkeys Allowed"
+          },
+          "password": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Password",
+            "type": "string"
+          },
+          "password_login": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Password Login"
+          }
+        },
+        "title": "SignInIn",
+        "type": "object"
+      },
       "Skipped": {
         "properties": {
           "id": {
@@ -10054,6 +10099,31 @@
         "title": "StartOut",
         "type": "object"
       },
+      "StorageLimitIn": {
+        "properties": {
+          "current_password": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Current Password",
+            "type": "string"
+          },
+          "limit": {
+            "anyOf": [
+              {
+                "maximum": 10995116277760.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Limit"
+          }
+        },
+        "title": "StorageLimitIn",
+        "type": "object"
+      },
       "SuggestionOut": {
         "description": "A document proposed to go with the one asked about: it carries the same number of the kind `via`.",
         "properties": {
@@ -10301,6 +10371,20 @@
           "languages"
         ],
         "title": "TextOut",
+        "type": "object"
+      },
+      "ThemeIn": {
+        "properties": {
+          "theme": {
+            "maxLength": 16,
+            "title": "Theme",
+            "type": "string"
+          }
+        },
+        "required": [
+          "theme"
+        ],
+        "title": "ThemeIn",
         "type": "object"
       },
       "TransferOut": {
@@ -11951,7 +12035,7 @@
     },
     "/api/v1/accounts/{account_id}": {
       "delete": {
-        "description": "Everything that belongs to the account goes with it. The documents of its own vault go where ``documents``\nsays; without a choice, a vault with documents answers 409 with their number. One transaction: a refusal changes\nnothing.",
+        "description": "Through the shared account module (konten 1.1.0, ``manage.remove``): the account is gone for everybody at once\nand has no way in any more; for 30 days the operator brings it back (``POST /accounts/{id}/restore``), then it is\nremoved for good with everything that belongs to it (``KontenStore.purge_account``). The documents of its own vault\ngo where ``documents`` says, checked now as before (without a choice, a vault with documents answers 409 with\ntheir number) and handed over when it is removed for good. A refusal changes nothing; deleting it again does\nnothing.",
         "operationId": "delete_account_api_v1_accounts__account_id__delete",
         "parameters": [
           {
@@ -11994,7 +12078,7 @@
             "HTTPBearer": []
           }
         ],
-        "summary": "Delete an account",
+        "summary": "Delete an account (it can be brought back for 30 days)",
         "tags": [
           "auth"
         ]
@@ -12002,7 +12086,7 @@
     },
     "/api/v1/accounts/{account_id}/block": {
       "post": {
-        "description": "Blocked, the account gets in nowhere: its sessions end, its tokens stop working.",
+        "description": "Blocked, the account gets in nowhere: its sessions and devices end, its keys stop working, its upload requests\nend (``manage.block``, ``KontenStore.shut_out``). Never the own account, never the last operator.",
         "operationId": "block_account_api_v1_accounts__account_id__block_post",
         "parameters": [
           {
@@ -12406,8 +12490,69 @@
         ]
       }
     },
+    "/api/v1/accounts/{account_id}/restore": {
+      "post": {
+        "description": "With the operator's own password (``manage.restore``). Blocked before the deletion, blocked after; its\nsessions and devices of before stay ended, its documents are where they were. After its days ``not_found``.",
+        "operationId": "restore_account_api_v1_accounts__account_id__restore_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "account_id",
+            "required": true,
+            "schema": {
+              "title": "Account Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OperatorConfirmIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Restore Account Api V1 Accounts  Account Id  Restore Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Bring a deleted account back within its 30 days",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
     "/api/v1/accounts/{account_id}/role": {
       "put": {
+        "description": "Several operators (konten 1.1.0, ``manage.set_role``): never the own account, never the last operator who can\nsign in (``last_operator``), never a deleted account.",
         "operationId": "set_role_api_v1_accounts__account_id__role_put",
         "parameters": [
           {
@@ -12501,6 +12646,66 @@
           }
         ],
         "summary": "End every session of an account",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/v1/accounts/{account_id}/storage-limit": {
+      "put": {
+        "description": "What the account's documents may take (``services/quota.py``); the own account too. Reaching it refuses\nuploads, nothing kept is touched (``manage.set_storage_limit``).",
+        "operationId": "set_storage_limit_api_v1_accounts__account_id__storage_limit_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "account_id",
+            "required": true,
+            "schema": {
+              "title": "Account Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StorageLimitIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Set Storage Limit Api V1 Accounts  Account Id  Storage Limit Put",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Set or remove the storage limit of an account",
         "tags": [
           "auth"
         ]
@@ -12618,6 +12823,7 @@
     },
     "/api/v1/accounts/{account_id}/unblock": {
       "post": {
+        "description": "``manage.unblock``: it signs in again, its sessions of before stay ended.",
         "operationId": "unblock_account_api_v1_accounts__account_id__unblock_post",
         "parameters": [
           {
@@ -21911,6 +22117,108 @@
         ]
       }
     },
+    "/api/v1/me/theme": {
+      "put": {
+        "description": "``profiles.change_theme`` of the shared module; kept in ``profile.mode`` as before (``PUT /me/preferences`` with\n``mode`` changes the same).",
+        "operationId": "set_theme_api_v1_me_theme_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ThemeIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Set Theme Api V1 Me Theme Put",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Light, dark or as the device says, for the own account on every device",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/v1/me/theme/adopt": {
+      "post": {
+        "description": "``profiles.adopt_theme``: an account that never chose takes what this browser had; one that chose keeps it.\nAnswers the theme in effect.",
+        "operationId": "adopt_theme_api_v1_me_theme_adopt_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ThemeIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Adopt Theme Api V1 Me Theme Adopt Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "The browser's earlier choice, taken once while the account has none",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
     "/api/v1/me/whats-new/seen": {
       "post": {
         "operationId": "whats_new_seen_api_v1_me_whats_new_seen_post",
@@ -25574,6 +25882,109 @@
         "summary": "Send the test mail now",
         "tags": [
           "mail"
+        ]
+      }
+    },
+    "/api/v1/server/readiness": {
+      "get": {
+        "operationId": "ready_api_v1_server_readiness_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Ready Api V1 Server Readiness Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Ready for the internet? In the form of the shared account module",
+        "tags": [
+          "settings"
+        ]
+      }
+    },
+    "/api/v1/server/sign-in": {
+      "get": {
+        "operationId": "read_sign_in_api_v1_server_sign_in_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Read Sign In Api V1 Server Sign In Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "The operator's sign-in switches, with what may change now",
+        "tags": [
+          "settings"
+        ]
+      },
+      "put": {
+        "description": "The module's rules: the password sign-in goes off only with an active provider (``provider_first``), the second\nfactor for everybody goes on only with one of the operator's own (``own_second_factor_first``) and off only with\nthe operator's password (``wrong_password``; without one a fresh sign-in at the provider).",
+        "operationId": "change_sign_in_api_v1_server_sign_in_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SignInIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Change Sign In Api V1 Server Sign In Put",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Change the operator's sign-in switches",
+        "tags": [
+          "settings"
         ]
       }
     },

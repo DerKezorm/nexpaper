@@ -611,6 +611,11 @@ KONTEN_COLUMNS: tuple[tuple[str, str, str], ...] = (
     ("password_resets", "origin", "VARCHAR(16) DEFAULT 'self' NOT NULL"),
     # The shared post module 1.1.0: the app's name for one mail (``Letter.key``), taken into the outbox only once.
     ("mail_outbox", "letter_key", "VARCHAR(120)"),
+    # konten 1.1.0 (the settings): deleting with 30 days to bring back, a storage limit per account, the handover of
+    # the documents chosen at the deletion. Empty for every account of before: nobody deleted, no limit.
+    ("users", "deleted_at", "DATETIME"),
+    ("users", "storage_limit", "BIGINT"),
+    ("users", "leaving", "JSON"),
 )
 
 
@@ -833,8 +838,9 @@ def _init(schema: Engine, *, backup: bool = True) -> None:
 
 
 def _konten_missing(schema: Engine) -> bool:
+    """A column of the shared modules is not there yet (1.12.0, or a database of an earlier build of 1.13.0)."""
     with schema.connect() as connection:
-        return not _has_column(connection, "users", "email_counts")
+        return any(not _has_column(connection, table, column) for table, column, _kind in KONTEN_COLUMNS)
 
 
 def _run_additions(schema: Engine) -> None:

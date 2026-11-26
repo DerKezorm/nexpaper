@@ -26,7 +26,7 @@ from app.security import brake
 from app.services import logs, settings_service, sorting, tell, upload_requests
 
 from . import files
-from .conftest import TAB, make_account, new_client
+from .conftest import TAB, make_account, new_client, remove_for_good
 from .intake import device_token, upload_key
 from .papers import PDF, own_vault, shared_vault
 
@@ -587,6 +587,11 @@ def test_blocking_ends_the_requests_for_good_and_deleting_takes_them_away(
     gone = client.request("DELETE", f"/api/v1/accounts/{lea.id}",
                           json={"current_password": "correct horse battery", "confirm_name": "lea"})
     assert gone.status_code == 204, gone.text
+    with SessionLocal() as db:
+        # Deleted, the requests end at once (as with a block); they go with the account when it goes for good.
+        assert db.scalar(select(func.count()).select_from(UploadRequest).where(
+            UploadRequest.user_id == lea.id, UploadRequest.revoked_at.is_(None))) == 0
+    remove_for_good(lea)
     with SessionLocal() as db:
         assert db.scalar(select(func.count()).select_from(UploadRequest).where(UploadRequest.user_id == lea.id)) == 0
 

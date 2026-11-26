@@ -16,7 +16,7 @@ from app.db import SessionLocal
 from app.models import Account, Document, Pin
 from app.services import pins, settings_service, vaults
 
-from .conftest import PASSWORD, make_account, new_client
+from .conftest import PASSWORD, make_account, new_client, remove_for_good
 from .papers import add_document, own_vault, shared_vault
 
 
@@ -238,6 +238,7 @@ def test_the_pins_go_with_the_account(client: TestClient, house: dict[str, Any])
     answer = client.request("DELETE", f"/api/v1/accounts/{house['tom'].id}",
                             json={"current_password": PASSWORD, "confirm_name": "tom", "documents": "delete_documents"})
     assert answer.status_code == 204, answer.text
+    remove_for_good(house["tom"])
     with SessionLocal() as db:
         assert db.scalar(select(func.count()).select_from(Pin)) == 0
 

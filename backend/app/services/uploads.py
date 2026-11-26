@@ -37,7 +37,7 @@ from .. import clock
 from ..config import get_settings
 from ..errors import error
 from ..models import EDIT, Document, Upload
-from . import filetypes, limits, receiving, rights, similar, storage
+from . import filetypes, limits, quota, receiving, rights, similar, storage
 
 logger = logging.getLogger("nexpaper.uploads")
 
@@ -115,6 +115,7 @@ def start(
         if pagetools.current_version(db, document).sha256 == sha256:
             raise error("same_file", "This file is the current version already.", 409)
         target = document.vault_id
+        quota.require_room(db, document.owner_id, size)
     else:
         target = receiving.resolve_vault(db, uid, vault_id)
         # The same file the person may see already: nothing is transferred. Only what they may see counts, so a file
@@ -122,6 +123,8 @@ def start(
         twin = similar.same_file(db, uid, sha256)
         if twin is not None:
             return Started(upload=None, existing=twin)
+        # The account's storage limit (konten 1.1.0): asked when the file is announced and again when it is finished.
+        quota.require_room(db, uid, size)
     now = clock.now()
     open_rows = list(db.scalars(select(Upload).where(Upload.user_id == uid, Upload.state == OPEN)))
     live = [row for row in open_rows if not _lapsed(row)]
@@ -310,6 +313,10 @@ def _make_document(db: Session, uid: int, upload: Upload) -> tuple[Document, Doc
     # version needs the right to change its document (``pagetools.accept_version`` asks).
     if upload.target_document_id is None:
         rights.require_vault(db, uid, upload.vault_id, EDIT)
+        quota.require_room(db, uid, upload.size)
+    else:
+        aimed = db.get(Document, upload.target_document_id)
+        quota.require_room(db, aimed.owner_id if aimed is not None else None, upload.size)
     _settle(db, upload)
     if upload.received != upload.size:
         raise error("incomplete", "Not all of the file has arrived.", 409, received=upload.received, size=upload.size)

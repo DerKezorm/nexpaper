@@ -343,21 +343,11 @@ def _sole_manager_of(db: Session, account_id: int, own: int | None) -> list[Vaul
     return found
 
 
-def before_account_delete(
-    db: Session, account_id: int, *, choice: str | None = None, target_user: int | None = None,
-    target_vault: int | None = None, by: int | None = None, account_name: str = "",
-) -> int:
-    """Called before an account is deleted, in the same transaction, under the write lock (a document uploaded or
-    changed at the same moment comes before or after, never in between). The documents of the person's own vault, the
-    trash included, go where ``choice`` says: ``transfer_to_user`` (into ``target_user``'s own vault, who becomes their
-    owner), ``transfer_to_vault`` (into the shared vault ``target_vault``) or ``delete_documents`` (for good, the files
-    in the background). Without a choice, a vault with documents refuses (409, with the number). The links the person
-    made end, the shares to them go, and so does their vault. Shared vaults the person manages alone refuse too.
-
-    The operator may choose themselves as the heir, or a vault they are in (a decision of the project): it is done in
-    the open, the dialog says who sees the documents afterwards, and every document says in its history that it was
-    taken over when this account was deleted, and by whom. Returns how many documents there were."""
-    changes.write_lock(db)
+def _handover(
+    db: Session, account_id: int, choice: str | None, target_user: int | None, target_vault: int | None,
+) -> tuple[Vault | None, list[int], int | None, int | None]:
+    """Whether the documents of the account's own vault can go where ``choice`` says (the refusals of
+    ``before_account_delete``), and where: the own vault, its documents, the vault they go to, their new owner."""
     own = db.scalar(select(Vault).where(Vault.personal_of == account_id))
     ids = list(db.scalars(select(Document.id).where(Document.vault_id == own.id))) if own is not None else []
     if ids and choice is None:
@@ -380,6 +370,36 @@ def before_account_delete(
         if place is None or place.personal_of is not None:
             raise error("invalid_target", "Choose a shared vault.", 422)
         destination = place.id
+    return own, ids, destination, new_owner
+
+
+def check_leaving(
+    db: Session, account_id: int, *, choice: str | None = None, target_user: int | None = None,
+    target_vault: int | None = None,
+) -> int:
+    """At the deletion (konten 1.1.0): the operator's choice for the documents is checked as ``before_account_delete``
+    would check it, nothing is changed; the handover itself follows when the account is removed for good, 30 days
+    later (``KontenStore.purge_account``). Returns how many documents there are now."""
+    _own, ids, _destination, _new_owner = _handover(db, account_id, choice, target_user, target_vault)
+    return len(ids)
+
+
+def before_account_delete(
+    db: Session, account_id: int, *, choice: str | None = None, target_user: int | None = None,
+    target_vault: int | None = None, by: int | None = None, account_name: str = "",
+) -> int:
+    """Called before an account is deleted, in the same transaction, under the write lock (a document uploaded or
+    changed at the same moment comes before or after, never in between). The documents of the person's own vault, the
+    trash included, go where ``choice`` says: ``transfer_to_user`` (into ``target_user``'s own vault, who becomes their
+    owner), ``transfer_to_vault`` (into the shared vault ``target_vault``) or ``delete_documents`` (for good, the files
+    in the background). Without a choice, a vault with documents refuses (409, with the number). The links the person
+    made end, the shares to them go, and so does their vault. Shared vaults the person manages alone refuse too.
+
+    The operator may choose themselves as the heir, or a vault they are in (a decision of the project): it is done in
+    the open, the dialog says who sees the documents afterwards, and every document says in its history that it was
+    taken over when this account was deleted, and by whom. Returns how many documents there were."""
+    changes.write_lock(db)
+    own, ids, destination, new_owner = _handover(db, account_id, choice, target_user, target_vault)
     now = clock.now()
     # The links the person made end at once, wherever they point.
     for link in db.scalars(select(Link).where(Link.created_by == account_id, Link.revoked_at.is_(None))):

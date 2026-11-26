@@ -167,6 +167,27 @@ def make_account(name: str, role: str = MEMBER, password: str = PASSWORD) -> Acc
     return row
 
 
+def remove_for_good(account: Account | int) -> None:
+    """A deleted account at the end of its 30 days (konten 1.1.0): its deletion moved back past them and the hourly
+    housekeeping run (``manage.purge_due``), which hands its documents on and removes it as deleting did before."""
+    from datetime import timedelta
+
+    from app.vendor.nexkonten import manage
+
+    account_id = account if isinstance(account, int) else account.id
+    with SessionLocal() as db:
+        row = db.get(Account, account_id)
+        assert row is not None and row.deleted_at is not None, "the account is not deleted"
+        moved = row.deleted_at - timedelta(days=manage.DELETE_DAYS + 1)
+        if row.blocked_at == row.deleted_at:
+            row.blocked_at = moved
+        row.deleted_at = moved
+        db.commit()
+    with SessionLocal() as db:
+        gone = manage.purge_due(konten_store.KontenStore(db))
+    assert account_id in gone, "removing the account for good failed (see the log)"
+
+
 def sign_in(client: TestClient, account: Account) -> None:
     """The client carries a session of ``account`` from now on (a real one, as after signing in)."""
     with SessionLocal() as db:

@@ -24,7 +24,7 @@ from app.models import (
 )
 from app.services import documents, searchtext
 
-from .conftest import make_account, new_client
+from .conftest import make_account, new_client, remove_for_good
 from .papers import add_document, own_vault, shared_vault
 from .searching import give_text
 
@@ -196,6 +196,7 @@ def test_account_deletion_with_documents_leaves_no_index(client: TestClient, ope
     answer = client.request("DELETE", f"/api/v1/accounts/{jule.id}", json={
         "current_password": PASSWORD, "confirm_name": jule.name, "documents": "delete_documents"})
     assert answer.status_code == 204, answer.text
+    remove_for_good(jule)
     with SessionLocal() as db:
         for t in ("doc_fts_docsize", "doc_tri_docsize"):
             assert db.scalar(text(f"SELECT count(*) FROM {t}")) == 0, t  # noqa: S608 - fixed names

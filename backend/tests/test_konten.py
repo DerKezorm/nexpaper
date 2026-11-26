@@ -30,7 +30,7 @@ from app.services import backups, intake, mail_senders, settings_service
 from app.services.konten_store import KontenStore, by_any_name, oldest_name
 from app.vendor.nexkonten import AccountError, profiles
 
-from .conftest import PASSWORD, make_account, new_client, sign_in
+from .conftest import PASSWORD, make_account, new_client, remove_for_good, sign_in
 from .test_pairing import ask as ask_oauth
 from .test_pairing import bearer, code_from, pkce, program, redeem, show_code, trade
 
@@ -125,6 +125,10 @@ def test_a_deleted_account_s_names_reach_nobody_and_stay_reserved(client: TestCl
     answer = client.request("DELETE", f"/api/v1/accounts/{account.id}",
                             json={"current_password": PASSWORD, "confirm_name": "dora2"})
     assert answer.status_code == 204, answer.text
+    with SessionLocal() as db:
+        # Deleted, no mail and no file reaches it any more under either name, while it can still come back.
+        assert intake.account_named(db, "dora") is None and intake.account_named(db, "dora2") is None
+    remove_for_good(account)
     with SessionLocal() as db:
         assert by_any_name(db, "dora") is None and by_any_name(db, "dora2") is None
         reserved = {row.name for row in db.query(FormerName).filter(FormerName.account_id.is_(None))}

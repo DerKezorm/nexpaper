@@ -46,6 +46,7 @@ from ..models import (
     AuthSession,
     Device,
     EmailConfirmation,
+    OidcProvider,
     Pairing,
     PasswordReset,
     utcnow,
@@ -80,6 +81,7 @@ from ..vendor.nexkonten import Account as KontoAccount
 from ..vendor.nexkonten.model2 import KIND_BROWSER, KIND_DEVICE, KIND_WAITING, STAGE_FULL
 from ..vendor.nexkonten.model2 import Passkey as PasskeyData
 from ..vendor.nexkonten.model2 import Session as SessionData
+from ..vendor.nexkonten.model3 import SignInSettings
 
 logger = logging.getLogger("nexpaper.auth")
 
@@ -193,6 +195,22 @@ def _dummy_hash() -> str:
     return accounts._dummy_hash()
 
 
+def blocked_since(row: Account) -> datetime | None:
+    """When the operator blocked the account. A deletion blocks an account that was not blocked at the same moment
+    (``set_deleted``): that mark belongs to the deletion, not to a block."""
+    if row.blocked_at is None or (row.deleted_at is not None and _aware(row.blocked_at) == _aware(row.deleted_at)):
+        return None
+    return _aware(row.blocked_at)
+
+
+def theme_of(row: Account) -> str:
+    """Light, dark or system as the account chose it (``profile.mode``, kept at the account since 1.0.0), "" while it
+    never chose."""
+    profile = row.profile if isinstance(row.profile, dict) else {}
+    mode = profile.get("mode")
+    return mode if isinstance(mode, str) and mode in nexkonten.profiles.THEMES else ""
+
+
 #: Whether the provider's picture is fetched in a thread of its own. Tests switch this off and do not wait.
 PICTURE_IN_THREAD = True
 
@@ -237,6 +255,11 @@ class KontenStore:
             offered_email_provider=(row.offered_email_provider or "") if offered else "",
             declined_email=row.declined_email or "",
             password_changed_at=_aware(row.password_changed_at) if row.password_changed_at else None,
+            blocked_at=blocked_since(row),
+            deleted_at=_aware(row.deleted_at) if row.deleted_at else None,
+            theme=theme_of(row),
+            storage_limit=row.storage_limit,
+            rights=frozenset({nexkonten.config.FEATURE_AI} if row.ai_allowed else ()),
         )
 
     @staticmethod
@@ -963,6 +986,138 @@ class KontenStore:
             row.avatar_at = None
             row.avatar_source = ""
             self.db.flush()
+
+    # === konten 1.1.0: the operator's functions, the theme, the sign-in switches ====================================
+
+    # --- ManageStore ---------------------------------------------------------------------------------------------
+    def active_operators(self) -> int:
+        return int(self.db.scalar(
+            select(func.count()).select_from(Account)
+            .where(Account.role == OPERATOR, Account.blocked_at.is_(None), Account.deleted_at.is_(None))
+        ) or 0)
+
+    def set_operator(self, account_id: AccountId, operator: bool) -> None:
+        row = self._row(account_id)
+        if row is not None:
+            row.role = OPERATOR if operator else MEMBER
+            self.db.flush()
+
+    def set_blocked(self, account_id: AccountId, at: datetime | None) -> None:
+        row = self._row(account_id)
+        if row is None:
+            return
+        row.blocked_at = at
+        if at is None:
+            row.failed_logins = 0
+            row.locked_until = None
+        self.db.flush()
+
+    def set_deleted(self, account_id: AccountId, at: datetime | None) -> None:
+        """Deleted at ``at``: blocked at the same moment unless it was blocked before (so every wall that asks
+        ``blocked_at`` keeps it out, and 1.12.0 sees it blocked). Brought back: that mark goes with the deletion, a
+        block of before stays; the documents' handover chosen at the deletion is forgotten. (The links for a new
+        password end with the deletion through the module, ``manage.remove``.)"""
+        row = self._row(account_id)
+        if row is None:
+            return
+        if at is not None:
+            row.deleted_at = at
+            if row.blocked_at is None:
+                row.blocked_at = at
+        else:
+            if row.deleted_at is not None and row.blocked_at is not None \
+                    and _aware(row.blocked_at) == _aware(row.deleted_at):
+                row.blocked_at = None
+            row.deleted_at = None
+            row.leaving = None
+        self.db.flush()
+
+    def shut_out(self, account_id: AccountId) -> None:
+        """What blocking ended in nexpaper before the module: every browser session and sign-in that waits, every
+        paired device (revoked, it stays in the list), a pairing code not used yet, the upload requests of the account,
+        and the key of known browsers. API keys stay and are refused while the account is blocked or deleted
+        (``schluessel_store.out``), as its providers and its links are (``blocked_at``)."""
+        from . import upload_requests
+
+        uid = int(account_id)
+        self.end_sessions(uid)
+        self.db.execute(update(Device).where(Device.account_id == uid, Device.revoked_at.is_(None))
+                        .values(revoked_at=utcnow()))
+        self.db.execute(delete(Pairing).where(Pairing.account_id == uid))
+        upload_requests.end_for(self.db, uid)
+        self.db.flush()
+
+    def deleted_before(self, moment: datetime) -> list[AccountId]:
+        return list(self.db.scalars(
+            select(Account.id).where(Account.deleted_at.is_not(None), Account.deleted_at <= moment).order_by(Account.id)
+        ))
+
+    def purge_account(self, account_id: AccountId) -> None:
+        """What deleting an account did in nexpaper before the module, now at the end of its 30 days: the documents of
+        its own vault go where the operator chose at the deletion (``leaving``; ``vaults.before_account_delete``, its
+        links end, its shares go, so does its vault), the name stays reserved for good, and the database takes what
+        hangs on the account with it (sessions, passkeys, keys, devices, links to providers)."""
+        from . import oidc_store, totp, vaults
+
+        row = self._row(account_id)
+        if row is None:
+            return
+        chosen = row.leaving if isinstance(row.leaving, dict) else {}
+        vaults.before_account_delete(
+            self.db, row.id, choice=chosen.get("documents"), target_user=chosen.get("target_user_id"),
+            target_vault=chosen.get("target_vault_id"), by=chosen.get("by"), account_name=row.name,
+        )
+        self.db.add(FormerName(account_id=None, name=row.name))
+        self.db.delete(row)
+        oidc_store.way_back_changed(self.db)
+        self.db.flush()
+        totp.forget_account(int(account_id))
+
+    def set_storage_limit(self, account_id: AccountId, limit: int | None) -> None:
+        row = self._row(account_id)
+        if row is not None:
+            row.storage_limit = limit
+            self.db.flush()
+
+    def set_right(self, account_id: AccountId, right: str, allowed: bool) -> None:
+        row = self._row(account_id)
+        if row is not None and right == nexkonten.config.FEATURE_AI:
+            row.ai_allowed = bool(allowed)
+            self.db.flush()
+
+    # --- ThemeStore ----------------------------------------------------------------------------------------------
+    def set_theme(self, account_id: AccountId, theme: str) -> None:
+        """In ``profile.mode``, where nexpaper kept light and dark at the account since 1.0.0 (1.12.0 reads it too)."""
+        row = self._row(account_id)
+        if row is not None:
+            profile = dict(row.profile) if isinstance(row.profile, dict) else {}
+            profile["mode"] = theme
+            row.profile = profile
+            self.db.flush()
+
+    # --- SignInStore ---------------------------------------------------------------------------------------------
+    def sign_in_settings(self) -> SignInSettings:
+        from . import settings_service
+
+        return SignInSettings(
+            password_login=bool(settings_service.get(self.db, "password_login")),
+            factor_required=bool(settings_service.get(self.db, SWITCH_FACTOR_REQUIRED)),
+            passkeys_allowed=bool(settings_service.get(self.db, SWITCH_PASSKEYS)),
+        )
+
+    def save_sign_in_settings(self, settings: SignInSettings) -> None:
+        from . import settings_service
+
+        settings_service.save(self.db, {
+            "password_login": settings.password_login,
+            SWITCH_FACTOR_REQUIRED: settings.factor_required,
+            SWITCH_PASSKEYS: settings.passkeys_allowed,
+        }, commit=False)
+
+    def active_providers(self) -> int:
+        return int(self.db.scalar(
+            select(func.count()).select_from(OidcProvider).where(OidcProvider.enabled.is_(True))
+        ) or 0)
 
     # --- Transaction ---------------------------------------------------------------------------------------------
     def commit(self) -> None:

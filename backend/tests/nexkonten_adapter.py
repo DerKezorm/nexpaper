@@ -418,3 +418,52 @@ class Adapter(StandardAdapter):
         if viewer is not None:
             browser.cookies.set(SESSION_COOKIE, self.open_session(viewer)[1])
         return browser.get(f"/api/v1/avatars/{owner}").status_code
+
+    # --- Since konten 1.1.0 -----------------------------------------------------------------------------------------
+
+    #: E23: nexpaper keeps the addresses 1.12.0 never proved by a link as unproven (the line "Address not confirmed"
+    #: was already there); every other app marks the addresses of before as proven.
+    keeps_unproven_addresses = True
+
+    def age_deletion(self, account_id: Any, days: int) -> None:
+        """The moment of the deletion ``days`` back, with the block mark a deletion sets (``KontenStore.set_deleted``)."""
+        from app.db import SessionLocal
+        from app.models import Account
+
+        with SessionLocal() as db:
+            row = db.get(Account, account_id)
+            assert row is not None and row.deleted_at is not None
+            moved = row.deleted_at - timedelta(days=days)
+            if row.blocked_at is not None and row.blocked_at == row.deleted_at:
+                row.blocked_at = moved
+            row.deleted_at = moved
+            db.commit()
+
+    def provider_active(self, on: bool) -> None:
+        """One active provider in ``oidc_providers`` (the table of the module oidc), or none."""
+        from sqlalchemy import delete
+
+        from app.db import SessionLocal
+        from app.models import OidcProvider, utcnow
+
+        with SessionLocal() as db:
+            db.execute(delete(OidcProvider))
+            if on:
+                db.add(OidcProvider(slug="probe", label="Probe", issuer="https://id.example.com", client_id="nexpaper",
+                                    client_secret_enc="", scopes="openid email profile", enabled=True,
+                                    auto_create=False, trusts_second_factor=False, managed="", position=0,
+                                    redirect_path="/api/v1/oidc/probe/callback", created_at=utcnow()))
+            db.commit()
+
+    def readiness(self, operator: Any) -> dict[str, Any]:
+        """``GET /api/v1/server/readiness`` over https, as the operator in a signed-in browser."""
+        from fastapi.testclient import TestClient
+
+        from app.main import app
+        from app.security import SESSION_COOKIE
+
+        browser = TestClient(app, base_url="https://testserver", headers=TAB)
+        browser.cookies.set(SESSION_COOKIE, self.open_session(operator)[1])
+        answer = browser.get("/api/v1/server/readiness")
+        assert answer.status_code == 200, answer.text
+        return answer.json()

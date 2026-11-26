@@ -16,13 +16,18 @@ from app.db import SessionLocal
 from app.models import Account, Document, DocumentTag, Job, Link, Sender, Share, Tag, Vault, VaultMember
 from app.services import documents, jobs, storage, vaults
 
-from .conftest import PASSWORD, make_account, new_client
+from .conftest import PASSWORD, make_account, new_client, remove_for_good
 from .papers import add_document, own_vault, shared_vault
 
 
-def delete(client: TestClient, account: Account, **body: object) -> object:
+def delete(client: TestClient, account: Account, *, for_good: bool = True, **body: object) -> object:
+    """Deleting through the operator's list; since konten 1.1.0 the account waits 30 days and goes for good after
+    them (``for_good``: at once, as the housekeeping does then). What the tests below look at happens then."""
     payload = {"current_password": PASSWORD, "confirm_name": account.name, **body}
-    return client.request("DELETE", f"/api/v1/accounts/{account.id}", json=payload)
+    answer = client.request("DELETE", f"/api/v1/accounts/{account.id}", json=payload)
+    if answer.status_code == 204 and for_good:
+        remove_for_good(account)
+    return answer
 
 
 def vault_of(document_id: int) -> int:
@@ -270,11 +275,13 @@ def test_an_upload_or_a_change_at_the_same_moment_comes_before_or_after_never_in
         assert "upload" not in outcome and "change" not in outcome, "a writer got in while the deletion was deciding"
         return real(db, account_id, own)  # type: ignore[arg-type]
 
+    # The handover happens when the account goes for good (konten 1.1.0): that is where the writers meet it.
+    answer = delete(client, jule, for_good=False, documents="transfer_to_user", target_user_id=tom.id)  # type: ignore[arg-type,attr-defined]
+    assert answer.status_code == 204  # type: ignore[attr-defined]
     monkeypatch.setattr(vaults, "_sole_manager_of", slow_check)
-    answer = delete(client, jule, documents="transfer_to_user", target_user_id=tom.id)  # type: ignore[arg-type,attr-defined]
+    remove_for_good(jule)  # type: ignore[arg-type]
     for thread in others:
         thread.join(20)
-    assert answer.status_code == 204  # type: ignore[attr-defined]
     assert outcome["upload"] == 404
     assert outcome["change"] == own_vault(tom)  # type: ignore[arg-type]
     with SessionLocal() as db:

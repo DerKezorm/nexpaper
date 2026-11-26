@@ -70,6 +70,7 @@ from .routers import reminders as reminders_router
 from .routers import request_page as request_page_router
 from .routers import search as search_router
 from .routers import settings as settings_router
+from .routers import signin_page as signin_page_router
 from .routers import sorting as sorting_router
 from .routers import storage as storage_router
 from .routers import totp as totp_router
@@ -105,6 +106,7 @@ from .services import uploads as uploads_service
 from .services.konten_store import KontenStore
 from .vendor import nexoidc
 from .vendor.nexkonten import factor as konten_factor
+from .vendor.nexkonten import manage as konten_manage
 from .vendor.nexkonten import setup as konten_setup
 from .vendor.nexschluessel import api as schluessel_api
 
@@ -132,6 +134,8 @@ ROUTERS = [
     # U1: upload requests, the person's side and the stranger's.
     upload_requests_router,
     request_page_router,
+    # konten 1.1.0: the page Server, Sign-in of the shared account module.
+    signin_page_router,
 ]
 
 
@@ -148,10 +152,16 @@ def _write_log_mode(mode: str, until: datetime | None) -> None:
         settings_service.save(db, {"log_mode": mode, "log_mode_until": until.isoformat() if until else None})
 
 
+def _purge_deleted() -> list[Any]:
+    with SessionLocal() as db:
+        return konten_manage.purge_due(KontenStore(db))
+
+
 async def _sweep_forever(stop: asyncio.Event) -> None:
     """Enrolments and sign-ins waiting for their second factor run out; what ran out goes from memory, ended
-    sessions from the database once an hour (they stayed until someone showed them again). System mail waiting in the
-    outbox of the shared post module goes out (in a thread: SMTP blocks)."""
+    sessions from the database once an hour (they stayed until someone showed them again), and so do accounts whose 30
+    days after a deletion are over. System mail waiting in the outbox of the shared post module goes out (in a thread:
+    SMTP blocks)."""
     rounds = 0
     while not stop.is_set():
         totp.sweep()
@@ -164,6 +174,12 @@ async def _sweep_forever(stop: asyncio.Event) -> None:
             with SessionLocal() as db:
                 purge_sessions(db)
                 pairing_service.sweep(db)
+            # Accounts deleted 30 days ago or longer go for good (konten 1.1.0), their documents where the operator
+            # chose; one that fails stays deleted and is tried again in an hour.
+            try:
+                await asyncio.to_thread(_purge_deleted)
+            except Exception:
+                logger.exception("Removing deleted accounts for good failed")
         rounds += 1
         try:
             await asyncio.wait_for(stop.wait(), 60)

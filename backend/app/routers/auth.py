@@ -19,7 +19,7 @@ from typing import Annotated, Any, Literal
 
 from fastapi import APIRouter, HTTPException, Path, Request, Response
 from pydantic import BaseModel, ConfigDict, Field, StrictBool
-from sqlalchemy import delete, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
 from .. import __version__
@@ -78,14 +78,14 @@ from ..services import (
     notices,
     oidc_store,
     post_store,
+    quota,
     settings_service,
     timezones,
     totp,
-    upload_requests,
 )
 from ..services import vaults as vaults_service
 from ..services.accounts import AccountError
-from ..services.konten_store import KontenStore, counts, pending_of, proven
+from ..services.konten_store import KontenStore, blocked_since, counts, pending_of, proven, theme_of
 from ..vendor import nexkonten, nexpost
 from ..vendor.nexkonten import login as konten_login
 from ..vendor.nexkonten import profiles
@@ -601,10 +601,44 @@ def me(request: Request, account: Account, db: DbSession) -> dict[str, Any]:
         # them). Making one stays possible; the page says so beside them.
         "keys_wait_for_second_factor": bool(account.second_factor_by_provider) and totp.keys_wait(db, account),
         "passkeys_allowed": bool(settings_service.get(db, "passkeys_allowed")),
+        # konten 1.1.0: light, dark or system for the account on every device ("" while it never chose: the page
+        # hands the server its browser's value once, ``POST /api/v1/me/theme/adopt``), and whether the profile shows
+        # "Address not confirmed yet" with "Send link" (an address that counts, never proven, a mail server to send).
+        "theme": theme_of(account),
+        "email_needs_proof": _needs_proof(db, account),
         "min_password": MIN_PASSWORD,
         # Signed in at a provider within the last minutes: an account without a password may confirm with that.
         "fresh_sign_in": fresh_session(request),
     }
+
+
+def _needs_proof(db: Session, account: AccountRow) -> bool:
+    konto = KontenStore(db).get_account(account.id)
+    return konto is not None and profiles.needs_proof(konto, mail_server=kontenpost.can_mail(db))
+
+
+class ThemeIn(BaseModel):
+    #: ``light``, ``dark`` or ``system``.
+    theme: str = Field(max_length=16)
+
+
+@router.put("/me/theme", summary="Light, dark or as the device says, for the own account on every device")
+def set_theme(payload: ThemeIn, account: Account, db: DbSession) -> dict[str, str]:
+    """``profiles.change_theme`` of the shared module; kept in ``profile.mode`` as before (``PUT /me/preferences`` with
+    ``mode`` changes the same)."""
+    try:
+        changed = profiles.change_theme(KontenStore(db), account.id, payload.theme)
+    except nexkonten.AccountError as exc:
+        db.rollback()
+        raise fail(exc) from exc
+    return {"theme": changed.theme}
+
+
+@router.post("/me/theme/adopt", summary="The browser's earlier choice, taken once while the account has none")
+def adopt_theme(payload: ThemeIn, account: Account, db: DbSession) -> dict[str, str]:
+    """``profiles.adopt_theme``: an account that never chose takes what this browser had; one that chose keeps it.
+    Answers the theme in effect."""
+    return {"theme": profiles.adopt_theme(KontenStore(db), account.id, payload.theme)}
 
 
 # --- The own signed-in devices ----------------------------------------------------------------------------------------
@@ -962,17 +996,39 @@ def list_accounts(operator: OperatorAccount, db: DbSession) -> list[dict[str, An
             key = row.email.strip().lower()
             shared[key] = shared.get(key, 0) + 1
     documents = vaults_service.documents_per_account(db)
+    used = quota.used_per_account(db)
+    return [listed(row, operator.id, shared, documents.get(row.id, 0), used.get(row.id, 0)) for row in rows]
+
+
+def listed(row: AccountRow, operator_id: int, shared: dict[str, int], documents: int, used: int) -> dict[str, Any]:
+    """One account of the operator's list. Since konten 1.1.0 also when it was deleted and when it goes for good
+    (``deleted_at``, ``purge_at``), its storage limit and what its documents take (``storage_limit``,
+    ``storage_used``, bytes), and the rights the operator gave it (``rights``: ``ai``). ``blocked`` is a block by
+    the operator; the mark a deletion sets is not one."""
+    blocked_at = blocked_since(row)
+    deleted_at = row.deleted_at
+    konto_rights = ["ai"] if row.ai_allowed else []
     # Never what a person chose for themselves either: when they are reminded, their time zone, their looks.
-    return [
-        {**{key: value for key, value in account_view(row).items() if key != "profile"},
-         "locked": accounts.is_locked(row), "blocked": row.blocked_at is not None,
-         "blocked_at": row.blocked_at.isoformat() if row.blocked_at else None,
-         "has_password": bool(row.password_hash),
-         "email_duplicate": bool((row.email or "").strip()) and shared.get(row.email.strip().lower(), 0) > 1,
-         "self": row.id == operator.id,
-         "documents": documents.get(row.id, 0)}
-        for row in rows
-    ]
+    return {**{key: value for key, value in account_view(row).items() if key != "profile"},
+            "locked": accounts.is_locked(row), "blocked": blocked_at is not None,
+            "blocked_at": blocked_at.isoformat() if blocked_at else None,
+            "deleted_at": deleted_at.isoformat() if deleted_at else None,
+            "purge_at": nexkonten.manage.purge_at(deleted_at).isoformat() if deleted_at else None,
+            "storage_limit": row.storage_limit,
+            "storage_used": used,
+            "rights": konto_rights,
+            "has_password": bool(row.password_hash),
+            "email_duplicate": bool((row.email or "").strip()) and shared.get(row.email.strip().lower(), 0) > 1,
+            "self": row.id == operator_id,
+            "documents": documents}
+
+
+def _listed_one(db: Session, row: AccountRow, operator_id: int) -> dict[str, Any]:
+    address = (row.email or "").strip().lower()
+    shared = {address: int(db.scalar(select(func.count()).select_from(AccountRow).where(
+        func.lower(func.trim(AccountRow.email)) == address)) or 0)} if address else {}
+    return listed(row, operator_id, shared, vaults_service.documents_per_account(db).get(row.id, 0),
+                  quota.used(db, row.id))
 
 
 class RenameIn(BaseModel):
@@ -1064,12 +1120,16 @@ def account_leaving(account_id: int, operator: OperatorAccount, db: DbSession) -
                           heirs_you_see=found.heirs_you_see)
 
 
-@router.delete("/accounts/{account_id}", status_code=204, summary="Delete an account")
+@router.delete("/accounts/{account_id}", status_code=204,
+               summary="Delete an account (it can be brought back for 30 days)")
 def delete_account(
     account_id: int, payload: AccountDeleteIn, request: Request, operator: OperatorAccount, db: DbSession,
 ) -> None:
-    """Everything that belongs to the account goes with it. The documents of its own vault go where ``documents``
-    says; without a choice, a vault with documents answers 409 with their number. One transaction: a refusal changes
+    """Through the shared account module (konten 1.1.0, ``manage.remove``): the account is gone for everybody at once
+    and has no way in any more; for 30 days the operator brings it back (``POST /accounts/{id}/restore``), then it is
+    removed for good with everything that belongs to it (``KontenStore.purge_account``). The documents of its own vault
+    go where ``documents`` says, checked now as before (without a choice, a vault with documents answers 409 with
+    their number) and handed over when it is removed for good. A refusal changes nothing; deleting it again does
     nothing."""
     confirm_operator(request, db, operator, payload.current_password)
     if account_id == operator.id:
@@ -1078,21 +1138,40 @@ def delete_account(
     name = row.name
     if payload.confirm_name.strip() != name:
         raise error("name_mismatch", "Type the name of the account to delete it.", 422)
-    held = vaults_service.before_account_delete(
+    if row.deleted_at is not None:
+        return
+    held = vaults_service.check_leaving(
         db, account_id, choice=payload.documents, target_user=payload.target_user_id,
-        target_vault=payload.target_vault_id, by=operator.id, account_name=name,
+        target_vault=payload.target_vault_id,
     )
-    # The name stays reserved for good (the shared account module: nobody inherits the post, the intake folder or the
-    # plus address of somebody else); the account's former names lose their account and stay reserved too.
-    db.add(FormerName(account_id=None, name=name))
-    # The database takes what hangs on the account with it (ON DELETE CASCADE): sessions, passkeys, keys, devices, its
-    # links to sign-in providers. The way back to 1.0.1 follows in the same commit (its subject leaves the old column).
-    db.delete(row)
-    oidc_store.way_back_changed(db)
-    db.commit()
+    row.leaving = {"documents": payload.documents, "target_user_id": payload.target_user_id,
+                   "target_vault_id": payload.target_vault_id, "by": operator.id}
+    try:
+        removed = nexkonten.manage.remove(KontenStore(db), row.id, actor_id=operator.id, actor_confirmed=True)
+    except nexkonten.AccountError as exc:
+        db.rollback()
+        raise fail(exc) from exc
     totp.forget_account(account_id)
-    logger.warning("Account deleted name=%s by=%s documents=%s choice=%s", name, operator.name, held,
-                   payload.documents if held else "-")
+    logger.warning("Account deleted name=%s by=%s documents=%s choice=%s purge_at=%s", name, operator.name, held,
+                   payload.documents if held else "-", removed.purge_at.isoformat())
+
+
+@router.post("/accounts/{account_id}/restore", summary="Bring a deleted account back within its 30 days")
+def restore_account(
+    account_id: int, payload: OperatorConfirmIn, request: Request, operator: OperatorAccount, db: DbSession,
+) -> dict[str, Any]:
+    """With the operator's own password (``manage.restore``). Blocked before the deletion, blocked after; its
+    sessions and devices of before stay ended, its documents are where they were. After its days ``not_found``."""
+    confirm_operator(request, db, operator, payload.current_password)
+    row = _row(db, account_id)
+    try:
+        nexkonten.manage.restore(KontenStore(db), row.id, actor_id=operator.id, actor_confirmed=True)
+    except nexkonten.AccountError as exc:
+        db.rollback()
+        raise fail(exc) from exc
+    db.refresh(row)
+    logger.warning("Account restored name=%s by=%s", row.name, operator.name)
+    return _listed_one(db, row, operator.id)
 
 
 @router.post("/accounts/{account_id}/sign-out", status_code=204, summary="End every session of an account")
@@ -1110,17 +1189,17 @@ def sign_out_account(account_id: int, operator: OperatorAccount, db: DbSession) 
 def block_account(
     account_id: int, payload: OperatorConfirmIn, request: Request, operator: OperatorAccount, db: DbSession,
 ) -> None:
-    """Blocked, the account gets in nowhere: its sessions end, its tokens stop working."""
+    """Blocked, the account gets in nowhere: its sessions and devices end, its keys stop working, its upload requests
+    end (``manage.block``, ``KontenStore.shut_out``). Never the own account, never the last operator."""
     confirm_operator(request, db, operator, payload.current_password)
     if account_id == operator.id:
         raise error("cannot_block_self", "You cannot block yourself.", 409)
     row = _row(db, account_id)
-    row.blocked_at = utcnow()
-    upload_requests.end_for(db, row.id)
-    # Known browsers of the account are worth nothing any more.
-    KontenStore(db).renew_device_key(row.id)
-    db.commit()
-    end_all_sessions(db, row.id)
+    try:
+        nexkonten.manage.block(KontenStore(db), row.id, actor_id=operator.id, actor_confirmed=True)
+    except nexkonten.AccountError as exc:
+        db.rollback()
+        raise fail(exc) from exc
     logger.warning("Account blocked name=%s by=%s", row.name, operator.name)
 
 
@@ -1128,10 +1207,16 @@ def block_account(
 def unblock_account(
     account_id: int, payload: OperatorConfirmIn, request: Request, operator: OperatorAccount, db: DbSession,
 ) -> None:
+    """``manage.unblock``: it signs in again, its sessions of before stay ended."""
     confirm_operator(request, db, operator, payload.current_password)
     row = _row(db, account_id)
-    row.blocked_at = None
-    db.commit()
+    if row.id == operator.id:
+        return
+    try:
+        nexkonten.manage.unblock(KontenStore(db), row.id, actor_id=operator.id, actor_confirmed=True)
+    except nexkonten.AccountError as exc:
+        db.rollback()
+        raise fail(exc) from exc
     logger.warning("Account unblocked name=%s by=%s", row.name, operator.name)
 
 
@@ -1151,9 +1236,14 @@ def set_permissions(
     row = _row(db, account_id)
     changes: dict[str, bool] = {key: value for key, value in payload.model_dump().items() if value is not None}
     if changes:
-        for key, value in changes.items():
-            setattr(row, key, value)
-        db.commit()
+        try:
+            # "AI allowed" of the shared account module (konten 1.1.0): a box that saves at once, in ``ai_allowed``.
+            nexkonten.manage.set_right(KontenStore(db), row.id, nexkonten.config.FEATURE_AI, changes["ai_allowed"],
+                                       actor_id=operator.id)
+        except nexkonten.AccountError as exc:
+            db.rollback()
+            raise fail(exc) from exc
+        db.refresh(row)
         logger.warning("Permissions changed name=%s %s by=%s", row.name,
                        " ".join(f"{key}={'yes' if value else 'no'}" for key, value in sorted(changes.items())),
                        operator.name)
@@ -1164,13 +1254,47 @@ def set_permissions(
 def set_role(
     account_id: int, payload: RoleIn, request: Request, operator: OperatorAccount, db: DbSession,
 ) -> dict[str, Any]:
+    """Several operators (konten 1.1.0, ``manage.set_role``): never the own account, never the last operator who can
+    sign in (``last_operator``), never a deleted account."""
     confirm_operator(request, db, operator, payload.current_password)
     if payload.role not in ROLES:
         raise error("invalid_role", "Unknown role.", 422)
     row = _row(db, account_id)
     if row.id == operator.id and payload.role != OPERATOR:
         raise error("cannot_demote_self", "You cannot take the operator role from yourself.", 409)
-    row.role = payload.role
-    db.commit()
+    if row.id != operator.id:
+        try:
+            nexkonten.manage.set_role(KontenStore(db), row.id, payload.role == OPERATOR, actor_id=operator.id,
+                                      actor_confirmed=True)
+        except nexkonten.AccountError as exc:
+            db.rollback()
+            raise fail(exc) from exc
+        db.refresh(row)
     logger.warning("Role changed name=%s role=%s by=%s", row.name, payload.role, operator.name)
     return account_view(row)
+
+
+class StorageLimitIn(BaseModel):
+    #: Bytes; null removes the limit.
+    limit: int | None = Field(default=None, ge=0, le=nexkonten.manage.STORAGE_LIMIT_MAX)
+    #: The operator's own password, as for everything the operator changes at an account.
+    current_password: str = Field(default="", max_length=200)
+
+
+@router.put("/accounts/{account_id}/storage-limit", summary="Set or remove the storage limit of an account")
+def set_storage_limit(
+    account_id: int, payload: StorageLimitIn, request: Request, operator: OperatorAccount, db: DbSession,
+) -> dict[str, Any]:
+    """What the account's documents may take (``services/quota.py``); the own account too. Reaching it refuses
+    uploads, nothing kept is touched (``manage.set_storage_limit``)."""
+    confirm_operator(request, db, operator, payload.current_password)
+    row = _row(db, account_id)
+    try:
+        nexkonten.manage.set_storage_limit(KontenStore(db), row.id, payload.limit, actor_id=operator.id,
+                                           actor_confirmed=True)
+    except nexkonten.AccountError as exc:
+        db.rollback()
+        raise fail(exc) from exc
+    db.refresh(row)
+    logger.warning("Storage limit set name=%s limit=%s by=%s", row.name, payload.limit, operator.name)
+    return _listed_one(db, row, operator.id)

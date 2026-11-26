@@ -25,7 +25,7 @@ from app.models import Account, Event, Job, PdfPassword, Version
 from app.services import backups, filecheck, pdf_passwords, processing
 
 from . import files
-from .conftest import DATA_DIR, PASSWORD, make_account, new_client
+from .conftest import DATA_DIR, PASSWORD, make_account, new_client, remove_for_good
 from .intake import process_all, sha, upload_key, upload_one, version_of
 from .papers import own_vault, shared_vault
 
@@ -449,6 +449,7 @@ def test_the_kept_passwords_go_with_the_account(client: TestClient, operator: Ac
     answer = client.request("DELETE", f"/api/v1/accounts/{tom.id}",
                             json={"current_password": PASSWORD, "confirm_name": "tom", "documents": "delete_documents"})
     assert answer.status_code == 204, answer.text
+    remove_for_good(tom)
     with SessionLocal() as db:
         assert db.scalar(select(func.count()).select_from(PdfPassword)) == 0
 

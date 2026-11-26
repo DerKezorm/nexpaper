@@ -208,6 +208,11 @@ class Adapter(StandardAdapter):
             json={"current_password": self.password_for(OPERATOR_NAME), "confirm_name": name},
         )
         assert answer.status_code == 204, answer.text
+        # Since konten 1.1.0 a deleted account waits 30 days; then the housekeeping removes it for good, with its links
+        # (and the way back written in that commit).
+        from tests.conftest import remove_for_good
+
+        remove_for_good(account_id)
 
     def trip_throttle(self, client: Any) -> None:
         # As many failed runs at the provider from this sender as the brake lets pass (every TestClient is the
