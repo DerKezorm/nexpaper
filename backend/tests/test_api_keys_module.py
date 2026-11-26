@@ -37,7 +37,8 @@ def old_key(account: Account, name: str, scope: str, days: int | None) -> str:
 
 
 def test_keys_made_before_work_and_both_lists_show_them(client: TestClient, operator: Account) -> None:
-    assert client.put(f"{NEW}/interfaces", json={"api": True}).json() == {"api": True}
+    # Since mcp 1.1.0 the switch "MCP-Zugang" stands beside it, off in a new installation.
+    assert client.put(f"{NEW}/interfaces", json={"api": True}).json() == {"api": True, "mcp": False}
     made = {
         "read": old_key(operator, "nexdeck", "read", 365),
         "upload": old_key(operator, "Scanner", "upload", None),
@@ -116,12 +117,17 @@ def test_the_new_routes_want_a_signed_in_browser(client: TestClient, operator: A
 
 
 def test_the_switch_of_the_card_is_the_old_setting(client: TestClient, operator: Account) -> None:
-    assert client.get(f"{NEW}/interfaces").json() == {"api": False}
-    assert client.put(f"{NEW}/interfaces", json={"api": True}).json() == {"api": True}
+    assert client.get(f"{NEW}/interfaces").json() == {"api": False, "mcp": False}
+    # Since mcp 1.1.0 the switch "MCP-Zugang" stands beside it, off in a new installation.
+    assert client.put(f"{NEW}/interfaces", json={"api": True}).json() == {"api": True, "mcp": False}
     assert client.get("/api/v1/settings").json()["api_keys_allowed"] is True
-    assert client.put(f"{NEW}/interfaces", json={"mcp": True}).status_code == 422
+    # Since mcp 1.1.0 the switch "MCP-Zugang" is nexpaper's too (setting ``mcp_enabled``); a switch nexpaper does not
+    # have is still refused.
+    assert client.put(f"{NEW}/interfaces", json={"mcp": True}).json() == {"api": True, "mcp": True}
+    assert client.put(f"{NEW}/interfaces", json={"mcp": False}).json()["mcp"] is False
+    assert client.put(f"{NEW}/interfaces", json={"pairing": True}).status_code == 422
     client.put("/api/v1/settings", json={"api_keys_allowed": False})
-    assert client.get(f"{NEW}/interfaces").json() == {"api": False}
+    assert client.get(f"{NEW}/interfaces").json() == {"api": False, "mcp": False}
 
 
 def test_a_new_key_starts_with_a_year_for_reading_and_never_for_uploading(client: TestClient,
@@ -130,7 +136,8 @@ def test_a_new_key_starts_with_a_year_for_reading_and_never_for_uploading(client
     listed = client.get(f"{NEW}/keys").json()
     kind = listed["kinds"][0]
     assert kind["rights"] == ["read", "upload"] and kind["default_days"] == 365
-    assert kind["default_days_by_right"] == {"upload": None} and listed["mcp"] is None
+    # Since mcp 1.1.0 nexpaper has MCP (off from the start): ``mcp`` is the switch, no more ``None``.
+    assert kind["default_days_by_right"] == {"upload": None} and listed["mcp"] is False
     read = client.post(f"{NEW}/keys", json={"kind": "api", "name": "card"}).json()
     upload = client.post(f"{NEW}/keys", json={"kind": "api", "name": "scanner", "right": "upload"}).json()
     assert read["key"]["expires_at"] is not None and upload["key"]["expires_at"] is None

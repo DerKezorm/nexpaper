@@ -240,7 +240,8 @@ def test_only_our_own_tokens_stand_in_for_the_tab_header(client: TestClient, ope
     from app.middleware import TOKEN_STARTS
     from app.services import apikeys
 
-    assert TOKEN_STARTS == (devices.TOKEN_PREFIX.encode(), apikeys.KEY_PREFIX.encode())
+    # Since mcp 1.1.0 and verbinden 0.1.1 also an MCP key (``npm_``) and a connection's token (``npv_``).
+    assert TOKEN_STARTS == (devices.TOKEN_PREFIX.encode(), apikeys.KEY_PREFIX.encode(), b"npm_", b"npv_")
     with TestClient(app, base_url="http://testserver") as bare:
         sign_in(bare, operator)
         for odd in ("Basic dXNlcjpwYXNz", "Bearer abc", "Bearer", "Token npd_" + "x" * 43, "npd_" + "x" * 43):

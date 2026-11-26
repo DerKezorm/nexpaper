@@ -469,7 +469,10 @@ def test_wrong_codes_rest_pairing_and_never_the_sign_in(client: TestClient, oper
 def test_the_routes_without_a_tab_are_exactly_these() -> None:
     from app.middleware import PROGRAM_PATHS
 
-    assert frozenset({"/api/v1/devices/pair", "/api/v1/oauth/token"}) == PROGRAM_PATHS
+    # The programs' places of the shared modules mcp and verbinden come beside them (tests/test_program_paths.py).
+    assert frozenset({"/api/v1/devices/pair", "/api/v1/oauth/token", "/api/mcp", "/api/oauth/register",
+                      "/api/oauth/token", "/api/oauth/revoke", "/api/connect/token", "/api/connect/revoke",
+                      "/api/connect/retire"}) == PROGRAM_PATHS
     with program() as anyone:
         assert anyone.post("/api/v1/auth/login", json={"name": "x", "password": "y"}).json()["detail"]["code"] == (
             "client_required")

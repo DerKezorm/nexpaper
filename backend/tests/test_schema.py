@@ -42,7 +42,13 @@ def schema_of(connection: sqlite3.Connection) -> dict[str, list[tuple[str, str, 
 
 #: What the shared account module adds without a version (``db._additions_konten``): its tables, and its columns at
 #: tables that were there. ``tests/test_konten.py`` checks them; a test of one step looks past them.
-KONTEN_TABLES = {"former_names", "setup_claims", "failed_unknown", "mail_outbox"}
+KONTEN_TABLES = {
+    "former_names", "setup_claims", "failed_unknown", "mail_outbox",
+    # The modules mcp 1.1.0, ki 0.1.0 and verbinden 0.1.1 add their tables the same way (``db._additions_mcp``,
+    # ``_additions_ki``, ``_additions_verbinden``).
+    "mcp_keys", "mcp_clients", "mcp_codes", "mcp_spent", "mcp_tool_rights", "mcp_requests", "ai_own_access",
+    "ai_events", "vb_connections", "vb_pending", "vb_codes", "vb_spent", "vb_waiting",
+}
 
 
 def without_konten(schema: dict[str, list[tuple[str, str, int, object, int]]]) -> dict[str, list[tuple]]:
