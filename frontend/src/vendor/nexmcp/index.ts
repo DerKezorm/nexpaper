@@ -1,0 +1,15 @@
+// nexmcp in the browser: the parts for rights per tool, requests, consent and the operator, and what they share.
+// Copied unchanged into frontend/src/vendor/nexmcp/ by bauplaene/mcp/tools/sync.py; changed only there.
+export { ConsentPage } from './ConsentPage'
+export type { ConsentPageProps } from './ConsentPage'
+export { McpOperatorSettings } from './McpOperatorSettings'
+export type { McpOperatorSettingsProps } from './McpOperatorSettings'
+export { PendingRequests } from './PendingRequests'
+export type { PendingRequestsProps } from './PendingRequests'
+export { RequestBellRow } from './RequestBellRow'
+export type { RequestBellRowProps } from './RequestBellRow'
+export { RequestPage } from './RequestPage'
+export type { RequestPageProps } from './RequestPage'
+export { ToolRights } from './ToolRights'
+export type { ToolRightsProps } from './ToolRights'
+export * from './mcp'

@@ -54,6 +54,14 @@ DEFAULTS: dict[str, Any] = {
     "oidc_legacy_second_factor": None,
     #: Keys for programs such as a dashboard card (``/api/v1``): closed until the operator opens it.
     "api_keys_allowed": False,
+    #: AI tools (MCP, ``services/mcp_store.py``): closed in a new installation until the operator opens it (MCP
+    #: decision 5; nexpaper had no MCP before, so no installation had it open).
+    "mcp_enabled": False,
+    #: The operator's settings of MCP (``vendor/nexmcp``): programs may connect (None: yes), the highest level of a key
+    #: (None: ``write``), the tools blocked for every account (None: none).
+    "mcp.programs": None,
+    "mcp.max_level": None,
+    "mcp.blocked_tools": None,
     #: Ask GitHub once a day whether a newer nexpaper is out (services/updates). Only the question goes out, so on.
     "update_check": True,
     #: Invitation mail: without a host nothing is sent, the link to copy is enough.

@@ -1,0 +1,131 @@
+{
+  "rights": {
+    "open": "Rechte je Werkzeug",
+    "title": "Rechte für „{name}“",
+    "hint": "Erlauben läuft sofort. Fragen hält den Aufruf an, bis du die Rückfrage erlaubst. Verweigern blendet das Werkzeug aus, das Programm sieht es nicht.",
+    "level": "Stufe: {level}",
+    "table": "Rechte je Werkzeug",
+    "tool": "Werkzeug",
+    "group": "Gruppe",
+    "right": "Recht",
+    "allow": "Erlauben",
+    "ask": "Fragen",
+    "deny": "Verweigern",
+    "save": "Speichern",
+    "cancel": "Abbrechen"
+  },
+  "groups": {
+    "read": "Lesen",
+    "draft": "Entwerfen",
+    "change": "Ändern",
+    "risky": "Riskant",
+    "admin": "Verwaltung"
+  },
+  "reasons": {
+    "blocked": "Vom Betreiber gesperrt.",
+    "level": "Über der Stufe dieses Zugangs.",
+    "admin": "Nur für Betreiber.",
+    "extra": "Braucht ein Extra, das dieser Zugang nicht hat."
+  },
+  "levels": {
+    "read": "Nur lesen",
+    "draft": "Lesen und Entwürfe",
+    "write": "Lesen und schreiben"
+  },
+  "toolNames": {
+    "request_status": "Stand einer Rückfrage"
+  },
+  "requests": {
+    "title": "Wartende Rückfragen",
+    "hint": "Was ein Programm mit einem Werkzeug tun will, das auf „Fragen“ steht. Erlauben führt genau das aus.",
+    "none": "Nichts wartet.",
+    "list": "Wartende Rückfragen",
+    "expires": "läuft ab {when}",
+    "noArguments": "Keine Angaben.",
+    "dangerous": "Gefährlich",
+    "approve": "Erlauben",
+    "decline": "Ablehnen",
+    "view": "Ansehen"
+  },
+  "request": {
+    "title": "Rückfrage von „{program}“",
+    "unknownProgram": "Programm",
+    "program": "Programm",
+    "tool": "Werkzeug",
+    "summary": "Was es tun will",
+    "created": "Gestellt",
+    "expires": "Läuft ab",
+    "status": "Stand",
+    "decided": "Entschieden",
+    "decidedBy": "{when} von {name}",
+    "arguments": "Angaben",
+    "result": "Antwort",
+    "exactly": "Ausgeführt wird genau das. Das Programm kann die Rückfrage nicht mehr ändern, nur eine neue stellen.",
+    "dangerousText": "Diese Rückfrage ist gefährlich: Was sie tut, lässt sich womöglich nicht zurücknehmen. Erlauben fragt noch einmal nach.",
+    "approve": "Erlauben",
+    "decline": "Ablehnen",
+    "confirmTitle": "„{tool}“ wirklich erlauben?",
+    "confirmText": "{program} führt das sofort aus, genau mit diesen Angaben.",
+    "confirm": "Ja, erlauben",
+    "cancel": "Abbrechen",
+    "loading": "Wird geladen …"
+  },
+  "status": {
+    "waiting": "Wartet",
+    "running": "Läuft",
+    "done": "Ausgeführt",
+    "failed": "Gescheitert",
+    "declined": "Abgelehnt",
+    "expired": "Abgelaufen"
+  },
+  "consent": {
+    "title": "{program} möchte {app} nutzen",
+    "text": "Danach geht es zurück zu {host}.",
+    "returnTo": "Zurück zu",
+    "unverified": "Den Namen gibt sich das Programm selbst; {app} hat ihn nicht geprüft. Erlaube nur, wenn du diese Anmeldung selbst begonnen hast.",
+    "level": "Was das Programm darf",
+    "areas": "Was das Programm erreicht",
+    "areasAll": "Alles, auch was später dazukommt",
+    "areasSome": "Nur diese",
+    "areasNone": "Wähle mindestens eins aus.",
+    "extras": "Extras",
+    "aiOff": "Der Betreiber erlaubt deinem Konto keine KI. Du kannst die Anmeldung nur ablehnen.",
+    "after": "Das Programm steht danach unter Mein Konto › Verbindungen › KI-Werkzeuge (MCP), mit Rechten je Werkzeug. Dort trennst du es jederzeit.",
+    "allow": "Erlauben",
+    "refuse": "Ablehnen",
+    "failed": "Diese Anmeldung geht nicht weiter",
+    "broken": "Der Adresse fehlen Angaben. Starte die Verbindung noch einmal im Programm.",
+    "loading": "Wird geladen …"
+  },
+  "operator": {
+    "programs": "Programme dürfen sich verbinden",
+    "programsHint": "Ein KI-Werkzeug verbindet sich mit der Zustimmung eines Mitglieds im Browser. Aus: kein neues Programm verbindet sich, verbundene arbeiten weiter.",
+    "maxLevel": "Höchste Stufe",
+    "maxLevelHint": "Kein Zugang darf mehr, auch keiner, der schon besteht.",
+    "blocked": "Gesperrte Werkzeuge",
+    "blockedHint": "Ein gesperrtes Werkzeug sieht kein Programm, ganz gleich, was ein Mitglied erlaubt.",
+    "blockedCount": "{count} gesperrt",
+    "blockedNone": "keins gesperrt"
+  },
+  "errors": {
+    "key_unknown": "Diesen Zugang gibt es nicht mehr.",
+    "right_invalid": "Dieses Recht gibt es hier nicht.",
+    "tool_unknown": "Dieses Werkzeug gibt es hier nicht.",
+    "level_invalid": "Diese Stufe gibt es hier nicht.",
+    "request_unknown": "Diese Rückfrage gibt es nicht mehr.",
+    "request_decided": "Diese Rückfrage ist schon entschieden.",
+    "request_expired": "Diese Rückfrage ist abgelaufen.",
+    "confirm_needed": "Diese Rückfrage ist gefährlich. Erlaube sie auf ihrer eigenen Seite.",
+    "programs_off": "Der Betreiber lässt keine Programme mehr verbinden.",
+    "client_unknown": "Dieses Programm ist hier nicht bekannt. Verbinde es noch einmal aus dem Programm heraus.",
+    "redirect_invalid": "Die Rücksprungadresse gehört nicht zu diesem Programm.",
+    "pkce_required": "Das Programm meldet sich nicht sicher genug an (PKCE mit S256 fehlt).",
+    "response_type": "Das Programm fragt nach einer Anmeldung, die es hier nicht gibt.",
+    "resource_invalid": "Das Programm will Zugang zu etwas anderem als dieser App.",
+    "ai_not_allowed": "Der Betreiber erlaubt deinem Konto keine KI.",
+    "areas_invalid": "Eins davon gehört nicht zu deinem Konto.",
+    "extra_invalid": "Dieses Extra gibt es hier nicht.",
+    "mcp_off": "Der Betreiber hat den MCP-Zugang abgeschaltet."
+  },
+  "failed": "Das ging gerade nicht. Gleich noch einmal versuchen."
+}

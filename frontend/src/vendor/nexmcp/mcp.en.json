@@ -1,0 +1,131 @@
+{
+  "rights": {
+    "open": "Rights per tool",
+    "title": "Rights for “{name}”",
+    "hint": "Allow runs at once. Ask holds the call until you allow the request. Deny hides the tool; the program does not see it.",
+    "level": "Level: {level}",
+    "table": "Rights per tool",
+    "tool": "Tool",
+    "group": "Group",
+    "right": "Right",
+    "allow": "Allow",
+    "ask": "Ask",
+    "deny": "Deny",
+    "save": "Save",
+    "cancel": "Cancel"
+  },
+  "groups": {
+    "read": "Read",
+    "draft": "Draft",
+    "change": "Change",
+    "risky": "Risky",
+    "admin": "Administration"
+  },
+  "reasons": {
+    "blocked": "Blocked by the operator.",
+    "level": "Above the level of this access.",
+    "admin": "Only for operators.",
+    "extra": "Needs an extra this access does not have."
+  },
+  "levels": {
+    "read": "Read only",
+    "draft": "Read and draft",
+    "write": "Read and write"
+  },
+  "toolNames": {
+    "request_status": "State of a request"
+  },
+  "requests": {
+    "title": "Waiting requests",
+    "hint": "What a program wants to do with a tool set to “Ask”. Allow runs exactly that.",
+    "none": "Nothing is waiting.",
+    "list": "Waiting requests",
+    "expires": "runs out {when}",
+    "noArguments": "No details.",
+    "dangerous": "Dangerous",
+    "approve": "Allow",
+    "decline": "Decline",
+    "view": "View"
+  },
+  "request": {
+    "title": "Request from “{program}”",
+    "unknownProgram": "Program",
+    "program": "Program",
+    "tool": "Tool",
+    "summary": "What it wants to do",
+    "created": "Asked",
+    "expires": "Runs out",
+    "status": "State",
+    "decided": "Decided",
+    "decidedBy": "{when} by {name}",
+    "arguments": "Details",
+    "result": "Answer",
+    "exactly": "Exactly this is run. The program cannot change the request any more, only ask a new one.",
+    "dangerousText": "This request is dangerous: what it does may not be undone. Allow asks once more.",
+    "approve": "Allow",
+    "decline": "Decline",
+    "confirmTitle": "Really allow “{tool}”?",
+    "confirmText": "{program} runs this at once, with exactly these details.",
+    "confirm": "Yes, allow",
+    "cancel": "Cancel",
+    "loading": "Loading …"
+  },
+  "status": {
+    "waiting": "Waiting",
+    "running": "Running",
+    "done": "Done",
+    "failed": "Failed",
+    "declined": "Declined",
+    "expired": "Ran out"
+  },
+  "consent": {
+    "title": "{program} wants to use {app}",
+    "text": "Afterwards you go back to {host}.",
+    "returnTo": "Back to",
+    "unverified": "The program gives itself this name; {app} has not checked it. Allow only if you started this sign-in yourself.",
+    "level": "What the program may do",
+    "areas": "What the program reaches",
+    "areasAll": "Everything, also what comes later",
+    "areasSome": "Only these",
+    "areasNone": "Choose at least one.",
+    "extras": "Extras",
+    "aiOff": "The operator does not let your account use AI. You can only decline this sign-in.",
+    "after": "The program then stands under My account › Connections › AI tools (MCP), with rights per tool. You can disconnect it there at any time.",
+    "allow": "Allow",
+    "refuse": "Decline",
+    "failed": "This sign-in cannot go on",
+    "broken": "The address lacks details. Start connecting again in the program.",
+    "loading": "Loading …"
+  },
+  "operator": {
+    "programs": "Programs may connect themselves",
+    "programsHint": "An AI tool connects with a member's consent in the browser. Off: no new program connects; connected ones keep working.",
+    "maxLevel": "Highest level",
+    "maxLevelHint": "No access may do more, not even one that exists already.",
+    "blocked": "Blocked tools",
+    "blockedHint": "No program sees a blocked tool, whatever a member allows.",
+    "blockedCount": "{count} blocked",
+    "blockedNone": "none blocked"
+  },
+  "errors": {
+    "key_unknown": "This access no longer exists.",
+    "right_invalid": "There is no such right here.",
+    "tool_unknown": "There is no such tool here.",
+    "level_invalid": "There is no such level here.",
+    "request_unknown": "This request no longer exists.",
+    "request_decided": "This request was decided already.",
+    "request_expired": "This request ran out.",
+    "confirm_needed": "This request is dangerous. Allow it on its own page.",
+    "programs_off": "The operator no longer lets programs connect.",
+    "client_unknown": "This program is not known here. Connect it again from the program.",
+    "redirect_invalid": "The return address does not belong to this program.",
+    "pkce_required": "The program does not sign in safely enough (PKCE with S256 is missing).",
+    "response_type": "The program asks for a sign-in that does not exist here.",
+    "resource_invalid": "The program asks for access to something other than this app.",
+    "ai_not_allowed": "The operator does not let your account use AI.",
+    "areas_invalid": "One of them does not belong to your account.",
+    "extra_invalid": "There is no such extra here.",
+    "mcp_off": "The operator has switched MCP access off."
+  },
+  "failed": "That did not work just now. Try again in a moment."
+}

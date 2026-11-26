@@ -1,0 +1,131 @@
+{
+  "rights": {
+    "open": "Droits par outil",
+    "title": "Droits pour « {name} »",
+    "hint": "Autoriser s’exécute aussitôt. Demander retient l’appel jusqu’à ce que tu autorises la demande. Refuser masque l’outil ; le programme ne le voit pas.",
+    "level": "Niveau : {level}",
+    "table": "Droits par outil",
+    "tool": "Outil",
+    "group": "Groupe",
+    "right": "Droit",
+    "allow": "Autoriser",
+    "ask": "Demander",
+    "deny": "Refuser",
+    "save": "Enregistrer",
+    "cancel": "Annuler"
+  },
+  "groups": {
+    "read": "Lire",
+    "draft": "Brouillons",
+    "change": "Modifier",
+    "risky": "Risqué",
+    "admin": "Administration"
+  },
+  "reasons": {
+    "blocked": "Bloqué par l’opérateur.",
+    "level": "Au-dessus du niveau de cet accès.",
+    "admin": "Réservé aux opérateurs.",
+    "extra": "Demande une option que cet accès n’a pas."
+  },
+  "levels": {
+    "read": "Lecture seule",
+    "draft": "Lecture et brouillons",
+    "write": "Lecture et écriture"
+  },
+  "toolNames": {
+    "request_status": "État d’une demande"
+  },
+  "requests": {
+    "title": "Demandes en attente",
+    "hint": "Ce qu’un programme veut faire avec un outil réglé sur « Demander ». Autoriser exécute exactement cela.",
+    "none": "Rien n’attend.",
+    "list": "Demandes en attente",
+    "expires": "expire {when}",
+    "noArguments": "Aucun détail.",
+    "dangerous": "Dangereux",
+    "approve": "Autoriser",
+    "decline": "Rejeter",
+    "view": "Voir"
+  },
+  "request": {
+    "title": "Demande de « {program} »",
+    "unknownProgram": "Programme",
+    "program": "Programme",
+    "tool": "Outil",
+    "summary": "Ce qu’il veut faire",
+    "created": "Posée",
+    "expires": "Expire",
+    "status": "État",
+    "decided": "Décidée",
+    "decidedBy": "{when} par {name}",
+    "arguments": "Détails",
+    "result": "Réponse",
+    "exactly": "C’est exactement cela qui est exécuté. Le programme ne peut plus changer la demande, seulement en poser une nouvelle.",
+    "dangerousText": "Cette demande est dangereuse : ce qu’elle fait ne pourra peut-être pas être annulé. Autoriser redemande une fois.",
+    "approve": "Autoriser",
+    "decline": "Rejeter",
+    "confirmTitle": "Vraiment autoriser « {tool} » ?",
+    "confirmText": "{program} l’exécute aussitôt, avec exactement ces détails.",
+    "confirm": "Oui, autoriser",
+    "cancel": "Annuler",
+    "loading": "Chargement …"
+  },
+  "status": {
+    "waiting": "En attente",
+    "running": "En cours",
+    "done": "Exécutée",
+    "failed": "Échouée",
+    "declined": "Rejetée",
+    "expired": "Expirée"
+  },
+  "consent": {
+    "title": "{program} veut utiliser {app}",
+    "text": "Ensuite, retour à {host}.",
+    "returnTo": "Retour à",
+    "unverified": "Le programme se donne ce nom lui-même ; {app} ne l’a pas vérifié. N’autorise que si tu as commencé cette connexion toi-même.",
+    "level": "Ce que le programme peut faire",
+    "areas": "Ce que le programme atteint",
+    "areasAll": "Tout, y compris ce qui viendra",
+    "areasSome": "Seulement ceux-ci",
+    "areasNone": "Choisis-en au moins un.",
+    "extras": "Options",
+    "aiOff": "L’opérateur ne permet pas l’IA à ton compte. Tu peux seulement rejeter cette connexion.",
+    "after": "Le programme figure ensuite sous Mon compte › Connexions › Outils d’IA (MCP), avec des droits par outil. Tu peux l’y déconnecter à tout moment.",
+    "allow": "Autoriser",
+    "refuse": "Rejeter",
+    "failed": "Cette connexion ne peut pas continuer",
+    "broken": "Il manque des détails dans l’adresse. Relance la connexion depuis le programme.",
+    "loading": "Chargement …"
+  },
+  "operator": {
+    "programs": "Les programmes peuvent se connecter",
+    "programsHint": "Un outil d’IA se connecte avec l’accord d’un membre dans le navigateur. Désactivé : aucun nouveau programme ne se connecte ; ceux déjà connectés continuent.",
+    "maxLevel": "Niveau le plus haut",
+    "maxLevelHint": "Aucun accès ne peut faire plus, même un accès qui existe déjà.",
+    "blocked": "Outils bloqués",
+    "blockedHint": "Aucun programme ne voit un outil bloqué, quoi qu’un membre autorise.",
+    "blockedCount": "{count} bloqué(s)",
+    "blockedNone": "aucun bloqué"
+  },
+  "errors": {
+    "key_unknown": "Cet accès n’existe plus.",
+    "right_invalid": "Ce droit n’existe pas ici.",
+    "tool_unknown": "Cet outil n’existe pas ici.",
+    "level_invalid": "Ce niveau n’existe pas ici.",
+    "request_unknown": "Cette demande n’existe plus.",
+    "request_decided": "Cette demande a déjà été décidée.",
+    "request_expired": "Cette demande a expiré.",
+    "confirm_needed": "Cette demande est dangereuse. Autorise-la sur sa propre page.",
+    "programs_off": "L’opérateur ne laisse plus les programmes se connecter.",
+    "client_unknown": "Ce programme n’est pas connu ici. Reconnecte-le depuis le programme.",
+    "redirect_invalid": "L’adresse de retour n’appartient pas à ce programme.",
+    "pkce_required": "Le programme ne se connecte pas de façon assez sûre (PKCE avec S256 manque).",
+    "response_type": "Le programme demande une connexion qui n’existe pas ici.",
+    "resource_invalid": "Le programme demande l’accès à autre chose que cette application.",
+    "ai_not_allowed": "L’opérateur ne permet pas l’IA à ton compte.",
+    "areas_invalid": "L’un d’eux n’appartient pas à ton compte.",
+    "extra_invalid": "Cette option n’existe pas ici.",
+    "mcp_off": "L’opérateur a désactivé l’accès MCP."
+  },
+  "failed": "Cela n’a pas marché. Réessaie dans un instant."
+}

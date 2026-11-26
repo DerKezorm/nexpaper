@@ -21,7 +21,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from . import __version__, private
 from .config import get_settings
 from .db import SessionLocal, init_db
-from .deps import require_browser_account, require_operator
+from .deps import client_ip, require_browser_account, require_operator
 from .errors import detail
 from .middleware import ForwardedProtoMiddleware, GuardMiddleware, RequestContextMiddleware, unhandled_error
 from .routers import (
@@ -86,6 +86,7 @@ from .services import (
     jobs,
     locales,
     logs,
+    mcp_store,
     mounts,
     notices,
     oidc_store,
@@ -108,6 +109,7 @@ from .vendor import nexoidc
 from .vendor.nexkonten import factor as konten_factor
 from .vendor.nexkonten import manage as konten_manage
 from .vendor.nexkonten import setup as konten_setup
+from .vendor.nexmcp import api as mcp_api
 from .vendor.nexschluessel import api as schluessel_api
 
 logger = logging.getLogger("nexpaper")
@@ -343,6 +345,13 @@ for module in ROUTERS:
 app.include_router(schluessel_api.router(
     config=schluessel_store.CONFIG, store=schluessel_store.store, account=require_browser_account,
     operator=require_operator, address=schluessel_store.address, prefix="/api/v1/connections", tags=["api keys"]))
+# AI tools (the shared MCP module, mcp 1.1.0): ``POST /api/mcp`` with an MCP key or a program's token, OAuth for
+# programs under ``/api/oauth`` and ``/.well-known``, the account's rights per tool and requests under
+# ``/api/v1/connections/mcp``. Consent and requests only in a signed-in browser, the settings for the operator.
+app.include_router(mcp_api.router(
+    config=mcp_store.MCP, store=mcp_store.store, account=require_browser_account, operator=require_operator,
+    address=schluessel_store.address, sender=client_ip, prefix="/api/v1/connections/mcp", notify=mcp_store.notify,
+    tags=["mcp"]))
 
 
 #: Files a browser asks the server about again each time: the service worker (an old one would keep its old ways for a

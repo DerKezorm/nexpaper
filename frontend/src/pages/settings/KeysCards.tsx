@@ -4,7 +4,8 @@
  * General (the switch "Programmschnittstelle (API) für Mitglieder"; before the card "Funktionen für alle Konten" and the
  * area "API"), "API-Schlüssel aller Konten" in Server › Accounts. The routes are the module's under
  * `/api/v1/connections`; nexpaper's older ways (`/api/v1/api-keys`, `/api/v1/admin/api-keys`) stay for nexpaper-ios, the
- * shortcut and scripts. nexpaper has no MCP access (E27): no card "KI-Werkzeuge (MCP)".
+ * shortcut and scripts. Since mcp 1.1.0 the operator's settings of MCP follow its switch in "Schnittstellen"
+ * (`McpCards.tsx`, which has the card "KI-Werkzeuge (MCP)" too).
  */
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -15,6 +16,7 @@ import { shortDate } from '../../lib/dates'
 import { useAuth } from '../../state/auth'
 import { AllKeysCard, ApiKeysCard, InterfacesCard, type AppWords, type KeyRequest } from '../../vendor/nexschluessel'
 import { Button, ConfirmDialog, CopyRow, Row, Rows, TextLink } from '../../vendor/nexui'
+import { McpOperator } from './McpCards'
 
 /** nexpaper's client for the cards (its headers, its errors with their codes). */
 // eslint-disable-next-line react-refresh/only-export-components
@@ -151,7 +153,7 @@ export function Interfaces() {
     [t('server.interface.auth'), 'Authorization: Bearer …', t('server.interface.authText')],
   ]
   return (
-    <InterfacesCard request={keyRequest} base={KEYS_AT} docsHref={DOCS} language={i18n.language}>
+    <InterfacesCard request={keyRequest} base={KEYS_AT} docsHref={DOCS} language={i18n.language} after={{ mcp: <McpOperator /> }}>
       <Rows label={t('server.interface.auth')} testId="interface-facts">
         {rows.map(([name, code, text]) => (
           <Row

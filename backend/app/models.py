@@ -1439,5 +1439,6 @@ class UploadRequest(Base):
 __all__ += ["UploadRequest"]
 
 
-# The tables of the shared account and post modules belong to every schema (``models_accounts``).
-from . import models_accounts  # noqa: E402, F401
+# The tables of the shared account and post modules belong to every schema (``models_accounts``), and those of the
+# shared MCP module (``models_mcp``), made at every start like them.
+from . import models_accounts, models_mcp  # noqa: E402, F401

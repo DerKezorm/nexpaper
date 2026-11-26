@@ -3207,5 +3207,24 @@
     "safari": "In Safari auf dem Mac: Ablage › Zum Dock hinzufügen.",
     "firefox": "Firefox kann Web-Apps nicht installieren. Öffne nexpaper dafür in einem anderen Browser, etwa Chrome, Edge oder Safari.",
     "other": "Bietet dein Browser hier keinen Knopf an, findest du das Installieren in seinem Menü, etwa unter „App installieren“ oder „Zum Startbildschirm hinzufügen“."
+  },
+  "mcp": {
+    "vaults": "Tresore",
+    "tools": {
+      "list_vaults": "Tresore auflisten",
+      "search_documents": "Dokumente suchen",
+      "read_document": "Dokument lesen",
+      "list_inbox": "Eingang ansehen",
+      "list_deadlines": "Fristen ansehen",
+      "accept_suggestions": "Vorschläge übernehmen",
+      "set_document_fields": "Angaben ändern",
+      "trash_document": "In den Papierkorb legen"
+    },
+    "levels": {
+      "read": "Lesen",
+      "write": "Lesen und ändern",
+      "readHint": "Sucht und liest Dokumente, Eingang und Fristen.",
+      "writeHint": "Darf dazu Angaben ändern, Vorschläge übernehmen und Dokumente in den Papierkorb legen."
+    }
   }
 }

@@ -209,13 +209,18 @@ def _refuse(status: int, code: str, text: str, **values: object) -> tuple[dict, 
 
 #: The start of a device token and of an API key (``services.devices.TOKEN_PREFIX``, ``services.apikeys.KEY_PREFIX``;
 #: a test keeps the two in step).
-TOKEN_STARTS = (b"npd_", b"npk_")
+TOKEN_STARTS = (b"npd_", b"npk_", b"npm_")
 
 
 #: Routes a program calls without a browser and without a token yet: a device trades a pairing code, an app trades the
 #: code of OAuth for its token. Neither reads a cookie, so a page on another site gains nothing by sending a browser
 #: there; they need no tab header (a native app has no tab).
-PROGRAM_PATHS = frozenset({"/api/v1/devices/pair", "/api/v1/oauth/token"})
+PROGRAM_PATHS = frozenset({
+    "/api/v1/devices/pair", "/api/v1/oauth/token",
+    # The shared MCP module: programs speak there with a token or none at all, never with a cookie that counts (its own
+    # walls: no ``Origin``, a key in ``Authorization``).
+    "/api/mcp", "/api/oauth/register", "/api/oauth/token", "/api/oauth/revoke",
+})
 
 
 def _stranger_upload(method: str, path: str) -> bool:

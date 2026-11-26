@@ -7,6 +7,8 @@ extend-exclude = [
     "app/vendor/nexoidc", "tests/nexoidc", "app/vendor/nexkonten", "tests/nexkonten", "app/vendor/nexpost",
     "tests/nexpost", "app/vendor/nexlog", "tests/nexlog", "app/vendor/nexsicherung", "tests/nexsicherung",
     "app/vendor/nexschluessel", "tests/nexschluessel", "app/vendor/nexsprachen", "tests/nexsprachen",
+    "app/vendor/nexupdates", "tests/nexupdates", "app/vendor/nexmcp", "tests/nexmcp", "app/vendor/nexki", "tests/nexki",
+    "app/vendor/nexverbinden", "tests/nexverbinden",
 ]
 
 [tool.ruff.lint]

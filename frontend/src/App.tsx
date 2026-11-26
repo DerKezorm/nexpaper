@@ -12,6 +12,7 @@ import { InboxPage } from './pages/InboxPage'
 import { ExportLinkPage } from './pages/ExportLinkPage'
 import { LinkPage } from './pages/LinkPage'
 import { OAuthPage } from './pages/OAuthPage'
+import { McpConsentPage, McpRequestPage } from './pages/settings/McpCards'
 import { OrderPage } from './pages/OrderPage'
 import { QuickPage } from './pages/QuickPage'
 import { FormerAddress, SettingsPage } from './pages/SettingsPage'
@@ -139,6 +140,8 @@ export default function App() {
           }
         />
         <Route path="oauth/authorize" element={<OAuthPage />} />
+        {/* AI tools (mcp 1.1.0): a program asks to connect; one of its requests waits for a yes. */}
+        <Route path="mcp/authorize" element={<McpConsentPage />} />
         <Route element={<AppShell />}>
           <Route index element={<ArchivePage />} />
           <Route path="eingang" element={<InboxPage />} />
@@ -150,6 +153,7 @@ export default function App() {
           <Route path="ordnung" element={<OrderPage />} />
           <Route path="settings" element={<SettingsPage />} />
           <Route path="settings/:tab" element={<SettingsPage />} />
+          <Route path="mcp/requests/:id" element={<McpRequestPage />} />
           {/* The pages of before, for links in mails, notices and the providers' answers. */}
           <Route path="konto" element={<FormerAddress page="konto" />} />
           <Route path="einstellungen" element={<FormerAddress page="einstellungen" />} />

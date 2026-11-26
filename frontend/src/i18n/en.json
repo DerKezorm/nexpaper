@@ -3207,5 +3207,24 @@
     "safari": "In Safari on the Mac: File › Add to Dock.",
     "firefox": "Firefox cannot install web apps. Open nexpaper in another browser for it, such as Chrome, Edge or Safari.",
     "other": "If your browser offers no button here, installing is in its menu, such as “Install app” or “Add to Home screen”."
+  },
+  "mcp": {
+    "vaults": "Vaults",
+    "tools": {
+      "list_vaults": "List vaults",
+      "search_documents": "Search documents",
+      "read_document": "Read a document",
+      "list_inbox": "Look at the inbox",
+      "list_deadlines": "Look at deadlines",
+      "accept_suggestions": "Accept suggestions",
+      "set_document_fields": "Change fields",
+      "trash_document": "Put in the trash"
+    },
+    "levels": {
+      "read": "Read",
+      "write": "Read and change",
+      "readHint": "Searches and reads documents, the inbox and deadlines.",
+      "writeHint": "May also change fields, accept suggestions and put documents in the trash."
+    }
   }
 }

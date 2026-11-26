@@ -676,8 +676,59 @@ def _additions_konten(connection: Connection) -> None:
         logger.info("The second factor stays required as before: the setting is written down")
 
 
+def _additions_mcp(connection: Connection) -> None:
+    """1.13.0, the shared MCP module (``services/mcp_store.py``, ``models_mcp.py``): MCP keys and connected programs,
+    their clients, codes, spent tokens, rights per tool and the requests that wait for a yes. All new and empty; 1.12.0
+    reads none of it. Written out as the tables stood in 1.13.0, like a step."""
+    for statement in (
+        (
+            "CREATE TABLE IF NOT EXISTS mcp_keys ( id INTEGER NOT NULL, account_id INTEGER NOT NULL, "
+            "name VARCHAR(100) NOT NULL, level VARCHAR(8) NOT NULL, token_hash VARCHAR(64), "
+            "prefix VARCHAR(16) NOT NULL, "
+            "created_at DATETIME NOT NULL, last_used_at DATETIME, expires_at DATETIME, blocked_at DATETIME, "
+            "vault_ids JSON, extras JSON, client_id VARCHAR(64), refresh_hash VARCHAR(64), signed_in_at DATETIME, "
+            "refreshed_at DATETIME, PRIMARY KEY (id), FOREIGN KEY(account_id) REFERENCES users (id) ON DELETE CASCADE, "
+            "UNIQUE (token_hash) )"
+        ),
+        "CREATE INDEX IF NOT EXISTS ix_mcp_keys_account_id ON mcp_keys (account_id)",
+        "CREATE INDEX IF NOT EXISTS ix_mcp_keys_client_id ON mcp_keys (client_id)",
+        "CREATE INDEX IF NOT EXISTS ix_mcp_keys_refresh_hash ON mcp_keys (refresh_hash)",
+        (
+            "CREATE TABLE IF NOT EXISTS mcp_clients ( id VARCHAR(64) NOT NULL, name VARCHAR(200) NOT NULL, "
+            "redirect_uris JSON NOT NULL, created_at DATETIME NOT NULL, last_used_at DATETIME, PRIMARY KEY (id) )"
+        ),
+        (
+            "CREATE TABLE IF NOT EXISTS mcp_codes ( code_hash VARCHAR(64) NOT NULL, client_id VARCHAR(64) NOT NULL, "
+            "account_id INTEGER NOT NULL, redirect_uri VARCHAR(2048) NOT NULL, challenge VARCHAR(200) NOT NULL, "
+            "level VARCHAR(8) NOT NULL, vault_ids JSON, extras JSON, expires_at DATETIME NOT NULL, "
+            "resource VARCHAR(2048) NOT NULL, PRIMARY KEY (code_hash), "
+            "FOREIGN KEY(account_id) REFERENCES users (id) ON DELETE CASCADE )"
+        ),
+        (
+            "CREATE TABLE IF NOT EXISTS mcp_spent ( token_hash VARCHAR(64) NOT NULL, key_id INTEGER NOT NULL, "
+            "spent_at DATETIME NOT NULL, PRIMARY KEY (token_hash) )"
+        ),
+        "CREATE INDEX IF NOT EXISTS ix_mcp_spent_key_id ON mcp_spent (key_id)",
+        (
+            "CREATE TABLE IF NOT EXISTS mcp_tool_rights ( key_id INTEGER NOT NULL, tool VARCHAR(64) NOT NULL, "
+            "value VARCHAR(8) NOT NULL, PRIMARY KEY (key_id, tool) )"
+        ),
+        (
+            "CREATE TABLE IF NOT EXISTS mcp_requests ( id INTEGER NOT NULL, account_id INTEGER NOT NULL, "
+            "key_id INTEGER NOT NULL, key_name VARCHAR(200) NOT NULL, tool VARCHAR(64) NOT NULL, "
+            "arguments TEXT NOT NULL, "
+            "digest VARCHAR(64) NOT NULL, status VARCHAR(16) NOT NULL, created_at DATETIME NOT NULL, "
+            "expires_at DATETIME NOT NULL, decided_at DATETIME, decided_by VARCHAR(200) NOT NULL, result TEXT, "
+            "summary VARCHAR(500) NOT NULL, dangerous BOOLEAN NOT NULL, PRIMARY KEY (id), "
+            "FOREIGN KEY(account_id) REFERENCES users (id) ON DELETE CASCADE )"
+        ),
+        "CREATE INDEX IF NOT EXISTS ix_mcp_requests_account_id ON mcp_requests (account_id)",
+    ):
+        connection.exec_driver_sql(statement)
+
+
 #: Made at every start when missing, without a new version (see the top of this file). Each is idempotent.
-ADDITIONS: list[Callable[[Connection], None]] = [_additions_signin, _additions_konten]
+ADDITIONS: list[Callable[[Connection], None]] = [_additions_signin, _additions_konten, _additions_mcp]
 
 #: The schema the additions are made on: the one of 1.0.1. From there on they run before every step too, so that a
 #: step of a later version finds their tables on a database 1.0.1 made (it would stop with "no such table" else).

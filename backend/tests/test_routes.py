@@ -82,7 +82,21 @@ OPEN = {
     # U1: an upload request, what it shows and the one file a stranger sends through it (tests/test_upload_requests.py).
     ("GET", "/api/v1/u/{token}"),
     ("POST", "/api/v1/u/{token}/files"),
+    # AI tools (the shared MCP module): a program speaks with its key or connects itself; the walls are the module's
+    # (tests/nexmcp). Closed (404) while the operator has MCP off.
+    ("POST", "/api/mcp"),
+    ("GET", "/api/mcp"),
+    ("GET", "/.well-known/oauth-protected-resource"),
+    ("GET", "/.well-known/oauth-protected-resource/api/mcp"),
+    ("GET", "/.well-known/oauth-authorization-server"),
+    ("POST", "/api/oauth/register"),
+    ("POST", "/api/oauth/token"),
+    ("POST", "/api/oauth/revoke"),
 }
+
+#: The fixed places of the shared MCP module, the same in every nex app (Entwurf MCP-Modul: one address for all): the
+#: only routes outside ``/api/v1``.
+MODULE_PLACES = ("/api/mcp", "/api/oauth/", "/.well-known/oauth-")
 
 
 def concrete(path: str) -> str:
@@ -115,7 +129,8 @@ def api_routes() -> list[tuple[str, str]]:
 
 
 def test_every_route_is_under_the_one_interface() -> None:
-    outside = [route.path for route in every_route() if not str(getattr(route, "path", "")).startswith("/api/v1")]
+    outside = [route.path for route in every_route() if not str(getattr(route, "path", "")).startswith("/api/v1")
+               and not str(getattr(route, "path", "")).startswith(MODULE_PLACES)]
     # The frontend is served from files and mounted only where it was built (not in the tests).
     assert outside == [], f"Routes outside /api/v1: {outside}"
     assert len(api_routes()) > 80
@@ -426,7 +441,9 @@ def test_the_description_is_served_and_names_the_ways_in() -> None:
     with TestClient(app, base_url="http://testserver") as client:
         answer = client.get("/api/v1/openapi.json")
         assert answer.status_code == 200 and answer.json()["info"]["title"] == "nexpaper"
-        assert all(path.startswith("/api/v1/") for path in answer.json()["paths"])
+        assert all(path.startswith("/api/v1/") or path.startswith(MODULE_PLACES) for path in answer.json()["paths"])
+        assert [path for path in answer.json()["paths"] if path.startswith(MODULE_PLACES)] == [
+            "/api/mcp", "/api/oauth/authorize"], "only the MCP endpoint and the consent of the shared module"
         assert "HTTPBearer" in str(answer.json()["components"]["securitySchemes"])
 
 
