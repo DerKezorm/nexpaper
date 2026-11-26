@@ -39,17 +39,13 @@ def test_no_mail_is_written_by_hand_any_more() -> None:
     found = [str(path.relative_to(APP)) for path in APP.rglob("*.py") if "vendor" not in path.parts
              and any(word in path.read_text(encoding="utf-8") for word in ("smtplib", "EmailMessage"))]
     assert found == []
-    # What is left of the mailer is one name for the test "Bestand" (Bauplan E47, as nexdiary): ``send_reset`` hands
-    # the link to ``kontenpost.send_reset`` and does nothing of its own.
-    mailer = (APP / "services" / "mailer.py").read_text(encoding="utf-8")
-    tree = ast.parse(mailer)
-    functions = [node for node in ast.walk(tree) if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))]
-    assert [function.name for function in functions] == ["send_reset"]
-    calls = [ast.unparse(node.func) for node in ast.walk(functions[0]) if isinstance(node, ast.Call)]
-    assert calls == ["kontenpost.send_reset"]
-    imported = {alias.name for node in ast.walk(tree) if isinstance(node, (ast.Import, ast.ImportFrom)) for alias in node.names}
-    assert imported <= {"annotations", "Session", "kontenpost"}, imported
-
+    # Nothing is left of nexpaper's own mailer (Bauplan E51): the test "Bestand" binds kontenpost in its block, and the
+    # link of "Forgot your password?" goes to ``kontenpost.send_reset``, the shared post module's letter.
+    assert not (APP / "services" / "mailer.py").exists()
+    resets = ast.parse((APP / "routers" / "resets.py").read_text(encoding="utf-8"))
+    send = next(node for node in ast.walk(resets) if isinstance(node, ast.FunctionDef) and node.name == "_send")
+    calls = [ast.unparse(node.func) for node in ast.walk(send) if isinstance(node, ast.Call)]
+    assert "kontenpost.send_reset" in calls and not any(call.startswith("mailer.") for call in calls), calls
 
 def test_a_mail_waiting_in_the_outbox_from_before_still_goes_out(smtp: type[FakeSmtp]) -> None:  # noqa: F811
     """A row of the outbox as the version before wrote it (the letter as JSON without headers and key)."""
