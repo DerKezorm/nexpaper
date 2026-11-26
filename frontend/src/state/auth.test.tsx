@@ -21,15 +21,21 @@ function Probe() {
   return <p>{status}</p>
 }
 
-function serve(profile: Record<string, unknown>): void {
+/** The requests the page sent, `METHOD path` with the body. */
+let sent: { method: string; url: string; body: unknown }[] = []
+
+function serve(profile: Record<string, unknown>, account: Record<string, unknown> = {}): void {
   const json = (data: unknown) => new Response(JSON.stringify(data), { status: 200, headers: { 'Content-Type': 'application/json' } })
+  sent = []
   vi.stubGlobal(
     'fetch',
-    vi.fn(async (url: string) => {
+    vi.fn(async (url: string, init?: RequestInit) => {
+      sent.push({ method: init?.method ?? 'GET', url, body: init?.body ? JSON.parse(String(init.body)) : undefined })
       if (url === '/api/v1/setup') return json({ needs_setup: false, code_required: false, signed_in: true, version: '0.1.0', min_password: 12 })
       if (url === '/api/v1/auth/me') {
-        return json({ id: 1, name: 'jule', display_name: 'Jule', role: 'user', language: 'de', version: '0.1.0', whats_new_seen: '0.1.0', profile: { timezone: 'Europe/Berlin', timezone_source: 'manual', ...profile } })
+        return json({ id: 1, name: 'jule', display_name: 'Jule', role: 'user', language: 'de', version: '0.1.0', whats_new_seen: '0.1.0', ...account, profile: { timezone: 'Europe/Berlin', timezone_source: 'manual', ...profile } })
       }
+      if (url === '/api/v1/me/theme/adopt') return json({ theme: (JSON.parse(String(init?.body)) as { theme: string }).theme })
       return json({})
     }),
   )
@@ -77,6 +83,31 @@ describe('the looks of the account', () => {
     await start()
     expect(document.documentElement.hasAttribute('data-theme')).toBe(false)
     expect(kept.get('nexpaper.theme')).toBe('light')
+  })
+
+  // konten 1.1.0 (plan "Einstellungen", Darstellung): the theme is the account's on every device; an account that never
+  // chose one takes over, once, what this browser kept before (`POST /api/v1/me/theme/adopt`).
+  it('take over what this browser kept, once, while the account never chose', async () => {
+    kept.set('nexpaper.theme', 'dark')
+    serve({ mode: 'system' }, { theme: '' })
+    await start()
+    expect(sent.filter((call) => call.url === '/api/v1/me/theme/adopt')).toEqual([{ method: 'POST', url: '/api/v1/me/theme/adopt', body: { theme: 'dark' } }])
+    // Until then the browser's own stays: the account's "system" of before does not paint over it.
+    expect(document.documentElement.getAttribute('data-theme')).toBe('dark')
+  })
+
+  it('take over nothing when the account chose, or when the browser kept nothing', async () => {
+    kept.set('nexpaper.theme', 'dark')
+    serve({ mode: 'light' }, { theme: 'light' })
+    await start()
+    expect(sent.some((call) => call.url === '/api/v1/me/theme/adopt')).toBe(false)
+    expect(document.documentElement.hasAttribute('data-theme')).toBe(false)
+    await act(async () => root.unmount())
+    box.remove()
+    kept.clear()
+    serve({ mode: 'system' }, { theme: '' })
+    await start()
+    expect(sent.some((call) => call.url === '/api/v1/me/theme/adopt')).toBe(false)
   })
 
   it('ignore a mode that is none of the three', async () => {

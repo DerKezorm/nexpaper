@@ -70,7 +70,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         adopting.current = true
         void authApi.adoptTheme(kept).then(
           ({ theme }) => {
-            if (isMode(theme) && theme !== storedMode()) applyMode(theme)
+            if (isMode(theme)) applyMode(theme)
             setMeState((current) => (current && current.id === next.id ? { ...current, theme, profile: { ...current.profile, mode: theme } } : current))
           },
           () => undefined,
