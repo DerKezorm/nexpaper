@@ -176,9 +176,24 @@ def delete_vault(db: Session, uid: int, vault_id: int, move_to: int | None) -> N
     logger.info("Vault deleted vault_id=%s moved=%s", vault_id, len(ids))
 
 
-def _managers(db: Session, vault_id: int) -> int:
-    return int(db.scalar(select(func.count()).select_from(VaultMember).where(
-        VaultMember.vault_id == vault_id, VaultMember.right == MANAGE)) or 0)
+def _managers(db: Session, vault_id: int, *, besides: int | None = None) -> int:
+    """The managers of the vault, ``besides`` one of them. A deleted account does not count (Bauplan E33): it keeps its
+    place for 30 days, so that bringing it back makes it whole, but it goes then, and a vault keeps a manager who
+    stays."""
+    clauses = [VaultMember.vault_id == vault_id, VaultMember.right == MANAGE,
+               VaultMember.user_id.in_(select(Account.id).where(Account.deleted_at.is_(None)))]
+    if besides is not None:
+        clauses.append(VaultMember.user_id != besides)
+    return int(db.scalar(select(func.count()).select_from(VaultMember).where(*clauses)) or 0)
+
+
+def _hidden(db: Session, user_ids: list[int]) -> set[int]:
+    """Of these members, the ones nobody sees in the vault's list: blocked or deleted (``listing``). They keep their
+    place and their right (Bauplan E33), nobody chooses, changes or removes them; a deleted one goes with its account at
+    the end of its 30 days."""
+    if not user_ids:
+        return set()
+    return set(db.scalars(select(Account.id).where(Account.id.in_(user_ids), Account.blocked_at.is_not(None))))
 
 
 def set_member(db: Session, uid: int, vault_id: int, user_id: int, right: str) -> VaultMember:
@@ -216,7 +231,7 @@ def remove_member(db: Session, uid: int, vault_id: int, user_id: int) -> None:
     if vault.personal_of == user_id:
         raise error("owner_stays_manager", "The owner of a personal vault always manages it.", 409)
     member = db.get(VaultMember, (vault_id, user_id))
-    if member is None:
+    if member is None or _hidden(db, [user_id]):
         raise error("not_found", "Not found.", 404)
     if member.right == MANAGE and _managers(db, vault_id) <= 1:
         raise error("last_manager", "A vault keeps at least one manager.", 409)
@@ -258,9 +273,11 @@ def set_members(db: Session, uid: int, vault_id: int, wanted: list[tuple[int, st
     added = [u for u in target if u not in current or current[u] != target[u]]
     if added:
         usable = set(db.scalars(select(Account.id).where(Account.id.in_(added), Account.blocked_at.is_(None))))
-        if any(u not in usable for u in added if u not in current):
+        if any(u not in usable for u in added):
             raise error("not_found", "Not found.", 404)
-    removed = [u for u in current if u not in target]
+    # Whoever the list does not show (blocked, deleted) stays as they are: the list sent back cannot name them.
+    hidden = _hidden(db, list(current))
+    removed = [u for u in current if u not in target and u not in hidden]
     if not added and not removed:
         db.rollback()
         return
@@ -336,7 +353,7 @@ def _sole_manager_of(db: Session, account_id: int, own: int | None) -> list[Vaul
     found = []
     for vault_id in db.scalars(select(VaultMember.vault_id).where(
             VaultMember.user_id == account_id, VaultMember.right == MANAGE)):
-        if vault_id != own and _managers(db, vault_id) <= 1:
+        if vault_id != own and _managers(db, vault_id, besides=account_id) == 0:
             vault = db.get(Vault, vault_id)
             if vault is not None:
                 found.append(vault)

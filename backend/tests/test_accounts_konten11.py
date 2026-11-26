@@ -12,15 +12,16 @@ from fastapi.testclient import TestClient
 from sqlalchemy import select
 
 from app.db import SessionLocal
-from app.models import Account, Document, Vault
+from app.models import Account, Document, Vault, VaultMember
 from app.models_accounts import FormerName
 from app.security import brake
 from app.services import apikeys, totp
 from app.services.konten_store import KontenStore
+from app.services.post_store import PostStore
 from app.vendor.nexkonten import manage
 
 from .conftest import PASSWORD, make_account, new_client
-from .papers import PDF, add_document, own_vault
+from .papers import PDF, add_document, own_vault, shared_vault
 
 #: A file of its own for an upload (the checksum must not match a document the account has).
 FILE = PDF + b"%" + b"x" * 2000 + b"\n"
@@ -139,6 +140,66 @@ def test_a_deleted_account_s_keys_rest_and_work_again_when_it_comes_back(client:
     client.post(f"/api/v1/accounts/{jule.id}/restore", json={"current_password": PASSWORD})
     apikeys.forget()
     assert client.get("/api/v1/me", headers=headers).status_code == 200
+
+
+def test_a_deleted_account_keeps_its_places_in_shared_vaults_unseen_and_unchosen_until_it_goes(
+        client: TestClient, operator: Account) -> None:
+    """Bauplan E33: for 30 days a deleted account keeps its memberships, so that bringing it back makes it whole; until
+    then nobody sees it in a vault's list, nobody chooses it, saving the list does not throw it out, it is no manager
+    anybody can rely on, and no mail goes to it. At the end of the 30 days its places go with it."""
+    tom, jule, kim = make_account("tom"), make_account("jule"), make_account("kim")
+    with SessionLocal() as db:
+        row = db.get(Account, jule.id)
+        assert row is not None
+        row.email, row.email_confirmed_at = "jule@example.com", row.created_at
+        db.commit()
+    vault = shared_vault("Haus", tom, (jule, "edit"), (kim, "manage"))
+    path = f"/api/v1/vaults/{vault}"
+
+    def members(browser: TestClient) -> dict[int, str]:
+        return {entry["user_id"]: entry["right"] for entry in browser.get(path).json()["members"]}
+
+    def mail_to(account: Account) -> object:
+        with SessionLocal() as db:
+            return PostStore(db).recipient(account.id)
+
+    assert mail_to(jule) is not None
+    assert delete(client, jule).status_code == 204  # type: ignore[attr-defined]
+    assert delete(client, kim).status_code == 204  # type: ignore[attr-defined]
+    with new_client(tom) as browser:
+        assert members(browser) == {tom.id: "manage"}
+        assert jule.id not in [entry["id"] for entry in browser.get("/api/v1/people").json()]
+        # Saving the list the page shows keeps the ones it does not show.
+        saved = browser.put(f"{path}/members", json={"members": [{"user_id": tom.id, "right": "manage"}]})
+        assert saved.status_code == 200, saved.text
+        # Nobody chooses, changes or removes a deleted account.
+        for answer in (
+            browser.put(f"{path}/members/{jule.id}", json={"right": "read"}),
+            browser.delete(f"{path}/members/{jule.id}"),
+            browser.put(f"{path}/members", json={"members": [{"user_id": tom.id, "right": "manage"},
+                                                             {"user_id": jule.id, "right": "read"}]}),
+        ):
+            assert answer.status_code == 404
+        # A deleted manager is none to rely on: tom stays the manager.
+        down = browser.put(f"{path}/members/{tom.id}", json={"right": "edit"})
+        assert down.status_code == 409 and down.json()["detail"]["code"] == "last_manager"
+        assert browser.post(f"{path}/leave").status_code == 409
+    with SessionLocal() as db:
+        kept = dict(db.execute(select(VaultMember.user_id, VaultMember.right)
+                               .where(VaultMember.vault_id == vault)).all())
+    assert kept == {tom.id: "manage", jule.id: "edit", kim.id: "manage"}
+    # The operator's dialog: tom is the only manager that stays, so tom's deletion is refused.
+    assert delete(client, tom).json()["detail"]["code"] == "last_manager"  # type: ignore[attr-defined]
+    assert mail_to(jule) is None
+    assert client.post(f"/api/v1/accounts/{jule.id}/restore", json={"current_password": PASSWORD}).status_code == 200
+    assert mail_to(jule) is not None
+    with new_client(tom) as browser:
+        assert members(browser) == {tom.id: "manage", jule.id: "edit"}
+    age(kim, manage.DELETE_DAYS + 1)
+    assert purge() == [kim.id]
+    with SessionLocal() as db:
+        assert db.get(VaultMember, (vault, kim.id)) is None
+        assert db.get(VaultMember, (vault, jule.id)) is not None
 
 
 def test_several_operators_and_never_the_own_account(client: TestClient, operator: Account) -> None:
