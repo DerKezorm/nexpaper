@@ -902,7 +902,7 @@
   "storage": {
     "limits": {
       "title": "Limites",
-      "text": "Vous fixez la limite d'un compte sous Comptes › Gérer.",
+      "text": "Ce que nexpaper accepte. S'applique au navigateur, au téléphone et aux applications, à partir du prochain fichier. Vous fixez la limite d'un compte sous Comptes › Gérer.",
       "maxFile": "Taille d'un fichier (Mo)",
       "maxFileHint": "Les fichiers plus grands sont refusés. Les fichiers de plus de 8 Mo sont envoyés en morceaux et, après une coupure réseau, reprennent là où ils se sont arrêtés.",
       "maxPages": "Pages par document",
@@ -923,8 +923,7 @@
       "cache": "Cache des images de pages (Mo)",
       "cacheHint": "Quand il dépasse cette taille, nexpaper efface les images inutilisées depuis le plus longtemps. Elles sont recréées au besoin.",
       "newAccountStorage": "Espace pour les nouveaux comptes (Go)",
-      "newAccountStorageHint": "Vide signifie sans limite. Vaut pour les comptes ajoutés à partir de maintenant.",
-      "applies": "Ce que nexpaper accepte. S'applique au navigateur, au téléphone et aux applications, à partir du prochain fichier."
+      "newAccountStorageHint": "Vide signifie sans limite. Vaut pour les comptes ajoutés à partir de maintenant."
     },
     "disk": {
       "title": "Comment les fichiers sont rangés sur le disque",

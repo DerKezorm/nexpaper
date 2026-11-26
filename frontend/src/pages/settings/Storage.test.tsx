@@ -63,11 +63,11 @@ describe('the limits', () => {
     expect(document.querySelector('[data-card="limits"]')).toBeTruthy()
     expect(save('file')!.closest('[data-part="field-action"]')!.contains(field('Größe einer Datei (MB)'))).toBe(true)
     expect([save('file')!.dataset.kind, save('more')!.dataset.kind]).toEqual(['secondary', 'secondary'])
-    // E48: the card's line names where the limit of one account is set, once, as in nexnotes; nexpaper's own line on
-    // what it takes in stays, under the fields.
-    expect(document.querySelector('[data-card="limits"] h2 + p')!.textContent).toBe('Die Grenze eines Kontos setzt du unter Konten › Verwalten.')
+    // E48: the card's line says what nexpaper takes in, then where the limit of one account is set, once.
+    expect(document.querySelector('[data-card="limits"] h2 + p')!.textContent).toBe(
+      'Was nexpaper annimmt. Gilt für Browser, Handy und Apps, ab der nächsten Datei. Die Grenze eines Kontos setzt du unter Konten › Verwalten.',
+    )
     expect(document.querySelector('[data-card="limits"]')!.textContent!.split('Konten › Verwalten').length).toBe(2)
-    expect(document.querySelector('[data-testid="limits-applies"]')!.textContent).toBe('Was nexpaper annimmt. Gilt für Browser, Handy und Apps, ab der nächsten Datei.')
   })
 
   it('send only what was changed, each Save its own part', async () => {

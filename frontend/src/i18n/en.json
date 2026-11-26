@@ -902,7 +902,7 @@
   "storage": {
     "limits": {
       "title": "Limits",
-      "text": "The limit of one account is set under Accounts › Manage.",
+      "text": "What nexpaper takes in. Applies to browser, phone and apps, from the next file on. The limit of one account is set under Accounts › Manage.",
       "maxFile": "Size of one file (MB)",
       "maxFileHint": "Larger files are refused. Files over 8 MB go in pieces, and after a break in the network they go on where they stopped.",
       "maxPages": "Pages per document",
@@ -923,8 +923,7 @@
       "cache": "Cache for page pictures (MB)",
       "cacheHint": "When it grows past this, nexpaper clears the pictures that were not used for the longest time. They are made again when needed.",
       "newAccountStorage": "Storage for new accounts (GB)",
-      "newAccountStorageHint": "Empty means no limit. Applies to accounts added from now on.",
-      "applies": "What nexpaper takes in. Applies to browser, phone and apps, from the next file on."
+      "newAccountStorageHint": "Empty means no limit. Applies to accounts added from now on."
     },
     "disk": {
       "title": "How the files lie on the disk",

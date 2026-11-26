@@ -902,7 +902,7 @@
   "storage": {
     "limits": {
       "title": "Grenzen",
-      "text": "Die Grenze eines Kontos setzt du unter Konten › Verwalten.",
+      "text": "Was nexpaper annimmt. Gilt für Browser, Handy und Apps, ab der nächsten Datei. Die Grenze eines Kontos setzt du unter Konten › Verwalten.",
       "maxFile": "Größe einer Datei (MB)",
       "maxFileHint": "Größere Dateien lehnt nexpaper ab. Dateien über 8 MB gehen in Stücken, und nach einem Netzabbruch geht es dort weiter, wo es aufgehört hat.",
       "maxPages": "Seiten je Dokument",
@@ -923,8 +923,7 @@
       "cache": "Zwischenspeicher für Seitenbilder (MB)",
       "cacheHint": "Wird er größer, räumt nexpaper die Bilder weg, die am längsten nicht gebraucht wurden. Sie entstehen bei Bedarf neu.",
       "newAccountStorage": "Speicher für neue Konten (GB)",
-      "newAccountStorageHint": "Leer heißt ohne Grenze. Gilt für Konten, die ab jetzt dazukommen.",
-      "applies": "Was nexpaper annimmt. Gilt für Browser, Handy und Apps, ab der nächsten Datei."
+      "newAccountStorageHint": "Leer heißt ohne Grenze. Gilt für Konten, die ab jetzt dazukommen."
     },
     "disk": {
       "title": "So liegen die Dateien auf der Platte",

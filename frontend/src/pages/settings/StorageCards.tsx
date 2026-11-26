@@ -2,8 +2,8 @@
  * Server › General: the card "Grenzen" (limits), laid out as nexnotes' card of the same name: the size of one file
  * first, its own field with its own button (`Field action`); nexpaper's further limits on what comes in below it, two to
  * a row, with one button for all of them; "Speicher für neue Konten" in GB with its own button, empty for no limit
- * (Bauplan E44); the card's line says where the limit of one account is set ("Konten › Verwalten", E48), nexpaper's
- * own line on what it takes in stands under the fields. Server ›
+ * (Bauplan E44); the card's line says what nexpaper takes in, then where the limit of one account is set ("Konten ›
+ * Verwalten", E48, once). Server ›
  * Storage and backups: the card that shows how the files lie on the disk. The operator's numbers count from the next
  * file on.
  */
@@ -157,9 +157,6 @@ export function LimitsCard() {
         </div>
       </form>
       {invalid && <Notice tone="danger">{t('storage.limits.invalid')}</Notice>}
-      <p className="m-0 text-xs text-[var(--nexui-text-muted)]" data-testid="limits-applies">
-        {t('storage.limits.applies')}
-      </p>
       <Outcome problem={server.problem} done={server.done} values={server.values} />
     </Card>
   )
