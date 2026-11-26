@@ -93,6 +93,19 @@ describe('the page behind an upload request', () => {
     expect(page.text).toContain('Noch 1 Datei möglich.')
   })
 
+  // Bauplan E47: while the storage of the person who asked is full, a file is refused with a word to try later.
+  it('says to try later while there is no room for the files', async () => {
+    serve(() => ({ status: 507, body: { detail: { code: 'request_no_room', message: 'x' } } }))
+    await open()
+    await drop('rechnung.pdf')
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    const rows = [...page.box.querySelectorAll('[data-testid="request-sent"] li')]
+    expect(rows.map((r) => r.getAttribute('data-state'))).toEqual(['refused'])
+    expect(page.text).toContain('Gerade ist kein Platz für weitere Dateien. Versuch es später noch einmal.')
+  })
+
   it('sends no more than the request takes', async () => {
     serve(() => ({ status: 201, body: { status: 'arrived', remaining: 1 } }))
     serve(() => ({ status: 201, body: { status: 'arrived', remaining: 0 } }))

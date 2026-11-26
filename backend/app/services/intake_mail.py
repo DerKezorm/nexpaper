@@ -19,6 +19,8 @@
   and the last UID fetched is kept per mailbox. When the server gives the mailbox new UIDs, a part already taken from
   a mail of the same Message-ID is known again by its checksum. Afterwards the mail is marked read, moved to
   ``nexpaper`` or deleted, as the operator chose.
+* **Full storage waits.** A mail for a person whose storage is full (``quota``) is left as it is, unread, and noted
+  under ``full`` with its person; it is fetched again once that person has room. The person is told how many wait.
 """
 
 from __future__ import annotations
@@ -49,7 +51,7 @@ from .. import clock
 from ..db import SessionLocal
 from ..models import IntakeItem
 from ..security import decrypt_secret
-from . import filetypes, intake, limits, mail_senders, mail_text, outbound, settings_service, storage
+from . import filetypes, intake, limits, mail_senders, mail_text, outbound, quota, settings_service, storage
 
 logger = logging.getLogger("nexpaper.intake")
 
@@ -450,15 +452,36 @@ def _flag(box: Box, uid: int) -> None:
 
 def _state(cfg: Config, box: Box, stored: Any) -> dict[str, Any]:
     """Where fetching stands for this mailbox: the last UID looked at, the mails to try again (``retry``, with their
-    tries) and those left for the next day (``later``). A fresh start (a new mailbox, or new UIDs) takes the unread
-    mails only (``backlog``): what was read before nexpaper came is history, not new post. Then everything after."""
+    tries), those left for the next day (``later``) and those that wait for room in their person's storage (``full``:
+    the person, how many documents the mail brings and their bytes). A fresh start (a new mailbox, or new UIDs) takes
+    the unread mails only (``backlog``): what was read before nexpaper came is history, not new post. Then everything
+    after."""
     state = stored if isinstance(stored, dict) else {}
     if state.get("box") == cfg.box and state.get("uidvalidity") == box.uidvalidity:
         return {"box": cfg.box, "uidvalidity": box.uidvalidity, "last": int(state.get("last") or 0),
                 "backlog": bool(state.get("backlog")),
                 "retry": {str(k): int(v) for k, v in dict(state.get("retry") or {}).items()},
-                "later": {str(k): str(v) for k, v in dict(state.get("later") or {}).items()}}
-    return {"box": cfg.box, "uidvalidity": box.uidvalidity, "last": 0, "backlog": True, "retry": {}, "later": {}}
+                "later": {str(k): str(v) for k, v in dict(state.get("later") or {}).items()},
+                "full": _full_of(state.get("full"))}
+    return {"box": cfg.box, "uidvalidity": box.uidvalidity, "last": 0, "backlog": True, "retry": {}, "later": {},
+            "full": {}}
+
+
+def _full_of(stored: Any) -> dict[str, list[int]]:
+    """The mails that wait for room, ``{uid: [account, documents, bytes]}``, as kept; anything else is left out."""
+    kept: dict[str, list[int]] = {}
+    for uid, value in dict(stored or {}).items() if isinstance(stored, dict) else ():
+        if isinstance(value, list) and len(value) == 3 and all(type(part) is int for part in value):
+            kept[str(uid)] = [value[0], value[1], value[2]]
+    return kept
+
+
+def waiting_for_room(state: dict[str, Any]) -> dict[int, int]:
+    """The documents that wait in the mailbox for room, by account."""
+    counts: dict[int, int] = {}
+    for owner, documents, _bytes in state.get("full", {}).values():
+        counts[owner] = counts.get(owner, 0) + documents
+    return counts
 
 
 def _waiting(box: Box, state: dict[str, Any]) -> list[int]:
@@ -467,10 +490,13 @@ def _waiting(box: Box, state: dict[str, Any]) -> list[int]:
     return [uid for uid in box.uids(criteria) if uid > int(state["last"])]
 
 
-def _due(state: dict[str, Any], today: str) -> list[int]:
-    """Mails from before that are tried again now: those whose take failed, and those left for a day that has come."""
+def _due(state: dict[str, Any], today: str, room: Callable[[int, int], bool] | None = None) -> list[int]:
+    """Mails from before that are tried again now: those whose take failed, those left for a day that has come, and
+    those whose person has room for them again (``room(account, bytes)``; still full, they are not fetched)."""
     again = {int(uid) for uid in state["retry"]}
     again |= {int(uid) for uid, day in state["later"].items() if day < today}
+    if room is not None:
+        again |= {int(uid) for uid, (owner, _documents, size) in state.get("full", {}).items() if room(owner, size)}
     return sorted(again)
 
 
@@ -736,6 +762,10 @@ class Taken:
     error: str = ""
     dropped: bool = False
     deferred: bool = False
+    #: The documents of the mail that wait, because the storage of its person is full (E47), and their bytes; nothing
+    #: was taken.
+    full: int = 0
+    need: int = 0
     #: The document made (or known from before) is the text of the mail.
     text: bool = False
 
@@ -795,6 +825,13 @@ def take_mail(raw: bytes, *, box: str, uidvalidity: int, uid: int, mailbox: str,
                            texts_left=texts_left)
             return taken
         fresh = sum(size for *_rest, size in candidates)
+        if candidates:
+            with SessionLocal() as db:
+                fits = quota.room(db, owner, fresh)
+            if not fits:
+                # The person's storage is full: nothing of the mail is taken, it waits in the mailbox (E47).
+                taken.full, taken.need = len(candidates), fresh
+                return taken
         if budget is not None and candidates and not budget(owner, fresh):
             taken.deferred = True
             return taken
@@ -862,6 +899,8 @@ class Result:
     flagged: int = 0
     deferred: int = 0
     dropped: int = 0
+    #: Mails that wait in the mailbox for room in their person's storage.
+    full: int = 0
     more: bool = False
     after: str = ""
     #: Of ``files``: documents made of the text of a mail.
@@ -972,7 +1011,9 @@ def _fetch() -> Result:
                 # for that one alone ("UID *"): the list of all would be one line as long as the mailbox.
                 state["last"] = max([state["last"], *box.uids(["UID", "*"])])
                 state["backlog"] = False
-            waiting = sorted(set(_due(state, today)) | set(fresh))
+            with SessionLocal() as db:
+                due = _due(state, today, lambda owner, size: quota.room(db, owner, size))
+            waiting = sorted(set(due) | set(fresh))
             result.more = len(waiting) > PER_RUN
             batch = waiting[:PER_RUN]
             sizes = _sizes(box, batch) if batch else {}
@@ -980,6 +1021,7 @@ def _fetch() -> Result:
                 # Tried again, but no longer in the mailbox (moved or deleted by somebody else).
                 state["retry"].pop(str(gone), None)
                 state["later"].pop(str(gone), None)
+                state["full"].pop(str(gone), None)
             made = [False]
             fetched = 0
             for uid in [uid for uid in batch if uid in sizes]:
@@ -993,15 +1035,18 @@ def _fetch() -> Result:
                 _one(box, cfg, state, uid, size, today, budget, result, made)
                 fetched += size
             _save_state(state)
+            quota.waiting(quota.MAIL, waiting_for_room(state))
     except MailFailure as exc:
         _remember(False, exc.code, result)
         logger.warning("Mailbox: fetching failed reason=%s", exc.code)
         raise
     _remember(True, "", result)
-    if result.mails or result.passed or result.skipped or result.flagged or result.deferred or result.dropped:
+    if (result.mails or result.passed or result.skipped or result.flagged or result.deferred or result.dropped
+            or result.full):
         logger.info("Mailbox: %s mail(s), %s attachment(s) taken unknown=%s passed=%s skipped=%s flagged=%s "
-                    "deferred=%s dropped=%s texts=%s", result.mails, result.files, result.unknown, result.passed,
-                    result.skipped, result.flagged, result.deferred, result.dropped, result.texts)
+                    "deferred=%s dropped=%s texts=%s full=%s", result.mails, result.files, result.unknown,
+                    result.passed, result.skipped, result.flagged, result.deferred, result.dropped, result.texts,
+                    result.full)
     return result
 
 
@@ -1013,6 +1058,7 @@ def _one(box: Box, cfg: Config, state: dict[str, Any], uid: int, size: int, toda
     tries = state["retry"].get(key, 0) + 1
     state["last"] = max(int(state["last"]), uid)
     state["later"].pop(key, None)
+    state["full"].pop(key, None)
     if tries > MAX_TRIES:
         state["retry"].pop(key, None)
         _flag(box, uid)
@@ -1040,6 +1086,12 @@ def _one(box: Box, cfg: Config, state: dict[str, Any], uid: int, size: int, toda
     if taken.error:
         state["retry"].pop(key, None)
         result.passed += 1
+        return
+    if taken.full and taken.owner is not None:
+        # Left in the mailbox as it is, unread; fetched again once the person has room (E47).
+        state["retry"].pop(key, None)
+        state["full"][key] = [int(taken.owner), taken.full, taken.need]
+        result.full += 1
         return
     if taken.deferred:
         state["retry"].pop(key, None)

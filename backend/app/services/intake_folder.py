@@ -8,6 +8,8 @@ itself or in a subfolder nobody has goes to the operator, marked as unknown.
 * **Taken, then gone.** A file becomes a document through ``receiving.accept`` (kind from the content, the limits of
   the server) and is removed from the folder afterwards. What is not taken (a kind nexpaper does not read, too large,
   empty) is moved to ``abgelehnt/`` beside it with a short reason, never deleted.
+* **Full storage waits.** A file of a person whose storage is full (``quota``) is not taken and stays where it lies,
+  untouched; it comes in by itself once there is room. The person is told how many wait (``quota.waiting``).
 * **Never twice.** The document and a row ``taken`` for the file are written in one transaction; the row is ``done``
   once the file is gone. A file found again after a restart with its row still ``taken`` (same size, same time) is only
   removed.
@@ -39,7 +41,7 @@ from ..config import get_settings
 from ..db import SessionLocal
 from ..models import Account, IntakeItem
 from ..names import clean_segment
-from . import filetypes, intake, konten_store, limits, settings_service, storage
+from . import filetypes, intake, konten_store, limits, quota, settings_service, storage
 
 logger = logging.getLogger("nexpaper.intake")
 
@@ -291,6 +293,8 @@ class Round:
     taken: dict[str, int] = field(default_factory=dict)
     rejected: int = 0
     waiting: int = 0
+    #: Files that lay still but wait in the folder because the storage of their person is full, by account.
+    full: dict[int, int] = field(default_factory=dict)
 
 
 #: What was seen of each file in the rounds before, to know when it lay still. In memory: a restart waits again.
@@ -426,6 +430,7 @@ def _scan(result: Round) -> Round:
         values = settings_service.get_all(db)
         if not values["folder_on"]:
             _watch.clear()
+            quota.waiting(quota.FOLDER, {})
             return result
         try:
             root = usable_root(str(values["folder_path"] or ""), make=True)
@@ -481,8 +486,15 @@ def _scan(result: Round) -> Round:
     for key in list(_watch):
         if key not in present:
             del _watch[key]
-    for item in _in_turns(still):
+    # A person whose storage is full gets nothing now: their files stay in the folder, untouched, and wait (E47).
+    with SessionLocal() as db:
+        closed_out = {owner for owner in {item.owner for item in still} if not quota.some_room(db, owner)}
+    for item in still:
+        if item.owner in closed_out:
+            result.full[item.owner] = result.full.get(item.owner, 0) + 1
+    for item in _in_turns([item for item in still if item.owner not in closed_out]):
         _take(root, item, max_file, result)
+    quota.waiting(quota.FOLDER, result.full)
     for name, count in sorted(result.taken.items()):
         logger.info("Intake folder: %s file(s) taken account=%s", count, name)
     if result.rejected:
@@ -672,6 +684,12 @@ def _settle_taken(item: Found) -> bool:
 
 def _take(root: Path, item: Found, max_file: int, result: Round) -> None:
     if _settle_taken(item):
+        return
+    with SessionLocal() as db:
+        fits = quota.room(db, item.owner, item.size)
+    if not fits:
+        # Not this one: it would go past the limit. It stays in the folder and is looked at again next round.
+        result.full[item.owner] = result.full.get(item.owner, 0) + 1
         return
     handle = _open(item.path, root, item.size, item.mtime_ns)
     if handle is None:

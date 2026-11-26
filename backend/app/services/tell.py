@@ -22,7 +22,7 @@ logger = logging.getLogger("nexpaper.tell")
 
 @dataclass(frozen=True)
 class Notice:
-    #: ``{"de": (title, body), "en": (title, body)}``.
+    #: ``{"de": (title, body), "en": (title, body)}``, and ``"fr"`` where a notice has French words (else English).
     texts: dict[str, tuple[str, str]]
     #: A path of nexpaper that a tap opens.
     url: str
@@ -51,6 +51,13 @@ def operator(notice: Notice) -> None:
         person(account_id, notice)
 
 
+def words(notice: Notice, language: str) -> tuple[str, str]:
+    """Title and body in ``language``: French where the notice has it, else German or English as before."""
+    if (language or "").split("-")[0].lower() == "fr" and "fr" in notice.texts:
+        return notice.texts["fr"]
+    return notice.texts[notices.language_of(language)]
+
+
 def _send(account_id: int, notice: Notice) -> None:
     from ..db import SessionLocal
     from ..vendor import nexpost
@@ -60,12 +67,12 @@ def _send(account_id: int, notice: Notice) -> None:
         account = db.get(Account, account_id)
         if account is None or account.blocked_at is not None:
             return
-        language = notices.language_of(account.language)
+        account_language = account.language or ""
         mail_to = account.email if account.email and account.email_confirmed_at and post_store.configured(db) else ""
         base = settings_service.public_url(db)
 
     def message_for(lang: str) -> push.Message:
-        title, body = notice.texts[notices.language_of(lang or language)]
+        title, body = words(notice, lang or account_language)
         return push.Message(title=title, body=body, url=notice.url, desk=notice.url, tag=notice.tag)
 
     push.send_to_person(account_id, message_for)

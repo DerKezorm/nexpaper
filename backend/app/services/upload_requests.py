@@ -40,6 +40,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
 
+from fastapi import HTTPException
 from sqlalchemy import ColumnElement, and_, exists, func, or_, select, update
 from sqlalchemy.orm import Session, aliased
 
@@ -47,7 +48,7 @@ from .. import clock
 from ..errors import error
 from ..models import Account, Document, Event, IntakeItem, UploadRequest
 from ..security import decrypt_secret, encrypt_secret
-from . import changes, filetypes, receiving, settings_service, sharing
+from . import changes, filetypes, quota, receiving, settings_service, sharing
 
 logger = logging.getLogger("nexpaper.requests")
 #: The person of a request, inside the tests of a query that may itself be over `Account`.
@@ -341,6 +342,11 @@ def still_open(db: Session, request_id: int) -> UploadRequest | None:
     return db.scalar(select(UploadRequest).where(UploadRequest.id == request_id, live(clock.now(), current)))
 
 
+def no_room() -> HTTPException:
+    """The answer to a stranger while the storage of the person who asked is full (E47)."""
+    return error("request_no_room", "There is no room for more files right now. Try again later.", 507)
+
+
 def take_file(db: Session, row: UploadRequest, *, filename: str, path: Path, kind: str, sha256: str,
               size: int) -> Document:
     """A file that arrived becomes a document of the person, in the inbox of their personal vault, never anywhere else,
@@ -353,6 +359,11 @@ def take_file(db: Session, row: UploadRequest, *, filename: str, path: Path, kin
 
     The history of the document names the request, not the person: nobody of the server put it there
     (``by_link`` is the request's name, ``detail.source`` is ``request``)."""
+    # The storage limit of the person who asked holds here too (Bauplan E47): the file is refused, the stranger is told
+    # to try later, nothing of the person's documents is named.
+    if not quota.room(db, row.user_id, size):
+        logger.info("Upload request refused a file, the storage of its person is full request_id=%s", row.id)
+        raise no_room()
     vault_id = receiving.personal_vault(db, row.user_id)
     cleaned = filetypes.file_name(filename) if filename else ""
     request_id, name = row.id, row.name

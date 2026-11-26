@@ -15,7 +15,9 @@ person.
 progress kept in the settings (``paperless_run``), stoppable by the operator (``stop``) and by the end of the server
 (it goes on at the next start). Every document taken is written down with its Paperless number in the same transaction
 as the document it becomes (``PaperlessItem``): a second run never takes it twice, it takes only what is new or was
-skipped. What is skipped is said in the log with its reason, never with a word of its content.
+skipped. What is skipped is said in the log with its reason, never with a word of its content. A document whose person's
+storage is full is skipped with ``storage_full`` and comes over in a later run (``quota``, E47); the person is told how
+many wait.
 
 **Paperless is a stranger.** The address goes through ``outbound.py`` (resolved once, checked, no redirect, a deadline
 for every request, the answer read up to a size); an address in the own network only with the operator's switch
@@ -76,6 +78,7 @@ from . import (
     limits,
     ocr,
     outbound,
+    quota,
     receiving,
     search_index,
     settings_service,
@@ -123,6 +126,8 @@ DISK_MARGIN = 512 * 1024 * 1024
 STAGED_DAYS = 30
 #: A skip for this reason is not tried again (the person has the very file already).
 FOR_GOOD = ("exists",)
+#: The skip of a document whose person's storage is full (``quota``): a later run takes it.
+STORAGE_FULL = "storage_full"
 
 IDLE, QUEUED, RUNNING, PAUSED, DONE, FAILED = "idle", "queued", "running", "paused", "done", "failed"
 ACTIVE = (QUEUED, RUNNING)
@@ -164,10 +169,12 @@ class Failure(Exception):
 class Skip(Exception):
     """One document that is not taken, with the reason; the run goes on."""
 
-    def __init__(self, reason: str, document_id: int | None = None) -> None:
+    def __init__(self, reason: str, document_id: int | None = None, *, owner: int | None = None) -> None:
         super().__init__(reason)
         self.reason = reason
         self.document_id = document_id
+        #: For ``storage_full``: the account whose storage is full (it is told how many wait).
+        self.owner = owner
 
 
 # --- The address and the token --------------------------------------------------------------------------------------
@@ -890,6 +897,8 @@ def _run(db: Session) -> None:
         done_before = len(everything) - len(pending)
         _save_run(db, total=len(everything), done=done_before, skipped=0, taken=0, reasons={})
         reasons: Counter[str] = Counter()
+        #: The documents skipped because the storage of their person is full, by account.
+        full: Counter[int] = Counter()
         imported = 0
         in_a_row = 0
         made_ids: list[int] = []
@@ -899,6 +908,7 @@ def _run(db: Session) -> None:
             if run_state(db)["stop"]:
                 _save_run(db, state=PAUSED, stop=False, finished_at=clock.now().isoformat())
                 logger.info("Paperless import paused taken=%s skipped=%s", imported, sum(reasons.values()))
+                quota.waiting(quota.PAPERLESS, dict(full))
                 return
             db.rollback()
             try:
@@ -908,6 +918,8 @@ def _run(db: Session) -> None:
             except Skip as exc:
                 db.rollback()
                 reasons[exc.reason] += 1
+                if exc.reason == STORAGE_FULL and exc.owner is not None:
+                    full[exc.owner] += 1
                 _skipped(db, plan.origin, pid, exc.reason, exc.document_id)
                 logger.info("Paperless document skipped paperless_id=%s reason=%s", pid, exc.reason)
                 in_a_row = 0
@@ -925,6 +937,8 @@ def _run(db: Session) -> None:
     _save_run(db, state=DONE, finished_at=clock.now().isoformat(), stop=False)
     logger.info("Paperless import done taken=%s skipped=%s", imported, sum(reasons.values()))
     tell_people(db, made_ids)
+    # What waits for room is said to its people; a later run takes it (E47).
+    quota.waiting(quota.PAPERLESS, dict(full))
 
 
 CLOSING = chr(10) * 2 + "Open nexpaper: {where}" + chr(10)
@@ -1228,6 +1242,10 @@ def take_one(db: Session, client: Client, found: Names, plan: Plan, pid: int) ->
                     original_missing)
         incoming.has_archive = False
     try:
+        if not quota.room(db, owner, saved.size):
+            # The person's storage is full: not taken now, a later run brings it over (E47).
+            db.rollback()
+            raise Skip(STORAGE_FULL, owner=owner)
         if incoming.has_archive and kind != filetypes.XML:
             try:
                 archive, _saved, archive_kind = _fetch(client, pid, False, limit)

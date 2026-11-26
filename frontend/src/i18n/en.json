@@ -1745,6 +1745,7 @@
       "exists": "The person has this very file already.",
       "unreachable": "Paperless could not be reached.",
       "no_person": "No person is assigned to the owner.",
+      "storage_full": "The storage of the person is full. A later import brings the document over.",
       "other": "For a reason that is in the log."
     },
     "errors": {
@@ -3188,6 +3189,7 @@
       "empty_file": "The file is empty.",
       "request_busy": "Too many files came just now. Try again later.",
       "request_day_full": "The server takes nothing more today. Try again tomorrow.",
+      "request_no_room": "There is no room for more files right now. Try again later.",
       "not_found": "The address takes nothing any more.",
       "too_many_attempts": "Too many tries. Wait a while.",
       "full": "No more files go.",

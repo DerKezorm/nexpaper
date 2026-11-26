@@ -1745,6 +1745,7 @@
       "exists": "La personne a déjà ce même fichier.",
       "unreachable": "Paperless n'a pas pu être joint.",
       "no_person": "Aucune personne n'est attribuée au propriétaire.",
+      "storage_full": "L'espace de stockage de la personne est plein. Une importation ultérieure récupérera le document.",
       "other": "Pour une raison indiquée dans le journal."
     },
     "errors": {
@@ -3188,6 +3189,7 @@
       "empty_file": "Le fichier est vide.",
       "request_busy": "Trop de fichiers viennent d'arriver. Réessayez plus tard.",
       "request_day_full": "Le serveur n'accepte plus rien aujourd'hui. Réessayez demain.",
+      "request_no_room": "Il n'y a pas de place pour d'autres fichiers pour le moment. Réessayez plus tard.",
       "not_found": "L'adresse n'accepte plus rien.",
       "too_many_attempts": "Trop de tentatives. Attendez un moment.",
       "full": "Plus aucun fichier n'est accepté.",

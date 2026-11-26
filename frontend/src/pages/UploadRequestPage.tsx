@@ -20,7 +20,7 @@ import { iso } from '../lib/say'
 type Sent = { key: number; name: string; state: 'waiting' | 'sending' | 'arrived' | 'refused'; reason?: string; values?: Record<string, unknown> }
 
 /** The reasons the page has a sentence for; anything else says that it did not work. */
-const REASONS = ['unsupported_type', 'xml_not_invoice', 'xml_doctype', 'too_large', 'empty_file', 'request_busy', 'request_day_full', 'too_slow', 'not_found', 'too_many_attempts']
+const REASONS = ['unsupported_type', 'xml_not_invoice', 'xml_doctype', 'too_large', 'empty_file', 'request_busy', 'request_day_full', 'request_no_room', 'too_slow', 'not_found', 'too_many_attempts']
 
 export function UploadRequestPage() {
   const { t, i18n } = useTranslation()

@@ -38,7 +38,7 @@ from sqlalchemy.orm import Session
 from .. import clock
 from ..db import SessionLocal
 from ..models import Account, Document, IntakeItem, Version, VersionText
-from . import filetypes, intake, search_index, storage
+from . import filetypes, intake, quota, search_index, storage
 
 logger = logging.getLogger("nexpaper.intake")
 
@@ -177,6 +177,12 @@ def take(taken: Any, raw: bytes, folder: Path, *, key: str, owner: int, marker: 
     taken.takeable = 1
     taken.text = True
     size = made.pdf.stat().st_size
+    with SessionLocal() as db:
+        fits = quota.room(db, owner, size)
+    if not fits:
+        # The person's storage is full: the mail waits in the mailbox (E47).
+        taken.full, taken.need = 1, size
+        return
     if (budget is not None and not budget(owner, size)) or (texts_left is not None and not texts_left(owner)):
         taken.deferred = True
         return

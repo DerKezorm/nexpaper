@@ -36,7 +36,7 @@ from starlette.concurrency import run_in_threadpool
 from ..db import SessionLocal
 from ..deps import client_ip, request_failed, request_guard
 from ..errors import error
-from ..services import limits, receiving, upload_requests
+from ..services import limits, quota, receiving, upload_requests
 
 logger = logging.getLogger("nexpaper.requests")
 
@@ -144,6 +144,10 @@ def _before(token: str, request: Request, length: int) -> tuple[upload_requests.
         if found is None:
             raise _unknown(request)
         request_id = found[0].id
+        if not quota.some_room(db, found[0].user_id):
+            # The storage of the person who asked is full (E47): refused before a byte of the file is read.
+            logger.info("Upload request refused a file, the storage of its person is full request_id=%s", request_id)
+            raise upload_requests.no_room()
         max_file = min(limits.current(db).max_file, upload_requests.REQUEST_DAY_BYTES)
         if length > max_file + ENVELOPE:
             raise error("too_large", f"The file is larger than the limit of {max_file // limits.MB} MB.", 413,

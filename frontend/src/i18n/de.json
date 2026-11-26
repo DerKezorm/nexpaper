@@ -1745,6 +1745,7 @@
       "exists": "Die Person hat genau diese Datei schon.",
       "unreachable": "Paperless war nicht erreichbar.",
       "no_person": "Dem Besitzer ist keine Person zugeordnet.",
+      "storage_full": "Der Speicher der Person ist voll. Ein späterer Import holt das Dokument nach.",
       "other": "Aus einem Grund, der im Log steht."
     },
     "errors": {
@@ -3188,6 +3189,7 @@
       "empty_file": "Die Datei ist leer.",
       "request_busy": "Gerade kamen zu viele Dateien. Versuch es später noch einmal.",
       "request_day_full": "Der Server nimmt heute nichts mehr an. Versuch es morgen noch einmal.",
+      "request_no_room": "Gerade ist kein Platz für weitere Dateien. Versuch es später noch einmal.",
       "not_found": "Die Adresse nimmt nichts mehr an.",
       "too_many_attempts": "Zu viele Versuche. Warte eine Weile.",
       "full": "Es gehen keine weiteren Dateien mehr.",
