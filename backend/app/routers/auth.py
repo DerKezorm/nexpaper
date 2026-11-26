@@ -246,8 +246,9 @@ def interface_language(request: Request) -> str:
 
 
 def check_language(language: str) -> str:
-    """Empty (the browser decides) or a language nexpaper has: built in or a usable file (``nexsprachen.known``)."""
-    if language and not locales.known(language):
+    """Empty (the browser decides) or a language nexpaper has: built in or a usable file of the operator, exactly what
+    1.12.0 took (Bauplan E52: the module's ``known`` only fills the menus, it refuses nothing)."""
+    if language and language not in locales.codes():
         raise error("unknown_language", "nexpaper does not have this language.", 422)
     return language
 

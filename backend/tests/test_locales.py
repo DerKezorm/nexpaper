@@ -246,12 +246,15 @@ def test_old_callers_get_the_same_answers(client: TestClient, folder: Path) -> N
 
 
 def test_the_profile_takes_a_built_in_or_an_added_language_only(client: TestClient, folder: Path) -> None:
-    """``PUT /api/v1/me/language`` checks with ``nexsprachen.known``: French and an added file go, a code without a
-    file is refused as before (``unknown_language``)."""
+    """The old way ``PUT /api/v1/me/language`` takes a code as before (Bauplan E52): empty (the browser decides), a
+    built-in language and an added file go, a valid code without a file is refused as it was (``unknown_language``);
+    the module's ``known`` only fills the menus."""
     from .conftest import make_account, sign_in
 
     sign_in(client, make_account("reader"))
     assert client.put("/api/v1/me/language", json={"language": "fr"}).status_code == 200
+    assert client.put("/api/v1/me/language", json={"language": "de"}).json()["language"] == "de"
+    assert client.put("/api/v1/me/language", json={"language": ""}).json()["language"] == ""
     refused = client.put("/api/v1/me/language", json={"language": "it"})
     assert refused.status_code == 422 and refused.json()["detail"]["code"] == "unknown_language"
     put(folder, "it.json", {"save": "Salva"})
