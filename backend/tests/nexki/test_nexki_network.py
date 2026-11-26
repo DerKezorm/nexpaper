@@ -19,6 +19,7 @@ from ki_contract import (
     operator_puts,
     own,
     resolving,
+    said,
     shared,
 )
 
@@ -48,7 +49,7 @@ def test_an_own_service_in_the_home_network_needs_the_operators_list(app: Any, s
     # Taken off the list, the same access stops at the next request: checked at every request, not when saved.
     own(app, hosts=["192.168.1.20:11434"])
     again = app.manual("owner", "Please tidy this text up")
-    assert again.status_code == 422 and code(again) == "ai_address_private"
+    assert said(app, again, "ai_address_private")
 
 
 @pytest.mark.parametrize(
@@ -75,7 +76,7 @@ def test_a_redirect_is_not_followed(app: Any, service: Any, recorder: Any) -> No
     service.redirect_to = recorder.address + "v1/chat/completions"
     shared(app, service.base, model="redirect")
     done = app.manual("owner", "Please tidy this text up")
-    assert done.status_code == 502 and code(done) == "ai_service_failed"
+    assert said(app, done, "ai_service_failed")
     assert detail(done).get("answered") == 307
     assert recorder.hits == []
 
@@ -83,7 +84,7 @@ def test_a_redirect_is_not_followed(app: Any, service: Any, recorder: Any) -> No
 def test_an_answer_that_is_too_large_is_not_read(app: Any, service: Any) -> None:
     shared(app, service.base, model="huge")
     done = app.manual("owner", "Please tidy this text up")
-    assert done.status_code == 502 and code(done) == "ai_unreadable"
+    assert said(app, done, "ai_unreadable")
 
 
 def test_one_deadline_for_the_whole_request(app: Any, service: Any) -> None:
@@ -92,7 +93,7 @@ def test_one_deadline_for_the_whole_request(app: Any, service: Any) -> None:
     started = time.monotonic()
     with fast_clock(app, factor=200.0):
         done = app.manual("owner", "Please tidy this text up")
-    assert done.status_code == 504 and code(done) == "ai_timeout"
+    assert said(app, done, "ai_timeout")
     assert time.monotonic() - started < 15
 
 
@@ -146,13 +147,13 @@ def test_the_internet_only_over_https(app: Any) -> None:
 
     with internet(app, ReferenceService()):
         done = operator_puts(app, api="openai", url="http://ai.example.com/v1", model="x")
-    assert done.status_code == 422 and code(done) == "ai_https_required"
+    assert said(app, done, "ai_https_required")
 
 
 def test_a_name_on_both_sides_is_refused(app: Any) -> None:
     with resolving(app, {"both.example.com": [PUBLIC, "192.168.1.20"]}):
         done = operator_puts(app, api="openai", url="https://both.example.com/v1", model="x")
-    assert done.status_code == 422 and code(done) == "ai_address_mixed"
+    assert said(app, done, "ai_address_mixed")
 
 
 def test_the_services_own_words_only_from_the_internet(app: Any, service: Any) -> None:
@@ -160,12 +161,12 @@ def test_the_services_own_words_only_from_the_internet(app: Any, service: Any) -
 
     shared(app, service.base, model="fail")
     local = app.manual("owner", "Please tidy this text up")
-    assert code(local) == "ai_service_failed" and detail(local).get("said") == ""
+    assert said(app, local, "ai_service_failed") and detail(local).get("said") == ""
     remote = ReferenceService()
     with internet(app, remote):
         shared(app, "https://ai.example.com/v1/", model="fail")
         far = app.manual("owner", "Please tidy this text up")
-    assert code(far) == "ai_service_failed" and "broke down" in str(detail(far).get("said"))
+    assert said(app, far, "ai_service_failed") and "broke down" in str(detail(far).get("said"))
 
 
 def test_the_connection_goes_to_the_address_checked(app: Any) -> None:

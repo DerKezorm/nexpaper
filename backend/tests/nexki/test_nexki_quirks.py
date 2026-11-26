@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from ki_contract import KEY, code, internet, last_body, package, shared
+from ki_contract import KEY, code, internet, last_body, package, said, shared
 from nexki_service import ReferenceService
 
 
@@ -56,9 +56,9 @@ def test_the_messages_api(app: Any) -> None:
 
 def test_used_up_empty_and_fenced_answers(app: Any, service: Any) -> None:
     shared(app, service.base, model="spend")
-    assert code(app.manual("owner", "Please tidy this text up")) == "ai_used_up"
+    assert said(app, app.manual("owner", "Please tidy this text up"), "ai_used_up")
     shared(app, service.base, model="empty")
-    assert code(app.manual("owner", "Please tidy this text up")) == "ai_empty"
+    assert said(app, app.manual("owner", "Please tidy this text up"), "ai_empty")
     shared(app, service.base, model="fenced")
     done = app.manual("owner", "Please tidy this text up")
     assert done.status_code == 200 and not done.json()["text"].startswith("```")
@@ -66,9 +66,9 @@ def test_used_up_empty_and_fenced_answers(app: Any, service: Any) -> None:
 
 def test_a_refused_key_and_a_busy_service_say_where_to_look(app: Any, keyed: Any, service: Any) -> None:
     shared(app, keyed.base, key="another-key")
-    assert code(app.manual("owner", "Please tidy this text up")) == "ai_key_refused"
+    assert said(app, app.manual("owner", "Please tidy this text up"), "ai_key_refused")
     shared(app, service.base, model="busy")
-    assert code(app.manual("owner", "Please tidy this text up")) == "ai_service_busy"
+    assert said(app, app.manual("owner", "Please tidy this text up"), "ai_service_busy")
 
 
 def test_the_model_list_and_the_probe_of_the_operator(app: Any, keyed: Any) -> None:

@@ -1,7 +1,7 @@
 {
   "files": {
-    "backend/app/vendor/nexki/__init__.py": "sha256-9bfnzoEw9aFnH3h9zLEi0siY+DFDgcUlgstd2wb1H1g=",
-    "backend/app/vendor/nexki/api.py": "sha256-PgzOtXT+gGsAyNEwqAJnMQC2Lgmf2b65pu4AHJ2ElI8=",
+    "backend/app/vendor/nexki/__init__.py": "sha256-807WuiyUoiyQeLApanrJISRLoFSZ+byyYa/Ga0Usdzc=",
+    "backend/app/vendor/nexki/api.py": "sha256-gyz58y+lYIsYIUhAGsc2NuqV0GEHGYYNW7MMhTjeBCk=",
     "backend/app/vendor/nexki/brake.py": "sha256-QbmyYziWwaUvsICx3Qva9Y7Gdf4wvXlPt4/SSsfMF3E=",
     "backend/app/vendor/nexki/chain.py": "sha256-kaUT57atxPerYtn8MZWg14PP0NMzp8guh7rT+YG5vnQ=",
     "backend/app/vendor/nexki/client.py": "sha256-3wgq6SkUBjrlPHHE7LKKkhM25Mv2HATxsD0t+J3v7T8=",
@@ -12,13 +12,13 @@
     "backend/app/vendor/nexki/quirks.py": "sha256-//Vf+ZJTTQ0YKX8WYzdbxMGwMcFzos3q8KNc925KGKg=",
     "backend/app/vendor/nexki/settings.py": "sha256-ymtxAKTgaQFQQdU0HHLrDHKtquFll+oFBIKVb11qD9g=",
     "backend/tests/nexki/conftest.py": "sha256-8dbXhXPZlrWTkBMR9wx1WDhL6mNwD4C1GOCqmmBwO7Q=",
-    "backend/tests/nexki/ki_contract.py": "sha256-vt0fnSZ9HA/sCnXzVZ/bovDsHD8A+6DoY/PalOi+NbY=",
+    "backend/tests/nexki/ki_contract.py": "sha256-AW38HisHBihHTjKJJieRMiXCf1xbSxzXSU16u+zqjlE=",
     "backend/tests/nexki/nexki_service.py": "sha256-OeIr80bgl7ELJ7RXrJaRlkdgKsOUzwvfGOucZ89xXnI=",
-    "backend/tests/nexki/test_nexki_chain.py": "sha256-6O168BvuMcdqw9vACXbeiuvdPoixdpS9kcfSQubEd4k=",
+    "backend/tests/nexki/test_nexki_chain.py": "sha256-hikTkJf6cxWxz28WaV24YQrdwK6Gcg2ckuz35qE/x70=",
     "backend/tests/nexki/test_nexki_events.py": "sha256-FtEm+oCJ3JdxwVCNP8/WN2J5R+ZEdpp53CxKMvv6iTc=",
     "backend/tests/nexki/test_nexki_existing.py": "sha256-MhaePyXNRGt6B1RKRpIlw2Ok2FQPDtTHM0UN6+rQ7yE=",
-    "backend/tests/nexki/test_nexki_network.py": "sha256-epZKHQVms554rfnojncjD8HM9PXp3rXdv3P5yOJ6E3U=",
-    "backend/tests/nexki/test_nexki_quirks.py": "sha256-gohIhKMnd2hJVLKQgqAPLk8zZf3vhgLZwiIQKMxGtEk=",
+    "backend/tests/nexki/test_nexki_network.py": "sha256-MgXGkaTt5p2gifuuAdf5fOwVfDDJBaNHuh27B/Z6vQY=",
+    "backend/tests/nexki/test_nexki_quirks.py": "sha256-88GJMnzp0nYZjxP/uV/2YgVOQglH8YiYIgmv8TdEfrs=",
     "backend/tests/nexki/test_nexki_vendored.py": "sha256-6M6cMPrq8YiOiMgEXYYMNx/9GOtwg4FelrkZpr6sNUg=",
     "frontend/src/vendor/nexki/AiAccountArea.tsx": "sha256-vywgjMlh3OXeO37hLvQFt9wicGjLh/keNzImJUQAwWY=",
     "frontend/src/vendor/nexki/AiProviderArea.tsx": "sha256-M2ZP/3cWk3rc/0ssFnmWmwHrT9EmQvRjIKHccs3ZU1g=",
@@ -35,5 +35,5 @@
     "httpx": ">=0.28.0"
   },
   "vendor_path": "backend/app/vendor/nexki",
-  "version": "0.1.0"
+  "version": "0.1.1"
 }

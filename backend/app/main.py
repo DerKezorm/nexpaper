@@ -389,7 +389,9 @@ app.include_router(schluessel_api.router(
 # stay beside them (``GET /api/v1/ai`` for devices as before).
 app.include_router(ki_api.router(
     config=ki_store.CONFIG, store=mcp_store.store, account=require_browser_account, operator=require_operator,
-    server_prefix="/api/v1/server/ai", me_prefix="/api/v1/me/ai"))
+    server_prefix="/api/v1/server/ai", me_prefix="/api/v1/me/ai",
+    # Beside nexpaper's own ``ModelsIn`` (routers/ai.py) and ``OperatorIn`` (routers/push.py), whose names stay (E53).
+    schema_names={"ModelsIn": "AiModelsIn", "OperatorIn": "AiOperatorIn"}))
 # Connections with other nex apps (verbinden 0.1.1): the fixed places ``/.well-known/nex-app``, ``/api/connect/…``;
 # starting, the consent and the cards only in a signed-in browser, the switch and the addresses for the operator.
 app.include_router(verbinden_api.router(
@@ -485,35 +487,3 @@ _mount_frontend(app, get_settings().frontend_dist)
 # The shared sign-in module learns who it runs in, before the first request.
 oidc_store.configure()
 
-
-# TODO ki 0.1.0: the module's routes name their bodies ``ModelsIn`` and ``OperatorIn`` and give no way to rename them
-# (updates and sicherung have ``schema_names``). Beside nexpaper's own ``ModelsIn`` (routers/ai.py) and ``OperatorIn``
-# (routers/push.py) FastAPI would call all four by their module paths, and the names of before would be gone (Bauplan
-# E53). The description keeps nexpaper's names and calls the module's ``AiModelsIn`` and ``AiOperatorIn``.
-SCHEMA_NAMES = {
-    "app__routers__ai__ModelsIn": "ModelsIn",
-    "app__routers__push__OperatorIn": "OperatorIn",
-    "app__vendor__nexki__api__ModelsIn": "AiModelsIn",
-    "app__vendor__nexki__api__OperatorIn": "AiOperatorIn",
-}
-_plain_openapi = app.openapi
-
-
-def _openapi_with_old_names() -> dict[str, Any]:
-    if app.openapi_schema is not None:
-        return app.openapi_schema
-    found = _plain_openapi()
-    text = json.dumps(found)
-    for qualified, name in SCHEMA_NAMES.items():
-        text = text.replace(f'"#/components/schemas/{qualified}"', f'"#/components/schemas/{name}"')
-    renamed = json.loads(text)
-    schemas = renamed.get("components", {}).get("schemas", {})
-    for qualified, name in SCHEMA_NAMES.items():
-        if qualified in schemas:
-            schemas[name] = schemas.pop(qualified)
-            schemas[name]["title"] = name
-    app.openapi_schema = renamed
-    return renamed
-
-
-app.openapi = _openapi_with_old_names  # type: ignore[method-assign]

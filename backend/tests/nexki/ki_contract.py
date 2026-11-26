@@ -32,6 +32,10 @@ class StandardAdapter:
     #: The kinds of older installation of this app the contract test "Bestand" starts from: ``shared`` (nexpaper,
     #: nexdiary), ``own`` (nexmail), ``both`` (nexlore). An app without AI before: ().
     older_forms: tuple[str, ...] = ()
+    #: Since 0.1.1 (E55): where the app's own routes of its tasks (``manual``) keep older status and codes of a refusal,
+    #: the module's code -> (status, the app's code); nexdiary ``{"ai_off": (403, "ai_off"), "ai_day_used": (429,
+    #: "ai_daily_limit")}``. The module's routes always answer with the module's.
+    old_codes: dict[str, tuple[int, str]] = {}  # noqa: RUF012 (read only)
 
     def start(self) -> None:
         """APP: a freshly installed app, started as in production, with ``owner``, ``other`` (members) and
@@ -108,6 +112,14 @@ def detail(response: Any) -> dict[str, Any]:
 
 def code(response: Any) -> str:
     return str(detail(response).get("code") or "")
+
+
+def said(adapter: Any, response: Any, module_code: str) -> bool:
+    """Whether the app's own route (``manual``) refused with ``module_code``: the module's status and code, or the
+    older ones the app keeps there (``old_codes``, E55)."""
+    status, _ = package(adapter).errors.CODES[module_code]
+    wanted_status, wanted_code = adapter.old_codes.get(module_code, (status, module_code))
+    return bool(response.status_code == wanted_status and code(response) == wanted_code)
 
 
 def operator_puts(adapter: Any, **body: Any) -> Any:
