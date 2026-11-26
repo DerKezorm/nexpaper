@@ -705,7 +705,14 @@
       "uploadHint": "Pour un numériseur, un script ou le raccourci : dépose des documents dans une boîte de réception et ne lit rien."
     },
     "keyUploadNote": "Une clé de téléversement ne fait que déposer des documents dans une boîte de réception : celle de ton coffre cible ou, si le programme en indique un autre, celle d'un coffre auquel tu peux ajouter. Elle ne peut rien lire, modifier ni supprimer.",
-    "keyLimits": "Limites par clé : 120 requêtes par minute, 50 téléversements par heure. Les clés erronées comptent comme des mots de passe erronés."
+    "keyLimits": "Limites par clé : 120 requêtes par minute, 50 téléversements par heure. Les clés erronées comptent comme des mots de passe erronés.",
+    "enable": "Les autoriser maintenant",
+    "enableConfirm": "Autoriser",
+    "enableTitle": "Autoriser les clés API pour tout le monde ?",
+    "enableText": "Ensuite, chaque personne sur ce serveur pourra créer des clés API sous Mon compte › Connexions. Une clé permet à un programme soit seulement de lire, soit seulement de téléverser, jamais plus que ce que peut le compte qui l'a créée. Vous pouvez désactiver cela de nouveau à tout moment sous Serveur › Général › Interfaces ; les clés existantes cessent alors aussi de fonctionner.",
+    "tryIt": "Pour l'essayer",
+    "lifetimeHint": "Une clé qui n'expire jamais est celle dont personne ne se souvient quand elle tombe entre de mauvaises mains. Un an suffit généralement ; la liste indique une semaine à l'avance qu'elle expire.",
+    "lifetimeHintUpload": "Une clé de téléversement ne peut que déposer des documents dans votre boîte de réception. Elle ne lit pas vos archives. Elle n'expire donc pas d'elle-même, et un raccourci ou un numériseur n'a pas à être reconfiguré au bout d'un an. Vous pouvez la révoquer à tout moment, ou choisir une durée."
   },
   "rights": {
     "read": {

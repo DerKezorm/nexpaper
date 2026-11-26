@@ -6,7 +6,7 @@
 import type { Me } from '../../api/client'
 import { changeLanguage } from '../../i18n'
 import { Page, Server } from '../../test/harness'
-import { ApiKeys } from './KeysCards'
+import { ApiKeys, TryIt } from './KeysCards'
 
 const me = { id: 1, name: 'jule', display_name: 'Jule', role: 'member', sign_in: 'password', language: 'de', profile: { mode: 'system' } } as unknown as Me
 const auth = { status: 'signedIn', me: me as Me | null }
@@ -45,5 +45,63 @@ describe('the card API-Schlüssel', () => {
     await changeLanguage('en', false)
     await page.show(<ApiKeys />)
     expect(document.querySelector('[data-testid="keys-limits"]')!.textContent).toBe('Limits per key: 120 requests a minute, 50 uploads an hour. Wrong keys count like wrong passwords.')
+  })
+})
+
+describe('nexpaper\'s parts in the card API-Schlüssel (Bauplan E57, schluessel 1.0.1)', () => {
+  afterEach(() => {
+    auth.me = me
+  })
+
+  it('lets the operator allow keys in the note that they are off, after a question', async () => {
+    auth.me = { ...me, role: 'operator' } as Me
+    server.answers['GET /api/v1/connections/keys'] = { ...(server.answers['GET /api/v1/connections/keys'] as object), api: false }
+    server.answers['PUT /api/v1/connections/interfaces'] = { api: true }
+    await page.show(<ApiKeys />)
+    const note = document.querySelector('[data-testid="api-keys-off"]')!
+    const allow = page.button('Jetzt freigeben', note)!
+    expect([allow.dataset.kind, allow.dataset.size]).toEqual(['secondary', 'sm'])
+    await page.click(allow)
+    expect(document.querySelector('[data-testid="api-keys-allow-dialog"]')).not.toBeNull()
+    await page.inDialog('Abbrechen')
+    expect(server.changes()).toEqual([])
+    await page.click(page.button('Jetzt freigeben', document.querySelector('[data-testid="api-keys-off"]')!))
+    const loads = server.calls.filter((call) => call.url === '/api/v1/connections/keys').length
+    await page.inDialog('Freigeben')
+    expect(server.changes()).toEqual(['PUT /api/v1/connections/interfaces'])
+    expect(server.calls.find((call) => call.method === 'PUT')!.body).toEqual({ api: true })
+    // The card asks again whether keys are on.
+    expect(server.calls.filter((call) => call.url === '/api/v1/connections/keys').length).toBeGreaterThan(loads)
+  })
+
+  it('offers no such button to a member', async () => {
+    server.answers['GET /api/v1/connections/keys'] = { ...(server.answers['GET /api/v1/connections/keys'] as object), api: false }
+    await page.show(<ApiKeys />)
+    expect(document.querySelector('[data-testid="api-keys-off"]')).not.toBeNull()
+    expect(page.button('Jetzt freigeben')).toBeUndefined()
+  })
+
+  it('says how long a key should live, at the end of the card', async () => {
+    await page.show(<ApiKeys />)
+    const lifetime = document.querySelector('[data-testid="keys-lifetime"]')!.textContent!
+    expect(lifetime).toContain('Ein Schlüssel, der nie abläuft')
+    expect(lifetime).toContain('Ein Schlüssel zum Hochladen kann nur Dokumente in deinen Eingang legen.')
+  })
+
+  it.each([
+    ['upload', '-F file=@Rechnung.pdf', '/api/v1/documents'],
+    ['read', '', '/api/v1/me'],
+  ])('shows the curl command of a new key for %s', async (right, part, path) => {
+    server.answers['GET /api/v1/connections/keys'] = {
+      ...(server.answers['GET /api/v1/connections/keys'] as object),
+      keys: [{ id: 3, kind: 'api', name: 'Scanner', right }],
+    }
+    await page.show(<TryIt name="Scanner" secret="npk_example" />)
+    const row = document.querySelector<HTMLInputElement>('[data-testid="key-try-it"] input')!
+    expect(row.value).toContain('Authorization: Bearer npk_example')
+    expect(row.value).toContain(part)
+    expect(row.value.endsWith(path)).toBe(true)
+    expect(document.querySelector('[data-testid="key-try-it-part"]')!.textContent).toContain('Zum Ausprobieren')
+    expect(row.getAttribute('aria-label')).toBe('Zum Ausprobieren')
   })
 })

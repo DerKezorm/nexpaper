@@ -705,7 +705,14 @@
       "uploadHint": "Für einen Scanner, ein Skript oder den Kurzbefehl: legt Dokumente in einen Eingang und liest nichts."
     },
     "keyUploadNote": "Ein Schlüssel zum Hochladen legt Dokumente nur in einen Eingang: in den deines Ziel-Tresors oder, wenn das Programm einen anderen nennt, in den eines Tresors, in dem du ablegen darfst. Lesen, ändern oder löschen kann er nichts.",
-    "keyLimits": "Grenzen je Schlüssel: 120 Anfragen in der Minute, 50 Uploads in der Stunde. Falsche Schlüssel zählen wie falsche Passwörter."
+    "keyLimits": "Grenzen je Schlüssel: 120 Anfragen in der Minute, 50 Uploads in der Stunde. Falsche Schlüssel zählen wie falsche Passwörter.",
+    "enable": "Jetzt freigeben",
+    "enableConfirm": "Freigeben",
+    "enableTitle": "API-Schlüssel für alle freigeben?",
+    "enableText": "Danach kann jede Person auf diesem Server unter Mein Konto › Verbindungen API-Schlüssel anlegen. Ein Schlüssel lässt ein Programm entweder nur lesen oder nur hochladen, nie mehr, als das Konto darf, das ihn anlegt. Du kannst die Freigabe unter Server › Allgemein › Schnittstellen jederzeit wieder ausschalten; dann gehen auch vorhandene Schlüssel nicht mehr.",
+    "tryIt": "Zum Ausprobieren",
+    "lifetimeHint": "Ein Schlüssel, der nie abläuft, ist der, an den sich niemand mehr erinnert, wenn er in falsche Hände gerät. Ein Jahr reicht meist; die Liste zeigt eine Woche vorher, dass er abläuft.",
+    "lifetimeHintUpload": "Ein Schlüssel zum Hochladen kann nur Dokumente in deinen Eingang legen. Dein Archiv liest er nicht. Darum läuft er von sich aus nicht ab, und ein Kurzbefehl oder Scanner muss nicht nach einem Jahr neu eingerichtet werden. Du kannst ihn jederzeit widerrufen oder eine Dauer wählen."
   },
   "rights": {
     "read": {
