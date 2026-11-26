@@ -900,7 +900,7 @@
   "storage": {
     "limits": {
       "title": "Grenzen",
-      "text": "Was nexpaper annimmt. Gilt für Browser, Handy und Apps, ab der nächsten Datei. Die Grenze eines Kontos setzt du unter Konten › Verwalten.",
+      "text": "Was nexpaper annimmt. Gilt für Browser, Handy und Apps, ab der nächsten Datei. Die Grenze eines Kontos setzt du unter Server › Konten › Verwalten.",
       "maxFile": "Größe einer Datei (MB)",
       "maxFileHint": "Größere Dateien lehnt nexpaper ab. Dateien über 8 MB gehen in Stücken, und nach einem Netzabbruch geht es dort weiter, wo es aufgehört hat.",
       "maxPages": "Seiten je Dokument",

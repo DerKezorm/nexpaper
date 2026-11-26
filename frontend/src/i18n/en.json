@@ -900,7 +900,7 @@
   "storage": {
     "limits": {
       "title": "Limits",
-      "text": "What nexpaper takes in. Applies to browser, phone and apps, from the next file on. The limit of one account is set under Accounts › Manage.",
+      "text": "What nexpaper takes in. Applies to browser, phone and apps, from the next file on. The limit of one account is set under Server › Accounts › Manage.",
       "maxFile": "Size of one file (MB)",
       "maxFileHint": "Larger files are refused. Files over 8 MB go in pieces, and after a break in the network they go on where they stopped.",
       "maxPages": "Pages per document",

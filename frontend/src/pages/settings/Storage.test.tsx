@@ -65,9 +65,9 @@ describe('the limits', () => {
     expect([save('file')!.dataset.kind, save('more')!.dataset.kind]).toEqual(['secondary', 'secondary'])
     // E48: the card's line says what nexpaper takes in, then where the limit of one account is set, once.
     expect(document.querySelector('[data-card="limits"] h2 + p')!.textContent).toBe(
-      'Was nexpaper annimmt. Gilt für Browser, Handy und Apps, ab der nächsten Datei. Die Grenze eines Kontos setzt du unter Konten › Verwalten.',
+      'Was nexpaper annimmt. Gilt für Browser, Handy und Apps, ab der nächsten Datei. Die Grenze eines Kontos setzt du unter Server › Konten › Verwalten.',
     )
-    expect(document.querySelector('[data-card="limits"]')!.textContent!.split('Konten › Verwalten').length).toBe(2)
+    expect(document.querySelector('[data-card="limits"]')!.textContent!.split('Server › Konten › Verwalten').length).toBe(2)
   })
 
   it('send only what was changed, each Save its own part', async () => {
@@ -186,7 +186,7 @@ describe('the storage for new accounts (Bauplan E44)', () => {
     await changeLanguage('en', false)
     await page.show(<LimitsCard />)
     expect(field('Storage for new accounts (GB)')).toBeTruthy()
-    expect(page.text).toContain('The limit of one account is set under Accounts › Manage.')
+    expect(page.text).toContain('The limit of one account is set under Server › Accounts › Manage.')
     page.close()
     await changeLanguage('fr', false)
     await page.show(<LimitsCard />)

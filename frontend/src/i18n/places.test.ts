@@ -38,8 +38,6 @@ const LANGUAGES = [
 
 /** Texts about other programs keep their words (E46): Safari's menus in the card "Auf diesem Gerät installieren". */
 const FOREIGN = /^install\./
-/** E48: the one sentence of "Grenzen" that names the dialog of an account, "Konten › Verwalten". */
-const E48 = /^storage\.limits\.text$/
 
 /** Paperless names its own access "API-Token"; that is Paperless' word, on the page of the import. */
 const PAPERLESS = /^paperless\./
@@ -102,12 +100,11 @@ describe('the places the texts name', () => {
         )
           wrong.push(`${key}: ${text}`)
         if (new RegExp(`(Karte|card|carte) [„“"«]\\s?(${words})|(,|in der|in the|dans la) (Karte|card|carte) [„“"«]`).test(text)) wrong.push(`${key}: ${text}`)
-        // An area at the start of a path needs its group before it; E48 sets "Konten › Verwalten" in "Grenzen".
+        // An area at the start of a path needs its group before it (E46, also "Server › Konten › Verwalten" in "Grenzen").
         for (const found of text.matchAll(new RegExp(`(^|[^›] )(${areas}) › `, 'g'))) {
           const before = text.slice(0, (found.index ?? 0) + found[1]!.length)
           const grouped = [kit.groupAccount, kit.groupServer].some((group) => before.endsWith(`${group} › `))
-          const e48 = E48.test(key) && found[2] === kit.areas.accounts.title
-          if (!grouped && !e48) wrong.push(`${key}: ${text}`)
+          if (!grouped) wrong.push(`${key}: ${text}`)
         }
       }
       expect(wrong).toEqual([])

@@ -114,7 +114,7 @@ DEFAULTS: dict[str, Any] = {
     #: The pictures of pages are kept in a cache that is trimmed to this size (MB), the ones used longest ago first.
     "cache_max_mb": 1024,
     #: The storage limit every new account starts with, in bytes (Bauplan E44); None: none. An account's own limit is
-    #: set under Accounts › Manage; changing this changes no account that exists.
+    #: set under Server › Accounts › Manage; changing this changes no account that exists.
     "new_account_storage_limit": None,
     #: Pages of a long document drawn in the background after it was read, behind every document that waits to be read
     #: (``services/pages.py``, job ``pages``); the ones after it are drawn when somebody asks for them.

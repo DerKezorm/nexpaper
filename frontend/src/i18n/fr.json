@@ -900,7 +900,7 @@
   "storage": {
     "limits": {
       "title": "Limites",
-      "text": "Ce que nexpaper accepte. S'applique au navigateur, au téléphone et aux applications, à partir du prochain fichier. Vous fixez la limite d'un compte sous Comptes › Gérer.",
+      "text": "Ce que nexpaper accepte. S'applique au navigateur, au téléphone et aux applications, à partir du prochain fichier. Vous fixez la limite d'un compte sous Serveur › Comptes › Gérer.",
       "maxFile": "Taille d'un fichier (Mo)",
       "maxFileHint": "Les fichiers plus grands sont refusés. Les fichiers de plus de 8 Mo sont envoyés en morceaux et, après une coupure réseau, reprennent là où ils se sont arrêtés.",
       "maxPages": "Pages par document",

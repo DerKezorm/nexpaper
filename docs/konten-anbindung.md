@@ -73,7 +73,7 @@ doppelt; jetzt prüft er Pfad, h1 und h2 je einmal und die Knopfnamen). `sync.py
   Teil statt „, Karte …“; in „Was ist neu“ nur die Wegweiser (`where`) auf heute, die alten Texte wie erschienen.
   Wächter: `places.test.ts` (auch die Wegweiser), `test_places.py` (README, `docs/`, jede Zeichenkette des Servers).
 - E48: Karte `web-push` (Reihenfolge Grenzen, Funktionen, Schnittstellen, Web Push, Sprachen), Satz unter Grenzen
-  „Was nexpaper annimmt … Die Grenze eines Kontos setzt du unter Konten › Verwalten.“, Satz unter Funktionen,
+  „Was nexpaper annimmt … Die Grenze eines Kontos setzt du unter Server › Konten › Verwalten.“, Satz unter Funktionen,
   „Schriften im Abbild“; „Verwalten“ bleibt `sm` wie aus konten.
 - E47: `tests/test_bestand.py` wieder wie auf `konten`, dünne Hülle `services/mailer.py` (`send_reset` →
   `kontenpost`); der Fänger `bestand_mail_caught` bleibt (ohne ihn sechs Versuche an mail.example.com:587).
