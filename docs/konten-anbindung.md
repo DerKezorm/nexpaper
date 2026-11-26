@@ -88,6 +88,30 @@ doppelt; jetzt prüft er Pfad, h1 und h2 je einmal und die Knopfnamen). `sync.py
   Dateien; `npm run lint` sauber; `npm run build` grün; Playwright `npm run e2e` 2 von 2 grün. Volle Backend-Reihe
   macht die Bau-Leitung.
 
+**Modul sprachen 1.0.0 (26.11.2026, E51; `bauplaene-stand` 4f3e75e).** Die eigenen Sprachen kommen aus dem Modul
+(`app/vendor/nexsprachen`, `src/vendor/nexsprachen`). `services/locales.py` ist das Modul (`configure` mit
+`NEXPAPER_LOCALES_DIR`, also dem Ordner von vorher: vorhandene Dateien gelten weiter; eingebaut `de`, `en`, `fr`; die
+Vorlage macht die Seite aus den englischen Texten); dort bleibt nexpapers Lesen von `Accept-Language` (`best_match`,
+jetzt über `codes()`). `routers/locales.py` hängt die Wege des Moduls unter `/api/v1/locales` ein, an derselben Stelle
+wie bisher. Profilsprache und Sprache der Seite prüft `nexsprachen.known`. Karte „Sprachen“ ist `LanguagesCard` des
+Moduls (fünfte Karte unter Allgemein, Satz „Deutsch, Englisch und Französisch sind eingebaut.“, Änderungen mit
+`X-Nexpaper-Client` über `tabFetch`), alte Karte und ihre Wörter sind weg; der i18n-Lader nimmt `ownLanguages`, das
+Profil `useLanguageOptions`. Die Anmeldeseite hat keine Sprachwahl (Frage S3).
+- Alte Wege: dieselben Pfade, Methoden und Felder (`code`, `name`, `keys`; Fehler `{"detail": {"code", "message", …}}`
+  mit `not_found`, `locale_unusable`, `too_large`). Anders: die Liste nennt vorne die eingebauten Sprachen
+  (`built_in`, `own`; die alte Seite übersprang eingebaute Codes), neu `GET /api/v1/locales/template` (404), der Grund
+  einer Ablehnung ist eine feste Kennung statt des Parsersatzes. `test_locales.py::test_old_callers_get_the_same_answers`
+  und `order.test.ts` (Liste in der Form von vorher) zeigen es.
+- Anders als vorher: Entfernen fragt nicht mehr (Modul wie nexnotes, Frage S2); der OpenAPI-Schnappschuss ist nicht
+  erneuert, weil sich neben Zusätzen `operationId`s und eine Zusammenfassung ändern (Frage S1, Test rot). Vorlage
+  `nexsprachen.test.tsx`: der englische Satz mit Französisch von Hand (Modulfehler S4).
+- schluessel aus 4f3e75e: „Neuer MCP-Schlüssel“ md secondary Plus; Vorlage `nexschluessel.test.tsx` von Hand
+  nachgezogen, Werte der App bleiben.
+- Läufe (Stand `a279855`): ruff sauber; pytest gezielt 437 grün, 1 übersprungen (nexschluessel ohne Bereiche), 1 rot
+  (Schnappschuss, S1) in nexsprachen, nexschluessel, Sprachen, PWA, Wege, Orte, Bestand, Konten, Einladungen, Push,
+  Mail; `tests/nexsprachen` 63 grün; vitest 1222 grün in 109 Dateien; `npm run lint` sauber; `npm run build` grün;
+  Playwright `npm run e2e` 2 von 2 grün. Neue Tests je gegen eine Mutation rot (Rückgabecode 1).
+
 
 **Gebaut** auf konten 0.3.9, oidc 1.1.0, post 0.1.1, ui 0.1.1, am selben Tag nachgezogen über 0.3.10 **auf den Modulen
 1.0.0** (konten 1.0.0, ui 1.0.0, post 1.0.0, oidc 1.1.2; Kopien aus `bauplaene`, Zweig `konten` `3c55402`, `sync.py check`
