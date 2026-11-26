@@ -44,7 +44,7 @@ export function PushServerCard() {
 
   const lines = () => hosts.split('\n').map((line) => line.trim()).filter(Boolean)
   return (
-    <Card id="push-server" icon={BellRing} title={t('server.push.title')} subtitle={t('server.push.text')}>
+    <Card id="web-push" icon={BellRing} title={t('server.push.title')} subtitle={t('server.push.text')}>
       <div>
         <Badge tone="on" testId="push-ready">
           {t('server.push.ready', { count: stored.devices })}

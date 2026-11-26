@@ -165,7 +165,7 @@
     "menu": "Über nexpaper",
     "subtitle": "Dokumente für Haushalt und kleine Betriebe: hochladen, finden, fertig.",
     "version": "Version",
-    "fonts": "Schrift im Abbild",
+    "fonts": "Schriften im Abbild",
     "fontsText": "nexpaper bringt seine Schrift mit, damit beim Öffnen kein anderer Server gefragt wird.",
     "updates": {
       "current": "Das ist die neueste Version.",
@@ -408,6 +408,7 @@
       "revivedPdfPasswords_other": "Zurückspielen bringt {{count}} gemerkte PDF-Passwörter zurück, die seit der Sicherung gelöscht wurden."
     },
     "features": "Funktionen für alle Konten",
+    "featuresHint": "Was jedes Konto auf diesem Server nutzen darf.",
     "documentsFact": "Dokumente",
     "backupHolds": "Eine Sicherung enthält die Datenbank (Konten, Tresore, Zuordnungen, erkannter Text, Notizen, Verlauf, Einstellungen) und den Schlüssel des Servers, nicht die Dokumente selbst: Die liegen als Dateien in /data/dokumente und gehören in die übliche Dateisicherung des Servers. Mit dem Schlüssel enthält sie auch die Zugänge für Mail und KI und die Adressen offener Links, bewahre sie darum geschützt auf, wie ein Passwort. Den Suchindex baut nexpaper nach dem Wiederherstellen neu.",
     "whatYouSee": "Als Betreiber siehst du Namen, Benutzernamen, Mailadressen, Rollen, wie sich jemand anmeldet, wann ein Konto zuletzt da war und wie viele Dokumente und wie viel Speicher es hat, aber nie die Dokumente in den Tresoren anderer, ihren erkannten Text, ihre Notizen oder ihre Passwörter.",
@@ -901,7 +902,7 @@
   "storage": {
     "limits": {
       "title": "Grenzen",
-      "text": "Was nexpaper annimmt. Gilt für Browser, Handy und Apps, ab der nächsten Datei.",
+      "text": "Die Grenze eines Kontos setzt du unter Konten › Verwalten.",
       "maxFile": "Größe einer Datei (MB)",
       "maxFileHint": "Größere Dateien lehnt nexpaper ab. Dateien über 8 MB gehen in Stücken, und nach einem Netzabbruch geht es dort weiter, wo es aufgehört hat.",
       "maxPages": "Seiten je Dokument",
@@ -922,8 +923,8 @@
       "cache": "Zwischenspeicher für Seitenbilder (MB)",
       "cacheHint": "Wird er größer, räumt nexpaper die Bilder weg, die am längsten nicht gebraucht wurden. Sie entstehen bei Bedarf neu.",
       "newAccountStorage": "Speicher für neue Konten (GB)",
-      "newAccountStorageHint": "Leer heißt ohne Grenze. Gilt für Konten, die ab jetzt dazukommen. Die Grenze eines Kontos setzt du unter Konten › Verwalten.",
-      "perAccount": "Speicher je Konto setzt du unter „Konten“."
+      "newAccountStorageHint": "Leer heißt ohne Grenze. Gilt für Konten, die ab jetzt dazukommen.",
+      "applies": "Was nexpaper annimmt. Gilt für Browser, Handy und Apps, ab der nächsten Datei."
     },
     "disk": {
       "title": "So liegen die Dateien auf der Platte",

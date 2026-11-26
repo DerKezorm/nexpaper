@@ -1,7 +1,7 @@
 /**
  * Server › General, the card "Grenzen": the limits on what comes in are shown with their values; the size of one file
- * has its own field with its own Save (`Field action`) as in nexnotes, the line that the storage of each account is
- * set under "Konten", the further limits one Save below (each sends only what changed in its part),
+ * has its own field with its own Save (`Field action`) as in nexnotes, the card's line on where one account's limit is
+ * set (E48), the further limits one Save below (each sends only what changed in its part),
  * refused on the page when a number is out of its range. Settings, Storage: the disk card shows how the files lie (the
  * queue is on the card of the text recognition, `Ocr.test.tsx`).
  */
@@ -63,7 +63,11 @@ describe('the limits', () => {
     expect(document.querySelector('[data-card="limits"]')).toBeTruthy()
     expect(save('file')!.closest('[data-part="field-action"]')!.contains(field('Größe einer Datei (MB)'))).toBe(true)
     expect([save('file')!.dataset.kind, save('more')!.dataset.kind]).toEqual(['secondary', 'secondary'])
-    expect(document.querySelector('[data-testid="limits-accounts"]')!.textContent).toBe('Speicher je Konto setzt du unter „Konten“.')
+    // E48: the card's line names where the limit of one account is set, once, as in nexnotes; nexpaper's own line on
+    // what it takes in stays, under the fields.
+    expect(document.querySelector('[data-card="limits"] h2 + p')!.textContent).toBe('Die Grenze eines Kontos setzt du unter Konten › Verwalten.')
+    expect(document.querySelector('[data-card="limits"]')!.textContent!.split('Konten › Verwalten').length).toBe(2)
+    expect(document.querySelector('[data-testid="limits-applies"]')!.textContent).toBe('Was nexpaper annimmt. Gilt für Browser, Handy und Apps, ab der nächsten Datei.')
   })
 
   it('send only what was changed, each Save its own part', async () => {
@@ -137,7 +141,7 @@ describe('the storage for new accounts (Bauplan E44)', () => {
   const GB = 1024 ** 3
   const own = () => page.button('Speichern', document.querySelector('[data-testid="limit-new-accounts"]')!)!
 
-  it('stands in "Grenzen" in GB with its own Save level with it, and says where one account gets its limit', async () => {
+  it('stands in "Grenzen" in GB with its own Save level with it, the place of one account\'s limit in the card\'s line', async () => {
     server.answers['GET /api/v1/settings'] = { ...settings, new_account_storage_limit: 5 * GB }
     await page.show(<LimitsCard />)
     const input = field('Speicher für neue Konten (GB)')
@@ -146,7 +150,8 @@ describe('the storage for new accounts (Bauplan E44)', () => {
     expect(own().closest('[data-part="field-action"]')!.contains(input)).toBe(true)
     expect([own().dataset.kind, own().dataset.size, own().dataset.icon]).toEqual(['secondary', 'md', 'Check'])
     const hint = document.getElementById((input.getAttribute('aria-describedby') ?? '').split(' ')[0]!)!
-    expect(hint.textContent).toBe('Leer heißt ohne Grenze. Gilt für Konten, die ab jetzt dazukommen. Die Grenze eines Kontos setzt du unter Konten › Verwalten.')
+    // The place of one account's limit stands once, in the card's line (E48), not again under the field.
+    expect(hint.textContent).toBe('Leer heißt ohne Grenze. Gilt für Konten, die ab jetzt dazukommen.')
   })
 
   it('sends the GB as bytes, alone, and empty as null', async () => {

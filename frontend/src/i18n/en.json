@@ -165,7 +165,7 @@
     "menu": "About nexpaper",
     "subtitle": "Documents for households and small firms: upload, find, done.",
     "version": "Version",
-    "fonts": "Font in the image",
+    "fonts": "Fonts in the image",
     "fontsText": "nexpaper brings its font along, so that opening it asks no other server.",
     "updates": {
       "current": "This is the newest version.",
@@ -408,6 +408,7 @@
       "revivedPdfPasswords_other": "Restoring brings back {{count}} remembered PDF passwords that were deleted since the backup."
     },
     "features": "Features for all accounts",
+    "featuresHint": "What every account on this server may use.",
     "documentsFact": "Documents",
     "backupHolds": "A backup holds the database (accounts, vaults, assignments, recognised text, notes, history, settings) and the server's key, not the documents themselves: they lie as files in /data/dokumente and belong in the server's usual file backup. With the key it also holds the access for mail and AI and the addresses of open links, so keep it protected, like a password. nexpaper builds the search index anew after a restore.",
     "whatYouSee": "As the operator you see names, usernames, mail addresses, roles, how somebody signs in, when an account was last here and how many documents and how much storage it has, but never the documents in other people's vaults, their recognised text, their notes or their passwords.",
@@ -901,7 +902,7 @@
   "storage": {
     "limits": {
       "title": "Limits",
-      "text": "What nexpaper takes in. Applies to browser, phone and apps, from the next file on.",
+      "text": "The limit of one account is set under Accounts › Manage.",
       "maxFile": "Size of one file (MB)",
       "maxFileHint": "Larger files are refused. Files over 8 MB go in pieces, and after a break in the network they go on where they stopped.",
       "maxPages": "Pages per document",
@@ -922,8 +923,8 @@
       "cache": "Cache for page pictures (MB)",
       "cacheHint": "When it grows past this, nexpaper clears the pictures that were not used for the longest time. They are made again when needed.",
       "newAccountStorage": "Storage for new accounts (GB)",
-      "newAccountStorageHint": "Empty means no limit. Applies to accounts added from now on. The limit of one account is set under Accounts › Manage.",
-      "perAccount": "You set the storage of each account under “Accounts”."
+      "newAccountStorageHint": "Empty means no limit. Applies to accounts added from now on.",
+      "applies": "What nexpaper takes in. Applies to browser, phone and apps, from the next file on."
     },
     "disk": {
       "title": "How the files lie on the disk",

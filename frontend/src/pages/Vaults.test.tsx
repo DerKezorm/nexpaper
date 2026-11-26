@@ -283,6 +283,8 @@ describe('the switches for all accounts (links to the outside, upload requests, 
     server.answers['GET /api/v1/sharing/overview'] = { open_links: 2, people: 2, next_end: '2026-10-31T10:00:00Z' }
     await page.show(<FeaturesCard />, '/einstellungen?tab=sharing')
     expect(page.text).toContain('Funktionen für alle Konten')
+    // E48: the card's line, the same in every app.
+    expect(document.querySelector('[data-card="features"] h2 + p')!.textContent).toBe('Was jedes Konto auf diesem Server nutzen darf.')
     expect(page.text).toContain('Teilen per Link')
     expect(page.text).toContain('Gerade offen: 2 Links von 2 Personen, der nächste läuft am 31.10.2026 ab.')
     expect((document.querySelector('select') as HTMLSelectElement).value).toBe('30')

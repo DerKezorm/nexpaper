@@ -215,6 +215,10 @@ describe('the settings', () => {
     expect(box.querySelector('h1')!.textContent).toBe('Allgemein')
     expect(box.querySelector('[data-testid="settings-area-general"] p')!.textContent).toBe('Grenzen, Funktionen für alle Konten, Schnittstellen und eigene Sprachen.')
     expect(box.querySelector('[data-testid="settings-about"], [data-part="settings-about"] a')!.textContent).toContain('Über nexpaper')
+    // The cards of General in the plan's order, under the plan's names (Bauplan Allgemein, E48: `features`, `web-push`).
+    expect([...box.querySelectorAll('[data-testid="settings-area-general"] section[data-card]')].map((card) => card.getAttribute('data-card'))).toEqual(
+      ['limits', 'features', 'interfaces', 'web-push', 'languages'],
+    )
     act(() => root.unmount())
     box.remove()
     // An address of before leads to its area: the interface is a card under General now.

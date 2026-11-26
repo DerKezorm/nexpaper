@@ -35,7 +35,7 @@ export function FeaturesCard() {
   // What belongs to a switch stands under it, a little in, while the switch is on.
   const beneath = 'flex flex-col gap-2 border-0 border-l-2 border-solid border-[var(--nexui-line)] pl-4'
   return (
-    <Card id="features" icon={SlidersHorizontal} title={t('server.features')}>
+    <Card id="features" icon={SlidersHorizontal} title={t('server.features')} subtitle={t('server.featuresHint')}>
       <CheckboxRow label={t('sharingSettings.allow')} hint={t('sharingSettings.allowHint')} checked={linksOn} onChange={(links_allowed) => void server.save({ links_allowed })} />
       {linksOn && (
         <div className={beneath} data-testid="links-beneath">

@@ -134,5 +134,7 @@ describe('what it is built with', () => {
     for (const part of ['OCRmyPDF (MPL-2.0)', 'Tesseract (Apache-2.0)', 'pikepdf (MPL-2.0)', 'img2pdf (LGPL-3.0)', 'PDF.js (Apache-2.0)', 'OpenCV.js (Apache-2.0)', 'jscanify (MIT)', 'Inter (OFL-1.1)']) {
       expect(built, part).toContain(part)
     }
+    // E48: the heading of the fonts the image brings, the same in every app.
+    expect(document.querySelector('[data-card="about-built-with"] [data-testid="about-fonts"] h3')!.textContent).toBe('Schriften im Abbild')
   })
 })

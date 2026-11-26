@@ -70,6 +70,10 @@ describe('the accounts', () => {
     expect(rowOf('lea')!.textContent).toContain('authentik')
     expect(rowOf('lea')!.textContent).toContain('Gesperrt')
     expect(page.button('Verwalten', rowOf('tom')!)).toBeTruthy()
+    // "Verwalten" as konten 1.1.0 gives it (`BUTTONS['account.manage']`: secondary, UserCog, sm); nexpaper sets none of
+    // its own (Bauplan E39).
+    const manageButton = page.button('Verwalten', rowOf('tom')!)!
+    expect([manageButton.dataset.kind, manageButton.dataset.size, manageButton.dataset.icon]).toEqual(['secondary', 'sm', 'UserCog'])
     expect(document.querySelector('[role="menu"]')).toBeNull()
   })
 

@@ -292,7 +292,7 @@ describe("the operator's card", () => {
     await show(<PushServerCard />)
     expect(box.querySelector('[data-testid="push-ready"]')!.textContent).toContain('Bereit · 3 Geräte angemeldet')
     expect(box.textContent).toContain('BEl6…x2Qk')
-    expect(box.querySelector('[data-card="push-server"]')).toBeTruthy()
+    expect(box.querySelector('[data-card="web-push"]')).toBeTruthy()
     const contact = box.querySelector<HTMLInputElement>('input')!
     expect(contact.placeholder).toBe('mailto:admin@example.com')
     await type(contact, 'mailto:paper@example.com')

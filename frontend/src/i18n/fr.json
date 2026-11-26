@@ -165,7 +165,7 @@
     "menu": "À propos de nexpaper",
     "subtitle": "Des documents pour les ménages et les petites entreprises : téléverser, trouver, terminé.",
     "version": "Version",
-    "fonts": "Police incluse dans l'image",
+    "fonts": "Polices incluses dans l'image",
     "fontsText": "nexpaper apporte sa propre police, de sorte que son ouverture ne sollicite aucun autre serveur.",
     "updates": {
       "current": "C'est la version la plus récente.",
@@ -408,6 +408,7 @@
       "revivedPdfPasswords_other": "La restauration ramène {{count}} mots de passe PDF mémorisés supprimés depuis la sauvegarde."
     },
     "features": "Fonctions pour tous les comptes",
+    "featuresHint": "Ce que chaque compte de ce serveur peut utiliser.",
     "documentsFact": "Documents",
     "backupHolds": "Une sauvegarde contient la base de données (comptes, coffres, attributions, texte reconnu, notes, historique, réglages) et la clé du serveur, pas les documents eux-mêmes : ils se trouvent sous forme de fichiers dans /data/dokumente et relèvent de la sauvegarde de fichiers habituelle du serveur. Avec la clé, elle contient aussi les accès au courriel et à l'IA et les adresses des liens ouverts, garde-la donc protégée, comme un mot de passe. nexpaper reconstruit l'index de recherche après une restauration.",
     "whatYouSee": "En tant qu'opérateur, tu vois les noms, les noms d'utilisateur, les adresses courriel, les rôles, la façon dont quelqu'un se connecte, la dernière visite d'un compte et combien de documents et d'espace il a, mais jamais les documents dans les coffres des autres, leur texte reconnu, leurs notes ni leurs mots de passe.",
@@ -901,7 +902,7 @@
   "storage": {
     "limits": {
       "title": "Limites",
-      "text": "Ce que nexpaper accepte. S'applique au navigateur, au téléphone et aux applications, à partir du prochain fichier.",
+      "text": "Vous fixez la limite d'un compte sous Comptes › Gérer.",
       "maxFile": "Taille d'un fichier (Mo)",
       "maxFileHint": "Les fichiers plus grands sont refusés. Les fichiers de plus de 8 Mo sont envoyés en morceaux et, après une coupure réseau, reprennent là où ils se sont arrêtés.",
       "maxPages": "Pages par document",
@@ -922,8 +923,8 @@
       "cache": "Cache des images de pages (Mo)",
       "cacheHint": "Quand il dépasse cette taille, nexpaper efface les images inutilisées depuis le plus longtemps. Elles sont recréées au besoin.",
       "newAccountStorage": "Espace pour les nouveaux comptes (Go)",
-      "newAccountStorageHint": "Vide signifie sans limite. Vaut pour les comptes ajoutés à partir de maintenant. Tu fixes la limite d'un compte sous Comptes › Gérer.",
-      "perAccount": "Tu fixes l'espace de chaque compte sous « Comptes »."
+      "newAccountStorageHint": "Vide signifie sans limite. Vaut pour les comptes ajoutés à partir de maintenant.",
+      "applies": "Ce que nexpaper accepte. S'applique au navigateur, au téléphone et aux applications, à partir du prochain fichier."
     },
     "disk": {
       "title": "Comment les fichiers sont rangés sur le disque",

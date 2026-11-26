@@ -39,7 +39,7 @@ const LANGUAGES = [
 /** Texts about other programs keep their words (E46): Safari's menus in the card "Auf diesem Gerät installieren". */
 const FOREIGN = /^install\./
 /** E48: the one sentence of "Grenzen" that names the dialog of an account, "Konten › Verwalten". */
-const E48 = /^storage\.limits\.(newAccountStorageHint|hint)$/
+const E48 = /^storage\.limits\.text$/
 
 /** Paperless names its own access "API-Token"; that is Paperless' word, on the page of the import. */
 const PAPERLESS = /^paperless\./
