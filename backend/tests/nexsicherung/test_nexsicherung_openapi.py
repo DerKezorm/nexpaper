@@ -81,9 +81,17 @@ def test_every_body_carries_the_schema_name_the_app_gave(app: Any, described: di
 
 
 def test_the_module_puts_no_class_of_its_own_beside_a_renamed_one(app: Any, described: dict[str, Any]) -> None:
-    """A name the app gave replaces the module's class in both routers: no second schema of the module remains."""
+    """A name the app gave replaces the module's class in both routers: no route of the module still answers with the
+    module's own class, and no schema carries the module's long name. A schema of the app's own under the same short
+    name (``RestoreIn`` of a trash, ``NoteIn`` of documents, which ``FORMER_SCHEMAS`` gives back their short names) is
+    the app's, not the module's."""
     schemas = described["components"]["schemas"]
-    given = set().union(*(shown(target) for target in app.schema_names.values())) if app.schema_names else set()
     for schema in app.schema_names:
         left = [name for name in schemas if name.endswith(f"nexsicherung__routes__{schema}")]
-        assert left == [] and (schema not in schemas or schema in given), (schema, sorted(schemas))
+        assert left == [], (schema, left)
+    routes = [(app.prefix, OWN)] + ([(app.legacy_prefix, LEGACY)] if app.legacy_prefix else [])
+    for prefix, table in routes:
+        for route, (tail, method, schema) in table.items():
+            if schema in app.schema_names:
+                found = _body(described["paths"][f"{prefix}{tail}"][method])
+                assert found not in ({schema} - shown(app.schema_names[schema])), (prefix, route, found)

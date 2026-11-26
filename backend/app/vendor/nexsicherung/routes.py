@@ -28,8 +28,8 @@ a schema, ``SCHEMAS``; a value is a name or a dotted place and name like ``app.r
 FastAPI writes ``app__routers__backups__PasswordIn`` where two classes share the name). Schemas given one name become
 one schema with the fields of all (the restore's ``archive_password`` and ``options`` beside the password; not
 required). An app gives the same ``schema_names`` to both routers. ``FORMER_SCHEMAS`` and ``former_names(prefix)`` are
-the names the apps' own backup routes had before the module (nexdiary, nexfolk, nexlore, nexpaper, nextasks,
-nextime). Without them the module's names stay (nexnotes took the module before).
+the names an app's own backup routes had before the module (the same in every app that had them). Without them the
+module's names stay (for an app that took the module before it kept the old names).
 """
 
 import base64
