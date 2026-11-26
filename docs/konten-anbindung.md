@@ -166,7 +166,9 @@ Entfernen einer eigenen Sprache fragt wieder (Tests `languagesCard.test.tsx`, `C
 TODO weg). P4: unter „Mail bei neuer Anmeldung“ nexpapers Satz „Auch als Mitteilung auf deinen Geräten.“
 (`newSignInMailHint`, DE/EN/FR). P5: in `ApiKeysCard` „Jetzt freigeben“ des Betreibers (`offAction`, Rückfrage, schaltet
 `api` unter `/api/v1/connections/interfaces`), „Zum Ausprobieren“ mit dem curl-Befehl je Recht (`made`), Ablauf-Hinweise
-am Ende (`children`); der Link „Eigene Tokens anlegen“ wartet auf einen Platz in `AllKeysCard` (Frage Q3).
+am Ende (`children`). E58: der Link „Eigene API-Schlüssel anlegen“ (Ziel Mein Konto › Verbindungen) steht am Ende von
+„API-Schlüssel aller Konten“ (`AllKeysCard` `children`, schluessel 1.0.2); Fristen-Briefe, Wochenübersicht und ihre
+Push-Meldungen auch auf Französisch.
 Endlauf `reihe.sh nexpaper ende9` (Stand `f289749`, mit P1 bis P5): ruff sauber; pytest 3925 grün, 5 übersprungen, 0 rot;
 lint sauber; vitest 1231 grün in 109 Dateien; build grün; Playwright 2 von 2 grün.
 
