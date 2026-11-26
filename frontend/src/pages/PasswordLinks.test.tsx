@@ -245,13 +245,14 @@ describe("the operator sends a link instead of setting a password", () => {
 })
 
 describe('what the server offers', () => {
-  it('turns the passkey button off where the server offers no passkeys', async () => {
+  it('offers no passkey button where the server offers no passkeys, and says what is missing (konten, E49)', async () => {
     Object.defineProperty(window, 'isSecureContext', { value: true, configurable: true })
     vi.stubGlobal('PublicKeyCredential', function PublicKeyCredential() {})
     answers['GET /api/v1/auth/passkeys'] = []
     answers['GET /api/v1/auth/methods'] = { password: true, providers: [], passkeys: false }
     await show(<PasskeysBox me={me} />, '/settings/security')
-    expect(button('Passkey hinzufügen', box)!.disabled).toBe(true)
+    expect(button('Passkey hinzufügen', box)).toBeUndefined()
+    expect(box.querySelector('[data-testid="passkey-needs-address"]')).not.toBeNull()
     act(() => root.unmount())
     box.remove()
     answers['GET /api/v1/auth/methods'] = { password: true, providers: [], passkeys: true }
