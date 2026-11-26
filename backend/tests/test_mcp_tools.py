@@ -91,7 +91,9 @@ def test_reading_tools_see_what_the_account_sees_and_nothing_else(people: dict[s
     assert data(call(secret, "read_document", {"document_id": people["shared"]}))["title"] == "Office lease"
     assert refused(call(secret, "read_document", {"document_id": people["theirs"]})) == "Not found."
     assert refused(call(secret, "read_document", {"document_id": 999_999})) == "Not found."
-    hits = {hit["id"] for hit in data(call(secret, "search_documents", {"query": "e"}))["documents"]}
+    hits = {hit["id"] for hit in data(call(secret, "search_documents", {"query": "October"}))["documents"]}
+    assert hits == {people["mine"]}
+    hits = {hit["id"] for hit in data(call(secret, "search_documents", {"query": "letter"}))["documents"]}
     assert people["theirs"] not in hits
     inbox = {entry["id"] for entry in data(call(secret, "list_inbox"))["documents"]}
     assert inbox == {people["waiting"]}
@@ -104,8 +106,10 @@ def test_a_key_limited_to_one_vault_sees_no_other(people: dict[str, Any]) -> Non
     assert refused(call(secret, "read_document", {"document_id": people["mine"]})) == "Not found."
     assert refused(call(secret, "search_documents", {"query": "e", "vault_id": own_vault(people["owner"])})) \
         == "Not found."
-    hits = {hit["id"] for hit in data(call(secret, "search_documents", {"query": "e"}))["documents"]}
-    assert people["mine"] not in hits
+    hits = {hit["id"] for hit in data(call(secret, "search_documents", {"query": "October"}))["documents"]}
+    assert hits == set()
+    hits = {hit["id"] for hit in data(call(secret, "search_documents", {"query": "lease"}))["documents"]}
+    assert hits == {people["shared"]}
     assert refused(call(secret, "set_document_fields", {"document_id": people["mine"], "title": "x"})) == "Not found."
     assert document(people["mine"]).title == "Electricity October"
 
