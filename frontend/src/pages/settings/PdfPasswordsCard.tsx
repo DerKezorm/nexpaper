@@ -1,5 +1,5 @@
 /**
- * "Gemerkte PDF-Passwörter" under My account, Upload (P1): the passwords the person kept when opening a protected PDF,
+ * "Gemerkte PDF-Passwörter" under My account › Upload (P1): the passwords the person kept when opening a protected PDF,
  * by their own names, with when they were kept and when one last fitted. A password is never shown again: an entry is
  * only renamed or deleted (with a question first). An entry the server can no longer unseal (its secret changed) says
  * so. Nobody else's entries are ever here.

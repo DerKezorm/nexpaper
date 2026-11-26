@@ -260,7 +260,7 @@ restore it, and copy the documents folder along.
 
 ### Checking the files, and the storage card
 
-Every file has a checksum. Once a week, and on a click (Settings › Server › Storage and backups, card "Check files"), nexpaper reads them all in
+Every file has a checksum. Once a week, and on a click (Settings › Server › Storage and backups › Check files), nexpaper reads them all in
 small portions with pauses and compares. A document whose file is missing or changed gets a warning sign in the archive,
 the inbox and on its page, a line in its history, and the operator a notice. The sign goes at the next check, or at once
 when the operator asks for that one document on its page, when a new version of it was read, when a version that could

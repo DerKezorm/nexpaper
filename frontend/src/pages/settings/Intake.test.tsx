@@ -1,7 +1,7 @@
 /**
- * Inputs, against a stand-in of the server: Settings, Inputs with its words (the folder with a line per
+ * Inputs, against a stand-in of the server: Server › Inputs with its words (the folder with a line per
  * person, the mailbox with its fields and "Afterwards"), "Save and try" that saves and then tries, the server's refusals
- * in the words of the card, the password never shown; My account, Upload with the addresses forwarded from, adding one
+ * in the words of the card, the password never shown; My account › Upload with the addresses forwarded from, adding one
  * (a mail with a link), removing one, the own mailbox address and subfolder; the page of the link in that mail.
  */
 import { Route, Routes } from 'react-router-dom'
@@ -68,7 +68,7 @@ function toggle(label: string): HTMLInputElement {
   return found!
 }
 
-describe('Settings, Inputs', () => {
+describe('Server › Inputs', () => {
   it('shows both cards with their words', async () => {
     await page.show(<IntakeCards />)
     for (const words of [
@@ -211,7 +211,7 @@ describe('Settings, Inputs', () => {
   })
 })
 
-describe('My account, Upload', () => {
+describe('My account › Upload', () => {
   it('lists the addresses forwarded from, the own mailbox address and the subfolder', async () => {
     await page.show(<MyIntakeCards />)
     for (const words of [

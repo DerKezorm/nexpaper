@@ -165,7 +165,7 @@ MAX_BODY = 16 * 1024 * 1024
 #: a picture, whose decoder says the same number (``pictures.MAX_BYTES``).
 LARGE_BODIES = {
     "/api/v1/backups/upload": 64 * 1024**3,
-    # The same upload on the way of the shared module sicherung (Settings, Storage and backups).
+    # The same upload on the way of the shared module sicherung (Server › Storage and backups).
     "/api/v1/server/storage/backups/upload": 64 * 1024**3,
     "/api/v1/auth/avatar": pictures.MAX_BYTES,
 }

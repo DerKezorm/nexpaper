@@ -1,5 +1,5 @@
 /**
- * Settings, Accounts and Log against a stand-in of the server: the accounts as the shared account module lays them out
+ * Server › Accounts and Log against a stand-in of the server: the accounts as the shared account module lays them out
  * (a row each with "Verwalten", the dialog with nexpaper's box "KI erlaubt" and the documents), the open invitations as a
  * card of their own, "Was du siehst"; the keys of all accounts in the module's table (schluessel 1.0.0) with a small red
  * "Sperren"; the module's log (log 1.0.0) under nexpaper's route: one bar (level filter, search, level of detail,

@@ -1,5 +1,5 @@
 /**
- * Inputs: Settings, Inputs (the intake folder and the mailbox for documents, for the operator) and My
+ * Inputs: Server › Inputs (the intake folder and the mailbox for documents, for the operator) and My
  * account, Upload (the addresses a person forwards from, the own subfolder). The folder must be a place nexpaper may take files from, the
  * mailbox is tried with the server, and an address counts once the link mailed to it was opened.
  */
@@ -58,7 +58,7 @@ function useIntakeSettings() {
 
 type Intake = ReturnType<typeof useIntakeSettings>
 
-/** Settings, Inputs: both cards. */
+/** Server › Inputs: both cards. */
 export function IntakeCards() {
   const intake = useIntakeSettings()
   if (!intake.settings) return null
@@ -294,9 +294,9 @@ function MailboxCard({ intake, settings }: { intake: Intake; settings: IntakeSet
   )
 }
 
-// --- My account, Upload -------------------------------------------------------------------------------------------
+// --- My account › Upload -------------------------------------------------------------------------------------------
 
-/** My account, Upload: "Per Mail" (the addresses forwarded from) and the own subfolder, when the operator set them up. */
+/** My account › Upload: "Per Mail" (the addresses forwarded from) and the own subfolder, when the operator set them up. */
 export function MyIntakeCards() {
   const { t } = useTranslation()
   const [mine, setMine] = useState<MyIntake | null>(null)

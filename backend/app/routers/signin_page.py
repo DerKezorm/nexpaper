@@ -1,4 +1,4 @@
-"""The page Server, Sign-in of the shared account module (konten 1.1.0): its switches with the module's rules
+"""The page Server › Sign-in of the shared account module (konten 1.1.0): its switches with the module's rules
 (``signin.view``, ``signin.change``) and "Ready for the internet?" in the module's form (``readiness.check``) with
 nexpaper's own points (the server's secrets, the backup, upload requests).
 

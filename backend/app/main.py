@@ -134,7 +134,7 @@ ROUTERS = [
     # U1: upload requests, the person's side and the stranger's.
     upload_requests_router,
     request_page_router,
-    # konten 1.1.0: the page Server, Sign-in of the shared account module.
+    # konten 1.1.0: the page Server › Sign-in of the shared account module.
     signin_page_router,
 ]
 

@@ -1,5 +1,5 @@
 /**
- * "KI-Vorschläge im Eingang", the cards under Settings, AI: the operator chooses one service for
+ * "KI-Vorschläge im Eingang", the cards under Server › AI provider: the operator chooses one service for
  * everybody (none from the start), with its address, key (for a local model only where its service asks for one)
  * and model, and tries it. The key is typed once and never shown again; a new address or another kind of service
  * forgets it (the server does that). Nobody else can set this.

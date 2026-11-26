@@ -8,6 +8,7 @@ The page's own texts are held the same way by ``frontend/src/i18n/places.test.ts
 
 from __future__ import annotations
 
+import ast
 import re
 from pathlib import Path
 
@@ -56,6 +57,66 @@ def test_no_text_points_the_old_way_and_a_programs_access_is_an_api_key() -> Non
             if OLD.search(line) or (TOKEN.search(line) and not re.search(r"Paperless|authentik", line)):
                 old.append(f"{name}:{number}: {line.strip()[:100]}")
     assert old == []
+
+
+#: German words of the places, for the server's own mails and notices in German (``reminders.WORDS``).
+AREAS_DE = {
+    "Mein Konto": ("Profil", "Sicherheit", "Darstellung", "Hochladen", "KI", "Benachrichtigungen", "Verbindungen"),
+    "Server": ("Allgemein", "Anmeldung", "Mail", "Speicher und Sicherung", "Texterkennung", "KI-Anbieter", "Ablage",
+               "Eingänge", "Import", "Konten", "Log"),
+}
+
+
+def _strings() -> dict[str, str]:
+    """Every string of the server's own code (its mails, notices, errors and the page of the interface), by file."""
+    found: dict[str, list[str]] = {}
+    for file in (ROOT / "backend" / "app").rglob("*.py"):
+        if "vendor" in file.parts:
+            continue
+        for node in ast.walk(ast.parse(file.read_text(encoding="utf-8"))):
+            if isinstance(node, ast.Constant) and isinstance(node.value, str):
+                found.setdefault(str(file.relative_to(ROOT)), []).append(node.value)
+    return {name: "\n".join(values) for name, values in found.items()}
+
+
+def _place_form_errors(texts: dict[str, str], settings: str, groups: dict[str, tuple[str, ...]]) -> list[str]:
+    """E46: a place is "group › area" ("Settings ›" before it where the sentence needs it), never with a comma or an
+    arrow between the words of places, never "…, card "…"", and an area at the start of a path comes after its
+    group."""
+    every = [settings, *groups, *(area for areas in groups.values() for area in areas)]
+    words = "|".join(re.escape(word) for word in sorted(every, key=len, reverse=True))
+    areas = "|".join(re.escape(area) for values in groups.values() for area in sorted(values, key=len, reverse=True))
+    wrong = []
+    for name, text in texts.items():
+        for line in re.sub(r"[ \t]*\n[ \t]*", " ", text).split(". "):
+            if re.search(rf"(?<![\w-])({words})\s*(,|→|->)\s*({words})(?![\w-])", line):
+                wrong.append(f"{name}: {line.strip()[:100]}")
+            if re.search(rf"(Karte|card|carte) [„“\"]\s?({words})|(,|in der|in the) (Karte|card|carte) [„“\"]", line):
+                wrong.append(f"{name}: {line.strip()[:100]}")
+            for found in re.finditer(rf"(?<!› )(?<![\w-])({areas}) › ", line):
+                if not any(line[: found.start()].endswith(f"{group} › ") for group in groups):
+                    wrong.append(f"{name}: {line.strip()[:100]}")
+    return wrong
+
+
+def test_a_place_is_written_with_its_group_and_no_comma_arrow_or_card_form() -> None:
+    """E46, in the README, the docs and every string of the server (its mails, notices, errors, the interface's page),
+    in English and German."""
+    texts = {**_texts(), **_strings()}
+    assert _place_form_errors(texts, "Settings", AREAS) == []
+    assert _place_form_errors(texts, "Einstellungen", AREAS_DE) == []
+
+
+def test_the_guard_of_the_place_form_finds_what_it_is_for() -> None:
+    """The rule above on sentences that break it, so that a guard that finds nothing is no guard."""
+    for bad in ("See Server, Storage and backups.", "under Settings › My account › Connections, card \"API keys\"",
+                "under General › Interfaces", "My account → Security", "Settings, Sign-in"):
+        assert _place_form_errors({"probe": bad}, "Settings", AREAS), bad
+    for bad in ("unter Mein Konto, Sicherheit", "unter Allgemein › Schnittstellen", "in der Karte „Mail“"):
+        assert _place_form_errors({"probe": bad}, "Einstellungen", AREAS_DE), bad
+    for good in ("under Settings › Server › Storage and backups › Check files", "My account › Notifications",
+                 "Server, user and password are missing."):
+        assert _place_form_errors({"probe": good}, "Settings", AREAS) == [], good
 
 
 def test_the_page_of_the_interface_says_key() -> None:

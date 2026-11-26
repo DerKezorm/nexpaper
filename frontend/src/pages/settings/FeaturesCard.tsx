@@ -1,5 +1,5 @@
 /**
- * Settings, General: "Funktionen für alle Konten", as nexnotes' card of the same name: one switch per feature the
+ * Server › General: "Funktionen für alle Konten", as nexnotes' card of the same name: one switch per feature the
  * operator opens or closes for everybody. nexpaper's are links to the outside (with the longest they may last and how
  * many are open now) and upload requests (U1, off from the start, with how many take files now; never an address or a
  * name). The switch for API keys is under "Schnittstellen" now (schluessel 1.0.0).

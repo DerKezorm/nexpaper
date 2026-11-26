@@ -1,5 +1,5 @@
 """The text of a mail as a document: for mails without any attachment (an order confirmation forwarded, a booking, a
-note to oneself), when the operator switched it on (Settings, Inputs, Mailbox; off from the start).
+note to oneself), when the operator switched it on (Server › Inputs › Mailbox; off from the start).
 
 * **Whose.** Only a mail the person sent themselves, as far as nexpaper can tell (``sure_owner``): exactly one
   address in ``From``, and it is a confirmed address of exactly one person; the trusted server says in so many words

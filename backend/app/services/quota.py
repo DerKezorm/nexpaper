@@ -1,5 +1,5 @@
 """The storage limit per account (konten 1.1.0, E24): what counts are the documents the account owns, every version of
-their files as it came (``Version.size``), the trash included. The operator sets a limit per account (Server, Accounts,
+their files as it came (``Version.size``), the trash included. The operator sets a limit per account (Server › Accounts,
 "Manage"); none is set from the start. When the documents reach it, an upload through the browser or ``/api/v1`` is
 refused with ``storage_limit_reached`` (507), as nexnotes does; nothing the account keeps is touched.
 

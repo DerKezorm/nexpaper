@@ -996,7 +996,7 @@ class IntakeItem(Base):
 
 
 class MailSender(Base):
-    """An address a person forwards documents from to the mailbox (My account, Upload). It counts once the link mailed
+    """An address a person forwards documents from to the mailbox (My account › Upload). It counts once the link mailed
     to it was opened (``confirmed_at``); until then only the hash of the link's token is kept, for 24 hours."""
 
     __tablename__ = "mail_senders"
@@ -1207,7 +1207,7 @@ __all__ += ["DeadlineSnooze"]
 
 
 class ReminderSettings(Base):
-    """How a person is reminded of deadlines (Mein Konto, Erinnerungen). No row: the defaults (one by one by push, at
+    """How a person is reminded of deadlines (Mein Konto › Benachrichtigungen). No row: the defaults (one by one by push, at
     3, 14 and 30 days, and on the day itself; no mail, no weekly mail)."""
 
     __tablename__ = "reminder_settings"
@@ -1228,7 +1228,7 @@ class ReminderSettings(Base):
     updated_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utcnow)
 
 class ReminderMute(Base):
-    """A vault a person hears nothing from (Mein Konto, Erinnerungen): its deadlines stay on the page, no reminder and
+    """A vault a person hears nothing from (Mein Konto › Benachrichtigungen): its deadlines stay on the page, no reminder and
     no weekly mail names them. Gone with the person or the vault."""
 
     __tablename__ = "reminder_mutes"

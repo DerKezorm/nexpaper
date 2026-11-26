@@ -1,4 +1,4 @@
-"""The operator's settings of the text recognition (Settings, Storage, card "Text recognition"), with the state of the
+"""The operator's settings of the text recognition (Server › Text recognition), with the state of the
 queue and what this server can do."""
 
 from __future__ import annotations

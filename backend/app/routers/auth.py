@@ -863,7 +863,7 @@ PROFILE: dict[str, tuple[Any, ...]] = {
     "ai": (True, False),
     #: A push and a mail when the account signs in from a new device (``services/notices.py``).
     "notify_login": (True, False),
-    #: Deadlines for this person (Mein Konto, Erinnerungen): off, the menu has no "Fristen", nothing is reminded and no
+    #: Deadlines for this person (Mein Konto › Benachrichtigungen): off, the menu has no "Fristen", nothing is reminded and no
     #: weekly mail comes (``services/deadlines.wanted``). The dates on the documents stay.
     "deadlines": (True, False),
     #: Where the time zone came from: the browser in use, or the person's own choice, which no browser overrides.

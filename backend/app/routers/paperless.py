@@ -1,4 +1,4 @@
-"""Settings, Import: taking documents over from Paperless-ngx (``services/paperless.py``). The operator only, from a
+"""Server › Import: taking documents over from Paperless-ngx (``services/paperless.py``). The operator only, from a
 browser: the token of Paperless sees everything there, and the run puts documents into the vaults of other people.
 
 The token is written sealed and never read back: the answer only says whether one is kept."""

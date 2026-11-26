@@ -1,5 +1,5 @@
-"""Inputs: the intake folder and the mailbox for documents (Settings, Inputs; operator only, from a browser), the
-addresses a person forwards documents from (My account, Upload), and where a document came from.
+"""Inputs: the intake folder and the mailbox for documents (Server › Inputs; operator only, from a browser), the
+addresses a person forwards documents from (My account › Upload), and where a document came from.
 
 The mailbox password is written sealed and never read back: the answer only says whether one is set.
 """

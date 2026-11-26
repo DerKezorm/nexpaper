@@ -34,6 +34,11 @@ const LANGUAGES = [
   { name: 'fr', tree: fr as unknown as Tree, kit: NEXUI_TEXTS.fr, areas: fr.settings.areas },
 ]
 
+/** Texts about other programs keep their words (E46): Safari's menus in the card "Auf diesem Gerät installieren". */
+const FOREIGN = /^install\./
+/** E48: the one sentence of "Grenzen" that names the dialog of an account, "Konten › Verwalten". */
+const E48 = /^storage\.limits\.(newAccountStorageHint|hint)$/
+
 /** Paperless names its own access "API-Token"; that is Paperless' word, on the page of the import. */
 const PAPERLESS = /^paperless\./
 
@@ -68,6 +73,32 @@ describe('the places the texts name', () => {
           /Einstellungen, |Einstellungen →|Settings, |Settings →|Paramètres, |Paramètres →|Mein Konto, |My account, |Mon compte, |Mein Konto →|My account →|Mon compte →|Speicher und Sicherungen/.test(text),
       )
       expect(old.map(([key, text]) => `${key}: ${text}`)).toEqual([])
+    })
+  }
+
+  for (const { name, tree, kit, areas: own } of LANGUAGES) {
+    const titles = [...ACCOUNT, ...SERVER].map((slug) => kit.areas[slug].title)
+      .concat([...OWN_ACCOUNT, ...OWN_SERVER].map((key) => own[key].title))
+    const escape = (word: string) => word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    const words = [kit.groupAccount, kit.groupServer, kit.settings, ...titles].map(escape).join('|')
+    const areas = titles.map(escape).join('|')
+
+    it(`write a place group › area, with no comma, arrow or "card" as a separator (E46, ${name})`, () => {
+      const wrong: string[] = []
+      for (const [key, text] of texts(tree)) {
+        // Safari's own menus ("Teilen › Zum Home-Bildschirm", "Ablage › Zum Dock hinzufügen") keep its words (E46).
+        if (FOREIGN.test(key)) continue
+        if (new RegExp(`(^|[^\\p{L}])(${words})\\s*(,|→|->)\\s*(${words})($|[^\\p{L}])`, 'u').test(text)) wrong.push(`${key}: ${text}`)
+        if (new RegExp(`(Karte|card|carte) [„“"«]\\s?(${words})|(,|in der|in the|dans la) (Karte|card|carte) [„“"«]`).test(text)) wrong.push(`${key}: ${text}`)
+        // An area at the start of a path needs its group before it; E48 sets "Konten › Verwalten" in "Grenzen".
+        for (const found of text.matchAll(new RegExp(`(^|[^›] )(${areas}) › `, 'g'))) {
+          const before = text.slice(0, (found.index ?? 0) + found[1]!.length)
+          const grouped = [kit.groupAccount, kit.groupServer].some((group) => before.endsWith(`${group} › `))
+          const e48 = E48.test(key) && found[2] === kit.areas.accounts.title
+          if (!grouped && !e48) wrong.push(`${key}: ${text}`)
+        }
+      }
+      expect(wrong).toEqual([])
     })
   }
 

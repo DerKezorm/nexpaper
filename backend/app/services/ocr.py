@@ -1,4 +1,4 @@
-"""The settings of the text recognition (Settings, Storage, card "Text recognition") and what the server can do.
+"""The settings of the text recognition (Server › Text recognition) and what the server can do.
 
 The image carries Tesseract with six languages (``LANGUAGES``) and nothing is loaded at run time: the operator picks
 among them. Straightening (``--deskew --rotate-pages``) is a switch. The switch for blank separator pages is kept here

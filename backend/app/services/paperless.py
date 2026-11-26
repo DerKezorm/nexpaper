@@ -1,4 +1,4 @@
-"""Taking documents over from Paperless-ngx, through its REST API (Settings, Import; the operator, from a browser).
+"""Taking documents over from Paperless-ngx, through its REST API (Server › Import; the operator, from a browser).
 
 **What comes over.** Every document with its file as it came (the original) and the searchable copy Paperless made
 (the archive version), the text Paperless recognised (no new recognition: the reading of a document takes it instead of

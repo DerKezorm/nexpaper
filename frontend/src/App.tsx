@@ -21,7 +21,7 @@ import { VaultsPage } from './pages/VaultsPage'
 import { useAuth } from './state/auth'
 import { UploadProvider } from './state/uploads'
 
-/** The page "Fristen", for somebody who uses deadlines; whoever switched them off (My account, Reminders) lands in the
+/** The page "Fristen", for somebody who uses deadlines; whoever switched them off (My account › Notifications) lands in the
  * archive, also from an old link. */
 function DeadlinesRoute() {
   const { me } = useAuth()
@@ -50,7 +50,7 @@ const QUICK_SHOWN = 'nexpaper.quickShown'
 const PHONE_WIDTH = 768
 
 /** On the phone nexpaper opens on the quick upload, once per visit; "Alles" from there stays in the full app. The switch
- * is the person's (My account, Upload). */
+ * is the person's (My account › Upload). */
 function QuickStart() {
   const { me } = useAuth()
   const { pathname } = useLocation()

@@ -87,7 +87,7 @@ async function connect() {
   await page.click(page.button('Verbinden und nachsehen'))
 }
 
-describe('Settings, Import', () => {
+describe('Server › Import', () => {
   it('starts with its words', async () => {
     await page.show(<ImportCard />)
     for (const words of [

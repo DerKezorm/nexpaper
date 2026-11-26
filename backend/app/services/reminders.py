@@ -196,7 +196,7 @@ def zone_name(account: Account) -> str:
 
 
 def view(db: Session, account: Account) -> dict[str, Any]:
-    """What Mein Konto, Erinnerungen shows: the choices, what the ways need, and the vaults (edit or manage: can be
+    """What Mein Konto › Benachrichtigungen shows: the choices, what the ways need, and the vaults (edit or manage: can be
     muted; read only: named, nothing to choose)."""
     prefs = preferences_of(db, account.id)
     # Only vaults the person would be reminded about today: a mute whose right is gone is no choice any more.

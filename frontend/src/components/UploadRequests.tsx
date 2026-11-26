@@ -2,7 +2,7 @@
  * Upload requests (U1), the side of the person who asks: the button "Um ein Dokument bitten" in the inbox, its dialog
  * (from whom, valid until, how many files; the address is copied right away), and the list of the own requests with how
  * many files came and when the last one came, to copy again or to withdraw (after asking). The same list stands under
- * My account, Upload. Everything goes through `/api/v1/upload-requests`; the page a stranger sees is
+ * My account › Upload. Everything goes through `/api/v1/upload-requests`; the page a stranger sees is
  * `pages/UploadRequestPage.tsx`.
  *
  * Off (the operator's switch) or without a public address, the dialog says what is missing instead of a form.
@@ -239,7 +239,7 @@ export function UploadRequestButton({ say }: { say?: (text: string) => void }) {
   )
 }
 
-/** My account, Upload: the own requests, with the same button. */
+/** My account › Upload: the own requests, with the same button. */
 export function UploadRequestsCard() {
   const { t } = useTranslation()
   const state = useRequests()

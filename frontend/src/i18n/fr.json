@@ -663,7 +663,7 @@
     },
     "backups": {
       "title": "Sauvegarde",
-      "warn": "Pas de sauvegarde automatique. Activez-la sous Serveur, Stockage et sauvegardes.",
+      "warn": "Pas de sauvegarde automatique. Activez-la sous Serveur › Stockage et sauvegardes.",
       "ok": "Une sauvegarde automatique est activée. Les documents eux-mêmes relèvent de la sauvegarde propre à votre serveur."
     }
   },

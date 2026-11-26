@@ -1,4 +1,4 @@
-"""The addresses a person forwards documents from to the mailbox (My account, Upload, "Per Mail").
+"""The addresses a person forwards documents from to the mailbox (My account › Upload › "Per Mail").
 
 An address counts only once the link mailed to it was opened, as with the address of the account: otherwise anybody
 could name somebody else's address and have their mail land in the own inbox. The link holds a random token of which

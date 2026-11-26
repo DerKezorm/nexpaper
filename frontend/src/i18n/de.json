@@ -663,7 +663,7 @@
     },
     "backups": {
       "title": "Sicherung",
-      "warn": "Keine automatische Sicherung. Schalte sie unter Server, Speicher und Sicherung ein.",
+      "warn": "Keine automatische Sicherung. Schalte sie unter Server › Speicher und Sicherung ein.",
       "ok": "Eine automatische Sicherung ist eingeschaltet. Die Dokumente selbst gehören in die Sicherung deines Servers."
     }
   },

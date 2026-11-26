@@ -663,7 +663,7 @@
     },
     "backups": {
       "title": "Backup",
-      "warn": "No automatic backup. Turn it on under Server, Storage and backups.",
+      "warn": "No automatic backup. Turn it on under Server › Storage and backups.",
       "ok": "An automatic backup is on. The documents themselves belong in your server's own backup."
     }
   },

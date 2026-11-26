@@ -1,6 +1,6 @@
 """A link to set a new password, made on the server itself: the way back in for whoever cannot sign in at all.
 
-The operator sends links from the interface (Settings, Accounts), and a person asks for one on the sign-in page where a
+The operator sends links from the interface (Server › Accounts), and a person asks for one on the sign-in page where a
 mail server is set up. An operator who forgot their own password, on a server without mail, has nobody to send one.
 Whoever can run a command in the container holds the database and the server's secrets anyway, so this gives them
 nothing they did not have::

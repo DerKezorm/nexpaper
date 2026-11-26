@@ -1,5 +1,5 @@
 /**
- * Deleting an account under Settings, Accounts, against a stand-in of the server: "Delete account" in the dialog
+ * Deleting an account under Server › Accounts, against a stand-in of the server: "Delete account" in the dialog
  * "Manage" of the shared account module opens nexpaper's own question, which names the number of documents in the
  * person's own vault and offers the three ways (another person, a shared vault, away for good); the name has to be
  * typed as it is, and what is sent is exactly the choice.

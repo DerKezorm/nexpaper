@@ -140,7 +140,7 @@ export type Profile = {
   ai: boolean
   /** A push and a mail when the account signs in from a new device. */
   notify_login: boolean
-  /** Deadlines for this person (My account, Reminders); off: no menu item, no reminders, no weekly mail. */
+  /** Deadlines for this person (My account › Notifications); off: no menu item, no reminders, no weekly mail. */
   deadlines: boolean
 }
 
@@ -1050,7 +1050,7 @@ export const savedApi = {
   remove: (id: number) => api<void>(`/api/v1/saved-searches/${id}`, { method: 'DELETE' }),
 }
 
-// ---- Paperless import (Settings, Import; the operator) ---------------------------------------------------------------
+// ---- Paperless import (Server › Import; the operator) ---------------------------------------------------------------
 
 export type PaperlessRunState = 'idle' | 'queued' | 'running' | 'paused' | 'done' | 'failed'
 export type PaperlessRun = {
@@ -1535,7 +1535,7 @@ export const einvoiceApi = {
   xmlUrl: (documentId: number, version: number) => `/api/v1/documents/${documentId}/versions/${version}/einvoice`,
 }
 
-/** The kinds of document, the operator's list (Settings, Filing). */
+/** The kinds of document, the operator's list (Server › Filing). */
 export const kindsApi = {
   list: () => api<DocumentKind[]>('/api/v1/kinds'),
   create: (name: string, hue: number) => api<DocumentKind>('/api/v1/kinds', { method: 'POST', body: { name, hue } }),

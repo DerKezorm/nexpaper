@@ -130,7 +130,7 @@ describe('the invitation page', () => {
   })
 })
 
-describe('Settings, Sign-in', () => {
+describe('Server › Sign-in', () => {
   beforeEach(() => {
     auth.status = 'signedIn'
   })

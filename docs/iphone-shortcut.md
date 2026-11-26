@@ -11,10 +11,10 @@ an iCloud link made on a device signed in with an Apple account. An unsigned `.s
 `shortcuts://import-shortcut` link takes only iCloud links. So nexpaper cannot ship a ready file, and a file made for
 one server would not fit another anyway. There are two ways instead:
 
-- **Build it** in a few steps (below). Settings › My account › Connections, card "From other apps on the iPhone",
+- **Build it** in a few steps (below). Settings › My account › Connections › From other apps on the iPhone
   shows the address and the key to copy.
-- **The operator shares a finished one** by an iCloud link (Settings › My account › Connections, card "Shortcut for
-  the iPhone", for the operator only). Settings › My account › Connections then shows "Load the shortcut" to everybody; the shortcut asks each person for their own address and key when it is added.
+- **The operator shares a finished one** by an iCloud link (Settings › My account › Connections › Shortcut for
+  the iPhone, for the operator only). Settings › My account › Connections then shows "Load the shortcut" to everybody; the shortcut asks each person for their own address and key when it is added.
 
 ## The key
 
@@ -49,7 +49,7 @@ Build it as above, but in step 3 type placeholders, not your key. Then, in the s
 Questions**: one for the URL of "Get Contents of URL" ("Address of your nexpaper, ending in
 /api/v1/documents?source=share") and one for the value of the header ("Your key for uploading: Bearer npk_…, from
 Settings › My account › Connections"). Share it as an iCloud link and enter the link under Settings › My account ›
-Connections, card "Shortcut for the iPhone".
+Connections › Shortcut for the iPhone.
 
 ## What it does, and what it may
 

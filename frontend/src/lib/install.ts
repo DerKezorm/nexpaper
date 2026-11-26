@@ -1,7 +1,7 @@
 /**
  * nexpaper as an installed app (plan "Einstellungen" E6, E28): whether it runs installed (`display-mode: standalone`),
  * and the browser's offer to install it (`beforeinstallprompt`, Chrome, Edge, Android), kept from the start of the page
- * for the card "Auf diesem Gerät installieren" (Settings › Connections). iPhone and iPad have no such offer: there it is
+ * for the card "Auf diesem Gerät installieren" (My account › Connections). iPhone and iPad have no such offer: there it is
  * Share › Add to Home Screen. As nexnotes' `pwa/worker.ts`.
  */
 import { useSyncExternalStore } from 'react'
