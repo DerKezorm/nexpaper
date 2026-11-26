@@ -171,6 +171,9 @@ TABLE = [
     Row("PUT", "/api/v1/documents/{d}/pin", None, "read", 404),
     Row("DELETE", "/api/v1/documents/{d}/pin", None, "read", 404),
     Row("GET", "/api/v1/pins", None, "any", 200),
+    # V19: a task in nextasks from a document needs reading it, in a browser (the connection is the person's); without a
+    # connection whoever may gets `409 nextasks_not_connected` (``test_nextasks_guest.py`` has the rest).
+    Row("POST", "/api/v1/documents/{d}/nextasks", {"list_id": "list-1"}, "read-browser", 404),
     # N2: the links of other documents that show this one, and taking it out of one, for who may see its links ({i} is a
     # number no link has: who may gets 404). ``test_link_also.py`` has the rest.
     Row("GET", "/api/v1/documents/{d}/shown-through", None, "manage", 404),
