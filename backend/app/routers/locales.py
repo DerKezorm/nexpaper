@@ -13,4 +13,21 @@ from ..deps import require_operator
 from ..services import locales as _configured  # noqa: F401 (configures the module with nexpaper's folder first)
 from ..vendor.nexsprachen import api
 
-router = api.router(operator=require_operator, prefix="/api/v1/locales", tags=["locales"])
+#: The names these routes had in ``/api/v1/openapi.json`` before the module (sprachen step 9): a snapshot and a
+#: generated client keep working; the module only adds the fields ``built_in``, ``own`` and the route ``/template``.
+OPERATION_IDS = {
+    "list": "list_locales_api_v1_locales_get",
+    "read": "read_locale_api_v1_locales__code__get",
+    "upload": "upload_locale_api_v1_locales__code__put",
+    "remove": "delete_locale_api_v1_locales__code__delete",
+}
+SUMMARIES = {
+    "list": "Languages the operator added",
+    "read": "The texts of one added language",
+    "upload": "Add or replace a language (operator)",
+    "remove": "Remove an added language (operator)",
+}
+SCHEMA_NAMES = {"LanguageEntry": "LocaleEntry"}
+
+router = api.router(operator=require_operator, prefix="/api/v1/locales", tags=["locales"], operation_ids=OPERATION_IDS,
+                    summaries=SUMMARIES, schema_names=SCHEMA_NAMES)

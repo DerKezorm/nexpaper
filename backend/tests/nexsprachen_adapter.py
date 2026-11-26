@@ -26,6 +26,21 @@ class Adapter(StandardAdapter):
     built_in = {"de": "Deutsch", "en": "English", "fr": "Français"}  # noqa: RUF012 (the contract's base declares it so)
     public_read = True
     has_template = False
+    # The names the routes had in nexpaper's description before the module, as given to the router (step 9).
+    openapi_path = "/api/v1/openapi.json"
+    operation_ids = {  # noqa: RUF012 (the contract's base declares it so)
+        "list": "list_locales_api_v1_locales_get",
+        "read": "read_locale_api_v1_locales__code__get",
+        "upload": "upload_locale_api_v1_locales__code__put",
+        "remove": "delete_locale_api_v1_locales__code__delete",
+    }
+    summaries = {  # noqa: RUF012
+        "list": "Languages the operator added",
+        "read": "The texts of one added language",
+        "upload": "Add or replace a language (operator)",
+        "remove": "Remove an added language (operator)",
+    }
+    schema_names = {"LanguageEntry": "LocaleEntry"}  # noqa: RUF012
 
     def start(self) -> None:
         from app.config import get_settings

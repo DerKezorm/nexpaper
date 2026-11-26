@@ -17,8 +17,8 @@ import { LanguagesCard } from './vendor/nexsprachen/LanguagesCard'
 import { ownLanguages } from './vendor/nexsprachen/languages'
 import { SPRACHEN_TEXTS, hintOf, mergeTexts, type Fetcher, type LanguageEntry, type Texts } from './vendor/nexsprachen/sprachen'
 
-// APP: where the app mounts the routes, its name, the languages it ships (as AppConfig.built_in, in its order) and
-// how the line of the card names them in German.
+// APP: where the app mounts the routes, its name and the languages it ships (as AppConfig.built_in, in its order;
+// nexpaper adds { code: 'fr', name: 'Français' }).
 const BASE = '/api/v1/locales'
 const APP = 'nexpaper'
 const BUILT_IN = [
@@ -26,7 +26,15 @@ const BUILT_IN = [
   { code: 'en', name: 'English' },
   { code: 'fr', name: 'Français' },
 ]
-const LINE = 'Deutsch, Englisch und Französisch sind eingebaut.'
+
+/** How the card's line names the built-in languages: each in the page's language, as a person writes a list
+ * ("Deutsch und Englisch sind eingebaut.", "German, English and French are built in."). */
+function line(language: 'de' | 'en'): string {
+  const named = new Intl.DisplayNames([language], { type: 'language' })
+  const names = new Intl.ListFormat(language, { style: 'long', type: 'conjunction' }).format(BUILT_IN.map((entry) => named.of(entry.code) ?? entry.name))
+  const one = BUILT_IN.length === 1
+  return language === 'de' ? `${names} ${one ? 'ist' : 'sind'} eingebaut.` : `${names} ${one ? 'is' : 'are'} built in.`
+}
 
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
@@ -120,7 +128,7 @@ describe('the card "Sprachen"', () => {
   it('is the card of the plan: Globe, its title, a line naming the built-in languages', async () => {
     await show()
     expect(card().querySelector('h2')?.textContent).toBe('Sprachen')
-    expect(card().textContent).toContain(LINE)
+    expect(card().textContent).toContain(line('de'))
     expect(card().textContent).toContain('fehlende Texte fallen auf Englisch zurück')
     expect(calls[0]).toEqual({ path: BASE, method: 'GET', body: undefined })
   })
@@ -211,8 +219,7 @@ describe('the card "Sprachen"', () => {
   it('speaks English and French as well', async () => {
     await show('en')
     expect(card().querySelector('h2')?.textContent).toBe('Languages')
-    // APP (nexpaper): the template names German and English here; nexpaper ships French as well.
-    expect(card().textContent).toContain('German, English, and French are built in.')
+    expect(card().textContent).toContain(line('en'))
     act(() => root.unmount())
     root = createRoot(box)
     await show('fr')

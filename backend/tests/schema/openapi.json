@@ -4560,6 +4560,11 @@
       },
       "LocaleEntry": {
         "properties": {
+          "built_in": {
+            "default": false,
+            "title": "Built In",
+            "type": "boolean"
+          },
           "code": {
             "title": "Code",
             "type": "string"
@@ -4571,6 +4576,11 @@
           "name": {
             "title": "Name",
             "type": "string"
+          },
+          "own": {
+            "default": false,
+            "title": "Own",
+            "type": "boolean"
           }
         },
         "required": [
@@ -21241,6 +21251,25 @@
           }
         },
         "summary": "Languages the operator added",
+        "tags": [
+          "locales"
+        ]
+      }
+    },
+    "/api/v1/locales/template": {
+      "get": {
+        "operationId": "download_template_api_v1_locales_template_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "The template to translate",
         "tags": [
           "locales"
         ]
