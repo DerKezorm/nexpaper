@@ -193,7 +193,7 @@
       {
         "title": "Um ein Dokument bitten",
         "where": "Eingang; Server › Allgemein › Funktionen für alle Konten",
-        "body": "Mit „Um ein Dokument bitten“ bekommst du eine Adresse, die du jemandem ohne Konto gibst, dem Steuerbüro oder der Hausverwaltung, und dort legt er Dateien ab. Sie landen in deinem Eingang in deinem eigenen Tresor, mit dem Namen, den du der Bitte gegeben hast; abgelegt wird nichts von selbst. Eine Bitte gilt höchstens so lange wie ein Link, nimmt 10 Dateien, wenn du nichts anderes sagst, und lässt sich jederzeit zurückziehen. Die Seite hinter der Adresse zeigt, wer bittet und wie viele Dateien noch gehen, nie, was schon angekommen ist. Ab Werk aus: Der Betreiber schaltet Upload-Bitten unter Server › Allgemein › Funktionen für alle Konten ein, und sie brauchen die öffentliche Adresse des Servers."
+        "body": "Mit „Um ein Dokument bitten“ bekommst du eine Adresse, die du jemandem ohne Konto gibst, dem Steuerbüro oder der Hausverwaltung, und dort legt er Dateien ab. Sie landen in deinem Eingang in deinem eigenen Tresor, mit dem Namen, den du der Bitte gegeben hast; abgelegt wird nichts von selbst. Eine Bitte gilt höchstens so lange wie ein Link, nimmt 10 Dateien, wenn du nichts anderes sagst, und lässt sich jederzeit zurückziehen. Die Seite hinter der Adresse zeigt, wer bittet und wie viele Dateien noch gehen, nie, was schon angekommen ist. Ab Werk aus: Der Betreiber schaltet Upload-Bitten unter Einstellungen, Teilen ein, und sie brauchen die öffentliche Adresse des Servers."
       },
       {
         "title": "Der Text einer Mail als Dokument",
@@ -291,7 +291,7 @@
       {
         "title": "Erinnerungen per Push und Mail",
         "where": "Mein Konto › Benachrichtigungen",
-        "body": "nexpaper erinnert jetzt rechtzeitig: an eine fällige Rechnung drei Tage vorher, an den letzten Kündigungstag 14 Tage vorher, an eine ablaufende Garantie 30 Tage vorher, jeweils noch einmal am Tag selbst, um 8 Uhr in deiner Zeitzone. Wie früh, ob per Push aufs Handy oder per Mail, ob einzeln, einmal die Woche oder beides, stellst du unter Mein Konto › Benachrichtigungen ein. Dort lassen sich auch einzelne Tresore stumm schalten, und eine Testnachricht zeigt, dass alles ankommt. Die Wochenübersicht kommt montags um 8 Uhr per Mail und nur, wenn etwas ansteht. Erinnert werden alle, die im Tresor bearbeiten dürfen; wer nur liest, bekommt nichts. In der Nachricht stehen Art, Datum und Titel des Dokuments, nie Betrag, Text oder Notizen. Ab Werk kommen Erinnerungen einzeln per Push, Mail und Wochenübersicht sind aus."
+        "body": "nexpaper erinnert jetzt rechtzeitig: an eine fällige Rechnung drei Tage vorher, an den letzten Kündigungstag 14 Tage vorher, an eine ablaufende Garantie 30 Tage vorher, jeweils noch einmal am Tag selbst, um 8 Uhr in deiner Zeitzone. Wie früh, ob per Push aufs Handy oder per Mail, ob einzeln, einmal die Woche oder beides, stellst du unter Mein Konto, Erinnerungen ein. Dort lassen sich auch einzelne Tresore stumm schalten, und eine Testnachricht zeigt, dass alles ankommt. Die Wochenübersicht kommt montags um 8 Uhr per Mail und nur, wenn etwas ansteht. Erinnert werden alle, die im Tresor bearbeiten dürfen; wer nur liest, bekommt nichts. In der Nachricht stehen Art, Datum und Titel des Dokuments, nie Betrag, Text oder Notizen. Ab Werk kommen Erinnerungen einzeln per Push, Mail und Wochenübersicht sind aus."
       },
       {
         "title": "Aufbewahrung je Art",
@@ -415,7 +415,7 @@
     "smallTitle": "Außerdem",
     "small": [
       "Dein bisheriger Anbieter ist der erste Eintrag der Liste, alle Verknüpfungen bleiben, seine Rückleitadresse auch",
-      "Eine Adresse vom Anbieter zählt für Dokumente per Mail erst, wenn du sie bestätigt hast, auch eine, die 1.0.1 als bestätigt übernommen hatte: einmal unter Mein Konto › Profil bestätigen",
+      "Eine Adresse vom Anbieter zählt für Dokumente per Mail erst, wenn du sie bestätigt hast, auch eine, die 1.0.1 als bestätigt übernommen hatte: einmal unter Mein Konto, Profil bestätigen",
       "Hinter einem Proxy, dem nexpaper traut, gilt auch das Schema, das er meldet",
       "„Zweiten Faktor verlangen“ gilt für die Anmeldung mit Passwort: Konten ohne Passwort und wer über einen Anbieter kommt, dessen Eintrag „Der Anbieter prüft den zweiten Faktor selbst“ hat, müssen keinen einrichten; die Hinweise sagen es",
       "Eine Dashboard-Karte kann nexpaper über einen API-Schlüssel lesen: was im Eingang wartet, was abgelegt ist und was in den nächsten 14 Tagen fällig wird.",

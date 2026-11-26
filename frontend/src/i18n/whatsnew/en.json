@@ -193,7 +193,7 @@
       {
         "title": "Ask for a document",
         "where": "Inbox; Server › General › Features for all accounts",
-        "body": "With “Ask for a document” you get an address that you give to somebody without an account, the tax office or the property manager, who drops files there. The files land in your inbox in your own vault, marked with the name you gave the request; nothing is filed by itself. A request lasts at most as long as a link, takes 10 files unless you say otherwise, and can be withdrawn at any time. The page behind the address shows who asks and how many files still go, never what has arrived. Off from the start: the operator switches upload requests on under Server › General › Features for all accounts, and they need the public address of the server."
+        "body": "With “Ask for a document” you get an address that you give to somebody without an account, the tax office or the property manager, who drops files there. The files land in your inbox in your own vault, marked with the name you gave the request; nothing is filed by itself. A request lasts at most as long as a link, takes 10 files unless you say otherwise, and can be withdrawn at any time. The page behind the address shows who asks and how many files still go, never what has arrived. Off from the start: the operator switches upload requests on under Settings, Sharing, and they need the public address of the server."
       },
       {
         "title": "A mail's text as a document",
@@ -291,7 +291,7 @@
       {
         "title": "Reminders by push and mail",
         "where": "My account › Notifications",
-        "body": "nexpaper now reminds you in good time: of an invoice that falls due three days ahead, of the last day to cancel 14 days ahead, of a warranty that runs out 30 days ahead, each once more on the day itself, at 8 in the morning in your time zone. How early, whether by push to the phone or by mail, whether one by one, once a week or both, you set under My account › Notifications. There you can also mute single vaults, and a test message shows that everything arrives. The weekly overview comes on Mondays at 8 by mail and only when something is coming up. Everybody who may edit in the vault is reminded; somebody who only reads gets nothing. The message holds the kind, the date and the title of the document, never the amount, the text or the notes. From the start, reminders come one by one by push; mail and the weekly overview are off."
+        "body": "nexpaper now reminds you in good time: of an invoice that falls due three days ahead, of the last day to cancel 14 days ahead, of a warranty that runs out 30 days ahead, each once more on the day itself, at 8 in the morning in your time zone. How early, whether by push to the phone or by mail, whether one by one, once a week or both, you set under My account, Reminders. There you can also mute single vaults, and a test message shows that everything arrives. The weekly overview comes on Mondays at 8 by mail and only when something is coming up. Everybody who may edit in the vault is reminded; somebody who only reads gets nothing. The message holds the kind, the date and the title of the document, never the amount, the text or the notes. From the start, reminders come one by one by push; mail and the weekly overview are off."
       },
       {
         "title": "Keeping times for kinds",
@@ -415,7 +415,7 @@
     "smallTitle": "Also",
     "small": [
       "Your provider so far is the first entry of the list, every link stays, its redirect address too",
-      "An address from the provider counts for documents by mail only once you confirmed it, also one 1.0.1 took over as confirmed: confirm it once under My account › Profile",
+      "An address from the provider counts for documents by mail only once you confirmed it, also one 1.0.1 took over as confirmed: confirm it once under My account, Profile",
       "Behind a proxy nexpaper trusts, the scheme it reports counts too",
       "“Require a second factor” is for signing in with a password: an account without a password, and whoever comes in through a provider whose entry has “The provider checks the second factor itself” on, is not made to set one up; the hints say so",
       "A dashboard card can read nexpaper through an API key: what waits in the inbox, what is filed, and what falls due in the next 14 days.",

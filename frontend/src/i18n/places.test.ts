@@ -88,9 +88,11 @@ describe('the places the texts name', () => {
 
     it(`write a place group › area, with no comma, arrow or "card" as a separator (E46, ${name})`, () => {
       const wrong: string[] = []
-      // "Was ist neu" of every version names the places as they are now, too (E46).
+      // "Was ist neu" of every version points to the places as they are now (E46, E49): its signposts (`where`); the
+      // text of an older entry stays as it was written.
       const news = ({ de: newsDe, en: newsEn } as Record<string, unknown>)[name]
-      for (const [key, text] of [...texts(tree), ...texts((news ?? {}) as Tree, 'whatsnew.')]) {
+      const signposts = texts((news ?? {}) as Tree, 'whatsnew.').filter(([key]) => key.endsWith('.where'))
+      for (const [key, text] of [...texts(tree), ...signposts]) {
         // Safari's own menus ("Teilen › Zum Home-Bildschirm", "Ablage › Zum Dock hinzufügen") keep its words (E46).
         if (FOREIGN.test(key)) continue
         // A comma after a group or "Einstellungen" leading into a place, or an arrow anywhere between places; a list of
