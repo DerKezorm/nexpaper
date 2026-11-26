@@ -115,3 +115,15 @@ def test_what_went_out_is_a_line_without_content(client: TestClient, operator: A
     with new_client(None) as nobody:
         assert nobody.get("/api/v1/me/ai/events").status_code == 401
     assert client.delete("/api/v1/me/ai/events").json() == {"cleared": 1}
+
+
+def test_the_start_takes_over_an_installation_of_before(operator: Account) -> None:
+    """``adopt`` runs at nexpaper's start (``main.lifespan``), not only when called."""
+    from app.main import app
+
+    with SessionLocal() as db:
+        db.query(Setting).filter(Setting.key.in_(("ai_enabled", "ai_mode", "ai_hosts", "ai_hosts_adopted"))).delete()
+        db.commit()
+        settings_service.save(db, {"ai_provider": "openai", "ai_url": CLOUD, "ai_model": "m"})
+    with TestClient(app, base_url="http://testserver"), SessionLocal() as db:
+        assert settings_service.get(db, "ai_enabled") is True and settings_service.get(db, "ai_mode") == "shared"
