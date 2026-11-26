@@ -42,13 +42,17 @@ def check(name: str, *, viewer: Any = None, archive_password: str | None = None)
     described = archives.describe(path)
     if described is None:
         return Brief(name, "", "manual", "", "", name.endswith(archives.UPLOADED), False, False, [], False, "", {}, {})
-    too_new = bool(described.version) and tools.newer(described.version, config.version)
     try:
         checked = config.hooks.check(path, viewer=viewer, archive_password=archive_password)
     except zlib.error as exc:
         # A deflated member the app's check read without ``tools.DAMAGE``: damaged, never a 500.
         config.logger.info("A backup could not be inflated name=%s: %s", name, exc)
         checked = Checked(database_ok=False, files_ok=False)
+    # A locked archive says nothing of itself until its password opens it; the app's check then tells what it found
+    # inside (since 1.0.4, E64): date, kind, note, version, facts, and with the version the comparison below.
+    if checked.described is not None:
+        described = checked.described
+    too_new = bool(described.version) and tools.newer(described.version, config.version)
     # The app's own "too new" (its schema, since E37) counts like the module's comparison of versions.
     too_new = too_new or checked.too_new or checked.details.get("too_new") is True
     return Brief(

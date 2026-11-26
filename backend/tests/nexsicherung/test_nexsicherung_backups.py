@@ -3,6 +3,7 @@ with the app's real data."""
 
 from __future__ import annotations
 
+import dataclasses
 import zipfile
 from typing import Any
 
@@ -130,6 +131,44 @@ def test_download_and_upload_bring_a_backup_to_another_server(
     assert restored.status_code == (202 if restarting else 200), restored.text
     app.restart()
     assert app.content() == held
+
+
+def test_a_backup_brought_back_tells_its_date_and_version_and_a_newer_one_is_refused(
+        app: Any, sicherung: Any, restarts: list) -> None:
+    """E64: a backup downloaded and brought in again (in an app that encrypts its downloads: locked, its manifest out
+    of reach until its own password opens it) tells in its check the date, kind, note and version it was made with,
+    and a backup of a newer version than the running one is refused, locked or not."""
+    app.add_content("dated")
+    client = app.operator()
+    name = _make(client, app, note="before the move")
+    original = next(item for item in _entries(client, app) if item["name"] == name)
+    locked = sicherung.current().download_password
+    own = {"archive_password": "travel-pass-2026"} if locked else {}
+    data = client.post(f"{app.prefix}/backups/{name}/download", json={"password": app.password, **own}).content
+    uploaded = client.post(f"{app.prefix}/backups/upload", content=data,
+                           headers={"x-backup-password": header(app.password)})
+    assert uploaded.status_code == 201, uploaded.text
+    new = uploaded.json()["name"]
+    brief = client.post(f"{app.prefix}/backups/{new}/check", json=own).json()
+    assert brief["usable"], brief
+    assert (brief["created"], brief["kind"], brief["note"]) == (original["created"], "manual", "before the move")
+    assert brief["version"] == original["version"] == sicherung.current().version
+    # The same archive met by an older version of the app: too new, never restored, nothing changed.
+    running = sicherung.current()
+    held = app.content()
+    sicherung.configure(dataclasses.replace(running, version="0.0.1"))
+    try:
+        seen = client.post(f"{app.prefix}/backups/{new}/check", json=own).json()
+        assert seen["too_new"] and not seen["usable"], seen
+        refused = client.post(f"{app.prefix}/backups/{new}/restore", json={"password": app.password, **own})
+        assert refused.status_code == 400 and code_of(refused) == "backup_too_new", refused.text
+    finally:
+        sicherung.configure(running)
+    assert restarts == [] and app.content() == held
+    restored = client.post(f"{app.prefix}/backups/{new}/restore", json={"password": app.password, **own})
+    assert restored.status_code in (200, 202), restored.text
+    assert restored.json()["created"] == original["created"]
+    app.restart()
 
 
 def test_an_upload_that_is_no_backup_of_the_app_is_refused(app: Any) -> None:

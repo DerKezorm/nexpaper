@@ -12,6 +12,7 @@ export {
   bytes,
   errorText,
   fill,
+  fillWhen,
   initialAnswers,
   makeSicherungApi,
   partName,

@@ -616,6 +616,8 @@ def check_archive(path: Path, *, hash_seconds: float = HASH_SECONDS) -> Checked:
         # archive of a newer version by itself; this holds when the version in the manifest does not say so).
         blocked="backup_too_new" if too_new else "",
         blocked_text="the archive comes from a newer nexpaper; nothing was changed" if too_new else "",
+        # The module's own word for the same (E37, E64): never restored, ``backup_too_new`` either way.
+        too_new=too_new,
     )
 
 

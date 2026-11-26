@@ -17,6 +17,7 @@ import {
   bytes,
   errorText,
   fill,
+  fillWhen,
   initialAnswers,
   partName,
   shares,
@@ -214,7 +215,9 @@ export function BackupCard({ app, holds, api, password, facts, details, onRestar
       load()
     }, t.saved)
 
-  const forBackup = (entry: Entry, action: string) => fill(t.forBackup, { action, when: when(entry.created, language) })
+  /** A time of the card in the app's words; none for an empty one (E64). */
+  const at = (iso: string) => (iso ? when(iso, language) : '')
+  const forBackup = (entry: Entry, action: string) => fillWhen(t.forBackup, at(entry.created), { action })
   const open = (next: Asking) => {
     setTyped('')
     setArchiveTyped('')
@@ -336,17 +339,17 @@ export function BackupCard({ app, holds, api, password, facts, details, onRestar
         />
       </form>
       <p className="m-0 text-sm text-[var(--nexui-text-muted)]" data-testid="backup-last">
-        {state.running ? t.running : last ? fill(t.last, { when: when(last.created, language), size: bytes(last.size, language) }) : t.never}
+        {state.running ? t.running : last ? fillWhen(t.last, at(last.created), { size: bytes(last.size, language) }) : t.never}
       </p>
       {failure && (
         <Notice tone="danger" testId="backup-failure">
-          {fill(t.failed, { when: when(failure.at, language), reason })}
+          {fillWhen(t.failed, at(failure.at), { reason })}
         </Notice>
       )}
       {state.restore_failure && (
         <Notice tone="danger" testId="restore-failure">
           <span className="flex flex-wrap items-center justify-between gap-2">
-            <span>{fill(t.restoreFailed, { when: when(state.restore_failure.at, language), app })}</span>
+            <span>{fillWhen(t.restoreFailed, at(state.restore_failure.at), { app })}</span>
             <Button size="sm" kind="secondary" icon="Check" onClick={() => void run('dismiss', async () => { await api.dismissFailed(); load() })}>
               {t.restoreFailedSeen}
             </Button>
@@ -506,7 +509,7 @@ export function BriefBox({
   else line = brief.usable ? t.checkOk : t.checkBad
   return (
     <Box
-      title={fill(t.brief, { when: when(brief.created, language) })}
+      title={fillWhen(t.brief, brief.created ? when(brief.created, language) : '')}
       badge={<Badge tone={brief.usable ? 'on' : 'danger'}>{brief.usable ? t.briefOk : t.briefBad}</Badge>}
       testId="backup-brief"
     >

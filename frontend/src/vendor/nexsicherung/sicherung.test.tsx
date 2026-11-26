@@ -12,7 +12,7 @@ import { createRoot } from 'react-dom/client'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { NexuiLanguage } from '../nexui'
-import { SICHERUNG_TEXTS, StorageArea, blockedWords, makeSicherungApi, passwordHeader, shares, bytes, type Backups, type Brief, type Entry, type Overview, type SicherungApi } from './index'
+import { SICHERUNG_TEXTS, StorageArea, blockedWords, fillWhen, makeSicherungApi, passwordHeader, shares, bytes, type Backups, type Brief, type Entry, type Overview, type SicherungApi } from './index'
 
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
@@ -566,4 +566,39 @@ describe('"Jetzt sichern" asks for a note (E63)', () => {
       expect(api.calls).toEqual(['make '])
     })
   }
+})
+
+describe('a sentence without a time (E64)', () => {
+  it('drops the time with its brackets or comma in every language, never "()"', () => {
+    const said = {
+      de: ['Prüfen: Sicherung', 'Prüfung der Sicherung', 'Die Sicherung ist gescheitert: R. Die älteren Sicherungen bleiben.', 'Das Wiederherstellen ist gescheitert. nexnotes läuft mit den Daten von vorher weiter.', 'Zuletzt: 2 KB'],
+      en: ['Check: backup', 'Check of the backup', 'The backup failed: R. The older backups stay.', 'Restoring failed. nexnotes keeps running with the data from before.', 'Last: 2 KB'],
+      fr: ['Vérifier : sauvegarde', 'Vérification de la sauvegarde', 'La sauvegarde a échoué : R. Les sauvegardes plus anciennes restent.', 'La restauration a échoué. nexnotes continue avec les données d’avant.', 'Dernière : 2 KB'],
+    }
+    for (const language of ['de', 'en', 'fr'] as const) {
+      const t = SICHERUNG_TEXTS[language].backup
+      const values = { action: t.check, reason: 'R', app: 'nexnotes', size: '2 KB' }
+      const found = [t.forBackup, t.brief, t.failed, t.restoreFailed, t.last].map((text) => fillWhen(text, '', values))
+      expect(found, language).toEqual(said[language])
+      // With a time nothing changes (E62).
+      expect(fillWhen(t.brief, 'heute, 17:15', values)).toContain('(heute, 17:15)')
+    }
+  })
+
+  it('titles the check of a locked backup without a date "Prüfung der Sicherung", and never asks the app\'s when for nothing', async () => {
+    const api = fakeApi()
+    api.check = vi.fn(async () => ({ ...brief(), created: '' }))
+    const asked: string[] = []
+    const root = await show(
+      <StorageArea app="nexnotes" things="Notizen" holds="h" api={api} password language="de" when={(iso) => (asked.push(iso), `heute <${iso.slice(11, 16)}>`)} />,
+    )
+    await waitFor(() => expect(root.querySelector('[data-testid="backup-list"]')).not.toBeNull())
+    const row = root.querySelector('[data-testid="backup-nexnotes-2026-11-25-030000.zip"]') as HTMLElement
+    await act(async () => fireEvent.click(getByRole(row, 'button', { name: /^Prüfen/ })))
+    const box = root.querySelector('[data-testid="backup-brief"]') as HTMLElement
+    expect(box.textContent).toContain('Prüfung der Sicherung')
+    expect(box.textContent).not.toContain('(')
+    expect(box.textContent).not.toContain('heute')
+    expect(asked).not.toContain('')
+  })
 })

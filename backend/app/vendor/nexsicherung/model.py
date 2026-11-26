@@ -82,7 +82,10 @@ class Checked:
     ``details``: the app's own findings, flat (``would_add``, ``notes_add_titles``, ``revived_keys`` …), as its check
     answered them before; the page shows them through the app's own words. ``too_new`` (since E37): the app finds the
     archive newer than itself by its own measure (its schema), beside the module's comparison of versions; it counts
-    like the module's (never restored, ``backup_too_new``)."""
+    like the module's (never restored, ``backup_too_new``). ``described`` (since 1.0.4, E64): what the archive says of
+    itself, read inside it once its password opened it; a locked archive's ``describe`` cannot read its manifest, so
+    without it the check of a locked archive has no date, no version and no comparison of versions. The module then
+    takes ``created``, ``kind``, ``note``, ``version`` and ``facts`` from here."""
 
     database_ok: bool
     files_ok: bool = True
@@ -91,6 +94,7 @@ class Checked:
     blocked_text: str = ""
     details: dict[str, Any] = field(default_factory=dict)
     too_new: bool = False
+    described: Described | None = None
 
 
 @dataclass

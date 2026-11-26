@@ -224,6 +224,13 @@ export function fill(text: string, values: Record<string, string | number>): str
   return text.replace(/\{(\w+)\}/g, (whole, key: string) => (key in values ? String(values[key]) : whole))
 }
 
+/** A sentence with a time (`{when}`): without one (a locked archive whose app gave no date, E64) the time goes with
+ * its brackets or its comma, never "()" or "Zuletzt: , 2 KB". */
+export function fillWhen(text: string, at: string, values: Record<string, string | number> = {}): string {
+  const shown = at.trim() ? text : text.replace(/\s*\(\{when\}\)/g, '').replace(/\{when\},\s*/g, '')
+  return fill(shown, { ...values, when: at })
+}
+
 /** The words of an error code; the app's own codes (its password check) fall back to `unknown`. */
 export function errorText(texts: SicherungTexts, error: unknown, app: string): string {
   const given = error && typeof error === 'object' && 'code' in error ? (error as { code: unknown }).code : null
