@@ -11855,6 +11855,31 @@
             ],
             "title": "Archive Password"
           },
+          "options": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "boolean"
+                    },
+                    {
+                      "type": "integer"
+                    }
+                  ]
+                },
+                "maxProperties": 20,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Options"
+          },
           "password": {
             "default": "",
             "maxLength": 200,
