@@ -28,10 +28,10 @@ from ..vendor.nexverbinden.model import Area
 from . import settings_service
 
 #: The partners nexpaper has a use with (V20: no card without one): it hosts nextime (deadlines) and nexmail
-#: (documents); as a guest of nextasks ("Aufgabe aus Dokument") it is not built yet.
+#: (documents), and it is the guest of nextasks (a task from a document, ``services/task_from_document.py``).
 CONFIG = nexverbinden.AppConfig(
     app_name="nexpaper", version=__version__, access_prefix="npv_", refresh_prefix="npvr_", code_prefix="npvc_",
-    in_use=("nextime", "nexmail"),
+    in_use=("nextime", "nexmail", "nextasks"),
 )
 
 #: The module's settings and nexpaper's names for them; the context of sealed tokens.

@@ -643,7 +643,11 @@
     "invalid_pdf_password": "Das Passwort darf 1 bis {{max}} Zeichen haben.",
     "invalid_pdf_password_name": "Der Name darf 1 bis {{max}} Zeichen haben, ohne Steuerzeichen.",
     "pdf_broken": "Das PDF lässt sich nicht lesen.",
-    "pdf_too_large": "Das PDF ist zu groß."
+    "pdf_too_large": "Das PDF ist zu groß.",
+    "nextasks_not_connected": "nexpaper ist nicht mit nextasks verbunden. Verbinden kannst du unter Mein Konto › Verbindungen.",
+    "nextasks_disconnected": "Die Verbindung mit nextasks trägt nicht mehr. Unter Mein Konto › Verbindungen steht, warum.",
+    "nextasks_declined": "nextasks hat die Aufgabe nicht angenommen. Wähle eine andere Liste oder versuche es später.",
+    "nextasks_unreachable": "nextasks ist gerade nicht erreichbar. Versuche es gleich noch einmal."
   },
   "ready": {
     "secrets": {
@@ -3227,5 +3231,16 @@
       "readHint": "Sucht und liest Dokumente, Eingang und Fristen.",
       "writeHint": "Darf dazu Angaben ändern, Vorschläge übernehmen und Dokumente in den Papierkorb legen."
     }
+  },
+  "nextasksTask": {
+    "button": "Aufgabe in nextasks",
+    "title": "Aufgabe in nextasks",
+    "text": "nexpaper legt in nextasks eine Aufgabe mit dem Titel des Dokuments und einem Link zurück hierher an.",
+    "list": "Liste in nextasks",
+    "make": "Aufgabe anlegen",
+    "made": "Die Aufgabe steht jetzt in nextasks.",
+    "there": "Für dieses Dokument gibt es in nextasks schon eine Aufgabe.",
+    "open": "In nextasks öffnen",
+    "noList": "In nextasks gibt es noch keine Liste."
   }
 }

@@ -643,7 +643,11 @@
     "invalid_pdf_password": "The password may have 1 to {{max}} characters.",
     "invalid_pdf_password_name": "The name may have 1 to {{max}} characters, without control characters.",
     "pdf_broken": "The PDF cannot be read.",
-    "pdf_too_large": "The PDF is too large."
+    "pdf_too_large": "The PDF is too large.",
+    "nextasks_not_connected": "nexpaper is not connected with nextasks. You connect it under My account › Connections.",
+    "nextasks_disconnected": "The connection with nextasks no longer holds. My account › Connections says why.",
+    "nextasks_declined": "nextasks did not take the task. Choose another list or try again later.",
+    "nextasks_unreachable": "nextasks cannot be reached right now. Try again in a moment."
   },
   "ready": {
     "secrets": {
@@ -3227,5 +3231,16 @@
       "readHint": "Searches and reads documents, the inbox and deadlines.",
       "writeHint": "May also change fields, accept suggestions and put documents in the trash."
     }
+  },
+  "nextasksTask": {
+    "button": "Task in nextasks",
+    "title": "Task in nextasks",
+    "text": "nexpaper makes a task in nextasks with the document's title and a link back here.",
+    "list": "List in nextasks",
+    "make": "Make task",
+    "made": "The task is in nextasks now.",
+    "there": "This document has a task in nextasks already.",
+    "open": "Open in nextasks",
+    "noList": "nextasks has no list yet."
   }
 }

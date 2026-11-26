@@ -643,7 +643,11 @@
     "invalid_pdf_password": "Le mot de passe peut compter de 1 à {{max}} caractères.",
     "invalid_pdf_password_name": "Le nom peut compter de 1 à {{max}} caractères, sans caractères de contrôle.",
     "pdf_broken": "Le PDF ne peut pas être lu.",
-    "pdf_too_large": "Le PDF est trop volumineux."
+    "pdf_too_large": "Le PDF est trop volumineux.",
+    "nextasks_not_connected": "nexpaper n'est pas connecté à nextasks. Vous le connectez sous Mon compte › Connexions.",
+    "nextasks_disconnected": "La connexion avec nextasks ne tient plus. Mon compte › Connexions indique pourquoi.",
+    "nextasks_declined": "nextasks n'a pas accepté la tâche. Choisissez une autre liste ou réessayez plus tard.",
+    "nextasks_unreachable": "nextasks est injoignable pour le moment. Réessayez dans un instant."
   },
   "ready": {
     "secrets": {
@@ -3227,5 +3231,16 @@
       "readHint": "Recherche et lit les documents, la boîte de réception et les échéances.",
       "writeHint": "Peut aussi modifier des champs, accepter des suggestions et mettre des documents à la corbeille."
     }
+  },
+  "nextasksTask": {
+    "button": "Tâche dans nextasks",
+    "title": "Tâche dans nextasks",
+    "text": "nexpaper crée dans nextasks une tâche avec le titre du document et un lien vers cette page.",
+    "list": "Liste dans nextasks",
+    "make": "Créer la tâche",
+    "made": "La tâche est maintenant dans nextasks.",
+    "there": "Ce document a déjà une tâche dans nextasks.",
+    "open": "Ouvrir dans nextasks",
+    "noList": "nextasks n'a pas encore de liste."
   }
 }

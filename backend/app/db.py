@@ -781,6 +781,11 @@ def _additions_verbinden(connection: Connection) -> None:
             "CREATE TABLE IF NOT EXISTS vb_waiting ( id INTEGER NOT NULL, account_id INTEGER, partner_base TEXT, "
             "token TEXT, since TEXT, PRIMARY KEY (id) )"
         ),
+        # nexpaper's own (a task in nextasks from a document): the list used last per account.
+        (
+            "CREATE TABLE IF NOT EXISTS nextasks_lists_used ( account_id INTEGER NOT NULL, list_id TEXT NOT NULL, "
+            "PRIMARY KEY (account_id) )"
+        ),
     ):
         connection.exec_driver_sql(statement)
 

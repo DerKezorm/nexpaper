@@ -47,7 +47,7 @@ KONTEN_TABLES = {
     # The modules mcp 1.1.0, ki 0.1.0 and verbinden 0.1.1 add their tables the same way (``db._additions_mcp``,
     # ``_additions_ki``, ``_additions_verbinden``).
     "mcp_keys", "mcp_clients", "mcp_codes", "mcp_spent", "mcp_tool_rights", "mcp_requests", "ai_own_access",
-    "ai_events", "vb_connections", "vb_pending", "vb_codes", "vb_spent", "vb_waiting",
+    "ai_events", "vb_connections", "vb_pending", "vb_codes", "vb_spent", "vb_waiting", "nextasks_lists_used",
 }
 
 

@@ -1440,6 +1440,20 @@ export const pinsApi = {
   unpin: (id: number) => api<void>(`${doc(id)}/pin`, { method: 'DELETE' }),
 }
 
+// ---- A task in nextasks from a document (Bauplan V19, over a connection made by a click; a draft) -------------------
+
+export type NextasksList = { id: string; name: string; space_name: string }
+export type NextasksTask = { task_id: string; title: string; link: string | null; created: boolean }
+
+export const nextasksApi = {
+  /** Whether the button stands: a connection with nextasks holds and may make tasks. */
+  state: () => api<{ usable?: boolean }>('/api/v1/nextasks'),
+  /** The lists in nextasks and the one this account used last. */
+  lists: () => api<{ lists: NextasksList[]; last_list_id: string | null }>('/api/v1/nextasks/lists'),
+  /** The task of the document (`created: false`: the one made before, wherever it lies now). */
+  make: (id: number, listId: string) => api<NextasksTask>(`${doc(id)}/nextasks`, { method: 'POST', body: { list_id: listId } }),
+}
+
 // ---- Order: what the senders, tags and kinds are used for ------------------------------------------------------------
 
 export type OrderWhat = 'senders' | 'tags' | 'kinds'

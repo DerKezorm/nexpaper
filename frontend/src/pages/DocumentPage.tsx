@@ -58,6 +58,7 @@ import {
   type VersionText,
 } from '../api/client'
 import { MemoLine } from '../components/SenderMemo'
+import { NextasksTaskButton } from '../components/NextasksTask'
 import { TransferButton, TransferDialog } from '../components/TransferDialog'
 import { Avatar } from '../components/Avatar'
 import { Button } from '../components/Button'
@@ -423,6 +424,7 @@ function Doc({ document: d, setDocument, reload, slots, pane }: { document: Docu
               <Share2 size={15} aria-hidden /> {t('docs.document.share')}
             </Button>
           )}
+          {d.status !== 'trash' && <NextasksTaskButton documentId={d.id} />}
           <div className="relative">
             <Button variant="ghost" size="sm" onClick={() => setMenu(menu === 'more' ? null : 'more')} aria-label={t('docs.document.more')} aria-expanded={menu === 'more'}>
               <MoreHorizontal size={18} aria-hidden />

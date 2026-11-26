@@ -6107,6 +6107,118 @@
         "title": "NewPasswordIn",
         "type": "object"
       },
+      "NextasksListOut": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "space_name": {
+            "title": "Space Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "space_name"
+        ],
+        "title": "NextasksListOut",
+        "type": "object"
+      },
+      "NextasksListsOut": {
+        "properties": {
+          "last_list_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last List Id"
+          },
+          "lists": {
+            "items": {
+              "$ref": "#/components/schemas/NextasksListOut"
+            },
+            "title": "Lists",
+            "type": "array"
+          }
+        },
+        "required": [
+          "lists"
+        ],
+        "title": "NextasksListsOut",
+        "type": "object"
+      },
+      "NextasksStateOut": {
+        "properties": {
+          "usable": {
+            "title": "Usable",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "usable"
+        ],
+        "title": "NextasksStateOut",
+        "type": "object"
+      },
+      "NextasksTaskIn": {
+        "properties": {
+          "list_id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "List Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "list_id"
+        ],
+        "title": "NextasksTaskIn",
+        "type": "object"
+      },
+      "NextasksTaskOut": {
+        "properties": {
+          "created": {
+            "title": "Created",
+            "type": "boolean"
+          },
+          "link": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Link"
+          },
+          "task_id": {
+            "title": "Task Id",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "task_id",
+          "title",
+          "created"
+        ],
+        "title": "NextasksTaskOut",
+        "type": "object"
+      },
       "NoteIn": {
         "properties": {
           "text": {
@@ -18013,6 +18125,79 @@
         ]
       }
     },
+    "/api/v1/documents/{document_id}/nextasks": {
+      "post": {
+        "operationId": "make_api_v1_documents__document_id__nextasks_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "document_id",
+            "required": true,
+            "schema": {
+              "title": "Document Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NextasksTaskIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NextasksTaskOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NextasksTaskOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "409": {
+            "description": "`nextasks_not_connected`, `nextasks_disconnected`, `nextasks_declined` (with `reason`)"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "502": {
+            "description": "`nextasks_unreachable`"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "A task in nextasks from the document, with its page as the link back",
+        "tags": [
+          "nextasks"
+        ]
+      }
+    },
     "/api/v1/documents/{document_id}/notes": {
       "get": {
         "operationId": "notes_api_v1_documents__document_id__notes_get",
@@ -23929,6 +24114,64 @@
         "summary": "\"What's new\" of the running version is read or put away",
         "tags": [
           "auth"
+        ]
+      }
+    },
+    "/api/v1/nextasks": {
+      "get": {
+        "operationId": "state_api_v1_nextasks_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NextasksStateOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Whether a task can go to nextasks (a draft)",
+        "tags": [
+          "nextasks"
+        ]
+      }
+    },
+    "/api/v1/nextasks/lists": {
+      "get": {
+        "operationId": "lists_api_v1_nextasks_lists_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NextasksListsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "409": {
+            "description": "`nextasks_not_connected`, `nextasks_disconnected`, `nextasks_declined` (with `reason`)"
+          },
+          "502": {
+            "description": "`nextasks_unreachable`"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "The lists in nextasks, through the connection",
+        "tags": [
+          "nextasks"
         ]
       }
     },

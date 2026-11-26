@@ -83,4 +83,14 @@ class VbWaiting(Base):
     since: Mapped[str | None] = mapped_column(Text, nullable=True)
 
 
-__all__ = ["VbCode", "VbConnection", "VbPending", "VbSpent", "VbWaiting"]
+class NextasksListUsed(Base):
+    """nexpaper's own beside the module's (V19, a task from a document): the list in nextasks an account put a task in
+    last, chosen first the next time. Made by ``db._additions_verbinden`` like the module's tables."""
+
+    __tablename__ = "nextasks_lists_used"
+
+    account_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    list_id: Mapped[str] = mapped_column(Text)
+
+
+__all__ = ["NextasksListUsed", "VbCode", "VbConnection", "VbPending", "VbSpent", "VbWaiting"]

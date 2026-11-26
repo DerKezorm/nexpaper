@@ -60,6 +60,7 @@ from .routers import keeping as keeping_router
 from .routers import locales as locales_router
 from .routers import logs as logs_router
 from .routers import mail as mail_router
+from .routers import nextasks as nextasks_router
 from .routers import ocr as ocr_router
 from .routers import pagetools as pagetools_router
 from .routers import paperless as paperless_router
@@ -96,6 +97,7 @@ from .services import (
     schluessel_store,
     settings_service,
     storage,
+    task_from_document,
     totp,
     verbinden_store,
 )
@@ -137,6 +139,8 @@ ROUTERS = [
     transfer_router,
     pins_router,
     pdfpasswords_router,
+    # Bauplan V19: a task in nextasks from a document, over a connection made by a click.
+    nextasks_router,
     # U1: upload requests, the person's side and the stranger's.
     upload_requests_router,
     request_page_router,
@@ -169,6 +173,7 @@ def _purge_deleted() -> list[Any]:
             nexverbinden.end_all(verbinden_store.VerbindenStore(db), verbinden_store.CONFIG, account_id,
                                  datetime.now(UTC))
             db.commit()
+            task_from_document.forget(db, account_id)
     return gone
 
 
