@@ -69,8 +69,13 @@ class Adapter(StandardAdapter):
 
         engine.dispose()
         backups.configure()
+        backups.tidy_at_start()
         backups.apply_pending()
         init_db()
+
+    def start_again(self) -> None:
+        """nexpaper's start on the same data folder: the same steps as ``restart`` (``main.lifespan``)."""
+        self.restart()
 
     def add_content(self, label: str) -> None:
         """A document of the operator with its file (as an upload leaves it: the file in the document folder)."""

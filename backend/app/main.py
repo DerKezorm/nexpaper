@@ -173,6 +173,8 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     logs.setup()
     # The shared backup module on this data folder (a test may have moved it since the import).
     backups.configure()
+    # What a stopped copy or upload left (a hidden work file, an empty archive) goes before anything else (1.0.1).
+    backups.tidy_at_start()
     backups.apply_pending()
     init_db()
     # A restore that could not be put in place at this start: the operators hear of it once.

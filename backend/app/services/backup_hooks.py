@@ -685,12 +685,12 @@ class NexpaperHooks(nexsicherung.AppHooks):
     def tidy(self) -> None:
         """At every start, before a staged restore is applied.
 
-        * A restore staged by nexpaper before the module (1.11 and older) has the database and the manifest in
-          ``restore-pending/`` but not the module's marker; the old version wrote the manifest last, so with both there
-          it is complete and gets the marker (else the module would throw it away).
-        * An empty archive a stopped process left: the module names an archive before ``pack`` writes it, and a process
-          stopped in between leaves that name empty, listed as unreadable for good. TODO sicherung 1.0.1: the module
-          writes under a working name and tidies itself (E29); then this part goes."""
+        A restore staged by nexpaper before the module (1.11 and older) has the database and the manifest in
+        ``restore-pending/`` but not the module's marker; the old version wrote the manifest last, so with both there it
+        is complete and gets the marker (else the module would throw it away).
+
+        An empty archive a stopped process left is the module's to tidy since sicherung 1.0.1
+        (``archives.tidy_at_start``, called by nexpaper's start and by ``restore.apply_pending``)."""
         from ..vendor.nexsicherung import restore
 
         pending = restore.pending_folder()
@@ -705,15 +705,6 @@ class NexpaperHooks(nexsicherung.AppHooks):
                 logger.info("A restore staged before the shared backup module is taken over")
             except (OSError, ValueError):
                 pass
-        folder = nexsicherung.archives.folder()
-        if folder.is_dir():
-            for path in folder.glob("nexpaper-*.zip"):
-                try:
-                    if path.is_file() and path.stat().st_size == 0 and nexsicherung.archives.known_name(path.name):
-                        path.unlink()
-                        logger.warning("An empty backup left by a stopped process was removed name=%s", path.name)
-                except OSError:
-                    continue
 
     # --- The schedule, under nexpaper's own keys
 

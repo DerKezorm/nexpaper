@@ -59,6 +59,7 @@ __all__ = [
     "schedule",
     "stage_restore",
     "temporary_upload",
+    "tidy_at_start",
 ]
 
 #: The names of nexpaper's archives, as before the module (the module's ``name_pattern`` for ``nexpaper``).
@@ -73,6 +74,7 @@ prune = archives.prune
 receive = archives.receive
 remove = archives.remove
 temporary_upload = archives.temporary_upload
+tidy_at_start = archives.tidy_at_start
 stage_restore = restore.stage_restore
 apply_pending = restore.apply_pending
 pending_folder = restore.pending_folder
