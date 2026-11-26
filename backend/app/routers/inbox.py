@@ -88,7 +88,8 @@ class MenuCounts(BaseModel):
 def counts(account: Reader, db: DbSession) -> MenuCounts:
     found = inbox.menu_counts(db, account.id)
     if not deadlines.wanted(account):
-        # Someone who switched deadlines off (My account › Notifications) has no number beside a menu item they do not have.
+        # Someone who switched deadlines off (My account › Notifications) has no number beside a menu item they do not
+        # have.
         return MenuCounts(inbox=found.inbox, reading=found.reading, trash=found.trash)
     soon = deadlines.menu_count(db, account.id, deadlines.today_of(account))
     return MenuCounts(inbox=found.inbox, reading=found.reading, trash=found.trash, deadlines=soon.soon,

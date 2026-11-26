@@ -1207,8 +1207,8 @@ __all__ += ["DeadlineSnooze"]
 
 
 class ReminderSettings(Base):
-    """How a person is reminded of deadlines (Mein Konto › Benachrichtigungen). No row: the defaults (one by one by push, at
-    3, 14 and 30 days, and on the day itself; no mail, no weekly mail)."""
+    """How a person is reminded of deadlines (Mein Konto › Benachrichtigungen). No row: the defaults (one by one by
+    push, at 3, 14 and 30 days, and on the day itself; no mail, no weekly mail)."""
 
     __tablename__ = "reminder_settings"
 
@@ -1228,8 +1228,8 @@ class ReminderSettings(Base):
     updated_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utcnow)
 
 class ReminderMute(Base):
-    """A vault a person hears nothing from (Mein Konto › Benachrichtigungen): its deadlines stay on the page, no reminder and
-    no weekly mail names them. Gone with the person or the vault."""
+    """A vault a person hears nothing from (Mein Konto › Benachrichtigungen): its deadlines stay on the page, no
+    reminder and no weekly mail names them. Gone with the person or the vault."""
 
     __tablename__ = "reminder_mutes"
     __table_args__ = (UniqueConstraint("user_id", "vault_id", name="uq_reminder_mutes"),)
