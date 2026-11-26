@@ -89,6 +89,16 @@ export function authentikReasonKey(reason: string | null | undefined): string | 
 }
 
 /**
+ * Whether a run of the button worked all through (since E33): the server's `ok`, or, from an answer that names only
+ * its steps, every step of `AUTHENTIK_STEPS` there and none failed (the server's own rule). Then the card empties the
+ * token field.
+ */
+export function authentikDone(result: { ok?: boolean; steps: ReadonlyArray<{ key: string; ok: boolean }> }): boolean {
+  if (result.ok !== undefined) return result.ok
+  return result.steps.every((step) => step.ok) && AUTHENTIK_STEPS.every((key) => result.steps.some((step) => step.key === key))
+}
+
+/**
  * The number of accounts the button asks about before it changes the issuer (`reason: issuer_change`), or
  * null when the run did not stop for that. The page then asks with `oidc.admin.issuerChangeConfirm` and, on yes, runs
  * the button again with `confirm_issuer_change: true`.

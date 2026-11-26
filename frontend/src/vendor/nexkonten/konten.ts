@@ -1408,6 +1408,10 @@ export const SIGN_IN_CARD = {
     label: 'account.factorRequiredSwitch',
     hint: 'account.factorRequiredSwitchHint',
     locked: 'account.ownSecondFactorFirst',
+    /** Since E36: after the hint, who is not affected (accounts whose provider checks the second factor itself);
+     * ``{{trusts}}`` is the words of oidc's switch ``oidc.admin.trustsSecondFactor``. */
+    exempt: 'account.factorRequiredExempt',
+    exemptLocked: 'account.factorRequiredExemptLocked',
     offTitle: 'account.factorRequiredOffTitle',
     offText: 'account.factorRequiredOffText',
     offButton: 'account.factorRequiredOff',

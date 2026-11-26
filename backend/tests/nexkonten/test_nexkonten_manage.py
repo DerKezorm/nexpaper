@@ -137,6 +137,31 @@ def test_deleting_keeps_the_account_thirty_days_to_bring_back(app: Any, konten: 
     assert app.sign_in("kim", own) == kim
 
 
+def test_deleting_lets_every_open_password_link_lapse_and_bringing_back_brings_none(app: Any, konten: Any) -> None:
+    """Since E37: the operator's link as well as the one the person asked for; the same in every app."""
+    boss, secret = _operator(app)
+    kim = app.seed("kim", email="kim@example.com", password=password())
+    ann = app.seed("ann", email="ann@example.com", password=password())
+    with app.store() as store:
+        by_operator = konten.resets.reset_link(store, kim, actor_id=boss, password=secret, mail=False).token
+        asked = konten.resets.forgot(store, "ann@example.com")
+    assert by_operator and asked is not None and asked.token
+    with app.store() as store:
+        for target in (kim, ann):
+            konten.manage.remove(store, target, actor_id=boss, password=secret)
+    with app.store() as store:
+        for target in (kim, ann):
+            konten.manage.restore(store, target, actor_id=boss, password=secret)
+    for token in (by_operator, asked.token):
+        with app.store() as store, pytest.raises(konten.AccountError) as refused:
+            konten.resets.use_reset(store, token, password())
+        assert refused.value.code == "reset_invalid"
+    # A new link after the return works as ever.
+    with app.store() as store:
+        fresh = konten.resets.reset_link(store, kim, actor_id=boss, password=secret, mail=False).token
+        konten.resets.use_reset(store, fresh, password())
+
+
 def test_after_its_days_a_deleted_account_goes_for_good_and_its_name_stays_reserved(app: Any, konten: Any) -> None:
     boss, secret = _operator(app)
     kim = app.seed("kim", password=password())

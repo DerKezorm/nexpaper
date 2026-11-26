@@ -70,6 +70,8 @@
     "factorRequired": "Every account on this server needs a second factor. Set it up now.",
     "factorRequiredSwitch": "Require a second factor of everybody",
     "factorRequiredSwitchHint": "On: every account without a second factor sets one up at its next sign-in. A passkey counts.",
+    "factorRequiredExempt": "Accounts from a sign-in provider bring the provider's. An account with a password is not affected either when it comes in through a provider for which “{{trusts}}” is on.",
+    "factorRequiredExemptLocked": "Not affected is whoever signs in through a provider for which “{{trusts}}” is on.",
     "secondFactorOff": "Second factor is switched off",
     "secondFactorOffHint": "{{secondFactorOffEnv}} is set: nobody is asked for a second factor. Remove the variable and restart {{app}} once you can get in again.",
     "factorReset": "Reset the second factor",

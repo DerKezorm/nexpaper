@@ -70,6 +70,8 @@
     "factorRequired": "Chaque compte de ce serveur a besoin d'un second facteur. Configurez-le maintenant.",
     "factorRequiredSwitch": "Exiger un second facteur de tous",
     "factorRequiredSwitchHint": "Activé : chaque compte sans second facteur en configure un à sa prochaine connexion. Une clé d'accès compte.",
+    "factorRequiredExempt": "Les comptes d’un fournisseur de connexion apportent le sien. Un compte avec mot de passe n’est pas concerné non plus s’il passe par un fournisseur pour lequel « {{trusts}} » est activé.",
+    "factorRequiredExemptLocked": "N’est pas concerné qui se connecte par un fournisseur pour lequel « {{trusts}} » est activé.",
     "secondFactorOff": "Le second facteur est désactivé",
     "secondFactorOffHint": "{{secondFactorOffEnv}} est définie : aucun second facteur n'est demandé. Supprimez la variable et redémarrez {{app}} dès que vous pouvez à nouveau vous connecter.",
     "factorReset": "Réinitialiser le second facteur",

@@ -204,11 +204,11 @@ def clear_caches() -> None:
     _jwks_cache.clear()
 
 
-async def _client(timeout: float = TIMEOUT_SECONDS) -> httpx.AsyncClient:
+async def _client(seconds: float = TIMEOUT_SECONDS) -> httpx.AsyncClient:
     # A fresh client per operation: the app runs under different event loops in tests, and a sign-in is rare enough
     # that connection reuse buys nothing. Redirects are not followed: a redirect is a misconfiguration to report.
     # The TLS context is read once for the module (``tls.py``), never per client and never in the event loop.
-    return httpx.AsyncClient(timeout=timeout, transport=config.transport(), verify=await tls.context())
+    return httpx.AsyncClient(timeout=seconds, transport=config.transport(), verify=await tls.context())
 
 
 def _content_type(response: httpx.Response) -> str:

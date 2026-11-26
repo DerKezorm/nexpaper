@@ -214,6 +214,8 @@ export function SignInCard({
   }
 
   const factorLocked = !view.factor_required && !view.factor_may_go_on
+  // The words of oidc's switch, between the quotes of the sentence on who is not affected (since E36).
+  const trusts = t('oidc.admin.trustsSecondFactor')
   const question = asking?.question
   const addressText = question
     ? [
@@ -256,7 +258,11 @@ export function SignInCard({
       </form>
       <CheckboxRow
         label={t(card.factorRequired.label)}
-        hint={factorLocked ? t(card.factorRequired.locked) : t(card.factorRequired.hint)}
+        hint={
+          factorLocked
+            ? `${t(card.factorRequired.locked)} ${t(card.factorRequired.exemptLocked, { trusts })}`
+            : `${t(card.factorRequired.hint)} ${t(card.factorRequired.exempt, { trusts })}`
+        }
         checked={view.factor_required}
         disabled={busy || factorLocked}
         onChange={(factor_required) => {

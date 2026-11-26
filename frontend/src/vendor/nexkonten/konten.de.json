@@ -70,6 +70,8 @@
     "factorRequired": "Auf diesem Server braucht jedes Konto einen zweiten Faktor. Richte ihn jetzt ein.",
     "factorRequiredSwitch": "Zweiten Faktor für alle verlangen",
     "factorRequiredSwitchHint": "An: Jedes Konto ohne zweiten Faktor richtet ihn bei der nächsten Anmeldung ein. Ein Passkey zählt.",
+    "factorRequiredExempt": "Konten von einem Anmeldeanbieter bringen dessen eigenen mit. Ein Konto mit Passwort ist ebenfalls nicht betroffen, wenn es über einen Anbieter kommt, bei dem „{{trusts}}“ an ist.",
+    "factorRequiredExemptLocked": "Nicht betroffen ist, wer sich über einen Anbieter anmeldet, bei dem „{{trusts}}“ an ist.",
     "secondFactorOff": "Zweiter Faktor ist abgeschaltet",
     "secondFactorOffHint": "{{secondFactorOffEnv}} ist gesetzt: Niemand wird nach einem zweiten Faktor gefragt. Entferne die Variable und starte {{app}} neu, sobald du wieder hineinkommst.",
     "factorReset": "Zweiten Faktor zurücksetzen",

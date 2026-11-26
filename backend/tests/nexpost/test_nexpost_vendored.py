@@ -1,6 +1,7 @@
 """The copied module is the module: every file as ``MANIFEST.json`` names it, and it needs nothing beyond the
-standard library (since 1.1.0 FastAPI for its routes, which every app has). Runs in the app's own test run and CI, which see only the app's repository. Red means: a file was
-changed in the app. Change it in the module's source and copy it again; never here."""
+standard library (since 1.1.0 FastAPI for its routes, which every app has). Runs in the app's own test run and CI,
+which see only the app's repository. Red means: a file was changed in the app. Change it in the module's source and
+copy it again; never here."""
 
 from __future__ import annotations
 

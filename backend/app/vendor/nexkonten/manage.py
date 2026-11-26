@@ -168,8 +168,9 @@ def unblock(
 def remove(
     store: Any, account_id: AccountId, *, actor_id: AccountId, password: str = "", actor_confirmed: bool = False
 ) -> Removed:
-    """Delete: gone for everybody at once and shut out; for ``DELETE_DAYS`` days the operator brings it back. Again on
-    a deleted account: nothing happens."""
+    """Delete: gone for everybody at once and shut out, every open link for a new password gone (the operator's too);
+    for ``DELETE_DAYS`` days the operator brings it back, without the links. Again on a deleted account: nothing
+    happens."""
     _not_self(account_id, actor_id, "cannot_delete_self")
     target = _operator(store, account_id, actor_id, password, actor_confirmed)
     if target.deleted_at is not None:
@@ -178,6 +179,8 @@ def remove(
     moment = utcnow()
     store.set_deleted(account_id, moment)
     store.shut_out(account_id)
+    # Every open link for a new password goes, the operator's too (since E37): bringing the account back brings none.
+    store.drop_resets(account_id)
     store.commit()
     log().info("Account deleted account=%s days=%s", account_id, DELETE_DAYS)
     tell(store, Event(EVENT_DELETED, account_id))

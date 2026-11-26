@@ -23,8 +23,10 @@ Three forms of the body, the app picks:
 
 ``text`` replaces the plain text the module would make from ``paragraphs`` (an app's own text template).
 ``unsubscribe``: the address that ends this kind of mail with one click (RFC 8058: ``List-Unsubscribe`` and
-``List-Unsubscribe-Post``), and a link in the footer of the frame. ``key``: the app's name for this one mail
-(``daily:42:2026-11-25``); the outbox takes a letter with a key it holds already only once.
+``List-Unsubscribe-Post``), and a link in the footer of the frame. ``unsubscribe_page`` (since E33): the app's page
+that asks before it ends anything; the link in the footer and in the text leads there instead (a link checker that
+opens every link of a mail must not unsubscribe anybody), the header keeps the one-click address. ``key``: the app's
+name for this one mail (``daily:42:2026-11-25``); the outbox takes a letter with a key it holds already only once.
 """
 
 from __future__ import annotations
@@ -66,6 +68,7 @@ def write(
     greeting: bool = False,
     footer: str | None = None,
     unsubscribe: str = "",
+    unsubscribe_page: str = "",
     key: str = "",
 ) -> Letter:
     """A letter of the app. ``to`` an address or a ``Recipient`` (its address, its language when ``language`` is not
@@ -91,7 +94,9 @@ def write(
     hello = _text(words, "greeting").replace("{{name}}", values["name"]) if greeting and name else ""
     closing = _text(words, "footer").replace("{{app}}", values["app"]) if footer is None else footer
     lines = [line for line in (hello, *paragraphs) if line]
-    stop = _text(words, "unsubscribe") if unsubscribe else ""
+    # The link a person follows: the app's page that asks first, else the one-click address (as before E33).
+    shown = unsubscribe_page or unsubscribe
+    stop = _text(words, "unsubscribe") if shown else ""
     if not text:
         text = (
             "\n\n".join(
@@ -99,7 +104,7 @@ def write(
                     *lines,
                     *([f"{action}:\n{link}" if action else link] if link else []),
                     *([closing] if closing else []),
-                    *([f"{stop}: {unsubscribe}"] if unsubscribe else []),
+                    *([f"{stop}: {shown}"] if shown else []),
                 ]
             )
             + "\n"
@@ -113,7 +118,7 @@ def write(
             action or link,
             closing,
             body_html=body_html,
-            unsubscribe=(stop, unsubscribe),
+            unsubscribe=(stop, shown),
         )
     headers: list[tuple[str, str]] = [("Content-Language", (given or words).strip().lower()[:8] or words)]
     if unsubscribe:

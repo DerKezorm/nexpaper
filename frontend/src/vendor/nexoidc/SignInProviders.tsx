@@ -40,6 +40,7 @@ import {
 } from '../nexui'
 import {
   OIDC_BUTTONS,
+  authentikDone,
   authentikIssuerChange,
   authentikProposal,
   authentikProxyWarning,
@@ -106,7 +107,8 @@ export interface AuthentikStep {
 }
 
 export interface AuthentikResult {
-  ok: boolean
+  /** The server always sends it; an answer without it counts by its steps (``authentikDone``). */
+  ok?: boolean
   steps: AuthentikStep[]
   count?: number
   public_url?: string
@@ -174,6 +176,7 @@ function OidcButtonOf({
   disabled?: boolean
   onClick?: () => void
   testId?: string
+  'aria-label'?: string
 }) {
   const spec: { kind: 'primary' | 'secondary' | 'danger'; icon: string; size?: 'sm' } = OIDC_BUTTONS[name]
   return (
@@ -322,10 +325,12 @@ export function ProvidersCard({
                 action={
                   entry.editable ? (
                     <Buttons>
-                      <OidcButtonOf name="oidc.admin.edit" t={t} onClick={() => setEditing(entry)} />
+                      {/* Named "<action>: <provider>" (as before 1.2.0, since E37), so that a screen reader tells the rows apart. */}
+                      <OidcButtonOf name="oidc.admin.edit" t={t} aria-label={`${t('oidc.admin.edit')}: ${entry.label}`} onClick={() => setEditing(entry)} />
                       <OidcButtonOf
                         name="oidc.admin.remove"
                         t={t}
+                        aria-label={`${t('oidc.admin.remove')}: ${entry.label}`}
                         busy={busy}
                         onClick={() =>
                           void run(async () => {
@@ -606,11 +611,13 @@ export function AuthentikCard({
     setUnusable(false)
     void run(async () => {
       const answer = await calls.authentik(authentik.url, authentik.token, confirmIssuerChange, noAddress ? proposal : '')
-      setSteps(answer)
-      setAsking(authentikIssuerChange(answer))
+      const question = authentikIssuerChange(answer)
+      // Another issuer is a question, not a failure: only the question shows, no line of steps behind it.
+      setSteps(question === null ? answer : null)
+      setAsking(question)
       if (answer.address) setAddress(answer.address)
       // The token goes only once everything worked; after a failure the operator corrects the address and tries again.
-      if (answer.ok) setAuthentik((current) => ({ ...current, token: '' }))
+      if (authentikDone(answer)) setAuthentik((current) => ({ ...current, token: '' }))
       await reload()
       if (answer.public_url) await onAddress()
       await loadAddress()
