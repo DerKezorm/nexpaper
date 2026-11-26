@@ -123,6 +123,7 @@ class AnyKeyOut(BaseModel):
     account: str
     name: str
     scope: str
+    #: Empty since Bauplan E36 (the operator never sees the start of a key); kept for the old shape.
     prefix: str
     created_at: datetime
     last_used_at: datetime | None = None
@@ -131,8 +132,10 @@ class AnyKeyOut(BaseModel):
 
 
 def _any(entry: dict) -> AnyKeyOut:
+    """The old shape, ``prefix`` kept as a field but always empty: the operator never sees the start of a key (Bauplan
+    E36, the module's operator rows carry none)."""
     return AnyKeyOut(id=entry["id"], account=entry["account"]["name"], name=entry["name"] or "",
-                     scope=entry["right"], prefix=entry["prefix"], created_at=entry["created_at"],
+                     scope=entry["right"], prefix="", created_at=entry["created_at"],
                      last_used_at=entry["last_used_at"], expires_at=entry["expires_at"], blocked=entry["blocked"])
 
 

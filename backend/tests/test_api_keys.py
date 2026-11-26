@@ -75,8 +75,9 @@ def test_a_key_speaks_for_its_own_account_only(client: TestClient, operator: Acc
         assert [item["name"] for item in listed] == ["nexdeck"]
     # The operator sees that rita has a key, never its secret, and cannot delete it as its own.
     every = client.get("/api/v1/admin/api-keys").json()
-    assert [(item["account"], item["prefix"]) for item in every] == [("rita", token[:8])]
-    assert all(token not in str(item) for item in every)
+    # Not even its start (Bauplan E36): the field stays for the old shape, empty.
+    assert [(item["account"], item["prefix"]) for item in every] == [("rita", "")]
+    assert all(token not in str(item) and token[:8] not in str(item) for item in every)
     assert client.delete(f"/api/v1/api-keys/{every[0]['id']}").status_code == 404
     assert client.get("/api/v1/api-keys").json()["keys"] == []
 
