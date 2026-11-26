@@ -112,8 +112,9 @@ export function ToolsCard({ request, base = KEYS_BASE, words, securityHref = '/s
           actions={
             kind?.creatable ? (
               <Button
-                kind={BUTTONS.newKey.kind}
-                icon={BUTTONS.newKey.icon}
+                kind={BUTTONS.newMcpKey.kind}
+                icon={BUTTONS.newMcpKey.icon}
+                size="md"
                 disabled={!listing.mcp || kind.count >= kind.max_keys}
                 onClick={() => {
                   setProblem(undefined)

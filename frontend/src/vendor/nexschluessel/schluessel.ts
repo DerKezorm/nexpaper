@@ -115,9 +115,11 @@ export const ADMIN_COLUMNS = ['account', 'name', 'right', 'used', 'action'] as c
 export type AdminColumn = (typeof ADMIN_COLUMNS)[number]
 export const COLUMN_WIDTHS: Partial<Record<KeyColumn | AdminColumn, string>> = { account: '9rem', expires: '9rem', used: '8rem', action: '13rem' }
 
-/** Kind and symbol of every button of the cards (the rules of the ui kit: what ends or removes is `danger`). */
+/** Kind and symbol of every button of the cards (the rules of the ui kit: what ends or removes is `danger`, at most one
+ * primary per box). "Neuer MCP-Schlüssel" is secondary (plan E48), "Neuer API-Schlüssel" primary. */
 export const BUTTONS = {
   newKey: { kind: 'primary', icon: 'Plus' },
+  newMcpKey: { kind: 'secondary', icon: 'Plus' },
   create: { kind: 'primary', icon: 'Check' },
   save: { kind: 'primary', icon: 'Check' },
   done: { kind: 'primary', icon: 'Check' },

@@ -325,7 +325,10 @@ describe('the card KI-Werkzeuge (MCP)', () => {
     expect(all('[data-testid="tools-keys-table"] [data-part="table-row"]')).toHaveLength(1)
     expect(card.textContent).toContain('Notebook')
     expect(find<HTMLInputElement>('[data-testid="tools-address"] input')!.value).toBe('https://notes.example.com/api/mcp')
-    expect(button('tools-new')!.dataset.kind).toBe('primary')
+    // Plan E48: "Neuer MCP-Schlüssel" is an md secondary Plus, the API key's "Neuer API-Schlüssel" stays primary.
+    expect([button('tools-new')!.dataset.kind, button('tools-new')!.dataset.size, button('tools-new')!.dataset.icon]).toEqual(['secondary', 'md', 'Plus'])
+    expect(button('tools-new')!.textContent).toBe('Neuer MCP-Schlüssel')
+    expect(all('[data-testid="tools-keys"] [data-kind="primary"]')).toHaveLength(0)
   })
 
   it('names an app without MCP', async () => {

@@ -17,14 +17,14 @@
     "frontend/src/vendor/nexschluessel/AllKeysCard.tsx": "sha256-Y/pwGZaSqyvSxj5Qt5315cYYTOR0cFD35OTtz78X3VM=",
     "frontend/src/vendor/nexschluessel/ApiKeysCard.tsx": "sha256-/QBLJSLtDkF2DGMgOvCHX0j97pbquqj//J4QTDD9MXU=",
     "frontend/src/vendor/nexschluessel/InterfacesCard.tsx": "sha256-hFdgl5B1Iq9LIuMOtX0p52o5jvfXSvEhu9o3O5AKPQA=",
-    "frontend/src/vendor/nexschluessel/ToolsCard.tsx": "sha256-CGNI5uMddlPAEGVUisidsb4iVAXKEZDbeAxsX+HzTJw=",
+    "frontend/src/vendor/nexschluessel/ToolsCard.tsx": "sha256-mKa1NGVeO1rcNGtHfain0NHKQQXLuXaP2O8hbWXpPss=",
     "frontend/src/vendor/nexschluessel/hooks.ts": "sha256-tKBwkLv5ama+L6EDNf1ixfAXvXLiElc0ZthUI37nEKk=",
     "frontend/src/vendor/nexschluessel/index.ts": "sha256-/9LKooIjfM/8AGM9wJCGqFeqsEA4ey9xBa9NIHjSodI=",
     "frontend/src/vendor/nexschluessel/parts.tsx": "sha256-hMsG3OQACbU8Em/I/2tDwCGu7eIU8MNsxL9tYIoDYFc=",
     "frontend/src/vendor/nexschluessel/schluessel.de.json": "sha256-sxzZ6BCE/wbbxnPQZ17Otk9CsM2CD/qxU8GE9jXAfiU=",
     "frontend/src/vendor/nexschluessel/schluessel.en.json": "sha256-0dtVZ7NfAnKx82syHKVjEhb8sEMlKuXgG7xUaooFoOU=",
     "frontend/src/vendor/nexschluessel/schluessel.fr.json": "sha256-WPc3WxR9pQRvV0MdviaNA5QWLbnMqL14ztZMkWLZgNk=",
-    "frontend/src/vendor/nexschluessel/schluessel.ts": "sha256-kpIie8qtFBnK9cFUOdkNUvhZjerd0euPWN6YeH+TdRI="
+    "frontend/src/vendor/nexschluessel/schluessel.ts": "sha256-AoqmD/XFzQ5/3EpklHR9o1bvdA1/iEL4tANLF7HFfwg="
   },
   "module": "schluessel",
   "requires": {
