@@ -13,7 +13,7 @@
  */
 import { FolderInput, FolderTree, Inbox } from 'lucide-react'
 
-import type { IconLike } from '../../vendor/nexui'
+import type { GeneralPart, IconLike } from '../../vendor/nexui'
 import type { Me } from '../../api/client'
 
 type Role = Me['role']
@@ -69,6 +69,10 @@ export const AREAS: Area[] = [
 ]
 
 export const GROUPS: AreaGroup[] = ['account', 'server']
+
+/** The cards of Server › General in their order (``SettingsAreas.tsx``): the line under the title names these (ui 1.1.3,
+ * U-3). */
+export const GENERAL_PARTS: readonly GeneralPart[] = ['limits', 'features', 'interfaces', 'nexApps', 'webPush', 'languages']
 
 /** "Über nexpaper": an area of every account, below the groups (its `group` only says who may open it). */
 export const ABOUT_AREA: Area = { slug: 'about', group: 'account', icon: 'Info' }

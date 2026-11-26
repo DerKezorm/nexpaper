@@ -71,28 +71,30 @@ export function PendingRequests({ request, base = MCP_BASE, words, language, whe
         </p>
       )}
       {waiting && waiting.length > 0 && (
-        <Rows label={texts.requests.list} testId="pending-requests-list">
-          {waiting.map((entry) => (
-            <Row
-              key={String(entry.id)}
-              name={<RequestProgram entry={entry} texts={texts} />}
-              badge={entry.dangerous ? <DangerBadge texts={texts} /> : undefined}
-              sub={<RequestDetails entry={entry} texts={texts} code={code} words={words} when={when} />}
-              action={
-                <RequestButtons
-                  entry={entry}
-                  texts={texts}
-                  busy={busy !== null}
-                  viewHref={viewHref}
-                  onView={onView}
-                  onApprove={() => void decide(entry, 'approve')}
-                  onDecline={() => void decide(entry, 'decline')}
-                />
-              }
-              testId="pending-request"
-            />
-          ))}
-        </Rows>
+        <div className="@container min-w-0" data-part="pending-requests-place">
+          <Rows label={texts.requests.list} testId="pending-requests-list">
+            {waiting.map((entry) => (
+              <Row
+                key={String(entry.id)}
+                name={<RequestProgram entry={entry} texts={texts} />}
+                badge={entry.dangerous ? <DangerBadge texts={texts} /> : undefined}
+                sub={<RequestDetails entry={entry} texts={texts} code={code} words={words} when={when} />}
+                action={
+                  <RequestButtons
+                    entry={entry}
+                    texts={texts}
+                    busy={busy !== null}
+                    viewHref={viewHref}
+                    onView={onView}
+                    onApprove={() => void decide(entry, 'approve')}
+                    onDecline={() => void decide(entry, 'decline')}
+                  />
+                }
+                testId="pending-request"
+              />
+            ))}
+          </Rows>
+        </div>
       )}
     </Box>
   )

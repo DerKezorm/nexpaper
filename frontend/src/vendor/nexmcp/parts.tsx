@@ -61,7 +61,9 @@ export function RequestButtons({
 }) {
   const canView = viewHref !== undefined || onView !== undefined
   return (
-    <span className="flex flex-wrap items-center gap-2">
+    // M-20 (1.1.4): on a narrow place the buttons stand under the text, not beside it (the text would be a thin column);
+    // from 36rem of the list's own width beside it (a list with `@container`, as "Wartende Rückfragen").
+    <span className="flex basis-full flex-wrap items-center justify-end gap-2 @min-[36rem]:basis-auto" data-part="request-buttons">
       <Button kind={MCP_BUTTONS.decline.kind} icon={MCP_BUTTONS.decline.icon} size="sm" disabled={busy} onClick={onDecline} testId="request-decline">
         {texts.requests.decline}
       </Button>

@@ -15,7 +15,7 @@ import type { ComponentType, ReactNode } from 'react'
 
 import { iconOf, type IconLike } from './icons'
 import { BUTTON_BASE, BUTTON_ICON_SIZE, BUTTON_KIND, BUTTON_SIZE, FOCUS, MUTED, PLAIN } from './styles'
-import { areaText, fill, useNexuiTexts } from './texts'
+import { areaText, fill, useNexuiTexts, type GeneralPart } from './texts'
 
 /** The link an app hands over; react-router's `Link` fits. */
 export type SettingsLink = ComponentType<{
@@ -185,6 +185,7 @@ export function SettingsPage({
   app,
   things,
   thingsDative,
+  parts,
   children,
 }: {
   slug: string
@@ -195,10 +196,12 @@ export function SettingsPage({
   app?: string
   things?: string
   thingsDative?: string
+  /** Since 1.1.3 (U-3): for Server › General the cards the app has, in their order; the line names only these. */
+  parts?: readonly GeneralPart[]
   children?: ReactNode
 }) {
   const texts = useNexuiTexts()
-  const shared = areaText(texts, slug, { app: app ?? '', things, thingsDative })
+  const shared = areaText(texts, slug, { app: app ?? '', things, thingsDative, parts })
   const line = subtitle ?? (shared?.text || null)
   return (
     <div className="flex min-w-0 flex-col gap-5" data-testid={`settings-area-${slug}`} data-area={slug}>

@@ -178,10 +178,14 @@ export function ConnectionCard({
   const mine = flows(texts, partner, view.uses, view.uses_levels ?? {}, true)
   const theirs = flows(texts, app, view.grants, view.grants_levels ?? {}, false)
   const status = (
-    <span className="flex min-w-0 items-center gap-2" data-testid="connection-summary">
-      <Badge tone={tone} testId="connection-state">
-        {tooOld && !connected ? texts.states.tooOld : word}
-      </Badge>
+    // V-15 (0.1.6, ui 1.1.3): state and address are one unit that goes under the title when the card is narrow; the
+    // state keeps its width, the address shortens.
+    <span className="flex min-w-0 max-w-full items-center gap-2" data-testid="connection-summary">
+      <span className="shrink-0">
+        <Badge tone={tone} testId="connection-state">
+          {tooOld && !connected ? texts.states.tooOld : word}
+        </Badge>
+      </span>
       {view.state === 'unreachable' && view.stale_since ? (
         <span className="min-w-0 truncate text-sm text-[var(--nexui-text-muted)]">{at(view.stale_since)}</span>
       ) : view.state === 'expiring' && view.legacy?.expires_at ? (

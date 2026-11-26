@@ -85,19 +85,23 @@ export function Collapsible({
           data-part="collapsible-head"
         >
           {mark}
-          <span className="min-w-0 flex-1">
-            <span
-              className={`${PLAIN} block [overflow-wrap:break-word] ${card ? 'text-base leading-6 font-semibold' : 'text-sm leading-5 font-medium'}`}
-            >
-              {title}
+          {/* Since 1.1.3 (V-15): title and state share a line that wraps as a whole; the title keeps at least 10rem, so a
+              short name ("nextime") never breaks inside a word, and the state goes under it when the place is narrow. */}
+          <span className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-1" data-part="collapsible-main">
+            <span className="min-w-[min(100%,10rem)] flex-1 basis-40" data-part="collapsible-title">
+              <span
+                className={`${PLAIN} block [overflow-wrap:break-word] ${card ? 'text-base leading-6 font-semibold' : 'text-sm leading-5 font-medium'}`}
+              >
+                {title}
+              </span>
+              {subtitle && <span className={`${PLAIN} block ${card ? 'text-sm leading-5' : 'text-xs leading-4'} ${MUTED}`}>{subtitle}</span>}
             </span>
-            {subtitle && <span className={`${PLAIN} block ${card ? 'text-sm leading-5' : 'text-xs leading-4'} ${MUTED}`}>{subtitle}</span>}
+            {status !== undefined && status !== null && status !== false && (
+              <span className="flex min-w-0 max-w-full items-center gap-2 text-xs leading-4 text-[var(--nexui-text-muted)]" data-part="collapsible-status">
+                {status}
+              </span>
+            )}
           </span>
-          {status !== undefined && status !== null && status !== false && (
-            <span className="flex shrink-0 items-center gap-2 text-xs leading-4 text-[var(--nexui-text-muted)]" data-part="collapsible-status">
-              {status}
-            </span>
-          )}
           <ChevronDown aria-hidden className={`h-4 w-4 shrink-0 ${MUTED} transition-transform${shown ? '' : ' -rotate-90'}`} strokeWidth={2} />
         </button>
       </Heading>

@@ -660,6 +660,25 @@ describe('the parts of the settings (since 1.1.0)', () => {
     expect(card?.textContent).toContain('connected · tasks.example.com')
   })
 
+  it('keeps a short title whole at 420 px: title and state wrap as a whole, the state goes under the title (V-15)', () => {
+    const root = show(
+      <div style={{ width: '420px' }}>
+        <Collapsible variant="card" id="nextime" icon="Plug" title="nextime" subtitle="Termine und Aufgaben" status="Nicht erreichbar · time.example.com">
+          <p>Inside.</p>
+        </Collapsible>
+      </div>,
+    )
+    const main = root.querySelector<HTMLElement>('[data-part="collapsible-main"]')!
+    expect(main.className.split(' ')).toEqual(expect.arrayContaining(['flex', 'flex-wrap', 'min-w-0', 'flex-1']))
+    const title = main.querySelector<HTMLElement>('[data-part="collapsible-title"]')!
+    expect(title.className.split(' ')).toEqual(expect.arrayContaining(['min-w-[min(100%,10rem)]', 'basis-40', 'flex-1']))
+    expect(title.textContent).toContain('nextime')
+    const status = main.querySelector<HTMLElement>('[data-part="collapsible-status"]')!
+    expect(status.className).not.toContain('shrink-0')
+    expect(status.className.split(' ')).toEqual(expect.arrayContaining(['min-w-0', 'max-w-full']))
+    expect(title.compareDocumentPosition(status) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
   it('a collapsible held by the caller opens only when told', () => {
     const asked = vi.fn()
     const root = show(
@@ -817,6 +836,17 @@ describe('the parts of the settings (since 1.1.0)', () => {
       'Geräte, andere Apps, API-Schlüssel und KI-Werkzeuge, die mit deinen Kalendern arbeiten.',
     )
     expect(areaText(NEXUI_TEXTS.de, 'connections', { app: 'nextime', things: 'Kalender' })?.text).toContain('mit deinen Kalender arbeiten')
+    // U-3 (1.1.3): the line of Server › General names only the cards the app has.
+    expect(areaText(NEXUI_TEXTS.de, 'general', { app: 'nexfolk', parts: ['interfaces', 'languages'] })?.text).toBe('Schnittstellen und eigene Sprachen.')
+    expect(areaText(NEXUI_TEXTS.en, 'general', { app: 'nexfolk', parts: ['interfaces', 'nexApps', 'languages'] })?.text).toBe('Interfaces, other nex apps and added languages.')
+    expect(areaText(NEXUI_TEXTS.fr, 'general', { app: 'nexfolk', parts: ['limits', 'languages'] })?.text).toBe('Limites et langues ajoutées.')
+    expect(areaText(NEXUI_TEXTS.de, 'general', { app: 'nexnotes' })?.text).toBe('Grenzen, Funktionen für alle Konten, Schnittstellen und eigene Sprachen.')
+    const page = show(
+      <NexuiLanguage language="de">
+        <SettingsPage slug="general" app="nexfolk" parts={['interfaces', 'nexApps', 'languages']} />
+      </NexuiLanguage>,
+    )
+    expect(page.querySelector('[data-area="general"] p')?.textContent).toBe('Schnittstellen, andere nex-Apps und eigene Sprachen.')
     // A phone in an area: the list is hidden, the way back is there; on the list it is the other way round.
     const side = root.querySelector('[data-part="settings-side"]')
     expect(side?.className.split(' ')).toContain('hidden')

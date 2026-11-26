@@ -39,7 +39,7 @@ from .errors import CODES, McpRefused, OAuthError, ToolError
 from .model import STATES, Caller, Client, Code, Grant, Program, Request, Store
 from .protocol import Context, Session
 
-__version__ = "1.1.3"
+__version__ = "1.1.4"
 
 __all__ = [
     "ALLOW",

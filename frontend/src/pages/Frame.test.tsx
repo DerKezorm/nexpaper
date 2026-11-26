@@ -12,6 +12,7 @@ import App from '../App'
 import '../i18n'
 import { changeLanguage } from '../i18n'
 import { idle, until } from '../test/wait'
+import { GENERAL_PARTS } from './settings/areas'
 
 const operator: Me = {
   id: 1, name: 'jule', display_name: 'Jule', role: 'operator', sign_in: 'password', email: '', language: 'de', email_confirmed: false, email_pending: '',
@@ -213,11 +214,15 @@ describe('the settings', () => {
     // The frame of the ui kit: its navigation, the area's title and line, then only cards.
     expect(box.querySelector('[data-testid="settings-nav"]')).toBeTruthy()
     expect(box.querySelector('h1')!.textContent).toBe('Allgemein')
-    expect(box.querySelector('[data-testid="settings-area-general"] p')!.textContent).toBe('Grenzen, Funktionen für alle Konten, Schnittstellen und eigene Sprachen.')
+    // ui 1.1.3 (U-3): the line names exactly the cards of General, in their order.
+    expect(box.querySelector('[data-testid="settings-area-general"] p')!.textContent).toBe('Grenzen, Funktionen für alle Konten, Schnittstellen, andere nex-Apps, Web Push und eigene Sprachen.')
     expect(box.querySelector('[data-testid="settings-about"], [data-part="settings-about"] a')!.textContent).toContain('Über nexpaper')
     // The cards of General in the plan's order, under the plan's names (Bauplan Allgemein, E48: `features`, `web-push`);
     // the operator's card of the other nex apps (verbinden 0.1.1, V14) after the interfaces.
     expect([...box.querySelectorAll('[data-testid="settings-area-general"] section[data-card]')].map((card) => card.getAttribute('data-card'))).toEqual(
+      ['limits', 'features', 'interfaces', 'nex-apps', 'web-push', 'languages'],
+    )
+    expect(GENERAL_PARTS.map((part) => part.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`))).toEqual(
       ['limits', 'features', 'interfaces', 'nex-apps', 'web-push', 'languages'],
     )
     act(() => root.unmount())

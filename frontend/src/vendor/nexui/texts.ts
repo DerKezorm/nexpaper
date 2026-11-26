@@ -78,6 +78,16 @@ const DE = {
   notifyDevices: 'iPhone und iPad',
   notifyDevicesHint: 'Mitteilungen aufs iPhone und iPad kommen über die App; verbunden wird sie unter „Verbindungen“.',
   notifyToConnections: 'Zu den Verbindungen',
+  // Since 1.1.3 (U-3): the parts of Server › General an app has, for its line (`areaText` with `parts`).
+  generalParts: {
+    limits: 'Grenzen',
+    features: 'Funktionen für alle Konten',
+    interfaces: 'Schnittstellen',
+    nexApps: 'andere nex-Apps',
+    webPush: 'Web Push',
+    languages: 'eigene Sprachen',
+  },
+  and: ' und ',
   areas: {
     'profile': { title: 'Profil', text: 'Bild, Name, Mailadresse, Sprache und Rolle deines Kontos.' },
     'security': { title: 'Sicherheit', text: 'Passwort, zweiter Faktor, Passkeys, Anmeldeanbieter und wo du angemeldet bist.' },
@@ -161,6 +171,16 @@ const EN: NexuiTexts = {
   notifyDevices: 'iPhone and iPad',
   notifyDevicesHint: 'Notifications on iPhone and iPad come through the app; it is connected under “Connections”.',
   notifyToConnections: 'To connections',
+  // Since 1.1.3 (U-3): the parts of Server › General an app has, for its line (`areaText` with `parts`).
+  generalParts: {
+    limits: 'limits',
+    features: 'features for every account',
+    interfaces: 'interfaces',
+    nexApps: 'other nex apps',
+    webPush: 'Web Push',
+    languages: 'added languages',
+  },
+  and: ' and ',
   areas: {
     'profile': { title: 'Profile', text: 'Picture, name, email address, language and role of your account.' },
     'security': { title: 'Security', text: 'Password, second factor, passkeys, sign-in providers and where you are signed in.' },
@@ -242,6 +262,16 @@ const FR: NexuiTexts = {
   notifyDevices: 'iPhone et iPad',
   notifyDevicesHint: 'Les notifications sur iPhone et iPad passent par l’app ; elle se connecte sous « Connexions ».',
   notifyToConnections: 'Vers les connexions',
+  // Since 1.1.3 (U-3): the parts of Server › General an app has, for its line (`areaText` with `parts`).
+  generalParts: {
+    limits: 'limites',
+    features: 'fonctions pour tous les comptes',
+    interfaces: 'interfaces',
+    nexApps: 'autres apps nex',
+    webPush: 'Web Push',
+    languages: 'langues ajoutées',
+  },
+  and: ' et ',
   areas: {
     'profile': { title: 'Profil', text: 'Photo, nom, adresse e-mail, langue et rôle de ton compte.' },
     'security': { title: 'Sécurité', text: 'Mot de passe, second facteur, clés d’accès, fournisseurs de connexion et où tu es connecté.' },
@@ -290,13 +320,22 @@ export function fill(text: string, values: Record<string, string | number>): str
 export type SharedAreaSlug = keyof NexuiTexts['areas']
 
 /** Title and line of a shared area, filled with the app's name and word for its things; null for an app's own area. */
+/** Since 1.1.3 (U-3): the cards of Server › General an app may have, in their order. */
+export type GeneralPart = keyof NexuiTexts['generalParts']
+
 export function areaText(
   texts: NexuiTexts,
   slug: string,
-  values: { app: string; things?: string; thingsDative?: string },
+  values: { app: string; things?: string; thingsDative?: string; parts?: readonly GeneralPart[] },
 ): { title: string; text: string } | null {
   const area = (texts.areas as Record<string, { title: string; text: string } | undefined>)[slug]
   if (!area) return null
+  if (slug === 'general' && values.parts && values.parts.length > 0) {
+    // U-3: the line names only the cards the app has, in their order ("Schnittstellen und eigene Sprachen.").
+    const said = values.parts.map((part) => texts.generalParts[part])
+    const joined = said.length === 1 ? said[0]! : `${said.slice(0, -1).join(', ')}${texts.and}${said.at(-1)}`
+    return { title: area.title, text: `${joined.charAt(0).toUpperCase()}${joined.slice(1)}.` }
+  }
   // Since E34 two forms: `things` ("Deine Kalender") and `thingsDative` ("mit deinen Kalendern"); without the second
   // the first stands in.
   const filled = { app: values.app, things: values.things ?? '', thingsDative: values.thingsDative ?? values.things ?? '' }

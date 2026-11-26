@@ -13,7 +13,7 @@ import { Avatar } from '../components/Avatar'
 import { APP_NAME } from '../i18n'
 import { useAuth } from '../state/auth'
 import { areaText, languageOf, NEXUI_TEXTS, NexuiLanguage, SettingsLayout, SettingsNav, SettingsPage as Area, type SettingsGroup } from '../vendor/nexui'
-import { ABOUT_AREA, areaPath, areasFor, findArea, formerAddress, GROUPS, resolveArea, type Area as AreaInfo } from './settings/areas'
+import { ABOUT_AREA, areaPath, areasFor, findArea, formerAddress, GENERAL_PARTS, GROUPS, resolveArea, type Area as AreaInfo } from './settings/areas'
 import { AreaContent } from './settings/SettingsAreas'
 
 export function SettingsPage() {
@@ -28,7 +28,7 @@ export function SettingsPage() {
   if (!area) return null
   const things = t('settings.things')
   const thingsDative = t('settings.thingsDative')
-  const shared = (info: AreaInfo) => areaText(NEXUI_TEXTS[languageOf(i18n.language)], info.slug, { app: APP_NAME, things, thingsDative })
+  const shared = (info: AreaInfo) => areaText(NEXUI_TEXTS[languageOf(i18n.language)], info.slug, { app: APP_NAME, things, thingsDative, parts: GENERAL_PARTS })
   const words = (info: AreaInfo) => {
     if (info.own) return { title: t(`settings.areas.${info.key}.title`), text: t(`settings.areas.${info.key}.text`) }
     const kit = shared(info) ?? { title: info.slug, text: '' }
@@ -63,7 +63,7 @@ export function SettingsPage() {
             />
           }
         >
-          <Area slug={area.slug} app={APP_NAME} things={things} thingsDative={thingsDative} title={own?.title} subtitle={own?.text}>
+          <Area slug={area.slug} app={APP_NAME} things={things} thingsDative={thingsDative} parts={GENERAL_PARTS} title={own?.title} subtitle={own?.text}>
             <AreaContent key={area.slug} area={area.slug} />
           </Area>
         </SettingsLayout>

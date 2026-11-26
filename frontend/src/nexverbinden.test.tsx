@@ -1,4 +1,4 @@
-// Vorlage nexverbinden 0.1.5
+// Vorlage nexverbinden 0.1.6
 // @vitest-environment jsdom
 /**
  * The parts of the module in the app: the card of a partner app in each state, the cards of all partners, the consent
@@ -283,6 +283,23 @@ describe('the card of a partner app', () => {
     const choice = [{ id: 1, name: 'Work' }]
     await show(<ConnectionCard key="areas" app={APP} view={view({ state: 'none', account: null, areas_choice: choice, grants: ['some.read'], grants_levels: { 'some.read': 'read' } })} request={request} areaWord="Address books" language="en" defaultOpen />, 'en')
     expect(byTest('connection-all-areas')?.parentElement?.textContent).toContain('All address books, including later ones')
+  })
+
+  it('at 420 px keeps the partner\'s name whole and puts state and address under it as one (V-15)', async () => {
+    await show(
+      <div style={{ width: '420px' }}>
+        <ConnectionCard app={APP} view={view({ state: 'unreachable', stale_since: '2026-11-26T14:05:00+00:00', host: 'a-very-long-host-name.example.com' })} request={request} />
+      </div>,
+    )
+    const main = box.querySelector<HTMLElement>('[data-part="collapsible-main"]')!
+    expect(main.className.split(' ')).toContain('flex-wrap')
+    const title = main.querySelector<HTMLElement>('[data-part="collapsible-title"]')!
+    expect(title.textContent).toContain(PARTNER)
+    expect(title.className.split(' ')).toEqual(expect.arrayContaining(['min-w-[min(100%,10rem)]', 'basis-40']))
+    const summary = main.querySelector<HTMLElement>('[data-testid="connection-summary"]')!
+    expect(summary.className.split(' ')).toEqual(expect.arrayContaining(['min-w-0', 'max-w-full']))
+    expect(byTest('connection-state')!.parentElement!.className.split(' ')).toContain('shrink-0')
+    expect(Array.from(summary.querySelectorAll('span')).some((part) => part.className.includes('truncate'))).toBe(true)
   })
 
   it('speaks English and French', async () => {

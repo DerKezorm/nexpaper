@@ -1,4 +1,4 @@
-// Vorlage nexmcp 1.1.3
+// Vorlage nexmcp 1.1.4
 // @vitest-environment jsdom
 /**
  * The parts of the module in the app: "Rechte je Werkzeug", "Wartende Rückfragen", the page of one request, the row in
@@ -317,6 +317,18 @@ describe('Wartende Rückfragen', () => {
     await settle()
     expect(posts()).toEqual([{ path: `${BASE}/requests/1/approve`, method: 'POST', body: undefined }])
     expect(all('[data-testid="pending-request"]')).toHaveLength(1)
+  })
+
+  it('at 420 px puts the buttons under the text, not beside it (M-20)', async () => {
+    show(<div style={{ width: '420px' }}><PendingRequests request={request} base={BASE} words={WORDS} /></div>)
+    await settle()
+    const place = find('[data-part="pending-requests-place"]')!
+    expect(place.className.split(' ')).toContain('@container')
+    expect(place.contains(find('[data-testid="pending-requests-list"]'))).toBe(true)
+    for (const buttons of all('[data-testid="pending-request"] [data-part="request-buttons"]')) {
+      expect(buttons.className.split(' ')).toEqual(expect.arrayContaining(['basis-full', 'justify-end', '@min-[36rem]:basis-auto']))
+    }
+    expect(all('[data-testid="pending-request"] [data-part="request-buttons"]')).toHaveLength(2)
   })
 
   it('declines, and says when nothing waits', async () => {
