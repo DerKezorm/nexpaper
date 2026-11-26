@@ -136,6 +136,10 @@ Passwortfrage; der Schnappschuss hat das Muster wieder, die Wege `/api/v1/backup
 `konten`. Neuer Vertragstest fürs Anlegen grün. Endlauf `reihe.sh nexpaper ende7` (Stand `192f627`): ruff sauber; pytest
 3899 grün, 5 übersprungen, 0 rot; lint sauber; vitest 1222 grün in 109 Dateien; build grün; Playwright 2 von 2 grün.
 
+**ui f4ab8ba (E56, `Table` `rowProps` nur `data-…`):** nur kopiert, nexpaper übergibt dort nichts anderes. Endlauf
+`reihe.sh nexpaper ende8` (Stand `549b40d`): ruff sauber; pytest 3899 grün, 5 übersprungen, 0 rot; lint sauber; vitest 1223
+grün in 109 Dateien; build grün; Playwright 2 von 2 grün.
+
 **Endlauf (26.11.2026, `reihe.sh nexpaper ende4`, Stand `29ba6c2`, nach Passkeys E49, Grenzen-Satz E46, Bestand E51,
 sprachen):** ruff sauber; pytest 3879 grün, 5 übersprungen, 1 rot: `test_routes.py::test_the_description_of_the_interface_is_the_snapshot`
 (OpenAPI-Schnappschuss, die alten Wege `/api/v1/locales…` tragen über das Modul andere `operationId` und den Schemanamen
