@@ -60,6 +60,8 @@
       "restoreFailedSeen": "Got it",
       "now": "Back up now",
       "made": "Backup created.",
+      "note": "Note",
+      "noteHint": "Optional, at most 200 characters. It is shown with the backup in the list.",
       "upload": "Upload a backup",
       "uploadedHint": "Uploaded. It is in the list now: check it first, then restore.",
       "list": "Backups",
@@ -113,6 +115,10 @@
           "title": "Upload a backup?",
           "text": "The file joins the list of backups. Nothing is restored until you confirm it there.",
           "button": "Upload"
+        },
+        "make": {
+          "title": "Back up now",
+          "button": "Back up"
         },
         "check": {
           "title": "Check an encrypted backup",

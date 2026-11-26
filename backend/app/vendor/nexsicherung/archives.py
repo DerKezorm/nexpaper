@@ -169,7 +169,8 @@ def _write_failed(exc: BaseException) -> BackupError:
 
 def create(*, kind: str = MANUAL, note: str = "", wait: bool = True) -> Path:
     """A new archive, written by the app's ``pack``. Returns its path. ``wait`` False: refuse with ``backup_running``
-    while another copy is made (a click on "Jetzt sichern"); True: wait for it (a copy before an update)."""
+    while another copy is made (a click on "Jetzt sichern"); True: wait for it (a copy before an update).
+    ``note`` is kept without the blanks around it, at most 200 characters; blanks alone are no note (E63)."""
     if kind not in KINDS:
         raise ValueError(f"unknown kind {kind}")
     config = current()
@@ -183,7 +184,7 @@ def create(*, kind: str = MANUAL, note: str = "", wait: bool = True) -> Path:
         work = base / f".{stem}-{os.getpid()}-{time.time_ns()}.zip.part"
         try:
             tools.new_file(work)
-            config.hooks.pack(work, kind=kind, note=note[:200], created=moment.isoformat(timespec="seconds"))
+            config.hooks.pack(work, kind=kind, note=note.strip()[:200], created=moment.isoformat(timespec="seconds"))
             final = tools.settle(work, base, stem, ".zip")
         except BackupError:
             raise

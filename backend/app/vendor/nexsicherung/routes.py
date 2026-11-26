@@ -13,7 +13,7 @@ Module's ways under ``prefix`` (default ``/api/server/storage``):
 GET      ``{prefix}``                               the card "Speicher" (``space.overview``)
 GET      ``{prefix}/backups``                       the card "Sicherung": schedule, last, failure, the list
 PUT      ``{prefix}/backups/schedule``              ``{every, time, keep}``
-POST     ``{prefix}/backups``                       "Jetzt sichern" ``{note}`` → 201 ``{name, entry}``, 409 if running
+POST     ``{prefix}/backups``                       "Jetzt sichern" ``{note?}`` → 201 ``{name, entry}``, 409 if running
 POST     ``{prefix}/backups/upload``                the ZIP as body, password in the header (base64 of UTF-8) → 201
 POST     ``{prefix}/backups/{name}/check``          ``{archive_password?}`` → the brief
 POST     ``{prefix}/backups/{name}/download``       ``{password, archive_password?}`` → the file
@@ -21,6 +21,9 @@ POST     ``{prefix}/backups/{name}/restore``        ``{password, archive_passwor
 DELETE   ``{prefix}/backups/{name}``                ``{password}`` → 204
 DELETE   ``{prefix}/backups/restore-failed``        the page saw the failed restore → 204
 =======  =========================================  =============================================================
+
+The note of "Jetzt sichern" is optional (no body as before), at most 200 characters (422 above), blanks alone are no
+note (E63).
 
 Names in the description of the interface (E53, ``/openapi.json``): both routers take ``operation_ids`` and
 ``summaries`` (by the name of a route, ``ROUTES`` and ``LEGACY_ROUTES``) and ``schema_names`` (by the module's name of

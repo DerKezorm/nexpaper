@@ -85,7 +85,7 @@ function fakeApi(): SicherungApi & { calls: string[] } {
     overview: vi.fn(async () => OVERVIEW),
     backups: vi.fn(async () => BACKUPS),
     saveSchedule: vi.fn(async (schedule) => (note(`schedule ${schedule.every} ${schedule.time} ${schedule.keep}`), schedule)),
-    make: vi.fn(async () => (note('make'), { name: 'x' })),
+    make: vi.fn(async (text) => (note(`make ${text ?? '-'}`), { name: 'x' })),
     upload: vi.fn(async (_file, password) => (note(`upload ${password}`), { name: 'y' })),
     check: vi.fn(async (name, archivePassword) => (note(`check ${name} ${archivePassword ?? '-'}`), brief())),
     download: vi.fn(async (name, password, archivePassword) => (note(`download ${name} ${password} ${archivePassword ?? '-'}`), new Blob(['zip']))),
@@ -172,7 +172,8 @@ describe('the area "Speicher und Sicherung"', () => {
     ])
     expect(row.textContent).toContain('12 Notizen')
     await act(async () => fireEvent.click(now))
-    expect(api.calls).toContain('make')
+    await act(async () => fireEvent.click(getByRole(getByRole(document.body, 'dialog', { name: 'Jetzt sichern' }), 'button', { name: 'Sichern' })))
+    expect(api.calls).toContain('make ')
   })
 
   it('writes every time of the card through the app\'s when (since E34), and as before without it', async () => {
@@ -494,5 +495,75 @@ describe('a time inside a sentence (E62)', () => {
         expect(root.querySelector('[data-testid="backup-brief"]')?.textContent).toContain(said.brief(at))
       })
     }
+  }
+})
+
+describe('"Jetzt sichern" asks for a note (E63)', () => {
+  const dialogOf = () => getByRole(document.body, 'dialog', { name: 'Jetzt sichern' })
+
+  it('opens a small window with the optional field "Notiz" (at most 200), Abbrechen and Sichern, and no password', async () => {
+    const api = fakeApi()
+    const root = await area(api)
+    await act(async () => fireEvent.click(root.querySelector('[data-testid="backup-now"]') as HTMLElement))
+    expect(api.calls).toEqual([])
+    const dialog = dialogOf()
+    const field = getByLabelText(dialog, 'Notiz') as HTMLInputElement
+    expect([field.maxLength, field.value, field.type]).toEqual([200, '', 'text'])
+    expect(dialog.textContent).toContain('Freiwillig, höchstens 200 Zeichen.')
+    expect(dialog.querySelector('input[type="password"]')).toBeNull()
+    const make = getByRole(dialog, 'button', { name: 'Sichern' }) as HTMLButtonElement
+    expect([make.dataset.kind, make.dataset.icon, make.disabled]).toEqual(['primary', 'Archive', false])
+    await act(async () => fireEvent.click(getByRole(dialog, 'button', { name: 'Abbrechen' })))
+    expect(queryByRole(document.body, 'dialog')).toBeNull()
+    expect(api.calls).toEqual([])
+  })
+
+  it('sends the note without the blanks around it, none for blanks alone, then says so and loads the list again', async () => {
+    const api = fakeApi()
+    const root = await area(api)
+    const loads = (api.backups as ReturnType<typeof vi.fn>).mock.calls.length
+    await act(async () => fireEvent.click(root.querySelector('[data-testid="backup-now"]') as HTMLElement))
+    fireEvent.change(getByLabelText(dialogOf(), 'Notiz'), { target: { value: '  vor dem Umzug  ' } })
+    await act(async () => fireEvent.click(getByRole(dialogOf(), 'button', { name: 'Sichern' })))
+    expect(api.calls).toEqual(['make vor dem Umzug'])
+    expect(queryByRole(document.body, 'dialog')).toBeNull()
+    expect(root.textContent).toContain('Sicherung erstellt.')
+    expect((api.backups as ReturnType<typeof vi.fn>).mock.calls.length).toBeGreaterThan(loads)
+    await act(async () => fireEvent.click(root.querySelector('[data-testid="backup-now"]') as HTMLElement))
+    expect((getByLabelText(dialogOf(), 'Notiz') as HTMLInputElement).value).toBe('')
+    fireEvent.change(getByLabelText(dialogOf(), 'Notiz'), { target: { value: '   ' } })
+    await act(async () => fireEvent.click(getByRole(dialogOf(), 'button', { name: 'Sichern' })))
+    expect(api.calls).toEqual(['make vor dem Umzug', 'make '])
+  })
+
+  it('keeps the window with the reason when the server refuses, and the list shows each note', async () => {
+    const api = fakeApi()
+    api.make = vi.fn(async () => {
+      throw Object.assign(new Error('busy'), { code: 'backup_running', status: 409 })
+    })
+    api.backups = vi.fn(async () => ({ ...BACKUPS, backups: [entry('nexnotes-2026-11-25-030000.zip', { kind: 'manual', note: 'vor dem Umzug' })] }))
+    const root = await area(api)
+    const row = root.querySelector('[data-testid="backup-nexnotes-2026-11-25-030000.zip"]') as HTMLElement
+    expect(row.textContent).toContain('vor dem Umzug')
+    await act(async () => fireEvent.click(root.querySelector('[data-testid="backup-now"]') as HTMLElement))
+    await act(async () => fireEvent.click(getByRole(dialogOf(), 'button', { name: 'Sichern' })))
+    expect(dialogOf().textContent).toContain(SICHERUNG_TEXTS.de.error.backup_running)
+  })
+
+  for (const [language, title, label, button, cancel] of [
+    ['en', 'Back up now', 'Note', 'Back up', 'Cancel'],
+    ['fr', 'Sauvegarder maintenant', 'Note', 'Sauvegarder', 'Annuler'],
+  ] as const) {
+    it(`speaks ${language}`, async () => {
+      const api = fakeApi()
+      const root = await show(<StorageArea app="nexnotes" things="notes" holds="h" api={api} password language={language} />, language)
+      await waitFor(() => expect(root.querySelector('[data-testid="backup-now"]')).not.toBeNull())
+      await act(async () => fireEvent.click(root.querySelector('[data-testid="backup-now"]') as HTMLElement))
+      const dialog = getByRole(document.body, 'dialog', { name: title })
+      expect((getByLabelText(dialog, label) as HTMLInputElement).maxLength).toBe(200)
+      getByRole(dialog, 'button', { name: cancel })
+      await act(async () => fireEvent.click(getByRole(dialog, 'button', { name: button })))
+      expect(api.calls).toEqual(['make '])
+    })
   }
 })

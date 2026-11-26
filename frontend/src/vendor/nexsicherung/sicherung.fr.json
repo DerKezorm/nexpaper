@@ -61,6 +61,8 @@
       "restoreFailedSeen": "Compris",
       "now": "Sauvegarder maintenant",
       "made": "Sauvegarde créée.",
+      "note": "Note",
+      "noteHint": "Facultative, 200 caractères au plus. Elle figure dans la liste à côté de la sauvegarde.",
       "upload": "Téléverser une sauvegarde",
       "uploadedHint": "Téléversée. Elle est maintenant dans la liste : d’abord vérifier, puis restaurer.",
       "list": "Sauvegardes",
@@ -118,6 +120,10 @@
           "title": "Téléverser une sauvegarde ?",
           "text": "Le fichier rejoint la liste des sauvegardes. Rien n’est restauré avant que vous le confirmiez là.",
           "button": "Téléverser"
+        },
+        "make": {
+          "title": "Sauvegarder maintenant",
+          "button": "Sauvegarder"
         },
         "check": {
           "title": "Vérifier une sauvegarde chiffrée",

@@ -60,6 +60,8 @@
       "restoreFailedSeen": "Verstanden",
       "now": "Jetzt sichern",
       "made": "Sicherung erstellt.",
+      "note": "Notiz",
+      "noteHint": "Freiwillig, höchstens 200 Zeichen. Sie steht in der Liste bei der Sicherung.",
       "upload": "Sicherung hochladen",
       "uploadedHint": "Hochgeladen. Sie steht jetzt in der Liste: erst prüfen, dann wiederherstellen.",
       "list": "Sicherungen",
@@ -113,6 +115,10 @@
           "title": "Sicherung hochladen?",
           "text": "Die Datei kommt in die Liste der Sicherungen. Wiederhergestellt wird erst, wenn du es dort bestätigst.",
           "button": "Hochladen"
+        },
+        "make": {
+          "title": "Jetzt sichern",
+          "button": "Sichern"
         },
         "check": {
           "title": "Verschlüsselte Sicherung prüfen",

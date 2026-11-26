@@ -151,6 +151,10 @@ type Asking =
   | { kind: 'restore' | 'download' | 'delete'; entry: Entry; brief?: Brief }
   | { kind: 'upload'; file: File }
   | { kind: 'check'; entry: Entry }
+  | { kind: 'make' }
+
+/** The longest note of a backup (the module's routes refuse more, E63). */
+const NOTE_LENGTH = 200
 
 /** Card "Sicherung": the schedule, the last one, failures, "Jetzt sichern", "Sicherung hochladen", the list. */
 export function BackupCard({ app, holds, api, password, facts, details, onRestarting, language, when = defaultWhen, blockedText, restoreOptions }: StorageAreaProps) {
@@ -166,6 +170,7 @@ export function BackupCard({ app, holds, api, password, facts, details, onRestar
   const [archiveTyped, setArchiveTyped] = useState('')
   const [answers, setAnswers] = useState<RestoreAnswers>(() => initialAnswers(restoreOptions))
   const [againTyped, setAgainTyped] = useState('')
+  const [note, setNote] = useState('')
   const [dialogProblem, setDialogProblem] = useState<string | null>(null)
   const [problem, setProblem] = useState<string | null>(null)
   const [done, setDone] = useState<string | null>(null)
@@ -214,6 +219,7 @@ export function BackupCard({ app, holds, api, password, facts, details, onRestar
     setTyped('')
     setArchiveTyped('')
     setAgainTyped('')
+    setNote('')
     setAnswers(initialAnswers(restoreOptions))
     setDialogProblem(null)
     setAsking(next)
@@ -230,7 +236,12 @@ export function BackupCard({ app, holds, api, password, facts, details, onRestar
     setDialogProblem(null)
     const archive = archiveTyped || undefined
     try {
-      if (asking.kind === 'check') {
+      if (asking.kind === 'make') {
+        // "Jetzt sichern" with the note of the window (E63); blanks alone are no note.
+        await api.make(note.trim())
+        setDone(t.made)
+        load()
+      } else if (asking.kind === 'check') {
         setBrief(await api.check(asking.entry.name, archive))
       } else if (asking.kind === 'download') {
         const blob = await api.download(asking.entry.name, typed, state.download_password ? archiveTyped : undefined)
@@ -267,17 +278,17 @@ export function BackupCard({ app, holds, api, password, facts, details, onRestar
 
   const confirmOf = (kind: Asking['kind']): Confirm => {
     const words = t.confirm[kind]
-    const icon = { restore: 'RotateCcw', download: 'Download', delete: 'Trash2', upload: 'Upload', check: 'ShieldCheck' }[kind] as Confirm['icon']
+    const icon = { restore: 'RotateCcw', download: 'Download', delete: 'Trash2', upload: 'Upload', check: 'ShieldCheck', make: 'Archive' }[kind] as Confirm['icon']
     // What removes or replaces something is danger (plan: kinds of buttons); fetching, bringing in, checking primary.
     return { label: words.button, kind: kind === 'delete' || kind === 'restore' ? 'danger' : 'primary', icon }
   }
   const askText = (kind: Asking['kind']) => {
     if (kind === 'restore') return fill(state.restore === 'now' ? t.confirm.restore.textNow : t.confirm.restore.text, { app })
-    if (kind === 'check') return undefined
+    if (kind === 'check' || kind === 'make') return undefined
     return fill(t.confirm[kind].text, { app })
   }
-  const needsArchivePassword = asking !== null && asking.kind !== 'upload' && asking.entry.locked && (asking.kind === 'restore' || asking.kind === 'check')
-  const needsPassword = password && asking !== null && asking.kind !== 'check'
+  const needsArchivePassword = asking !== null && (asking.kind === 'restore' || asking.kind === 'check') && asking.entry.locked
+  const needsPassword = password && asking !== null && asking.kind !== 'check' && asking.kind !== 'make'
   // nexmail: a download is encrypted with a password of its own, at least 8 characters, typed twice.
   const needsFilePassword = asking !== null && asking.kind === 'download' && state.download_password
   const filePasswordOk = archiveTyped.length >= 8 && archiveTyped === againTyped
@@ -343,7 +354,7 @@ export function BackupCard({ app, holds, api, password, facts, details, onRestar
         </Notice>
       )}
       <div className="flex flex-wrap gap-2">
-        <Button kind="primary" icon="Archive" busy={busy === 'make' || state.running} onClick={() => void run('make', async () => { await api.make(); load() }, t.made)} testId="backup-now">
+        <Button kind="primary" icon="Archive" busy={state.running} onClick={() => open({ kind: 'make' })} testId="backup-now">
           {t.now}
         </Button>
         <Button kind="secondary" icon="Upload" accept=".zip,application/zip" onFile={(file) => open({ kind: 'upload', file })} testId="backup-upload">
@@ -422,6 +433,9 @@ export function BackupCard({ app, holds, api, password, facts, details, onRestar
           onConfirm={() => void confirmAsked()}
           testId={`backup-confirm-${asking.kind}`}
         >
+          {asking.kind === 'make' && (
+            <Field label={t.note} maxLength={NOTE_LENGTH} autoComplete="off" value={note} onChange={(event) => setNote(event.target.value)} hints={[t.noteHint]} data-testid="backup-note" />
+          )}
           {asking.kind === 'restore' && asking.brief && details && <div className="text-sm">{details(asking.brief)}</div>}
           {asking.kind === 'restore' &&
             (restoreOptions ?? []).map((question) =>
