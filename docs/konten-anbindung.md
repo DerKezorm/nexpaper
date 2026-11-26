@@ -180,6 +180,14 @@ abgelehnt, weil nexpapers Englisch vier Listen hat (Wochentage, Monate, Suchhilf
 `reihe.sh nexpaper ende11` (Stand `579cbe9`): ruff sauber; pytest 3928 grün, 5 übersprungen, 0 rot; lint sauber; vitest 1234
 grün in 109 Dateien; build grün; Playwright 2 von 2 grün.
 
+**E59 A5 und A6 (26.11.2026, `bauplaene-stand` 2a565f5 und 6e13836):** sprachen 1.0.2 macht die Vorlage selbst nur aus
+Texten (`textsOnly`); nexpapers eigenes `textsOnly` ist weg, `TEMPLATE` ist das Englisch mit den Modulwörtern, der Adapter
+bietet die Vorlage der Seite an (`offered_template`, `texts_only`), `test_locales.py` stützt sich auf das Modul. konten
+1.1.2: „Neues Passwort“ im Fenster „Passwort ändern“ (`fieldLabel('change', …)`) und auf der Seite eines Links
+(`fieldLabel('reset', …)`), Einrichtung und Einladung bleiben „Passwort“; neuer Vertragstest zur Anmeldung grün ohne
+Änderung am Store. Endlauf `reihe.sh nexpaper ende12` (Stand `a32d4aa`): ruff sauber; pytest 3931 grün, 5 übersprungen,
+0 rot; lint sauber; vitest 1239 grün in 109 Dateien; build grün; Playwright 2 von 2 grün.
+
 **Endlauf (26.11.2026, `reihe.sh nexpaper ende4`, Stand `29ba6c2`, nach Passkeys E49, Grenzen-Satz E46, Bestand E51,
 sprachen):** ruff sauber; pytest 3879 grün, 5 übersprungen, 1 rot: `test_routes.py::test_the_description_of_the_interface_is_the_snapshot`
 (OpenAPI-Schnappschuss, die alten Wege `/api/v1/locales…` tragen über das Modul andere `operationId` und den Schemanamen
