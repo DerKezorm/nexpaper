@@ -14,7 +14,7 @@ import { errorText } from '../../lib/errors'
 import { shortDate } from '../../lib/dates'
 import { useAuth } from '../../state/auth'
 import { AllKeysCard, ApiKeysCard, InterfacesCard, type AppWords, type KeyRequest } from '../../vendor/nexschluessel'
-import { Button, ConfirmDialog, CopyRow, Row, Rows } from '../../vendor/nexui'
+import { Button, ConfirmDialog, CopyRow, Row, Rows, TextLink } from '../../vendor/nexui'
 
 /** nexpaper's client for the cards (its headers, its errors with their codes). */
 // eslint-disable-next-line react-refresh/only-export-components
@@ -175,8 +175,17 @@ export function Interfaces() {
   )
 }
 
-/** Server › Accounts, place 4: "API-Schlüssel aller Konten". */
+/** Server › Accounts, place 4: "API-Schlüssel aller Konten", at its end the way to the own keys (as before the
+ * module: "Eigene API-Schlüssel anlegen" leads to My account › Connections; schluessel 1.0.2, Bauplan E58). */
 export function AllKeys() {
-  const { i18n } = useTranslation()
-  return <AllKeysCard request={keyRequest} base={KEYS_AT} words={useWords()} language={i18n.language} when={(iso, language) => shortDate(iso, language)} />
+  const { t, i18n } = useTranslation()
+  return (
+    <AllKeysCard request={keyRequest} base={KEYS_AT} words={useWords()} language={i18n.language} when={(iso, language) => shortDate(iso, language)}>
+      <p className="m-0">
+        <TextLink href="/settings/connections" testId="all-keys-own">
+          {t('apiKeys.ownKeys')}
+        </TextLink>
+      </p>
+    </AllKeysCard>
+  )
 }

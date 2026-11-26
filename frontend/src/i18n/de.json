@@ -713,7 +713,8 @@
     "enableText": "Danach kann jede Person auf diesem Server unter Mein Konto › Verbindungen API-Schlüssel anlegen. Ein Schlüssel lässt ein Programm entweder nur lesen oder nur hochladen, nie mehr, als das Konto darf, das ihn anlegt. Du kannst die Freigabe unter Server › Allgemein › Schnittstellen jederzeit wieder ausschalten; dann gehen auch vorhandene Schlüssel nicht mehr.",
     "tryIt": "Zum Ausprobieren",
     "lifetimeHint": "Ein Schlüssel, der nie abläuft, ist der, an den sich niemand mehr erinnert, wenn er in falsche Hände gerät. Ein Jahr reicht meist; die Liste zeigt eine Woche vorher, dass er abläuft.",
-    "lifetimeHintUpload": "Ein Schlüssel zum Hochladen kann nur Dokumente in deinen Eingang legen. Dein Archiv liest er nicht. Darum läuft er von sich aus nicht ab, und ein Kurzbefehl oder Scanner muss nicht nach einem Jahr neu eingerichtet werden. Du kannst ihn jederzeit widerrufen oder eine Dauer wählen."
+    "lifetimeHintUpload": "Ein Schlüssel zum Hochladen kann nur Dokumente in deinen Eingang legen. Dein Archiv liest er nicht. Darum läuft er von sich aus nicht ab, und ein Kurzbefehl oder Scanner muss nicht nach einem Jahr neu eingerichtet werden. Du kannst ihn jederzeit widerrufen oder eine Dauer wählen.",
+    "ownKeys": "Eigene API-Schlüssel anlegen"
   },
   "rights": {
     "read": {

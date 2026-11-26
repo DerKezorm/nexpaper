@@ -6,7 +6,7 @@
 import type { Me } from '../../api/client'
 import { changeLanguage } from '../../i18n'
 import { Page, Server } from '../../test/harness'
-import { ApiKeys, TryIt } from './KeysCards'
+import { AllKeys, ApiKeys, TryIt } from './KeysCards'
 
 const me = { id: 1, name: 'jule', display_name: 'Jule', role: 'member', sign_in: 'password', language: 'de', profile: { mode: 'system' } } as unknown as Me
 const auth = { status: 'signedIn', me: me as Me | null }
@@ -103,5 +103,19 @@ describe('nexpaper\'s parts in the card API-Schlüssel (Bauplan E57, schluessel 
     expect(row.value.endsWith(path)).toBe(true)
     expect(document.querySelector('[data-testid="key-try-it-part"]')!.textContent).toContain('Zum Ausprobieren')
     expect(row.getAttribute('aria-label')).toBe('Zum Ausprobieren')
+  })
+})
+
+describe('the card API-Schlüssel aller Konten', () => {
+  it('ends with the way to the own keys, under My account › Connections (schluessel 1.0.2, Bauplan E58)', async () => {
+    server.answers['GET /api/v1/connections/admin/keys'] = { keys: [] }
+    await page.show(<AllKeys />)
+    const card = document.querySelector('[data-card="all-api-keys"]')!
+    const link = card.querySelector<HTMLAnchorElement>('[data-testid="all-keys-own"]')!
+    expect([link.textContent, link.getAttribute('href')]).toEqual(['Eigene API-Schlüssel anlegen', '/settings/connections'])
+    await changeLanguage('en', false)
+    page.close()
+    await page.show(<AllKeys />)
+    expect(document.querySelector('[data-testid="all-keys-own"]')!.textContent).toBe('Make your own API keys')
   })
 })

@@ -713,7 +713,8 @@
     "enableText": "Ensuite, chaque personne sur ce serveur pourra créer des clés API sous Mon compte › Connexions. Une clé permet à un programme soit seulement de lire, soit seulement de téléverser, jamais plus que ce que peut le compte qui l'a créée. Vous pouvez désactiver cela de nouveau à tout moment sous Serveur › Général › Interfaces ; les clés existantes cessent alors aussi de fonctionner.",
     "tryIt": "Pour l'essayer",
     "lifetimeHint": "Une clé qui n'expire jamais est celle dont personne ne se souvient quand elle tombe entre de mauvaises mains. Un an suffit généralement ; la liste indique une semaine à l'avance qu'elle expire.",
-    "lifetimeHintUpload": "Une clé de téléversement ne peut que déposer des documents dans votre boîte de réception. Elle ne lit pas vos archives. Elle n'expire donc pas d'elle-même, et un raccourci ou un numériseur n'a pas à être reconfiguré au bout d'un an. Vous pouvez la révoquer à tout moment, ou choisir une durée."
+    "lifetimeHintUpload": "Une clé de téléversement ne peut que déposer des documents dans votre boîte de réception. Elle ne lit pas vos archives. Elle n'expire donc pas d'elle-même, et un raccourci ou un numériseur n'a pas à être reconfiguré au bout d'un an. Vous pouvez la révoquer à tout moment, ou choisir une durée.",
+    "ownKeys": "Créer vos propres clés API"
   },
   "rights": {
     "read": {

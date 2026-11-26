@@ -1,4 +1,4 @@
-// Vorlage nexschluessel 1.0.1
+// Vorlage nexschluessel 1.0.2
 // @vitest-environment jsdom
 /**
  * The cards of the module in the app: "API-Schlüssel", "KI-Werkzeuge (MCP)", "Schnittstellen" and "API-Schlüssel aller
@@ -405,6 +405,20 @@ describe('the card API-Schlüssel aller Konten', () => {
     expect(rows.map((row) => row.textContent?.includes('3'))).toEqual([true, false])
     click(button('all-keys-block')!)
     expect(find('[data-testid="all-keys-block-dialog"]')!.textContent).toContain('„Key 1“ von Anna sperren?')
+  })
+
+  it('has a place for the app at the end of the card, after the table (E58)', async () => {
+    show(
+      <AllKeysCard request={request} base={BASE}>
+        <a href="/settings/connections" data-testid="app-own-keys">Eigene API-Schlüssel anlegen</a>
+      </AllKeysCard>,
+    )
+    await settle()
+    const card = find('[data-card="all-api-keys"]')!
+    const own = card.querySelector('[data-testid="app-own-keys"]')!
+    expect(own.textContent).toBe('Eigene API-Schlüssel anlegen')
+    const table = card.querySelector('[data-testid="all-keys-table"]')!
+    expect(table.compareDocumentPosition(own) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   })
 
   it('shows no start of a key even when a server still sends one', async () => {

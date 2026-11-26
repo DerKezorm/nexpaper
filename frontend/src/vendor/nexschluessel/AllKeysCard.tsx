@@ -34,10 +34,12 @@ export type AllKeysCardProps = {
   when?: WhenFormat
   /** Since E36: the app's own columns, before the button; each shows `row.extra[key]` unless it has its own `cell`. */
   extra?: readonly AdminExtraColumn[]
+  /** Since 1.0.2 (E58): the app's own parts at the end of the card (nexpaper: the link to make keys of one's own). */
+  children?: ReactNode
   testId?: string
 }
 
-export function AllKeysCard({ request, base = KEYS_BASE, words, language, when = defaultWhen, extra = [], testId = 'all-keys-card' }: AllKeysCardProps) {
+export function AllKeysCard({ request, base = KEYS_BASE, words, language, when = defaultWhen, extra = [], children, testId = 'all-keys-card' }: AllKeysCardProps) {
   const { texts, code } = useKeyTexts(language)
   const kit = useNexuiTexts()
   const [rows, setRows] = useState<AdminKey[] | null>(null)
@@ -127,6 +129,7 @@ export function AllKeysCard({ request, base = KEYS_BASE, words, language, when =
           testId="all-keys-table"
         />
       )}
+      {children}
       {asking && (
         <ConfirmDialog
           title={fillKeys(texts.allKeys.askBlock, { name: asking.name ?? texts.allKeys.hidden, account: asking.account.display_name || asking.account.name })}
