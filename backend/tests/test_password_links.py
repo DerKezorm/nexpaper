@@ -176,6 +176,13 @@ def test_a_deleted_account_has_no_valid_link_and_a_link_asked_for_ends_with_the_
     client.request("DELETE", f"/api/v1/accounts/{bert.id}", json={"confirm_name": "bert", "current_password": PASSWORD})
     assert stranger().get(f"/api/v1/reset/{two}").status_code == 404
     assert stored_rows() == [] or all(row.account_id != bert.id for row in stored_rows()), "gone with the account"
+    # konten 1.1.0: the deletion let every open link lapse, the operator's too; bringing the account back within its
+    # 30 days brings none of them back, a new link works as ever.
+    assert client.post(f"/api/v1/accounts/{bert.id}/restore", json={"current_password": PASSWORD}).status_code == 200
+    assert stranger().get(f"/api/v1/reset/{two}").status_code == 404
+    fresh = token_of(client.post(f"/api/v1/accounts/{bert.id}/reset-link",
+                                 json={"current_password": PASSWORD}).json()["link"])
+    assert stranger().get(f"/api/v1/reset/{fresh}").status_code == 200
 
 
 def test_two_requests_with_one_link_at_the_same_moment_set_it_once(
