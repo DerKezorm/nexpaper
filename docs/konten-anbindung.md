@@ -130,6 +130,12 @@ die alten Sicherungswege tragen wieder ihre operationIds, Zusammenfassungen und 
 Endlauf `reihe.sh nexpaper ende6` (Stand `b61acc3`): ruff sauber; pytest 3892 grün, 5 übersprungen, 0 rot; lint sauber;
 vitest 1222 grün in 109 Dateien; build grün; Playwright 2 von 2 grün.
 
+**E53 Schritte 9 und 10 (26.11.2026, `bauplaene-stand` 6edff85):** Die alten Sicherungswege prüfen `{name}` wieder mit
+Muster und Länge 64 wie auf `konten` (über `former_names`, Adapter `name_pattern`), falsche Namen 404/422 vor der
+Passwortfrage; der Schnappschuss hat das Muster wieder, die Wege `/api/v1/backups…` sind in Parametern gleich wie auf
+`konten`. Neuer Vertragstest fürs Anlegen grün. Endlauf `reihe.sh nexpaper ende7` (Stand `192f627`): ruff sauber; pytest
+3899 grün, 5 übersprungen, 0 rot; lint sauber; vitest 1222 grün in 109 Dateien; build grün; Playwright 2 von 2 grün.
+
 **Endlauf (26.11.2026, `reihe.sh nexpaper ende4`, Stand `29ba6c2`, nach Passkeys E49, Grenzen-Satz E46, Bestand E51,
 sprachen):** ruff sauber; pytest 3879 grün, 5 übersprungen, 1 rot: `test_routes.py::test_the_description_of_the_interface_is_the_snapshot`
 (OpenAPI-Schnappschuss, die alten Wege `/api/v1/locales…` tragen über das Modul andere `operationId` und den Schemanamen
