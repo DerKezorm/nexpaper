@@ -112,6 +112,15 @@ Profil `useLanguageOptions`. Die Anmeldeseite hat keine Sprachwahl (Frage S3).
   Mail; `tests/nexsprachen` 63 grün; vitest 1222 grün in 109 Dateien; `npm run lint` sauber; `npm run build` grün;
   Playwright `npm run e2e` 2 von 2 grün. Neue Tests je gegen eine Mutation rot (Rückgabecode 1).
 
+**sprachen Schritte 9 bis 11 und E52 (26.11.2026, `bauplaene-stand` 68fd070):** Die Wege `/api/v1/locales…` behalten in
+`/api/v1/openapi.json` ihre operationIds, Zusammenfassungen und das Schema `LocaleEntry` (`routers/locales.py`
+`OPERATION_IDS`, `SUMMARIES`, `SCHEMA_NAMES`, dasselbe im Adapter); der Schnappschuss gewinnt gegen `konten` nur
+`built_in`, `own` und `GET /template`. Beim Start direkt nach `configure` `tidy_at_start` (`locales.start`), Adapter
+`restart`. Profilsprache (E52): nimmt genau, was 1.12.0 nahm (eingebaut oder hinzugefügte Datei, leer), `known` füllt
+nur die Menüs. Endlauf `reihe.sh nexpaper ende5` (Stand `65946b0`): ruff sauber; pytest 3886 grün, 5 übersprungen, 0 rot;
+`npm run lint` sauber; vitest 1222 grün in 109 Dateien; `npm run build` grün; danach Modul 68fd070 (nur Vertragstests,
+`tests/nexsprachen` und `test_routes.py` 82 grün); Playwright `npm run e2e` 2 von 2 grün.
+
 **Endlauf (26.11.2026, `reihe.sh nexpaper ende4`, Stand `29ba6c2`, nach Passkeys E49, Grenzen-Satz E46, Bestand E51,
 sprachen):** ruff sauber; pytest 3879 grün, 5 übersprungen, 1 rot: `test_routes.py::test_the_description_of_the_interface_is_the_snapshot`
 (OpenAPI-Schnappschuss, die alten Wege `/api/v1/locales…` tragen über das Modul andere `operationId` und den Schemanamen
