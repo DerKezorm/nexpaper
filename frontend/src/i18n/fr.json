@@ -261,9 +261,7 @@
       "removeButton": "Retirer",
       "removed": "Clé d'accès retirée.",
       "added": "Clé d'accès ajoutée.",
-      "unavailable": "Les clés d'accès ne fonctionnent qu'en https (ou localhost) et dans les navigateurs qui les prennent en charge.",
-      "noAddressOperator": "Saisissez d'abord l'adresse publique (<settings>Serveur › Connexion</settings>).",
-      "noAddressMember": "Votre administrateur doit d'abord saisir l'adresse publique."
+      "unavailable": "Les clés d'accès ne fonctionnent qu'en https (ou localhost) et dans les navigateurs qui les prennent en charge."
     },
     "oidc": {
       "linkedTo": "Votre compte est lié à {{name}}.",

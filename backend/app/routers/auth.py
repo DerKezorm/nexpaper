@@ -88,6 +88,7 @@ from ..services.accounts import AccountError
 from ..services.konten_store import KontenStore, blocked_since, counts, pending_of, proven, theme_of
 from ..vendor import nexkonten, nexpost
 from ..vendor.nexkonten import login as konten_login
+from ..vendor.nexkonten import passkeys as konten_passkeys
 from ..vendor.nexkonten import profiles
 from ..vendor.nexkonten import sessions as konten_sessions
 from ..vendor.nexkonten import setup as konten_setup
@@ -601,6 +602,11 @@ def me(request: Request, account: Account, db: DbSession) -> dict[str, Any]:
         # them). Making one stays possible; the page says so beside them.
         "keys_wait_for_second_factor": bool(account.second_factor_by_provider) and totp.keys_wait(db, account),
         "passkeys_allowed": bool(settings_service.get(db, "passkeys_allowed")),
+        # Since E49: whether the box Passkeys under My account › Security offers "Add a passkey": a public https
+        # address, or the page open on localhost (the module's rule); else it says what is missing.
+        "passkeys_can_add": konten_passkeys.can_add(settings_service.public_url(db) or "",
+                                                    origin=request.headers.get("origin", ""),
+                                                    request_url=str(request.base_url)),
         # konten 1.1.0: light, dark or system for the account on every device ("" while it never chose: the page
         # hands the server its browser's value once, ``POST /api/v1/me/theme/adopt``), and whether the profile shows
         # "Address not confirmed yet" with "Send link" (an address that counts, never proven, a mail server to send).

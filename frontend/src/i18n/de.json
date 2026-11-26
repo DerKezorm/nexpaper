@@ -261,9 +261,7 @@
       "removeButton": "Entfernen",
       "removed": "Passkey entfernt.",
       "added": "Passkey angelegt.",
-      "unavailable": "Passkeys gibt es nur über https (oder localhost) und in Browsern, die sie kennen.",
-      "noAddressOperator": "Trag zuerst die öffentliche Adresse ein (<settings>Server › Anmeldung</settings>).",
-      "noAddressMember": "Dein Betreiber muss erst die öffentliche Adresse eintragen."
+      "unavailable": "Passkeys gibt es nur über https (oder localhost) und in Browsern, die sie kennen."
     },
     "oidc": {
       "linkedTo": "Dein Konto ist mit {{name}} verknüpft.",

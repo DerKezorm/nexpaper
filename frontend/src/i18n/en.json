@@ -261,9 +261,7 @@
       "removeButton": "Remove",
       "removed": "Passkey removed.",
       "added": "Passkey added.",
-      "unavailable": "Passkeys work only over https (or localhost) and in browsers that know them.",
-      "noAddressOperator": "Enter the public address first (<settings>Server › Sign-in</settings>).",
-      "noAddressMember": "Your operator has to enter the public address first."
+      "unavailable": "Passkeys work only over https (or localhost) and in browsers that know them."
     },
     "oidc": {
       "linkedTo": "Your account is linked to {{name}}.",

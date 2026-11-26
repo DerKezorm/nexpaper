@@ -7,14 +7,15 @@
  *   (``profiles.prove_email``; nexpaper had it, now every app);
  * - ``SignOutCard``: "Sign out" with the module's sentence and the app's word for its things, asking first where the
  *   app knows changes that still wait;
- * - ``WhatYouSeeCard``: under Server › Accounts, "What you see" with the app's sentence.
+ * - ``WhatYouSeeCard``: under Server › Accounts, "What you see" with the app's sentence;
+ * - ``PasskeyAddition`` (since E49): in the box "Passkeys" the button "Add a passkey", or what is missing for it.
  *
  * Copied unchanged into frontend/src/vendor/nexkonten/ by bauplaene/konten/tools/sync.py; changed only there.
  */
 import { useState, type ReactNode } from 'react'
 
-import { Box, Button, Card, ConfirmDialog, ThemeSegment, useNexuiTexts, type ThemeChoice } from '../nexui'
-import { APPEARANCE_CARD, BUTTONS, SIGN_OUT_CARD, UNCONFIRMED_BOX, WHAT_YOU_SEE_CARD, buttonSize, themeOf } from './konten'
+import { Box, Button, Card, ConfirmDialog, TextLink, ThemeSegment, useNexuiTexts, type ThemeChoice } from '../nexui'
+import { APPEARANCE_CARD, BUTTONS, SIGN_OUT_CARD, UNCONFIRMED_BOX, WHAT_YOU_SEE_CARD, buttonSize, passkeyAddition, themeOf } from './konten'
 import type { Translate } from './SignInPage'
 
 /** "Aussehen" (Palette): the theme of the account. ``children``: nothing else of the app belongs here; its own cards
@@ -146,5 +147,48 @@ export function WhatYouSeeCard({ t, text }: { t: Translate; text: string }) {
     <Card id={WHAT_YOU_SEE_CARD.id} icon={WHAT_YOU_SEE_CARD.icon} title={t(WHAT_YOU_SEE_CARD.title)}>
       <p className="m-0 text-sm leading-5 text-[var(--nexui-text-muted)]">{text}</p>
     </Card>
+  )
+}
+
+/** Since E49: in the box "Passkeys" the button "Add a passkey" where the server can add one (``canAdd`` from
+ * ``passkeys.can_add``), else the sentence that the public https address is missing: an operator with the place to
+ * enter it (a link to ``signInHref``, Server › Sign-in), a member without. The list of the account's passkeys stays
+ * the app's, always shown and removable. */
+export function PasskeyAddition({
+  t,
+  canAdd,
+  operator,
+  onAdd,
+  busy = false,
+  signInHref = '/settings/sign-in',
+}: {
+  t: Translate
+  canAdd: boolean
+  operator: boolean
+  onAdd: () => void
+  busy?: boolean
+  signInHref?: string
+}) {
+  const shown = passkeyAddition(canAdd, operator)
+  if (shown.button) {
+    const add = BUTTONS['account.passkeyAdd']
+    return (
+      <Button kind={add.kind} icon={add.icon} size={buttonSize('account.passkeyAdd')} busy={busy} onClick={onAdd} testId="passkey-add">
+        {t('account.passkeyAdd')}
+      </Button>
+    )
+  }
+  return (
+    <p className="m-0 text-sm leading-5 text-[var(--nexui-text-muted)]" data-testid="passkey-needs-address">
+      {t(shown.note)}
+      {shown.place && (
+        <>
+          {' '}
+          <TextLink href={signInHref} testId="passkey-needs-address-place">
+            {t(shown.place)}
+          </TextLink>
+        </>
+      )}
+    </p>
   )
 }

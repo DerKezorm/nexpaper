@@ -8,8 +8,8 @@
  */
 import { Fingerprint, Laptop, Smartphone } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
-import { Trans, useTranslation } from 'react-i18next'
-import { Link, useSearchParams } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
+import { useSearchParams } from 'react-router-dom'
 
 import { api, ApiError, authApi, oidcApi, passkeyApi, type Me, type MyProvider, type Passkey, type RemainingAccess, type SignedSession } from '../../api/client'
 import { AccountButton } from '../../components/AccountButton'
@@ -20,6 +20,7 @@ import { errorText } from '../../lib/errors'
 import { iso } from '../../lib/say'
 import { createPasskey, passkeysAvailable } from '../../lib/webauthn'
 import { useAuth } from '../../state/auth'
+import { PasskeyAddition } from '../../vendor/nexkonten/AccountCards'
 import { FIELDS, PAGES, pageOrder, passwordChanged, SECOND_FACTOR_STATE } from '../../vendor/nexkonten/konten'
 import { Badge, Box, Button, Card, CheckboxRow, ConfirmDialog, Field, Notice, Row, Rows } from '../../vendor/nexui'
 import { useAction } from './actions'
@@ -392,7 +393,12 @@ export function PasskeysBox({ me }: { me: Me }) {
     authApi.methods().then((found) => setOffered(found.passkeys !== false), () => undefined)
   }, [])
   const inBrowser = passkeysAvailable()
-  const available = inBrowser && offered
+  const startAdding = () => {
+    setName(guessName(navigator.userAgent))
+    setPassword('')
+    action.clear()
+    setAdding(true)
+  }
   const add = () =>
     void action
       .run(async () => {
@@ -416,18 +422,21 @@ export function PasskeysBox({ me }: { me: Me }) {
       hint={t(part('passkeys').hint)}
       testId="passkeys-part"
       actions={
-        !codes && (
-          <AccountButton
-            name="account.passkeyAdd"
-            disabled={!available}
-            onClick={() => {
-              setName(guessName(navigator.userAgent))
-              setPassword('')
-              action.clear()
-              setAdding(true)
-            }}
+        !codes &&
+        (inBrowser ? (
+          // Since E49 the module's box part: the button where the server can add a passkey (a public https address,
+          // or the page on localhost), else what is missing (an operator gets the way to Server › Anmeldung).
+          <PasskeyAddition
+            t={t}
+            canAdd={(me.passkeys_can_add ?? true) && offered}
+            operator={me.role === 'operator'}
+            onAdd={startAdding}
+            signInHref="/settings/sign-in"
           />
-        )
+        ) : (
+          // This browser has no passkeys at all: the button stays, greyed, as before.
+          <AccountButton name="account.passkeyAdd" disabled onClick={() => undefined} />
+        ))
       }
     >
       {list.length > 0 && (
@@ -475,16 +484,10 @@ export function PasskeysBox({ me }: { me: Me }) {
           }}
         />
       )}
-      {!available && (
+      {!inBrowser && (
+        // The browser cannot (no https, no API). A missing public address says the module's box part above.
         <p className="m-0 text-xs text-[var(--nexui-text-muted)]" data-testid="passkeys-unavailable">
-          {/* The browser cannot (no https, no API): that is said first. Otherwise the server has no public address. */}
-          {!inBrowser ? (
-            t('me.passkeys.unavailable')
-          ) : me.role === 'operator' ? (
-            <Trans i18nKey="me.passkeys.noAddressOperator" components={{ settings: <Link to="/settings/sign-in" className="font-semibold underline underline-offset-2" /> }} />
-          ) : (
-            t('me.passkeys.noAddressMember')
-          )}
+          {t('me.passkeys.unavailable')}
         </p>
       )}
       {!adding && <Outcome problem={action.problem} done={action.done} values={action.values} />}

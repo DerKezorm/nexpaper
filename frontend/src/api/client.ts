@@ -205,6 +205,8 @@ export type Me = {
   /** A link for a new address can be mailed (a mail server and the public address). */
   mail_links?: boolean
   passkeys_allowed?: boolean
+  /** Since E49: the box Passkeys offers "Add a passkey" (a public https address, or the page on localhost). */
+  passkeys_can_add?: boolean
   min_password?: number
   /** Signed in within the last minutes (an account without a password confirms with that). */
   fresh_sign_in?: boolean

@@ -93,6 +93,19 @@ def party(public_url: str, origin: str = "", request_url: str = "") -> Party:
     return Party(host, f"{parts.scheme}://{parts.netloc.lower()}")
 
 
+def can_add(public_url: str, origin: str = "", request_url: str = "") -> bool:
+    """Since E49: whether the box "Passkeys" under My account › Security offers "Add a passkey" (as nexdiary had it):
+    with a public https address of the app, or where the page is open on ``localhost``; the same inputs as ``party``
+    (the app's public address, the request's ``Origin``, the address the request came to). Without, the box says
+    instead what is missing (an operator: enter the public address, with a link to Server › Sign-in; a member: the
+    operator has to). Passkeys an account has stay listed and removable either way."""
+    try:
+        party(public_url, origin, request_url)
+    except AccountError:
+        return False
+    return True
+
+
 @dataclass
 class _Held:
     challenge: bytes

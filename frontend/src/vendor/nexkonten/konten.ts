@@ -1341,6 +1341,17 @@ export function browserTheme(raw: string | null | undefined): Theme | '' {
   return (THEMES as readonly string[]).includes(value) ? (value as Theme) : ''
 }
 
+/** Since E49: what the box "Passkeys" under My account › Security shows where passkeys are added: the button "Add a
+ * passkey" where the server says it can (``passkeys.can_add``: a public https address, or the page on localhost), else
+ * the sentence that the address is missing; an operator gets the place to enter it (``account.passkeysNeedAddressPlace``,
+ * a link to Server › Sign-in), a member only the sentence. Passkeys the account has stay listed and removable. */
+export function passkeyAddition(canAdd: boolean, operator: boolean): { button: boolean; note: string; place: string } {
+  if (canAdd) return { button: true, note: '', place: '' }
+  return operator
+    ? { button: false, note: 'account.passkeysNeedAddress', place: 'account.passkeysNeedAddressPlace' }
+    : { button: false, note: 'account.passkeysNeedAddressMember', place: '' }
+}
+
 /** Since 1.1.0: the card "Appearance", first on the page Appearance of every app (``AppearanceCard``): id, symbol, the
  * title from ui (``appearance``, "Aussehen"), the ``ThemeSegment`` with its hint. */
 export const APPEARANCE_CARD = { id: 'appearance', icon: 'Palette' } as const

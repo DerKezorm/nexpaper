@@ -252,25 +252,35 @@ describe('the own account, Security', () => {
     expect(calls.find((call) => call.url === `/api/v1/auth/passkeys/${id}/remove`)!.body).toEqual({ password: 'the own password' })
   })
 
-  describe('the hint under "Passkey hinzufügen"', () => {
-    const hint = () => box.querySelector('[data-testid="passkeys-unavailable"]')
+  describe('the hint instead of "Passkey hinzufügen" (konten 1.1.0, Bauplan E49)', () => {
+    const hint = () => box.querySelector('[data-testid="passkey-needs-address"]')
+    const browserHint = () => box.querySelector('[data-testid="passkeys-unavailable"]')
 
-    it('tells the operator where to enter the public address, with a link there, when the server has none', async () => {
+    it('tells the operator where to enter the public address, with a link there and no button, when the server has none', async () => {
       passkeysInTheBrowser(true)
       answers['GET /api/v1/auth/methods'] = { password: true, providers: [], passkeys: false }
       await show(<PasskeysBox me={me} />, '/settings/security')
-      expect(hint()!.textContent).toBe('Trag zuerst die öffentliche Adresse ein (Server › Anmeldung).')
+      expect(hint()!.textContent).toBe('Passkeys brauchen die öffentliche Adresse mit https. Trag sie zuerst ein: Server › Anmeldung')
       expect(hint()!.querySelector('a')!.getAttribute('href')).toBe('/settings/sign-in')
-      expect(hint()!.textContent).not.toContain('nur über https')
-      expect(button('Passkey hinzufügen', box)!.disabled).toBe(true)
+      expect(button('Passkey hinzufügen', box)).toBeUndefined()
+      expect(browserHint()).toBeNull()
+    })
+
+    it('follows passkeys_can_add of the server, even where the sign-in page offers passkeys', async () => {
+      passkeysInTheBrowser(true)
+      answers['GET /api/v1/auth/methods'] = { password: true, providers: [], passkeys: true }
+      await show(<PasskeysBox me={{ ...me, passkeys_can_add: false }} />, '/settings/security')
+      expect(hint()).not.toBeNull()
+      expect(button('Passkey hinzufügen', box)).toBeUndefined()
     })
 
     it('tells a member that the operator has to enter it, and links nowhere', async () => {
       passkeysInTheBrowser(true)
       answers['GET /api/v1/auth/methods'] = { password: true, providers: [], passkeys: false }
       await show(<PasskeysBox me={{ ...me, role: 'member' }} />, '/settings/security')
-      expect(hint()!.textContent).toBe('Dein Betreiber muss erst die öffentliche Adresse eintragen.')
+      expect(hint()!.textContent).toBe('Passkeys brauchen die öffentliche Adresse mit https. Der Betreiber muss sie zuerst eintragen.')
       expect(hint()!.querySelector('a')).toBeNull()
+      expect(button('Passkey hinzufügen', box)).toBeUndefined()
     })
 
     it('says it in English as well, for both', async () => {
@@ -278,27 +288,30 @@ describe('the own account, Security', () => {
       passkeysInTheBrowser(true)
       answers['GET /api/v1/auth/methods'] = { password: true, providers: [], passkeys: false }
       await show(<PasskeysBox me={me} />, '/settings/security')
-      expect(hint()!.textContent).toBe('Enter the public address first (Server › Sign-in).')
+      expect(hint()!.textContent).toBe('Passkeys need the public address with https. Enter it first: Server › Sign-in')
       expect(hint()!.querySelector('a')!.getAttribute('href')).toBe('/settings/sign-in')
       act(() => root.unmount())
       box.remove()
       await show(<PasskeysBox me={{ ...me, role: 'member' }} />, '/settings/security')
-      expect(hint()!.textContent).toBe('Your operator has to enter the public address first.')
+      expect(hint()!.textContent).toBe('Passkeys need the public address with https. The operator has to enter it first.')
     })
 
     it('keeps the old sentence for a browser that cannot (no https, no API), whatever the server says', async () => {
       passkeysInTheBrowser(false)
       answers['GET /api/v1/auth/methods'] = { password: true, providers: [], passkeys: true }
       await show(<PasskeysBox me={me} />, '/settings/security')
-      expect(hint()!.textContent).toBe('Passkeys gibt es nur über https (oder localhost) und in Browsern, die sie kennen.')
-      expect(hint()!.querySelector('a')).toBeNull()
+      expect(browserHint()!.textContent).toBe('Passkeys gibt es nur über https (oder localhost) und in Browsern, die sie kennen.')
+      expect(browserHint()!.querySelector('a')).toBeNull()
+      expect(button('Passkey hinzufügen', box)!.disabled).toBe(true)
     })
 
     it('says nothing when passkeys can be made', async () => {
       passkeysInTheBrowser(true)
-      await show(<PasskeysBox me={me} />, '/settings/security')
+      await show(<PasskeysBox me={{ ...me, passkeys_can_add: true }} />, '/settings/security')
       expect(hint()).toBeNull()
-      expect(button('Passkey hinzufügen', box)!.disabled).toBe(false)
+      expect(browserHint()).toBeNull()
+      const add = button('Passkey hinzufügen', box)!
+      expect([add.disabled, add.dataset.testid]).toEqual([false, 'passkey-add'])
     })
   })
 

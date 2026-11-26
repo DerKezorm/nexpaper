@@ -11,7 +11,7 @@ import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { NexuiLanguage } from './vendor/nexui'
-import { AppearanceCard, SignOutCard, UnconfirmedEmailBox, WhatYouSeeCard } from './vendor/nexkonten/AccountCards'
+import { AppearanceCard, PasskeyAddition, SignOutCard, UnconfirmedEmailBox, WhatYouSeeCard } from './vendor/nexkonten/AccountCards'
 import { SignInPage, type SignInView, type Translate } from './vendor/nexkonten/SignInPage'
 import { kontenVariables, publicUrlPlaceholder, type Readiness } from './vendor/nexkonten/konten'
 import german from './vendor/nexkonten/konten.de.json'
@@ -284,5 +284,35 @@ describe('the cards of the profile, appearance and accounts (konten 1.1.0)', () 
   it('speaks English with the English words', () => {
     show(<SignOutCard t={translator(english)} things="notes" onSignOut={() => undefined} />, 'en')
     expect(document.querySelector('[data-card="sign-out"]')?.textContent).toContain('Your notes stay as they are.')
+  })
+})
+
+describe('the box Passkeys without a public https address (since E49)', () => {
+  it.each([
+    [true, true],
+    [true, false],
+  ] as const)('offers "Passkey hinzufügen" where the server can add one (operator %s)', async (canAdd, operator) => {
+    const added = vi.fn()
+    show(<PasskeyAddition t={t} canAdd={canAdd} operator={operator} onAdd={added} />)
+    await click(button(t('account.passkeyAdd')))
+    expect(added).toHaveBeenCalledTimes(1)
+    expect(document.querySelector('[data-testid="passkey-needs-address"]')).toBeNull()
+  })
+
+  it('tells an operator where to enter the address, with a link there, and no button', () => {
+    show(<PasskeyAddition t={t} canAdd={false} operator onAdd={() => undefined} signInHref="/settings/sign-in" />)
+    const note = document.querySelector('[data-testid="passkey-needs-address"]') as HTMLElement
+    expect(note.textContent).toContain(t('account.passkeysNeedAddress'))
+    const place = note.querySelector('a') as HTMLAnchorElement
+    expect([place.textContent, place.getAttribute('href')]).toEqual(['Server › Anmeldung', '/settings/sign-in'])
+    expect([...document.querySelectorAll('button')].some((entry) => entry.textContent?.includes(t('account.passkeyAdd')))).toBe(false)
+  })
+
+  it('tells a member that the operator has to enter it, without a place and without a button', () => {
+    show(<PasskeyAddition t={t} canAdd={false} operator={false} onAdd={() => undefined} />)
+    const note = document.querySelector('[data-testid="passkey-needs-address"]') as HTMLElement
+    expect(note.textContent).toBe(t('account.passkeysNeedAddressMember'))
+    expect(note.querySelector('a')).toBeNull()
+    expect(document.querySelectorAll('button')).toHaveLength(0)
   })
 })

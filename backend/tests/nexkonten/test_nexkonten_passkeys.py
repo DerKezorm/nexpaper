@@ -330,3 +330,18 @@ def test_the_session_expired_dialog_offers_the_passkey_step_where_a_passkey_is_t
     assert konten.common.session_expired_parts("unknown") == konten.common.session_expired_parts(konten.NEXT_SIGN_IN)
     for step in (konten.NEXT_SECOND_FACTOR_SETUP, konten.NEXT_SHOW_CODES):
         assert konten.common.session_expired_parts(step)
+
+
+def test_adding_a_passkey_needs_a_public_https_address_or_the_page_on_localhost(konten: Any) -> None:
+    """Since E49 (nexdiary had it): ``passkeys.can_add`` tells the box "Passkeys" whether it offers "Add a passkey";
+    without, an operator reads where to enter the address, a member that the operator has to (the page's part,
+    ``PasskeyAddition``)."""
+    can_add = konten.passkeys.can_add
+    # No public address, the page under another name than localhost: no button.
+    assert can_add("", request_url="https://notes.example.com/settings/security") is False
+    assert can_add("", origin="http://192.168.1.20:8570") is False
+    assert can_add("http://notes.example.com") is False
+    # With a public https address, or the page on localhost: the button.
+    assert can_add("https://notes.example.com") is True
+    assert can_add("", origin="http://localhost:5173") is True
+    assert can_add("", request_url="http://localhost:8570/api/auth/me") is True

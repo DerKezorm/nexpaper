@@ -426,3 +426,20 @@ def test_the_passkey_button_is_offered_without_a_public_address_only_on_localhos
     with SessionLocal() as db:
         settings_service.save(db, {"public_url": "http://paper.example.com"})
     assert offered("localhost:8560") is False
+
+
+def test_the_box_passkeys_offers_adding_only_where_a_browser_can(client: TestClient, operator: Account) -> None:
+    """Bauplan E49: ``/auth/me`` says ``passkeys_can_add`` by the account module's rule, so the box Passkeys under
+    My account › Security shows the button only with a public https address or on localhost, else what is missing."""
+
+    def can_add(**headers: str) -> bool:
+        return client.get("/api/v1/auth/me", headers=headers).json()["passkeys_can_add"]
+
+    assert can_add() is True  # the public https address of the fixture
+    with SessionLocal() as db:
+        settings_service.save(db, {"public_url": "http://paper.example.com"})
+    assert can_add() is False
+    with SessionLocal() as db:
+        settings_service.save(db, {"public_url": ""})
+    assert can_add() is False  # opened as testserver, not localhost
+    assert can_add(origin="http://localhost:8560") is True
