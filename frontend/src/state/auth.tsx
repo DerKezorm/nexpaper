@@ -9,7 +9,6 @@ import i18n, { changeLanguage } from '../i18n'
 import { browserTimeZone } from '../lib/dates'
 import { forgetPictures } from '../lib/pictures'
 import { applyMode, isMode, keptTheme, storedMode } from '../lib/theme'
-import { browserTheme } from '../vendor/nexkonten/konten'
 
 type Status = 'loading' | 'setup' | 'signedOut' | 'signedIn'
 
@@ -55,20 +54,22 @@ const Context = createContext<Auth | null>(null)
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<Status>('loading')
   const [me, setMeState] = useState<Me | null>(null)
-  const adopting = useRef(false)
+  /** The account whose theme is being taken over (once per account, also after a change of account). */
+  const adopting = useRef<number | null>(null)
 
   const setMe = useCallback((next: Me) => {
     setMeState(next)
     setStatus('signedIn')
     // The account's language and light or dark win over what this browser remembered.
     if (next.language && next.language !== i18n.language) void changeLanguage(next.language)
-    // Since konten 1.1.0 the theme is the account's (`theme`, the same as `profile.mode`). An account that never chose
-    // one takes over what this browser kept before, once (`adopt`); until then the browser's own stays.
+    // Since konten 1.1.0 the theme is the account's (`theme`, the same as `profile.mode`). Only an account of before
+    // never chose one: it takes, once, what this browser really kept (`adopt`, the raw value of `nexpaper.theme`), and
+    // without one the server takes nexpaper's default of before (E45). Never what the browser prefers
+    // (`prefers-color-scheme`) and never a value worked out here: the server decides, the page shows its answer.
     if (next.theme === '') {
-      const kept = browserTheme(keptTheme())
-      if (kept && !adopting.current) {
-        adopting.current = true
-        void authApi.adoptTheme(kept).then(
+      if (adopting.current !== next.id) {
+        adopting.current = next.id
+        void authApi.adoptTheme(keptTheme() ?? '').then(
           ({ theme }) => {
             if (isMode(theme)) applyMode(theme)
             setMeState((current) => (current && current.id === next.id ? { ...current, theme, profile: { ...current.profile, mode: theme } } : current))

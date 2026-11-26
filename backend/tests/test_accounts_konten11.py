@@ -367,3 +367,39 @@ def test_new_accounts_start_with_the_storage_for_new_accounts_the_ones_there_kee
         assert account_service.create_with_password(db, "paul", PASSWORD).storage_limit is None
     with SessionLocal() as db:
         assert db.scalar(select(Account).where(Account.name == "nina")).storage_limit == five  # type: ignore[union-attr]
+
+
+def test_new_accounts_start_with_system_accounts_of_before_take_the_kept_value_or_the_default_once(
+        client: TestClient, operator: Account, provider: FakeProvider) -> None:
+    """Bauplan E45: an account made now (invitation, provider, nexpaper's own way) has the theme system from the start,
+    kept where nexpaper keeps it (``profile.mode``), whatever the browser holds. An account of before without a choice
+    takes, once, the value its browser really kept, else nexpaper's default of before (system), and keeps it."""
+    from app.services import accounts as account_service
+
+    token = client.post("/api/v1/invites", json={"days": 7}).json()["link"].rsplit("/", 1)[1]
+    with new_client() as visitor:
+        joined = visitor.post(f"/api/v1/invite/{token}", json={"name": "nina", "password": PASSWORD})
+        assert joined.status_code in (200, 201), joined.text
+        assert visitor.get("/api/v1/auth/me").json()["theme"] == "system"
+        # A value this browser kept for somebody else is no choice of the new account.
+        assert visitor.post("/api/v1/me/theme/adopt", json={"theme": "dark"}).json() == {"theme": "system"}
+    configure(client, provider, auto_create=True)
+    assert location(sign_in_via_oidc(fresh_browser(), provider, sub="person-7", preferred_username="lea")) == "/"
+    with SessionLocal() as db:
+        assert account_service.create_with_password(db, "otto", PASSWORD).profile == {"mode": "system"}
+        for name in ("nina", "lea"):
+            row = db.scalar(select(Account).where(Account.name == name))
+            assert row is not None and row.profile == {"mode": "system"}, name
+
+    # Accounts of before: profile.mode empty, as 1.12.0 left an account that never chose.
+    for name, kept, taken in (("kim", "dark", "dark"), ("ole", "", "system"), ("uwe", '"light"', "light")):
+        make_account(name)
+        with new_client() as browser:
+            assert browser.post("/api/v1/auth/login", json={"name": name, "password": PASSWORD}).status_code == 200
+            assert browser.get("/api/v1/auth/me").json()["theme"] == ""
+            assert browser.post("/api/v1/me/theme/adopt", json={"theme": kept}).json() == {"theme": taken}, name
+            # Once: what a browser kept later changes nothing any more.
+            assert browser.post("/api/v1/me/theme/adopt", json={"theme": "light" if taken != "light" else "dark"}).json() == {
+                "theme": taken}
+            me = browser.get("/api/v1/auth/me").json()
+            assert me["theme"] == taken and me["profile"]["mode"] == taken, name

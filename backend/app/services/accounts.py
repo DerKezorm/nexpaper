@@ -56,6 +56,8 @@ def create_with_password(db: Session, name: str, password: str, role: str = MEMB
         password_hash=hash_password(password),
         whats_new_seen=__version__,
         storage_limit=settings_service.new_account_storage_limit(db),
+        # A new account starts with the theme system (Bauplan E45, ``profile.mode``).
+        profile={"mode": "system"},
     )
     db.add(account)
     if commit:

@@ -96,18 +96,29 @@ describe('the looks of the account', () => {
     expect(document.documentElement.getAttribute('data-theme')).toBe('dark')
   })
 
-  it('take over nothing when the account chose, or when the browser kept nothing', async () => {
+  it('take over nothing when the account chose', async () => {
     kept.set('nexpaper.theme', 'dark')
     serve({ mode: 'light' }, { theme: 'light' })
     await start()
     expect(sent.some((call) => call.url === '/api/v1/me/theme/adopt')).toBe(false)
     expect(document.documentElement.hasAttribute('data-theme')).toBe(false)
-    await act(async () => root.unmount())
-    box.remove()
-    kept.clear()
+  })
+
+  // E45: without a value this browser kept, the page sends nothing of its own making (never what the browser prefers,
+  // never "system" as worked out here); the server takes nexpaper's default of before and the page shows its answer.
+  it('send only a value the browser really kept, never what the browser prefers', async () => {
+    vi.stubGlobal('matchMedia', () => ({ matches: true, addEventListener: () => undefined }))
     serve({ mode: 'system' }, { theme: '' })
     await start()
-    expect(sent.some((call) => call.url === '/api/v1/me/theme/adopt')).toBe(false)
+    expect(sent.filter((call) => call.url === '/api/v1/me/theme/adopt')).toEqual([{ method: 'POST', url: '/api/v1/me/theme/adopt', body: { theme: '' } }])
+    expect(kept.has('nexpaper.theme')).toBe(false)
+  })
+
+  it('send the kept value raw, as the browser holds it', async () => {
+    kept.set('nexpaper.theme', 'system')
+    serve({ mode: 'system' }, { theme: '' })
+    await start()
+    expect(sent.filter((call) => call.url === '/api/v1/me/theme/adopt').map((call) => call.body)).toEqual([{ theme: 'system' }])
   })
 
   it('ignore a mode that is none of the three', async () => {

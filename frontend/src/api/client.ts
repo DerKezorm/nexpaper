@@ -285,10 +285,10 @@ export const authApi = {
   me: () => api<Me>('/api/v1/auth/me'),
   language: (language: string) => api<Me>('/api/v1/me/language', { method: 'PUT', body: { language } }),
   preferences: (change: Partial<Profile>) => api<Profile>('/api/v1/me/preferences', { method: 'PUT', body: change }),
-  /** Light, dark or as the device says, at the account (konten 1.1.0); `adoptTheme` hands over the browser's value of
-   * before once, while the account has none. */
+  /** Light, dark or as the device says, at the account (konten 1.1.0); `adoptTheme` hands over, once while the
+   * account has none, what this browser really kept, raw (`''` for nothing: the server takes nexpaper's default, E45). */
   theme: (theme: ThemeChoice) => api<{ theme: ThemeChoice }>('/api/v1/me/theme', { method: 'PUT', body: { theme } }),
-  adoptTheme: (theme: ThemeChoice) => api<{ theme: ThemeChoice }>('/api/v1/me/theme/adopt', { method: 'POST', body: { theme } }),
+  adoptTheme: (kept: string) => api<{ theme: ThemeChoice }>('/api/v1/me/theme/adopt', { method: 'POST', body: { theme: kept } }),
   profile: (change: ProfileChange) => api<Me>('/api/v1/me/profile', { method: 'PUT', body: change }),
   password: (current: string, next: string, confirm?: string) =>
     api<void>('/api/v1/auth/password', { method: 'PUT', body: { current, new: next, ...(confirm !== undefined ? { password_confirm: confirm } : {}) } }),

@@ -346,8 +346,10 @@ class SqlStore:
         shown = nexkonten.names.provider_display_name(store, display_name or "")
         if not shown and invited is not None:
             shown = nexkonten.names.provider_display_name(store, invited.display_name or "")
+        # A new account starts with the theme system (Bauplan E45, ``profile.mode`` as at the store's add_account).
         row = Account(name=name, display_name=shown, role=MEMBER, sign_in=SIGN_IN_OIDC, whats_new_seen=__version__,
-                      storage_limit=settings_service.new_account_storage_limit(self.db))
+                      storage_limit=settings_service.new_account_storage_limit(self.db),
+                      profile={"mode": "system"})
         self.db.add(row)
         # A name or a link another return wrote a moment ago fails here (unique), and the module takes it from there.
         self.db.flush()

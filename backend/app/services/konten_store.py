@@ -362,6 +362,9 @@ class KontenStore:
             whats_new_seen=__version__,
             # The limit new accounts start with (Bauplan E44, Server › General › Limits).
             storage_limit=settings_service.new_account_storage_limit(self.db),
+            # Light, dark or system where nexpaper keeps it (``profile.mode``): a new account starts with ``system``
+            # (Bauplan E45); only accounts of before have none and take a value once (``profiles.adopt_theme``).
+            profile={"mode": new.theme},
         )
         self.db.add(row)
         self._flush()
