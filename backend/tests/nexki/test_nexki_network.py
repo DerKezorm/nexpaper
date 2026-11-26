@@ -12,21 +12,23 @@ from ki_contract import (
     KEY,
     PUBLIC,
     code,
-    detail,
     fast_clock,
     internet,
     last_body,
     operator_puts,
     own,
+    package,
     resolving,
     said,
     shared,
+    task,
+    values,
 )
 
 
 def test_the_operators_service_may_lie_in_the_own_network(app: Any, service: Any) -> None:
     shared(app, service.base)
-    done = app.manual("owner", "Please tidy this text up")
+    done = task(app, "owner", "Please tidy this text up")
     assert done.status_code == 200, done.text
     assert done.json()["text"].startswith("Done:")
     # In the own network a thinking model is asked not to think (nexpaper 1.5.1).
@@ -44,11 +46,11 @@ def test_an_own_service_in_the_home_network_needs_the_operators_list(app: Any, s
     own(app, hosts=[f"127.0.0.1:{port}", "192.168.1.20:11434"])
     assert owner.put(app.me_prefix, json={"url": "http://192.168.1.20:11434/v1", "model": "x"}).status_code == 200
     assert owner.put(app.me_prefix, json={"url": service.base, "model": "plain"}).status_code == 200
-    done = app.manual("owner", "Please tidy this text up")
+    done = task(app, "owner", "Please tidy this text up")
     assert done.status_code == 200, done.text
     # Taken off the list, the same access stops at the next request: checked at every request, not when saved.
     own(app, hosts=["192.168.1.20:11434"])
-    again = app.manual("owner", "Please tidy this text up")
+    again = task(app, "owner", "Please tidy this text up")
     assert said(app, again, "ai_address_private")
 
 
@@ -75,15 +77,15 @@ def test_the_metadata_address_and_link_local_are_never_reached(app: Any, url: st
 def test_a_redirect_is_not_followed(app: Any, service: Any, recorder: Any) -> None:
     service.redirect_to = recorder.address + "v1/chat/completions"
     shared(app, service.base, model="redirect")
-    done = app.manual("owner", "Please tidy this text up")
+    done = task(app, "owner", "Please tidy this text up")
     assert said(app, done, "ai_service_failed")
-    assert detail(done).get("answered") == 307
+    assert values(app, done).get("answered") == 307
     assert recorder.hits == []
 
 
 def test_an_answer_that_is_too_large_is_not_read(app: Any, service: Any) -> None:
     shared(app, service.base, model="huge")
-    done = app.manual("owner", "Please tidy this text up")
+    done = task(app, "owner", "Please tidy this text up")
     assert said(app, done, "ai_unreadable")
 
 
@@ -92,7 +94,7 @@ def test_one_deadline_for_the_whole_request(app: Any, service: Any) -> None:
     shared(app, service.base, model="slow")
     started = time.monotonic()
     with fast_clock(app, factor=200.0):
-        done = app.manual("owner", "Please tidy this text up")
+        done = task(app, "owner", "Please tidy this text up")
     assert said(app, done, "ai_timeout")
     assert time.monotonic() - started < 15
 
@@ -103,7 +105,7 @@ def test_no_proxy_from_the_environment(app: Any, service: Any, recorder: Any, mo
     for name in ("NO_PROXY", "no_proxy"):
         monkeypatch.delenv(name, raising=False)
     shared(app, service.base)
-    done = app.manual("owner", "Please tidy this text up")
+    done = task(app, "owner", "Please tidy this text up")
     assert done.status_code == 200, done.text
     assert recorder.hits == [] and service.seen
 
@@ -114,11 +116,11 @@ def test_the_key_does_not_go_to_a_new_host(app: Any) -> None:
     remote = ReferenceService()
     with internet(app, remote):
         shared(app, "https://ai.example.com/v1/", key=KEY)
-        assert app.manual("owner", "Please tidy this text up").status_code == 200
+        assert task(app, "owner", "Please tidy this text up").status_code == 200
         assert remote.seen[-1].headers.get("authorization") == f"Bearer {KEY}"
         moved = operator_puts(app, url="https://other.example.com/v1/")
         assert moved.status_code == 200 and moved.json()["key_set"] is False
-        assert app.manual("owner", "Please tidy this text up").status_code == 200
+        assert task(app, "owner", "Please tidy this text up").status_code == 200
         assert "authorization" not in remote.seen[-1].headers
         # A model list with a typed address gets the stored key only for the stored address.
         operator_puts(app, url="https://ai.example.com/v1/", key=KEY)
@@ -160,13 +162,13 @@ def test_the_services_own_words_only_from_the_internet(app: Any, service: Any) -
     from nexki_service import ReferenceService
 
     shared(app, service.base, model="fail")
-    local = app.manual("owner", "Please tidy this text up")
-    assert said(app, local, "ai_service_failed") and detail(local).get("said") == ""
+    local = task(app, "owner", "Please tidy this text up")
+    assert said(app, local, "ai_service_failed") and values(app, local).get("said") == ""
     remote = ReferenceService()
     with internet(app, remote):
         shared(app, "https://ai.example.com/v1/", model="fail")
-        far = app.manual("owner", "Please tidy this text up")
-    assert said(app, far, "ai_service_failed") and "broke down" in str(detail(far).get("said"))
+        far = task(app, "owner", "Please tidy this text up")
+    assert said(app, far, "ai_service_failed") and "broke down" in str(values(app, far).get("said"))
 
 
 def test_the_connection_goes_to_the_address_checked(app: Any) -> None:
@@ -178,7 +180,30 @@ def test_the_connection_goes_to_the_address_checked(app: Any) -> None:
     with internet(app, remote) as asked:
         shared(app, "https://ai.example.com/v1/")
         before = asked.count("ai.example.com")
-        done = app.manual("owner", "Please tidy this text up")
+        done = task(app, "owner", "Please tidy this text up")
     assert done.status_code == 200, done.text
     assert asked.count("ai.example.com") == before + 1
     assert remote.seen[-1].via == f"{PUBLIC}:443"
+
+
+def test_a_connection_that_never_came_is_not_reached_and_a_late_one_is_late(
+    app: Any, service: Any, monkeypatch: Any
+) -> None:
+    """K-6 (0.1.2): a connection that never came about, with time left, is "not reached"; out of time, "too late"."""
+    import httpx
+
+    nexki = package(app)
+    shared(app, service.base)
+
+    def never(*args: Any, **kwargs: Any) -> Any:
+        raise httpx.ConnectTimeout("no connection")
+
+    monkeypatch.setattr(nexki.net, "send", never)
+    assert said(app, task(app, "owner", "Please tidy this text up"), "ai_unreachable")
+
+    def late(*args: Any, **kwargs: Any) -> Any:
+        raise nexki.net.Late
+
+    monkeypatch.setattr(nexki.net, "send", late)
+    assert said(app, task(app, "owner", "Please tidy this text up"), "ai_timeout")
+

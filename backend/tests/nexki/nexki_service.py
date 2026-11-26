@@ -106,6 +106,11 @@ class ReferenceService:
             big = {"choices": [{"index": 0, "message": {"role": "assistant", "content": "x" * (3 * 1024 * 1024)},
                                 "finish_reason": "stop"}]}
             return _json(200, big)
+        if model == "garbled":
+            # Since 0.1.2 (K-5): 200, but no JSON at all.
+            return Reply(200, b"<html>not an answer</html>", {"content-type": "application/json"})
+        if model == "shapeless":
+            return _json(200, {"nothing": 1})
         if model == "slow":
             return Reply(200, b'{"choices": []}' + b" " * 400, {"content-type": "application/json"}, drip=True)
         if model == "thinking" and not messages_form:

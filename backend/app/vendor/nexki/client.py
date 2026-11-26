@@ -143,6 +143,10 @@ def _exchange(
     except net.Late as exc:
         _log(found, what, "timeout", started)
         raise AiRefused("ai_timeout", seconds=int(seconds)) from exc
+    except httpx.ConnectTimeout as exc:
+        # K-6 (0.1.2): the connection never came about, with time left: not reached (nexmail told both apart).
+        _log(found, what, "unreachable", started)
+        raise AiRefused("ai_unreachable") from exc
     except httpx.TimeoutException as exc:
         _log(found, what, "timeout", started)
         raise AiRefused("ai_timeout", seconds=int(seconds)) from exc
@@ -169,12 +173,16 @@ def _now() -> datetime:
 
 
 def _keep(store: Store, config: AppConfig, account_id: AccountId, *, task: Any, to: str, model: str,
-          system: str, user: str, outcome: str) -> None:
-    """A line of "what went out" (K5): a manual task word for word, sealed; an automatic one without content."""
+          system: str, user: str, outcome: str, values: dict[str, Any] | None = None) -> None:
+    """A line of "what went out" (K5): a manual task word for word, sealed; an automatic one without content. Since
+    0.1.2 (K-7) a manual task keeps the values of its refusal with it (``answered``, ``seconds``, ``said``), sealed
+    with the text, so no store needs a new column."""
     sent = ""
     if task.manual:
-        sent = store.seal(json.dumps({"system": system, "user": user}, ensure_ascii=False),
-                          f"{config.account_key_context(account_id)}:events")
+        kept: dict[str, Any] = {"system": system, "user": user}
+        if values:
+            kept["values"] = values
+        sent = store.seal(json.dumps(kept, ensure_ascii=False), f"{config.account_key_context(account_id)}:events")
     now = _now()
     store.add_event(Event(account_id=account_id, at=now, task=task.id, to=to, model=model[:200], manual=task.manual,
                           chars=len(user), outcome=outcome, sent=sent))
@@ -224,15 +232,19 @@ def ask(
             answer, local_now = _exchange(found, store, config, "POST", path, task.id, task.seconds, make, pinned)
         except AiRefused as refused:
             _keep(store, config, account_id, task=task, to=_to(found, None), model=found.model, system=system,
-                  user=user, outcome=refused.code)
+                  user=user, outcome=refused.code, values=dict(refused.values))
             store.commit()
             raise
         try:
             data = answer.json()
-        except ValueError as exc:
+            text = quirks.unfence(quirks.content_of(found.api, data))
+            calls = quirks.tool_calls_of(found.api, data) if tools else []
+        except (ValueError, AiRefused) as exc:
+            # K-5 (0.1.2): the text went out even though the answer could not be read; "what went out" says so (K5).
+            _keep(store, config, account_id, task=task, to=_to(found, local_now), model=found.model, system=system,
+                  user=user, outcome="ai_unreadable")
+            store.commit()
             raise AiRefused("ai_unreadable") from exc
-        text = quirks.unfence(quirks.content_of(found.api, data))
-        calls = quirks.tool_calls_of(found.api, data) if tools else []
         outcome = "ok"
         if not text and not calls:
             outcome = "ai_used_up" if quirks.ran_out(found.api, data) else "ai_empty"
@@ -338,5 +350,7 @@ def events(store: Store, config: AppConfig, account_id: AccountId) -> list[dict[
                 sent = None
         out.append({"id": event.id, "at": event.at.isoformat(), "task": event.task, "to": event.to,
                     "model": event.model, "manual": event.manual, "chars": event.chars, "outcome": event.outcome,
+                    # Since 0.1.2 (K-7): the values of a refusal of a manual task (``answered``, ``seconds``, ``said``).
+                    "values": sent.pop("values", {}) if isinstance(sent, dict) else {},
                     "sent": sent})
     return out

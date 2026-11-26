@@ -7,9 +7,9 @@ its settings and tables (``services/ki_store.py`` in ``services/mcp_store.McpSto
 
 nexpaper has no button task: its only AI task, ``propose``, runs in the background for a new document
 (``services/ai_proposals.py``). ``automatic`` is that task's request (``ai_proposals.ask``, as the job makes it).
-``manual`` is skipped: the contract has no form for an app without a button task (``einst-fragen/
-nexpaper-module.md``); nexpaper's own tests hold the chain, the network, the day's limit and the Bestand of its form
-through the task and the older routes (``test_ai.py``, ``test_ai_proposals.py``, ``test_ki.py``).
+Since ki 0.1.2 (``has_manual = False``) the contract runs its cases through ``automatic``; only the cases of a button
+task fall away (deselected by the contract). nexpaper's own tests hold the Bestand of its form through the task and the
+older routes besides (``test_ai.py``, ``test_ai_proposals.py``, ``test_ki.py``).
 """
 
 from __future__ import annotations
@@ -19,7 +19,6 @@ import sqlite3
 from datetime import UTC, datetime
 from typing import Any
 
-import pytest
 from ki_contract import StandardAdapter
 
 
@@ -28,6 +27,8 @@ class Adapter(StandardAdapter):
     server_prefix = "/api/v1/server/ai"
     me_prefix = "/api/v1/me/ai"
     older_forms: tuple[str, ...] = ("shared",)
+    #: ki 0.1.2 (K-10): no button task, the contract takes ``automatic``.
+    has_manual = False
 
     def _accounts_made(self) -> None:
         from app.models import MEMBER, OPERATOR
@@ -103,13 +104,12 @@ class Adapter(StandardAdapter):
         return self._accounts[role].id
 
     def manual(self, role: str, text: str) -> Any:
-        pytest.skip("nexpaper has no button task: its only AI task (propose) runs in the background")
+        raise AssertionError("nexpaper has no button task (has_manual = False): the contract never asks for one")
 
     def automatic(self, role: str, text: str) -> Any:
         from app.services import ai_proposals
 
-        mark = "DOC-" + secrets.token_hex(8)
-        return ai_proposals.ask(self.account_id(role), text, ["Invoice", "Contract"], "", mark)
+        return ai_proposals.ask(self.account_id(role), text, ["Invoice", "Contract"], "")
 
     def _set(self, role: str, **values: Any) -> None:
         from app.db import SessionLocal

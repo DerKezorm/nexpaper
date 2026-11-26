@@ -7,14 +7,16 @@ import logging
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
-from ki_contract import KEY, package, shared
+import pytest
+from ki_contract import KEY, package, shared, task
 
 SECRET_TEXT = "The quetzal sleeps in the third drawer"
 
 
+@pytest.mark.manual_only
 def test_a_button_task_is_kept_word_for_word_for_its_owner_only(app: Any, service: Any) -> None:
     shared(app, service.base)
-    assert app.manual("owner", SECRET_TEXT).status_code == 200
+    assert task(app, "owner", SECRET_TEXT).status_code == 200
     events = app.client("owner").get(f"{app.me_prefix}/events").json()
     assert len(events) == 1
     event = events[0]
@@ -24,6 +26,7 @@ def test_a_button_task_is_kept_word_for_word_for_its_owner_only(app: Any, servic
     assert SECRET_TEXT not in app.dump()
 
 
+@pytest.mark.automatic_only
 def test_an_automatic_task_is_a_line_without_content(app: Any, service: Any) -> None:
     shared(app, service.base)
     app.automatic("owner", SECRET_TEXT)
@@ -35,18 +38,33 @@ def test_an_automatic_task_is_a_line_without_content(app: Any, service: Any) -> 
 
 def test_a_refused_request_is_kept_with_its_reason(app: Any, service: Any) -> None:
     shared(app, service.base, model="fail")
-    app.manual("owner", SECRET_TEXT)
+    task(app, "owner", SECRET_TEXT)
     events = app.client("owner").get(f"{app.me_prefix}/events").json()
     assert events[0]["outcome"] == "ai_service_failed"
+    if events[0]["manual"]:
+        # K-7 (0.1.2): the values of the refusal stay with a button task (``said`` only from the internet).
+        assert events[0]["values"]["answered"] == 500 and "said" in events[0]["values"]
 
 
+def test_an_answer_that_cannot_be_read_is_kept_too(app: Any, service: Any) -> None:
+    """K-5 (0.1.2): the text went out, so what went out says so, whatever came back."""
+    for number, model in enumerate(("garbled", "shapeless"), start=1):
+        shared(app, service.base, model=model)
+        task(app, "owner", f"{SECRET_TEXT} {number}")
+        events = app.client("owner").get(f"{app.me_prefix}/events").json()
+        assert len(events) == number and events[0]["outcome"] == "ai_unreadable", events
+        if events[0]["manual"]:
+            assert f"{SECRET_TEXT} {number}" in events[0]["sent"]["user"]
+
+
+@pytest.mark.manual_only
 def test_cleared_at_once_and_gone_after_14_days(app: Any, service: Any, monkeypatch: Any) -> None:
     shared(app, service.base)
     found = package(app).client
     monkeypatch.setattr(found, "_now", lambda: datetime.now(UTC) - timedelta(days=15))
-    app.manual("owner", "An old text")
+    task(app, "owner", "An old text")
     monkeypatch.undo()
-    app.manual("owner", "A new text")
+    task(app, "owner", "A new text")
     events = app.client("owner").get(f"{app.me_prefix}/events").json()
     assert [event["sent"]["user"].count("A new text") for event in events] == [1]
     owner = app.client("owner")
@@ -57,7 +75,7 @@ def test_cleared_at_once_and_gone_after_14_days(app: Any, service: Any, monkeypa
 def test_the_log_carries_neither_text_nor_key(app: Any, keyed: Any, caplog: Any) -> None:
     caplog.set_level(logging.DEBUG)
     shared(app, keyed.base, key=KEY)
-    assert app.manual("owner", SECRET_TEXT).status_code == 200
+    assert task(app, "owner", SECRET_TEXT).status_code == 200
     app.client("operator").post(f"{app.server_prefix}/probe")
     assert caplog.records
     assert SECRET_TEXT not in caplog.text and KEY not in caplog.text and "Done:" not in caplog.text

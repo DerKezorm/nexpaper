@@ -6,23 +6,23 @@ from __future__ import annotations
 from typing import Any
 
 import pytest
-from ki_contract import code, operator_puts, own, package, said, shared
+from ki_contract import code, operator_puts, own, package, said, shared, task
 
 
 def test_a_new_installation_starts_closed_with_the_operators_service_for_all(app: Any) -> None:
     view = app.client("operator").get(app.server_prefix).json()
     assert view["enabled"] is False and view["mode"] == "shared" and view["key_set"] is False
-    done = app.manual("owner", "Please tidy this text up")
+    done = task(app, "owner", "Please tidy this text up")
     assert said(app, done, "ai_off")
 
 
 def test_the_main_switch_alone_says_no_and_deletes_nothing(app: Any, service: Any) -> None:
     shared(app, service.base, enabled=False)
-    assert said(app, app.manual("owner", "Please tidy this text up"), "ai_off")
+    assert said(app, task(app, "owner", "Please tidy this text up"), "ai_off")
     assert operator_puts(app, enabled=True).status_code == 200
-    assert app.manual("owner", "Please tidy this text up").status_code == 200
+    assert task(app, "owner", "Please tidy this text up").status_code == 200
     assert operator_puts(app, enabled=False).json()["model"] == "plain"
-    assert said(app, app.manual("owner", "Please tidy this text up"), "ai_off")
+    assert said(app, task(app, "owner", "Please tidy this text up"), "ai_off")
 
 
 def test_ai_allowed_of_the_account_alone_says_no_and_rests_ai_programs(app: Any, service: Any) -> None:
@@ -31,12 +31,12 @@ def test_ai_allowed_of_the_account_alone_says_no_and_rests_ai_programs(app: Any,
     owner = app.account_id("owner")
     assert nexki.chain.for_programs(app.store(), owner) is True
     app.take_ai("owner")
-    done = app.manual("owner", "Please tidy this text up")
+    done = task(app, "owner", "Please tidy this text up")
     assert said(app, done, "ai_not_allowed")
     assert nexki.chain.for_programs(app.store(), owner) is False
-    assert app.manual("other", "Please tidy this text up").status_code == 200
+    assert task(app, "other", "Please tidy this text up").status_code == 200
     app.give_ai("owner")
-    assert app.manual("owner", "Please tidy this text up").status_code == 200
+    assert task(app, "owner", "Please tidy this text up").status_code == 200
 
 
 def test_a_blocked_account_sends_nothing_and_its_ai_programs_rest(app: Any, service: Any) -> None:
@@ -46,7 +46,10 @@ def test_a_blocked_account_sends_nothing_and_its_ai_programs_rest(app: Any, serv
     app.shut_out("owner")
     assert nexki.chain.for_programs(app.store(), owner) is False
     with pytest.raises(nexki.AiRefused) as refused:
-        app.automatic("owner", "A letter for the inbox")
+        if app.has_automatic:
+            app.automatic("owner", "A letter for the inbox")
+        else:  # K-8 (0.1.2): an app without automatic tasks; what its jobs would ask, the module refuses
+            nexki.ask(app.store(), app.config(), owner, app.config().tasks[0].id, system="", user="A letter")
     assert refused.value.code == "ai_not_allowed"
     app.let_in("owner")
     assert nexki.chain.for_programs(app.store(), owner) is True
@@ -57,7 +60,7 @@ def test_the_persons_own_switch_alone_says_no(app: Any, service: Any) -> None:
     owner = app.client("owner")
     state = owner.put(app.me_prefix, json={"mine": False}).json()
     assert state["mine"] is False and state["available"] is False and state["reason"] == "ai_switched_off"
-    done = app.manual("owner", "Please tidy this text up")
+    done = task(app, "owner", "Please tidy this text up")
     assert said(app, done, "ai_switched_off")
     assert owner.put(app.me_prefix, json={"mine": True}).json()["available"] is True
 
@@ -76,7 +79,7 @@ def test_own_accesses_only_in_the_way_own(app: Any, service: Any) -> None:
     refused = app.client("owner").put(app.me_prefix, json={"url": service.base, "model": "plain"})
     assert refused.status_code == 409 and code(refused) == "ai_own_off"
     own(app)
-    done = app.manual("owner", "Please tidy this text up")
+    done = task(app, "owner", "Please tidy this text up")
     assert said(app, done, "ai_incomplete")
 
 
@@ -102,19 +105,21 @@ def test_the_key_never_comes_back(app: Any, keyed: Any) -> None:
     view = shared(app, keyed.base, key=KEY)
     assert view["key_set"] is True and KEY not in str(view)
     assert KEY not in app.client("operator").get(app.server_prefix).text
-    assert app.manual("owner", "Please tidy this text up").status_code == 200
+    assert task(app, "owner", "Please tidy this text up").status_code == 200
     assert KEY not in app.dump()
 
 
 def test_the_brakes_per_minute_and_per_day_on_the_server(app: Any, service: Any) -> None:
     shared(app, service.base)
     operator_puts(app, per_minute=1)
-    assert app.manual("owner", "Please tidy this text up").status_code == 200
-    slowed = app.manual("owner", "Please tidy this text up")
-    assert said(app, slowed, "ai_too_often") and slowed.headers.get("retry-after") == "60"
+    assert task(app, "owner", "Please tidy this text up").status_code == 200
+    slowed = task(app, "owner", "Please tidy this text up")
+    assert said(app, slowed, "ai_too_often")
+    # The route of a button task says when to come again; an automatic task has no route.
+    assert not app.has_manual or slowed.headers.get("retry-after") == "60"
     package(app).brake.BRAKE.forget()
     operator_puts(app, per_minute=60, server_day=2)
-    assert app.manual("other", "Please tidy this text up").status_code in (200, 429)
-    used = app.manual("other", "Please tidy this text up")
+    assert task(app, "other", "Please tidy this text up").status_code in (200, 429)
+    used = task(app, "other", "Please tidy this text up")
     assert said(app, used, "ai_day_used")
     assert app.client("operator").get(app.server_prefix).json()["used_today"] == 2

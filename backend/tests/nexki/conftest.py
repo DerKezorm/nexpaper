@@ -38,6 +38,32 @@ def _adapter_module() -> ModuleType:
 ADAPTER = _adapter_module()
 
 
+def pytest_configure(config: Any) -> None:
+    config.addinivalue_line("markers", "manual_only: a case of button tasks (``has_manual``)")
+    config.addinivalue_line("markers", "automatic_only: a case of automatic tasks (``has_automatic``)")
+    config.addinivalue_line("markers", "older_own: a case of an older installation of own services (``own``)")
+
+
+def pytest_collection_modifyitems(config: Any, items: list[Any]) -> None:
+    """Since 0.1.2 (K-8, K-10): the cases of a kind of task the app does not have fall away (deselected, not
+    skipped); every other case runs through the kind it has."""
+    adapter = ADAPTER.Adapter
+    assert adapter.has_manual or adapter.has_automatic, "an app with the module has button or automatic tasks"
+    kept, dropped = [], []
+    for item in items:
+        if (
+            (item.get_closest_marker("manual_only") and not adapter.has_manual)
+            or (item.get_closest_marker("automatic_only") and not adapter.has_automatic)
+            or (item.get_closest_marker("older_own") and "own" not in adapter.older_forms)
+        ):
+            dropped.append(item)
+        else:
+            kept.append(item)
+    if dropped:
+        config.hook.pytest_deselected(items=dropped)
+        items[:] = kept
+
+
 def _forget(adapter: Any) -> None:
     contract.package(adapter).brake.BRAKE.forget()
 

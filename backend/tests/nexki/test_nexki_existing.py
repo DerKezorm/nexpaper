@@ -10,7 +10,7 @@ from typing import Any
 
 import pytest
 from conftest import ADAPTER
-from ki_contract import KEY, package
+from ki_contract import KEY, package, task
 from nexki_service import ReferenceService
 
 FORMS = tuple(ADAPTER.Adapter.older_forms)
@@ -34,7 +34,7 @@ def older(request: Any) -> Iterator[tuple[Any, ReferenceService, str]]:
 
 def test_the_older_installation_keeps_working(older: tuple[Any, ReferenceService, str]) -> None:
     app, service, form = older
-    done = app.manual("owner", "Please tidy this text up")
+    done = task(app, "owner", "Please tidy this text up")
     assert done.status_code == 200, done.text
     seen = service.seen[-1]
     assert seen.headers.get("authorization") == f"Bearer {KEY}" and seen.body["model"] == "plain"
@@ -56,3 +56,24 @@ def test_a_second_start_changes_nothing(older: tuple[Any, ReferenceService, str]
     before = app.client("operator").get(app.server_prefix).json()
     assert nexki.settings.adopt(store, app.config()) == []
     assert app.client("operator").get(app.server_prefix).json() == before
+
+
+@pytest.mark.older_own
+def test_an_older_installation_of_own_services_keeps_its_way_without_any_set_up() -> None:
+    """K-9 (0.1.2, K2): an older installation where every account brought its own service (nexmail) stays "own"
+    though no account set one up yet; it does not become "one for all"."""
+    found = ReferenceService(key=KEY)
+    found.serve()
+    adapter = ADAPTER.Adapter()
+    package(adapter).brake.BRAKE.forget()
+    adapter.start_older("own_unset", found.base, KEY)
+    try:
+        view = adapter.client("operator").get(adapter.server_prefix).json()
+        assert view["mode"] == "own", view
+        mine = adapter.client("owner").get(adapter.me_prefix).json()
+        assert not (mine.get("own") or {}).get("key_set")
+        assert package(adapter).settings.adopt(adapter.store(), adapter.config()) == []
+    finally:
+        adapter.stop()
+        found.stop()
+

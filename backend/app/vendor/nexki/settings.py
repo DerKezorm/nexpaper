@@ -239,10 +239,18 @@ def save_own(
 # --- After an update ------------------------------------------------------------------------------------------------
 
 
-def adopt(store: Store, config: AppConfig, *, resolver: Callable[[str, int], list[str]] = net.resolve) -> list[str]:
+def adopt(
+    store: Store,
+    config: AppConfig,
+    *,
+    resolver: Callable[[str, int], list[str]] = net.resolve,
+    older_mode: str | None = None,
+) -> list[str]:
     """Run at every start; changes only what was never stored, so a second run does nothing. Returns what it did.
 
-    * The way (K2): an installation whose accounts set up their own services keeps "own" (nexmail, nexlore); every
+    * The way (K2): an installation whose accounts set up their own services keeps "own" (nexmail, nexlore); since
+      0.1.2 (K-9) so does one whose older version had that way though nobody set one up yet: the app names it as
+      ``older_mode`` (nexmail: ``"own"`` on a database of an older version, ``None`` on a new installation). Every
       other one starts with the operator's service for all.
     * The main switch (K3): never stored, it is on where the operator's service is complete (nexpaper, nexdiary had no
       switch), else off (a new installation: closed). Apps that had a switch (nexmail ``ki_erlaubt``, nexlore
@@ -252,7 +260,10 @@ def adopt(store: Store, config: AppConfig, *, resolver: Callable[[str, int], lis
     done: list[str] = []
     urls = [url for url in store.own_access_urls() if url]
     if store.setting("mode") is None:
-        chosen = "own" if urls and "own" in config.modes else "shared"
+        if older_mode in config.modes:
+            chosen = str(older_mode)
+        else:
+            chosen = "own" if urls and "own" in config.modes else "shared"
         store.set_setting("mode", chosen)
         done.append(f"mode={chosen}")
     if store.setting("enabled") is None:

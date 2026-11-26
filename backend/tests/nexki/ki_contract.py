@@ -9,6 +9,7 @@ a public address. Never a real service, never a real key. They never change; the
 from __future__ import annotations
 
 import importlib
+import json
 import time
 from collections.abc import Iterator
 from contextlib import contextmanager
@@ -30,12 +31,18 @@ class StandardAdapter:
     server_prefix = "/api/server/ai"
     me_prefix = "/api/me/ai"
     #: The kinds of older installation of this app the contract test "Bestand" starts from: ``shared`` (nexpaper,
-    #: nexdiary), ``own`` (nexmail), ``both`` (nexlore). An app without AI before: ().
+    #: nexdiary), ``own`` (nexmail), ``both`` (nexlore). An app without AI before: (). Since 0.1.2 (K-9) an app with
+    #: ``own`` also starts ``own_unset`` (the same way, no account's service set up) and names its way to ``adopt``.
     older_forms: tuple[str, ...] = ()
     #: Since 0.1.1 (E55): where the app's own routes of its tasks (``manual``) keep older status and codes of a refusal,
     #: the module's code -> (status, the app's code); nexdiary ``{"ai_off": (403, "ai_off"), "ai_day_used": (429,
     #: "ai_daily_limit")}``. The module's routes always answer with the module's.
     old_codes: dict[str, tuple[int, str]] = {}  # noqa: RUF012 (read only)
+    #: Since 0.1.2 (K-8, K-10): which kinds of task the app has. An app without button tasks (nexpaper: only
+    #: proposals) runs the cases through ``automatic``, an app without automatic tasks (nexmail) through ``manual``;
+    #: only the cases of one kind (what went out word for word, the line without content) fall away, deselected.
+    has_manual = True
+    has_automatic = True
 
     def start(self) -> None:
         """APP: a freshly installed app, started as in production, with ``owner``, ``other`` (members) and
@@ -111,14 +118,61 @@ def detail(response: Any) -> dict[str, Any]:
 
 
 def code(response: Any) -> str:
+    """The code of a refusal: ``detail.code``, or since 0.1.2 (K-4) ``detail`` itself where an app's older route
+    answers it as text (nexmail ``"ki_nicht_erreichbar"``, E55)."""
+    data = response.json()
+    found = data.get("detail") if isinstance(data, dict) else None
+    if isinstance(found, str):
+        return found
     return str(detail(response).get("code") or "")
+
+
+def values(adapter: Any, response: Any, role: str = "owner") -> dict[str, Any]:
+    """The values of a refusal (``answered``, ``seconds``, ``said``): from ``detail``, or since 0.1.2 (K-4, K-7) where
+    the app's older route answers ``detail`` as text, from the newest line of the account's "what went out"."""
+    data = response.json()
+    found = data.get("detail") if isinstance(data, dict) else None
+    if isinstance(found, dict):
+        return found
+    events = adapter.client(role).get(f"{adapter.me_prefix}/events").json()
+    return dict(events[0].get("values") or {}) if events else {}
+
+
+class Done:
+    """The answer of an automatic task in the form of a response (since 0.1.2): 200 with its text, or the refusal."""
+
+    def __init__(self, status_code: int, body: dict[str, Any]) -> None:
+        self.status_code = status_code
+        self.headers: dict[str, str] = {}
+        self._body = body
+        self.text = json.dumps(body)
+
+    def json(self) -> dict[str, Any]:
+        return self._body
+
+
+def task(adapter: Any, role: str, text: str) -> Any:
+    """One task of the app as ``role`` with ``text``: a button task where the app has one (``manual``, its response),
+    else an automatic one (K-10), its outcome as a response."""
+    if adapter.has_manual:
+        return adapter.manual(role, text)
+    nexki = package(adapter)
+    try:
+        found = adapter.automatic(role, text)
+    except nexki.AiRefused as refused:
+        return Done(refused.status, {"detail": refused.as_dict()})
+    if hasattr(found, "status_code"):
+        return found
+    return Done(200, {"text": found if isinstance(found, str) else ""})
 
 
 def said(adapter: Any, response: Any, module_code: str) -> bool:
     """Whether the app's own route (``manual``) refused with ``module_code``: the module's status and code, or the
-    older ones the app keeps there (``old_codes``, E55)."""
+    older ones the app keeps there (``old_codes``, E55). An automatic task (``task`` without button tasks) says the
+    module's."""
     status, _ = package(adapter).errors.CODES[module_code]
-    wanted_status, wanted_code = adapter.old_codes.get(module_code, (status, module_code))
+    older = adapter.old_codes if adapter.has_manual else {}
+    wanted_status, wanted_code = older.get(module_code, (status, module_code))
     return bool(response.status_code == wanted_status and code(response) == wanted_code)
 
 
