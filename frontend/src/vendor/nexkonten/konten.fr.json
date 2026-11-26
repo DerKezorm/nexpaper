@@ -24,6 +24,7 @@
     "password": "Mot de passe",
     "currentPassword": "Mot de passe actuel",
     "newPassword": "Mot de passe",
+    "changedPassword": "Nouveau mot de passe",
     "passwordRepeat": "Répéter le mot de passe",
     "passwordRules": "Au moins {{minimum}} caractères.",
     "passwordMismatch": "Les deux mots de passe ne sont pas identiques.",

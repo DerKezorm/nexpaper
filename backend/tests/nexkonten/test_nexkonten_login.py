@@ -209,8 +209,48 @@ def test_a_brake_over_both_counts_tells_no_name_from_no_account(app: Any, konten
     assert set(answers.values()) == {"too_many"}, answers
 
 
+class _CountingStore:
+    """The app's store, with every password check written down (account, password) and how long the app's check took
+    (``seconds``)."""
+
+    def __init__(self, store: Any) -> None:
+        self._store = store
+        self.checked: list[tuple[Any, str]] = []
+        self.seconds: list[float] = []
+
+    def check_password(self, account_id: Any, password: str) -> bool:
+        import time
+
+        self.checked.append((account_id, password))
+        started = time.perf_counter()
+        try:
+            return bool(self._store.check_password(account_id, password))
+        finally:
+            self.seconds.append(time.perf_counter() - started)
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self._store, name)
+
+
+def test_a_wrong_password_is_checked_once_for_a_known_name_and_for_an_unknown_one(app: Any, konten: Any) -> None:
+    """The same work for a known and an unknown name (since 1.1.2 counted, not only timed): one check of the typed
+    password each, against the account's hash or, for a name nobody has, against the app's stand-in (``None``)."""
+    alex = app.seed("alex", password=password())
+    for typed, account in (("alex", alex), ("nobody-at-all", None)):
+        with app.store() as store:
+            counting = _CountingStore(store)
+            with pytest.raises(konten.AccountError):
+                konten.login.authenticate(counting, typed, "wrong password")
+        assert counting.checked == [(account, "wrong password")], (typed, counting.checked)
+
+
 def test_a_wrong_password_takes_as_long_for_a_known_name_as_for_an_unknown_one(app: Any, konten: Any) -> None:
-    import time
+    """The app's stand-in for an unknown name costs what a real check costs: a store that skips it answers an unknown
+    name at once. Since 1.1.2 the time is that of the app's password check itself (what differs between the two paths
+    besides it, counting a failure at the account, is not what this guards), measured in pairs, known and unknown back
+    to back in alternating order, after a warm-up: the median of the pairs' ratios lies between 0.6 and 1.6 (the bounds
+    of before); load that slows a moment slows both sides of its pair."""
+    import statistics
 
     secret = password()
     for index in range(6):
@@ -218,20 +258,25 @@ def test_a_wrong_password_takes_as_long_for_a_known_name_as_for_an_unknown_one(a
 
     def once(typed: str) -> float:
         with app.store() as store:
-            started = time.perf_counter()
+            counting = _CountingStore(store)
             with pytest.raises(konten.AccountError):
-                konten.login.authenticate(store, typed, "wrong password")
-            return time.perf_counter() - started
+                konten.login.authenticate(counting, typed, "wrong password")
+        assert len(counting.seconds) == 1, counting.checked
+        return counting.seconds[0]
 
-    known, unknown = [], []
-    for round_ in range(5):
+    for index in range(6):  # warm-up: caches, the first hash, the database
+        once(f"user{index}")
+        once(f"warm{index}")
+    ratios = []
+    for round_ in range(10):
         for index in range(6):
-            known.append(once(f"user{index}"))
-            unknown.append(once(f"nobody{round_}{index}"))
-    known.sort()
-    unknown.sort()
-    middle_known, middle_unknown = known[len(known) // 2], unknown[len(unknown) // 2]
-    assert 0.6 < middle_known / middle_unknown < 1.6, (middle_known, middle_unknown)
+            if (round_ + index) % 2:
+                known, unknown = once(f"user{index}"), once(f"nobody{round_}{index}")
+            else:
+                unknown, known = once(f"nobody{round_}{index}"), once(f"user{index}")
+            ratios.append(known / unknown)
+    middle = statistics.median(ratios)
+    assert 0.6 < middle < 1.6, (middle, sorted(ratios)[::6])
 
 
 def test_a_new_password_makes_the_known_browser_mark_worthless(app: Any, konten: Any) -> None:

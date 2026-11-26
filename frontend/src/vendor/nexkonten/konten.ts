@@ -161,7 +161,22 @@ export const SCREENS = {
   reset: ['newPassword', 'passwordRepeat'],
   profile: ['displayName', 'username', 'email', 'language'],
   operatorInvite: ['email', 'displayName'],
+  /** Since 1.1.2: the dialog "Passwort ändern" under Security (each app draws it; its words come from here). */
+  change: ['currentPassword', 'newPassword', 'passwordRepeat'],
 } as const satisfies Record<string, readonly AccountField[]>
+
+/** Since 1.1.2: labels that differ by screen. Where a password replaces one there was (changing it, a new one after
+ * "Passwort vergessen?") the field says "Neues Passwort" (``account.changedPassword``); where it is the first one
+ * (setup, invitation) it stays "Passwort" (``account.newPassword``, unchanged). */
+export const SCREEN_LABELS: Partial<Record<AccountScreen, Partial<Record<AccountField, string>>>> = {
+  reset: { newPassword: 'account.changedPassword' },
+  change: { newPassword: 'account.changedPassword' },
+}
+
+/** Since 1.1.2: the text key of a field's label on a screen (``SCREEN_LABELS``, else ``FIELDS``). */
+export function fieldLabel(screen: AccountScreen, field: AccountField): string {
+  return SCREEN_LABELS[screen]?.[field] ?? FIELDS[field].label
+}
 
 export type AccountScreen = keyof typeof SCREENS
 
@@ -444,7 +459,7 @@ export function screenFields(
     const hint = profileName ? 'account.usernameHintProfile' : spec.hint
     // Since 0.3.7 the profile names the rules under it too.
     const hints = profileName ? [hint, 'account.usernameRules'] : hint ? [hint] : []
-    return { ...spec, field, autoComplete, hint, hints, required: optional ? false : spec.required }
+    return { ...spec, label: fieldLabel(screen, field), field, autoComplete, hint, hints, required: optional ? false : spec.required }
   })
 }
 

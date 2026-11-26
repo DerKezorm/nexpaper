@@ -1,4 +1,4 @@
-// Vorlage nexkonten 1.1.1
+// Vorlage nexkonten 1.1.2
 // @vitest-environment jsdom
 /**
  * Since 1.1.0: the module's cards in the app (``SignInPage.tsx``, ``AccountCards.tsx``): built from the ui kit, in the
@@ -13,7 +13,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { NexuiLanguage } from './vendor/nexui'
 import { AppearanceCard, PasskeyAddition, SignOutCard, UnconfirmedEmailBox, WhatYouSeeCard } from './vendor/nexkonten/AccountCards'
 import { SignInPage, type SignInView, type Translate } from './vendor/nexkonten/SignInPage'
-import { kontenVariables, newSignInMailHint, publicUrlPlaceholder, type Readiness } from './vendor/nexkonten/konten'
+import { fieldLabel, kontenVariables, newSignInMailHint, publicUrlPlaceholder, screenFields, type Readiness } from './vendor/nexkonten/konten'
+import french from './vendor/nexkonten/konten.fr.json'
 import german from './vendor/nexkonten/konten.de.json'
 import english from './vendor/nexkonten/konten.en.json'
 
@@ -325,5 +326,25 @@ describe('"Mail bei neuer Anmeldung" with a sentence of the app (since 1.1.1, E5
     expect(newSignInMailHint(hint, '  ')).toBe(hint)
     expect(newSignInMailHint(hint, null)).toBe(hint)
     expect(newSignInMailHint(hint, ' Auch als Mitteilung auf deinen Geräten. ')).toBe(`${hint} Auch als Mitteilung auf deinen Geräten.`)
+  })
+})
+
+describe('the new password is called "Neues Passwort" where it replaces one (since 1.1.2)', () => {
+  const label = (screen: Parameters<typeof fieldLabel>[0], words: Record<string, unknown>) =>
+    translator(words)(screenFields(screen).find((spec) => spec.field === 'newPassword')!.label)
+
+  it('in the dialog "Passwort ändern" and after "Passwort vergessen?", beside the current password and its repetition', () => {
+    for (const screen of ['change', 'reset'] as const) {
+      expect([label(screen, german), label(screen, english), label(screen, french)]).toEqual(['Neues Passwort', 'New password', 'Nouveau mot de passe'])
+      expect(fieldLabel(screen, 'newPassword')).toBe('account.changedPassword')
+    }
+    expect(screenFields('change').map((spec) => t(spec.label))).toEqual(['Aktuelles Passwort', 'Neues Passwort', 'Passwort wiederholen'])
+  })
+
+  it('stays "Passwort" where it is the first one: setup and invitation', () => {
+    for (const screen of ['setup', 'invite'] as const) {
+      expect([label(screen, german), label(screen, english), label(screen, french)]).toEqual(['Passwort', 'Password', 'Mot de passe'])
+      expect(fieldLabel(screen, 'newPassword')).toBe('account.newPassword')
+    }
   })
 })

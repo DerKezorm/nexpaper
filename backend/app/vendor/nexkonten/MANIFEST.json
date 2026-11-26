@@ -1,6 +1,6 @@
 {
   "files": {
-    "backend/app/vendor/nexkonten/__init__.py": "sha256-u7HSMGY802M6veIFEuWf7P6dKqGNUKqGhItEYDBd/ig=",
+    "backend/app/vendor/nexkonten/__init__.py": "sha256-qEdUG+J523gBsCHfTatPPftzk6GxdtdrnYZECrKVSVM=",
     "backend/app/vendor/nexkonten/avatars.py": "sha256-zF41PxM+eCD16c/C36xhXzjhRTaBj0MEIIVvwcnNr6A=",
     "backend/app/vendor/nexkonten/brake.py": "sha256-v6SDfEuci3kL2B9FG9mVBdcKuRJ2M/LK33/j7E+bdRM=",
     "backend/app/vendor/nexkonten/common.py": "sha256-5RaNt9NTVf7wM+aBpmuJU3rzjhfDFdykamjHY1a8l/A=",
@@ -30,7 +30,7 @@
     "backend/tests/nexkonten/test_nexkonten_existing.py": "sha256-TaDLDnoKfBZHaiuI2VgxX4X9lvtT03f8PldUH67D13E=",
     "backend/tests/nexkonten/test_nexkonten_factor.py": "sha256-PyeIyJC5S5YsFWbKl6W8pvpVOOykYladwRlp+D3DYFA=",
     "backend/tests/nexkonten/test_nexkonten_invite.py": "sha256-EXDV+cpEGP8B0FR47cyg4mHUpPd3IOPoRygGPgRF8Io=",
-    "backend/tests/nexkonten/test_nexkonten_login.py": "sha256-Q9V1kIR69NoWHqa6XyuKAN2zJem3YuuvPuzTDglNewI=",
+    "backend/tests/nexkonten/test_nexkonten_login.py": "sha256-Ie3JZUNW72xi9vcAQfN+bsR92u7lRe/Jcw5+Ks/WMPk=",
     "backend/tests/nexkonten/test_nexkonten_manage.py": "sha256-GQm5gXBmTrrUvZPLg70GZl39vaiBgMQYQAqvq/VAR20=",
     "backend/tests/nexkonten/test_nexkonten_oidc.py": "sha256-XEvpK68RzxpfQ0Tmq3wAUCLIhCJQ56FbeJejGjVEt+w=",
     "backend/tests/nexkonten/test_nexkonten_passkeys.py": "sha256-ekhO3F3wQcE41KM6UG8V3DeK+EIyDtjlzf8q4CaShd0=",
@@ -45,10 +45,10 @@
     "backend/tests/nexkonten/webauthn_device.py": "sha256-67Qt8Bq4aAveF/3aP8YTNjGRGxqzqItI1QQHHrkeEF8=",
     "frontend/src/vendor/nexkonten/AccountCards.tsx": "sha256-TZTNNfVAopH478lSnZHhpWzq2WnxzfGL87wuqd+bVTM=",
     "frontend/src/vendor/nexkonten/SignInPage.tsx": "sha256-MxChjNXdovJBBJ5Gr4dzox8iodAFD+UOu5zPByeOY/w=",
-    "frontend/src/vendor/nexkonten/konten.de.json": "sha256-NjOGkrXSmETpQfpYDMoRxdXzJVO3Etb1AKbImWs/CLk=",
-    "frontend/src/vendor/nexkonten/konten.en.json": "sha256-JyK3stCMmtAnwpN8Kdk42BxDT2i2oW/Z+ndzq8Q4emA=",
-    "frontend/src/vendor/nexkonten/konten.fr.json": "sha256-EW81FDEep66qcoS5EwmQ5xv89jVEVoxfQXzDnRWyrXE=",
-    "frontend/src/vendor/nexkonten/konten.ts": "sha256-fLloGQrbWOTsjWZ6s+vrSjKlcAi3ClZiIXDqijPJGv0="
+    "frontend/src/vendor/nexkonten/konten.de.json": "sha256-pdZn89k0LC+Ue7JRb1dYtaSoXbuxBQiQVFcJnSHh3mE=",
+    "frontend/src/vendor/nexkonten/konten.en.json": "sha256-Olo+O8RoTtZMC1W8YUnFsJe9Lx8Qkyfiw7wSBbdgdBE=",
+    "frontend/src/vendor/nexkonten/konten.fr.json": "sha256-ck8QPa+hl3ZdzwTj3cqLCxGKh9r9HL/Ltl/QVJEoUZY=",
+    "frontend/src/vendor/nexkonten/konten.ts": "sha256-/TGjmNO2/rl3G0AWX/A8MEawM5FqOxuW9a4ujBtO3iY="
   },
   "module": "konten",
   "requires": {
@@ -57,5 +57,5 @@
     "webauthn": "3.0.1"
   },
   "vendor_path": "backend/app/vendor/nexkonten",
-  "version": "1.1.1"
+  "version": "1.1.2"
 }
