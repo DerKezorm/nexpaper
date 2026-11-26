@@ -6,6 +6,7 @@ from typing import Any
 from urllib.parse import urlsplit
 
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from ..config import get_settings
@@ -226,9 +227,17 @@ def save(db: Session, changes: dict[str, Any], *, commit: bool = True) -> None:
             raise KeyError(key)
         row = db.get(Setting, key)
         if row is None:
-            db.add(Setting(key=key, value=value))
-        else:
-            row.value = value
+            try:
+                with db.begin_nested():
+                    db.add(Setting(key=key, value=value))
+                continue
+            except IntegrityError:
+                # Written meanwhile by another start of nexpaper (two at once: tests, a restart while one still
+                # runs): then this value goes onto that row instead of breaking the start.
+                row = db.get(Setting, key, populate_existing=True)
+                if row is None:
+                    raise
+        row.value = value
     if commit:
         db.commit()
     else:
