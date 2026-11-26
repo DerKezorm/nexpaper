@@ -21,6 +21,12 @@
   ``nexpaper`` or deleted, as the operator chose.
 * **Full storage waits.** A mail for a person whose storage is full (``quota``) is left as it is, unread, and noted
   under ``full`` with its person; it is fetched again once that person has room. The person is told how many wait.
+* **A blocked or deleted account's post waits** (Bauplan E38, E57). A mail to the plus address of an account that is
+  blocked or deleted (within its 30 days), or from a confirmed address of such an account only, never goes to the
+  operator, not even as unknown: the operator never sees what was meant for somebody else. It is left as it is,
+  unread, noted under ``held`` with its accounts, and fetched again once one of them is back (unblocked, brought
+  back); then it comes in as any other. Once they are all removed for good it is passed over, never fetched again,
+  given to nobody (as a mail of an unknown sender when the operator drops those).
 """
 
 from __future__ import annotations
@@ -49,7 +55,7 @@ from sqlalchemy import select
 
 from .. import clock
 from ..db import SessionLocal
-from ..models import IntakeItem
+from ..models import Account, IntakeItem
 from ..security import decrypt_secret
 from . import filetypes, intake, limits, mail_senders, mail_text, outbound, quota, settings_service, storage
 
@@ -462,9 +468,19 @@ def _state(cfg: Config, box: Box, stored: Any) -> dict[str, Any]:
                 "backlog": bool(state.get("backlog")),
                 "retry": {str(k): int(v) for k, v in dict(state.get("retry") or {}).items()},
                 "later": {str(k): str(v) for k, v in dict(state.get("later") or {}).items()},
-                "full": _full_of(state.get("full"))}
+                "full": _full_of(state.get("full")), "held": _held_of(state.get("held"))}
     return {"box": cfg.box, "uidvalidity": box.uidvalidity, "last": 0, "backlog": True, "retry": {}, "later": {},
-            "full": {}}
+            "full": {}, "held": {}}
+
+
+def _held_of(stored: Any) -> dict[str, list[int]]:
+    """The mails that wait for a blocked or deleted account, ``{uid: [account, …]}``, as kept; anything else is left
+    out."""
+    kept: dict[str, list[int]] = {}
+    for uid, value in dict(stored or {}).items() if isinstance(stored, dict) else ():
+        if isinstance(value, list) and value and all(type(part) is int for part in value):
+            kept[str(uid)] = list(value)
+    return kept
 
 
 def _full_of(stored: Any) -> dict[str, list[int]]:
@@ -490,14 +506,28 @@ def _waiting(box: Box, state: dict[str, Any]) -> list[int]:
     return [uid for uid in box.uids(criteria) if uid > int(state["last"])]
 
 
-def _due(state: dict[str, Any], today: str, room: Callable[[int, int], bool] | None = None) -> list[int]:
-    """Mails from before that are tried again now: those whose take failed, those left for a day that has come, and
-    those whose person has room for them again (``room(account, bytes)``; still full, they are not fetched)."""
+def _due(state: dict[str, Any], today: str, room: Callable[[int, int], bool] | None = None,
+         accounts: tuple[set[int], set[int]] | None = None) -> list[int]:
+    """Mails from before that are tried again now: those whose take failed, those left for a day that has come, those
+    whose person has room for them again (``room(account, bytes)``; still full, they are not fetched), and those held
+    for accounts of which one is back or all are removed for good (``accounts``: those there are, those of them
+    blocked or deleted; ``_accounts_now``)."""
     again = {int(uid) for uid in state["retry"]}
     again |= {int(uid) for uid, day in state["later"].items() if day < today}
     if room is not None:
         again |= {int(uid) for uid, (owner, _documents, size) in state.get("full", {}).items() if room(owner, size)}
+    if accounts is not None:
+        there, out = accounts
+        again |= {int(uid) for uid, held in state.get("held", {}).items()
+                  if set(held) & (there - out) or not set(held) & there}
     return sorted(again)
+
+
+def _accounts_now() -> tuple[set[int], set[int]]:
+    """The accounts there are and those of them that are blocked or deleted."""
+    with SessionLocal() as db:
+        rows = db.execute(select(Account.id, Account.blocked_at)).all()
+    return {int(uid) for uid, _at in rows}, {int(uid) for uid, at in rows if at is not None}
 
 
 # --- Checking a mail before it is taken apart -------------------------------------------------------------------------
@@ -717,18 +747,41 @@ def passed_check(auth: list[str], mailbox: str, sender: str, trusted: str = "") 
     return passed
 
 
+def _named(recipients: list[str], mailbox: str) -> set[str]:
+    """The names of ``name+<account>@`` of the mailbox's address among the recipients (casefolded)."""
+    named: set[str] = set()
+    if "@" in mailbox:
+        local, _at, domain = mailbox.strip().rpartition("@")
+        prefix = local.casefold() + "+"
+        for recipient in recipients:
+            r_local, _at2, r_domain = recipient.rpartition("@")
+            if r_domain.casefold() == domain.casefold() and r_local.casefold().startswith(prefix):
+                named.add(r_local[len(prefix):].split("+", 1)[0].casefold())
+    return named
+
+
+def held_for(db: Any, sender: str, recipients: list[str], mailbox: str) -> list[int]:
+    """The blocked or deleted accounts a mail is meant for, when it is meant for them and nobody else that may receive
+    (Bauplan E57): the plus address names such an account, or no plus address names anybody and the sender's address
+    is a confirmed one of such accounts only. Empty: ``assign`` decides as always."""
+    from .konten_store import by_any_name
+
+    named = _named(recipients, mailbox)
+    if len(named) == 1:
+        row = by_any_name(db, next(iter(named)))
+        if row is not None:
+            return [int(row.id)] if row.blocked_at is not None else []
+    if len(named) > 1 or not sender or mail_senders.owners(db, sender):
+        return []
+    return sorted(mail_senders.owners(db, sender, shut_out=True))
+
+
 def assign(db: Any, sender: str, recipients: list[str], mailbox: str) -> tuple[int | None, bool]:
     """Whose a mail is: ``name+<account>@`` of the mailbox's address (its domain; the name is what stands up to the
     next ``+``; all such recipients must name the same account), else a confirmed sender address of exactly one person;
     else the operator's, marked unknown."""
     if "@" in mailbox:
-        local, _at, domain = mailbox.strip().rpartition("@")
-        prefix = local.casefold() + "+"
-        named: set[str] = set()
-        for recipient in recipients:
-            r_local, _at2, r_domain = recipient.rpartition("@")
-            if r_domain.casefold() == domain.casefold() and r_local.casefold().startswith(prefix):
-                named.add(r_local[len(prefix):].split("+", 1)[0].casefold())
+        named = _named(recipients, mailbox)
         if len(named) == 1:
             account = intake.account_named(db, next(iter(named)))
             if account is not None:
@@ -768,6 +821,8 @@ class Taken:
     need: int = 0
     #: The document made (or known from before) is the text of the mail.
     text: bool = False
+    #: The blocked or deleted accounts the mail waits for (E57); nothing was taken.
+    held: list[int] = field(default_factory=list)
 
     @property
     def whole(self) -> bool:
@@ -795,6 +850,10 @@ def take_mail(raw: bytes, *, box: str, uidvalidity: int, uid: int, mailbox: str,
             if failed_check(parsed.auth, mailbox, auth_server):
                 owner, unknown = intake.operator_id(db), True
             else:
+                taken.held = held_for(db, parsed.sender, parsed.recipients, mailbox)
+                if taken.held:
+                    # Meant for an account that is out: nothing is taken, nobody sees it, it waits (E57).
+                    return taken
                 owner, unknown = assign(db, parsed.sender, parsed.recipients, mailbox)
             sure = mail_text.sure_owner(db, parsed, mailbox, auth_server) if text_on else None
         taken.unknown, taken.owner, taken.over = unknown, owner, parsed.over
@@ -901,6 +960,8 @@ class Result:
     dropped: int = 0
     #: Mails that wait in the mailbox for room in their person's storage.
     full: int = 0
+    #: Mails that wait in the mailbox for a blocked or deleted account.
+    held: int = 0
     more: bool = False
     after: str = ""
     #: Of ``files``: documents made of the text of a mail.
@@ -1012,7 +1073,7 @@ def _fetch() -> Result:
                 state["last"] = max([state["last"], *box.uids(["UID", "*"])])
                 state["backlog"] = False
             with SessionLocal() as db:
-                due = _due(state, today, lambda owner, size: quota.room(db, owner, size))
+                due = _due(state, today, lambda owner, size: quota.room(db, owner, size), _accounts_now())
             waiting = sorted(set(due) | set(fresh))
             result.more = len(waiting) > PER_RUN
             batch = waiting[:PER_RUN]
@@ -1022,6 +1083,7 @@ def _fetch() -> Result:
                 state["retry"].pop(str(gone), None)
                 state["later"].pop(str(gone), None)
                 state["full"].pop(str(gone), None)
+                state["held"].pop(str(gone), None)
             made = [False]
             fetched = 0
             for uid in [uid for uid in batch if uid in sizes]:
@@ -1042,11 +1104,11 @@ def _fetch() -> Result:
         raise
     _remember(True, "", result)
     if (result.mails or result.passed or result.skipped or result.flagged or result.deferred or result.dropped
-            or result.full):
+            or result.full or result.held):
         logger.info("Mailbox: %s mail(s), %s attachment(s) taken unknown=%s passed=%s skipped=%s flagged=%s "
-                    "deferred=%s dropped=%s texts=%s full=%s", result.mails, result.files, result.unknown,
+                    "deferred=%s dropped=%s texts=%s full=%s held=%s", result.mails, result.files, result.unknown,
                     result.passed, result.skipped, result.flagged, result.deferred, result.dropped, result.texts,
-                    result.full)
+                    result.full, result.held)
     return result
 
 
@@ -1059,6 +1121,13 @@ def _one(box: Box, cfg: Config, state: dict[str, Any], uid: int, size: int, toda
     state["last"] = max(int(state["last"]), uid)
     state["later"].pop(key, None)
     state["full"].pop(key, None)
+    held = state["held"].pop(key, None)
+    if held is not None and not (set(held) & _accounts_now()[0]):
+        # Every account it waited for was removed for good: given to nobody, the operator neither, never fetched again.
+        state["retry"].pop(key, None)
+        result.dropped += 1
+        logger.info("Mailbox: a mail that waited for a removed account was passed over")
+        return
     if tries > MAX_TRIES:
         state["retry"].pop(key, None)
         _flag(box, uid)
@@ -1086,6 +1155,12 @@ def _one(box: Box, cfg: Config, state: dict[str, Any], uid: int, size: int, toda
     if taken.error:
         state["retry"].pop(key, None)
         result.passed += 1
+        return
+    if taken.held:
+        # Left in the mailbox as it is, unread; fetched again once one of its accounts is back (E57).
+        state["retry"].pop(key, None)
+        state["held"][key] = sorted(taken.held)
+        result.held += 1
         return
     if taken.full and taken.owner is not None:
         # Left in the mailbox as it is, unread; fetched again once the person has room (E47).

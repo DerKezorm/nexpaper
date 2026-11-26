@@ -319,8 +319,9 @@ def test_exactly_one_address_in_from(mailbox: imap_server.Store, tom: Account, h
 
 
 def test_a_blocked_account_gets_nothing(mailbox: imap_server.Store, tom: Account, operator: Account) -> None:
-    """X11: a blocked account gets no text from its own address, and attachments to its plus address go to the
-    operator, marked unknown."""
+    """X11: a blocked account gets no text from its own address, and attachments to its plus address do not go to the
+    operator either (Bauplan E57, before: marked unknown): both wait unread in the mailbox and come in to the account
+    once it is unblocked."""
     lea = make_account("lea")
     confirmed_sender(lea, "lea@example.com")
     with SessionLocal() as db:
@@ -332,10 +333,17 @@ def test_a_blocked_account_gets_nothing(mailbox: imap_server.Store, tom: Account
     deliver(mailbox, plain_mail(sender="lea@example.com", auth=PASS))
     assert intake_mail.fetch().texts == 0 and docs() == []
     deliver(mailbox, mail(sender="spam@example.org", to="paper+lea@example.com", files=[PDF]))
-    intake_mail.fetch()
-    [document] = docs()
-    assert document.owner_id == operator.id
-    assert [i.unknown for i in items()] == [True]
+    assert intake_mail.fetch().held == 1
+    assert docs() == [] and items() == [], "nothing for the operator, not even as unknown"
+    assert all("\\Seen" not in kept.flags for kept in mailbox.inbox().mails), "both left unread"
+    with SessionLocal() as db:
+        row = db.get(Account, lea.id)
+        assert row is not None
+        row.blocked_at = None
+        db.commit()
+    done = intake_mail.fetch()
+    assert (done.texts, done.files) == (1, 2)
+    assert [d.owner_id for d in docs()] == [lea.id, lea.id] and [i.unknown for i in items()] == [False, False]
 
 
 def test_at_most_a_number_of_texts_a_day_per_person(mailbox: imap_server.Store, tom: Account,

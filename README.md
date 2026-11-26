@@ -485,7 +485,9 @@ itself: it all waits in an inbox.
   through `paper+<account>@` alone, at most 50 a day per person and 200 KB of text each. Without such a verdict of your
   mail server no text is taken. A mail belongs to the
   person whose confirmed address it comes from (Settings › My account › Upload) or who is named in `paper+<account>@`; everything
-  else goes to the operator, marked unknown (or stays in the mailbox, if you choose so). Once every part was taken the
+  else goes to the operator, marked unknown (or stays in the mailbox, if you choose so). A mail for a blocked or deleted
+  account never goes to the operator: it stays unread in the mailbox and comes in once the account is back; once the
+  account is removed for good, it is left there and goes to nobody. Once every part was taken the
   mail is marked read, moved to `nexpaper` or deleted; a mail with parts over the limits stays and is flagged. The first
   start takes only the unread mails. TLS or STARTTLS is required (without it only for a server on the same machine), a
   server in your own network must be allowed first, and switched off nothing connects. A stranger who knows the address

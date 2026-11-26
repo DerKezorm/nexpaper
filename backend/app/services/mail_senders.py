@@ -140,17 +140,18 @@ def confirm(db: Session, token: str) -> tuple[MailSender, Account] | None:
     return row, account
 
 
-def owners(db: Session, address: str) -> set[int]:
+def owners(db: Session, address: str, *, shut_out: bool = False) -> set[int]:
     """The accounts (not blocked) for which this address counts: a confirmed sender address, or the confirmed address
-    of the account."""
+    of the account. ``shut_out``: the blocked and deleted ones instead (not yet removed for good), whose post waits
+    for them (``intake_mail.held_for``)."""
     key = key_of(address)
     if not key:
         return set()
+    out = Account.blocked_at.is_not(None) if shut_out else Account.blocked_at.is_(None)
     found = set(db.scalars(select(MailSender.user_id).join(Account, Account.id == MailSender.user_id)
-                           .where(MailSender.address_key == key, MailSender.confirmed_at.is_not(None),
-                                  Account.blocked_at.is_(None))))
+                           .where(MailSender.address_key == key, MailSender.confirmed_at.is_not(None), out)))
     for account_id, email in db.execute(select(Account.id, Account.email).where(
-            Account.email_confirmed_at.is_not(None), Account.blocked_at.is_(None), Account.email != "")):
+            Account.email_confirmed_at.is_not(None), out, Account.email != "")):
         if key_of(email) == key:
             found.add(int(account_id))
     return found
