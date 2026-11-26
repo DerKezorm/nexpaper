@@ -22,6 +22,26 @@ dort weiter); und **die iPhone-App hängt am Benutzernamen** (Abschnitt 12). Umb
 
 ## 0. Stand (gebaut 25.11.2026, Zweig `konten`)
 
+### Durchgang „Module“ (26.11.2026, Zweig `einst-module`, Worktree `nexpaper-module`)
+
+Module aus `bauplaene-module` (21844cf, dann sicherung 2d2f228 und de70ac2, verbinden c852886), je `tools/sync.py copy`, `check` aller
+Module ok. Fragen und Modulfehler: `nexapps/einst-fragen/nexpaper-module.md` (1 bis 18). Runde 2 (`AUFTRAG-RUNDE2.md`): Teil A
+Gastgeberin nextime fertig; Teil B Gastgeberin nexmail fertig, Gast nextasks offen (keine Karte, V20); MCP 14
+(Rückfrage als Push) und MCP 15 (Verlauf „<Person> (MCP · <Schlüssel>)“) gebaut.
+
+| Modul | Fassung | was nexpaper dafür gebaut hat | alte Wege, Umwege |
+|---|---|---|---|
+| sicherung | 1.0.4 | nichts Neues außer `too_new` im Prüf-Haken neben `backup_too_new` (E64) | Tests suchten keine alten Knopfnamen |
+| ui | 1.1.1 | `AboutPage showUpdates` | |
+| schluessel | 1.1.0 | zweite Art `mcp` (`npm_`, eigene Tabelle `mcp_keys`, Ids ab 1.000.000.000, Bereiche = Tresore), `ai_allowed` (MCP 10) | `api_keys` unverändert, jeder `npk_` gilt weiter |
+| updates | 0.1.1 | `services/updates.py` auf dem Modul (Schalter `update_check` wie vorher), Wege unter `/api/v1/about` mit alten Namen (E53), Kästchen in der Einrichtung (U1), keine Projektseite (U18), keine Glocke, also kein Blick im Hintergrund (U19) | `TODO updates 0.1.1`: Kästchen mit nexpapers Hinweis statt `UpdateSetupRow` („Glocke“); Mitglieder sehen die Karte nicht mehr (U15/U21) |
+| mcp | 1.1.0 neu | `POST /api/mcp`, OAuth `/api/oauth` (Zustimmung `/mcp/authorize`, weil `/oauth/authorize` die iPhone-Kopplung ist), acht Werkzeuge über die Dienste der Oberfläche (`services/mcp_store.py`), Tabellen `mcp_*` als Zusätze, ab Werk aus, Rückfrage als Push (MCP 14), Verlauf nennt das Programm (`changes.by_program`, MCP 15), Karte „KI-Werkzeuge (MCP)“ mit Rechten je Werkzeug und wartenden Rückfragen, Betreiber-Einstellungen in „Schnittstellen“ | Tab-Wächter: Programm-Wege in `PROGRAM_PATHS` |
+| ki | 0.1.0 | Store über die alten Einstellungen (`services/ki_store.py`, nichts wandert), Vorschläge über `nexki.ask`, `adopt` beim Start (Hauptschalter an, wo ein Dienst stand), beide Wege, eigene Zugänge `ai_own_access`, „Was ging hinaus“ `ai_events`, Wege `/api/v1/server/ai`, `/api/v1/me/ai`; Server › KI-Anbieter und Mein Konto › KI aus dem Modul, nexpapers Karte „Vorschläge im Eingang“ (persönliche Tresore, eigene Anweisungen) | alte Wege `/api/v1/ai`, `/api/v1/settings/ai…` in alter Form mit alten Prüfungen; `TODO ki 0.1.0` Schemanamen in `main.py`; **zwei Moduldateien nicht committet** (Scanner, Frage 10) |
+| verbinden | 0.1.2 | `in_use=(nextime, nexmail)`; Gastgeberin für nextime (`deadlines.read`) und nexmail (`documents.add`, dazu `GET /api/v1/vaults`), Token `npv_` in `deps.py`, nur gegebene Tresore; Tabellen `vb_*`; Karten Verbindungen (Platz 3) und Server › Allgemein „Andere nex-Apps“; Seiten `/connect/app`, `/connect/return` | keine alten Verbindungen in nexpaper; nextasks (Gast) nicht gebaut, keine Karte (V20 über `in_use`); ein Vertragstest rot (Modulfehler, Frage 17) |
+
+Läufe: siehe unten „Endlauf Module“.
+
+
 ### Durchgang „Einstellungen“ (25./26.11.2026, Zweig `einst-desktop`)
 
 Nach dem Bauplan in nexlore `Development/nexapps/Baupläne/Bauplan Einstellungen.md` (E1 bis E44). Module aus
