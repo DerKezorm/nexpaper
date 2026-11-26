@@ -193,6 +193,18 @@ def list_deadlines(ctx: Any, args: dict[str, Any]) -> dict[str, Any]:
     return answer
 
 
+def _by_program(run: Any) -> Any:
+    """A changing tool: what it changes stands in the history as the program's ("Anna (MCP · Laptop)", decision 15)."""
+
+    def changing(ctx: Any, args: dict[str, Any]) -> dict[str, Any]:
+        from . import changes
+
+        with changes.by_program(str(ctx.caller.key_name or "")):
+            return run(ctx, args)  # type: ignore[no-any-return]
+
+    return changing
+
+
 def accept_suggestions(ctx: Any, args: dict[str, Any]) -> dict[str, Any]:
     from . import inbox
 
@@ -289,7 +301,7 @@ MCP = nexmcp.AppConfig(
             "accept_suggestions", "change", "write",
             "File documents of the inbox as nexpaper suggested (title, sender, kind, date, vault).",
             _schema({"document_ids": {"type": "array", "items": _ID, "maxItems": 50}}, ["document_ids"]),
-            accept_suggestions,
+            _by_program(accept_suggestions),
             describe=lambda args: f"File {len(args.get('document_ids') or [])} document(s) as suggested",
         ),
         nexmcp.Tool(
@@ -305,11 +317,11 @@ MCP = nexmcp.AppConfig(
                 "amount_cents": {"type": "integer", "minimum": -(10**12), "maximum": 10**12},
                 "tags": {"type": "array", "items": {"type": "string", "maxLength": 40}, "maxItems": 60},
             }, ["document_id"]),
-            set_document_fields,
+            _by_program(set_document_fields),
             describe=lambda args: f"Change fields of document {args.get('document_id')}",
         ),
         nexmcp.Tool("trash_document", "risky", "write", "Put a document in the trash for 30 days.",
-                    _schema({"document_id": _ID}, ["document_id"]), trash_document,
+                    _schema({"document_id": _ID}, ["document_id"]), _by_program(trash_document),
                     describe=lambda args: f"Put document {args.get('document_id')} in the trash"),
     ),
     off_status=404,

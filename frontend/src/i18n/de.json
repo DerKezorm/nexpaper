@@ -1601,7 +1601,8 @@
       "filesMissing": "fand beim Prüfen der Dateien eine fehlende Datei",
       "filesChanged": "fand beim Prüfen der Dateien eine veränderte Datei",
       "filesWhole": "fand beim Prüfen der Dateien alles wieder in Ordnung",
-      "autoTrashed": "hat das Dokument von selbst in den Papierkorb gelegt (Aufbewahren bis {{date}})"
+      "autoTrashed": "hat das Dokument von selbst in den Papierkorb gelegt (Aufbewahren bis {{date}})",
+      "byProgram": "{{name}} (MCP · {{key}})"
     },
     "trash": {
       "title": "Papierkorb",

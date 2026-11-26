@@ -209,3 +209,16 @@ def test_the_waiting_notice_goes_as_a_push_in_the_language_of_each_device(monkey
     account_id, german, english = sent[0]
     assert account_id == 3 and german.url == "/mcp/requests/7" and "Notebook" in german.body
     assert german.title == "Ein KI-Programm wartet auf dein Ja" and english.title == "An AI program waits for your yes"
+
+
+def test_the_history_says_which_program_changed_and_never_mixes_it_with_a_hand(people: dict[str, Any]) -> None:
+    """MCP decision 15, as nexnotes shows it: a change of a tool stands as "<person> (MCP · <key>)" in the history of
+    the document, a change by hand as the person alone, each in a line of its own."""
+    browser = people["browser"]
+    secret = key(browser)
+    data(call(secret, "set_document_fields", {"document_id": people["mine"], "title": "Power October"}))
+    assert browser.patch(f"/api/v1/documents/{people['mine']}", json={"title": "Power"}).status_code == 200
+    events = browser.get(f"/api/v1/documents/{people['mine']}/events").json()
+    changed = [event for event in events if event["action"] == "changed"]
+    assert sorted(event["mcp"] for event in changed) == ["", "Notebook"]
+    assert all("mcp" not in (event["detail"] or {}) for event in events)

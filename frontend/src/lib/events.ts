@@ -39,6 +39,8 @@ export function standsAlone(event: DocumentEvent): boolean {
 
 /** Who did it: the person, somebody through the link made for whom, or nexpaper (reading, a deleted account). */
 export function eventWho(event: DocumentEvent, t: TFunction): string {
+  // An AI program of the person (MCP decision 15): "Anna (MCP · Laptop)", never in one line with a change by hand.
+  if (event.by && event.mcp) return t('docs.events.byProgram', { name: iso(personName(event.by)), key: iso(event.mcp) })
   if (event.by) return iso(personName(event.by))
   // U1: a file somebody without an account sent through an upload request; `by_link` is the request's name.
   if (event.by_link && event.detail?.source === 'request') return t('uploadRequest.eventWho', { name: iso(event.by_link) })

@@ -127,6 +127,8 @@ class EventOut(BaseModel):
     detail: dict[str, Any] | None
     #: Done by somebody through a link (also when ``by_link`` is left empty for the caller).
     via_link: bool = False
+    #: Done by an AI program of ``by`` (MCP): the name of its key ("Laptop"); empty for a change by hand.
+    mcp: str = ""
 
 
 class DocumentPage(BaseModel):
@@ -295,7 +297,8 @@ def events(document_id: int, account: Reader, db: DbSession) -> list[EventOut]:
             if outside_only and event.action in LINK_ACTIONS:
                 for key in LINK_DETAILS:
                     detail.pop(key, None)
-        out.append(EventOut(id=event.id, at=event.at, action=event.action,
+        program = str(detail.pop("mcp", "") or "") if isinstance(detail, dict) else ""
+        out.append(EventOut(id=event.id, at=event.at, action=event.action, mcp=program,
                             by=person(people.get(event.user_id)) if event.user_id else None,
                             by_link="" if outside_only else event.by_link, detail=detail,
                             via_link=bool(event.by_link)))

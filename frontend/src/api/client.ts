@@ -1295,7 +1295,8 @@ export const deadlinesApi = {
 }
 export type DocumentNote = { id: number; author: Person | null; text: string; created_at: string; updated_at: string | null; mine: boolean }
 /** `by_link` is empty for who may not share the document; `via_link` still says it was done through a link (N2b). */
-export type DocumentEvent = { id: number; at: string; action: string; by: Person | null; by_link: string; detail: Record<string, unknown> | null; via_link?: boolean }
+/** `mcp`: the name of the key of the AI program that made the change (MCP decision 15), empty for a change by hand. */
+export type DocumentEvent = { id: number; at: string; action: string; by: Person | null; by_link: string; detail: Record<string, unknown> | null; via_link?: boolean; mcp?: string }
 export type DocumentVersion = {
   n: number
   current: boolean

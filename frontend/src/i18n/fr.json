@@ -1601,7 +1601,8 @@
       "filesMissing": "a trouvé un fichier manquant lors de la vérification des fichiers",
       "filesChanged": "a trouvé un fichier modifié lors de la vérification des fichiers",
       "filesWhole": "a de nouveau trouvé tout en ordre lors de la vérification des fichiers",
-      "autoTrashed": "a mis le document à la corbeille de lui-même (conserver jusqu'au {{date}})"
+      "autoTrashed": "a mis le document à la corbeille de lui-même (conserver jusqu'au {{date}})",
+      "byProgram": "{{name}} (MCP · {{key}})"
     },
     "trash": {
       "title": "Corbeille",

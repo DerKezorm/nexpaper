@@ -20,6 +20,7 @@ from __future__ import annotations
 import logging
 from collections.abc import Iterator
 from contextlib import contextmanager
+from contextvars import ContextVar
 from dataclasses import dataclass
 from datetime import timedelta
 from typing import Any
@@ -111,9 +112,28 @@ def tombstone(db: Session, kind: str, *, document_id: int | None = None, vault_i
                      at=clock.now()))
 
 
+#: The AI program a change comes from (MCP decision 15): the name of its key while one of its tools runs
+#: (``services/mcp_store.py``), so that the history says "Anna (MCP · Laptop)". Empty for every other change.
+PROGRAM: ContextVar[str] = ContextVar("nexpaper_change_program", default="")
+
+
+@contextmanager
+def by_program(key_name: str) -> Iterator[None]:
+    """Changes made inside are an AI program's (its key's name in the history), never a hand's."""
+    token = PROGRAM.set((key_name or "?")[:100])
+    try:
+        yield
+    finally:
+        PROGRAM.reset(token)
+
+
 def record(db: Session, document_id: int, action: str, *, user_id: int | None = None, by_link: str = "",
            detail: dict[str, Any] | None = None) -> None:
-    """One line in the history of a document. ``detail`` never holds contents, only which fields changed or ids."""
+    """One line in the history of a document. ``detail`` never holds contents, only which fields changed or ids, and
+    the name of the key of an AI program that made the change (``mcp``)."""
+    program = PROGRAM.get()
+    if program:
+        detail = {**(detail or {}), "mcp": program}
     db.add(Event(document_id=document_id, user_id=user_id, by_link=by_link[:100], at=clock.now(), action=action,
                  detail=detail))
 

@@ -1601,7 +1601,8 @@
       "filesMissing": "found a missing file when checking the files",
       "filesChanged": "found a changed file when checking the files",
       "filesWhole": "found everything in order again when checking the files",
-      "autoTrashed": "put the document in the trash by itself (keep until {{date}})"
+      "autoTrashed": "put the document in the trash by itself (keep until {{date}})",
+      "byProgram": "{{name}} (MCP · {{key}})"
     },
     "trash": {
       "title": "Trash",

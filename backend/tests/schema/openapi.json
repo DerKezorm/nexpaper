@@ -2282,6 +2282,11 @@
             "title": "Id",
             "type": "integer"
           },
+          "mcp": {
+            "default": "",
+            "title": "Mcp",
+            "type": "string"
+          },
           "via_link": {
             "default": false,
             "title": "Via Link",
