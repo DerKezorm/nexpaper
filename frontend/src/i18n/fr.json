@@ -490,7 +490,15 @@
     "documentsFact": "Documents",
     "backupHolds": "Une sauvegarde contient la base de données (comptes, coffres, attributions, texte reconnu, notes, historique, réglages) et la clé du serveur, pas les documents eux-mêmes : ils se trouvent sous forme de fichiers dans /data/dokumente et relèvent de la sauvegarde de fichiers habituelle du serveur. Avec la clé, elle contient aussi les accès au courriel et à l'IA et les adresses des liens ouverts, garde-la donc protégée, comme un mot de passe. nexpaper reconstruit l'index de recherche après une restauration.",
     "whatYouSee": "En tant qu'opérateur, tu vois les noms, les noms d'utilisateur, les adresses courriel, les rôles, la façon dont quelqu'un se connecte, la dernière visite d'un compte et combien de documents et d'espace il a, mais jamais les documents dans les coffres des autres, leur texte reconnu, leurs notes ni leurs mots de passe.",
-    "limitText": "Une fois la limite atteinte, nexpaper n'accepte plus de nouveaux fichiers de ce compte et le dit au moment du dépôt. Ce qui est déjà là reste."
+    "limitText": "Une fois la limite atteinte, nexpaper n'accepte plus de nouveaux fichiers de ce compte et le dit au moment du dépôt. Ce qui est déjà là reste.",
+    "interface": {
+      "schema": "Lisible par machine",
+      "schemaText": "OpenAPI, pour les outils et générateurs de code",
+      "pair": "Connecter un iPhone ou un iPad",
+      "pairText": "Code QR depuis Mon compte, une clé propre à chaque appareil",
+      "auth": "Comment les programmes se connectent",
+      "authText": "appareil ou clé dans l'en-tête de chaque requête ; ils n'ont besoin ni de mot de passe ni de session"
+    }
   },
   "errors": {
     "ai_not_allowed": "Votre administrateur n'a pas autorisé l'IA pour votre compte.",

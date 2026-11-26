@@ -334,6 +334,13 @@ describe('the switches for all accounts (links to the outside, upload requests, 
     expect(server.called('PUT', '/api/v1/connections/interfaces')!.body).toEqual({ api: true })
     expect(tick('Programmschnittstelle (API) für Mitglieder').checked).toBe(true)
     expect(document.querySelector('[data-testid="interfaces-docs"]')!.getAttribute('href')).toBe('/api/v1/docs')
+    // What the card "Schnittstelle" of the area "API" said stays in nexpaper's rows: the schema, connecting a device,
+    // how a program signs in.
+    const facts = document.querySelector('[data-card="interfaces"] [data-testid="interface-facts"], [data-testid="interface-facts"]')!
+    expect(facts.querySelector('a')!.getAttribute('href')).toBe('/api/v1/openapi.json')
+    expect(facts.textContent).toContain('POST /api/v1/devices/pair')
+    expect(facts.textContent).toContain('Authorization: Bearer …')
+    expect(facts.textContent).toContain('Gerät oder API-Schlüssel in der Kopfzeile jeder Anfrage')
   })
 })
 

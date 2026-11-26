@@ -12,6 +12,7 @@ import { api } from '../../api/client'
 import { shortDate } from '../../lib/dates'
 import { useAuth } from '../../state/auth'
 import { AllKeysCard, ApiKeysCard, InterfacesCard, type AppWords, type KeyRequest } from '../../vendor/nexschluessel'
+import { Row, Rows } from '../../vendor/nexui'
 
 /** nexpaper's client for the cards (its headers, its errors with their codes). */
 // eslint-disable-next-line react-refresh/only-export-components
@@ -58,8 +59,37 @@ export function ApiKeys() {
 
 /** Server › General, place 3: "Schnittstellen". */
 export function Interfaces() {
-  const { i18n } = useTranslation()
-  return <InterfacesCard request={keyRequest} base={KEYS_AT} docsHref={DOCS} language={i18n.language} />
+  const { t, i18n } = useTranslation()
+  // nexpaper's own rows at the end (before the area "API"): the machine-readable description, how a device connects
+  // and how a program signs in; the description of the routes is the module's link.
+  const rows: [string, string, string][] = [
+    [t('server.interface.schema'), '/api/v1/openapi.json', t('server.interface.schemaText')],
+    [t('server.interface.pair'), 'POST /api/v1/devices/pair', t('server.interface.pairText')],
+    [t('server.interface.auth'), 'Authorization: Bearer …', t('server.interface.authText')],
+  ]
+  return (
+    <InterfacesCard request={keyRequest} base={KEYS_AT} docsHref={DOCS} language={i18n.language}>
+      <Rows label={t('server.interface.auth')} testId="interface-facts">
+        {rows.map(([name, code, text]) => (
+          <Row
+            key={name}
+            icon="Webhook"
+            name={name}
+            sub={text}
+            detail={
+              code.startsWith('/') ? (
+                <a href={code} target="_blank" rel="noreferrer" className="font-mono underline underline-offset-2">
+                  {code}
+                </a>
+              ) : (
+                <code className="font-mono">{code}</code>
+              )
+            }
+          />
+        ))}
+      </Rows>
+    </InterfacesCard>
+  )
 }
 
 /** Server › Accounts, place 4: "API-Schlüssel aller Konten". */

@@ -490,7 +490,15 @@
     "documentsFact": "Dokumente",
     "backupHolds": "Eine Sicherung enthält die Datenbank (Konten, Tresore, Zuordnungen, erkannter Text, Notizen, Verlauf, Einstellungen) und den Schlüssel des Servers, nicht die Dokumente selbst: Die liegen als Dateien in /data/dokumente und gehören in die übliche Dateisicherung des Servers. Mit dem Schlüssel enthält sie auch die Zugänge für Mail und KI und die Adressen offener Links, bewahre sie darum geschützt auf, wie ein Passwort. Den Suchindex baut nexpaper nach dem Wiederherstellen neu.",
     "whatYouSee": "Als Betreiber siehst du Namen, Benutzernamen, Mailadressen, Rollen, wie sich jemand anmeldet, wann ein Konto zuletzt da war und wie viele Dokumente und wie viel Speicher es hat, aber nie die Dokumente in den Tresoren anderer, ihren erkannten Text, ihre Notizen oder ihre Passwörter.",
-    "limitText": "Ist die Grenze erreicht, nimmt nexpaper keine neuen Dateien dieses Kontos mehr an und sagt es beim Hochladen. Was schon da ist, bleibt."
+    "limitText": "Ist die Grenze erreicht, nimmt nexpaper keine neuen Dateien dieses Kontos mehr an und sagt es beim Hochladen. Was schon da ist, bleibt.",
+    "interface": {
+      "schema": "Maschinenlesbar",
+      "schemaText": "OpenAPI, für Werkzeuge und Code-Erzeuger",
+      "pair": "iPhone oder iPad verbinden",
+      "pairText": "QR-Code aus Mein Konto, eigener Schlüssel je Gerät",
+      "auth": "Anmelden von Programmen",
+      "authText": "Gerät oder API-Schlüssel in der Kopfzeile jeder Anfrage; Passwort und Sitzung brauchen sie nicht"
+    }
   },
   "errors": {
     "ai_not_allowed": "Dein Betreiber hat die KI für dein Konto nicht freigegeben.",

@@ -490,7 +490,15 @@
     "documentsFact": "Documents",
     "backupHolds": "A backup holds the database (accounts, vaults, assignments, recognised text, notes, history, settings) and the server's key, not the documents themselves: they lie as files in /data/dokumente and belong in the server's usual file backup. With the key it also holds the access for mail and AI and the addresses of open links, so keep it protected, like a password. nexpaper builds the search index anew after a restore.",
     "whatYouSee": "As the operator you see names, usernames, mail addresses, roles, how somebody signs in, when an account was last here and how many documents and how much storage it has, but never the documents in other people's vaults, their recognised text, their notes or their passwords.",
-    "limitText": "Once the limit is reached, nexpaper takes no new files of this account and says so at the upload. What is there stays."
+    "limitText": "Once the limit is reached, nexpaper takes no new files of this account and says so at the upload. What is there stays.",
+    "interface": {
+      "schema": "Machine readable",
+      "schemaText": "OpenAPI, for tools and code generators",
+      "pair": "Connect iPhone or iPad",
+      "pairText": "QR code from My account, a key of its own for each device",
+      "auth": "How programs sign in",
+      "authText": "device or API key in the header of every request; they need no password and no session"
+    }
   },
   "errors": {
     "ai_not_allowed": "Your operator has not allowed the AI for your account.",
