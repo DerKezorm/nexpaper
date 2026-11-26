@@ -54,6 +54,13 @@ class Adapter(StandardAdapter):
         self._settings.locales_dir = self._folder
         locales.forget()
 
+    def restart(self) -> None:
+        """nexpaper again on the same folder, as at a start in production (``locales.start``: configure, then tidy)."""
+        from app.services import locales
+
+        locales.start()
+        locales.forget()
+
     def stop(self) -> None:
         from app.services import locales
 

@@ -31,7 +31,14 @@ def _folder() -> Path:
     return directory
 
 
-nexsprachen.configure(nexsprachen.AppConfig(app_name="nexpaper", folder=_folder, built_in=BUILT_IN))
+def start() -> None:
+    """nexpaper's languages at its start: the module set up with nexpaper's folder of before (its files stay valid),
+    then, right after, what a stopped upload left there removed (``tidy_at_start``, sprachen step 10)."""
+    nexsprachen.configure(nexsprachen.AppConfig(app_name="nexpaper", folder=_folder, built_in=BUILT_IN))
+    nexsprachen.tidy_at_start()
+
+
+start()
 
 
 def codes() -> set[str]:

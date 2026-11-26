@@ -44,6 +44,11 @@ class StandardAdapter:
     def stop(self) -> None:
         """APP: close the database, remove temporary folders."""
 
+    def restart(self) -> None:
+        """APP: start the app again on the same data folder, as after a stop (``configure``, then
+        ``nexsprachen.tidy_at_start()``, as in production)."""
+        raise NotImplementedError("APP: restart")
+
     def client(self, role: str) -> Any:
         """APP: a ``TestClient`` of the app: ``"operator"`` signed in as an operator, ``"member"`` signed in as an
         account without that role, ``"anonymous"`` without a session."""

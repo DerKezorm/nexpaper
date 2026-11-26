@@ -15,6 +15,8 @@ The files come from outside, so nothing in them is trusted:
   (a lone surrogate). The page renders the texts as text, never as HTML.
 * An upload is checked whole before anything is written, then written under a passing name and moved into place: a
   refused or failed upload leaves the folder as it was.
+* What a stopped process left of an upload (a hidden ``.<code>.<random>.part``) is removed when the app starts
+  (``tidy_at_start``), never a language file.
 * A broken file laid into the folder by hand is skipped and named in the log (once per state of the file); it never
   stops the others or the start of the app.
 
@@ -31,6 +33,7 @@ import os
 import re
 import stat
 import tempfile
+import threading
 from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
@@ -49,6 +52,11 @@ MAX_KEY = 120
 #: More would be a folder somebody filled by mistake; the menu has no room for it either.
 MAX_FILES = 200
 META_KEY = "_meta"
+#: The passing name of an upload (``tempfile.mkstemp(prefix=".<code>.", suffix=".part")``, and the older apps'
+#: ``.<code>.json.part``): the only names ``tidy_at_start`` removes.
+PASSING_PATTERN = re.compile(r"\.[a-z]{2,3}(?:-(?:[A-Z]{2}|[A-Z][a-z]{3}))?\.[A-Za-z0-9_]{1,64}\.part")
+#: Held while an upload writes, so that tidying never takes a passing file of this process.
+_writing = threading.Lock()
 #: Keys a browser's merge of texts must never meet.
 RESERVED_KEYS = frozenset({"__proto__"})
 _CONTROL = re.compile(r"[\x00-\x1f\x7f]")
@@ -285,12 +293,13 @@ def save(code: str, raw: bytes) -> Locale:
         raise LocaleError("not_a_file")
     passing = ""
     try:
-        handle, passing = tempfile.mkstemp(dir=directory, prefix=f".{code}.", suffix=".part")
-        with os.fdopen(handle, "wb") as file:
-            file.write(raw)
-            file.flush()
-            os.fsync(file.fileno())
-        os.replace(passing, target)
+        with _writing:
+            handle, passing = tempfile.mkstemp(dir=directory, prefix=f".{code}.", suffix=".part")
+            with os.fdopen(handle, "wb") as file:
+                file.write(raw)
+                file.flush()
+                os.fsync(file.fileno())
+            os.replace(passing, target)
     except OSError as exc:
         if passing:
             with contextlib.suppress(OSError):
@@ -299,6 +308,33 @@ def save(code: str, raw: bytes) -> Locale:
         raise SaveError("not written") from exc
     config.logger.info("Language file name=%s saved keys=%s", target.name, parsed.keys)
     return Locale(code=code, name=parsed.name or code, keys=parsed.keys)
+
+
+def tidy_at_start() -> int:
+    """**The app calls it at its start**, right after ``configure``: removes what a stopped process left of an upload,
+    the hidden plain files named like ``PASSING_PATTERN`` (``.nl.k3j9x_2a.part``), whatever their age. Never a
+    language file, a link, a folder or any other name. Calling it again is harmless; while an upload of this process
+    writes, it leaves everything as it is. Returns how many it removed."""
+    directory = locales_dir()
+    if not directory.is_dir() or not _writing.acquire(blocking=False):
+        return 0
+    removed = 0
+    try:
+        for path in directory.iterdir():
+            if not PASSING_PATTERN.fullmatch(path.name):
+                continue
+            try:
+                if not stat.S_ISREG(path.lstat().st_mode):
+                    continue
+                path.unlink()
+            except OSError:
+                continue
+            removed += 1
+    finally:
+        _writing.release()
+    if removed:
+        current().logger.info("Removed %d unfinished language upload(s) left by a stopped process", removed)
+    return removed
 
 
 def remove(code: str) -> bool:

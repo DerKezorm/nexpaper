@@ -26,6 +26,7 @@ from .store import (
     MAX_KEY,
     MAX_NAME,
     META_KEY,
+    PASSING_PATTERN,
     RESERVED_KEYS,
     Language,
     Locale,
@@ -40,6 +41,7 @@ from .store import (
     remove,
     save,
     template,
+    tidy_at_start,
     valid_code,
 )
 
@@ -55,6 +57,7 @@ __all__ = [
     "MAX_KEY",
     "MAX_NAME",
     "META_KEY",
+    "PASSING_PATTERN",
     "REASONS",
     "RESERVED_KEYS",
     "AppConfig",
@@ -78,5 +81,6 @@ __all__ = [
     "save",
     "store",
     "template",
+    "tidy_at_start",
     "valid_code",
 ]
