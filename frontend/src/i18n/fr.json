@@ -39,8 +39,6 @@
       "storage": "Stockage"
     },
     "language": {
-      "title": "Langue",
-      "text": "S'applique à votre compte. Les autres choisissent la leur. L'administrateur ajoute d'autres langues sous Paramètres, Langues.",
       "hint": "(s'applique sur tous vos appareils)"
     },
     "phone": {
@@ -134,18 +132,12 @@
         "text": "Quel fournisseur fait des propositions lors du classement, et dans quelles limites."
       }
     },
-    "groups": {
-      "account": "Mon compte",
-      "server": "Serveur"
-    },
-    "jump": "Page des paramètres",
     "things": "documents",
     "thingsDative": "documents"
   },
   "auth": {
     "name": "Nom",
     "nameHint": "Vous vous connectez avec : 2 à 64 lettres sans accents, chiffres, point, trait d'union ou trait de soulignement.",
-    "password": "Mot de passe",
     "passwordHint": "Au moins 12 caractères.",
     "backToLogin": "Vers la connexion",
     "setup": {
@@ -242,30 +234,10 @@
     "menu": "À propos de nexpaper",
     "subtitle": "Des documents pour les ménages et les petites entreprises : téléverser, trouver, terminé.",
     "version": "Version",
-    "whatsNew": "Nouveautés",
-    "newer": "La version {{version}} est disponible",
-    "licence": "Licence",
-    "source": "Code source",
-    "releases": "Versions",
-    "releasesLink": "Toutes les versions et leurs changements",
-    "project": "Page du projet",
-    "report": "Vous avez trouvé un problème ?",
-    "reportLink": "Signalez-le sur GitHub",
-    "builtWith": "Construit avec",
     "fonts": "Police incluse dans l'image",
     "fontsText": "nexpaper apporte sa propre police, de sorte que son ouverture ne sollicite aucun autre serveur.",
     "updates": {
-      "title": "Mises à jour",
-      "text": "Indique si une version plus récente de nexpaper est disponible.",
-      "daily": "Vérifier une fois par jour",
-      "dailyHint": "Demande à GitHub la version la plus récente quand quelqu'un ouvre cette page, au plus une fois par jour. Désactivé : seulement quand vous appuyez sur le bouton.",
-      "now": "Vérifier maintenant",
       "current": "C'est la version la plus récente.",
-      "none": "Aucune version trouvée pour l'instant.",
-      "notYet": "Pas encore vérifié.",
-      "off": "La vérification quotidienne est désactivée.",
-      "toRelease": "Quoi de neuf",
-      "checkedAt": "dernière vérification {{when}}",
       "whatGoesOut": "Seule la question sort : une requête à api.github.com pour la version la plus récente de nexpaper, sans noms, documents ni paramètres. Outre le serveur de courriel, l'IA et la boîte aux lettres, si vous les configurez, les services push des navigateurs, l'importation depuis Paperless quand quelqu'un la lance, et les fournisseurs de connexion quand quelqu'un se connecte par leur intermédiaire, c'est le seul appel que nexpaper fait de lui-même."
     }
   },
@@ -298,9 +270,6 @@
       "roleLine": "Rôle : {{role}} · Nom de connexion : {{name}}"
     },
     "password": {
-      "current": "Mot de passe actuel",
-      "new": "Nouveau mot de passe",
-      "again": "Encore une fois",
       "submit": "Changer le mot de passe",
       "done": "Mot de passe changé. Tous les autres appareils sont déconnectés."
     },
@@ -350,8 +319,6 @@
     "devices": {
       "ends_one": "Une connexion se termine d'elle-même après {{count}} jour sans utilisation.",
       "ends_other": "Une connexion se termine d'elle-même après {{count}} jours sans utilisation.",
-      "notify": "M'avertir d'une nouvelle connexion",
-      "notifyHint": "Par notification push sur vos appareils et par courriel : quel appareil, quel navigateur, à peu près d'où. Si ce n'était pas vous, un toucher le déconnecte.",
       "here": "cet appareil",
       "meta": "{{where}} · dernière fois {{when}}",
       "signOut": "Déconnecter",
@@ -385,17 +352,9 @@
       "addressTaken": "L'adresse est maintenant celle de votre compte. Confirmez-la sous Profil, elle servira alors aussi pour les documents envoyés par courriel."
     },
     "keysWait": "Les appareils et les clés d’API ne fonctionnent qu'une fois un second facteur configuré.",
-    "keysWaitLink": "Configurer un second facteur",
-    "signOut": {
-      "title": "Se déconnecter",
-      "text": "Termine votre session dans ce navigateur. Vos documents restent tels quels.",
-      "provider": "Vous restez connecté chez votre fournisseur de connexion ; seul nexpaper vous déconnecte.",
-      "button": "Se déconnecter"
-    }
+    "keysWaitLink": "Configurer un second facteur"
   },
   "twofactor": {
-    "off": "Désactivé.",
-    "onShort": "Activé.",
     "scan": "Scannez ce code avec l'application, ou saisissez-y la clé ci-dessous. Puis indiquez le code affiché par l'application, et votre mot de passe.",
     "qr": "Code QR pour l'application d'authentification",
     "code": "Code de l'application",
@@ -430,163 +389,18 @@
     "noEmail": "Lien d'invitation sans adresse"
   },
   "server": {
-    "aiAllowed": "IA autorisée",
-    "permissionsHint": "Certains comptes peuvent être exclus de l'IA.",
-    "accounts": "Comptes",
-    "invite": "Inviter une personne",
-    "inviteText": "Quiconque suit le lien crée son propre compte. Sans serveur de courriel, vous copiez le lien et le transmettez vous-même.",
-    "signInBy": {
-      "password": "mot de passe",
-      "oidc": "par le fournisseur"
-    },
-    "withTwoFactor": "second facteur activé",
-    "locked": "verrouillé pour un moment",
-    "blocked": "bloqué",
-    "makeOperator": "Nommer administrateur",
-    "makeMember": "Nommer membre",
-    "newPassword": "Lien de réinitialisation …",
-    "givePassword": "Lien pour un mot de passe …",
-    "resetTwoFactor": "Réinitialiser le second facteur",
-    "signOutEverywhere": "Déconnecter partout",
-    "block": "Bloquer",
-    "unblock": "Débloquer",
-    "deleteAccount": "Supprimer …",
-    "more": "Actions pour {{name}}",
-    "confirm": {
-      "role": {
-        "title": "Changer le rôle de {{name}} ?",
-        "button": "Changer le rôle"
-      },
-      "promote": {
-        "text": "{{name}} pourra alors modifier tous les paramètres de ce serveur. Un administrateur ne voit pas non plus les coffres personnels des autres."
-      },
-      "demote": {
-        "text": "{{name}} devient membre et n'a plus accès aux paramètres du serveur."
-      },
-      "reset": {
-        "title": "Réinitialiser le second facteur de {{name}} ?",
-        "text": "Pour un téléphone perdu : le code de l'application, les clés d'accès et les codes de récupération sont supprimés, tous les appareils sont déconnectés et la personne en est informée. À la prochaine connexion, elle configure de nouveau le second facteur.",
-        "button": "Réinitialiser"
-      },
-      "signout": {
-        "title": "Déconnecter {{name}} partout ?",
-        "text": "Tous les appareils du compte devront se reconnecter.",
-        "button": "Déconnecter"
-      },
-      "block": {
-        "title": "Bloquer {{name}} ?",
-        "text": "{{name}} ne peut plus entrer, les sessions ouvertes se terminent immédiatement. Le déblocage est possible à tout moment.",
-        "button": "Bloquer"
-      },
-      "unblock": {
-        "title": "Débloquer {{name}} ?",
-        "text": "{{name}} pourra ensuite se connecter de nouveau, avec son propre mot de passe ou par le fournisseur de connexion.",
-        "button": "Débloquer"
-      },
-      "backup_restore": {
-        "title": "Restaurer cette sauvegarde ?",
-        "text": "L'état actuel est d'abord sauvegardé. nexpaper redémarre, tout le monde se reconnecte.",
-        "button": "Restaurer"
-      },
-      "backup_download": {
-        "title": "Télécharger cette sauvegarde ?",
-        "text": "Elle contient tous les comptes, le classement et les secrets du serveur, mais aucun document. Elle n'est pas chiffrée.",
-        "button": "Télécharger"
-      },
-      "backup_delete": {
-        "title": "Supprimer cette sauvegarde ?",
-        "text": "Elle ne pourra pas être récupérée.",
-        "button": "Supprimer"
-      },
-      "backup_upload": {
-        "title": "Téléverser une sauvegarde ?",
-        "text": "Le fichier rejoint la liste des sauvegardes. Rien n'est restauré tant que vous ne le confirmez pas là.",
-        "button": "Téléverser"
-      },
-      "two_factor_off": {
-        "title": "Ne plus exiger de second facteur ?",
-        "text": "Un mot de passe seul suffira alors de nouveau pour lire les documents. Ceux qui ont déjà un second facteur le conservent.",
-        "button": "Ne plus l'exiger"
-      },
-      "link": {
-        "title": "Envoyer à {{name}} un lien pour réinitialiser le mot de passe ?",
-        "text": "La personne choisit elle-même son mot de passe. Le lien part par courriel à son adresse si le courriel est configuré, sinon vous le recevez une seule fois pour le transmettre. Le second facteur reste en place.",
-        "button": "Envoyer le lien"
-      },
-      "unlink": {
-        "title": "Délier {{name}} ?",
-        "text": "{{name}} ne se connectera plus par {{provider}} et en sera informé. Le compte pourra se lier de nouveau au besoin.",
-        "button": "Délier"
-      }
-    },
-    "twoFactorRequired": "Exiger un second facteur",
-    "twoFactorRequiredHint": "Chaque compte qui se connecte avec un mot de passe doit le configurer avant d'aller plus loin. Les comptes du fournisseur apportent le leur. Un compte avec mot de passe n'est pas concerné non plus s'il arrive par un fournisseur pour lequel « {{trusts}} » est activé.",
-    "ownSecondFactorFirst": "Configurez d'abord votre propre second facteur (Mon compte, Sécurité), sinon vous seriez le premier à ne plus pouvoir continuer. N'est pas concerné qui se connecte par un fournisseur pour lequel « {{trusts}} » est activé.",
-    "secretKept": "enregistré, laisser vide pour le conserver",
-    "mail": "Courriel",
     "mailHint": "nexpaper envoie par lui les invitations, les liens pour un nouveau mot de passe et pour confirmer une adresse, les avis sur ton compte (nouvelle connexion, adresse modifiée, nouveau nom d'utilisateur, second facteur réinitialisé), les rappels d'échéances et l'aperçu de la semaine, l'avis d'un export terminé ou échoué, les avis aux opérateurs (demandes de dépôt, import Paperless, vérification des fichiers, restauration, connexion) et la confirmation d'une adresse d'expéditeur pour l'entrée par courriel.",
-    "smtpHost": "Serveur",
-    "smtpPort": "Port",
-    "smtpSecurity": "Chiffrement",
-    "smtpUser": "Utilisateur",
-    "smtpFrom": "Expéditeur",
-    "none": "aucun",
-    "mailTest": "Courriel de test à",
-    "send": "Envoyer",
-    "mailSent": "Le courriel de test est parti.",
-    "backups": "Sauvegarde",
-    "backupsHint": "Un seul fichier avec la base de données, les paramètres et les secrets du serveur : comptes, coffres, classement, texte reconnu, notes, historique. Avec le secret du serveur, il contient aussi les identifiants du courriel et de l'IA ainsi que les adresses des liens ouverts ; protégez-le donc comme un mot de passe. La restauration montre d'abord un essai à blanc.",
-    "schedule": "Automatiquement",
-    "off": "Désactivé",
-    "daily": "Tous les jours",
-    "weekly": "Toutes les semaines",
-    "keep": "Conserver",
-    "backupNow": "Sauvegarder maintenant",
-    "backupMade": "Sauvegarde effectuée.",
-    "uploadBackup": "Téléverser une sauvegarde",
-    "uploaded": "téléversée",
-    "uploadedHint": "Téléversée. Elle figure maintenant dans la liste : vérifiez-la d'abord, puis restaurez.",
-    "noBackups": "Aucune sauvegarde pour l'instant.",
-    "kinds": {
-      "manual": "manuelle",
-      "scheduled": "planifiée",
-      "update": "avant un changement"
-    },
     "countAccounts_one": "{{count}} compte",
     "countAccounts_other": "{{count}} comptes",
-    "check": "Vérifier",
-    "checkOk": "Lisible : {{accounts}}. La restauration remplace l'état actuel ; celui-ci est d'abord sauvegardé.",
-    "checkBad": "Endommagée : cette sauvegarde ne peut pas être restaurée.",
-    "download": "Télécharger",
-    "restore": "Restaurer",
-    "deleteBackup": "Supprimer",
-    "restarting": "nexpaper redémarre avec la sauvegarde. La page se recharge dans un instant.",
     "languages": "Langues",
     "languagesHint": "L'allemand, l'anglais et le français sont intégrés. Ajoutez-en d'autres sous forme de fichier JSON ; les textes manquants s'affichent en anglais.",
     "builtIn": "intégrée",
     "texts_one": "un texte",
     "texts_other": "{{count}} textes",
-    "removeLanguage": "Retirer {{name}}",
     "template": "Télécharger le modèle",
     "languageCode": "Code de langue",
     "upload": "Téléverser une langue",
     "languageAdded": "Langue ajoutée. Elle apparaît sous Mon compte, Profil.",
-    "log": "Journal",
-    "logHint": "Quatre niveaux. Les deux plus détaillés se désactivent d'eux-mêmes au bout d'une heure. Jamais le contenu des documents, ni mots de passe, ni jetons.",
-    "level": "Niveau",
-    "logSearch": "Rechercher dans le texte …",
-    "logEmpty": "Rien dans le journal.",
-    "detail": "Détail",
-    "levels": {
-      "quiet": "Discret",
-      "normal": "Normal",
-      "detailed": "Détaillé (1 heure)",
-      "trace": "Tout (1 heure)"
-    },
-    "logClear": "Vider le journal",
-    "logClearText": "Toutes les lignes sont effacées. Les nouvelles arrivent comme avant.",
-    "logUntil": "Retour à la normale à {{time}}.",
-    "checkNewer": "Cette sauvegarde provient d'une version plus récente de nexpaper. Mettez d'abord nexpaper à jour, puis restaurez.",
     "ai": {
       "title": "Propositions de l'IA dans la boîte de réception",
       "text": "S'applique à tout le monde. L'IA propose le titre, l'expéditeur, le type, la date et le montant ; seul ce qu'une personne confirme est classé. Les règles passent toujours en premier.",
@@ -630,43 +444,7 @@
       "save": "Enregistrer",
       "out": "Ce qui sort : un message chiffré vers le service push de chaque navigateur. Seul l'appareil peut le lire. Il ne contient jamais le contenu d'un document."
     },
-    "linkSent": "Le lien pour {{name}} est parti à {{email}}. Il fonctionne une seule fois et pendant 24 heures.",
-    "linkShown": "Le lien pour {{name}}, affiché seulement maintenant, valide une seule fois et pendant 24 heures. Transmettez-le, la personne choisit elle-même le mot de passe :",
-    "linkLabel": "Lien vers le mot de passe",
-    "checkMissing_one": "{{count}} document est manquant sur le disque.",
-    "checkMissing_other": "{{count}} documents sont manquants sur le disque.",
-    "backupNoDocuments": "Les documents eux-mêmes ne sont pas dans la sauvegarde.",
-    "backupNoDocumentsText": "Ils se trouvent sous forme de fichiers ordinaires dans /data/dokumente, lisibles aussi sans nexpaper. Incluez ce dossier dans la sauvegarde que votre serveur fait de toute façon (Hyper Backup, restic, instantanés). Qui ne sauvegarde que ce fichier aura, après une panne de disque, un classement sans documents.",
-    "apiKeys": {
-      "title": "Jetons API de tous les comptes",
-      "text": "Pour chaque jeton : le compte, le nom, le droit, l'expiration et la dernière utilisation. Jamais le jeton lui-même. Vous choisissez sous Général s'il peut y avoir des jetons.",
-      "allow": "Autoriser les jetons API",
-      "allowHint": "Chaque personne crée sous Mon compte, Appareils et applications des jetons avec lesquels des programmes lisent ou téléversent. Désactivé : personne ne peut créer de jetons, et ceux qui existent cessent de fonctionner.",
-      "block": "Bloquer",
-      "blockNamed": "Bloquer le jeton {{name}} de {{account}}",
-      "blockTitle": "Bloquer le jeton {{name}} de {{account}} ?",
-      "blockText": "Elle cesse de fonctionner immédiatement et définitivement. Le compte la voit bloquée dans sa liste.",
-      "blocked": "bloquée",
-      "offHint": "Un jeton ne fait que lire ou que téléverser, et ne fait jamais plus que ce que son compte peut faire.",
-      "own": "Créer vos propres jetons",
-      "none": "Aucun compte n'a encore de jeton API."
-    },
-    "interface": {
-      "title": "Interface",
-      "text": "Tout ce que l'application web sait faire fonctionne aussi via /api/v1. Vos propres outils et programmes s'appuient dessus.",
-      "docs": "Description",
-      "docsText": "Toutes les routes sur une page",
-      "schema": "Lisible par machine",
-      "schemaText": "OpenAPI, pour les outils et générateurs de code",
-      "pair": "Jumeler un appareil",
-      "pairText": "Code QR depuis Mon compte, une clé propre à chaque appareil",
-      "auth": "Comment les programmes se connectent",
-      "authText": "appareil ou jeton dans l'en-tête de chaque requête ; ils n'ont besoin ni de mot de passe ni de session",
-      "limits": "Limites par jeton : 120 requêtes par minute, 50 téléversements par heure. Les jetons erronés comptent comme des mots de passe erronés."
-    },
     "remove": {
-      "title": "Supprimer {{name}} ?",
-      "text": "Le compte est supprimé avec tout ce qui lui appartient et ne peut pas être récupéré. Les liens créés par {{name}} cessent de fonctionner immédiatement.",
       "loading": "Un instant …",
       "none": "Il n'y a aucun document dans le coffre personnel.",
       "documents_one": "Le coffre personnel contient {{n}} document, corbeille comprise. Où doit-il aller ?",
@@ -683,14 +461,11 @@
       "deleteAllHint": "Définitivement, aussi pour tous ceux avec qui ils étaient partagés.",
       "soleManager": "{{name}} gère seul {{vaults}}. Donnez d'abord à quelqu'un d'autre le droit de gérer là.",
       "typeName": "Pour confirmer, saisissez le nom du compte {{name}}",
-      "button": "Supprimer le compte",
-      "done": "Compte {{name}} supprimé.",
       "youSee": "Vous verrez vous-même les documents ensuite."
     },
     "countDocuments_one": "{{count}} document",
     "countDocuments_other": "{{count}} documents",
     "restorePreview": {
-      "title": "Essai à blanc",
       "documents": "La sauvegarde connaît {{count}} documents.",
       "allThere": "Tous leurs fichiers sont sur le disque.",
       "missing_one": "{{count}} document a un fichier manquant sur le disque.",
@@ -709,39 +484,9 @@
       "revivedLinks_one": "La restauration rend de nouveau valide {{count}} lien retiré depuis la sauvegarde.",
       "revivedLinks_other": "La restauration rend de nouveau valides {{count}} liens retirés depuis la sauvegarde.",
       "revivedPdfPasswords_one": "La restauration ramène {{count}} mot de passe PDF mémorisé supprimé depuis la sauvegarde.",
-      "revivedPdfPasswords_other": "La restauration ramène {{count}} mots de passe PDF mémorisés supprimés depuis la sauvegarde.",
-      "working": "Essai en cours …"
+      "revivedPdfPasswords_other": "La restauration ramène {{count}} mots de passe PDF mémorisés supprimés depuis la sauvegarde."
     },
-    "sizeNote": "La sauvegarde est faite pendant que nexpaper fonctionne, par la fonction de sauvegarde propre à SQLite ; rien ne se bloque. L'index de recherche n'y figure pas et est reconstruit après une restauration. Télécharger, supprimer et restaurer demandent votre mot de passe.",
-    "providers": {
-      "order": "Déplacer {{name}} (touches fléchées)",
-      "more": "Plus"
-    },
-    "unlinkProvider": "Délier de {{name}}",
     "features": "Fonctions pour tous les comptes",
-    "accountsLead_one": "{{count}} compte. Chacun reçoit son coffre personnel à sa création. En tant qu'administrateur, vous gérez les comptes et les coffres partagés ; vous ne voyez pas les coffres personnels.",
-    "accountsLead_other": "{{count}} comptes. Chacun reçoit son coffre personnel à sa création. En tant qu'administrateur, vous gérez les comptes et les coffres partagés ; vous ne voyez pas les coffres personnels.",
-    "openInvites": "Invitations en attente",
-    "table": {
-      "person": "Personne",
-      "signIn": "Connexion",
-      "role": "Rôle",
-      "ai": "IA",
-      "last": "Dernière visite",
-      "actions": "Actions",
-      "never": "jamais",
-      "passwordTwoFactor": "Mot de passe + 2FA"
-    },
-    "storageBackups": "Stockage et sauvegardes",
-    "lastBackup": "Dernière sauvegarde : {{time}}",
-    "forBackup": "{{action}} : sauvegarde du {{name}}",
-    "logAll": "Tous",
-    "logLevelHint": "Un filtre affiche toujours aussi les niveaux supérieurs : « WARNING » inclut donc les erreurs.",
-    "logTime": "Heure",
-    "logSource": "Source",
-    "logRequest": "N° / compte",
-    "logMessage": "Message",
-    "logRequestHint": "Afficher seulement cette requête",
     "documentsFact": "Documents",
     "backupHolds": "Une sauvegarde contient la base de données (comptes, coffres, attributions, texte reconnu, notes, historique, réglages) et la clé du serveur, pas les documents eux-mêmes : ils se trouvent sous forme de fichiers dans /data/dokumente et relèvent de la sauvegarde de fichiers habituelle du serveur. Avec la clé, elle contient aussi les accès au courriel et à l'IA et les adresses des liens ouverts, garde-la donc protégée, comme un mot de passe. nexpaper reconstruit l'index de recherche après une restauration.",
     "whatYouSee": "En tant qu'opérateur, tu vois les noms, les noms d'utilisateur, les adresses courriel, les rôles, la façon dont quelqu'un se connecte, la dernière visite d'un compte et combien de documents et d'espace il a, mais jamais les documents dans les coffres des autres, leur texte reconnu, leurs notes ni leurs mots de passe.",
@@ -980,64 +725,17 @@
     "pdf_too_large": "Le PDF est trop volumineux."
   },
   "ready": {
-    "title": "Prêt pour Internet ?",
-    "text": "Beaucoup accèdent à nexpaper aussi en déplacement. nexpaper le vérifie lui-même, chaque fois que vous ouvrez la page.",
-    "open_one": "{{count}} point ouvert",
-    "open_other": "{{count}} points ouverts",
-    "allGood": "Tout va bien",
-    "state": {
-      "ok": "bien",
-      "warn": "à vérifier",
-      "bad": "ouvert"
-    },
-    "https": {
-      "title": "Adresse publique en https",
-      "ok": "{{address}}",
-      "warn": "{{address}} a le https, mais cette requête est arrivée sans. Ouvrez nexpaper à cette adresse, ou faites envoyer X-Forwarded-Proto par le proxy et indiquez-le dans NEXPAPER_TRUSTED_PROXIES.",
-      "bad": "Sans https, les mots de passe circulent en clair sur le réseau, et Web Push et les clés d'accès ne fonctionnent pas du tout. Saisissez ci-dessous l'adresse publique en https."
-    },
-    "two_factor": {
-      "title": "Second facteur pour tout le monde",
-      "ok": "Quiconque se connecte avec un mot de passe a aussi besoin d'un code ou d'une clé d'accès.",
-      "bad": "Désactivé : un mot de passe deviné ou volé suffit pour lire tous les documents de cette personne. Activez « Exiger un second facteur » ci-dessous."
-    },
-    "own_account": {
-      "title": "Votre propre compte",
-      "ok": "A un second facteur.",
-      "bad": "N'a pas encore de second facteur, alors qu'il peut tout modifier. Configurez-le sous Mon compte, Sécurité."
-    },
-    "brake": {
-      "title": "Protection contre les tentatives répétées",
-      "ok": "Après 5 tentatives erronées, une pause de 15 minutes, par compte et par adresse. Chaque tentative figure dans le journal.",
-      "warn": "Tous les visiteurs passent par un proxy que nexpaper ne connaît pas : la pause s'applique par compte, mais par adresse seulement approximativement. Voir « Derrière le proxy ».",
-      "bad": "La liste des proxys de confiance contient des réseaux publics ({{networks}}). N'importe qui pourrait alors inventer l'adresse de l'expéditeur, et la pause après des tentatives erronées ne tient plus. Ne listez que l'adresse de votre proxy.",
-      "broken": "La protection contre les tentatives répétées échoue à son propre test. Redémarrez nexpaper ; si cela n'aide pas, merci de le signaler."
-    },
-    "cookies": {
-      "title": "Sessions et témoins (cookies)",
-      "ok_one": "Témoins uniquement en https et illisibles par les scripts ; une connexion expire après {{count}} jour sans utilisation.",
-      "ok_other": "Témoins uniquement en https et illisibles par les scripts ; une connexion expire après {{count}} jours sans utilisation.",
-      "warn": "Sans https, les témoins de connexion circulent en clair. En https, nexpaper les protège de lui-même.",
-      "bad": "NEXPAPER_COOKIE_SECURE est désactivé : les témoins ne sont pas protégés, même en https. Réglez-le sur auto."
-    },
-    "proxy": {
-      "title": "Derrière le proxy",
-      "ok": "L'adresse réelle des visiteurs arrive (proxy {{proxies}} déclaré de confiance). Sans cela, la protection contre les tentatives répétées verrait tout le monde comme une seule personne.",
-      "direct": "Les visiteurs arrivent directement, sans proxy intermédiaire.",
-      "warn": "Les requêtes passent par un proxy ({{proxy}}) non déclaré de confiance : la protection contre les tentatives répétées voit tout le monde comme une seule personne. Réglez NEXPAPER_TRUSTED_PROXIES sur son adresse.",
-      "bad": "Des réseaux publics sont déclarés de confiance ({{networks}}). Réglez NEXPAPER_TRUSTED_PROXIES sur l'adresse de votre proxy, pas sur tout Internet."
-    },
     "secrets": {
       "title": "Secrets du serveur",
-      "ok": "La clé du secret OIDC, du mot de passe du courriel et de la clé de l'IA n'est lisible que par le propriétaire.",
       "env": "La clé provient de NEXPAPER_SECRET_KEY, et non d'un fichier.",
+      "ok": "La clé du secret OIDC, du mot de passe du courriel et de la clé de l'IA n'est lisible que par le propriétaire.",
       "bad": "Le fichier {{path}} est lisible par d'autres aussi (mode {{mode}}). Réglez-le sur 600, propriétaire uniquement.",
       "missing": "La clé est absente à {{path}}."
     },
     "backups": {
       "title": "Sauvegarde",
-      "ok": "Une sauvegarde automatique est activée. Les documents eux-mêmes relèvent de la sauvegarde propre à votre serveur.",
-      "warn": "Pas de sauvegarde automatique. Activez-la sous Paramètres, Sauvegarde."
+      "warn": "Pas de sauvegarde automatique. Activez-la sous Serveur, Stockage et sauvegardes.",
+      "ok": "Une sauvegarde automatique est activée. Les documents eux-mêmes relèvent de la sauvegarde propre à votre serveur."
     }
   },
   "home": {
@@ -1062,19 +760,14 @@
     "removed": "Adresse retirée.",
     "off": "L'administrateur n'a pas encore configuré de serveur de courriel, donc aucun lien ne peut être envoyé.",
     "passwordHint": "Par sécurité : l'adresse est le chemin de retour vers le compte.",
-    "passwordFirst": "Pour cela, saisissez le mot de passe ci-dessus",
-    "confirmedLine": "Adresse courriel confirmée",
-    "unconfirmedLine": "Adresse courriel non confirmée"
+    "passwordFirst": "Pour cela, saisissez le mot de passe ci-dessus"
   },
   "looks": {
-    "title": "Apparence",
     "text": "Pour votre compte uniquement.",
     "archive": "Archives",
     "archiveText": "(l'apparence de la liste à l'ouverture de nexpaper)",
     "list": "Liste",
     "grid": "Tuiles",
-    "mode": "Affichage",
-    "everywhere": "(s'applique sur tous vos appareils)",
     "archiveStyle": "Affichage de l'archive"
   },
   "pairing": {
@@ -1087,55 +780,9 @@
     "disconnectNamed": "Déconnecter {{name}}"
   },
   "apiKeys": {
-    "title": "Jetons API",
-    "text": "Pour vos propres scripts, nexdeck ou un numériseur qui téléverse directement. Un jeton ne peut que lire ou que téléverser, jamais modifier les paramètres.",
-    "off": "L'administrateur n'a pas autorisé les jetons API.",
-    "offForOperator": "Les jetons API ne sont pas encore autorisés.",
     "offOperator": "Autorisez-les sous Paramètres, Général.",
-    "enable": "Les autoriser maintenant",
-    "enableConfirm": "Autoriser",
-    "enableTitle": "Autoriser les jetons API pour tout le monde ?",
-    "enableText": "Ensuite, chaque personne sur ce serveur pourra créer des jetons sous Mon compte. Un jeton permet à un programme soit seulement de lire, soit seulement de téléverser, jamais plus que ce que peut le compte qui l'a créé. Vous pouvez désactiver cela de nouveau à tout moment sous Paramètres, Général ; les jetons existants cessent alors aussi de fonctionner.",
-    "uploadNote": "Un jeton de téléversement ne fait que déposer des documents dans une boîte de réception : celle de votre coffre cible ou, si le programme en indique un autre, celle d'un coffre auquel vous pouvez ajouter. Il ne peut rien lire, modifier ni supprimer.",
-    "new": "Nouveau jeton API",
-    "name": "Nom",
-    "namePlaceholder": "nexdeck",
-    "lifetime": "Expiration",
-    "lifetimeNever": "Sans fin",
-    "lifetimeHint": "Un jeton qui n'expire jamais est celui dont personne ne se souvient quand il tombe entre de mauvaises mains. Un an suffit généralement ; la liste indique une semaine à l'avance qu'il expire.",
-    "lifetimeHintUpload": "Un jeton de téléversement ne peut que déposer des documents dans votre boîte de réception. Il ne lit pas vos archives. Il n'expire donc pas de lui-même, et un raccourci ou un numériseur n'a pas à être reconfiguré au bout d'un an. Vous pouvez le supprimer à tout moment, ou choisir une durée.",
-    "lifetimeDays": {
-      "30": "30 jours",
-      "90": "90 jours",
-      "365": "365 jours"
-    },
-    "make": "Créer le jeton",
-    "key": "Jeton",
-    "header": "Ligne d'en-tête pour le programme",
-    "tryIt": "Pour l'essayer",
-    "done": "Terminé",
-    "copyNamed": "Copier {{what}}",
-    "deleteNamed": "Supprimer le jeton {{name}}",
-    "readOnlyOne": "lecture seule",
-    "never": "n'expire pas",
-    "runsOut": "expire le {{day}}",
-    "ranOut": "a expiré le {{day}}",
-    "blocked": "bloquée par l'administrateur",
-    "used": "dernière utilisation {{when}}",
-    "unused": "jamais utilisée",
-    "docs": "Tout ce que l'application web sait faire fonctionne aussi via l'interface sous /api/v1. La description se trouve à /api/v1/docs.",
-    "made": "« {{name}} » créé",
-    "once": "Copiez le jeton maintenant. Il n'est affiché que cette fois-ci.",
-    "address": "Adresse pour les programmes",
-    "headerLine": "Les programmes envoient le jeton sous la forme « Authorization: Bearer … ».",
-    "docsLink": "Documentation de l'API",
-    "none": "Aucun jeton API pour l'instant.",
-    "delete": "Supprimer",
-    "right": "Droit",
     "scope": {
-      "read": "Lecture seule",
       "readHint": "Lire les documents, les coffres et la recherche, dans la mesure où votre compte le peut. Il ne peut rien modifier.",
-      "upload": "Téléversement seul",
       "uploadHint": "Pour un numériseur, un script ou le raccourci : dépose des documents dans une boîte de réception et ne lit rien."
     },
     "keyUploadNote": "Une clé de téléversement ne fait que déposer des documents dans une boîte de réception : celle de ton coffre cible ou, si le programme en indique un autre, celle d'un coffre auquel tu peux ajouter. Elle ne peut rien lire, modifier ni supprimer.",
@@ -1490,12 +1137,9 @@
     },
     "keys": {
       "upload": "Jeton de téléversement",
-      "uploadOne": "téléversement seulement",
       "uploadButton": "Jeton de téléversement (pour numériseurs et applications)",
       "scope": "Peut",
-      "read": "lecture seule",
-      "limits": "Limites par jeton : 120 requêtes par minute, 50 téléversements par heure.",
-      "uploadPlaceholder": "Numériseur de l'entrée"
+      "read": "lecture seule"
     },
     "settings": {
       "title": "Raccourci pour l'iPhone",
@@ -3111,7 +2755,6 @@
       "text": "Des factures, des délais de résiliation et des garanties dans vos coffres. Ce qu'un message indique : le type, le jour et le titre du document, jamais un montant ni son contenu."
     },
     "when": "Quand",
-    "rhythmLabel": "Quand vous êtes averti",
     "rhythm": {
       "single": "Un par un, au moment voulu",
       "weekly": "Une fois par semaine",
@@ -3149,7 +2792,6 @@
       "cancel": "Dernier jour pour résilier",
       "warranty": "Fin de la garantie"
     },
-    "leadAria": "{{label}}, combien de temps à l'avance",
     "before_one": "{{count}} jour avant",
     "before_other": "{{count}} jours avant",
     "sameDay": "Encore une fois le jour même",

@@ -39,8 +39,6 @@
       "storage": "Storage"
     },
     "language": {
-      "title": "Language",
-      "text": "Applies to your account. The others choose their own. The operator adds more languages under Settings, Languages.",
       "hint": "(applies on all your devices)"
     },
     "phone": {
@@ -134,18 +132,12 @@
         "text": "Which provider makes suggestions when filing, and within which limits."
       }
     },
-    "groups": {
-      "account": "My account",
-      "server": "Server"
-    },
-    "jump": "Page of the settings",
     "things": "documents",
     "thingsDative": "documents"
   },
   "auth": {
     "name": "Name",
     "nameHint": "You sign in with it: 2 to 64 letters without accents, digits, dot, hyphen or underscore.",
-    "password": "Password",
     "passwordHint": "At least 12 characters.",
     "backToLogin": "To the sign-in",
     "setup": {
@@ -242,30 +234,10 @@
     "menu": "About nexpaper",
     "subtitle": "Documents for households and small firms: upload, find, done.",
     "version": "Version",
-    "whatsNew": "What's new",
-    "newer": "Version {{version}} is out",
-    "licence": "Licence",
-    "source": "Source code",
-    "releases": "Releases",
-    "releasesLink": "All versions and what changed",
-    "project": "Project page",
-    "report": "Found a problem?",
-    "reportLink": "Report it on GitHub",
-    "builtWith": "Built with",
     "fonts": "Font in the image",
     "fontsText": "nexpaper brings its font along, so that opening it asks no other server.",
     "updates": {
-      "title": "Updates",
-      "text": "Whether a newer version of nexpaper is out.",
-      "daily": "Check once a day",
-      "dailyHint": "Asks GitHub for the newest release when somebody opens this page, once a day at most. Off: only when you press the button.",
-      "now": "Check now",
       "current": "This is the newest version.",
-      "none": "No release found yet.",
-      "notYet": "Not checked yet.",
-      "off": "The daily check is off.",
-      "toRelease": "What is new",
-      "checkedAt": "last checked {{when}}",
       "whatGoesOut": "Only the question goes out: a request to api.github.com for the newest release of nexpaper, with no names, documents or settings. Besides the mail server, the AI and the mailbox, if you set them up, the push services of the browsers, the import from Paperless when somebody starts it, and the sign-in providers when somebody signs in through them, it is the only call nexpaper makes on its own."
     }
   },
@@ -298,9 +270,6 @@
       "roleLine": "Role: {{role}} · Sign-in name: {{name}}"
     },
     "password": {
-      "current": "Current password",
-      "new": "New password",
-      "again": "Once more",
       "submit": "Change password",
       "done": "Password changed. Every other device is signed out."
     },
@@ -350,8 +319,6 @@
     "devices": {
       "ends_one": "A sign-in ends by itself after {{count}} day without use.",
       "ends_other": "A sign-in ends by itself after {{count}} days without use.",
-      "notify": "Tell me about a new sign-in",
-      "notifyHint": "By push to your devices and by mail: which device, which browser, roughly from where. If it was not you, one tap signs it off.",
       "here": "this device",
       "meta": "{{where}} · last {{when}}",
       "signOut": "Sign out",
@@ -385,17 +352,9 @@
       "addressTaken": "The address is your account's now. Confirm it under Profile, then it counts for documents by mail too."
     },
     "keysWait": "Devices and API keys work only once you set up a second factor.",
-    "keysWaitLink": "Set up a second factor",
-    "signOut": {
-      "title": "Sign out",
-      "text": "Ends your session in this browser. Your documents stay as they are.",
-      "provider": "You stay signed in at your sign-in provider; only nexpaper signs you out.",
-      "button": "Sign out"
-    }
+    "keysWaitLink": "Set up a second factor"
   },
   "twofactor": {
-    "off": "Off.",
-    "onShort": "On.",
     "scan": "Scan this code with the app, or type the key below into it. Then give the code the app shows, and your password.",
     "qr": "QR code for the authenticator app",
     "code": "Code from the app",
@@ -430,163 +389,18 @@
     "noEmail": "Invitation link without an address"
   },
   "server": {
-    "aiAllowed": "AI allowed",
-    "permissionsHint": "Single accounts can be left out of the AI.",
-    "accounts": "Accounts",
-    "invite": "Invite a person",
-    "inviteText": "Whoever follows the link makes an account of their own. Without a mail server you copy the link and pass it on yourself.",
-    "signInBy": {
-      "password": "password",
-      "oidc": "through the provider"
-    },
-    "withTwoFactor": "second factor on",
-    "locked": "locked for a while",
-    "blocked": "blocked",
-    "makeOperator": "Make operator",
-    "makeMember": "Make member",
-    "newPassword": "Reset link …",
-    "givePassword": "Link for a password …",
-    "resetTwoFactor": "Reset the second factor",
-    "signOutEverywhere": "Sign out everywhere",
-    "block": "Block",
-    "unblock": "Unblock",
-    "deleteAccount": "Delete …",
-    "more": "Actions for {{name}}",
-    "confirm": {
-      "role": {
-        "title": "Change the role of {{name}}?",
-        "button": "Change role"
-      },
-      "promote": {
-        "text": "{{name}} may then change every setting of this server. An operator does not look into the others' personal vaults either."
-      },
-      "demote": {
-        "text": "{{name}} becomes a member and no longer reaches the server's settings."
-      },
-      "reset": {
-        "title": "Reset the second factor of {{name}}?",
-        "text": "For a lost phone: the code from the app, the passkeys and the recovery codes go, every device is signed out, and the person is told. At the next sign-in they set the second factor up again.",
-        "button": "Reset"
-      },
-      "signout": {
-        "title": "Sign {{name}} out everywhere?",
-        "text": "Every device of the account has to sign in again.",
-        "button": "Sign out"
-      },
-      "block": {
-        "title": "Block {{name}}?",
-        "text": "{{name}} no longer gets in, open sessions end at once. Unblocking works at any time.",
-        "button": "Block"
-      },
-      "unblock": {
-        "title": "Unblock {{name}}?",
-        "text": "{{name}} can sign in again afterwards, with their own password or through the sign-in provider.",
-        "button": "Unblock"
-      },
-      "backup_restore": {
-        "title": "Restore this backup?",
-        "text": "The current state is backed up first. nexpaper restarts, everybody signs in again.",
-        "button": "Restore"
-      },
-      "backup_download": {
-        "title": "Download this backup?",
-        "text": "It holds every account, the filing and the server's secrets, but no documents. It is not encrypted.",
-        "button": "Download"
-      },
-      "backup_delete": {
-        "title": "Delete this backup?",
-        "text": "It cannot be brought back.",
-        "button": "Delete"
-      },
-      "backup_upload": {
-        "title": "Upload a backup?",
-        "text": "The file joins the list of backups. Nothing is restored until you confirm it there.",
-        "button": "Upload"
-      },
-      "two_factor_off": {
-        "title": "Stop requiring a second factor?",
-        "text": "Then a password alone is enough again to read documents. Whoever has a second factor already keeps it.",
-        "button": "Stop requiring it"
-      },
-      "link": {
-        "title": "Send {{name}} a link to reset the password?",
-        "text": "The person chooses their password themselves. The link goes by mail to their address when mail is set up, otherwise you get it once to pass on. The second factor stays.",
-        "button": "Send link"
-      },
-      "unlink": {
-        "title": "Unlink {{name}}?",
-        "text": "{{name}} no longer signs in through {{provider}} afterwards and is told. The account can link itself again when needed.",
-        "button": "Unlink"
-      }
-    },
-    "twoFactorRequired": "Require a second factor",
-    "twoFactorRequiredHint": "Every account that signs in with a password must set it up before it gets any further. Accounts from the provider bring their own. An account with a password is not affected either when it comes in through a provider for which “{{trusts}}” is on.",
-    "ownSecondFactorFirst": "Set up your own second factor first (My account, Security), or you would be the first one who cannot go on. Not affected is whoever signs in through a provider for which “{{trusts}}” is on.",
-    "secretKept": "stored, leave empty to keep it",
-    "mail": "Mail",
     "mailHint": "nexpaper sends through it invitations, links for a new password and to confirm an address, notices about your account (a new sign-in, a changed address, a new username, a second factor reset), reminders of deadlines and the weekly overview, word of a finished or failed export, notices to operators (upload requests, Paperless import, the check of the files, restoring, sign-in) and the confirmation of a sender address for the mail intake.",
-    "smtpHost": "Server",
-    "smtpPort": "Port",
-    "smtpSecurity": "Encryption",
-    "smtpUser": "User",
-    "smtpFrom": "Sender",
-    "none": "none",
-    "mailTest": "Test mail to",
-    "send": "Send",
-    "mailSent": "The test mail is out.",
-    "backups": "Backup",
-    "backupsHint": "One file with the database, the settings and the server's secrets: accounts, vaults, filing, recognised text, notes, history. With the server's secret it also holds the mail and AI credentials and the addresses of open links, so keep it protected, like a password. Restoring shows a trial run first.",
-    "schedule": "Automatically",
-    "off": "Off",
-    "daily": "Daily",
-    "weekly": "Weekly",
-    "keep": "Keep",
-    "backupNow": "Back up now",
-    "backupMade": "Backup made.",
-    "uploadBackup": "Upload a backup",
-    "uploaded": "uploaded",
-    "uploadedHint": "Uploaded. It is in the list now: check it first, then restore.",
-    "noBackups": "No backups yet.",
-    "kinds": {
-      "manual": "by hand",
-      "scheduled": "scheduled",
-      "update": "before a change"
-    },
     "countAccounts_one": "{{count}} account",
     "countAccounts_other": "{{count}} accounts",
-    "check": "Check",
-    "checkOk": "Readable: {{accounts}}. Restoring replaces the current state; it is backed up first.",
-    "checkBad": "Damaged: this backup cannot be restored.",
-    "download": "Download",
-    "restore": "Restore",
-    "deleteBackup": "Delete",
-    "restarting": "nexpaper restarts with the backup. The page reloads in a moment.",
     "languages": "Languages",
     "languagesHint": "German, English and French are built in. Add more as a JSON file; missing texts fall back to English.",
     "builtIn": "built in",
     "texts_one": "one text",
     "texts_other": "{{count}} texts",
-    "removeLanguage": "Remove {{name}}",
     "template": "Download the template",
     "languageCode": "Language code",
     "upload": "Upload a language",
     "languageAdded": "Language added. It appears under My account, Profile.",
-    "log": "Log",
-    "logHint": "Four levels. The two deep ones switch themselves off after an hour. Never the content of documents, passwords or tokens.",
-    "level": "Level",
-    "logSearch": "Search the text …",
-    "logEmpty": "Nothing in the log.",
-    "detail": "Detail",
-    "levels": {
-      "quiet": "Quiet",
-      "normal": "Normal",
-      "detailed": "Detailed (1 hour)",
-      "trace": "Everything (1 hour)"
-    },
-    "logClear": "Clear log",
-    "logClearText": "Every line goes. New ones come as before.",
-    "logUntil": "Back to normal at {{time}}.",
-    "checkNewer": "This backup comes from a newer version of nexpaper. Update nexpaper first, then restore.",
     "ai": {
       "title": "AI proposals in the inbox",
       "text": "Applies to everybody. The AI proposes title, sender, kind, date and amount; only what a person confirms is filed. Rules always come first.",
@@ -630,43 +444,7 @@
       "save": "Save",
       "out": "What goes out: an encrypted message to the push service of each browser. Only the device can read it. It never holds the content of a document."
     },
-    "linkSent": "The link for {{name}} went to {{email}}. It works once and for 24 hours.",
-    "linkShown": "The link for {{name}}, shown only now, valid once and for 24 hours. Pass it on, the person chooses the password themselves:",
-    "linkLabel": "Link to the password",
-    "checkMissing_one": "{{count}} document is missing on the disk.",
-    "checkMissing_other": "{{count}} documents are missing on the disk.",
-    "backupNoDocuments": "The documents themselves are not in the backup.",
-    "backupNoDocumentsText": "They lie as plain files under /data/dokumente, readable without nexpaper too. Put this folder into the backup your server makes anyway (Hyper Backup, restic, snapshots). Whoever backs up only this file has filing without documents after a disk failure.",
-    "apiKeys": {
-      "title": "API tokens of all accounts",
-      "text": "Per token the account, name, right, run-out and last use. Never the token itself. Whether there are tokens at all you set under General.",
-      "allow": "Allow API tokens",
-      "allowHint": "Each person makes tokens under My account, Connections, with which programs read or upload. Off: nobody can make tokens, and existing ones stop working.",
-      "block": "Block",
-      "blockNamed": "Block the token {{name}} of {{account}}",
-      "blockTitle": "Block the token {{name}} of {{account}}?",
-      "blockText": "It stops working at once, for good. The account sees it blocked in its list.",
-      "blocked": "blocked",
-      "offHint": "A token only reads or only uploads, and never does more than its account may.",
-      "own": "Make your own tokens",
-      "none": "No account has an API token yet."
-    },
-    "interface": {
-      "title": "Interface",
-      "text": "Everything the web app can do works through /api/v1 as well. Helpers and programs of your own build on it.",
-      "docs": "Description",
-      "docsText": "All routes on one page",
-      "schema": "Machine readable",
-      "schemaText": "OpenAPI, for tools and code generators",
-      "pair": "Pair a device",
-      "pairText": "QR code from My account, a key of its own for each device",
-      "auth": "How programs sign in",
-      "authText": "device or token in the header of every request; they need no password and no session",
-      "limits": "Limits per token: 120 requests a minute, 50 uploads an hour. Wrong tokens count like wrong passwords."
-    },
     "remove": {
-      "title": "Delete {{name}}?",
-      "text": "The account is deleted with everything that belongs to it and cannot be brought back. Links {{name}} created stop working at once.",
       "loading": "One moment …",
       "none": "There are no documents in the own vault.",
       "documents_one": "The own vault holds {{n}} document, the trash included. Where should it go?",
@@ -683,14 +461,11 @@
       "deleteAllHint": "For good, also for everybody they were shared with.",
       "soleManager": "{{name}} alone manages {{vaults}}. First give somebody else the right to manage there.",
       "typeName": "To confirm, type the account name {{name}}",
-      "button": "Delete account",
-      "done": "Account {{name}} deleted.",
       "youSee": "You will see the documents yourself afterwards."
     },
     "countDocuments_one": "{{count}} document",
     "countDocuments_other": "{{count}} documents",
     "restorePreview": {
-      "title": "Trial run",
       "documents": "The backup knows {{count}} documents.",
       "allThere": "All their files lie on the disk.",
       "missing_one": "{{count}} document has a file missing on the disk.",
@@ -709,39 +484,9 @@
       "revivedLinks_one": "Restoring makes {{count}} link valid again that was withdrawn since the backup.",
       "revivedLinks_other": "Restoring makes {{count}} links valid again that were withdrawn since the backup.",
       "revivedPdfPasswords_one": "Restoring brings back {{count}} remembered PDF password that was deleted since the backup.",
-      "revivedPdfPasswords_other": "Restoring brings back {{count}} remembered PDF passwords that were deleted since the backup.",
-      "working": "Running the trial …"
+      "revivedPdfPasswords_other": "Restoring brings back {{count}} remembered PDF passwords that were deleted since the backup."
     },
-    "sizeNote": "The backup is made while nexpaper runs, through SQLite's own backup function, nothing stalls. The search index is not in it and is built anew after a restore. Download, delete and restore ask for your password.",
-    "providers": {
-      "order": "Move {{name}} (arrow keys)",
-      "more": "More"
-    },
-    "unlinkProvider": "Unlink from {{name}}",
     "features": "Features for all accounts",
-    "accountsLead_one": "{{count}} account. Each gets its personal vault when it is made. As the operator you manage accounts and shared vaults; you do not look into personal vaults.",
-    "accountsLead_other": "{{count}} accounts. Each gets its personal vault when it is made. As the operator you manage accounts and shared vaults; you do not look into personal vaults.",
-    "openInvites": "Open invitations",
-    "table": {
-      "person": "Person",
-      "signIn": "Sign-in",
-      "role": "Role",
-      "ai": "AI",
-      "last": "Last seen",
-      "actions": "Actions",
-      "never": "never",
-      "passwordTwoFactor": "Password + 2FA"
-    },
-    "storageBackups": "Storage and backups",
-    "lastBackup": "Last backup: {{time}}",
-    "forBackup": "{{action}}: backup of {{name}}",
-    "logAll": "All",
-    "logLevelHint": "A filter always shows the higher levels too: “WARNING” includes the errors.",
-    "logTime": "Time",
-    "logSource": "Source",
-    "logRequest": "No. / account",
-    "logMessage": "Message",
-    "logRequestHint": "Show only this request",
     "documentsFact": "Documents",
     "backupHolds": "A backup holds the database (accounts, vaults, assignments, recognised text, notes, history, settings) and the server's key, not the documents themselves: they lie as files in /data/dokumente and belong in the server's usual file backup. With the key it also holds the access for mail and AI and the addresses of open links, so keep it protected, like a password. nexpaper builds the search index anew after a restore.",
     "whatYouSee": "As the operator you see names, usernames, mail addresses, roles, how somebody signs in, when an account was last here and how many documents and how much storage it has, but never the documents in other people's vaults, their recognised text, their notes or their passwords.",
@@ -980,64 +725,17 @@
     "pdf_too_large": "The PDF is too large."
   },
   "ready": {
-    "title": "Ready for the internet?",
-    "text": "Many reach nexpaper from on the road too. nexpaper checks this itself, every time you open the page.",
-    "open_one": "{{count}} point open",
-    "open_other": "{{count}} points open",
-    "allGood": "All good",
-    "state": {
-      "ok": "fine",
-      "warn": "check",
-      "bad": "open"
-    },
-    "https": {
-      "title": "Public address with https",
-      "ok": "{{address}}",
-      "warn": "{{address}} has https, but this request came without. Open nexpaper under that address, or let the proxy send X-Forwarded-Proto and name it in NEXPAPER_TRUSTED_PROXIES.",
-      "bad": "Without https, passwords travel the network in the clear, and Web Push and passkeys do not work at all. Enter the public address with https below."
-    },
-    "two_factor": {
-      "title": "Second factor for everybody",
-      "ok": "Whoever signs in with a password needs a code or a passkey as well.",
-      "bad": "Off: a guessed or stolen password is enough to read all documents of that person. Turn on \"Require a second factor\" below."
-    },
-    "own_account": {
-      "title": "Your own account",
-      "ok": "Has a second factor.",
-      "bad": "Has no second factor yet, and it may change everything. Set it up under My account, Security."
-    },
-    "brake": {
-      "title": "Protection against guessing",
-      "ok": "After 5 wrong tries a 15 minute pause, per account and per address. Every try is in the log.",
-      "warn": "All visitors come through a proxy nexpaper does not know: the pause holds per account, per address only roughly. See “Behind the proxy”.",
-      "bad": "The list of trusted proxies holds public networks ({{networks}}). Anybody could then make up the sender's address, and the pause after wrong tries no longer holds. List only the address of your proxy.",
-      "broken": "The protection against guessing fails its own test. Restart nexpaper; if that does not help, please report it."
-    },
-    "cookies": {
-      "title": "Sessions and cookies",
-      "ok_one": "Cookies only over https and not readable by scripts; a sign-in runs out after {{count}} day without use.",
-      "ok_other": "Cookies only over https and not readable by scripts; a sign-in runs out after {{count}} days without use.",
-      "warn": "Without https the sign-in cookies travel in the clear. Over https nexpaper protects them by itself.",
-      "bad": "NEXPAPER_COOKIE_SECURE is off: the cookies go unprotected even over https. Set it to auto."
-    },
-    "proxy": {
-      "title": "Behind the proxy",
-      "ok": "The visitors' real address arrives (proxy {{proxies}} entered as trusted). Without that the protection against guessing would see everybody as one.",
-      "direct": "The visitors arrive directly, without a proxy in between.",
-      "warn": "The requests come through a proxy ({{proxy}}) that is not entered as trusted: the protection against guessing sees everybody as one. Set NEXPAPER_TRUSTED_PROXIES to its address.",
-      "bad": "Public networks are listed as trusted ({{networks}}). Set NEXPAPER_TRUSTED_PROXIES to the address of your proxy, not to the whole internet."
-    },
     "secrets": {
       "title": "Server secrets",
-      "ok": "The key for the OIDC secret, the mail password and the AI key can be read by the owner only.",
       "env": "The key comes from NEXPAPER_SECRET_KEY, not from a file.",
+      "ok": "The key for the OIDC secret, the mail password and the AI key can be read by the owner only.",
       "bad": "The file {{path}} can be read by others too (mode {{mode}}). Set it to 600, the owner only.",
       "missing": "The key is missing at {{path}}."
     },
     "backups": {
       "title": "Backup",
-      "ok": "An automatic backup is on. The documents themselves belong in your server's own backup.",
-      "warn": "No automatic backup. Turn it on under Settings, Backup."
+      "warn": "No automatic backup. Turn it on under Server, Storage and backups.",
+      "ok": "An automatic backup is on. The documents themselves belong in your server's own backup."
     }
   },
   "home": {
@@ -1062,19 +760,14 @@
     "removed": "Address removed.",
     "off": "The operator has not set up a mail server yet, so no link can be sent.",
     "passwordHint": "For safety: the address is the way back into the account.",
-    "passwordFirst": "Enter the password above for that",
-    "confirmedLine": "Mail address confirmed",
-    "unconfirmedLine": "Mail address not confirmed"
+    "passwordFirst": "Enter the password above for that"
   },
   "looks": {
-    "title": "Appearance",
     "text": "For your account only.",
     "archive": "Archive",
     "archiveText": "(how the list looks when you open nexpaper)",
     "list": "List",
     "grid": "Tiles",
-    "mode": "Look",
-    "everywhere": "(applies on all your devices)",
     "archiveStyle": "Look of the archive"
   },
   "pairing": {
@@ -1087,55 +780,9 @@
     "disconnectNamed": "Disconnect {{name}}"
   },
   "apiKeys": {
-    "title": "API tokens",
-    "text": "For your own scripts, nexdeck or a scanner that uploads directly. A token can only read or only upload, never change settings.",
-    "off": "The operator has not allowed API tokens.",
-    "offForOperator": "API tokens are not allowed yet.",
     "offOperator": "Allow them under Settings, General.",
-    "enable": "Allow them now",
-    "enableConfirm": "Allow",
-    "enableTitle": "Allow API tokens for everybody?",
-    "enableText": "After that every person on this server can make tokens under My account. A token lets a program either only read or only upload, never more than the account that made it may. You can switch this off again under Settings, General at any time; tokens that exist stop working then too.",
-    "uploadNote": "A token for uploading only puts documents into an inbox: the one of your target vault or, when the program names another, the one of a vault you may add to. It cannot read, change or delete anything.",
-    "new": "New API token",
-    "name": "Name",
-    "namePlaceholder": "nexdeck",
-    "lifetime": "Expiry",
-    "lifetimeNever": "No end",
-    "lifetimeHint": "A token that never runs out is the one nobody remembers when it falls into the wrong hands. A year is usually enough; the list shows a week ahead that it runs out.",
-    "lifetimeHintUpload": "A token for uploading can only put documents into your inbox. It does not read your archive. So it does not run out by itself, and a shortcut or a scanner does not have to be set up again after a year. You can delete it at any time, or choose a time.",
-    "lifetimeDays": {
-      "30": "30 days",
-      "90": "90 days",
-      "365": "365 days"
-    },
-    "make": "Make the token",
-    "key": "Token",
-    "header": "Header line for the program",
-    "tryIt": "To try it",
-    "done": "Done",
-    "copyNamed": "Copy {{what}}",
-    "deleteNamed": "Delete the token {{name}}",
-    "readOnlyOne": "read only",
-    "never": "does not run out",
-    "runsOut": "runs out on {{day}}",
-    "ranOut": "ran out on {{day}}",
-    "blocked": "blocked by the operator",
-    "used": "last used {{when}}",
-    "unused": "never used",
-    "docs": "Everything the web app can do works through the interface under /api/v1 as well. The description is at /api/v1/docs.",
-    "made": "“{{name}}” made",
-    "once": "Copy the token now. It is shown this once only.",
-    "address": "Address for programs",
-    "headerLine": "Programs send the token as “Authorization: Bearer …”.",
-    "docsLink": "API documentation",
-    "none": "No API token yet.",
-    "delete": "Delete",
-    "right": "Right",
     "scope": {
-      "read": "Read only",
       "readHint": "Read documents, vaults and the search, as far as your account may. It cannot change anything.",
-      "upload": "Upload only",
       "uploadHint": "For a scanner, a script or the shortcut: puts documents into an inbox and reads nothing."
     },
     "keyUploadNote": "A key for uploading only puts documents into an inbox: the one of your target vault or, when the program names another, the one of a vault you may add to. It cannot read, change or delete anything.",
@@ -1490,12 +1137,9 @@
     },
     "keys": {
       "upload": "Token for uploading",
-      "uploadOne": "upload only",
       "uploadButton": "Token for uploading (for scanners and apps)",
       "scope": "May",
-      "read": "read only",
-      "limits": "Limits per token: 120 requests a minute, 50 uploads an hour.",
-      "uploadPlaceholder": "Scanner in the hall"
+      "read": "read only"
     },
     "settings": {
       "title": "Shortcut for the iPhone",
@@ -3111,7 +2755,6 @@
       "text": "Of bills, notice periods and warranties in your vaults. What a message says: the kind, the day and the title of the document, never an amount or its contents."
     },
     "when": "When",
-    "rhythmLabel": "When you are reminded",
     "rhythm": {
       "single": "One by one, when it is time",
       "weekly": "Once a week",
@@ -3149,7 +2792,6 @@
       "cancel": "Last day to cancel",
       "warranty": "Warranty ends"
     },
-    "leadAria": "{{label}}, how early",
     "before_one": "{{count}} day before",
     "before_other": "{{count}} days before",
     "sameDay": "Once more on the day itself",

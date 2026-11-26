@@ -368,7 +368,7 @@ describe("the operator's checks", () => {
     })
     expect(box.textContent).toContain('Server-Geheimnisse')
     expect((await opened('secrets')).text).toContain('Der Schlüssel kommt aus NEXPAPER_SECRET_KEY, nicht aus einer Datei.')
-    expect((await opened('backups')).text).toContain('Keine automatische Sicherung. Schalte sie unter Einstellungen, Sicherung ein.')
+    expect((await opened('backups')).text).toContain('Keine automatische Sicherung. Schalte sie unter Server, Speicher und Sicherung ein.')
     expect((await opened('upload_requests')).text).toContain('Gerade nehmen 2 Bitten etwas an.')
   })
 })

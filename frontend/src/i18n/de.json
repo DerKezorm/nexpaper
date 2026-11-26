@@ -39,8 +39,6 @@
       "storage": "Ablage"
     },
     "language": {
-      "title": "Sprache",
-      "text": "Gilt für dein Konto. Die anderen wählen ihre eigene. Weitere Sprachen fügt der Betreiber unter Einstellungen, Sprachen hinzu.",
       "hint": "(gilt auf allen deinen Geräten)"
     },
     "phone": {
@@ -134,18 +132,12 @@
         "text": "Welcher Anbieter beim Einsortieren Vorschläge macht, und mit welchen Grenzen."
       }
     },
-    "groups": {
-      "account": "Mein Konto",
-      "server": "Server"
-    },
-    "jump": "Seite der Einstellungen",
     "things": "Dokumente",
     "thingsDative": "Dokumenten"
   },
   "auth": {
     "name": "Name",
     "nameHint": "Damit meldest du dich an: 2 bis 64 Buchstaben ohne Umlaute, Ziffern, Punkt, Bindestrich oder Unterstrich.",
-    "password": "Passwort",
     "passwordHint": "Mindestens 12 Zeichen.",
     "backToLogin": "Zur Anmeldung",
     "setup": {
@@ -242,30 +234,10 @@
     "menu": "Über nexpaper",
     "subtitle": "Dokumente für Haushalt und kleine Betriebe: hochladen, finden, fertig.",
     "version": "Version",
-    "whatsNew": "Was ist neu",
-    "newer": "Version {{version}} ist erschienen",
-    "licence": "Lizenz",
-    "source": "Quelltext",
-    "releases": "Veröffentlichungen",
-    "releasesLink": "Alle Versionen und was sich geändert hat",
-    "project": "Projektseite",
-    "report": "Einen Fehler gefunden?",
-    "reportLink": "Auf GitHub melden",
-    "builtWith": "Gebaut mit",
     "fonts": "Schrift im Abbild",
     "fontsText": "nexpaper bringt seine Schrift mit, damit beim Öffnen kein anderer Server gefragt wird.",
     "updates": {
-      "title": "Aktualisierungen",
-      "text": "Ob es eine neuere Version von nexpaper gibt.",
-      "daily": "Einmal am Tag nachsehen",
-      "dailyHint": "Fragt GitHub nach der neuesten Veröffentlichung, wenn jemand diese Seite öffnet, höchstens einmal am Tag. Aus: nur, wenn du den Knopf drückst.",
-      "now": "Jetzt nachsehen",
       "current": "Das ist die neueste Version.",
-      "none": "Noch keine Veröffentlichung gefunden.",
-      "notYet": "Noch nicht nachgesehen.",
-      "off": "Das tägliche Nachsehen ist aus.",
-      "toRelease": "Was neu ist",
-      "checkedAt": "zuletzt nachgesehen {{when}}",
       "whatGoesOut": "Hinaus geht nur die Frage: eine Anfrage an api.github.com nach der neuesten Veröffentlichung von nexpaper, ohne Namen, Dokumente oder Einstellungen. Neben dem Mailserver, der KI und dem Postfach, wenn ihr sie eingerichtet habt, den Push-Diensten der Browser, dem Import aus Paperless, wenn ihn jemand startet, und den Anmeldeanbietern, wenn sich jemand über sie anmeldet, ist es der einzige Ruf, den nexpaper von sich aus macht."
     }
   },
@@ -298,9 +270,6 @@
       "roleLine": "Rolle: {{role}} · Anmeldename: {{name}}"
     },
     "password": {
-      "current": "Jetziges Passwort",
-      "new": "Neues Passwort",
-      "again": "Noch einmal",
       "submit": "Passwort ändern",
       "done": "Passwort geändert. Alle anderen Geräte sind abgemeldet."
     },
@@ -350,8 +319,6 @@
     "devices": {
       "ends_one": "Eine Anmeldung läuft nach {{count}} Tag ohne Nutzung von selbst ab.",
       "ends_other": "Eine Anmeldung läuft nach {{count}} Tagen ohne Nutzung von selbst ab.",
-      "notify": "Bei einer neuen Anmeldung Bescheid geben",
-      "notifyHint": "Per Push auf deine Geräte und per Mail: welches Gerät, welcher Browser, ungefähr von wo. Warst du es nicht, meldest du es mit einem Tipp ab.",
       "here": "dieses Gerät",
       "meta": "{{where}} · zuletzt {{when}}",
       "signOut": "Abmelden",
@@ -385,17 +352,9 @@
       "addressTaken": "Die Adresse gilt jetzt für dein Konto. Bestätige sie unter Profil, dann zählt sie auch für Dokumente per Mail."
     },
     "keysWait": "Geräte und API-Schlüssel wirken erst, wenn du einen zweiten Faktor einrichtest.",
-    "keysWaitLink": "Zweiten Faktor einrichten",
-    "signOut": {
-      "title": "Abmelden",
-      "text": "Beendet deine Sitzung in diesem Browser. Deine Dokumente bleiben, wie sie sind.",
-      "provider": "Bei deinem Anmeldeanbieter bleibst du angemeldet; nur nexpaper meldet dich ab.",
-      "button": "Abmelden"
-    }
+    "keysWaitLink": "Zweiten Faktor einrichten"
   },
   "twofactor": {
-    "off": "Aus.",
-    "onShort": "An.",
     "scan": "Scanne diesen Code mit der App oder tippe den Schlüssel darunter ein. Dann gib den Code ein, den die App zeigt, und dein Passwort.",
     "qr": "QR-Code für die Authenticator-App",
     "code": "Code aus der App",
@@ -430,163 +389,18 @@
     "noEmail": "Einladungslink ohne Adresse"
   },
   "server": {
-    "aiAllowed": "KI erlaubt",
-    "permissionsHint": "Einzelne Konten lassen sich von der KI ausnehmen.",
-    "accounts": "Konten",
-    "invite": "Person einladen",
-    "inviteText": "Wer dem Link folgt, legt sich ein eigenes Konto an. Ohne Mailserver kopierst du den Link und gibst ihn selbst weiter.",
-    "signInBy": {
-      "password": "Passwort",
-      "oidc": "über den Anbieter"
-    },
-    "withTwoFactor": "zweiter Faktor an",
-    "locked": "eine Weile gesperrt",
-    "blocked": "gesperrt",
-    "makeOperator": "Zum Betreiber machen",
-    "makeMember": "Zum Mitglied machen",
-    "newPassword": "Link zum Zurücksetzen …",
-    "givePassword": "Link für ein Passwort …",
-    "resetTwoFactor": "Zweiten Faktor zurücksetzen",
-    "signOutEverywhere": "Überall abmelden",
-    "block": "Sperren",
-    "unblock": "Entsperren",
-    "deleteAccount": "Löschen …",
-    "more": "Aktionen für {{name}}",
-    "confirm": {
-      "role": {
-        "title": "Rolle von {{name}} ändern?",
-        "button": "Rolle ändern"
-      },
-      "promote": {
-        "text": "{{name}} darf dann jede Einstellung dieses Servers ändern. In die persönlichen Tresore der anderen sieht auch ein Betreiber nicht."
-      },
-      "demote": {
-        "text": "{{name}} wird Mitglied und kommt nicht mehr an die Einstellungen des Servers."
-      },
-      "reset": {
-        "title": "Zweiten Faktor von {{name}} zurücksetzen?",
-        "text": "Für ein verlorenes Handy: Code aus der App, Passkeys und Wiederherstellungscodes gehen weg, alle Geräte werden abgemeldet, und die Person bekommt Bescheid. Bei der nächsten Anmeldung richtet sie den zweiten Faktor neu ein.",
-        "button": "Zurücksetzen"
-      },
-      "signout": {
-        "title": "{{name}} überall abmelden?",
-        "text": "Jedes Gerät des Kontos muss sich neu anmelden.",
-        "button": "Abmelden"
-      },
-      "block": {
-        "title": "{{name}} sperren?",
-        "text": "{{name}} kommt danach nicht mehr herein, offene Sitzungen enden sofort. Entsperren geht jederzeit.",
-        "button": "Sperren"
-      },
-      "unblock": {
-        "title": "{{name}} entsperren?",
-        "text": "{{name}} kann sich danach wieder anmelden, mit dem eigenen Passwort oder über den Anmeldeanbieter.",
-        "button": "Entsperren"
-      },
-      "backup_restore": {
-        "title": "Diese Sicherung wiederherstellen?",
-        "text": "Der jetzige Stand wird vorher gesichert. nexpaper startet neu, alle melden sich neu an.",
-        "button": "Wiederherstellen"
-      },
-      "backup_download": {
-        "title": "Diese Sicherung herunterladen?",
-        "text": "Sie enthält jedes Konto, die Zuordnungen und die Server-Geheimnisse, aber keine Dokumente. Sie ist nicht verschlüsselt.",
-        "button": "Herunterladen"
-      },
-      "backup_delete": {
-        "title": "Diese Sicherung löschen?",
-        "text": "Sie lässt sich nicht zurückholen.",
-        "button": "Löschen"
-      },
-      "backup_upload": {
-        "title": "Sicherung hochladen?",
-        "text": "Die Datei kommt in die Liste der Sicherungen. Wiederhergestellt wird erst, wenn du es dort bestätigst.",
-        "button": "Hochladen"
-      },
-      "two_factor_off": {
-        "title": "Zweiten Faktor nicht mehr verlangen?",
-        "text": "Dann reicht wieder ein Passwort, um Dokumente zu lesen. Wer schon einen zweiten Faktor hat, behält ihn.",
-        "button": "Nicht mehr verlangen"
-      },
-      "link": {
-        "title": "{{name}} einen Link zum Zurücksetzen schicken?",
-        "text": "Die Person wählt ihr Passwort selbst. Der Link geht per Mail an ihre Adresse, wenn Mail eingerichtet ist, sonst bekommst du ihn einmal zum Weitergeben. Der zweite Faktor bleibt.",
-        "button": "Link schicken"
-      },
-      "unlink": {
-        "title": "Verknüpfung von {{name}} lösen?",
-        "text": "{{name}} meldet sich danach nicht mehr über {{provider}} an und bekommt Bescheid. Das Konto verknüpft sich bei Bedarf selbst neu.",
-        "button": "Lösen"
-      }
-    },
-    "twoFactorRequired": "Zweiten Faktor verlangen",
-    "twoFactorRequiredHint": "Jedes Konto, das sich mit Passwort anmeldet, muss ihn einrichten, bevor es weiterkommt. Konten vom Anbieter bringen dessen eigenen mit. Ein Konto mit Passwort ist ebenfalls nicht betroffen, wenn es über einen Anbieter kommt, bei dem „{{trusts}}“ an ist.",
-    "ownSecondFactorFirst": "Richte zuerst deinen eigenen zweiten Faktor ein (Mein Konto, Sicherheit), sonst wärst du der Erste, der nicht mehr weiterkommt. Nicht betroffen ist, wer sich über einen Anbieter anmeldet, bei dem „{{trusts}}“ an ist.",
-    "secretKept": "gespeichert, leer lassen zum Behalten",
-    "mail": "Mail",
     "mailHint": "Über ihn verschickt nexpaper Einladungen, Links für ein neues Passwort und zum Bestätigen einer Adresse, Hinweise zu deinem Konto (neue Anmeldung, geänderte Adresse, neuer Benutzername, zurückgesetzter zweiter Faktor), Erinnerungen an Fristen und die Wochenübersicht, Bescheid zu einem fertigen oder gescheiterten Export, Hinweise an Betreiber (Upload-Bitten, Paperless-Import, Prüfung der Dateien, Wiederherstellen, Anmeldung) und die Bestätigung einer Absenderadresse für den Mail-Eingang.",
-    "smtpHost": "Server",
-    "smtpPort": "Port",
-    "smtpSecurity": "Verschlüsselung",
-    "smtpUser": "Benutzer",
-    "smtpFrom": "Absender",
-    "none": "keine",
-    "mailTest": "Testmail an",
-    "send": "Senden",
-    "mailSent": "Die Testmail ist raus.",
-    "backups": "Sicherung",
-    "backupsHint": "Eine Datei mit Datenbank, Einstellungen und Server-Geheimnissen: Konten, Tresore, Zuordnungen, erkannter Text, Notizen, Verlauf. Mit dem Server-Geheimnis enthält sie auch die Zugänge für Mail und KI und die Adressen offener Links. Bewahre sie darum geschützt auf, wie ein Passwort. Wiederherstellen zeigt zuerst einen Probelauf.",
-    "schedule": "Automatisch",
-    "off": "Aus",
-    "daily": "Täglich",
-    "weekly": "Wöchentlich",
-    "keep": "Behalten",
-    "backupNow": "Jetzt sichern",
-    "backupMade": "Sicherung erstellt.",
-    "uploadBackup": "Sicherung hochladen",
-    "uploaded": "hochgeladen",
-    "uploadedHint": "Hochgeladen. Sie steht jetzt in der Liste: erst prüfen, dann wiederherstellen.",
-    "noBackups": "Noch keine Sicherungen.",
-    "kinds": {
-      "manual": "von Hand",
-      "scheduled": "geplant",
-      "update": "vor einer Änderung"
-    },
     "countAccounts_one": "{{count}} Konto",
     "countAccounts_other": "{{count}} Konten",
-    "check": "Prüfen",
-    "checkOk": "Lesbar: {{accounts}}. Wiederherstellen ersetzt den jetzigen Stand; der wird vorher gesichert.",
-    "checkBad": "Beschädigt: Diese Sicherung lässt sich nicht wiederherstellen.",
-    "download": "Herunterladen",
-    "restore": "Wiederherstellen",
-    "deleteBackup": "Löschen",
-    "restarting": "nexpaper startet mit der Sicherung neu. Die Seite lädt gleich neu.",
     "languages": "Sprachen",
     "languagesHint": "Deutsch, Englisch und Französisch sind eingebaut. Weitere als JSON-Datei hinzufügen, fehlende Texte fallen auf Englisch zurück.",
     "builtIn": "eingebaut",
     "texts_one": "ein Text",
     "texts_other": "{{count}} Texte",
-    "removeLanguage": "{{name}} entfernen",
     "template": "Vorlage herunterladen",
     "languageCode": "Sprachcode",
     "upload": "Sprache hochladen",
     "languageAdded": "Sprache hinzugefügt. Sie erscheint unter Mein Konto, Profil.",
-    "log": "Log",
-    "logHint": "Vier Stufen. Die beiden tiefen schalten sich nach einer Stunde selbst ab. Nie Inhalte von Dokumenten, Passwörter oder Tokens.",
-    "level": "Stufe",
-    "logSearch": "Im Text suchen …",
-    "logEmpty": "Nichts im Log.",
-    "detail": "Ausführlichkeit",
-    "levels": {
-      "quiet": "Ruhig",
-      "normal": "Normal",
-      "detailed": "Ausführlich (1 Stunde)",
-      "trace": "Alles (1 Stunde)"
-    },
-    "logClear": "Protokoll leeren",
-    "logClearText": "Jede Zeile geht. Neue kommen wie bisher.",
-    "logUntil": "Um {{time}} zurück auf normal.",
-    "checkNewer": "Diese Sicherung stammt aus einer neueren Version von nexpaper. Erst nexpaper aktualisieren, dann wiederherstellen.",
     "ai": {
       "title": "KI-Vorschläge im Eingang",
       "text": "Gilt für alle. Die KI schlägt Titel, Absender, Art, Datum und Betrag vor; abgelegt wird nur, was ein Mensch bestätigt. Regeln gehen immer vor.",
@@ -630,43 +444,7 @@
       "save": "Speichern",
       "out": "Was hinausgeht: eine verschlüsselte Nachricht an den Push-Dienst des jeweiligen Browsers. Lesen kann sie nur das Gerät. Darin steht nie der Inhalt eines Dokuments."
     },
-    "linkSent": "Der Link für {{name}} ging an {{email}}. Er gilt einmal und 24 Stunden.",
-    "linkShown": "Der Link für {{name}}, nur jetzt zu sehen, einmal und 24 Stunden gültig. Gib ihn weiter, die Person wählt das Passwort selbst:",
-    "linkLabel": "Link zum Passwort",
-    "checkMissing_one": "Auf der Platte fehlt {{count}} Dokument.",
-    "checkMissing_other": "Auf der Platte fehlen {{count}} Dokumente.",
-    "backupNoDocuments": "Die Dokumente selbst sind nicht in der Sicherung.",
-    "backupNoDocumentsText": "Sie liegen als normale Dateien unter /data/dokumente, lesbar auch ohne nexpaper. Nimm diesen Ordner in die Sicherung, die dein Server sowieso macht (Hyper Backup, restic, Snapshots). Wer nur diese Datei sichert, hat nach einem Plattenschaden Zuordnungen ohne Dokumente.",
-    "apiKeys": {
-      "title": "API-Token aller Konten",
-      "text": "Je Token Konto, Name, Recht, Ablauf und letzte Nutzung. Nie der Token selbst. Ob es Tokens gibt, stellst du unter Allgemein ein.",
-      "allow": "API-Token erlauben",
-      "allowHint": "Jede Person legt unter Mein Konto, Verbindungen Tokens an, mit denen Programme lesen oder hochladen. Aus: niemand kann Tokens anlegen, und vorhandene gehen nicht mehr.",
-      "block": "Sperren",
-      "blockNamed": "Token {{name}} von {{account}} sperren",
-      "blockTitle": "Token {{name}} von {{account}} sperren?",
-      "blockText": "Er hört sofort auf zu gehen, für immer. Das Konto sieht ihn gesperrt in seiner Liste.",
-      "blocked": "gesperrt",
-      "offHint": "Ein Token kann lesen oder nur hochladen und nie mehr, als das Konto darf.",
-      "own": "Eigene Tokens anlegen",
-      "none": "Noch kein Konto hat einen API-Token."
-    },
-    "interface": {
-      "title": "Schnittstelle",
-      "text": "Alles, was die Web-App kann, geht auch über /api/v1. Darauf bauen eigene Helfer und Programme auf.",
-      "docs": "Beschreibung",
-      "docsText": "Alle Routen auf einer Seite",
-      "schema": "Maschinenlesbar",
-      "schemaText": "OpenAPI, für Werkzeuge und Code-Erzeuger",
-      "pair": "Gerät koppeln",
-      "pairText": "QR-Code aus Mein Konto, eigener Schlüssel je Gerät",
-      "auth": "Anmelden von Programmen",
-      "authText": "Gerät oder Token in der Kopfzeile jeder Anfrage; Passwort und Sitzung brauchen sie nicht",
-      "limits": "Grenzen je Token: 120 Anfragen in der Minute, 50 Uploads in der Stunde. Falsche Tokens zählen wie falsche Passwörter."
-    },
     "remove": {
-      "title": "{{name}} löschen?",
-      "text": "Das Konto wird mit allem gelöscht, was dazugehört, und lässt sich nicht zurückholen. Links, die {{name}} angelegt hat, hören sofort auf zu gehen.",
       "loading": "Einen Moment …",
       "none": "Im eigenen Tresor liegen keine Dokumente.",
       "documents_one": "Im eigenen Tresor liegt {{n}} Dokument, der Papierkorb mitgezählt. Wohin soll es?",
@@ -683,14 +461,11 @@
       "deleteAllHint": "Endgültig, auch für alle, mit denen sie geteilt sind.",
       "soleManager": "{{name}} verwaltet {{vaults}} allein. Gib dort zuerst jemand anderem das Recht Verwalten.",
       "typeName": "Zum Bestätigen den Kontonamen {{name}} eintippen",
-      "button": "Konto löschen",
-      "done": "Konto {{name}} gelöscht.",
       "youSee": "Du siehst die Dokumente danach selbst."
     },
     "countDocuments_one": "{{count}} Dokument",
     "countDocuments_other": "{{count}} Dokumente",
     "restorePreview": {
-      "title": "Probelauf",
       "documents": "Die Sicherung kennt {{count}} Dokumente.",
       "allThere": "Alle ihre Dateien liegen auf der Platte.",
       "missing_one": "Zu {{count}} Dokument fehlt eine Datei auf der Platte.",
@@ -709,39 +484,9 @@
       "revivedLinks_one": "Zurückspielen macht {{count}} Link wieder gültig, der seit der Sicherung zurückgezogen wurde.",
       "revivedLinks_other": "Zurückspielen macht {{count}} Links wieder gültig, die seit der Sicherung zurückgezogen wurden.",
       "revivedPdfPasswords_one": "Zurückspielen bringt {{count}} gemerktes PDF-Passwort zurück, das seit der Sicherung gelöscht wurde.",
-      "revivedPdfPasswords_other": "Zurückspielen bringt {{count}} gemerkte PDF-Passwörter zurück, die seit der Sicherung gelöscht wurden.",
-      "working": "Probelauf läuft …"
+      "revivedPdfPasswords_other": "Zurückspielen bringt {{count}} gemerkte PDF-Passwörter zurück, die seit der Sicherung gelöscht wurden."
     },
-    "sizeNote": "Gesichert wird im laufenden Betrieb über die Sicherungsfunktion von SQLite, nichts hakt. Der Suchindex ist nicht dabei und wird nach dem Wiederherstellen neu gebaut. Herunterladen, Löschen und Wiederherstellen fragen nach deinem Passwort.",
-    "providers": {
-      "order": "{{name}} verschieben (Pfeiltasten)",
-      "more": "Mehr"
-    },
-    "unlinkProvider": "Verknüpfung mit {{name}} lösen",
     "features": "Funktionen für alle Konten",
-    "accountsLead_one": "{{count}} Konto. Jedes bekommt beim Anlegen seinen persönlichen Tresor. Als Betreiber verwaltest du Konten und gemeinsame Tresore, in persönliche Tresore schaust du nicht hinein.",
-    "accountsLead_other": "{{count}} Konten. Jedes bekommt beim Anlegen seinen persönlichen Tresor. Als Betreiber verwaltest du Konten und gemeinsame Tresore, in persönliche Tresore schaust du nicht hinein.",
-    "openInvites": "Offene Einladungen",
-    "table": {
-      "person": "Person",
-      "signIn": "Anmeldung",
-      "role": "Rolle",
-      "ai": "KI",
-      "last": "Zuletzt",
-      "actions": "Aktionen",
-      "never": "noch nie",
-      "passwordTwoFactor": "Passwort + 2FA"
-    },
-    "storageBackups": "Speicher und Backups",
-    "lastBackup": "Letztes Backup: {{time}}",
-    "forBackup": "{{action}}: Backup vom {{name}}",
-    "logAll": "Alle",
-    "logLevelHint": "Ein Filter zeigt immer auch die höheren Stufen: „WARNING“ enthält also die Fehler.",
-    "logTime": "Zeit",
-    "logSource": "Quelle",
-    "logRequest": "Nr. / Konto",
-    "logMessage": "Meldung",
-    "logRequestHint": "Nur diese Anfrage zeigen",
     "documentsFact": "Dokumente",
     "backupHolds": "Eine Sicherung enthält die Datenbank (Konten, Tresore, Zuordnungen, erkannter Text, Notizen, Verlauf, Einstellungen) und den Schlüssel des Servers, nicht die Dokumente selbst: Die liegen als Dateien in /data/dokumente und gehören in die übliche Dateisicherung des Servers. Mit dem Schlüssel enthält sie auch die Zugänge für Mail und KI und die Adressen offener Links, bewahre sie darum geschützt auf, wie ein Passwort. Den Suchindex baut nexpaper nach dem Wiederherstellen neu.",
     "whatYouSee": "Als Betreiber siehst du Namen, Benutzernamen, Mailadressen, Rollen, wie sich jemand anmeldet, wann ein Konto zuletzt da war und wie viele Dokumente und wie viel Speicher es hat, aber nie die Dokumente in den Tresoren anderer, ihren erkannten Text, ihre Notizen oder ihre Passwörter.",
@@ -980,64 +725,17 @@
     "pdf_too_large": "Das PDF ist zu groß."
   },
   "ready": {
-    "title": "Bereit fürs Internet?",
-    "text": "Viele erreichen nexpaper auch von unterwegs. Das hier prüft nexpaper selbst, jedes Mal, wenn du die Seite öffnest.",
-    "open_one": "{{count}} Punkt offen",
-    "open_other": "{{count}} Punkte offen",
-    "allGood": "Alles erfüllt",
-    "state": {
-      "ok": "erfüllt",
-      "warn": "prüfen",
-      "bad": "offen"
-    },
-    "https": {
-      "title": "Öffentliche Adresse mit https",
-      "ok": "{{address}}",
-      "warn": "{{address}} hat https, aber diese Anfrage kam ohne. Öffne nexpaper über diese Adresse, oder lass den Proxy X-Forwarded-Proto mitschicken und trag ihn in NEXPAPER_TRUSTED_PROXIES ein.",
-      "bad": "Ohne https gehen Passwörter offen durchs Netz, und Web Push und Passkeys funktionieren gar nicht. Trage unten die öffentliche Adresse mit https ein."
-    },
-    "two_factor": {
-      "title": "Zweiter Faktor für alle",
-      "ok": "Wer sich mit Passwort anmeldet, braucht dazu einen Code oder einen Passkey.",
-      "bad": "Aus: Ein erratenes oder gestohlenes Passwort reicht, um alle Dokumente dieser Person zu lesen. Schalte unten „Zweiten Faktor verlangen“ ein."
-    },
-    "own_account": {
-      "title": "Dein eigenes Konto",
-      "ok": "Hat einen zweiten Faktor.",
-      "bad": "Hat noch keinen zweiten Faktor, und es darf alles einstellen. Richte ihn unter Mein Konto, Sicherheit ein."
-    },
-    "brake": {
-      "title": "Schutz vor Raten",
-      "ok": "Nach 5 falschen Versuchen 15 Minuten Pause, je Konto und je Adresse. Jeder Versuch steht im Log.",
-      "warn": "Alle Besucher kommen über einen Proxy, den nexpaper nicht kennt: Die Pause greift je Konto, je Adresse aber nur grob. Siehe „Hinter dem Proxy“.",
-      "bad": "Die Liste der vertrauenswürdigen Proxys enthält öffentliche Netze ({{networks}}). So könnte jeder die Adresse des Absenders erfinden, und die Pause nach falschen Versuchen greift nicht mehr. Trage nur die Adresse deines Proxys ein.",
-      "broken": "Der Schutz vor Raten besteht seinen eigenen Test nicht. Starte nexpaper neu; hilft das nicht, melde es bitte."
-    },
-    "cookies": {
-      "title": "Sitzungen und Cookies",
-      "ok_one": "Cookies nur über https und nicht für Skripte lesbar; eine Anmeldung läuft nach {{count}} Tag ohne Nutzung ab.",
-      "ok_other": "Cookies nur über https und nicht für Skripte lesbar; eine Anmeldung läuft nach {{count}} Tagen ohne Nutzung ab.",
-      "warn": "Ohne https gehen die Anmelde-Cookies offen mit. Über https schützt nexpaper sie von selbst.",
-      "bad": "NEXPAPER_COOKIE_SECURE steht auf off: Die Cookies gehen auch über https ungeschützt. Setze den Wert auf auto."
-    },
-    "proxy": {
-      "title": "Hinter dem Proxy",
-      "ok": "Die echte Adresse der Besucher kommt an (Proxy {{proxies}} als vertrauenswürdig eingetragen). Ohne das sähe der Schutz vor Raten alle als einen.",
-      "direct": "Die Besucher kommen direkt an, ohne Proxy dazwischen.",
-      "warn": "Die Anfragen kommen über einen Proxy ({{proxy}}), der nicht als vertrauenswürdig eingetragen ist: Der Schutz vor Raten sieht alle als einen. Setze NEXPAPER_TRUSTED_PROXIES auf seine Adresse.",
-      "bad": "Als vertrauenswürdig eingetragen sind öffentliche Netze ({{networks}}). Setze NEXPAPER_TRUSTED_PROXIES auf die Adresse deines Proxys, nicht auf das ganze Internet."
-    },
     "secrets": {
       "title": "Server-Geheimnisse",
-      "ok": "Der Schlüssel für OIDC-Geheimnis, Mailpasswort und KI-Schlüssel ist nur für den Besitzer lesbar.",
       "env": "Der Schlüssel kommt aus NEXPAPER_SECRET_KEY, nicht aus einer Datei.",
+      "ok": "Der Schlüssel für OIDC-Geheimnis, Mailpasswort und KI-Schlüssel ist nur für den Besitzer lesbar.",
       "bad": "Die Datei {{path}} ist auch für andere lesbar (Rechte {{mode}}). Setze sie auf 600, nur für den Besitzer.",
       "missing": "Der Schlüssel fehlt unter {{path}}."
     },
     "backups": {
       "title": "Sicherung",
-      "ok": "Eine automatische Sicherung ist eingeschaltet. Die Dokumente selbst gehören in die Sicherung deines Servers.",
-      "warn": "Keine automatische Sicherung. Schalte sie unter Einstellungen, Sicherung ein."
+      "warn": "Keine automatische Sicherung. Schalte sie unter Server, Speicher und Sicherung ein.",
+      "ok": "Eine automatische Sicherung ist eingeschaltet. Die Dokumente selbst gehören in die Sicherung deines Servers."
     }
   },
   "home": {
@@ -1062,19 +760,14 @@
     "removed": "Adresse entfernt.",
     "off": "Der Betreiber hat noch keinen Mailserver eingerichtet, deshalb kann kein Link verschickt werden.",
     "passwordHint": "Zur Sicherheit: Die Adresse ist der Weg zurück ins Konto.",
-    "passwordFirst": "Dafür oben das Passwort eintragen",
-    "confirmedLine": "Mailadresse bestätigt",
-    "unconfirmedLine": "Mailadresse nicht bestätigt"
+    "passwordFirst": "Dafür oben das Passwort eintragen"
   },
   "looks": {
-    "title": "Aussehen",
     "text": "Nur für dein Konto.",
     "archive": "Archiv",
     "archiveText": "(wie die Liste aussieht, wenn du nexpaper öffnest)",
     "list": "Liste",
     "grid": "Kacheln",
-    "mode": "Darstellung",
-    "everywhere": "(gilt auf allen deinen Geräten)",
     "archiveStyle": "Darstellung des Archivs"
   },
   "pairing": {
@@ -1087,55 +780,9 @@
     "disconnectNamed": "{{name}} trennen"
   },
   "apiKeys": {
-    "title": "API-Token",
-    "text": "Für eigene Skripte, nexdeck oder einen Scanner, der direkt hochlädt. Ein Token kann nur lesen oder nur hochladen, nie Einstellungen ändern.",
-    "off": "Der Betreiber hat API-Token nicht freigegeben.",
-    "offForOperator": "API-Token sind noch nicht freigegeben.",
     "offOperator": "Unter Einstellungen, Allgemein freigeben.",
-    "enable": "Jetzt freigeben",
-    "enableConfirm": "Freigeben",
-    "enableTitle": "API-Token für alle freigeben?",
-    "enableText": "Danach kann jede Person auf diesem Server unter Mein Konto Tokens anlegen. Ein Token lässt ein Programm entweder nur lesen oder nur hochladen, nie mehr, als das Konto darf, das ihn anlegt. Du kannst die Freigabe unter Einstellungen, Allgemein jederzeit wieder ausschalten; dann gehen auch vorhandene Tokens nicht mehr.",
-    "uploadNote": "Ein Token zum Hochladen legt Dokumente nur in einen Eingang: in den deines Ziel-Tresors oder, wenn das Programm einen anderen nennt, in den eines Tresors, in dem du ablegen darfst. Lesen, ändern oder löschen kann er nichts.",
-    "new": "Neuer API-Token",
-    "name": "Name",
-    "namePlaceholder": "nexdeck",
-    "lifetime": "Ablauf",
-    "lifetimeNever": "Ohne Ablauf",
-    "lifetimeHint": "Ein Token, der nie abläuft, ist der, an den sich niemand mehr erinnert, wenn er in falsche Hände gerät. Ein Jahr reicht meist; die Liste zeigt eine Woche vorher, dass er abläuft.",
-    "lifetimeHintUpload": "Ein Token zum Hochladen kann nur Dokumente in deinen Eingang legen. Dein Archiv liest er nicht. Darum läuft er von sich aus nicht ab, und ein Kurzbefehl oder Scanner muss nicht nach einem Jahr neu eingerichtet werden. Du kannst ihn jederzeit löschen, oder eine Dauer wählen.",
-    "lifetimeDays": {
-      "30": "30 Tage",
-      "90": "90 Tage",
-      "365": "365 Tage"
-    },
-    "make": "Token anlegen",
-    "key": "Token",
-    "header": "Kopfzeile für das Programm",
-    "tryIt": "Zum Ausprobieren",
-    "done": "Fertig",
-    "copyNamed": "{{what}} kopieren",
-    "deleteNamed": "Token {{name}} löschen",
-    "readOnlyOne": "nur lesen",
-    "never": "läuft nicht ab",
-    "runsOut": "läuft am {{day}} ab",
-    "ranOut": "am {{day}} abgelaufen",
-    "blocked": "vom Betreiber gesperrt",
-    "used": "zuletzt benutzt {{when}}",
-    "unused": "noch nie benutzt",
-    "docs": "Alles, was die Web-App kann, geht auch über die Schnittstelle unter /api/v1. Die Beschreibung liegt unter /api/v1/docs.",
-    "made": "„{{name}}“ angelegt",
-    "once": "Kopiere den Token jetzt. Er wird nur dieses eine Mal angezeigt.",
-    "address": "Adresse für Programme",
-    "headerLine": "Programme schicken den Token als „Authorization: Bearer …“.",
-    "docsLink": "API-Dokumentation",
-    "none": "Noch kein API-Token.",
-    "delete": "Löschen",
-    "right": "Recht",
     "scope": {
-      "read": "Nur lesen",
       "readHint": "Dokumente, Tresore und Suche lesen, so weit dein Konto darf. Ändern kann er nichts.",
-      "upload": "Nur hochladen",
       "uploadHint": "Für einen Scanner, ein Skript oder den Kurzbefehl: legt Dokumente in einen Eingang und liest nichts."
     },
     "keyUploadNote": "Ein Schlüssel zum Hochladen legt Dokumente nur in einen Eingang: in den deines Ziel-Tresors oder, wenn das Programm einen anderen nennt, in den eines Tresors, in dem du ablegen darfst. Lesen, ändern oder löschen kann er nichts.",
@@ -1490,12 +1137,9 @@
     },
     "keys": {
       "upload": "Token zum Hochladen",
-      "uploadOne": "nur hochladen",
       "uploadButton": "Token zum Hochladen (für Scanner und Apps)",
       "scope": "Darf",
-      "read": "nur lesen",
-      "limits": "Grenzen je Token: 120 Anfragen in der Minute, 50 Uploads in der Stunde.",
-      "uploadPlaceholder": "Scanner im Flur"
+      "read": "nur lesen"
     },
     "settings": {
       "title": "Kurzbefehl fürs iPhone",
@@ -3111,7 +2755,6 @@
       "text": "An Rechnungen, Kündigungen und Garantien in deinen Tresoren. Was in der Nachricht steht: Art, Datum und Titel des Dokuments, nie Betrag oder Inhalt."
     },
     "when": "Wann",
-    "rhythmLabel": "Wann erinnert wird",
     "rhythm": {
       "single": "Einzeln, wenn es so weit ist",
       "weekly": "Einmal die Woche",
@@ -3149,7 +2792,6 @@
       "cancel": "Letzter Kündigungstag",
       "warranty": "Garantie läuft ab"
     },
-    "leadAria": "{{label}}, wie früh",
     "before_one": "{{count}} Tag vorher",
     "before_other": "{{count}} Tage vorher",
     "sameDay": "Am Tag selbst noch einmal",
