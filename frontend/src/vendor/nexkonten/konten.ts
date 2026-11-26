@@ -1383,13 +1383,13 @@ export const SIGN_OUT_CARD = {
 
 // --- Accounts ---
 
-/** Since 1.1.0: the card "What you see" under Server, Accounts in all eight apps (ShieldCheck): the app's sentence
+/** Since 1.1.0: the card "What you see" under Server › Accounts in all eight apps (ShieldCheck): the app's sentence
  * (its own text key, "Als Betreiber siehst du …, aber nie …"). */
 export const WHAT_YOU_SEE_CARD = { id: 'accounts-what-you-see', icon: 'ShieldCheck', title: 'account.whatYouSee' } as const
 
-// --- Server, Sign-in ---
+// --- Server › Sign-in ---
 
-/** Since 1.1.0: the page Server, Sign-in of every app, top to bottom (``SignInPage``): the emergency hammer's notice
+/** Since 1.1.0: the page Server › Sign-in of every app, top to bottom (``SignInPage``): the emergency hammer's notice
  * (only while it is down), "Ready for the internet?", the card "Sign-in", then the module oidc's cards "Sign-in
  * providers" and "authentik in one step". */
 export const SIGN_IN_PAGE = ['secondFactorOff', 'readiness', 'signIn', 'providers', 'authentik'] as const

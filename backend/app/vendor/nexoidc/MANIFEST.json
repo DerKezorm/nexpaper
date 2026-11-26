@@ -3,7 +3,7 @@
     "backend/app/vendor/nexoidc/__init__.py": "sha256-ozQHtnmq4x8VABcxZ/e1FkLaask1cvVqKFZqDzH8TUM=",
     "backend/app/vendor/nexoidc/accounts.py": "sha256-XWMqWA8nYtikz2SIG4BlwKKSz8lNK0JaOa2YlFv2UWE=",
     "backend/app/vendor/nexoidc/attempt.py": "sha256-vGBQZ30w57nQSwTFusoWizBVrBxwbxf3aFKaTQdmhkQ=",
-    "backend/app/vendor/nexoidc/authentik.py": "sha256-3qg8bjfOJEeP1ctqNkI/G9UCSko+A4FTUKYUjog2XRU=",
+    "backend/app/vendor/nexoidc/authentik.py": "sha256-hwpbnm9KQPtZl/iAEnp85EgE47/xVXbB6YSwfbTFowQ=",
     "backend/app/vendor/nexoidc/config.py": "sha256-nanwUSIvAL5kc7LK+PJv4/AZHTYbIQFsFoL4SYJ2enA=",
     "backend/app/vendor/nexoidc/coupling.py": "sha256-GrT8mzVFiwj8uRLJ+DE6Sv8fSE6bYDOFIGqw7+yFFmg=",
     "backend/app/vendor/nexoidc/errors.py": "sha256-AYzL5YAZZpPoHikwBJ1Miw83dQRZCfPPiBeeNS+N/FE=",

@@ -5,7 +5,7 @@
     "backend/app/vendor/nexsicherung/config.py": "sha256-NjOI2ciR9xZcgMsvvzflkDlXrsTG9za1QidH0ssbx4w=",
     "backend/app/vendor/nexsicherung/errors.py": "sha256-voQIqfWrHk5OX57dMPJmVjTsaZPRmHnkQI9ZRth+v3w=",
     "backend/app/vendor/nexsicherung/hooks.py": "sha256-lF4n2bIuMjVziow8pGpPzBehPGDwQgojsj5Z4Zm19ik=",
-    "backend/app/vendor/nexsicherung/model.py": "sha256-Lb00ke4rDIR5lYrYMnSvZfFYEtX1os3WKtqxFhpADyw=",
+    "backend/app/vendor/nexsicherung/model.py": "sha256-QQ4QmtXSOfF+mBb+v5EH86N+I6jdsWQf1fd2fT/ynNU=",
     "backend/app/vendor/nexsicherung/plan.py": "sha256-+DZim06hNugJZyOIssJa1wib+gNvfbA7cWOPMzhYE8M=",
     "backend/app/vendor/nexsicherung/restore.py": "sha256-qpkq/yAOWbNL8oh3OpoAZqBnJHPt5D4wtzKSQUDSOZY=",
     "backend/app/vendor/nexsicherung/routes.py": "sha256-OAJE9WCPyucjf7muEhmUGjNNZn9f5fokh/Q2YM9pTgM=",

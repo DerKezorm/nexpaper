@@ -1,4 +1,4 @@
-"""Since 1.1.0: "Ready for the internet?" on the page Server, Sign-in, the same in every app (plan "Einstellungen",
+"""Since 1.1.0: "Ready for the internet?" on the page Server › Sign-in, the same in every app (plan "Einstellungen",
 Anmeldung; contents after nexpaper's and nexdiary's card, which it replaces).
 
 The server checks itself each time the page opens and says per point ``ok`` (green), ``warn`` (orange: something to

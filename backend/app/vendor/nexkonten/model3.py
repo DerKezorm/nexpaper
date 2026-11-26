@@ -75,7 +75,7 @@ class ThemeStore(Protocol):
 
 @dataclass(frozen=True)
 class SignInSettings:
-    """The operator's switches on the page Server, Sign-in (the public address is the module oidc's and the app's)."""
+    """The operator's switches on the page Server › Sign-in (the public address is the module oidc's and the app's)."""
 
     password_login: bool = True
     factor_required: bool = False

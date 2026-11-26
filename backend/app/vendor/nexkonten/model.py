@@ -136,6 +136,9 @@ class NewAccount:
     operator: bool = False
     invite: Invite | None = None
     email_proven: bool = False
+    #: Since E45: every new account starts with ``system`` (as the device says); the store writes it with the account.
+    #: Only accounts of before have none and take a value once (``profiles.adopt_theme``).
+    theme: str = "system"
 
 
 @dataclass(frozen=True)

@@ -240,7 +240,7 @@
       "provider_first": "Without an active sign-in provider, signing in with a password stays on.",
       "own_second_factor_first": "Set up a second factor of your own first."
     },
-    "ownSecondFactorFirst": "Set up a second factor of your own first (My account, Security), or you would be the first one locked out.",
+    "ownSecondFactorFirst": "Set up a second factor of your own first (My account › Security), or you would be the first one locked out.",
     "factorRequiredOffTitle": "Stop requiring a second factor?",
     "factorRequiredOffText": "A password alone gets into an account again then. Whoever has a second factor already keeps it.",
     "factorRequiredOff": "Stop requiring",
@@ -294,7 +294,7 @@
       "ownAccount": {
         "title": "Your own account",
         "ok": "Has a second factor.",
-        "bad": "Has no second factor yet, and it may set everything. Set one up under My account, Security."
+        "bad": "Has no second factor yet, and it may set everything. Set one up under My account › Security."
       },
       "brake": {
         "title": "Protection against guessing",

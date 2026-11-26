@@ -40,7 +40,7 @@ import inspect
 from dataclasses import dataclass, replace
 from datetime import timedelta
 
-from . import brake, common, names
+from . import brake, common, config, names
 from .common import acting, address_hint, log, reload, tell
 from .errors import AccountError
 from .model import (
@@ -469,15 +469,19 @@ def change_theme(store: Store, account_id: AccountId, theme: str) -> Account:
 
 
 def adopt_theme(store: Store, account_id: AccountId, browser_value: object) -> str:
-    """At the first load after 1.1.0: an account that has chosen nothing yet takes the value its browser kept
-    (``browser_theme``) once; one that has a choice keeps it. Returns the theme in effect."""
+    """At the first load after 1.1.0: an account of before that has chosen nothing yet takes, once, (a) the value its
+    browser really kept (the person's choice: ``browser_value`` is what the app read from its own storage, never what
+    the browser prefers, ``prefers-color-scheme``), else (b) what the app showed before
+    (``AppConfig.theme_default_before``: nexmail and nexlore ``dark``), so that nothing changes at the update (E45).
+    One that has a choice keeps it; a new account has ``system`` from the start. Returns the theme in effect."""
     account = common.account_or_404(store, account_id)
     if account.theme in THEMES:
         return account.theme
     taken = browser_theme(browser_value)
+    source = "browser"
     if not taken:
-        return THEME_DEFAULT
+        taken, source = config.current().theme_default_before, "the app's default of before"
     store.set_theme(account.id, taken)  # type: ignore[attr-defined]
     store.commit()
-    log().info("Theme taken from the browser name=%s theme=%s", account.username, taken)
+    log().info("Theme taken name=%s theme=%s from=%s", account.username, taken, source)
     return taken

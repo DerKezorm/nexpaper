@@ -939,7 +939,7 @@ def blueprint(redirect_uri: str) -> str:
 #
 # Apply it under Customization, Blueprints (create a blueprint from this file) or drop it into the blueprints/custom/
 # directory of the authentik worker. Afterwards copy client id and client secret from the provider "{name}"
-# (Applications, Providers) into {name} under Settings, Server, Sign-in, Sign-in providers, with the issuer
+# (Applications, Providers) into {name} under Settings › Server › Sign-in › Sign-in providers, with the issuer
 # <authentik address>/application/o/{name}/.
 #
 # The signing key is authentik's own self-signed certificate: a blueprint cannot generate one. Pick another

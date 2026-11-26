@@ -240,7 +240,7 @@
       "provider_first": "Ohne aktiven Anmeldeanbieter bleibt die Anmeldung mit Passwort an.",
       "own_second_factor_first": "Richte zuerst deinen eigenen zweiten Faktor ein."
     },
-    "ownSecondFactorFirst": "Richte zuerst deinen eigenen zweiten Faktor ein (Mein Konto, Sicherheit), sonst wärst du der Erste, der nicht mehr weiterkommt.",
+    "ownSecondFactorFirst": "Richte zuerst deinen eigenen zweiten Faktor ein (Mein Konto › Sicherheit), sonst wärst du der Erste, der nicht mehr weiterkommt.",
     "factorRequiredOffTitle": "Zweiten Faktor nicht mehr verlangen?",
     "factorRequiredOffText": "Dann reicht wieder ein Passwort, um in ein Konto zu kommen. Wer schon einen zweiten Faktor hat, behält ihn.",
     "factorRequiredOff": "Nicht mehr verlangen",
@@ -294,7 +294,7 @@
       "ownAccount": {
         "title": "Dein eigenes Konto",
         "ok": "Hat einen zweiten Faktor.",
-        "bad": "Hat noch keinen zweiten Faktor, und es darf alles einstellen. Richte ihn unter Mein Konto, Sicherheit ein."
+        "bad": "Hat noch keinen zweiten Faktor, und es darf alles einstellen. Richte ihn unter Mein Konto › Sicherheit ein."
       },
       "brake": {
         "title": "Schutz vor Raten",

@@ -240,7 +240,7 @@
       "provider_first": "Sans fournisseur de connexion actif, la connexion par mot de passe reste active.",
       "own_second_factor_first": "Configure d’abord ton propre second facteur."
     },
-    "ownSecondFactorFirst": "Configure d’abord ton propre second facteur (Mon compte, Sécurité), sinon tu serais le premier bloqué.",
+    "ownSecondFactorFirst": "Configure d’abord ton propre second facteur (Mon compte › Sécurité), sinon tu serais le premier bloqué.",
     "factorRequiredOffTitle": "Ne plus exiger de second facteur ?",
     "factorRequiredOffText": "Un mot de passe suffit alors de nouveau pour entrer dans un compte. Qui a déjà un second facteur le garde.",
     "factorRequiredOff": "Ne plus exiger",
@@ -294,7 +294,7 @@
       "ownAccount": {
         "title": "Ton propre compte",
         "ok": "A un second facteur.",
-        "bad": "N’a pas encore de second facteur, et il peut tout régler. Configure-le sous Mon compte, Sécurité."
+        "bad": "N’a pas encore de second facteur, et il peut tout régler. Configure-le sous Mon compte › Sécurité."
       },
       "brake": {
         "title": "Protection contre les essais",

@@ -3,7 +3,8 @@
  * scrolls), and on it `ConfirmDialog`: "Really?" with an optional field (the own password), the problem in red, and the
  * buttons right below, "Cancel" first. Escape and the scrim close it, focus starts inside and comes back afterwards.
  * `dismissable={false}` (since E38): Escape and a click beside it do nothing; the close button and the dialog's own
- * buttons ("Cancel", "Done") stay.
+ * buttons ("Cancel", "Done") stay. Since E47 Escape closes only the topmost open dialog (the one opened last), never
+ * every dialog of a stack at once; a topmost one that is not dismissable keeps Escape for itself.
  */
 import { useEffect, useId, useRef, type ReactNode } from 'react'
 import { X } from 'lucide-react'
@@ -11,6 +12,9 @@ import { X } from 'lucide-react'
 import { Button } from './Button'
 import type { IconLike } from './icons'
 import { MUTED, PLAIN, type ButtonKind } from './styles'
+
+/** The open dialogs, the one opened last at the end: only it hears Escape (since E47). */
+const OPEN: symbol[] = []
 
 export function Dialog({
   title,
@@ -40,11 +44,14 @@ export function Dialog({
     leave.current = dismissable
   }, [onClose, dismissable])
   useEffect(() => {
+    const me = Symbol('dialog')
+    OPEN.push(me)
     const before = document.activeElement as HTMLElement | null
     const first = panel.current?.querySelector<HTMLElement>('input:not([type="hidden"]), textarea, select, button:not([data-close])')
     first?.focus()
     const key = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
+      // Only the topmost dialog answers; the ones below it stay open.
+      if (event.key === 'Escape' && OPEN[OPEN.length - 1] === me) {
         event.stopPropagation()
         if (leave.current) close.current()
       }
@@ -52,6 +59,7 @@ export function Dialog({
     window.addEventListener('keydown', key, true)
     return () => {
       window.removeEventListener('keydown', key, true)
+      OPEN.splice(OPEN.indexOf(me), 1)
       before?.focus?.()
     }
   }, [])

@@ -98,7 +98,7 @@ class StandardAdapter:
         any check: ``username`` as given (capitals, one letter), ``password`` None for an account through a provider
         only, ``picture`` True for a picture of its own, ``second_factor`` ``"none"``, ``"active"`` (it has one) or
         ``"required"`` (the app requires one it has not set up). Returns the account's id. Two accounts may get one
-        address."""
+        address. Since E45 it stands for an account of before: its theme stays empty ("")."""
         raise NotImplementedError("APP: seed")
 
     def make_invite(

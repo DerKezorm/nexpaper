@@ -18,8 +18,8 @@ OFF = "off"
 DAILY = "daily"
 WEEKLY = "weekly"
 MONTHLY = "monthly"
-#: "Automatisch": Aus / Jede Nacht / Jede Woche (Bauplan Einstellungen, Speicher und Sicherung) / Jeden Monat (am 1.,
-#: entschieden beim Bauen: nexmail konnte es, also alle).
+#: "Automatisch": Aus / Jede Nacht / Jede Woche (Bauplan Einstellungen, Abschnitt „Speicher und Sicherung“) / Jeden
+#: Monat (am 1., entschieden beim Bauen: nexmail konnte es, also alle).
 EVERY = (OFF, DAILY, WEEKLY, MONTHLY)
 TIME = re.compile(r"^([01]\d|2[0-3]):([0-5]\d)$")
 KEEP_MIN = 1

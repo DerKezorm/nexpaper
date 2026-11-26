@@ -67,6 +67,11 @@ class AppConfig:
     #: Since 1.1.0: the features of ``FEATURES`` this app has; None (the default) takes the app's row of the table.
     #: Only the module's own tests name them by hand (an app called ``nexapp`` has none).
     features: frozenset[str] | None = None
+    #: Since E45: what the app showed an account that never chose light or dark before 1.1.0 (nexmail, nexlore
+    #: ``dark``; every other app ``system``). An account of before without a choice and without a value its browser
+    #: kept takes it once (``profiles.adopt_theme``), so that nothing changes at the update. New accounts always start
+    #: with ``system``.
+    theme_default_before: str = "system"
 
     def __post_init__(self) -> None:
         if not _APP_NAME.fullmatch(self.app_name):
@@ -79,6 +84,8 @@ class AppConfig:
         strange = sorted(set(self.features or ()) - set(FEATURES))
         if strange:
             raise ValueError(f"features names features the module does not have: {strange}")
+        if self.theme_default_before not in ("light", "dark", "system"):
+            raise ValueError(f"theme_default_before {self.theme_default_before!r} must be light, dark or system")
 
     @property
     def feature_set(self) -> frozenset[str]:

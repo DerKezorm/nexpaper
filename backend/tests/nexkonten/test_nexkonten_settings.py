@@ -23,10 +23,46 @@ def test_the_theme_is_kept_at_the_account_and_a_browsers_value_is_taken_once(app
     with app.store() as store, pytest.raises(konten.AccountError) as caught:
         konten.profiles.change_theme(store, kim, "sepia")
     assert caught.value.code == "theme_invalid"
+    # Since E45: without a value its browser kept, an account of before takes what the app showed before, once.
     other = app.seed("other", password=password())
+    before = konten.config.current().theme_default_before
     with app.store() as store:
-        assert konten.profiles.adopt_theme(store, other, "sepia") == "system"
-        assert store.get_account(other).theme == ""
+        assert konten.profiles.adopt_theme(store, other, "sepia") == before
+        assert konten.profiles.adopt_theme(store, other, None) == before
+    with app.store() as store:
+        assert store.get_account(other).theme == before
+        # Taken once: a value the browser kept later changes nothing any more.
+        assert konten.profiles.adopt_theme(store, other, "light" if before != "light" else "dark") == before
+
+
+def test_a_new_account_starts_with_system_whatever_the_browser_holds(app: Any, konten: Any) -> None:
+    """Since E45: set up, invited or through a provider, a new account has "system" from the start; neither a value an
+    earlier account left in the browser nor what the browser prefers counts as its choice."""
+    with app.store() as store:
+        first = konten.setup.setup(
+            store, code=konten.setup.setup_code(), display_name="Alex Example", username="alex",
+            email="alex@example.com", password=password(), language="de",
+        ).account
+    assert first.theme == "system"
+    token = app.make_invite(email="new@example.com")
+    with app.store() as store:
+        invited = konten.invites.accept_invite(
+            store, token, display_name="New Person", username="newbie", email="new@example.com", password=password(),
+        ).account
+    with app.store() as store:
+        assert store.get_account(invited.id).theme == "system"
+        assert konten.profiles.adopt_theme(store, invited.id, '"dark"') == "system"
+    with app.oidc_store() as oidc:
+        through_provider = oidc.create_account("provided", invite=None, email=None)
+        oidc.commit()
+    provided = app.account_of(through_provider)
+    with app.store() as store:
+        assert store.get_account(provided).theme == "system"
+        assert konten.profiles.adopt_theme(store, provided, "dark") == "system"
+
+
+def test_the_apps_default_of_before_is_one_of_the_themes(konten: Any) -> None:
+    assert konten.config.current().theme_default_before in konten.profiles.THEMES
 
 
 def test_password_sign_in_goes_off_only_with_an_active_provider(app: Any, konten: Any) -> None:

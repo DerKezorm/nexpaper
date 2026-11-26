@@ -5,7 +5,7 @@
  * states, dialogs). Needs react-dom and @testing-library/dom, both in every app.
  */
 import { fireEvent, getAllByRole, getByLabelText, getByRole, getByText, queryByRole } from '@testing-library/dom'
-import { act, type ReactNode } from 'react'
+import { act, useState, type ReactNode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
@@ -275,6 +275,51 @@ describe('ConfirmDialog', () => {
     fireEvent.click(getByRole(dialog, 'button', { name: 'Cancel' }))
     fireEvent.click(getByRole(dialog, 'button', { name: 'Close' }))
     expect(cancelled).toHaveBeenCalledTimes(dismissable ? 4 : 2)
+  })
+
+  it('Escape closes only the topmost of two stacked dialogs, a second Escape the one below (since E47)', () => {
+    const closed: string[] = []
+    function Stack() {
+      const [lower, setLower] = useState(true)
+      const [upper, setUpper] = useState(true)
+      return (
+        <>
+          {lower && (
+            <Dialog title="Lower" onClose={() => (closed.push('lower'), setLower(false))} closeLabel="Close">
+              <p>below</p>
+            </Dialog>
+          )}
+          {upper && (
+            <Dialog title="Upper" onClose={() => (closed.push('upper'), setUpper(false))} closeLabel="Close">
+              <p>on top</p>
+            </Dialog>
+          )}
+        </>
+      )
+    }
+    show(<Stack />)
+    act(() => fireEvent.keyDown(window, { key: 'Escape' }))
+    expect(closed).toEqual(['upper'])
+    expect(queryByRole(document.body, 'dialog', { name: 'Lower' })).not.toBeNull()
+    act(() => fireEvent.keyDown(window, { key: 'Escape' }))
+    expect(closed).toEqual(['upper', 'lower'])
+    expect(queryByRole(document.body, 'dialog')).toBeNull()
+  })
+
+  it('a topmost dialog that is not dismissable keeps Escape, the one below stays open', () => {
+    const closed: string[] = []
+    show(
+      <>
+        <Dialog title="Lower" onClose={() => closed.push('lower')} closeLabel="Close">
+          <p>below</p>
+        </Dialog>
+        <Dialog title="Upper" onClose={() => closed.push('upper')} closeLabel="Close" dismissable={false}>
+          <p>on top</p>
+        </Dialog>
+      </>,
+    )
+    fireEvent.keyDown(window, { key: 'Escape' })
+    expect(closed).toEqual([])
   })
 
   it('a Dialog that is not dismissable stays on Escape and a click beside it, its close button still closes', () => {

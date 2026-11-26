@@ -1,4 +1,4 @@
-"""Since 1.1.0: the operator's switches on the page Server, Sign-in, with the same rules in every app (plan
+"""Since 1.1.0: the operator's switches on the page Server › Sign-in, with the same rules in every app (plan
 "Einstellungen", Anmeldung, card "Anmeldung"):
 
 - **Password sign-in** goes off only while a provider is active (``provider_first``); the operator can always sign in
