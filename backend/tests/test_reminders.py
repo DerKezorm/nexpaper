@@ -50,6 +50,20 @@ DAY = timedelta(days=1)
 RECORDS = Path(__file__).parent / "schema"
 
 
+
+def readable(mail: Any) -> str:
+    """Everything a mail says, decoded: every header but the random ones (``Message-ID`` and the MIME boundaries,
+    whose digits could hold a number by chance) and every text part in plain characters, so a secret is found
+    whatever transfer encoding the part has. The logo (an image) says nothing."""
+    said = [f"{key}: {value}" for key, value in mail.items() if key.lower() not in ("message-id", "content-type")]
+    for part in mail.walk():
+        said.append(part.get_content_type())
+        if part.get_content_maintype() == "text":
+            said.append(part.get_content())
+        said.extend(f"{key}: {value}" for key, value in part.items()
+                    if key.lower() not in ("message-id", "content-type", "content-transfer-encoding"))
+    return "\n".join(said)
+
 def at(day: Date, hour: int, minute: int = 0) -> datetime:
     """``hour`` o'clock in Berlin on ``day`` (summer time until the 25th of October), as the UTC the clock gives."""
     offset = 2 if day < Date(2026, 10, 25) else 1
@@ -466,7 +480,7 @@ def test_a_message_names_kind_day_and_title_never_amount_text_notes_or_tags(town
     assert late["Subject"] == single["Subject"] and "Seit 2 Tagen." in late.get_content()
     assert single["Subject"] == "Zahlen bis Sa, 10.10.: Zahnarzt Bcc: x@example.com" and single["Bcc"] is None
     assert "Noch 2 Tage." in single.get_content()
-    for text in [repr(m) for m in messages] + [m.as_string() for m in mails]:
+    for text in [repr(m) for m in messages] + [readable(m.message) for m in mails]:
         for secret in ("987654", "9.876,54", "9876", "Geheimnotiz", "Geheimtag"):
             assert secret not in text
     assert "https://paper.example.com/dokument/" in single.get_content()
