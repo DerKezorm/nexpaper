@@ -45,7 +45,9 @@ export function CopyRow({ value, label, testId }: { value: string; label: string
     return () => window.clearTimeout(timer)
   }, [copied])
   return (
-    <div className="flex min-w-0 items-center gap-2 rounded-[12px] border border-solid border-[var(--nexui-line)] py-1 pr-1 pl-3" data-part="copy-row" data-testid={testId}>
+    // `relative` since 1.1.4 (B7): the hidden status line is placed inside the row; without it, it hung on the page and
+    // made a page with a fixed frame taller than the window (an empty strip and a second scroll bar).
+    <div className="relative flex min-w-0 items-center gap-2 rounded-[12px] border border-solid border-[var(--nexui-line)] py-1 pr-1 pl-3" data-part="copy-row" data-testid={testId}>
       <input
         ref={field}
         readOnly

@@ -2,11 +2,11 @@
   "files": {
     "frontend/src/vendor/nexui/About.tsx": "sha256-7fJScTsBnWzfoDJAkski2T1wKB6Iqa6V0RRLAQIBo54=",
     "frontend/src/vendor/nexui/Avatar.tsx": "sha256-A7ONEhFXqDCJ4UAxzADYCA+qHi6Dje+T2rgHXDdwA9Y=",
-    "frontend/src/vendor/nexui/Button.tsx": "sha256-DXM+vCAGLJBCbfdh3Z/SWTixHkTj8jw0Ut+gIuvQStI=",
+    "frontend/src/vendor/nexui/Button.tsx": "sha256-pvkZ1/ahOZ2Z98DcRDqWQHDXkY8sd19VHwCSwR2ZXsw=",
     "frontend/src/vendor/nexui/Card.tsx": "sha256-xtPj/vX5JrW1Kpvn0JXLAIDYufarEzizrGr2OcSCelY=",
     "frontend/src/vendor/nexui/Chip.tsx": "sha256-ZEetk95QZfDbyRd5oR0BVpCWzenIYMm4sQe4yfEDHvI=",
     "frontend/src/vendor/nexui/Collapsible.tsx": "sha256-DvumKojZS0ENE6DmU6iEPkfJwaW6nF1R0+UeH1+rzAA=",
-    "frontend/src/vendor/nexui/CopyRow.tsx": "sha256-61xh8d/QrghkgDYqij/Ml7huR4mbtFuIffLE5yyoShU=",
+    "frontend/src/vendor/nexui/CopyRow.tsx": "sha256-nl3P5y2EiXz6Pwg9UvUhasRp3M64S7WDtjuN5qsQ6w4=",
     "frontend/src/vendor/nexui/Dialog.tsx": "sha256-rI6SEOJV5tss6ea5/6SCsSukustZsxAMUR8XG9htPgw=",
     "frontend/src/vendor/nexui/Facts.tsx": "sha256-IAzTIrYxh9UULDaMUWOuazZ6DQ+EhA/EHJdq1PE547o=",
     "frontend/src/vendor/nexui/Field.tsx": "sha256-fJ87yvwO0oXXN6B5D6uChKAZEavTwovfpLWhVUGM47M=",
@@ -17,7 +17,7 @@
     "frontend/src/vendor/nexui/Table.tsx": "sha256-m/lrXp5LOja0A2dg9KrXXhUGR+RtVybh2EQVYejXUbg=",
     "frontend/src/vendor/nexui/icons.ts": "sha256-Pp+2gPW4lbFbX35apMrJ4iA+sKuQnqSgVIr3PmnxjP4=",
     "frontend/src/vendor/nexui/index.ts": "sha256-2PobDAiWwPOEs+M9hQbPsQPVVNPanppFrlOP2ilxvUg=",
-    "frontend/src/vendor/nexui/nexui.test.tsx": "sha256-TdQK4QIUbB/lIbtlKX2Bg7nagqLeF5qPCDvFOee9oSs=",
+    "frontend/src/vendor/nexui/nexui.test.tsx": "sha256-2BTSvlR6dnOKJ98KaRIWrls6YumrqdVYMDh6OTN/oB0=",
     "frontend/src/vendor/nexui/styles.ts": "sha256-8JqU6nYkFqI8KGmP77RpKR/eA0RbxATHHFRDAYPUKss=",
     "frontend/src/vendor/nexui/texts.ts": "sha256-pm7tpz4M4JP7LZL10B9HlR3vEvoCRho4Qmo6ouCZYPk=",
     "frontend/src/vendor/nexui/when.ts": "sha256-b4oL+Jtc+T8e0l4FCw2sPAxnTx+c+20mvW+6bsnALvY="
@@ -30,5 +30,5 @@
     "tailwindcss": ">=4.1.0"
   },
   "vendor_path": "frontend/src/vendor/nexui",
-  "version": "1.1.3"
+  "version": "1.1.4"
 }

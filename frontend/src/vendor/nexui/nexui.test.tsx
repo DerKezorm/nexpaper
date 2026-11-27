@@ -169,6 +169,19 @@ describe('Button', () => {
     expect(root.querySelector('[data-testid="picture"]')?.getAttribute('data-kind')).toBe('secondary')
   })
 
+  it('keeps its hidden helpers inside: a page with a fixed frame does not grow below the window (B7, 1.1.4)', () => {
+    // `sr-only` is `position: absolute`; with no placed ancestor it hangs on the page, past every scrolling area.
+    const root = show(
+      <>
+        <CopyRow label="Key" value="ntk_x" />
+        <Button kind="secondary" icon="Upload" onFile={() => undefined}>Upload</Button>
+      </>,
+    )
+    const hidden = [...root.querySelectorAll<HTMLElement>('.sr-only')]
+    expect(hidden).toHaveLength(2)
+    for (const element of hidden) expect(element.parentElement?.className.split(' ')).toContain('relative')
+  })
+
   it('knows every symbol it is asked for by name', () => {
     for (const name of Object.keys(ICONS)) {
       const root = show(<Button kind="secondary" icon={name as keyof typeof ICONS}>{name}</Button>)

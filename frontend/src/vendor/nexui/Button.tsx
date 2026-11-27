@@ -52,7 +52,8 @@ export function Button({ kind, icon, children, size = 'md', busy = false, wide =
   )
   if (onFile) {
     return (
-      <label htmlFor={fileId} className={className} data-kind={kind} data-size={size} data-icon={name} aria-disabled={locked || undefined} data-testid={testId}>
+      // `relative` since 1.1.4 (B7): the hidden file field stays inside the button, not at the foot of the page.
+      <label htmlFor={fileId} className={`relative ${className}`} data-kind={kind} data-size={size} data-icon={name} aria-disabled={locked || undefined} data-testid={testId}>
         {inside}
         <input
           id={fileId}
