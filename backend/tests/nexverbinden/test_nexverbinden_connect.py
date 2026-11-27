@@ -30,13 +30,17 @@ def test_connecting_from_the_app_gives_both_sides_one_connection(world: Any) -> 
     assert done.status_code == 200, done.text
     view = done.json()
     pair = world.pkg.CATALOG.pair(world.app.config().app_name, world.partner.name)
-    assert view["state"] == "connected" and view["account"] == "kim"
+    # Since 0.1.16 (V55): the linked account as on the consent page, "Kim Example (kim)" (the partner of the test
+    # gives "Kim Example").
+    assert view["state"] == "connected" and view["account"] == "Kim Example (kim)"
     assert view["uses"] == list(pair.uses[world.app.config().app_name])
     assert view["grants"] == list(pair.uses[world.partner.name])
     theirs = world.card("partner")
     assert theirs["state"] == "connected" and theirs["uses"] == view["grants"] and theirs["grants"] == view["uses"]
     # One connection, the same on both sides.
-    assert world.partner_connection() is not None and theirs["account"] == world.app.names["owner"]
+    owner, shown = world.app.names["owner"], world.app.shown_names.get("owner")
+    assert world.partner_connection() is not None
+    assert theirs["account"] == (f"{shown} ({owner})" if shown else owner)
 
 
 def test_connecting_from_the_partner_works_the_same(world: Any) -> None:

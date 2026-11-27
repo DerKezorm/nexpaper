@@ -247,7 +247,7 @@ def come_back(
         "reverse_access": theirs.access,
         "reverse_refresh": theirs.refresh,
         "reverse_expires_in": str(config.access_hours * 3600),
-        "reverse_account": store.account_name(account_id),
+        "reverse_account": account_shown(store, account_id),
         "reverse_areas": json.dumps(_areas_named(store, account_id, pending.areas_granted)),
         "reverse_version": config.version,
     }
@@ -426,6 +426,16 @@ def account_card(store: Any, account_id: AccountId) -> dict[str, Any]:
     return {"name": name if name != username else "", "username": username, "picture": picture, "color": color}
 
 
+def account_shown(store: Any, account_id: AccountId) -> str:
+    """Decision V55 (27.11.2026): the name the other app keeps and shows for the linked account is written like
+    on the consent page (V43), "Kim Example (kim)"; without a shown name of its own, the user name alone. Sent when
+    connecting (``reverse_account``, ``account`` of the token answer) and with every check (``hello``), so connections
+    made before take the new form at their next check."""
+    card = account_card(store, account_id)
+    shown = f"{card['name']} ({card['username']})" if card["name"] else card["username"]
+    return shown if len(shown) <= MAX_NAME else card["username"][:MAX_NAME]
+
+
 def _words_of(config: AppConfig, granted_by: str, purposes: tuple[str, ...]) -> list[dict[str, Any]]:
     return [
         {
@@ -514,7 +524,7 @@ def _answer(config: AppConfig, connection: Connection, access: str, refresh: str
         "refresh_token": refresh,
         "token_type": "Bearer",
         "expires_in": config.access_hours * 3600,
-        "account": store.account_name(connection.account_id),
+        "account": account_shown(store, connection.account_id),
         "areas": _areas_named(store, connection.account_id, connection.areas_granted),
         "app": config.app_name,
         "version": config.version,
@@ -802,7 +812,7 @@ def hello(store: Any, config: AppConfig, caller: Caller) -> dict[str, Any]:
         "app": config.app_name,
         "version": config.version,
         "connection": caller.connection_id,
-        "account": store.account_name(caller.account_id),
+        "account": account_shown(store, caller.account_id),
     }
 
 
