@@ -152,6 +152,17 @@ export function ConsentPage({ request, base = VERBINDEN_BASE, search, areaWord, 
         <AccountRow texts={texts} card={card} />
         {(info.partner_may.length > 0 || neither) && <MayBox title={fillVerbinden(texts.card.partnerMay, words)} texts={texts} grantedBy={info.app} items={info.partner_may} mine={false} />}
         {info.app_may.length > 0 && <MayBox title={fillVerbinden(texts.card.appMay, words)} texts={texts} grantedBy={info.partner} items={info.app_may} mine />}
+        {/* V53 (0.1.13): what goes out when one app asks about a person. In the card's words: {app} is this app. */}
+        {info.partner_sends_person && (
+          <p className="m-0 text-sm text-[var(--nexui-text-muted)]" data-testid="consent-partner-sends-person">
+            {fillVerbinden(texts.card.receivesPerson, words)}
+          </p>
+        )}
+        {info.app_sends_person && (
+          <p className="m-0 text-sm text-[var(--nexui-text-muted)]" data-testid="consent-app-sends-person">
+            {fillVerbinden(texts.card.sendsPerson, words)}
+          </p>
+        )}
         {info.areas.length > 0 && (
           <div className="flex flex-col gap-2" data-testid="consent-areas">
             <CheckboxRow label={fillVerbinden(texts.consent.allAreas, words)} checked={allAreas} onChange={setAllAreas} testId="consent-all-areas" />

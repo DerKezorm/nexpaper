@@ -235,6 +235,21 @@ export function ConnectionCard({
     </span>
   )
 
+  // V53 (0.1.13): what goes out when one app asks about a person (nexfolk's contact), said under what flows.
+  const personLines = (
+    <>
+      {view.sends_person && (
+        <p className="m-0 text-sm text-[var(--nexui-text-muted)]" data-testid="connection-sends-person">
+          {fillVerbinden(texts.card.sendsPerson, words)}
+        </p>
+      )}
+      {view.receives_person && (
+        <p className="m-0 text-sm text-[var(--nexui-text-muted)]" data-testid="connection-receives-person">
+          {fillVerbinden(texts.card.receivesPerson, words)}
+        </p>
+      )}
+    </>
+  )
   const nothingChosen = !allAreas && choice.length > 0 && chosen.length === 0
   const areaChoice =
     choice.length > 0 ? (
@@ -326,6 +341,7 @@ export function ConnectionCard({
       {view.state === 'none' ? (
         <>
           <FlowBox title={texts.card.wouldFlow} items={[...mine, ...theirs]} empty={texts.card.onlyCheck} testId="connection-would-flow" />
+          {personLines}
           {setUp ? (
             <>
               {areaChoice}
@@ -361,6 +377,7 @@ export function ConnectionCard({
         <>
           {mine.length > 0 && <FlowBox title={fillVerbinden(texts.card.appMay, words)} items={mine} empty={texts.card.onlyCheck} testId="connection-app-may" />}
           {theirs.length > 0 && <FlowBox title={fillVerbinden(texts.card.partnerMay, words)} items={theirs} empty={texts.card.onlyCheck} testId="connection-partner-may" />}
+          {personLines}
           {facts.length > 0 && <Facts items={facts} testId="connection-facts" />}
           {/* V23: the app's own choice (lists, areas, calendars) stands open in every state, by click or by hand. */}
           {children}

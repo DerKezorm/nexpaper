@@ -141,12 +141,12 @@ def ask(
     bearer: str | None = None,
     form: dict[str, str] | None = None,
     body: Any = None,
-    params: dict[str, str] | None = None,
+    params: dict[str, str] | dict[str, list[str]] | None = None,
 ) -> Answer:
     """``<base><path>`` once; the answer whatever its status, ``Unreachable`` when none came that can be read."""
     url = clean_url(base) + path
     if params:
-        url += "?" + urlencode(params)
+        url += "?" + urlencode(params, doseq=True)
     try:
         place = outbound.pin(url, RESOLVER, address_rule(local_allowed))
     except outbound.Refused as exc:

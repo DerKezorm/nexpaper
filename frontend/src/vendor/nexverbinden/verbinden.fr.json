@@ -55,7 +55,9 @@
     "localOffTitle": "{app} n’interroge pas d’adresses du réseau local",
     "localOffText": "{partner} se trouve à une adresse du réseau local. L’opérateur doit d’abord l’autoriser : Serveur › Général › Autres apps nex, « Connexions vers le réseau local ».",
     "otherApp": "l’autre app",
-    "tooOldMember": "{partner} à cette adresse ne peut pas encore se connecter ainsi. Demande à l’opérateur de mettre {partner} à jour."
+    "tooOldMember": "{partner} à cette adresse ne peut pas encore se connecter ainsi. Demande à l’opérateur de mettre {partner} à jour.",
+    "sendsPerson": "Pour cela, {app} envoie à {partner} le nom, les adresses e-mail et les numéros du contact que tu regardes dans {app}, seulement quand tu l’ouvres.",
+    "receivesPerson": "Pour cela, {partner} envoie à {app} le nom, les adresses e-mail et les numéros du contact que tu regardes dans {partner}, seulement quand tu l’ouvres."
   },
   "buttons": {
     "connect": "Connecter avec {partner}",
@@ -132,23 +134,28 @@
     "partner_not_set_up": "{partner} n’est pas configurée sur ce serveur. L’opérateur le fait sous Serveur › Général › Autres apps nex.",
     "declined": "Tu as refusé la connexion dans {partner}.",
     "partner_local_off": "{partner} n’interroge pas {app}, car l’adresse de {app} se trouve dans le réseau local. L’opérateur doit d’abord l’autoriser dans {partner} : Serveur › Général › Autres apps nex, « Connexions vers le réseau local ».",
-    "partner_cannot_reach": "{partner} ne joint pas {app} pour le moment. Si cela dure, l’opérateur vérifie l’adresse de {app} dans {partner} sous Serveur › Général › Autres apps nex."
+    "partner_cannot_reach": "{partner} ne joint pas {app} pour le moment. Si cela dure, l’opérateur vérifie l’adresse de {app} dans {partner} sous Serveur › Général › Autres apps nex.",
+    "about_unknown": "Cette app ne dit rien sur les personnes pour cela.",
+    "person_invalid": "Nomme une personne par son nom, son adresse e-mail ou son numéro, dans les limites."
   },
   "purposes": {
     "nextasks": {
       "tasks.read": "Lire tes tâches et celles qui te sont attribuées",
       "tasks.write": "Créer et modifier des tâches",
       "tasks.complete": "Cocher des tâches",
-      "members.read": "Voir les membres de tes espaces"
+      "members.read": "Voir les membres de tes espaces",
+      "tasks.about": "Trouver les tâches ouvertes concernant un contact (seulement titre et échéance)"
     },
     "nextime": {
       "calendars.read": "Lire tes calendriers et rendez-vous",
       "events.write": "Créer, modifier et supprimer des rendez-vous",
-      "invitations.answer": "Répondre aux invitations"
+      "invitations.answer": "Répondre aux invitations",
+      "events.about": "Trouver les rendez-vous avec un contact (seulement titre et heure)"
     },
     "nexpaper": {
       "deadlines.read": "Lire les échéances de tes documents",
-      "documents.add": "Déposer des documents dans l'entrée"
+      "documents.add": "Déposer des documents dans l'entrée",
+      "documents.about": "Trouver les documents d’un contact (seulement titre et date)"
     },
     "nexnotes": {
       "notes.add": "Créer des notes"
@@ -161,6 +168,9 @@
       "contacts.read": "Lire les contacts",
       "contacts.write": "Créer et modifier des contacts",
       "people.read": "Trouver des personnes (nom et adresse e-mail)"
+    },
+    "nexmail": {
+      "mails.about": "Compter les e-mails avec un contact (jamais leur contenu)"
     }
   },
   "about": {
@@ -169,15 +179,17 @@
     "nextasks+nextime": "Les tâches à échéance dans le calendrier, cochées dans le calendrier.",
     "nexpaper+nextime": "Les échéances des documents comme entrées sur la journée.",
     "nexmail+nextime": "Les calendriers dans nexmail, des rendez-vous depuis les e-mails, répondre aux invitations.",
-    "nexfolk+nextime": "Les anniversaires comme calendrier, des invités depuis les contacts.",
-    "nexfolk+nexmail": "Les contacts en écrivant, les nouvelles adresses dans le carnet.",
+    "nexfolk+nextime": "Les anniversaires comme calendrier, des invités depuis les contacts, le prochain rendez-vous dans le contact.",
+    "nexfolk+nexmail": "Les contacts en écrivant, les nouvelles adresses dans le carnet, le nombre d’e-mails dans le contact.",
     "nexmail+nexpaper": "Les pièces jointes comme documents dans l'entrée.",
     "nexpaper+nextasks": "Des tâches depuis des documents, avec un lien retour.",
     "nexlore+nexnotes": "Des notes dans le savoir de nexlore.",
     "nexdiary+nextime": "Les rendez-vous du jour dans le bilan du jour.",
     "nexdiary+nextasks": "Les tâches terminées du jour dans le bilan du jour.",
     "nexdiary+nexfolk": "Des personnes de tes contacts dans l'entrée.",
-    "nexnotes+nextime": "Une note pour le rendez-vous, avec un lien retour."
+    "nexnotes+nextime": "Une note pour le rendez-vous, avec un lien retour.",
+    "nexfolk+nextasks": "Les tâches ouvertes concernant la personne dans le contact.",
+    "nexfolk+nexpaper": "Les documents de la personne dans le contact."
   },
   "areaActions": {
     "nextasks": {
@@ -205,6 +217,12 @@
         "verbs": [
           "voir"
         ]
+      },
+      "tasks.about": {
+        "object": "les tâches d’un contact",
+        "verbs": [
+          "trouver"
+        ]
       }
     },
     "nextime": {
@@ -226,6 +244,12 @@
         "verbs": [
           "répondre"
         ]
+      },
+      "events.about": {
+        "object": "les rendez-vous avec un contact",
+        "verbs": [
+          "trouver"
+        ]
       }
     },
     "nexpaper": {
@@ -239,6 +263,12 @@
         "object": "des documents",
         "verbs": [
           "déposer"
+        ]
+      },
+      "documents.about": {
+        "object": "les documents d’un contact",
+        "verbs": [
+          "trouver"
         ]
       }
     },
@@ -282,6 +312,14 @@
         "object": "des personnes",
         "verbs": [
           "trouver"
+        ]
+      }
+    },
+    "nexmail": {
+      "mails.about": {
+        "object": "les e-mails avec un contact",
+        "verbs": [
+          "compter"
         ]
       }
     }

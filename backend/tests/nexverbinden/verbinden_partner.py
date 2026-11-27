@@ -319,6 +319,8 @@ class ReferenceApp:
         self.old_key_for: dict[str, str] = {}
         #: What the app's ``on_disconnected`` heard, as (account id, partner).
         self.ended: list[tuple[Any, str]] = []
+        #: Since 0.1.13: the questions about a person the app was asked, as (purpose, person).
+        self.asked: list[tuple[str, Any]] = []
         self.api = self._app()
 
     def _older(self, link_partner: str | None) -> None:
@@ -360,6 +362,29 @@ class ReferenceApp:
         headers = {"X-Ref-Session": role} if role else {}
         return TestClient(self.api, base_url=self.base, headers=headers)
 
+    def _about(self, data: Any, caller: Any, purpose: str, person: Any) -> dict[str, Any]:
+        """Since 0.1.13 (V52): the items of the given areas whose title names the person (by name or the part of a
+        mail address before the @); the first is the next one, the last the last one. Asks the questions it got."""
+        self.asked.append((purpose, person))
+        rows = self.db.execute(
+            "SELECT area_id, title FROM items WHERE account_id = ? ORDER BY id", (caller.account_id,)
+        ).fetchall()
+        words = [person.name.lower()] if person.name else []
+        words += [mail.split("@")[0] for mail in person.mails]
+        hits = [
+            title
+            for area, title in rows
+            if (caller.areas is None or area in caller.areas) and any(word and word in title.lower() for word in words)
+        ]
+        if not hits:
+            return {"count": 0, "next": None, "last": None, "open": None}
+        return {
+            "count": len(hits),
+            "next": {"title": hits[0], "at": "2026-12-24T18:00:00+00:00"},
+            "last": {"title": hits[-1], "at": "2026-11-02"},
+            "open": f"/search?q={hits[0].split()[0]}",
+        }
+
     def _app(self) -> FastAPI:
         app = FastAPI()
         pkg = self.pkg
@@ -390,6 +415,7 @@ class ReferenceApp:
                 address=lambda request: self.base,
                 old_key=lambda data, who, partner: self.old_key_for.get(partner),
                 on_disconnected=lambda data, who, partner: self.ended.append((who, partner)),
+                about=self._about,
             )
         )
 

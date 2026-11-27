@@ -92,6 +92,17 @@ class StandardAdapter:
         given it must succeed (2xx), into any other the app refuses it (403 or 404)."""
         raise NotImplementedError("APP: write_into")
 
+    #: APP (since 0.1.13, V51), only in an app that grants a purpose about a person (nextime ``events.about``,
+    #: nextasks ``tasks.about``, nexmail ``mails.about``, nexpaper ``documents.about``): its id. The cases of
+    #: ``test_nexverbinden_about.py`` run against a reference that plays nexfolk; the app's ``in_use`` names nexfolk.
+    about_purpose: str | None = None
+
+    def about_seed(self, purpose: str, area: Any, person: Any) -> None:
+        """APP (since 0.1.13): one thing of ``owner`` in ``area`` (an id from ``areas_choice``) that the app counts for
+        ``person`` (``nexverbinden.Person``: name, mail addresses, numbers) under ``purpose``: an upcoming event the
+        person takes part in, an open task about the person, a mail from the person, a document from the person."""
+        raise NotImplementedError("APP: about_seed")
+
     def people(self, answer: Any) -> list[dict[str, Any]]:
         """APP, only for an app that grants ``people.read`` (nexfolk, V29): the persons in the answer of
         ``probe("people.read")`` (JSON of the answer)."""
@@ -190,7 +201,7 @@ class World:
     # --- connecting -------------------------------------------------------------------------------------------------
 
     def start(self, which: str = "app", role: str = "owner", **body: Any) -> Any:
-        """"Mit <other> verbinden" on ``which``; since 0.1.8 (V42) at the address the operator set (``world`` sets it
+        """ "Mit <other> verbinden" on ``which``; since 0.1.8 (V42) at the address the operator set (``world`` sets it
         on both sides), an ``address`` in ``body`` is not taken."""
         clients, _, _ = self.side(which)
         _, other_name, _ = self.side(self.other(which))
@@ -288,11 +299,16 @@ class World:
         self.partner.store.commit()
 
 
-def world(pkg: ModuleType, adapter: StandardAdapter, folder: Path, *, older: bool = False) -> Iterator[World]:
+def world(
+    pkg: ModuleType, adapter: StandardAdapter, folder: Path, *, older: bool = False, partner_name: str | None = None
+) -> Iterator[World]:
+    """The app and a reference partner (``adapter.partner``, or since 0.1.13 ``partner_name``: nexfolk for the
+    questions about a person)."""
+    name = partner_name or adapter.partner
     (folder / "app").mkdir(parents=True, exist_ok=True)
     (folder / "partner").mkdir(parents=True, exist_ok=True)
     adapter.start(folder / "app", older=older)
-    partner = ReferenceApp(pkg, adapter.partner, f"https://{adapter.partner}.example.com", folder / "partner")
+    partner = ReferenceApp(pkg, name, f"https://{name}.example.com", folder / "partner")
     made = World(pkg, adapter, partner)
     made.install()
     # Since 0.1.8 (V42, B3): only the operator sets the other app up; here on both sides, as a server with both apps.

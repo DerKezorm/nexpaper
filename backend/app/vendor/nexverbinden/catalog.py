@@ -24,6 +24,11 @@ class Purpose:
     level: str
     #: Whether the account picks areas for it on the consent page.
     areas: bool = True
+    #: Since 0.1.13 (V51): a purpose about one person, asked with that person's name, mail addresses and numbers
+    #: (``GET /api/connect/about/<purpose>``); the answer is small (how many, the next or last one, where to open it).
+    person: bool = False
+    #: Whether the answer of a person purpose names titles (``mails.about`` does not: never what a mail says).
+    titles: bool = True
 
 
 def _purposes(*found: Purpose) -> dict[str, Purpose]:
@@ -37,13 +42,20 @@ PURPOSES: dict[str, dict[str, Purpose]] = {
         Purpose("tasks.write", "write"),
         Purpose("tasks.complete", "write"),
         Purpose("members.read", "read"),
+        # V51 (since 0.1.13): the open tasks about one person, for nexfolk's "In den anderen Apps".
+        Purpose("tasks.about", "read", person=True),
     ),
     "nextime": _purposes(
         Purpose("calendars.read", "read"),
         Purpose("events.write", "write"),
         Purpose("invitations.answer", "write"),
+        Purpose("events.about", "read", person=True),
     ),
-    "nexpaper": _purposes(Purpose("deadlines.read", "read"), Purpose("documents.add", "write")),
+    "nexpaper": _purposes(
+        Purpose("deadlines.read", "read"),
+        Purpose("documents.add", "write"),
+        Purpose("documents.about", "read", person=True),
+    ),
     "nexnotes": _purposes(Purpose("notes.add", "write")),
     "nexlore": _purposes(Purpose("notes.add", "write")),
     "nexfolk": _purposes(
@@ -54,7 +66,8 @@ PURPOSES: dict[str, dict[str, Purpose]] = {
         # address, no notes); nextime and nexdiary take this one, contacts.read stays nexmail's.
         Purpose("people.read", "read"),
     ),
-    "nexmail": {},
+    # V51 (since 0.1.13): how many mails with one person and when the last came; never what they say.
+    "nexmail": _purposes(Purpose("mails.about", "read", person=True, titles=False)),
     "nexdiary": {},
 }
 
@@ -78,15 +91,16 @@ def _pair(first: str, second: str, **uses: tuple[str, ...]) -> Pair:
     )
 
 
-#: The 14 connections (V2). The order is the order of the cards when an app has several partners.
+#: The connections: 14 since V2, 16 since 0.1.13 (V51: nexfolk asks nextasks and nexpaper about a person, and nextime
+#: and nexmail besides what they use at nexfolk). The order is the order of the cards when an app has several partners.
 PAIRS: tuple[Pair, ...] = (
     _pair("nexnotes", "nextasks", nexnotes=("tasks.read", "tasks.write")),
     _pair("nexmail", "nextasks", nexmail=("tasks.read", "tasks.write", "tasks.complete", "members.read")),
     _pair("nextime", "nextasks", nextime=("tasks.read", "tasks.complete")),
     _pair("nextime", "nexpaper", nextime=("deadlines.read",)),
     _pair("nexmail", "nextime", nexmail=("calendars.read", "events.write", "invitations.answer")),
-    _pair("nextime", "nexfolk", nextime=("birthdays.read", "people.read")),
-    _pair("nexmail", "nexfolk", nexmail=("contacts.read", "contacts.write")),
+    _pair("nextime", "nexfolk", nextime=("birthdays.read", "people.read"), nexfolk=("events.about",)),
+    _pair("nexmail", "nexfolk", nexmail=("contacts.read", "contacts.write"), nexfolk=("mails.about",)),
     _pair("nexmail", "nexpaper", nexmail=("documents.add",)),
     _pair("nexpaper", "nextasks", nexpaper=("tasks.read", "tasks.write")),
     _pair("nexnotes", "nexlore", nexnotes=("notes.add",)),
@@ -94,6 +108,8 @@ PAIRS: tuple[Pair, ...] = (
     _pair("nexdiary", "nextasks", nexdiary=("tasks.read",)),
     _pair("nexdiary", "nexfolk", nexdiary=("people.read",)),
     _pair("nextime", "nexnotes", nextime=("notes.add",)),
+    _pair("nexfolk", "nextasks", nexfolk=("tasks.about",)),
+    _pair("nexfolk", "nexpaper", nexfolk=("documents.about",)),
 )
 
 

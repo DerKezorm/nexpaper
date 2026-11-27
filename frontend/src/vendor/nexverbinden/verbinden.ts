@@ -63,6 +63,9 @@ export type PartnerView = {
   /** V16, V41: this app's areas to choose before the click, where the partner reads or writes areas here (else empty). */
   areas_choice: AreaRef[]
   version: string | null
+  /** Since 0.1.13 (V53): this app sends the partner a person when it asks (nexfolk), or the partner sends one here. */
+  sends_person?: boolean
+  receives_person?: boolean
 }
 
 /** One purpose on the consent page. */
@@ -85,6 +88,9 @@ export type ConsentInfo = {
   app_may: PurposeInfo[]
   areas: AreaRef[]
   replaces: boolean
+  /** Since 0.1.13 (V53): the app that asks sends this one a person when asking, or this one sends it one. */
+  partner_sends_person?: boolean
+  app_sends_person?: boolean
 }
 
 /** Since 0.1.8 (B6, V47): `GET <base>/consent` where the app that asks cannot connect here but has a safe way back:

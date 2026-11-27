@@ -462,6 +462,9 @@ def consent_info(store: Any, config: AppConfig, account_id: AccountId, params: d
         "app_may": _words_of(config, asker, mine),
         "areas": [{"id": area["id"], "name": area["name"]} for area in store.areas(account_id)] if with_areas else [],
         "replaces": store.connection(account_id, asker) is not None,
+        # Since 0.1.13 (V53): which side sends the other a person when asking (the page says so).
+        "partner_sends_person": _asks_person(config, config.app_name, theirs),
+        "app_sends_person": _asks_person(config, asker, mine),
     }
 
 
@@ -737,7 +740,7 @@ def call(
     now: datetime,
     *,
     body: Any = None,
-    params: dict[str, str] | None = None,
+    params: dict[str, str] | dict[str, list[str]] | None = None,
 ) -> reach.Answer:
     """One request to the partner (``path`` from its root, ``/api/v1/tasks``) with the connection's token: refreshed on
     its own, the card's state kept. Raises ``Refused`` with ``not_connected``, ``unreachable`` (the last state stays
@@ -871,6 +874,12 @@ def retire_at(store: Any, config: AppConfig, base: str, old_key: str) -> bool:
 # --- what the card shows ----------------------------------------------------------------------------------------------
 
 
+def _asks_person(config: AppConfig, granted_by: str, purposes: Any) -> bool:
+    """Whether one of ``purposes`` (granted by ``granted_by``) is asked with a person (V51)."""
+    own = config.catalog.purposes.get(granted_by, {})
+    return any(own[purpose].person for purpose in purposes if purpose in own)
+
+
 def view(
     config: AppConfig, store: Any, account_id: AccountId, partner: str, now: datetime, connection: Connection | None
 ) -> dict[str, Any]:
@@ -905,6 +914,10 @@ def view(
     found["grants_levels"] = {
         purpose: config.catalog.purpose(config.app_name, purpose).level for purpose in found["grants"]
     }
+    # Since 0.1.13 (V53): whether this app sends the partner a person (name, mail addresses, numbers of the contact
+    # looked at), or the partner sends one here; the card says so.
+    found["sends_person"] = _asks_person(config, partner, found["uses"])
+    found["receives_person"] = _asks_person(config, config.app_name, found["grants"])
     # Decisions V16 (F1 = a) and V41: where a purpose the partner uses here has areas, reading or writing, the card asks
     # for them before the click; the account's own areas to choose from (empty when no purpose of the partner has any).
     catalog_grants = config.catalog.uses(partner, config.app_name)

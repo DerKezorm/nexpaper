@@ -55,7 +55,9 @@
     "localOffTitle": "{app} does not ask addresses in the local network",
     "localOffText": "{partner} is at an address in the local network. The operator has to allow that first: Server › General › Other nex apps, “Connections into the local network”.",
     "otherApp": "the other app",
-    "tooOldMember": "{partner} at this address cannot connect this way yet. Ask the operator to update {partner}."
+    "tooOldMember": "{partner} at this address cannot connect this way yet. Ask the operator to update {partner}.",
+    "sendsPerson": "For this, {app} sends {partner} the name, mail addresses and phone numbers of the contact you look at in {app}, only when you open it.",
+    "receivesPerson": "For this, {partner} sends {app} the name, mail addresses and phone numbers of the contact you look at in {partner}, only when you open it."
   },
   "buttons": {
     "connect": "Connect with {partner}",
@@ -132,23 +134,28 @@
     "partner_not_set_up": "{partner} is not set up on this server. The operator does that under Server › General › Other nex apps.",
     "declined": "You turned the connection down in {partner}.",
     "partner_local_off": "{partner} does not ask {app}, because the address of {app} lies in the local network. The operator has to allow that in {partner} first: Server › General › Other nex apps, “Connections into the local network”.",
-    "partner_cannot_reach": "{partner} cannot reach {app} right now. If it stays so, the operator checks the address of {app} in {partner} under Server › General › Other nex apps."
+    "partner_cannot_reach": "{partner} cannot reach {app} right now. If it stays so, the operator checks the address of {app} in {partner} under Server › General › Other nex apps.",
+    "about_unknown": "This app tells nothing about people for that.",
+    "person_invalid": "Name a person by name, mail address or number, within the limits."
   },
   "purposes": {
     "nextasks": {
       "tasks.read": "Read your tasks and those assigned to you",
       "tasks.write": "Create and change tasks",
       "tasks.complete": "Tick tasks off",
-      "members.read": "See the members of your spaces"
+      "members.read": "See the members of your spaces",
+      "tasks.about": "Find open tasks about a contact (only title and due date)"
     },
     "nextime": {
       "calendars.read": "Read your calendars and events",
       "events.write": "Create, change and delete events",
-      "invitations.answer": "Answer invitations"
+      "invitations.answer": "Answer invitations",
+      "events.about": "Find events with a contact (only title and time)"
     },
     "nexpaper": {
       "deadlines.read": "Read the deadlines of your documents",
-      "documents.add": "Put documents into the inbox"
+      "documents.add": "Put documents into the inbox",
+      "documents.about": "Find documents from a contact (only title and date)"
     },
     "nexnotes": {
       "notes.add": "Create notes"
@@ -161,6 +168,9 @@
       "contacts.read": "Read contacts",
       "contacts.write": "Create and change contacts",
       "people.read": "Find people (name and mail address)"
+    },
+    "nexmail": {
+      "mails.about": "Count mails with a contact (never what they say)"
     }
   },
   "about": {
@@ -169,15 +179,17 @@
     "nextasks+nextime": "Tasks with a due date in the calendar, ticked off in the calendar.",
     "nexpaper+nextime": "Deadlines from documents as all-day entries.",
     "nexmail+nextime": "Calendars in nexmail, events from mails, answering invitations.",
-    "nexfolk+nextime": "Birthdays as a calendar, guests from contacts.",
-    "nexfolk+nexmail": "Contacts while writing, new addresses into the address book.",
+    "nexfolk+nextime": "Birthdays as a calendar, guests from contacts, the next event in the contact.",
+    "nexfolk+nexmail": "Contacts while writing, new addresses into the address book, the number of mails in the contact.",
     "nexmail+nexpaper": "Attachments of mails as documents in the inbox.",
     "nexpaper+nextasks": "Tasks from documents, with a link back.",
     "nexlore+nexnotes": "Notes into the knowledge of nexlore.",
     "nexdiary+nextime": "The day's events in the review of the day.",
     "nexdiary+nextasks": "The day's finished tasks in the review of the day.",
     "nexdiary+nexfolk": "People from your contacts in the entry.",
-    "nexnotes+nextime": "A note for the event, with a link back."
+    "nexnotes+nextime": "A note for the event, with a link back.",
+    "nexfolk+nextasks": "The open tasks about the person in the contact.",
+    "nexfolk+nexpaper": "The person's documents in the contact."
   },
   "areaActions": {
     "nextasks": {
@@ -205,6 +217,12 @@
         "verbs": [
           "see"
         ]
+      },
+      "tasks.about": {
+        "object": "tasks about a contact",
+        "verbs": [
+          "find"
+        ]
       }
     },
     "nextime": {
@@ -226,6 +244,12 @@
         "verbs": [
           "answer"
         ]
+      },
+      "events.about": {
+        "object": "events with a contact",
+        "verbs": [
+          "find"
+        ]
       }
     },
     "nexpaper": {
@@ -239,6 +263,12 @@
         "object": "documents",
         "verbs": [
           "file"
+        ]
+      },
+      "documents.about": {
+        "object": "documents from a contact",
+        "verbs": [
+          "find"
         ]
       }
     },
@@ -282,6 +312,14 @@
         "object": "people",
         "verbs": [
           "find"
+        ]
+      }
+    },
+    "nexmail": {
+      "mails.about": {
+        "object": "mails with a contact",
+        "verbs": [
+          "count"
         ]
       }
     }

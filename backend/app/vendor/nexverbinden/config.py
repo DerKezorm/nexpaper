@@ -51,6 +51,8 @@ class AppConfig:
     expiring_days: int = 7
     #: Connections started and checks by hand, per account and minute.
     starts_per_minute: int = 5
+    #: Since 0.1.13 (V52): questions about a person a connection may ask in a minute (the brake of the host).
+    about_per_minute: int = 30
     #: How many spent refresh tokens per connection are recognised when brought again.
     spent_kept: int = 20
     #: A revocation that did not reach the partner is tried again for this long.

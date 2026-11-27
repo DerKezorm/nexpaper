@@ -52,5 +52,15 @@ def older(tmp_path: Path) -> Iterator[Any]:
 
 
 @pytest.fixture
+def about_world(tmp_path: Path) -> Iterator[Any]:
+    """Since 0.1.13: the app and a reference that plays nexfolk, for the questions about a person; skipped in an app
+    that grants no purpose about a person."""
+    adapter = ADAPTER.Adapter()
+    if not adapter.about_purpose:
+        pytest.skip("the app tells nothing about people (no purpose about a person in the catalog)")
+    yield from contract.world(contract.package(adapter), adapter, tmp_path, partner_name="nexfolk")
+
+
+@pytest.fixture
 def pkg(world: Any) -> ModuleType:
     return world.pkg

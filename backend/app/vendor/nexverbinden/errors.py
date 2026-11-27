@@ -24,6 +24,9 @@ CODES: dict[str, tuple[int, str]] = {
     "declined": (409, "The connection was turned down."),
     "partner_local_off": (409, "The other app does not ask addresses in its own network until its operator allows it."),
     "partner_cannot_reach": (409, "The other app cannot reach this one."),
+    # Since 0.1.13 (V52): the question about one person.
+    "about_unknown": (404, "This app tells nothing about people for that."),
+    "person_invalid": (422, "Name a person by name, mail addresses or numbers, within the limits."),
     "refused": (409, "The other app does not take this connection any more."),
     "resting": (409, "The other app lets this connection rest."),
     "consent_failed": (409, "The other app did not confirm the connection. Connect again."),

@@ -1,4 +1,4 @@
-// Vorlage nexverbinden 0.1.11
+// Vorlage nexverbinden 0.1.13
 // @vitest-environment jsdom
 /**
  * The parts of the module in the app: the card of a partner app in each state, the cards of all partners, the consent
@@ -176,6 +176,17 @@ describe('the card of a partner app', () => {
     )
     expect(byTest('connection-set-up')?.getAttribute('href')).toBe(`https://partner.example.com${OPERATOR_PAGE}`)
     expect(byTest('connection-set-up')?.textContent).toBe(`In ${PARTNER} einrichten`)
+  })
+
+  it('says what goes out when one app asks about a person (V53, 0.1.13)', async () => {
+    await show(<ConnectionCard app={APP} view={view({ state: 'none', account: null, sends_person: true })} request={request} defaultOpen />)
+    expect(byTest('connection-sends-person')?.textContent).toBe(
+      VERBINDEN_TEXTS.de.card.sendsPerson.replaceAll('{app}', APP).replaceAll('{partner}', PARTNER),
+    )
+    expect(byTest('connection-receives-person')).toBeNull()
+    await show(<ConnectionCard key="other" app={APP} view={view({ receives_person: true })} request={request} defaultOpen />)
+    expect(byTest('connection-receives-person')?.textContent).toContain(`Dafür schickt ${PARTNER} Name, Mailadressen und Telefonnummern`)
+    expect(byTest('connection-sends-person')).toBeNull()
   })
 
   it('a connection whose partner sits in the own network without the switch says why (B2)', async () => {
@@ -454,6 +465,15 @@ describe('the consent page', () => {
       await new Promise((done) => setTimeout(done, 50))
     })
     expect(calls.filter((call) => call.path.startsWith('/api/connect/consent'))).toHaveLength(1)
+  })
+
+  it('says what the app that asks sends about a person (V53, 0.1.13)', async () => {
+    answers['GET /api/connect/consent'] = { ...info, partner_sends_person: true }
+    await show(<ConsentPage request={request} search={search} navigate={(url) => went.push(url)} />)
+    expect(byTest('consent-partner-sends-person')?.textContent).toBe(
+      VERBINDEN_TEXTS.de.card.receivesPerson.replaceAll('{partner}', PARTNER).replaceAll('{app}', APP),
+    )
+    expect(byTest('consent-app-sends-person')).toBeNull()
   })
 
   it('where the app that asks cannot connect here, goes straight back to its card (B6, V47)', async () => {

@@ -14,6 +14,8 @@
 ``POST   /api/connect/token``, ``/revoke``         between the apps (forms, RFC 6749 and 7009)
 ``POST   /api/connect/retire``                     an older API key of this app ends itself (``Authorization``)
 ``GET    /api/connect/hello``                      a partner checks its connection (``Authorization``)
+``GET    /api/connect/about/{purpose}``            since 0.1.13: what this app has about one person (``Authorization``,
+                                                  ``name``, ``mail``, ``phone``; the app's hook ``about``)
 
 Between the apps an ``Origin`` is refused (403 ``origin_refused``): browsers send one, apps do not. A refusal of the
 partner never reaches the account's page as 401 (``errors``)."""
@@ -28,9 +30,10 @@ from urllib.parse import parse_qsl
 from fastapi import APIRouter, Body, Depends, HTTPException, Query, Request
 from fastapi.responses import JSONResponse
 
-from . import connect, reach
+from . import connect, persons, reach
 from .config import PREFIX, WELL_KNOWN, AppConfig
 from .errors import CODES, GrantError, Refused
+from .shared import BRAKE
 
 logger = logging.getLogger("nexverbinden")
 
@@ -82,6 +85,7 @@ def router(
     on_connected: Callable[[Any, Any, str], None] | None = None,
     on_disconnected: Callable[[Any, Any, str], None] | None = None,
     old_key: Callable[[Any, Any, str], str | None] | None = None,
+    about: Callable[[Any, Any, str, Any], Any] | None = None,
     tags: list[str] | None = None,
 ) -> APIRouter:
     """The routes. ``store``: a dependency giving the app's ``nexverbinden.Store`` for this request. ``account``: the
@@ -91,7 +95,10 @@ def router(
     a connection was made here (load lists, calendars). ``on_disconnected(store, account_id, partner)`` (since 0.1.4,
     V-13): after a connection ended here, by "Trennen" in this app or because the partner ended it (drop the app's own
     rows of it). ``old_key(store, account_id, partner)``: the API key of an
-    older connection with this partner, if the app has one; after "Neu verbinden" it ends itself at the partner."""
+    older connection with this partner, if the app has one; after "Neu verbinden" it ends itself at the partner.
+    ``about(store, caller, purpose, person)`` (since 0.1.13, V52): what the app has about ``person`` (``Person``) for
+    one of its person purposes, only in ``caller.areas``: ``{"count", "next", "last", "open"}`` (``persons.cleaned``
+    cuts it to that form); without it the app tells nothing about people (404 ``about_unknown``)."""
     routes = APIRouter(tags=tags or ["connect"])
     base_of = address or (lambda request: str(request.base_url).rstrip("/"))
     Data = Annotated[Any, Depends(store)]
@@ -298,6 +305,24 @@ def router(
             data.commit()
             logger.info("an older API key ended itself after a new connection")
         return _grant_answer({"retired": retired})
+
+    @routes.get(f"{PREFIX}/about/{{purpose}}", include_in_schema=False)
+    def about_route(request: Request, purpose: str, data: Data) -> JSONResponse:
+        if request.headers.get("origin"):
+            return wall("origin_refused")
+        granted = config.catalog.purposes.get(config.app_name, {}).get(purpose)
+        if granted is None or not granted.person or about is None:
+            return wall("about_unknown")
+        try:
+            caller = connect.authenticate(data, config, _bearer(request), _now())
+            connect.require(caller, purpose)
+            if not BRAKE.take(f"verbinden:about:{caller.connection_id}", config.about_per_minute):
+                raise Refused("slow_down")
+            person = persons.person_from(request.query_params.multi_items())
+        except Refused as refusal:
+            return wall(refusal.code)
+        found = about(data, caller, purpose, person)
+        return JSONResponse(persons.cleaned(found, granted), headers={"Cache-Control": "no-store"})
 
     @routes.get(f"{PREFIX}/hello", include_in_schema=False)
     def hello(request: Request, data: Data) -> JSONResponse:

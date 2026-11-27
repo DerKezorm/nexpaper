@@ -19,7 +19,7 @@ check of a token at its own routes (``authenticate``, ``require``) and what it d
 
 from __future__ import annotations
 
-from . import catalog, connect, reach
+from . import catalog, connect, persons, reach
 from .catalog import APPS, CATALOG, PAIRS, PURPOSES, Catalog, Pair, Purpose
 from .config import CONSENT_PAGE, PREFIX, PROTOCOL, RETURN_PAGE, STATES, WELL_KNOWN, AppConfig
 from .connect import (
@@ -37,8 +37,9 @@ from .connect import (
 )
 from .errors import CODES, GrantError, Refused
 from .model import Caller, Code, Connection, Legacy, Pending, Store, Waiting
+from .persons import Person, about
 
-__version__ = "0.1.12"
+__version__ = "0.1.13"
 
 __all__ = [
     "APPS",
@@ -62,11 +63,14 @@ __all__ = [
     "Legacy",
     "Pair",
     "Pending",
+    "Person",
     "Purpose",
     "Refused",
     "Store",
     "Waiting",
     "__version__",
+    "about",
+    "persons",
     "access",
     "authenticate",
     "call",
