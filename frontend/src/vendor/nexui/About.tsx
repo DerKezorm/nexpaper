@@ -14,12 +14,14 @@
  * nexmail kept it), for the banner after an update too. Since 1.2.0 (module wasneu): `WhatsNewBanner` (the strip under
  * the head after an update), the window with several versions (`entries`, each under its version) and a button for the
  * earlier ones (`onEarlier`), a section only for operators marked as such, and on the about page the version of the
- * text (`whatsNewVersion`, after a fix without its own text) and the module's own window (`onWhatsNew`).
+ * text (`whatsNewVersion`, after a fix without its own text) and the module's own window (`onWhatsNew`). Since 1.2.2
+ * (W24): the other nex apps a text names are links to their repositories (`appLinkParts`), never the app itself.
  */
-import { useState, type ReactNode } from 'react'
+import { Fragment, useState, type ReactNode } from 'react'
 import { Sparkles, X } from 'lucide-react'
 
-import { Button } from './Button'
+import { appLinkParts } from './appLinks'
+import { Button, TextLink } from './Button'
 import { Badge, Card } from './Card'
 import { Dialog } from './Dialog'
 import { Facts, type Fact } from './Facts'
@@ -218,14 +220,35 @@ export function AboutPage({
   )
 }
 
-/** The text of one version: its lead, each part with where to find it, the small things at the end. */
-function WhatsNewText({ entry, logo }: { entry: WhatsNewEntry; logo?: string }) {
+/** Since 1.2.2 (W24): words of a text with each other nex app they name as a link to its repository, in a new tab;
+ * `app` (the one showing the text) never. */
+function AppLinked({ text, app }: { text: string; app: string }) {
+  return (
+    <>
+      {appLinkParts(text, app).map((part, index) =>
+        part.href ? (
+          <TextLink key={index} href={part.href} newTab>
+            {part.text}
+          </TextLink>
+        ) : (
+          <Fragment key={index}>{part.text}</Fragment>
+        ),
+      )}
+    </>
+  )
+}
+
+/** The text of one version: its lead, each part with where to find it, the small things at the end. Since 1.2.2 the
+ * lead, the bodies and the small things link the other nex apps they name (titles and `where` stay plain). */
+function WhatsNewText({ entry, logo, app }: { entry: WhatsNewEntry; logo?: string; app: string }) {
   const texts = useNexuiTexts()
   return (
     <>
       <div className="flex items-start gap-3">
         {logo && <img src={logo} alt="" className="h-9 w-9 shrink-0 rounded-[12px]" />}
-        <p className={`${PLAIN} text-[var(--nexui-text)]`}>{entry.lead}</p>
+        <p className={`${PLAIN} text-[var(--nexui-text)]`}>
+          <AppLinked text={entry.lead} app={app} />
+        </p>
       </div>
       <ul className="m-0 flex list-none flex-col gap-4 p-0">
         {entry.sections.map((part) => (
@@ -234,7 +257,9 @@ function WhatsNewText({ entry, logo }: { entry: WhatsNewEntry; logo?: string }) 
               <span>{part.title}</span>
               {part.operator && <Badge tone="off">{texts.whatsNewOperator}</Badge>}
             </h3>
-            <p className={`${PLAIN} ${MUTED}`}>{part.body}</p>
+            <p className={`${PLAIN} ${MUTED}`}>
+              <AppLinked text={part.body} app={app} />
+            </p>
             {part.link && part.link.href.startsWith('https://') && (
               <a href={part.link.href} target="_blank" rel="noopener noreferrer" className={`mt-1 inline-block text-sm font-semibold ${LINK}`}>
                 {part.link.label}
@@ -251,7 +276,9 @@ function WhatsNewText({ entry, logo }: { entry: WhatsNewEntry; logo?: string }) 
           <h3 className={`${PLAIN} text-xs leading-4 font-semibold tracking-wide uppercase ${MUTED}`}>{entry.smallTitle}</h3>
           <ul className={`mt-1.5 list-disc pl-5 ${MUTED}`}>
             {entry.small.map((line) => (
-              <li key={line}>{line}</li>
+              <li key={line}>
+                <AppLinked text={line} app={app} />
+              </li>
             ))}
           </ul>
         </section>
@@ -308,10 +335,10 @@ export function WhatsNewDialog({
                 className={`flex flex-col gap-4${index > 0 ? ' border-0 border-t border-solid border-[var(--nexui-line)] pt-4' : ''}`}
               >
                 <h3 className={`${PLAIN} text-base leading-6 font-semibold text-[var(--nexui-text)]`}>{fill(texts.whatsNewVersion, { version: one.version })}</h3>
-                <WhatsNewText entry={one.entry} logo={index === 0 ? logo : undefined} />
+                <WhatsNewText entry={one.entry} logo={index === 0 ? logo : undefined} app={app} />
               </section>
             ))
-          : shown[0] && <WhatsNewText entry={shown[0].entry} logo={logo} />}
+          : shown[0] && <WhatsNewText entry={shown[0].entry} logo={logo} app={app} />}
         <div className="flex flex-wrap justify-end gap-2">
           {onEarlier && (
             <Button kind="secondary" icon="History" busy={earlierBusy} onClick={onEarlier} testId="whats-new-earlier">

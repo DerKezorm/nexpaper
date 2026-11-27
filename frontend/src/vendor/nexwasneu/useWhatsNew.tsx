@@ -40,7 +40,8 @@ export function useAnswer(fetcher: Fetcher, base: string, language: string | und
   return found?.key === key ? found.answer : null
 }
 
-/** The history, loaded on a click on "Frühere Versionen". */
+/** The history, loaded on a click on "Frühere Versionen"; without one text of the right form the window keeps what it
+ * shows (W25). */
 export function useEarlier(fetcher: Fetcher, base: string, language: string | undefined) {
   const api = useMemo(() => makeWhatsNewApi(fetcher, base), [fetcher, base])
   const [entries, setEntries] = useState<WhatsNewItem[] | null>(null)
@@ -49,7 +50,7 @@ export function useEarlier(fetcher: Fetcher, base: string, language: string | un
     setBusy(true)
     api
       .history(language)
-      .then((found) => setEntries(found.entries), () => setEntries(null))
+      .then((found) => setEntries(found.entries.length > 0 ? found.entries : null), () => setEntries(null))
       .finally(() => setBusy(false))
   }
   return { entries, busy, load, reset: () => setEntries(null) }

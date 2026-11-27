@@ -11,6 +11,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import {
   AboutPage,
+  APP_REPOS,
+  appLinkParts,
   Avatar,
   Badge,
   Box,
@@ -39,6 +41,7 @@ import {
   SettingsNav,
   SettingsPage,
   Table,
+  TextLink,
   ThemeSegment,
   ICONS,
   formatDay,
@@ -1116,5 +1119,113 @@ describe('the parts of the settings (since 1.1.0)', () => {
       expect(button.firstElementChild?.tagName.toLowerCase()).toBe('svg')
       expect(button.textContent?.trim()).not.toBe('')
     }
+  })
+})
+
+describe('the other nex apps in "What\'s new" link their repositories (since 1.2.2, W24)', () => {
+  const linked = (text: string, app: string, repos?: Record<string, string>) =>
+    appLinkParts(text, app, repos)
+      .filter((part) => part.href)
+      .map((part) => `${part.text} ${part.href}`)
+
+  it('the directory holds the public apps only, each at its repository on GitHub, and nexfolk not yet', () => {
+    expect(Object.keys(APP_REPOS).sort()).toEqual(['nexdiary', 'nexlore', 'nexmail', 'nexnotes', 'nexpaper', 'nextasks', 'nextime'])
+    for (const [name, href] of Object.entries(APP_REPOS)) expect(href).toBe(`https://github.com/DerKezorm/${name}`)
+    expect(APP_REPOS).not.toHaveProperty('nexfolk')
+  })
+
+  it('splits a text into words and links, and the pieces give the text back', () => {
+    const text = 'Aufgaben aus nextasks und Termine aus nextime, dazu nextasks noch einmal.'
+    const parts = appLinkParts(text, 'nexlore')
+    expect(parts.map((part) => part.text).join('')).toBe(text)
+    expect(parts).toEqual([
+      { text: 'Aufgaben aus ' },
+      { text: 'nextasks', href: 'https://github.com/DerKezorm/nextasks' },
+      { text: ' und Termine aus ' },
+      { text: 'nextime', href: 'https://github.com/DerKezorm/nextime' },
+      { text: ', dazu ' },
+      { text: 'nextasks', href: 'https://github.com/DerKezorm/nextasks' },
+      { text: ' noch einmal.' },
+    ])
+    expect(appLinkParts('nexnotes', 'nexlore')).toEqual([{ text: 'nexnotes', href: 'https://github.com/DerKezorm/nexnotes' }])
+    expect(appLinkParts('Nichts davon.', 'nexlore')).toEqual([{ text: 'Nichts davon.' }])
+    expect(appLinkParts('', 'nexlore')).toEqual([])
+  })
+
+  it('links a whole word only, with any punctuation after it', () => {
+    for (const text of ['nexnotes.', 'nexnotes,', 'nexnotes:', 'nexnotes;', 'nexnotes!', 'nexnotes?', '(nexnotes)', '„nexnotes“', '"nexnotes"', "nexnotes' Notizen", '»nexnotes«', 'nexnotes…', 'mit nexnotes\nund']) {
+      expect(linked(text, 'nexlore'), text).toEqual(['nexnotes https://github.com/DerKezorm/nexnotes'])
+    }
+    for (const text of ['nexnotes-ios', 'nexnotes-Server', 'nexapps-nexnotes', 'mynexnotes', 'nexnotes2', 'nexnotes_x', 'Nexnotes', 'NEXNOTES', 'github.com/DerKezorm/nexnotes', 'nexnotes/frontend', 'nexnotes.app', 'nexnotes:8080', 'nexnotes@home', '#nexnotes', 'nexnotesapp', 'Ünexnotes', 'nexnotesé']) {
+      expect(linked(text, 'nexlore'), text).toEqual([])
+    }
+  })
+
+  it('never links the app showing the text, in any case of its name, and every other one', () => {
+    const text = 'nexlore nimmt Notizen aus nexnotes; nexlore bleibt.'
+    expect(linked(text, 'nexlore')).toEqual(['nexnotes https://github.com/DerKezorm/nexnotes'])
+    expect(linked(text, ' NexLore ')).toEqual(['nexnotes https://github.com/DerKezorm/nexnotes'])
+    expect(linked(text, 'nexnotes')).toEqual(['nexlore https://github.com/DerKezorm/nexlore', 'nexlore https://github.com/DerKezorm/nexlore'])
+    expect(linked('nexdiary, nexlore, nexmail, nexnotes, nexpaper, nextasks, nextime', 'nexfolk')).toHaveLength(7)
+  })
+
+  it('leaves nexfolk plain until its line is in the directory, then links it', () => {
+    expect(linked('Kontakte aus nexfolk.', 'nexlore')).toEqual([])
+    const later = { ...APP_REPOS, nexfolk: 'https://github.com/DerKezorm/nexfolk' }
+    expect(linked('Kontakte aus nexfolk.', 'nexlore', later)).toEqual(['nexfolk https://github.com/DerKezorm/nexfolk'])
+    expect(linked('Kontakte aus nexfolk.', 'nexfolk', later)).toEqual([])
+    expect(linked('Kontakte aus nexfolk.', 'nexlore', { nexfolk: 'http://example.org/nexfolk' })).toEqual([])
+  })
+
+  it('the window links the apps in lead, bodies and small things, not in titles or where, opens a new tab and is reached by Tab', () => {
+    const entry = Object.freeze({
+      lead: 'nexlore liest jetzt nexnotes.',
+      sections: Object.freeze([Object.freeze({ title: 'Aus nexnotes', where: 'Einstellungen › nexnotes', body: 'Termine aus nextime, Mails aus nexmail und nexnotes-ios.' })]),
+      smallTitle: 'Außerdem',
+      small: Object.freeze(['Weniger Klicks in nextasks', 'nexfolk folgt.']),
+    })
+    const copy = JSON.stringify(entry)
+    show(
+      <NexuiLanguage language="de">
+        <WhatsNewDialog app="nexlore" version="1.17.0" entry={entry} onClose={() => undefined} />
+      </NexuiLanguage>,
+    )
+    const dialog = getByRole(document.body, 'dialog', { name: 'Neu in nexlore 1.17.0' })
+    const links = getAllByRole(dialog, 'link')
+    expect(links.map((link) => [link.textContent, link.getAttribute('href')])).toEqual([
+      ['nexnotes', 'https://github.com/DerKezorm/nexnotes'],
+      ['nextime', 'https://github.com/DerKezorm/nextime'],
+      ['nexmail', 'https://github.com/DerKezorm/nexmail'],
+      ['nextasks', 'https://github.com/DerKezorm/nextasks'],
+    ])
+    for (const link of links) {
+      expect(link.tagName).toBe('A')
+      expect(link.getAttribute('target')).toBe('_blank')
+      expect(link.getAttribute('rel')).toBe('noopener noreferrer')
+      expect(link.tabIndex).toBe(0)
+      expect(link.className).toContain('underline')
+      expect(link.className).toContain('focus-visible:outline-[var(--nexui-accent)]')
+    }
+    expect(getByRole(dialog, 'heading', { level: 3, name: 'Aus nexnotes' }).querySelector('a')).toBeNull()
+    expect(getByText(dialog, 'Einstellungen › nexnotes').querySelector('a')).toBeNull()
+    expect(dialog.textContent).toContain('Termine aus nextime, Mails aus nexmail und nexnotes-ios.')
+    expect(dialog.textContent).toContain('nexfolk folgt.')
+    expect(JSON.stringify(entry)).toBe(copy)
+  })
+
+  it('TextLink opens a new tab only when asked', () => {
+    const root = show(
+      <>
+        <TextLink href="/here">Hier</TextLink>
+        <TextLink href="https://example.org" newTab>
+          Dort
+        </TextLink>
+      </>,
+    )
+    const [here, there] = getAllByRole(root, 'link')
+    expect(here?.getAttribute('target')).toBeNull()
+    expect(here?.getAttribute('rel')).toBeNull()
+    expect(there?.getAttribute('target')).toBe('_blank')
+    expect(there?.getAttribute('rel')).toBe('noopener noreferrer')
   })
 })

@@ -29,11 +29,10 @@ let calls: Call[] = []
 let answers: Record<string, unknown> = {}
 let fails: Record<string, number> = {}
 
-/** What the server answers where a test names nothing: empty lists, nothing new since the version the account read
- * (the banner of the shared module wasneu), no devices (the cards of the shared module geraete). */
+/** What the server answers where a test names nothing: empty lists, no devices (the cards of the shared module
+ * geraete). */
 function quiet(url: string): unknown {
   if (url.includes('/api/v1/locales') || url.includes('/api/v1/accounts') || url.includes('/api/v1/invites')) return []
-  if (url.startsWith('/api/v1/whats-new?')) return { version: '1.0.0', seen: '1.0.0', unread: [], more: false, current: null, earlier: false }
   if (url === '/api/v1/app-devices') return { devices: [], max: 30, app_store_url: null, has_app: true }
   if (/^\/api\/v1\/server\/accounts\/[^/]+\/devices$/.test(url)) return { count: 0, devices: [] }
   return {}

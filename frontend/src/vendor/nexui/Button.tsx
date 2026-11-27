@@ -130,13 +130,14 @@ export function Buttons({ children, end = false }: { children: ReactNode; end?: 
   return <div className={`flex flex-wrap items-center gap-2${end ? ' justify-end' : ''}`}>{children}</div>
 }
 
-/** A link in words (not a button): "Forgot your password?". A `button` when it acts, an `a` when it leads somewhere. */
-export function TextLink({ children, href, onClick, testId }: { children: ReactNode; href?: string; onClick?: () => void; testId?: string }) {
+/** A link in words (not a button): "Forgot your password?". A `button` when it acts, an `a` when it leads somewhere;
+ * since 1.2.2 `newTab` opens an `a` in a new tab (`rel="noopener noreferrer"`), for a place outside the app. */
+export function TextLink({ children, href, onClick, testId, newTab = false }: { children: ReactNode; href?: string; onClick?: () => void; testId?: string; newTab?: boolean }) {
   const className =
     'm-0 cursor-pointer border-0 bg-transparent p-0 text-sm leading-5 font-normal tracking-normal text-[var(--nexui-text-muted)] underline underline-offset-2 [font-family:inherit] hover:text-[var(--nexui-text)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--nexui-accent)] focus-visible:shadow-none'
   if (href !== undefined) {
     return (
-      <a href={href} onClick={onClick} className={className} data-testid={testId}>
+      <a href={href} onClick={onClick} className={className} data-testid={testId} {...(newTab ? { target: '_blank', rel: 'noopener noreferrer' } : {})}>
         {children}
       </a>
     )

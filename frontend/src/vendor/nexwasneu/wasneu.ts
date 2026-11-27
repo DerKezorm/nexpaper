@@ -36,20 +36,96 @@ export type WhatsNewApi = {
   seen(): Promise<{ seen: string }>
 }
 
-/** The calls to the module's routes under `base` (where the app mounted `api.router`). */
+// --- The form of an answer (W25) ------------------------------------------------------------------------------------
+// What comes back is checked before the page uses it: an answer of another form (an old server, a test double, the
+// page of a proxy) is no answer and shows nothing; a text of another form is left out, never shown half. Nothing
+// throws into the app. Fields the page does not know are ignored, so a newer server stays readable.
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value)
+
+const isText = (value: unknown): value is string => typeof value === 'string'
+
+function isLink(value: unknown): boolean {
+  if (value === undefined || value === null) return true
+  if (!isRecord(value)) return false
+  const { label, href } = value
+  return isText(label) && isText(href)
+}
+
+function isSection(value: unknown): boolean {
+  if (!isRecord(value)) return false
+  const { title, where, body, link, operator } = value
+  return isText(title) && isText(where) && isText(body) && isLink(link) && (operator === undefined || typeof operator === 'boolean')
+}
+
+/** Whether a value is one version's text in the form the page shows. */
+export function isItem(value: unknown): value is WhatsNewItem {
+  if (!isRecord(value)) return false
+  const { version, language, lead, sections, smallTitle, small } = value
+  return (
+    isText(version) &&
+    isText(language) &&
+    isText(lead) &&
+    isText(smallTitle) &&
+    Array.isArray(small) &&
+    small.every(isText) &&
+    Array.isArray(sections) &&
+    sections.every(isSection)
+  )
+}
+
+const items = (value: unknown[]): WhatsNewItem[] => value.filter(isItem)
+
+/** `GET <base>` as the page may use it, or null for an answer of another form. */
+export function readAnswer(value: unknown): WhatsNewAnswer | null {
+  if (!isRecord(value)) return null
+  const { version, seen, unread, more, current, earlier } = value
+  if (!isText(version) || !Array.isArray(unread)) return null
+  return {
+    version,
+    seen: isText(seen) ? seen : '',
+    unread: items(unread),
+    more: more === true,
+    current: isItem(current) ? current : null,
+    earlier: earlier === true,
+  }
+}
+
+/** `GET <base>/history` as the page may use it, or null for an answer of another form. */
+export function readHistory(value: unknown): WhatsNewHistory | null {
+  if (!isRecord(value)) return null
+  const { version, entries } = value
+  if (!isText(version) || !Array.isArray(entries)) return null
+  return { version, entries: items(entries) }
+}
+
+function shaped<T>(found: T | null): T {
+  if (found === null) throw new Error('an answer of another form')
+  return found
+}
+
+/** The calls to the module's routes under `base` (where the app mounted `api.router`). An answer of another form
+ * rejects like a failed call (W25). */
 export function makeWhatsNewApi(fetcher: Fetcher = plainFetch, base: string = BASE): WhatsNewApi {
-  const call = async <T,>(path: string, init: RequestInit): Promise<T> => {
+  const call = async (path: string, init: RequestInit): Promise<unknown> => {
     const response = await fetcher(base + path, init)
     if (!response.ok) throw new Error(String(response.status))
-    return (await response.json()) as T
+    return (await response.json()) as unknown
   }
   const json = { Accept: 'application/json' }
   const asked = (language?: string) => (language ? `?language=${encodeURIComponent(language)}` : '')
   return {
-    state: (language) => call<WhatsNewAnswer>(asked(language), { method: 'GET', headers: json }),
-    history: (language) => call<WhatsNewHistory>(`/history${asked(language)}`, { method: 'GET', headers: json }),
-    seen: () => call<{ seen: string }>('/seen', { method: 'POST', headers: json }),
+    state: async (language) => shaped(readAnswer(await call(asked(language), { method: 'GET', headers: json }))),
+    history: async (language) => shaped(readHistory(await call(`/history${asked(language)}`, { method: 'GET', headers: json }))),
+    seen: async () => readSeen(await call('/seen', { method: 'POST', headers: json })),
   }
+}
+
+function readSeen(value: unknown): { seen: string } {
+  if (!isRecord(value)) return { seen: '' }
+  const { seen } = value
+  return { seen: isText(seen) ? seen : '' }
 }
 
 /** The server's texts as the kit's window takes them; a link leaves only to https (the server checks it too). */

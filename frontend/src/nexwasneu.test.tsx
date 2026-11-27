@@ -1,4 +1,4 @@
-// Vorlage nexwasneu 0.1.0
+// Vorlage nexwasneu 0.1.1
 // @vitest-environment jsdom
 /**
  * "What's new" in the app: after an update the banner stands under the head; "Was ist neu?" shows the texts since the
@@ -28,6 +28,8 @@ let box: HTMLDivElement
 let calls: { path: string; method: string }[]
 let answer: WhatsNewAnswer
 let failing: boolean
+let raw: string | null
+let rawHistory: string | null
 
 const item = (version: string, operator = false): WhatsNewItem => ({
   version,
@@ -50,8 +52,8 @@ const fetcher: Fetcher = async (path, init) => {
     answer = { ...answer, seen: answer.version, unread: [] }
     return new Response(JSON.stringify({ seen: answer.version }), { status: 200 })
   }
-  if (path.startsWith(`${BASE}/history`)) return new Response(JSON.stringify({ version: answer.version, entries: HISTORY }), { status: 200 })
-  if (path.startsWith(BASE)) return new Response(JSON.stringify(answer), { status: 200 })
+  if (path.startsWith(`${BASE}/history`)) return new Response(rawHistory ?? JSON.stringify({ version: answer.version, entries: HISTORY }), { status: 200 })
+  if (path.startsWith(BASE)) return new Response(raw ?? JSON.stringify(answer), { status: 200 })
   return new Response('{}', { status: 404 })
 }
 
@@ -95,6 +97,23 @@ async function about(): Promise<void> {
   await settle()
 }
 
+async function fresh(): Promise<void> {
+  act(() => root.unmount())
+  root = createRoot(box)
+}
+
+// Answers of another form (W25): an old server, a test double, the page of a proxy. Nothing to show, nothing thrown.
+const OTHER_FORMS = [
+  '[]',
+  '{}',
+  'null',
+  '"1.4.0"',
+  '<!doctype html><title>nexapp</title>',
+  JSON.stringify({ version: '1.4.0', unread: 'all' }),
+  JSON.stringify({ version: 140, unread: [] }),
+  JSON.stringify({ version: '1.4.0', seen: '1.2.0', unread: [{ version: '1.4.0' }, 7, null, []], more: false, current: { version: '1.4.0' }, earlier: true }),
+]
+
 async function click(element: Element | null | undefined): Promise<void> {
   expect(element).toBeTruthy()
   await act(async () => (element as HTMLElement).click())
@@ -110,6 +129,8 @@ const seenCalls = () => calls.filter((call) => call.method === 'POST')
 beforeEach(() => {
   calls = []
   failing = false
+  raw = null
+  rawHistory = null
   answer = { version: '1.4.0', seen: '1.2.0', unread: [item('1.4.0', true), item('1.3.0')], more: false, current: item('1.4.0', true), earlier: true }
   box = document.createElement('div')
   document.body.append(box)
@@ -180,6 +201,23 @@ describe("what's new after an update", () => {
     expect(win()?.textContent).toContain(`Was ist neu in ${APP}`)
   })
 
+  it('shows nothing and does not fail when the answer has another form', async () => {
+    for (const body of OTHER_FORMS) {
+      await fresh()
+      raw = body
+      await shell()
+      expect(banner(), body).toBeNull()
+    }
+  })
+
+  it('leaves out a text of another form and shows the others', async () => {
+    const broken = { ...item('1.3.0'), sections: [{ title: 'Teil', where: 'Über', body: 'Text', link: 'https://example.com' }] }
+    raw = JSON.stringify({ ...answer, unread: [item('1.4.0'), broken, { ...item('1.2.0'), small: 'Klein' }, item('1.1.0')] })
+    await shell()
+    await click(button(banner(), 'Was ist neu?'))
+    expect(Array.from(win()?.querySelectorAll<HTMLElement>('section[data-version]') ?? []).map((part) => part.dataset.version)).toEqual(['1.4.0', '1.1.0'])
+  })
+
   it('speaks the language of the page', async () => {
     await shell('en')
     expect(calls[0]?.path).toBe(`${BASE}?language=en`)
@@ -203,6 +241,26 @@ describe("what's new on About", () => {
     answer = { ...answer, version: '1.4.1', unread: [] }
     await about()
     expect(document.querySelector('[data-testid="about-whats-new"]')?.textContent).toBe(`Neu in ${APP} 1.4.0`)
+  })
+
+  it('has no row and does not fail when the answer has another form', async () => {
+    for (const body of OTHER_FORMS) {
+      await fresh()
+      raw = body
+      await about()
+      expect(document.querySelector('[data-testid="about-whats-new"]'), body).toBeNull()
+    }
+  })
+
+  it('keeps the newest text when the history has another form', async () => {
+    for (const body of ['[]', '{}', JSON.stringify({ version: '1.4.0', entries: [7, { version: '1.3.0' }] })]) {
+      await fresh()
+      rawHistory = body
+      await about()
+      await click(document.querySelector('[data-testid="about-whats-new"]'))
+      await click(button(win(), 'Frühere Versionen'))
+      expect(win()?.textContent, body).toContain('Text 1.4.0.')
+    }
   })
 
   it('has no row while there is no text at all', async () => {
