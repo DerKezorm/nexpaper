@@ -38,18 +38,18 @@ def test_the_operators_service_may_lie_in_the_own_network(app: Any, service: Any
 def test_an_own_service_in_the_home_network_needs_the_operators_list(app: Any, service: Any) -> None:
     own(app)
     owner = app.client("owner")
-    refused = owner.put(app.me_prefix, json={"api": "openai", "url": "http://192.168.1.20:11434/v1", "model": "x"})
+    refused = owner.put(app.me_prefix, json={"api": "openai", "url": "http://172.16.0.20:11434/v1", "model": "x"})
     assert refused.status_code == 422 and code(refused) == "ai_address_private"
     refused = owner.put(app.me_prefix, json={"url": service.base, "model": "plain"})
     assert code(refused) == "ai_address_private"
     port = service.base.split(":")[2].split("/")[0]
-    own(app, hosts=[f"127.0.0.1:{port}", "192.168.1.20:11434"])
-    assert owner.put(app.me_prefix, json={"url": "http://192.168.1.20:11434/v1", "model": "x"}).status_code == 200
+    own(app, hosts=[f"127.0.0.1:{port}", "172.16.0.20:11434"])
+    assert owner.put(app.me_prefix, json={"url": "http://172.16.0.20:11434/v1", "model": "x"}).status_code == 200
     assert owner.put(app.me_prefix, json={"url": service.base, "model": "plain"}).status_code == 200
     done = task(app, "owner", "Please tidy this text up")
     assert done.status_code == 200, done.text
     # Taken off the list, the same access stops at the next request: checked at every request, not when saved.
-    own(app, hosts=["192.168.1.20:11434"])
+    own(app, hosts=["172.16.0.20:11434"])
     again = task(app, "owner", "Please tidy this text up")
     assert said(app, again, "ai_address_private")
 
@@ -153,7 +153,7 @@ def test_the_internet_only_over_https(app: Any) -> None:
 
 
 def test_a_name_on_both_sides_is_refused(app: Any) -> None:
-    with resolving(app, {"both.example.com": [PUBLIC, "192.168.1.20"]}):
+    with resolving(app, {"both.example.com": [PUBLIC, "172.16.0.20"]}):
         done = operator_puts(app, api="openai", url="https://both.example.com/v1", model="x")
     assert said(app, done, "ai_address_mixed")
 

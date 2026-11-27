@@ -61,7 +61,7 @@ class ReferenceService:
         self.key = key
         self.seen: list[Seen] = []
         #: Where the model ``redirect`` sends a request.
-        self.redirect_to = "http://192.168.1.1/"
+        self.redirect_to = "http://172.16.0.1/"
         #: The base address of the real server (``serve``), "" before.
         self.base = ""
         self._server: ThreadingHTTPServer | None = None

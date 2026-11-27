@@ -338,7 +338,7 @@ def test_adding_a_passkey_needs_a_public_https_address_or_the_page_on_localhost(
     ``PasskeyAddition``). A public address set counts alone and only with https; without one only localhost."""
     can_add = konten.passkeys.can_add
     # A public https address: yes, whatever the page's name.
-    for where in ({}, {"origin": "http://192.168.1.20:8570"}, {"request_url": "http://localhost:8570/api/auth/me"}):
+    for where in ({}, {"origin": "http://172.16.0.20:8570"}, {"request_url": "http://localhost:8570/api/auth/me"}):
         assert can_add("https://notes.example.com", **where) is True, where
     # A public http address: no, on localhost too (adding would fail there).
     for where in ({}, {"origin": "http://localhost:5173"}, {"request_url": "http://localhost:8570/api/auth/me"}):
@@ -349,7 +349,7 @@ def test_adding_a_passkey_needs_a_public_https_address_or_the_page_on_localhost(
     assert can_add("", origin="https://localhost") is True
     assert can_add("", request_url="http://localhost:8570/api/auth/me") is True
     for where in (
-        {"origin": "http://192.168.1.20:8570"},
+        {"origin": "http://172.16.0.20:8570"},
         {"origin": "http://127.0.0.1:8570"},
         {"origin": "https://notes.example.com"},
         {"origin": "http://localhost.example.com"},

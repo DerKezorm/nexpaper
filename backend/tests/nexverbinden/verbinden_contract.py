@@ -20,7 +20,7 @@ from verbinden_partner import ReferenceApp
 
 #: Where the names point: every app outside on the internet, ``home.example.com`` in the own network.
 PUBLIC = "93.184.215.14"
-HOME = "192.168.1.20"
+HOME = "172.16.0.20"
 
 
 class StandardAdapter:
