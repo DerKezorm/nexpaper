@@ -46,6 +46,12 @@ def _key_of(request: Request) -> int | None:
     return getattr(request.state, "api_key_id", None)
 
 
+def _is_connection(request: Request) -> bool:
+    """A connection of another nex app asks (``deps._connection_account``); it may only use ``POST /documents``."""
+    session = getattr(request.state, "session", None)
+    return session is not None and str(session.uid).startswith("connection:")
+
+
 def _keys_own(db: DbSession, request: Request, upload_id: str) -> None:
     """A key reaches only the uploads it started; any other answers like none (404)."""
     key_id = _key_of(request)
@@ -116,6 +122,8 @@ async def upload(request: Request, account: Uploader, db: DbSession, vault_id: V
         raise _hour_full()
     target = receiving.resolve_vault(db, account.id, vault_id)
     areas = connection_areas(request)
+    # A key or a connection of another nex app hears nothing of other documents of the account (``_plain``).
+    program = key_id is not None or _is_connection(request)
     if areas is not None and int(target) not in areas:
         # A connection of another nex app limited to some vaults brings documents into those only (verbinden 0.1.1).
         raise error("not_found", "Not found.", 404)
@@ -158,7 +166,7 @@ async def upload(request: Request, account: Uploader, db: DbSession, vault_id: V
                     document, twin = receiving.accept(
                         own, uid=account.id, vault_id=target, filename=received.filename, path=path, kind=received.kind,
                         sha256=received.sha256, size=received.size, source=source)
-                    results.append(_accepted(own, account.id, received.filename, document, twin, key_id is not None))
+                    results.append(_accepted(own, account.id, received.filename, document, twin, program))
             except Exception:
                 path.unlink(missing_ok=True)
                 raise

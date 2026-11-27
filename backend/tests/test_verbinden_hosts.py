@@ -121,3 +121,80 @@ def _now() -> Any:
     from datetime import UTC, datetime
 
     return datetime.now(UTC)
+
+
+def _limited_to_own_vault(w: Any) -> tuple[dict[str, str], int, int]:
+    """nexmail connected with the owner's own vault only: the token's header, the vault given and one not given."""
+    from verbinden_partner import ROLES
+
+    from app.db import SessionLocal
+    from app.models import Account, Document
+
+    from .papers import own_vault
+
+    params = w.consent_params(w.start("partner").json()["go"])
+    owner = w.app.client("owner")
+    with SessionLocal() as db:
+        given = own_vault(db.get(Account, w.app.account_id("owner")))
+        other = next(row.vault_id for row in db.query(Document).all() if row.vault_id != given)
+    agreed = owner.post(f"{w.pkg.PREFIX}/consent", json={**params, "allow": True, "areas": [given]})
+    back = w.consent_params(agreed.json()["redirect"])
+    assert w.partner.client("owner").post(f"{w.pkg.PREFIX}/return", json=back).status_code == 200
+    token = w.pkg.access(w.partner.store, w.partner.config, ROLES["owner"][0], "nexpaper", _now()).token
+    return {"Authorization": f"Bearer {token}"}, given, other
+
+
+def test_a_connection_does_not_upload_in_pieces(nexmail: Any) -> None:
+    """The upload in pieces could put a file into a vault not given, make a new version of any document the account
+    may change, tell the title of a document with the same file, and list every open upload of the account: a
+    connection's token gets 403 ``purpose_missing`` on each of its routes (Befundsuche 28.11.2026)."""
+    from app.db import SessionLocal
+    from app.models import Document
+
+    from .intake import sha
+    from .papers import PDF
+
+    asked, given, other = _limited_to_own_vault(nexmail)
+    with SessionLocal() as db:
+        foreign = next(row.id for row in db.query(Document).all() if row.vault_id == other)
+    program = nexmail.program()
+    announced = {"filename": "a.pdf", "size": len(PDF), "sha256": sha(PDF)}
+    for body in ({**announced, "vault_id": other}, {**announced, "document_id": foreign}, {**announced, "vault_id": given},
+                 announced):
+        found = program.post("/api/v1/uploads", json=body, headers=asked)
+        assert found.status_code == 403, (body, found.text)
+        assert found.json()["detail"]["code"] == "purpose_missing"
+    some = "0" * 32
+    for method, path in (("GET", "/api/v1/uploads"), ("GET", f"/api/v1/uploads/{some}"),
+                         ("PUT", f"/api/v1/uploads/{some}?offset=0"), ("POST", f"/api/v1/uploads/{some}/finish"),
+                         ("DELETE", f"/api/v1/uploads/{some}")):
+        found = program.request(method, path, headers=asked)
+        assert found.status_code == 403, (method, path, found.text)
+        assert found.json()["detail"]["code"] == "purpose_missing"
+    with SessionLocal() as db:
+        assert db.query(Document).filter(Document.vault_id == other).count() == 1
+
+
+def test_a_connection_adds_whole_files_to_its_vault_and_hears_of_no_other_document(nexmail: Any) -> None:
+    """``POST /documents`` stays the connection's way in (nexmail), in the vaults given; like a key it hears nothing of a
+    document of the account with the same file (a title from a vault not given)."""
+    from app.db import SessionLocal
+    from app.models import Account
+
+    from .papers import PDF, add_document
+
+    asked, given, other = _limited_to_own_vault(nexmail)
+    secret = PDF + b"% only in the vault not given" + bytes([10])
+    with SessionLocal() as db:
+        add_document(other, db.get(Account, nexmail.app.account_id("owner")), "Secret contract", content=secret)
+    program = nexmail.program()
+    refused = program.post("/api/v1/documents", params={"vault_id": other}, headers=asked,
+                           files={"file": ("a.pdf", PDF, "application/pdf")})
+    assert refused.status_code == 404
+    taken = program.post("/api/v1/documents", params={"vault_id": given}, headers=asked,
+                         files={"file": ("a.pdf", secret, "application/pdf")})
+    assert taken.status_code == 201, taken.text
+    item = taken.json()["items"][0]
+    assert item["status"] == "accepted"
+    assert item["duplicate"] is None and item["document"]["duplicate"] is None
+    assert "Secret contract" not in taken.text

@@ -287,6 +287,11 @@ CONNECTION_READS = {
     # Who adds documents learns the vaults it may put them into.
     "/api/v1/vaults": "documents.add",
 }
+#: Where a connection with ``documents.add`` brings files in: the upload of whole files (``POST /api/v1/documents``),
+#: which keeps to the vaults given at the consent. The upload in pieces (``/api/v1/uploads``) is for devices and keys:
+#: it can make a new version of any document the account may change and lists every open upload of the account, so a
+#: connection's token gets 403 ``purpose_missing`` there.
+CONNECTION_UPLOADS = frozenset({"/api/v1/documents"})
 #: The prefix of a connection's token (``services/verbinden_store.CONFIG``).
 CONNECTION_PREFIX = "npv_"
 
@@ -347,12 +352,14 @@ def require_uploader(
 ) -> AccountRow:
     """For the routes that bring files in: the signed-in browser or a device (``require_account``), or a program with an
     API key whose scope is ``upload``. A key for reading is turned away here, as a key for uploading is turned away
-    where something is read."""
+    where something is read. A connection of another nex app (``npv_``, ``documents.add``) only on
+    ``CONNECTION_UPLOADS``."""
     token = bearer_token(request)
     if token is not None and token.startswith(apikeys.KEY_PREFIX):
         return _key_account(request, token, "upload")
     if token is not None and token.startswith(CONNECTION_PREFIX):
-        return _connection_account(request, token, "documents.add")
+        purpose = "documents.add" if request.url.path in CONNECTION_UPLOADS else None
+        return _connection_account(request, token, purpose)
     return require_account(request)
 
 
