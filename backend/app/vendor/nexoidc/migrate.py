@@ -43,11 +43,10 @@ import re
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field, replace
 
-from . import config, coupling, model, protocol, providers
+from . import config, model, protocol, providers
 from .model import (
     LEGACY_SLUG,
     MANAGED_AUTHENTIK,
-    MANAGED_NEXSUITE,
     Link,
     Provider,
     ProviderValues,
@@ -141,37 +140,6 @@ def old_callback(template: str, slug: str) -> str:
     it as the entry's ``redirect_path``; the start then sends it, the cookie follows it, and the app routes it to the
     same return."""
     return providers.check_redirect_path(template.format(slug=slug))
-
-
-def apply_coupled(
-    store: Store,
-    *,
-    nexsuite: Legacy,
-    own: Legacy | None,
-    people: Iterable[tuple[int, str]],
-    own_subjects: Iterable[tuple[int, str]],
-    trusts_second_factor: bool,
-    label: str = "nexsuite",
-) -> coupling.Coupling | None:
-    """``trusts_second_factor`` is how the app behaved so far, for both entries: its own and the coupled one.
-
-    The migration of an app that is coupled to nexsuite at the moment: its own provider from before the
-    coupling (the settings it saved for the way back, and the subjects it kept apart, such as a column
-    ``oidc_subject_local``) becomes the entry ``oidc`` with its links, set aside at once; nexsuite becomes the coupled
-    entry with the accounts' persons. Returns what the app keeps for uncoupling; None when there is a list already."""
-    if store.list_providers():
-        return None
-    if own is not None:
-        apply(store, plan(own, own_subjects, trusts_second_factor=trusts_second_factor))
-    return coupling.couple(
-        store,
-        issuer=nexsuite.issuer,
-        client_id=nexsuite.client_id,
-        client_secret=nexsuite.client_secret,
-        label=label,
-        people=people,
-        trusts_second_factor=trusts_second_factor,
-    )
 
 
 # ---------------------------------------------------------------------------
@@ -322,11 +290,9 @@ def changes_since(previous: str | None, legacy: Legacy, subjects: Iterable[tuple
 
 @dataclass
 class Resync:
-    """What ``resync`` did. ``coupled``: nothing, because the app is coupled to nexsuite (the list changes through the
-    coupling only)."""
+    """What ``resync`` did."""
 
     changes: Changes = field(default_factory=Changes)
-    coupled: bool = False
     removed: bool = False
     created: bool = False
     issuer_changed: bool = False
@@ -413,8 +379,7 @@ def resync(
       given up go first, then the new ones are made: a subject that moved from one account to another, or two that
       swapped, are taken over in any order of the accounts.
 
-    While the app is coupled to nexsuite, nothing (``Resync.coupled``). Commits once when it wrote anything; the app's
-    commit mirrors again, and the app stores the new fingerprint.
+    Commits once when it wrote anything; the app's commit mirrors again, and the app stores the new fingerprint.
 
     **The anchor** (since 1.0.10): ``anchor`` is the one the app stored (None or "" when it has none yet: a database
     migrated before 1.0.10). ``Resync.anchor`` is the one from now on: the issuer taken over when the older version
@@ -429,14 +394,10 @@ def resync(
     found = changes_since(previous, legacy, subjects)
     done = Resync(changes=found)
     entry = store.provider_by_slug(LEGACY_SLUG)
-    coupled_now = providers.coupled(store) or (entry is not None and entry.managed == MANAGED_NEXSUITE)
-    if not found.any or coupled_now:
+    if not found.any:
         done.anchor = _kept(store, legacy, anchor)
         if keep_anchor is not None:
             keep_anchor(done.anchor)
-        if found.any:
-            done.coupled = True
-            _log().warning("OIDC: the older version changed its sign-in settings while coupled; nothing taken over")
         return done
     olds = _subjects_of(subjects)
     touched = set(found.accounts)
@@ -512,7 +473,7 @@ def _open(anchor: str | None) -> str:
 
 
 def anchor_of(legacy: Legacy | None) -> str:
-    """The anchor at the migration (``apply``, ``apply_coupled`` with ``own``): the issuer of the old settings, or
+    """The anchor at the migration (``apply``): the issuer of the old settings, or
     ``CLOSED`` when they hold no provider (no issuer or no client id; then a provider the older version sets up later
     comes in through ``resync``, which opens the anchor). Stored by the app before the migration commits."""
     if legacy is None or not _has_provider(legacy):
@@ -532,7 +493,7 @@ def _kept(store: Store, legacy: Legacy, anchor: str | None) -> str:
             return CLOSED
         return written if written and protocol.same_issuer(written, kept) else kept
     entry = store.provider_by_slug(LEGACY_SLUG)
-    if entry is None or entry.managed == MANAGED_NEXSUITE or not written:
+    if entry is None or not written:
         return CLOSED
     return written if protocol.same_issuer(entry.issuer, written) else CLOSED
 
@@ -567,10 +528,7 @@ def way_back(entry: Provider | None, links: Iterable[tuple[int, str]], anchor: s
        older version finds no provider, so its bridge over a confirmed address and its ``auto_create`` never act.
     4. Only ``resync`` opens it again (see there).
 
-    While coupled (the entry ``oidc`` is nexsuite's): everything empty and the anchor as it was; an app that couples
-    keeps its own rule for that time and does not call this then."""
-    if entry is not None and entry.managed == MANAGED_NEXSUITE:
-        return Mirror(legacy=_EMPTY, subjects={}, anchor=_open(anchor) or CLOSED)
+    An entry with a ``managed`` value the module no longer writes counts as one by hand (``set_up_by_button`` off)."""
     known = _open(anchor)
     if entry is None or not known or not protocol.same_issuer(entry.issuer, known):
         return Mirror(legacy=_EMPTY, subjects={}, anchor=CLOSED)

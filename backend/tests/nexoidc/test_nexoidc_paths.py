@@ -1,5 +1,5 @@
 """Contract, the addresses: ``Secure`` behind HTTPS, the blueprint's callback entered by hand, old callbacks per
-entry, the coupling."""
+entry; an entry with a ``managed`` value the module no longer writes."""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ import oidc_fakes as fakes
 from oidc_contract import (
     add_in_store,
     entry,
-    error_in,
+    form_of,
     link_person,
     location,
     oidc_package,
@@ -95,64 +95,29 @@ def test_an_entry_with_an_old_callback_signs_in_there(adapter: Any, oidc: Any, s
         assert location(response) == adapter.home and adapter.who(browser) == f"person{number}"
 
 
-def test_coupling_sets_the_own_entries_aside_and_uncoupling_puts_them_back(
-    adapter: Any, oidc: Any, sso: fakes.FakeProvider, with_sso: dict, net: fakes.Network
+def test_an_entry_with_a_managed_value_the_module_no_longer_writes_counts_as_one_by_hand(
+    adapter: Any, oidc: Any, net: fakes.Network
 ) -> None:
-    if not adapter.supports_coupling:
-        # Apps with one account are never coupled: the list stays
-        # the app's own, editable, and the authentik button is not held back.
-        with adapter.store() as store:
-            assert not oidc.providers.coupled(store)
-        assert all(item["editable"] and item["managed"] != "nexsuite" for item in adapter.providers())
-        ak = net.add(fakes.FakeAuthentik())
-        reasons = [step.get("reason") for step in adapter.setup_authentik(ak.base, ak.token).json()["steps"]]
-        assert "coupled" not in reasons and ak.calls
-        return
-    suite = net.add(fakes.FakeProvider("https://suite.example.com"))
-    # The app's own migrated entry holds the slug nexsuite needs: it is parked while coupled.
-    own = net.add(fakes.FakeProvider("https://own.example.com"))
-    add_in_store(adapter, own, "oidc", label="Own")
-    alex_id = adapter.make_account("alex")
-    link_person(adapter, "alex", "sso", sso)
-    bob_id = adapter.make_account("bob")
-    with adapter.store() as store:
-        joined = oidc.coupling.couple(
-            store,
-            issuer=suite.issuer,
-            client_id=suite.client_id,
-            client_secret=suite.client_secret,
-            label="Suite",
-            people=[(alex_id, "p-alex"), (bob_id, "person-1")],
-        )
+    """An older installation may hold a ``managed`` value the module no longer writes (an entry of a coupling that was
+    given up). Nothing breaks on it: the entry is read as one by hand, listed and editable, it signs in, it is saved
+    with its value untouched, and it can be removed."""
+    older = net.add(fakes.FakeProvider("https://older.example.com"))
+    made = add_in_store(adapter, older, "older", label="Older", managed="nexsuite")
+    item = entry(adapter, "older")
+    assert item["editable"] and item["enabled"] and item["managed"] == "nexsuite"
     public = adapter.browser().get(adapter.path("public")).json()
-    assert [(item["slug"], item["label"]) for item in public] == [("oidc", "Suite")]
-    # The set-aside entries stay in the list, off, and the whole list is read-only.
-    listed = {item["slug"]: item for item in adapter.providers()}
-    assert set(listed) == {"oidc", "oidc-own", "sso"}
-    assert listed["oidc"]["managed"] == "nexsuite" and listed["oidc"]["enabled"]
-    assert not listed["sso"]["enabled"] and not listed["oidc-own"]["enabled"]
-    assert not any(item["editable"] for item in listed.values())
-    # Subject "person-1" of the own provider is alex; person "person-1" of nexsuite is bob.
-    browser, response = round_trip(adapter, suite, "oidc")
-    assert fakes.query_of(location(start(adapter, adapter.browser(), "oidc")))["redirect_uri"].endswith(
-        adapter.path("legacy_callback")
-    )
-    assert location(response) == adapter.home and adapter.who(browser) == "bob"
-    assert error_in(start(adapter, adapter.browser(), "sso")) == "oidc_not_configured"
-    # While coupled the authentik button touches neither authentik nor the list (the app locks its card too).
-    ak = net.add(fakes.FakeAuthentik())
-    answer = adapter.setup_authentik(ak.base, ak.token)
-    assert answer.status_code == 200 and ak.calls == []
-    assert [(step["key"], step["reason"], step["status"]) for step in answer.json()["steps"]] == [
-        ("reached", "coupled", 0)
-    ]
-    assert len(adapter.providers()) == 3
+    assert {"slug": "older", "label": "Older"} in public
+    adapter.make_account("alex")
+    link_person(adapter, "alex", "older", older)
+    browser, response = round_trip(adapter, older, "older")
+    assert location(response) == adapter.home and adapter.who(browser) == "alex"
+    saved = adapter.save_provider(made["id"], form_of(item, label="Older, renamed"))
+    assert saved.status_code == 200, saved.text
     with adapter.store() as store:
-        oidc.coupling.uncouple(store, oidc.coupling.Coupling.from_dict(joined.as_dict()))
-    assert sorted(item["slug"] for item in adapter.browser().get(adapter.path("public")).json()) == ["oidc", "sso"]
-    with adapter.store() as store:
-        assert store.provider_by_slug("oidc").managed == "" and store.provider_by_slug("oidc").label == "Own"
-    assert adapter.who(round_trip(adapter, sso, "sso")[0]) == "alex"
+        row = store.get_provider(made["id"])
+        assert (row.label, row.managed) == ("Older, renamed", "nexsuite") and oidc.by_hand(row.managed)
+    assert adapter.remove_provider(made["id"]).status_code in (200, 204)
+    assert all(item["slug"] != "older" for item in adapter.providers())
 
 
 def _network(adapter: Any) -> fakes.Network:

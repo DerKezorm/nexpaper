@@ -17,14 +17,19 @@ from datetime import datetime
 from typing import Protocol
 
 DEFAULT_SCOPES = "openid profile email"
-#: The slug of the entry that came from the settings of a single-provider app, and of the nexsuite coupling: its
-#: callback is the old address ``<api>/oidc/callback``.
+#: The slug of the entry that came from the settings of a single-provider app: its callback is the old address
+#: ``<api>/oidc/callback``.
 LEGACY_SLUG = "oidc"
-#: ``managed`` values. Only the authentik button touches an entry with ``MANAGED_AUTHENTIK``; an entry with
-#: ``MANAGED_NEXSUITE`` changes only through the coupling, never through the form.
+#: ``managed`` values. Only the authentik button touches an entry with ``MANAGED_AUTHENTIK``. Any other value counts
+#: as made by hand (``by_hand``): ``MANAGED_HAND``, and one the module no longer writes (an older installation's), so
+#: such an entry can be edited and removed like every other.
 MANAGED_HAND = ""
 MANAGED_AUTHENTIK = "authentik"
-MANAGED_NEXSUITE = "nexsuite"
+
+
+def by_hand(managed: str) -> bool:
+    """Whether an entry with this ``managed`` value is one by hand: everything but ``MANAGED_AUTHENTIK``."""
+    return managed != MANAGED_AUTHENTIK
 
 
 @dataclass(frozen=True)
@@ -46,7 +51,7 @@ class Provider:
     position: int = 0
     #: The callback path the provider knows, relative to the app root; "" for the standard one
     #: (``<api>/oidc/<slug>/callback``, for the entry ``oidc`` ``<api>/oidc/callback``). Set only by a migration
-    #: (an address a provider knew before the module) or a coupling, never by the form.
+    #: (an address a provider knew before the module), never by the form.
     redirect_path: str = ""
     created_at: datetime | None = None
     #: The redirect address the authentik button last registered at authentik for this entry, "" when it never did

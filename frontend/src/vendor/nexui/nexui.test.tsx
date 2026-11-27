@@ -1180,10 +1180,10 @@ describe('the other nex apps in "What\'s new" link their repositories (since 1.2
       .filter((part) => part.href)
       .map((part) => `${part.text} ${part.href}`)
 
-  it('the directory holds the public apps only, each at its repository on GitHub, and nexfolk not yet', () => {
-    expect(Object.keys(APP_REPOS).sort()).toEqual(['nexdiary', 'nexlore', 'nexmail', 'nexnotes', 'nexpaper', 'nextasks', 'nextime'])
+  it('the directory holds the public apps, each at its repository on GitHub, nexfolk too (since 1.3.2)', () => {
+    expect(Object.keys(APP_REPOS)).toEqual(['nexdiary', 'nexfolk', 'nexlore', 'nexmail', 'nexnotes', 'nexpaper', 'nextasks', 'nextime'])
     for (const [name, href] of Object.entries(APP_REPOS)) expect(href).toBe(`https://github.com/DerKezorm/${name}`)
-    expect(APP_REPOS).not.toHaveProperty('nexfolk')
+    expect(APP_REPOS).toHaveProperty('nexfolk', 'https://github.com/DerKezorm/nexfolk')
   })
 
   it('splits a text into words and links, and the pieces give the text back', () => {
@@ -1219,13 +1219,16 @@ describe('the other nex apps in "What\'s new" link their repositories (since 1.2
     expect(linked(text, ' NexLore ')).toEqual(['nexnotes https://github.com/DerKezorm/nexnotes'])
     expect(linked(text, 'nexnotes')).toEqual(['nexlore https://github.com/DerKezorm/nexlore', 'nexlore https://github.com/DerKezorm/nexlore'])
     expect(linked('nexdiary, nexlore, nexmail, nexnotes, nexpaper, nextasks, nextime', 'nexfolk')).toHaveLength(7)
+    expect(linked('nexdiary, nexfolk, nexlore, nexmail, nexnotes, nexpaper, nextasks, nextime', 'nexlore')).toHaveLength(7)
+    expect(linked('nexdiary, nexfolk, nexlore, nexmail, nexnotes, nexpaper, nextasks, nextime', 'nexnotes')).toHaveLength(7)
   })
 
-  it('leaves nexfolk plain until its line is in the directory, then links it', () => {
-    expect(linked('Kontakte aus nexfolk.', 'nexlore')).toEqual([])
-    const later = { ...APP_REPOS, nexfolk: 'https://github.com/DerKezorm/nexfolk' }
-    expect(linked('Kontakte aus nexfolk.', 'nexlore', later)).toEqual(['nexfolk https://github.com/DerKezorm/nexfolk'])
-    expect(linked('Kontakte aus nexfolk.', 'nexfolk', later)).toEqual([])
+  it('links nexfolk now that it is public (since 1.3.2), never in its own text, and an app without a line stays plain', () => {
+    expect(linked('Kontakte aus nexfolk.', 'nexlore')).toEqual(['nexfolk https://github.com/DerKezorm/nexfolk'])
+    expect(linked('Kontakte aus nexfolk.', 'nexfolk')).toEqual([])
+    expect(linked('nexfolk nimmt Termine aus nextime.', 'nexfolk')).toEqual(['nextime https://github.com/DerKezorm/nextime'])
+    const without = Object.fromEntries(Object.entries(APP_REPOS).filter(([name]) => name !== 'nexfolk'))
+    expect(linked('Kontakte aus nexfolk.', 'nexlore', without)).toEqual([])
     expect(linked('Kontakte aus nexfolk.', 'nexlore', { nexfolk: 'http://example.org/nexfolk' })).toEqual([])
   })
 
@@ -1249,6 +1252,7 @@ describe('the other nex apps in "What\'s new" link their repositories (since 1.2
       ['nextime', 'https://github.com/DerKezorm/nextime'],
       ['nexmail', 'https://github.com/DerKezorm/nexmail'],
       ['nextasks', 'https://github.com/DerKezorm/nextasks'],
+      ['nexfolk', 'https://github.com/DerKezorm/nexfolk'],
     ])
     for (const link of links) {
       expect(link.tagName).toBe('A')

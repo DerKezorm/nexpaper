@@ -80,7 +80,6 @@
         "malformed": "Le jeton contient des caractères qu'aucun jeton ne contient. Copiez-le de nouveau depuis authentik.",
         "answered": "Quelque chose répond à cette adresse, mais pas authentik comme prévu (réponse {{status}}). Vérifiez l'adresse ; la réponse complète figure dans le journal.",
         "slug": "Chaque slug que {{app}} donnerait à son application appartient déjà à une autre application dans authentik. Renommez-y le fournisseur {{app}} et réessayez.",
-        "coupled": "Tant que {{app}} est couplé, la connexion passe par le couplage. Découplez d'abord, puis configurez authentik ici.",
         "issuer_change_one": "C'est un autre authentik qu'avant, donc un autre émetteur. {{count}} compte devra se lier de nouveau ensuite.",
         "issuer_change_other": "C'est un autre authentik qu'avant, donc un autre émetteur. {{count}} comptes devront se lier de nouveau ensuite.",
         "public_url_needed": "{{app}} n'a pas encore d'adresse publique. Utilisez celle proposée, et {{app}} configure authentik avec."
@@ -121,7 +120,6 @@
       "client_id_required": "Saisissez l'ID client.",
       "client_secret_invalid": "Le secret client est trop long.",
       "scopes_invalid": "Les portées doivent contenir openid.",
-      "provider_managed": "Ce fournisseur vient d'un couplage et ne se modifie que là.",
       "provider_unknown": "Ce fournisseur n'existe plus."
     },
     "noInvitations": {

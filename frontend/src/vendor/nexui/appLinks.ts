@@ -6,11 +6,12 @@
  */
 
 /**
- * The public repository of every nex app that has one, by the app's name. nexfolk is not public yet (it lives on
- * Forgejo): once it is on GitHub, its line goes here, and every text that names it links it.
+ * The public repository of every nex app that has one, by the app's name: all nex apps with a public repository on
+ * GitHub (since 1.3.2 also nexfolk). A new public app gets its line here, and every text that names it links it.
  */
 export const APP_REPOS: Readonly<Record<string, string>> = {
   nexdiary: 'https://github.com/DerKezorm/nexdiary',
+  nexfolk: 'https://github.com/DerKezorm/nexfolk',
   nexlore: 'https://github.com/DerKezorm/nexlore',
   nexmail: 'https://github.com/DerKezorm/nexmail',
   nexnotes: 'https://github.com/DerKezorm/nexnotes',

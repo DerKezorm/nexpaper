@@ -47,9 +47,6 @@ class Adapter(StandardAdapter):
     single_account = False
     has_invitations = True
     only_authentik = False
-    # nexpaper is never coupled to an outside identity provider of a suite: the coupling
-    # test then checks that the list stays the app's own and the authentik button is not held back.
-    supports_coupling = False
     has_second_factor = True
     legacy_model = "single"
     # nexpaper 1.0.1 asked the code of its own second factor after the provider (its switch was off from the start).

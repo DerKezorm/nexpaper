@@ -80,7 +80,6 @@
         "malformed": "Das Token enthält Zeichen, die kein Token hat. Kopier es noch einmal aus authentik.",
         "answered": "Unter dieser Adresse antwortet etwas, aber nicht authentik wie erwartet (Antwort {{status}}). Prüf die Adresse; die ganze Antwort steht im Log.",
         "slug": "In authentik gehören alle Slugs, die {{app}} seiner Anwendung geben würde, schon anderen Anwendungen. Benenne den Anbieter von {{app}} dort um und versuch es noch einmal.",
-        "coupled": "Solange {{app}} gekoppelt ist, kommt die Anmeldung über die Kopplung. Entkopple zuerst, dann richte authentik hier ein.",
         "issuer_change_one": "Das ist ein anderes authentik als bisher, also ein anderer Aussteller. {{count}} Konto muss sich danach neu verknüpfen.",
         "issuer_change_other": "Das ist ein anderes authentik als bisher, also ein anderer Aussteller. {{count}} Konten müssen sich danach neu verknüpfen.",
         "public_url_needed": "{{app}} hat noch keine öffentliche Adresse. Übernimm die vorgeschlagene, dann richtet {{app}} authentik damit ein."
@@ -121,7 +120,6 @@
       "client_id_required": "Gib die Client-ID ein.",
       "client_secret_invalid": "Das Client-Geheimnis ist zu lang.",
       "scopes_invalid": "Die Bereiche müssen openid enthalten.",
-      "provider_managed": "Dieser Anbieter kommt über eine Kopplung und ändert sich nur dort.",
       "provider_unknown": "Diesen Anbieter gibt es nicht mehr."
     },
     "noInvitations": {

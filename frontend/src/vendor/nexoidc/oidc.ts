@@ -41,7 +41,6 @@ export const OIDC_FORM_CODES = [
   'client_id_required',
   'client_secret_invalid',
   'scopes_invalid',
-  'provider_managed',
   'provider_unknown',
 ] as const
 
@@ -60,7 +59,6 @@ export const AUTHENTIK_REASONS = [
   'malformed',
   'answered',
   'slug',
-  'coupled',
   'issuer_change',
   'public_url_needed',
 ] as const

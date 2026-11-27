@@ -80,7 +80,6 @@
         "malformed": "The token contains characters no token has. Copy it from authentik once more.",
         "answered": "Something answers at this address, but not authentik as expected (answer {{status}}). Check the address; the whole answer is in the log.",
         "slug": "Every slug {{app}} would give its application already belongs to another application in authentik. Rename the {{app}} provider there and try again.",
-        "coupled": "While {{app}} is coupled, sign-in comes through the coupling. Uncouple first, then set up authentik here.",
         "issuer_change_one": "This is another authentik than before, so another issuer. {{count}} account will have to link again afterwards.",
         "issuer_change_other": "This is another authentik than before, so another issuer. {{count}} accounts will have to link again afterwards.",
         "public_url_needed": "{{app}} has no public address yet. Use the suggested one, and {{app}} sets up authentik with it."
@@ -121,7 +120,6 @@
       "client_id_required": "Enter the client ID.",
       "client_secret_invalid": "The client secret is too long.",
       "scopes_invalid": "The scopes must contain openid.",
-      "provider_managed": "This provider comes through a coupling and changes only there.",
       "provider_unknown": "This provider no longer exists."
     },
     "noInvitations": {

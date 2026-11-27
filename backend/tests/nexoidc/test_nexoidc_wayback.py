@@ -502,33 +502,6 @@ def test_up_again_a_provider_set_up_while_the_entry_was_off_turns_it_on(
     assert linked(adapter) == {"alex": "person-1"}
 
 
-def test_up_again_nothing_is_taken_over_while_coupled(adapter: Any, sso: fakes.FakeProvider, oidc: Any) -> None:
-    if not _one_provider(adapter) or not adapter.supports_coupling:
-        return
-    ids = migrated(adapter, sso)
-    suite = fakes.FakeProvider("https://suite.example.com")
-    with adapter.store() as store:
-        coupled = oidc.coupling.couple(
-            store,
-            issuer=suite.issuer,
-            client_id=suite.client_id,
-            client_secret=suite.client_secret,
-            label="Suite",
-            people=[(ids["alex"], "p-alex")],
-        )
-    adapter.run_migration()
-    before = sorted((item["slug"], item["issuer"], item["enabled"]) for item in adapter.providers())
-    older(adapter, sso, subjects={"alex": "elsewhere"}, issuer="https://other.example.com", client_id="other")
-    adapter.run_migration()
-    assert sorted((item["slug"], item["issuer"], item["enabled"]) for item in adapter.providers()) == before
-    # The anchor outlives the coupling: uncoupled, the way back shows the own entry again, as the migration made it.
-    with adapter.store() as store:
-        oidc.coupling.uncouple(store, coupled)
-    adapter.run_migration()
-    assert linked(adapter) == {"alex": "person-1"}
-    assert found(adapter, like=in_full(adapter, sso)) == as_made(adapter, sso)
-
-
 def test_the_helper_for_entries_in_the_store_is_untouched_by_the_way_back(adapter: Any, net: fakes.Network) -> None:
     """Another entry than ``oidc`` is no business of the way back: a start leaves it alone."""
     if not _one_provider(adapter):

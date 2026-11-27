@@ -9,7 +9,7 @@ Paths, relative to the app's API (``AppConfig.api_prefix``):
 
 - ``<api>/oidc/<slug>/start`` (``?invite=<key>`` for an invitation), ``<api>/oidc/<slug>/callback``;
 - ``<api>/oidc/callback``: the old address of a single-provider app, valid for ever, owned by the entry with the slug
-  ``oidc`` (the migrated one, or the nexsuite coupling). A provider registered before only knows this one.
+  ``oidc`` (the migrated one). A provider registered before only knows this one.
 """
 
 from __future__ import annotations

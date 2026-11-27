@@ -13,7 +13,6 @@ What lives here:
 - ``accounts``: who the identity is, linking, unlinking, the second factor;
 - ``providers``: the provider list, issuer changes, removal;
 - ``migrate``: from one provider in the settings to the list; the way back (way_back, anchor), up again (resync);
-- ``coupling``: nexsuite as the provider of a coupled app, the own entries set aside and back;
 - ``authentik``: the button and the blueprint;
 - ``tls``: one TLS context for every call, read once outside the event loop (``warm()`` at the app's start).
 
@@ -29,7 +28,6 @@ from .model import (
     LEGACY_SLUG,
     MANAGED_AUTHENTIK,
     MANAGED_HAND,
-    MANAGED_NEXSUITE,
     AccountState,
     Identity,
     Impact,
@@ -38,11 +36,12 @@ from .model import (
     Provider,
     ProviderValues,
     Store,
+    by_hand,
     secret_context,
 )
 from .tls import warm
 
-__version__ = "1.2.0"
+__version__ = "1.3.0"
 
 __all__ = [
     "CODES",
@@ -51,7 +50,6 @@ __all__ = [
     "LEGACY_SLUG",
     "MANAGED_AUTHENTIK",
     "MANAGED_HAND",
-    "MANAGED_NEXSUITE",
     "AccountState",
     "AppConfig",
     "Identity",
@@ -64,6 +62,7 @@ __all__ = [
     "ProviderValues",
     "Store",
     "__version__",
+    "by_hand",
     "configure",
     "current",
     "secret_context",

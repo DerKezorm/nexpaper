@@ -124,7 +124,7 @@ WAYS = ("adopt_only", "save_public_url_route")
 def active_by_hand(adapter: Any, oidc: Any) -> int:
     """The entries made by hand that are on now (the store's word)."""
     with adapter.store() as store:
-        return sum(1 for item in store.list_providers() if item.managed == oidc.MANAGED_HAND and item.enabled)
+        return sum(1 for item in store.list_providers() if oidc.by_hand(item.managed) and item.enabled)
 
 
 @pytest.mark.parametrize("way", WAYS)

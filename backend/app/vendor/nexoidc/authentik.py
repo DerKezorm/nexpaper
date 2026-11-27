@@ -43,10 +43,10 @@ from .errors import OidcError
 from .model import (
     DEFAULT_SCOPES,
     MANAGED_AUTHENTIK,
-    MANAGED_HAND,
     Provider,
     ProviderValues,
     Store,
+    by_hand,
 )
 
 STEP_KEYS = ("reached", "signingKey", "mapping", "provider", "application", "filled")
@@ -59,7 +59,6 @@ REASONS = (
     "malformed",
     "answered",
     "slug",
-    "coupled",
     "issuer_change",
     "public_url_needed",
 )
@@ -363,7 +362,7 @@ async def _entry(store: Store, api: _Api) -> Provider | None:
         return managed[0]
     prefix = f"{api.base_url}/application/o/".lower()
     for entry in entries:
-        if entry.managed != MANAGED_HAND or not (entry.issuer + "/").lower().startswith(prefix) or not entry.client_id:
+        if not by_hand(entry.managed) or not (entry.issuer + "/").lower().startswith(prefix) or not entry.client_id:
             continue
         if await api.find_one("/providers/oauth2/", {"client_id": entry.client_id}, "client_id", entry.client_id):
             return entry
@@ -607,13 +606,6 @@ async def setup(
     ``confirm_issuer_change=True``, which changes the issuer and drops the links."""
     base_url = normalize_base(base_url)
     result = SetupResult()
-    if providers.coupled(store):
-        # While coupled, sign-in comes through nexsuite: the button touches neither authentik nor the
-        # list, and says so at the first step. The app locks the card meanwhile; this is the guard behind it.
-        detail = "the app is coupled to nexsuite; the button changes nothing until it is uncoupled"
-        result.steps.append(Step(STEP_KEYS[0], False, detail, "coupled", 0))
-        _log().warning("authentik setup stopped at step %s: %s", STEP_KEYS[0], detail)
-        return result
     try:
         if not token.isascii() or not token.isprintable() or any(char.isspace() for char in token):
             # No HTTP header carries it, so no authentik token looks like this (reason "malformed").
@@ -812,10 +804,8 @@ def public_url_change(store: Store, new_url: str, request_base: str = "") -> dic
     for entry in store.list_providers():
         callback = flow.callback_path(entry.slug, entry.redirect_path)
         target = base + callback if base else ""
-        if entry.managed == MANAGED_HAND:
+        if by_hand(entry.managed):
             hand += int(entry.enabled and bool(old) and old + callback != target)
-            continue
-        if entry.managed != MANAGED_AUTHENTIK:
             continue
         known = entry.registered_redirect or (old + callback if old else "")
         if known and known != target:

@@ -336,7 +336,7 @@ export type OidcProvider = {
   enabled: boolean
   auto_create: boolean
   trusts_second_factor: boolean
-  managed: '' | 'authentik' | 'nexsuite'
+  managed: string
   position: number
   redirect_uri: string
   links: number

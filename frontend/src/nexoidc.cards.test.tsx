@@ -1,9 +1,9 @@
-// Vorlage nexoidc 1.2.0
+// Vorlage nexoidc 1.3.0
 // @vitest-environment jsdom
 /**
  * Since 1.2.0: the cards "Sign-in providers" and "authentik in one step" (``SignInProviders.tsx``) in the app: built
  * from the ui kit, as nexnotes had them, with the buttons the plan "Einstellungen" names (the grip, small "Edit" and
- * "Remove", "Add provider"), the app's placeholders and no coupling. Copied once by bauplaene/oidc/tools/sync.py to
+ * "Remove", "Add provider") and the app's placeholders. Copied once by bauplaene/oidc/tools/sync.py to
  * ``frontend/src/nexoidc.cards.test.tsx``; then the app's file. Fill in the places marked APP.
  */
 import { act, type ReactNode } from 'react'
@@ -172,10 +172,9 @@ describe('Sign-in providers and authentik (oidc 1.2.0)', () => {
     for (const entry of dialog.querySelectorAll('button[data-kind]')) expect(['primary', 'secondary', 'danger']).toContain(entry.getAttribute('data-kind'))
   })
 
-  it('authentik: the button sets up, the blueprint is a link under the prefix, nothing of a coupling', async () => {
+  it('authentik: the button sets up, the blueprint is a link under the prefix', async () => {
     await cards()
     expect(document.querySelector('[data-testid="authentik-blueprint"]')?.getAttribute('href')).toBe(`${API}/oidc/authentik/blueprint`)
-    expect(document.body.textContent).not.toContain(t('oidc.authentik.why.coupled'))
     const run = document.querySelector('[data-testid="authentik-run"]') as HTMLButtonElement
     expect([run.dataset.kind, run.dataset.icon, run.disabled]).toEqual(['primary', 'Sparkles', true])
   })

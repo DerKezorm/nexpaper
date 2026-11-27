@@ -36,7 +36,6 @@ FORM_CODES = (
     "client_id_required",
     "client_secret_invalid",
     "scopes_invalid",
-    "provider_managed",
     "provider_unknown",
 )
 

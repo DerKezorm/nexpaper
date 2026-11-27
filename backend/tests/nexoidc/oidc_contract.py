@@ -34,9 +34,6 @@ class StandardAdapter:
     has_invitations = True
     #: Only authentik, no second entry through the form. Entries are then made in the store.
     only_authentik = False
-    #: The app can be coupled to nexsuite. False for the apps with one account: they
-    #: have no people to pair, and the coupling test checks instead that the list stays uncoupled.
-    supports_coupling = True
     #: The app has a second factor of its own.
     has_second_factor = True
     #: "single": the app kept one provider in its settings and migrates; "list" or "none": not.
@@ -393,7 +390,7 @@ def iterate(value: Any) -> Iterator[Any]:
 def oidc_package(adapter: Any) -> ModuleType:
     """The vendored package with every part the tests touch loaded."""
     package = importlib.import_module(adapter.package)
-    for name in ("protocol", "attempt", "flow", "accounts", "providers", "authentik", "migrate", "coupling"):
+    for name in ("protocol", "attempt", "flow", "accounts", "providers", "authentik", "migrate"):
         importlib.import_module(f"{adapter.package}.{name}")
     return package
 

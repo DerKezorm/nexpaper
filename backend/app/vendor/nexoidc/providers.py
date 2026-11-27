@@ -20,7 +20,6 @@ from .model import (
     LEGACY_SLUG,
     MANAGED_AUTHENTIK,
     MANAGED_HAND,
-    MANAGED_NEXSUITE,
     Impact,
     Provider,
     ProviderValues,
@@ -155,19 +154,6 @@ def change_issuer(store: Store, provider: Provider, issuer: str) -> int:
     return dropped
 
 
-def coupled(store: Store) -> bool:
-    """Whether the app is coupled to nexsuite: then nexsuite is its provider, and the list changes only through the
-    coupling."""
-    return any(entry.managed == MANAGED_NEXSUITE for entry in store.list_providers())
-
-
-def _not_coupled(store: Store) -> None:
-    if coupled(store):
-        raise ProviderInvalid(
-            "id", "provider_managed", "While coupled, the providers change through the coupling only."
-        )
-
-
 def check_redirect_path(path: str) -> str:
     """A callback path a provider knew before the module, for a migration: kept as it is, refused when it is no
     plain path of this app."""
@@ -179,7 +165,6 @@ def check_redirect_path(path: str) -> str:
 async def create(store: Store, form: Form) -> Provider:
     """A new entry from the form, after a fresh discovery. Defaults: on, no new accounts, the provider
     checks the second factor."""
-    _not_coupled(store)
     form = _checked(form)
     slug = (form.slug or slug_from_label(form.label)).strip()
     if not SLUG_PATTERN.fullmatch(slug):
@@ -209,14 +194,11 @@ async def create(store: Store, form: Form) -> Provider:
 
 
 async def update(store: Store, provider_id: int, form: Form) -> tuple[Provider, int]:
-    """Save the form over an entry: (the entry, the number of links dropped). The slug stays. An entry of the nexsuite
-    coupling is read-only here."""
+    """Save the form over an entry: (the entry, the number of links dropped). The slug and ``managed`` stay, whatever
+    ``managed`` holds."""
     current = store.get_provider(provider_id)
     if current is None:
         raise ProviderInvalid("id", "provider_unknown", "No such provider.")
-    if current.managed == MANAGED_NEXSUITE:
-        raise ProviderInvalid("id", "provider_managed", "This provider changes through the coupling only.")
-    _not_coupled(store)
     form = _checked(form)
     await _discover(form.issuer)
     dropped = change_issuer(store, current, form.issuer)
@@ -248,9 +230,6 @@ def remove(store: Store, provider_id: int) -> Impact:
     current = store.get_provider(provider_id)
     if current is None:
         raise ProviderInvalid("id", "provider_unknown", "No such provider.")
-    if current.managed == MANAGED_NEXSUITE:
-        raise ProviderInvalid("id", "provider_managed", "This provider changes through the coupling only.")
-    _not_coupled(store)
     impact = removal_impact(store, provider_id)
     store.delete_provider(provider_id)
     store.commit()
@@ -260,7 +239,6 @@ def remove(store: Store, provider_id: int) -> Impact:
 
 def reorder(store: Store, ids: list[int]) -> list[Provider]:
     """Put the entries in the order of ``ids`` (the drag handle). Unknown ids are ignored, missing ones go last."""
-    _not_coupled(store)
     entries = {entry.id: entry for entry in store.list_providers()}
     order = [entry_id for entry_id in dict.fromkeys(ids) if entry_id in entries]
     order += [entry_id for entry_id in entries if entry_id not in order]
@@ -296,12 +274,14 @@ def public_list(store: Store) -> list[dict[str, str]]:
     return [{"slug": entry.slug, "label": entry.label} for entry in store.list_providers() if entry.enabled]
 
 
-def admin_view(provider: Provider, request_base: str, link_count: int, *, coupled: bool = False) -> dict[str, object]:
+def admin_view(provider: Provider, request_base: str, link_count: int) -> dict[str, object]:
     """An entry as the operator's list and form show it: never the secret, only whether one is stored.
 
     ``registered_redirect_uri`` is what the authentik button registered at authentik for this entry ("" for none),
     ``redirect_stale`` whether that is no longer the redirect address the sign-in sends (the public address changed
-    since): the authentik card then shows ``oidc.authentik.stale`` until the button ran again (since 1.0.10)."""
+    since): the authentik card then shows ``oidc.authentik.stale`` until the button ran again (since 1.0.10).
+    ``editable`` is always true since 1.3.0 (every entry changes through the form); it stays for the pages that read
+    it."""
     from .flow import provider_redirect_uri
 
     redirect = provider_redirect_uri(provider, request_base)
@@ -322,9 +302,7 @@ def admin_view(provider: Provider, request_base: str, link_count: int, *, couple
         "registered_redirect_uri": provider.registered_redirect,
         "redirect_stale": bool(provider.registered_redirect) and provider.registered_redirect != redirect,
         "links": link_count,
-        # While coupled, the whole list is read-only (the set-aside entries show as "off"); the entry of
-        # the coupling never changes through the form.
-        "editable": not coupled and provider.managed != MANAGED_NEXSUITE,
+        "editable": True,
     }
 
 
