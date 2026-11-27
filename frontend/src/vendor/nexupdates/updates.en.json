@@ -5,5 +5,8 @@
   "setupLabel": "Look for new versions",
   "setupHint": "Once a day {app} asks {host} whether a newer version is out and tells you in the bell. You can change this later under Settings › About {app}.",
   "setupHintNoBell": "When you open Settings › About {app}, {app} asks {host} at most once a day whether a newer version is out and shows it there. You can change this later under Settings › About {app}.",
+  "setupHintDevices": "When you open Settings › About {app}, {app} asks {host} at most once a day whether a newer version is out and shows it there; also once a day while a device of an operator wants to hear of new versions. You can change this later under Settings › About {app}.",
+  "dailyHintNoBell": "Asks {host} when an operator opens this page, at most once a day. Off: only when you press the button.",
+  "dailyHintDevices": "Asks {host} when an operator opens this page, and once a day while a device of an operator wants to hear of new versions. Off: only when you press the button.",
   "failed": "That did not work just now. Try again in a moment."
 }

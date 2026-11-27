@@ -26,7 +26,12 @@ class AppConfig:
     - ``read_told() -> str | None`` / ``write_told(version)``: the version the operators were last told about (nexlore
       ``notify_version``), so nobody hears of a version twice;
     - ``on_newer(version)``: tell the operators once (U3; the app's bell, e.g. nexlore ``notify.operators``); None for
-      an app without a bell.
+      an app without a bell;
+    - since 0.1.3 (U24), an app that pairs devices (module ``geraete``): ``devices_want() -> bool``, True while a
+      device of an operator understands and wants the kind ``update`` (``nexgeraete.notices.update_wanted``), and
+      ``on_devices(version)``, telling those devices (``nexgeraete.notices.newer``). Such a device counts as a bell:
+      while there is one, the background looks at most once a day, also in an app without a bell. Both None: no
+      devices.
     """
 
     app_name: str
@@ -37,6 +42,8 @@ class AppConfig:
     read_told: Callable[[], str | None] = lambda: None
     write_told: Callable[[str], None] = lambda _version: None
     on_newer: Callable[[str], None] | None = None
+    devices_want: Callable[[], bool] | None = None
+    on_devices: Callable[[str], None] | None = None
     project_url: str = ""
     license: str = "AGPL-3.0"
     update_url: str | Callable[[], str] = ""

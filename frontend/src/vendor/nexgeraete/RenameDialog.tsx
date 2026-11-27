@@ -9,7 +9,7 @@ import { useState } from 'react'
 
 import { Button, Dialog, Field, useNexuiTexts } from '../nexui'
 import { useDeviceTexts } from './hooks'
-import { BUTTONS, DEVICES_BASE, NAME_MAX, refusalText, type Device, type DeviceRequest } from './geraete'
+import { BUTTONS, DEVICES_BASE, NAME_MAX, asDevice, refusalText, type Device, type DeviceRequest } from './geraete'
 
 export type RenameDialogProps = {
   request: DeviceRequest
@@ -32,7 +32,7 @@ export function RenameDialog({ request, base = DEVICES_BASE, device, language, o
     setBusy(true)
     setError(undefined)
     try {
-      onRenamed(await request<Device>(`${base}/app-devices/${encodeURIComponent(String(device.id))}`, { method: 'PATCH', body: { name: name.trim() } }))
+      onRenamed(asDevice(await request<unknown>(`${base}/app-devices/${encodeURIComponent(String(device.id))}`, { method: 'PATCH', body: { name: name.trim() } })))
     } catch (failure) {
       setError(refusalText(texts, failure))
       setBusy(false)

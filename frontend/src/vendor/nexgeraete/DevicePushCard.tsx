@@ -12,7 +12,7 @@ import { useCallback, useEffect, useState, type ReactNode } from 'react'
 
 import { Badge, Box, Button, Buttons, Card, CheckboxRow, Notice } from '../nexui'
 import { useDeviceTexts } from './hooks'
-import { DEVICES_BASE, fillDevices, kindLabel, refusalText, type Device, type DeviceListing, type DeviceRequest, type PushKind, type PushKinds } from './geraete'
+import { DEVICES_BASE, asListing, asPushKinds, fillDevices, kindLabel, refusalText, type Device, type DeviceRequest, type PushKind } from './geraete'
 
 export type DevicePushCardProps = {
   request: DeviceRequest
@@ -42,7 +42,8 @@ export function DevicePushCard({ request, base = DEVICES_BASE, app, language, co
 
   useEffect(() => {
     let live = true
-    request<DeviceListing>(`${base}/app-devices`)
+    request<unknown>(`${base}/app-devices`)
+      .then(asListing)
       .then(async (listing) => {
         if (!listing.has_app) {
           if (live) setHidden(true)
@@ -50,8 +51,8 @@ export function DevicePushCard({ request, base = DEVICES_BASE, app, language, co
         }
         const kinds = await Promise.all(
           listing.devices.map((device) =>
-            request<PushKinds>(kindsPath(device)).then(
-              (found): PushKind[] | string => found.kinds,
+            request<unknown>(kindsPath(device)).then(
+              (found): PushKind[] | string => asPushKinds(found).kinds,
               (failure: unknown) => refusalText(texts, failure),
             ),
           ),
@@ -72,7 +73,7 @@ export function DevicePushCard({ request, base = DEVICES_BASE, app, language, co
     setSaved(null)
     setFailed(null)
     try {
-      const found = await request<PushKinds>(kindsPath(device), { method: 'PUT', body: { [kind.id]: on } })
+      const found = asPushKinds(await request<unknown>(kindsPath(device), { method: 'PUT', body: { [kind.id]: on } }))
       setLoaded((before) => (before ? { ...before, kinds: { ...before.kinds, [id]: found.kinds } } : before))
       setSaved(id)
     } catch (failure) {
@@ -114,7 +115,7 @@ export function DevicePushCard({ request, base = DEVICES_BASE, app, language, co
                 {device.push ? texts.push.allowed : texts.push.systemOff}
               </Badge>
             }
-            hint={device.push ? undefined : fillDevices(texts.push.systemOffText, { app })}
+            hint={device.push ? (device.chooses_kinds ? texts.push.inApp : fillDevices(texts.push.inAppLater, { app })) : fillDevices(texts.push.systemOffText, { app })}
             testId="devices-push-device"
           >
             {typeof kinds === 'string' && (

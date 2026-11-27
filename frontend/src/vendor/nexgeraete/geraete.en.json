@@ -61,7 +61,9 @@
   },
   "push": {
     "title": "Notifications on your devices",
-    "hint": "Every device has its own choice. The app shows the same ticks under Settings › Notifications.",
+    "hint": "Every device has its own choice.",
+    "inApp": "The app shows the same ticks under Settings › Notifications.",
+    "inAppLater": "The ticks apply already. {app} on the device lets you choose them with a coming version of the app.",
     "none": "No device connected yet. You connect iPhone and iPad under My account › Connections.",
     "toConnections": "To Connections",
     "allowed": "Notifications allowed",

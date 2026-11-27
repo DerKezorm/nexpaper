@@ -1,7 +1,8 @@
 /**
  * The setup of a new nexpaper asks once whether to look for new versions (updates U1): the box "Nach neuen Versionen
  * sehen" stands ticked, its hint says where nexpaper asks and that it asks when an operator opens the about page (no
- * bell in nexpaper, U19), and its answer goes along with the setup.
+ * bell in nexpaper, U19) and once a day while a device of an operator wants to hear of new versions (U24), and its
+ * answer goes along with the setup.
  */
 import type { Me } from '../api/client'
 import { changeLanguage } from '../i18n'
@@ -38,8 +39,9 @@ describe('the box "Nach neuen Versionen sehen" (U1)', () => {
     expect(box.checked).toBe(true)
     expect(page.text).toContain('Nach neuen Versionen sehen')
     expect(page.text).toContain('api.github.com')
-    // The module's hint for an app without a bell (updates 0.1.2, U19).
+    // The module's hint for an app without a bell but with devices (updates 0.1.3, U19, U24).
     expect(page.text).toContain('Wenn du Einstellungen › Über nexpaper öffnest')
+    expect(page.text).toContain('außerdem einmal am Tag, solange ein Gerät eines Betreibers Hinweise auf neue Versionen bekommen will')
     expect(page.text).not.toContain('Glocke')
     await setUp()
     expect(server.called('POST', '/api/v1/setup')?.body).toMatchObject({ update_check: true })

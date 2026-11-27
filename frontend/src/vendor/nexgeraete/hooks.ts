@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 
 import { NEXUI_TEXTS, languageOf, useNexuiTexts } from '../nexui'
-import { DEVICES_BASE, DEVICE_TEXTS, devicesWay, type DeviceListing, type DeviceRequest, type DeviceTexts } from './geraete'
+import { DEVICES_BASE, DEVICE_TEXTS, asListing, devicesWay, type DeviceListing, type DeviceRequest, type DeviceTexts } from './geraete'
 
 /** The module's words in the kit's language (or the one given). */
 export function useDeviceTexts(language?: string): { texts: DeviceTexts; code: 'de' | 'en' | 'fr' } {
@@ -27,7 +27,7 @@ export function useDevicesWay(
   const [listing, setListing] = useState<DeviceListing | null>(null)
   useEffect(() => {
     let live = true
-    request<DeviceListing>(`${base}/app-devices`).then(
+    request<unknown>(`${base}/app-devices`).then(asListing).then(
       (found) => {
         if (live) setListing(found)
       },

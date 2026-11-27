@@ -51,14 +51,15 @@ class Paired:
     holder: Holder
 
 
-def connect_link(config: AppConfig, address: str, pairing_id: str, secret: str) -> str:
+def connect_link(config: AppConfig, address: str, pairing_id: str, secret: str, code: str = "") -> str:
     """The QR code's link. ``server=`` for nexnotes and nextime, ``address=`` for nextasks, nexlore, nexmail; every
-    app passes over the part it does not know."""
+    app passes over the part it does not know. With ``link_form="pair"`` (G58, nexpaper) ``<scheme>://pair?server=
+    &code=`` first, as the published nexpaper-ios reads it, then the module's parts."""
     where = quote(address, safe="")
-    return (
-        f"{config.scheme}://connect?server={where}&address={where}&pairing={quote(pairing_id, safe='')}"
-        f"&secret={quote(secret, safe='')}"
-    )
+    rest = f"address={where}&pairing={quote(pairing_id, safe='')}&secret={quote(secret, safe='')}"
+    if config.link_form == "pair":
+        return f"{config.scheme}://pair?server={where}&code={quote(code, safe='')}&{rest}"
+    return f"{config.scheme}://connect?server={where}&{rest}"
 
 
 def ready(store: Store, config: AppConfig) -> None:
@@ -101,7 +102,8 @@ def start(
         )
     )
     store.commit()
-    return Started(row, secret, tokens.show_code(code), connect_link(config, address, row.id, secret), address)
+    shown = tokens.show_code(code)
+    return Started(row, secret, shown, connect_link(config, address, row.id, secret, shown), address)
 
 
 def _own(store: Store, account_id: AccountId, pairing_id: str) -> Pairing:

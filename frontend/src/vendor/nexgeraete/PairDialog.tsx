@@ -16,6 +16,8 @@ import {
   BUTTONS,
   DEVICES_BASE,
   POLL_MS,
+  asPairing,
+  asPairingState,
   fillDevices,
   hostOf,
   kindLabel,
@@ -26,7 +28,6 @@ import {
   type Device,
   type DeviceRequest,
   type Pairing,
-  type PairingState,
 } from './geraete'
 
 export type PairDialogProps = {
@@ -75,7 +76,7 @@ export function PairDialog({ request, base = DEVICES_BASE, app, language, onClos
   // A new code on opening and on "Neuen Code zeigen"; one that comes back after the window closed is withdrawn.
   useEffect(() => {
     let live = true
-    request<Pairing>(`${base}/app-pairing`, { method: 'POST', body: { address: window.location.origin } }).then(
+    request<unknown>(`${base}/app-pairing`, { method: 'POST', body: { address: window.location.origin } }).then(asPairing).then(
       (made) => {
         if (!live) {
           void request(`${base}/app-pairing/${encodeURIComponent(made.id)}`, { method: 'DELETE' }).catch(() => undefined)
@@ -102,7 +103,7 @@ export function PairDialog({ request, base = DEVICES_BASE, app, language, onClos
     if (!pairing || phase !== 'waiting') return
     const clock = window.setInterval(() => setNow(Date.now()), 1000)
     const ask = window.setInterval(() => {
-      request<PairingState>(`${base}/app-pairing/${encodeURIComponent(pairing.id)}`).then(
+      request<unknown>(`${base}/app-pairing/${encodeURIComponent(pairing.id)}`).then(asPairingState).then(
         (found) => {
           if (current.current?.id !== pairing.id) return
           if (found.state === 'used') {

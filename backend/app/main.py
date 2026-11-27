@@ -153,8 +153,7 @@ ROUTERS = [
     request_page_router,
     # konten 1.1.0: the page Server › Sign-in of the shared account module.
     signin_page_router,
-    # geraete 0.1.0: ``/api/app/1/hello`` and ``me``, and the QR code the published iPhone app reads too (the module's
-    # routes are added below).
+    # geraete 0.1.1: ``/api/app/1/hello`` and ``me`` (the module's routes are added below).
     app_devices,
 ]
 
@@ -199,7 +198,7 @@ async def _sweep_forever(stop: asyncio.Event) -> None:
     """Enrolments and sign-ins waiting for their second factor run out; what ran out goes from memory, ended
     sessions from the database once an hour (they stayed until someone showed them again), and so do accounts whose 30
     days after a deletion are over. System mail waiting in the outbox of the shared post module goes out (in a thread:
-    SMTP blocks). Once a day, devices not used for a year are disconnected (geraete 0.1.0, G27)."""
+    SMTP blocks). Once a day, devices not used for a year are disconnected (geraete, G27)."""
     rounds = 0
     while not stop.is_set():
         totp.sweep()
@@ -295,8 +294,8 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
         tasks.append(asyncio.create_task(deadlines_service.run_forever(stop)))
         tasks.append(asyncio.create_task(reminders_service.run_forever(stop)))
         tasks.append(asyncio.create_task(autotrash_service.run_forever(stop)))
-        # Whether a newer nexpaper is out, at most once a day while the operator's switch is on: the operators' devices
-        # hear of it once (geraete 0.1.0, G18; ``services/updates.py``).
+        # Whether a newer nexpaper is out, at most once a day while the operator's switch is on and a device of an
+        # operator wants to hear of it (updates 0.1.3, U24; geraete 0.1.1, G56; ``services/updates.py``).
         tasks.append(asyncio.create_task(updates_check.run_forever(stop)))
     logger.info("nexpaper %s started", __version__)
     with SessionLocal() as db:
@@ -408,12 +407,13 @@ nexwasneu.configure(nexwasneu.AppConfig(app_name="nexpaper", version=lambda: __v
                                         folder=Path(__file__).parent / "whatsnew", languages=("de", "en", "fr")))
 app.include_router(wasneu_api.router(viewer=whats_new_viewer, prefix="/api/v1/whats-new", tags=["whats new"]))
 
-# iPhone, iPad and Mac (the shared module geraete 0.1.0, ``services/geraete_store.py``): the routes of the apps built on
+# iPhone, iPad and Mac (the shared module geraete 0.1.1, ``services/geraete_store.py``): the routes of the apps built on
 # NexKonto under ``/api/app/1`` (pairing by the QR code, a code, the sign-in in the browser or iCloud; the own devices;
-# notifications), and the browser's under ``/api/v1`` (``app-pairing``, ``app-connect``, ``app-devices``, the operator's
-# ``server/accounts/{id}/devices``), only for a signed-in browser. Not in the description of ``/api/v1``: they are the
-# module's, the same in every nex app (``SCHNITTSTELLE.md`` of the module), and the published iPhone app keeps its
-# routes of before (``routers/devices.py``, ``routers/pairing.py``).
+# notifications), and the browser's under ``/api/v1`` (``app-pairing``, whose QR code the published iPhone app reads
+# too, G58; ``app-connect``, ``app-devices``, the operator's ``server/accounts/{id}/devices``), only for a signed-in
+# browser. Not in the description of ``/api/v1``: they are the module's, the same in every nex app (``SCHNITTSTELLE.md``
+# of the module); G59 would allow them, but its guard of the names stays red on nexpaper's own older names. The
+# published iPhone app keeps its routes of before (``routers/devices.py``, ``routers/pairing.py``).
 app.include_router(geraete_api.app_router(
     config=geraete_store.CONFIG, store=geraete_store.store, brake=KONTEN_BRAKE, sender=client_ip,
     on_paired=lambda holder, device: geraete_store.paired_hook(holder, device),

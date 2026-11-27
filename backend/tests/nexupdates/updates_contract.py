@@ -85,6 +85,9 @@ class StandardAdapter:
     #: operator opens "Über"). Then ``bell`` and ``bell_notices`` are never called, and the tests check instead that
     #: the background never asks.
     has_bell = True
+    #: Since 0.1.3 (U24): True for an app that pairs devices (module geraete) and gives ``configure`` ``devices_want``
+    #: and ``on_devices``. Then ``want_on_device`` and ``devices_told`` are called, else never.
+    has_devices = False
 
     def start(self) -> None:
         """APP: an empty app with a fresh database and data folder, started as in production (``configure``), with an
@@ -124,6 +127,16 @@ class StandardAdapter:
         """APP (only with ``has_bell``): every notice of the bell as (language of the operator's account, version,
         title), U17."""
         raise NotImplementedError("APP: bell_notices")
+
+    def want_on_device(self, on: bool) -> None:
+        """APP (only with ``has_devices``): a device of the operator that understands the kind ``update`` has it
+        switched on (``on``), or no device of an operator wants it (U24; in an app with geraete: pair one with
+        ``understands=["update"]`` and switch the kind)."""
+        raise NotImplementedError("APP: want_on_device")
+
+    def devices_told(self) -> list[str]:
+        """APP (only with ``has_devices``): the versions the operators' devices were told about, oldest first."""
+        raise NotImplementedError("APP: devices_told")
 
     def description(self) -> dict[str, Any]:
         """The app's OpenAPI description, also when it does not publish it (default: what the client's app makes)."""

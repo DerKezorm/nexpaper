@@ -5,5 +5,8 @@
   "setupLabel": "Nach neuen Versionen sehen",
   "setupHint": "Einmal am Tag fragt {app} bei {host} nach, ob eine neuere Version erschienen ist, und sagt es dir in der Glocke. Später unter Einstellungen › Über {app} änderbar.",
   "setupHintNoBell": "Wenn du Einstellungen › Über {app} öffnest, fragt {app} höchstens einmal am Tag bei {host} nach, ob eine neuere Version erschienen ist, und zeigt es dort. Später unter Einstellungen › Über {app} änderbar.",
+  "setupHintDevices": "Wenn du Einstellungen › Über {app} öffnest, fragt {app} höchstens einmal am Tag bei {host} nach, ob eine neuere Version erschienen ist, und zeigt es dort; außerdem einmal am Tag, solange ein Gerät eines Betreibers Hinweise auf neue Versionen bekommen will. Später unter Einstellungen › Über {app} änderbar.",
+  "dailyHintNoBell": "Fragt {host}, wenn ein Betreiber diese Seite öffnet, höchstens einmal am Tag. Aus: nur, wenn du den Knopf drückst.",
+  "dailyHintDevices": "Fragt {host}, wenn ein Betreiber diese Seite öffnet, und einmal am Tag, solange ein Gerät eines Betreibers Hinweise auf neue Versionen bekommen will. Aus: nur, wenn du den Knopf drückst.",
   "failed": "Das ging gerade nicht. Gleich noch einmal versuchen."
 }

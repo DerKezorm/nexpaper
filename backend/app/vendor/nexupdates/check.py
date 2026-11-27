@@ -157,13 +157,32 @@ def at_setup(on: bool) -> bool:
 # --- Telling the operators (U3) -----------------------------------------------------------------------------------
 
 
-def look_once() -> str | None:
-    """The background's look: only while the switch is on and the app has a bell (U19), through ``state`` (so at
-    most once a day); tells the operators once about a version newer than the running one and newer than any they were
-    told about. Returns the version told about, else None."""
+def devices_want() -> bool:
+    """U24 (0.1.3): a device of an operator wants to hear of new versions (``devices_want``), and the app can tell it
+    (``on_devices``). A failure of the app's question counts as no."""
     config = current()
-    if config.on_newer is None or not switch_on():
-        # U19: without a bell the background has no one to tell, so it does not ask; the operator's page does.
+    if config.devices_want is None or config.on_devices is None:
+        return False
+    try:
+        return bool(config.devices_want())
+    except Exception:  # a side matter never ends the look
+        config.logger.exception("Asking for the devices failed")
+        return False
+
+
+def look_once() -> str | None:
+    """The background's look: only while the switch is on and somebody is there to tell, the bell or (U24) a device of
+    an operator that wants it (U19 otherwise), through ``state`` (so at most once a day); tells them once about a
+    version newer than the running one and newer than any they were told about. Returns the version told about, else
+    None."""
+    config = current()
+    if not switch_on():
+        return None
+    bell = config.on_newer is not None
+    devices = devices_want()
+    if not bell and not devices:
+        # U19: without a bell and without a device that wants it, the background has no one to tell, so it does not
+        # ask; the operator's page does.
         return None
     known = state(on=True)
     latest = known.latest
@@ -175,6 +194,8 @@ def look_once() -> str | None:
     config.write_told(latest)
     if config.on_newer is not None:
         config.on_newer(latest)
+    if devices and config.on_devices is not None:
+        config.on_devices(latest)
     config.logger.info("A newer version is out version=%s", latest)
     return latest
 

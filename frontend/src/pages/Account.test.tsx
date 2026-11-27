@@ -324,7 +324,7 @@ describe('devices and apps', () => {
     vi.useFakeTimers({ shouldAdvanceTime: true })
     try {
       const link = 'nexpaper://pair?server=https%3A%2F%2Fpaper.example.com&code=KRAF-T7Q2-K9XW&address=https%3A%2F%2Fpaper.example.com&pairing=p1&secret=s'
-      answers['POST /api/v1/devices/app-pairing'] = {
+      answers['POST /api/v1/app-pairing'] = {
         id: 'p1', secret: 's', code: 'KRAF-T7Q2-K9XW', link, address: 'https://paper.example.com',
         expires_at: new Date(Date.now() + 300_000).toISOString(), qr_svg: '<svg xmlns="http://www.w3.org/2000/svg"></svg>',
         app_store_url: 'https://apps.apple.com/app/nexpaper/id6824032969',
@@ -337,9 +337,9 @@ describe('devices and apps', () => {
       const pair = button('iPhone oder iPad verbinden', card)!
       expect([pair.dataset.kind, pair.dataset.icon]).toEqual(['primary', 'Smartphone'])
       await click(pair)
-      // nexpaper's way to the module's pairing: the link holds `pair` with `server` and `code` for nexpaper-ios 1.3.
-      expect(calls.some((call) => call.method === 'POST' && call.url === '/api/v1/devices/app-pairing')).toBe(true)
-      expect(calls.some((call) => call.method === 'POST' && call.url === '/api/v1/app-pairing')).toBe(false)
+      // The module's pairing (G58): the link holds `pair` with `server` and `code` for nexpaper-ios 1.3.
+      expect(calls.some((call) => call.method === 'POST' && call.url === '/api/v1/app-pairing')).toBe(true)
+      expect(calls.some((call) => call.method === 'POST' && call.url === '/api/v1/devices/app-pairing')).toBe(false)
       expect(dialog()!.textContent).toContain('KRAF-T7Q2-K9XW')
       // Once the device took the code, the window says so and the list comes again.
       const phone = { id: 'a'.repeat(32), name: 'iPhone von jule', kind: 'ios', model: null, system: null, app_version: null, via: 'code', created_at: '2026-10-08T10:00:00Z', last_seen_at: null, push: false }

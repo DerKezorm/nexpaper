@@ -3,10 +3,11 @@
  * neu" from the shared module wasneu (the newest text and the earlier versions; reading here puts nothing away), licence, where it comes from, whether a newer one is out, and what it is built with.
  * The last area of the settings, `/settings/about`; the old address `/ueber` leads there.
  *
- * The card "Aktualisierungen" comes from the shared module `nexupdates` (updates 0.1.1): only an operator sees it,
+ * The card "Aktualisierungen" comes from the shared module `nexupdates` (updates 0.1.3): only an operator sees it,
  * switches the daily question and asks now (U2, U15), because the question goes out for the whole installation; a
  * member's page shows the own version and asks for nothing else. The sentence on what goes out names the address and
- * nexpaper's other calls by itself (U11).
+ * nexpaper's other calls by itself (U11). nexpaper has no bell: the hint under the switch says the background looks
+ * once a day only while a device of an operator wants to hear of new versions (U24, `dailyHint`).
  */
 import { useTranslation } from 'react-i18next'
 
@@ -14,7 +15,7 @@ import { tabFetch } from '../../api/client'
 import { APP_NAME } from '../../i18n'
 import { useAuth } from '../../state/auth'
 import { AboutPage, Notice, formatMoment, type BuiltWith } from '../../vendor/nexui'
-import { useUpdates, useUpdatesTexts, whatGoesOut } from '../../vendor/nexupdates/updates'
+import { dailyHint, useUpdates, useUpdatesTexts, whatGoesOut } from '../../vendor/nexupdates/updates'
 import { useAboutWhatsNew } from '../../vendor/nexwasneu/useWhatsNew'
 
 const PARTS: BuiltWith[] = [
@@ -93,7 +94,10 @@ export function AboutArea() {
           </div>
         }
         problem={problem}
-        texts={{ updatesWhatGoesOut: whatGoesOut(texts, APP_NAME, undefined, [t('about.updates.otherCalls')]) }}
+        texts={{
+          updatesWhatGoesOut: whatGoesOut(texts, APP_NAME, undefined, [t('about.updates.otherCalls')]),
+          updatesDailyHint: dailyHint(texts, { bell: false, devices: true }),
+        }}
       />
       {news.window}
     </>

@@ -61,7 +61,9 @@
   },
   "push": {
     "title": "Notifications sur tes appareils",
-    "hint": "Chaque appareil a son propre choix. L’app montre les mêmes cases sous Réglages › Notifications.",
+    "hint": "Chaque appareil a son propre choix.",
+    "inApp": "L’app montre les mêmes cases sous Réglages › Notifications.",
+    "inAppLater": "Les cases s’appliquent déjà. {app} sur l’appareil te laissera les choisir dans une prochaine version de l’app.",
     "none": "Aucun appareil connecté pour l’instant. Tu connectes iPhone et iPad sous Mon compte › Connexions.",
     "toConnections": "Vers les connexions",
     "allowed": "Notifications autorisées",

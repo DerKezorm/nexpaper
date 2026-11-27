@@ -14,6 +14,7 @@ import { useDeviceTexts } from './hooks'
 import {
   BUTTONS,
   DEVICES_BASE,
+  asAccountDevices,
   countText,
   defaultWhen,
   fillDevices,
@@ -52,9 +53,18 @@ export function AccountDevicesPart({ request, base = DEVICES_BASE, accountId, na
   const [round, setRound] = useState(0)
 
   const path = `${base}/server/accounts/${encodeURIComponent(String(accountId))}/devices`
-  const load = useCallback(() => request<AccountDevices>(path), [request, path])
+  const load = useCallback(() => request<unknown>(path).then(asAccountDevices), [request, path])
   useEffect(() => {
-    load().then(setFound, (failure: unknown) => setProblem(refusalText(texts, failure)))
+    load().then(
+      (answer) => {
+        setProblem(undefined)
+        setFound(answer)
+      },
+      (failure: unknown) => {
+        setFound(null)
+        setProblem(refusalText(texts, failure))
+      },
+    )
   }, [load, round, texts])
 
   const drop = async () => {

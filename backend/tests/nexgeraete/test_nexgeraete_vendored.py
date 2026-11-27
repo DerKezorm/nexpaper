@@ -47,3 +47,14 @@ def test_the_copied_package_carries_the_version_of_the_manifest(app: Any) -> Non
 def test_the_module_needs_only_fastapi_segno_and_cryptography_beyond_the_standard_library(app: Any) -> None:
     _, manifest = _manifest(app)
     assert set(manifest["requires"]) == {"fastapi", "segno", "cryptography"}
+
+
+def test_the_module_s_bodies_keep_their_names_beside_the_app_s(app: Any) -> None:
+    """G59: in the app's description the module's bodies are ``Nexgeraete…``, and none of the app's names is
+    renamed into a long module path (FastAPI does that when two models share a name)."""
+    schemas = app.client("anonymous").app.openapi().get("components", {}).get("schemas", {})
+    renamed = [name for name in schemas if "__" in name]
+    assert renamed == [], renamed
+    for name in schemas:
+        if name.endswith(("PairIn", "PushIn", "NameIn", "AddressIn", "ConnectIn")) and name.startswith("Nex"):
+            assert name.startswith("Nexgeraete"), name

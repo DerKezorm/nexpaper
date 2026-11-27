@@ -9,7 +9,8 @@ from typing import Any
 
 from geraete_contract import NEW, auth, code_of, listed, new_device
 
-FIELDS = {"id", "name", "kind", "model", "system", "app_version", "via", "created_at", "last_seen_at", "push", "this"}
+FIELDS = {"id", "name", "kind", "model", "system", "app_version", "via", "created_at", "last_seen_at", "push",
+          "chooses_kinds", "this"}
 
 
 def test_the_browser_lists_the_own_devices_only_with_every_field(app: Any, config: Any, package: Any) -> None:

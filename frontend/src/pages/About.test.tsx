@@ -90,6 +90,8 @@ describe('the daily question', () => {
     expect(page.text).toContain('Hinaus geht nur eine Frage: eine Anfrage an api.github.com')
     expect(page.text).toContain('Von sich aus ruft nexpaper außerdem: den Mailserver')
     expect(page.text).not.toContain('der einzige Ruf')
+    // No bell in nexpaper; a device of an operator that wants to hear of new versions counts as one (updates U24).
+    expect(page.text).toContain('und einmal am Tag, solange ein Gerät eines Betreibers Hinweise auf neue Versionen bekommen will')
     // The kit's About page (ui AboutPage): the card of the updates, "Jetzt nachsehen" secondary, the daily question a box.
     expect(document.querySelector('[data-card="about-updates"]')).toBeTruthy()
     const now = page.button('Jetzt nachsehen')!

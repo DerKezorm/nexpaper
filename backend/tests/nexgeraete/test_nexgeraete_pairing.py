@@ -80,8 +80,12 @@ def test_the_link_names_the_address_both_ways_and_the_qr_code_scales(app: Any, c
     started = start_pairing(app)
     link = urlsplit(started["link"])
     query = parse_qs(link.query)
-    assert link.scheme == config.scheme and link.netloc == "connect"
+    assert link.scheme == config.scheme and link.netloc == config.link_form
     assert query["server"] == query["address"] == [started["address"]]
+    if config.link_form == "pair":
+        # G58: the published nexpaper-ios reads server and code; the code is the one shown to type.
+        assert query["code"] == [started["code"]]
+        assert link.query.startswith("server="), "the published app's parts first"
     assert query["pairing"] == [started["id"]] and query["secret"] == [started["secret"]]
     assert started["qr_svg"].lstrip().startswith("<svg") and "viewBox" in started["qr_svg"]
     assert started["app_store_url"] == config.app_store_url
@@ -150,7 +154,7 @@ def test_pkce_the_verifier_must_fit_and_a_wrong_one_uses_the_code_up(app: Any) -
 def test_the_old_sign_in_page_leads_to_the_qr_codes_link(app: Any, config: Any) -> None:
     redirect = _consent(app, {"device": "Kim's iPhone"})
     query = parse_qs(urlsplit(redirect).query)
-    assert redirect.startswith(f"{config.scheme}://connect?") and query["pairing"] and query["secret"]
+    assert redirect.startswith(f"{config.scheme}://{config.link_form}?") and query["pairing"] and query["secret"]
     answer = pick_up(app, {"id": query["pairing"][0], "secret": query["secret"][0]})
     assert answer.status_code == 200
 
@@ -190,6 +194,9 @@ def test_two_pickups_at_the_same_moment_make_one_device(app: Any) -> None:
 
 
 def test_at_most_five_pairings_wait_and_thirty_devices(app: Any, config: Any) -> None:
+    """G57: the module's own routes let several pairings wait (two browser windows); an app whose older routes ended
+    the code before (nexpaper) does so there with ``pairing.start(..., replace=True)``, not with ``open_pairings=1``."""
+    assert config.open_pairings >= 2, "open_pairings below 2 breaks a second window; use replace=True in old routes"
     for _ in range(config.open_pairings):
         start_pairing(app)
     answer = app.client("owner").post(f"{app.browser_prefix}/app-pairing", json={})

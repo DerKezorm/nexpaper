@@ -154,8 +154,9 @@ export function SetupPage() {
       >
         <Problem code={problem} />
         <AccountFields screen="setup" values={values} onChange={setValues} />
-        {/* U1: asked once; nexpaper has no bell (U19), so the hint says it asks when an operator opens "Über". */}
-        <UpdateSetupRow app="nexpaper" checked={updateCheck} onChange={setUpdateCheck} bell={false} language={i18n.language} />
+        {/* U1: asked once; nexpaper has no bell (U19), but pairs devices (U24): the hint says it asks when an operator
+            opens "Über", and once a day while a device of an operator wants to hear of new versions. */}
+        <UpdateSetupRow app="nexpaper" checked={updateCheck} onChange={setUpdateCheck} bell={false} devices language={i18n.language} />
         {setupNotes({ factorRequired }).map((note) => (
           <p key={note} className="text-xs text-muted">
             {t(note)}

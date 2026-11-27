@@ -108,6 +108,14 @@ export function whatGoesOut(texts: UpdatesTexts, app: string, url: string = GITH
   return `${first} ${then}`
 }
 
+/** U24 (0.1.3): the hint under "Einmal am Tag nachsehen" on the page "Über" (`AboutPage texts={{ updatesDailyHint }}`)
+ * for an app without a bell: it asks when an operator opens the page, and (with `devices`) once a day while a device
+ * of an operator wants to hear of new versions. With a bell: undefined, the kit's words stay. */
+export function dailyHint(texts: UpdatesTexts, { bell, devices = false, url = GITHUB }: { bell: boolean; devices?: boolean; url?: string }): string | undefined {
+  if (bell) return undefined
+  return fill(devices ? texts.dailyHintDevices : texts.dailyHintNoBell, { host: hostOf(url) })
+}
+
 export type UseUpdates = {
   about: AboutInfo | null
   updates: AboutUpdates | null

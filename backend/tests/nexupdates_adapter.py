@@ -6,14 +6,16 @@ The contract tests in ``backend/tests/nexupdates/`` run the module inside nexpap
 ``/api/v1/about`` (``app/routers/about.py``) and its setup route ``POST /api/v1/setup`` with the box "Nach neuen
 Versionen sehen".
 
-nexpaper has no bell of its own; since geraete 0.1.0 (G18) the operators' devices are told once about a new version
-(``on_newer`` → ``geraete_store.announce``), so the background looks once a day while the switch is on, and the
-contract (updates 0.1.2) checks that as the bell (``has_bell = True``). ``bell`` is every version handed to
-``on_newer``; ``bell_notices`` the title each operator's devices get, in the language of the account.
+nexpaper has no bell of its own (``has_bell = False``, U19); it pairs devices (module geraete, ``has_devices = True``):
+a device of an operator that understands and wants the kind ``update`` counts as a bell (U24, G56), so only then does
+the background look, at most once a day. ``want_on_device`` pairs such an iPhone for the operator in the module's store
+and switches the kind; the relay is a recorder (``geraete_store.SEND``), and what it got is unsealed with the device's
+key (``devices_told``).
 """
 
 from __future__ import annotations
 
+import json
 import secrets
 from typing import Any
 
@@ -24,63 +26,72 @@ class Adapter(StandardAdapter):
     package = "app.vendor.nexupdates"
     prefix = "/api/v1/about"
     also: tuple[str, ...] = ()
-    has_bell = True
+    has_bell = False
+    has_devices = True
 
     def start(self) -> None:
         from fastapi.testclient import TestClient
 
         from app.main import app
+        from app.services import geraete_store
         from tests.conftest import TAB
 
         self._clients: dict[str, Any] = {}
+        self._phone: tuple[Any, str] | None = None
+        self.relayed: list[dict[str, Any]] = []
+        geraete_store.SEND = lambda _url, body: self.relayed.append(body) or 200
         self._main = TestClient(app, base_url="http://testserver", headers=TAB)
         self._main.__enter__()
         self.restart()
 
     def stop(self) -> None:
+        from app.services import geraete_store
+
         for client in self._clients.values():
             client.close()
         self._main.__exit__(None, None, None)
-        if hasattr(self, "_on_newer"):
-            from app.services import updates
-
-            updates._on_newer = self._on_newer  # type: ignore[assignment]
+        geraete_store.SEND = None
 
     def restart(self) -> None:
         from app.services import updates
 
         # nexpaper's start configures the module on its settings (at import, as in production).
         updates.configure()
-        if not hasattr(self, "_told"):
-            self._told: list[str] = []
-            self._on_newer = updates._on_newer
 
-            def recorded(version: str) -> None:
-                self._told.append(version)
-                self._on_newer(version)
-
-            updates._on_newer = recorded  # type: ignore[assignment]
-
-    def bell(self) -> list[str]:
-        return list(self._told)
-
-    def bell_notices(self) -> list[tuple[str, str, str]]:
-        """What each operator's devices got as the title (``nexgeraete.notices.newer``), per version told."""
+    def want_on_device(self, on: bool) -> None:
+        """The operator's iPhone, paired once and signed up for ``update``; the kind switched on or off."""
         from app.db import SessionLocal
         from app.services import geraete_store
-        from app.vendor.nexgeraete import notices
+        from app.vendor import nexgeraete
+        from app.vendor.nexgeraete import seal
 
-        found = []
+        operator = self._account("operator")
         with SessionLocal() as db:
-            data = geraete_store.GeraeteStore(db)
-            for account in data.operators():
-                holder = data.holder(account)
+            store = geraete_store.GeraeteStore(db)
+            if self._phone is None:
+                holder = store.holder(operator.id)
                 assert holder is not None
-                for version in self._told:
-                    title = notices.words(holder.language)["update_title"].format(
-                        app=geraete_store.CONFIG.app, version=version.strip().removeprefix("v"))
-                    found.append((holder.language, version, title))
-        return found
+                device, _key = nexgeraete.devices.add(store, geraete_store.CONFIG, holder, name="Ollis iPhone",
+                                                      kind="ios", via=nexgeraete.VIA_QR)
+                private, public = seal.key_pair()
+                store.set_push(device.id, nexgeraete.PushState("olli-phone", public, ("update",)))
+                self._phone = (device.id, private)
+            store.set_kinds(self._phone[0], {"update": on})
+            store.commit()
+
+    def devices_told(self) -> list[str]:
+        """The versions the relay carried to the operator's iPhone, unsealed with its key."""
+        from app.services import geraete_store
+        from app.vendor.nexgeraete import seal
+
+        if self._phone is None:
+            return []
+        told = []
+        for body in self.relayed:
+            message = json.loads(seal.unseal(body["enc"], self._phone[1], geraete_store.CONFIG.push_info))
+            if message.get("type") == "update":
+                told.append("v" + str(message["version"]))
+        return told
 
     def _account(self, role: str) -> Any:
         """The operator set up at ``setup`` when there is one, else made now; a member made now."""

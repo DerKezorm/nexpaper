@@ -61,7 +61,9 @@
   },
   "push": {
     "title": "Mitteilungen auf deinen Geräten",
-    "hint": "Jedes Gerät hat seine eigene Auswahl. Die App zeigt dieselben Haken unter Einstellungen › Mitteilungen.",
+    "hint": "Jedes Gerät hat seine eigene Auswahl.",
+    "inApp": "Die App zeigt dieselben Haken unter Einstellungen › Mitteilungen.",
+    "inAppLater": "Die Haken gelten schon. In {app} auf dem Gerät wählst du sie erst mit einer kommenden App-Version.",
     "none": "Noch kein Gerät verbunden. iPhone und iPad verbindest du unter Mein Konto › Verbindungen.",
     "toConnections": "Zu den Verbindungen",
     "allowed": "Mitteilungen erlaubt",

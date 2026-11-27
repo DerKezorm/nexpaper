@@ -86,6 +86,8 @@ def entry(device: Device, this: DeviceId | None = None) -> dict[str, Any]:
         "created_at": iso(device.created_at),
         "last_seen_at": iso(device.last_seen_at),
         "push": device.push is not None,
+        # Since 0.1.1: the app on the device named what it understands, so it shows the same ticks itself.
+        "chooses_kinds": device.push is not None and device.push.understands is not None,
         "this": this is not None and str(device.id) == str(this),
     }
 

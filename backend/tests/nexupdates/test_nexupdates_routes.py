@@ -253,6 +253,60 @@ def test_the_bell_is_given_exactly_where_the_app_has_one(app: Any, nexupdates: A
     assert (nexupdates.current().on_newer is not None) == app.has_bell
 
 
+def test_devices_are_given_exactly_where_the_app_pairs_them(app: Any, nexupdates: Any) -> None:
+    """U24 (0.1.3): an app with paired devices gives ``configure`` ``devices_want`` and ``on_devices``, else none."""
+    config = nexupdates.current()
+    assert (config.devices_want is not None and config.on_devices is not None) == app.has_devices
+    assert (config.devices_want is None) == (config.on_devices is None)
+
+
+def test_a_device_of_an_operator_that_wants_new_versions_counts_as_a_bell(app: Any, operator: Any, github: Any,
+                                                                           nexupdates: Any) -> None:
+    """U24: while such a device is there, the background looks at most once a day and tells it once per version,
+    with a bell and without; without such a device an app without a bell stays as U19 says."""
+    if not app.has_devices:
+        return
+    _switch(operator, app, True)
+    app.want_on_device(False)
+    if not app.has_bell:
+        background_stays_quiet(app, github)
+    else:
+        app.look()
+        assert app.bell() == ["v99.0.0"]
+    assert app.devices_told() == []
+    app.want_on_device(True)
+    github.tag = "v99.0.1"
+    nexupdates.forget()
+    before = len(github.requests)
+    app.look()
+    app.look()
+    assert len(github.requests) == before + 1, "at most once a day"
+    assert app.devices_told() == ["v99.0.1"]
+    if app.has_bell:
+        assert app.bell() == ["v99.0.0", "v99.0.1"]
+    nexupdates.forget()
+    app.look()
+    assert app.devices_told() == ["v99.0.1"], "each version once"
+    app.want_on_device(False)
+    github.tag = "v99.0.2"
+    nexupdates.forget()
+    app.look()
+    assert app.devices_told() == ["v99.0.1"], "a device that no longer wants it hears nothing"
+
+
+def test_off_a_device_that_wants_new_versions_changes_nothing(app: Any, operator: Any, github: Any,
+                                                                nexupdates: Any) -> None:
+    """U24: only while the operator allowed the check (U2)."""
+    if not app.has_devices:
+        return
+    _switch(operator, app, False)
+    app.want_on_device(True)
+    for _ in range(2):
+        nexupdates.forget()
+        app.look()
+    assert github.requests == [] and app.devices_told() == []
+
+
 def test_a_switch_from_before_stays_as_it_was(app: Any, github: Any) -> None:
     """Test "Bestand": the version before switched off; after the update nothing goes out, the routes answer the
     same."""

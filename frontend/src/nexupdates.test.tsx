@@ -1,4 +1,4 @@
-// Vorlage nexupdates 0.1.2
+// Vorlage nexupdates 0.1.3
 // @vitest-environment jsdom
 /**
  * The card "Aktualisierungen" of the kit's about page with the module's state in the app: an operator sees the newer
@@ -15,7 +15,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { AboutPage, NexuiLanguage } from './vendor/nexui'
 import { UpdateSetupRow } from './vendor/nexupdates/UpdateSetupRow'
-import { UPDATES_TEXTS, aboutUpdates, useUpdates, whatGoesOut, type Fetcher, type UpdatesAnswer } from './vendor/nexupdates/updates'
+import { UPDATES_TEXTS, aboutUpdates, dailyHint, useUpdates, whatGoesOut, type Fetcher, type UpdatesAnswer } from './vendor/nexupdates/updates'
 
 // APP: where the app mounts the routes, its name, its other calls by itself (the words its card names; none: []).
 const BASE = '/api/v1/about'
@@ -230,5 +230,23 @@ describe('what goes out, and the setup (U1)', () => {
       expect(box.textContent).toContain(texts.setupHintNoBell.replace(/\{app\}/g, APP).replace('{host}', 'api.github.com'))
       expect(box.textContent).not.toContain(texts.setupHint.replace(/\{app\}/g, APP).replace('{host}', 'api.github.com'))
     }
+  })
+
+  it('without a bell but with paired devices the hint says so (U24, since 0.1.3)', async () => {
+    for (const language of ['de', 'en', 'fr'] as const) {
+      await act(async () =>
+        root.render(
+          <NexuiLanguage language={language}>
+            <UpdateSetupRow app={APP} checked onChange={() => undefined} bell={false} devices />
+          </NexuiLanguage>,
+        ),
+      )
+      const texts = UPDATES_TEXTS[language]
+      expect(box.textContent).toContain(texts.setupHintDevices.replace(/\{app\}/g, APP).replace('{host}', 'api.github.com'))
+    }
+    expect(UPDATES_TEXTS.de.setupHintDevices).toContain('solange ein Gerät eines Betreibers Hinweise auf neue Versionen bekommen will')
+    expect(dailyHint(UPDATES_TEXTS.de, { bell: true, devices: true })).toBeUndefined()
+    expect(dailyHint(UPDATES_TEXTS.de, { bell: false })).toBe('Fragt api.github.com, wenn ein Betreiber diese Seite öffnet, höchstens einmal am Tag. Aus: nur, wenn du den Knopf drückst.')
+    expect(dailyHint(UPDATES_TEXTS.de, { bell: false, devices: true })).toContain('und einmal am Tag, solange ein Gerät eines Betreibers Hinweise auf neue Versionen bekommen will')
   })
 })

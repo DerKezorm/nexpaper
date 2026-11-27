@@ -153,11 +153,21 @@ class Adapter(StandardAdapter):
         from tests.conftest import PASSWORD
 
         with SessionLocal() as db:
-            getattr(manage, action)(KontenStore(db), self.ids[account], actor_id=self.ids["operator"],
+            getattr(manage, action)(KontenStore(db), self.ids[account], actor_id=self._actor(account),
                                     password=PASSWORD)
         old = self.clients.pop(account, None)
         if old is not None:
             old.close()
+
+    def _actor(self, account: str) -> Any:
+        """The operator acts; on the operator's own account a second operator does (nobody blocks themselves)."""
+        from tests.conftest import make_account
+
+        if account != "operator":
+            return self.ids["operator"]
+        if "second operator" not in self.ids:
+            self.ids["second operator"] = make_account("otto", "operator").id
+        return self.ids["second operator"]
 
     def block(self, account: str = "owner") -> None:
         self._manage("block", account)
@@ -222,16 +232,22 @@ class Adapter(StandardAdapter):
                       {"type": kind, "title": "Kim Example", "text": "changed something"}, send=self.relay)
 
     def announce(self, version: str) -> None:
-        """The way of ``updates.on_newer`` (``services/updates.py``), on a server that runs 1.2.1: the contract names
-        the running version so (as its reference does)."""
-        from app.services import geraete_store, updates
+        """The way of ``updates.on_devices`` (``services/updates.py``, G56): ``geraete_store.newer``, with the version
+        nexpaper runs."""
+        from app.services import geraete_store
 
-        running = geraete_store.__version__
-        geraete_store.__version__ = "1.2.1"  # type: ignore[attr-defined]
-        try:
-            updates._on_newer(version)
-        finally:
-            geraete_store.__version__ = running  # type: ignore[attr-defined]
+        geraete_store.newer(version)
+
+    def update_wanted(self) -> bool:
+        """What nexpaper gives ``nexupdates`` as ``devices_want`` (G56)."""
+        from app.services import geraete_store
+
+        return geraete_store.update_wanted()
+
+    def running(self) -> str:
+        from app import __version__
+
+        return __version__
 
     def sweep(self) -> int:
         from app.services import geraete_store

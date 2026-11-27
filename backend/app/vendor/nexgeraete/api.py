@@ -53,7 +53,9 @@ class Brake(Protocol):
     def succeeded(self, keys: list[str]) -> None: ...
 
 
-class PairIn(BaseModel):
+#: G59: the bodies carry the module's name in the description (``NexgeraetePairIn``), so they never meet an app's
+#: own ``PairIn`` or ``AddressIn`` and FastAPI renames nothing; the routes may stay in the app's description.
+class NexgeraetePairIn(BaseModel):
     secret: str | None = Field(default=None, max_length=200)
     code: str | None = Field(default=None, max_length=200)
     verifier: str | None = Field(default=None, max_length=200)
@@ -63,7 +65,7 @@ class PairIn(BaseModel):
     device: str | None = Field(default=None, max_length=200)
 
 
-class PushIn(BaseModel):
+class NexgeraetePushIn(BaseModel):
     ticket: str = Field(min_length=1, max_length=push.TICKET_MAX)
     key: str | None = Field(default=None, max_length=10_000)
     #: nexmail's name of ``key``.
@@ -71,20 +73,25 @@ class PushIn(BaseModel):
     understands: list[str] | None = Field(default=None, max_length=100)
 
 
-class NameIn(BaseModel):
+class NexgeraeteNameIn(BaseModel):
     name: str | None = Field(default=None, max_length=1000)
 
 
-class AddressIn(BaseModel):
+class NexgeraeteAddressIn(BaseModel):
     #: Where the browser sees the app now; counts only when the app gives no public address.
     address: str = Field(default="", max_length=600)
 
 
-class ConnectIn(BaseModel):
+class NexgeraeteConnectIn(BaseModel):
     state: str | None = Field(default=None, max_length=200)
     challenge: str | None = Field(default=None, max_length=200)
     #: nextasks, nexlore: ``/app-connect?device=<name>`` leads to the QR code's link.
     device: str | None = Field(default=None, max_length=200)
+
+
+#: The optional bodies as the routes take them.
+PairBody = Annotated[NexgeraetePairIn | None, Body()]
+AddressBody = Annotated[NexgeraeteAddressIn | None, Body()]
 
 
 def _respond(answer: forms.Answer) -> Response:
@@ -242,8 +249,8 @@ def app_router(
         )
 
     @routes.post("/pairing/{pairing_id}/key", response_model=None, summary="The device's key for the QR code")
-    def by_secret(pairing_id: str, request: Request, data: Data, body: Annotated[PairIn | None, Body()] = None) -> Any:
-        given = body or PairIn()
+    def by_secret(pairing_id: str, request: Request, data: Data, body: PairBody = None) -> Any:
+        given = body or NexgeraetePairIn()
         secret = given.secret or request.headers.get("x-pairing-secret")
         return pickup(
             request,
@@ -263,7 +270,7 @@ def app_router(
     @routes.post(
         "/pairing/code", response_model=None, summary="The device's key for a typed code or the code of the sign-in"
     )
-    def by_code(request: Request, data: Data, body: PairIn) -> Any:
+    def by_code(request: Request, data: Data, body: NexgeraetePairIn) -> Any:
         return pickup(
             request,
             data,
@@ -282,9 +289,9 @@ def app_router(
     @routes.post(
         "/devices", response_model=None, status_code=201, summary="A key of its own for another device of this account"
     )
-    def bring_in(request: Request, found: Found, data: Data, body: Annotated[PairIn | None, Body()] = None) -> Any:
+    def bring_in(request: Request, found: Found, data: Data, body: PairBody = None) -> Any:
         form = forms.form_of(config, request.headers)
-        given = body or PairIn()
+        given = body or NexgeraetePairIn()
         try:
             done = pairing.sibling(
                 data,
@@ -320,7 +327,7 @@ def app_router(
         return Response(status_code=204)
 
     @routes.patch("/device", response_model=None, summary="Rename this device")
-    def rename_self(request: Request, found: Found, data: Data, body: NameIn) -> Any:
+    def rename_self(request: Request, found: Found, data: Data, body: NexgeraeteNameIn) -> Any:
         try:
             changed = (
                 devices.rename(data, config, found.holder.id, found.device.id, body.name)
@@ -342,7 +349,7 @@ def app_router(
         response_model=None,
         summary="Notifications for this device: the relay's ticket, its key, what it understands",
     )
-    def push_on(request: Request, found: Found, data: Data, body: PushIn) -> Any:
+    def push_on(request: Request, found: Found, data: Data, body: NexgeraetePushIn) -> Any:
         form = forms.form_of(config, request.headers)
         try:
             push.register(data, config, found, body.ticket, body.key or body.schluessel or "", body.understands)
@@ -427,7 +434,7 @@ def browser_router(
         status_code=201,
         summary="A QR code and a code for the app (10 minutes, one device)",
     )
-    def pair(request: Request, signed_in: Own, data: Data, body: Annotated[AddressIn | None, Body()] = None) -> Any:
+    def pair(request: Request, signed_in: Own, data: Data, body: AddressBody = None) -> Any:
         try:
             started = pairing.start(
                 data,
@@ -473,7 +480,7 @@ def browser_router(
         return Response(status_code=204)
 
     @routes.post("/app-connect", response_model=None, summary="Connect the app that opened /app-connect")
-    def connect(request: Request, signed_in: Own, data: Data, body: ConnectIn) -> Any:
+    def connect(request: Request, signed_in: Own, data: Data, body: NexgeraeteConnectIn) -> Any:
         """With ``state``: the link back into the app with a one-time code (five minutes, once; ``challenge`` for
         PKCE). With ``device`` alone (nextasks, nexlore): the QR code's link of a new pairing."""
         try:
@@ -502,7 +509,7 @@ def browser_router(
         }
 
     @routes.patch("/app-devices/{device_id}", response_model=None, summary="Rename a device")
-    def rename(device_id: str, signed_in: Own, data: Data, body: NameIn) -> Any:
+    def rename(device_id: str, signed_in: Own, data: Data, body: NexgeraeteNameIn) -> Any:
         try:
             found = own_device(data, signed_in, device_id)
             changed = devices.rename(data, config, account_id(signed_in), found.id, body.name)

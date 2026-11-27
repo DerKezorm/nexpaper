@@ -1,12 +1,12 @@
-"""Whether a newer nexpaper is out: the shared module ``nexupdates`` (updates 0.1.1) on nexpaper's settings.
+"""Whether a newer nexpaper is out: the shared module ``nexupdates`` (updates 0.1.3) on nexpaper's settings.
 
 The public GitHub API is asked for the newest release when an operator opens the about page (``GET
-/api/v1/about/updates``) and the last answer is older than a day (an hour after one that failed), when an operator
-presses "Jetzt nachsehen", and since geraete 0.1.0 by the background at most once a day while the switch is on: a newer
-version is told once to the operators' devices that understand it (G18, ``geraete_store.announce``; nexpaper has no
-bell of its own, the about page shows it as before). A member's page never asks and learns nothing of the check (U15,
-U21). Nothing goes out but the question itself: no names, no documents, no settings, not the version of this server.
-Off means "not by itself": the button still asks.
+/api/v1/about/updates``) and the last answer is older than a day (an hour after one that failed), and when an operator
+presses "Jetzt nachsehen". nexpaper has no bell of its own (U19): the background looks at most once a day only while
+the switch is on and a device of an operator wants to hear of new versions (U24, G56: ``geraete_store.update_wanted``);
+such a device is told once (``geraete_store.newer``). The about page shows it as before. A member's page never asks
+and learns nothing of the check (U15, U21). Nothing goes out but the question itself: no names, no documents, no
+settings, not the version of this server. Off means "not by itself": the button still asks.
 
 The switch stays where it was, ``update_check`` in the settings table, with its value; a new installation answers it
 at setup (U1, ``nexupdates.at_setup``). The project pages are switched off, so the about page names none (U18).
@@ -29,7 +29,7 @@ RELEASES_URL = f"{REPO_URL}/releases"
 PROJECT_URL = ""
 #: Where the switch lives in the settings table (as before the module).
 SWITCH = "update_check"
-#: The version the operators' devices were last told about (geraete 0.1.0): nobody hears of a version twice.
+#: The version the operators' devices were last told about: nobody hears of a version twice.
 TOLD = "update_told"
 
 
@@ -68,10 +68,16 @@ def _write_told(version: str) -> None:
         settings_service.save(db, {TOLD: version})
 
 
-def _on_newer(version: str) -> None:
+def _devices_want() -> bool:
     from . import geraete_store
 
-    geraete_store.announce(version)
+    return geraete_store.update_wanted()
+
+
+def _on_devices(version: str) -> None:
+    from . import geraete_store
+
+    geraete_store.newer(version)
 
 
 def configure() -> nexupdates.AppConfig:
@@ -87,9 +93,11 @@ def configure() -> nexupdates.AppConfig:
             write_switch=_write_switch,
             read_told=_read_told,
             write_told=_write_told,
-            # nexpaper has no bell; since geraete 0.1.0 (G18) the operators' devices hear of a new version once
-            # (looked up at the call: the contract tests listen). The about page shows it as before.
-            on_newer=lambda version: _on_newer(version),
+            # nexpaper has no bell (U19); a device of an operator that wants it counts as one (U24, G56). Looked up at
+            # the call: the contract tests listen.
+            on_newer=None,
+            devices_want=lambda: _devices_want(),
+            on_devices=lambda version: _on_devices(version),
         )
     )
 

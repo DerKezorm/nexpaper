@@ -17,6 +17,7 @@ import { RenameDialog } from './RenameDialog'
 import {
   BUTTONS,
   DEVICES_BASE,
+  asListing,
   countText,
   deviceLine,
   fillDevices,
@@ -63,7 +64,7 @@ export function DevicesCard({ request, base = DEVICES_BASE, app, language, when,
   const [fresh, setFresh] = useState<string[]>([])
   const [round, setRound] = useState(0)
 
-  const load = useCallback(() => request<DeviceListing>(`${base}/app-devices`), [request, base])
+  const load = useCallback(() => request<unknown>(`${base}/app-devices`).then(asListing), [request, base])
   useEffect(() => {
     load().then(setListing, (failure: unknown) => setProblem(refusalText(texts, failure)))
   }, [load, round, texts])

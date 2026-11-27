@@ -142,12 +142,24 @@ class StandardAdapter:
         raise NotImplementedError("APP: travel")
 
     def tell(self, account: str, kind: str) -> None:
-        """APP: the app sends a message of its own ``kind`` to ``account`` (its event, or ``nexgeraete.push.tell``)."""
+        """APP: the app sends a message of ``kind`` to ``account``: one of its own kinds (its event, or
+        ``nexgeraete.push.tell``). An app without kinds of its own (``kinds=()``) is called with ``security`` and
+        hands it to ``nexgeraete.push.tell``."""
         raise NotImplementedError("APP: tell")
 
     def announce(self, version: str) -> None:
-        """APP: ``updates`` found ``version`` (``on_newer``; the app hands it to ``nexgeraete.notices.newer``)."""
+        """APP: ``updates`` found ``version`` (``on_newer``; the app hands it to ``nexgeraete.notices.newer`` with the
+        version it runs, ``running``)."""
         raise NotImplementedError("APP: announce")
+
+    def update_wanted(self) -> bool:
+        """APP: what the app gives ``nexupdates`` as ``devices_want`` (``nexgeraete.notices.update_wanted`` over its
+        store), G56."""
+        raise NotImplementedError("APP: update_wanted")
+
+    def running(self) -> str:
+        """APP: the version the app runs, as ``announce`` hands it on (``__version__``, ``APP_VERSION``)."""
+        raise NotImplementedError("APP: running")
 
     def sweep(self) -> int:
         """APP: the app's daily run (``nexgeraete.devices.sweep``)."""

@@ -32,6 +32,9 @@ export type Device = {
   last_seen_at: string | null
   /** The device is signed up for notifications (iOS lets the app show them). */
   push: boolean
+  /** Since 0.1.1: the app on the device named the kinds it understands (a version that shows the same ticks under
+   * Settings › Notifications); false for the published apps. Missing from an older server. */
+  chooses_kinds?: boolean
   /** Only in the app's own list (`/api/app/1/devices`): the device that asks. */
   this?: boolean
 }
@@ -81,6 +84,59 @@ export type DeviceRequest = <T>(
   path: string,
   init?: { method?: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE'; query?: Record<string, string | number | undefined>; body?: unknown },
 ) => Promise<T>
+
+/** An answer of another shape than the module's (a test double, a route of the app's that answers in its old form). The
+ * parts show it as "did not work" (`refusalText`), they never fall over. */
+export class UnexpectedAnswer extends Error {
+  constructor(what: string) {
+    super(`nexgeraete: unexpected answer for ${what}`)
+    this.name = 'UnexpectedAnswer'
+  }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function isDevice(value: unknown): value is Device {
+  return isRecord(value) && (typeof value.id === 'number' || typeof value.id === 'string') && typeof value.name === 'string'
+}
+
+/** `GET <base>/app-devices`, checked. */
+export function asListing(found: unknown): DeviceListing {
+  if (!isRecord(found) || !Array.isArray(found.devices) || !found.devices.every(isDevice)) throw new UnexpectedAnswer('app-devices')
+  return { ...found, has_app: found.has_app !== false } as DeviceListing
+}
+
+/** `GET <base>/server/accounts/{id}/devices`, checked. */
+export function asAccountDevices(found: unknown): AccountDevices {
+  if (!isRecord(found) || typeof found.count !== 'number' || !Array.isArray(found.devices) || !found.devices.every(isRecord)) throw new UnexpectedAnswer('account devices')
+  return found as AccountDevices
+}
+
+/** `GET`/`PUT <base>/app-devices/{id}/push-kinds`, checked. */
+export function asPushKinds(found: unknown): PushKinds {
+  if (!isRecord(found) || !Array.isArray(found.kinds) || !found.kinds.every((kind) => isRecord(kind) && typeof kind.id === 'string')) throw new UnexpectedAnswer('push-kinds')
+  return found as PushKinds
+}
+
+/** `POST <base>/app-pairing`, checked. */
+export function asPairing(found: unknown): Pairing {
+  if (!isRecord(found) || typeof found.id !== 'string' || typeof found.link !== 'string' || typeof found.code !== 'string') throw new UnexpectedAnswer('app-pairing')
+  return found as Pairing
+}
+
+/** `GET <base>/app-pairing/{id}`, checked. */
+export function asPairingState(found: unknown): PairingState {
+  if (!isRecord(found) || typeof found.state !== 'string' || (found.device != null && !isDevice(found.device))) throw new UnexpectedAnswer('app-pairing state')
+  return found as PairingState
+}
+
+/** `PATCH <base>/app-devices/{id}`, checked. */
+export function asDevice(found: unknown): Device {
+  if (!isDevice(found)) throw new UnexpectedAnswer('app-device')
+  return found
+}
 
 /** Where the module's browser routes are mounted. */
 export const DEVICES_BASE = '/api'

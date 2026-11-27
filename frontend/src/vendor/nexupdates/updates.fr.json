@@ -5,5 +5,8 @@
   "setupLabel": "Rechercher les nouvelles versions",
   "setupHint": "Une fois par jour, {app} demande à {host} si une nouvelle version est parue et te le dit dans la cloche. Modifiable plus tard sous Réglages › À propos de {app}.",
   "setupHintNoBell": "Quand tu ouvres Réglages › À propos de {app}, {app} demande à {host} au plus une fois par jour si une nouvelle version est parue et l'affiche là. Modifiable plus tard sous Réglages › À propos de {app}.",
+  "setupHintDevices": "Quand tu ouvres Réglages › À propos de {app}, {app} demande à {host} au plus une fois par jour si une nouvelle version est parue et l'affiche là ; aussi une fois par jour tant qu'un appareil d'un opérateur veut être averti des nouvelles versions. Modifiable plus tard sous Réglages › À propos de {app}.",
+  "dailyHintNoBell": "Demande à {host} quand un opérateur ouvre cette page, au plus une fois par jour. Désactivé : seulement quand tu appuies sur le bouton.",
+  "dailyHintDevices": "Demande à {host} quand un opérateur ouvre cette page, et une fois par jour tant qu'un appareil d'un opérateur veut être averti des nouvelles versions. Désactivé : seulement quand tu appuies sur le bouton.",
   "failed": "Cela n’a pas fonctionné. Réessaie dans un instant."
 }

@@ -1,4 +1,4 @@
-"""nexpaper's side of the shared module ``vendor/nexgeraete`` (geraete 0.1.0): its ``AppConfig`` and the ``Store`` over
+"""nexpaper's side of the shared module ``vendor/nexgeraete`` (geraete 0.1.1): its ``AppConfig`` and the ``Store`` over
 ``devices`` and ``pairings``.
 
 The module pairs, lists, renames and disconnects devices the same in every nex app, knows a device again by its key and
@@ -9,10 +9,11 @@ sign-in in the browser; OAuth's codes stay nexpaper's own). Every device paired 
 published iPhone app's ways under ``/api/v1`` (``routers/devices.py``, ``routers/pairing.py``), which call the module in
 their old shapes.
 
-nexpaper's own: a 12-letter code valid for five minutes, one waiting at a time (a new one ends the one before), the
-names ``device`` (brought in by another device, the module's ``icloud``) and ``qr`` (the code, the module's ``code``)
-in the old answers, the mail "New sign-in" after a new device (G29, ``on_paired``), the daily ``sweep`` (G27) and the
-notice of a new version to the operators' devices (G18, ``announce``).
+nexpaper's own: a 12-letter code valid for five minutes (on the old ways one waiting at a time, a new one ends the one
+before), the QR link ``nexpaper://pair?server=…&code=…`` the published app reads (G58), the names ``device`` (brought
+in by another device, the module's ``icloud``) and ``qr`` (the code, the module's ``code``) in the old answers, the
+mail "New sign-in" after a new device (G29, G50, ``on_paired``), the daily ``sweep`` (G27) and the notice of a new
+version to the operators' devices that want it (G56: ``update_wanted`` and ``newer`` for ``nexupdates``).
 """
 
 from __future__ import annotations
@@ -51,11 +52,14 @@ CONFIG = AppConfig(
     form=nexgeraete.FORM_NEX,
     code_length=12,
     pairing_minutes=5,
-    # Up to five QR codes may wait on the module's route (several browsers at once); nexpaper's own ways end the one
-    # before with a new one (``pairing.start(replace=True)``: ``/api/v1/devices/pairing``, the pairing window).
+    # G57: up to five QR codes may wait on the module's route (several windows at once); nexpaper's old way ends the one
+    # before with a new one (``pairing.start(replace=True)``: ``/api/v1/devices/pairing``).
     open_pairings=5,
     max_devices=30,
     app_store_url=APP_STORE_URL,
+    # G58: the QR link is ``nexpaper://pair?server=…&code=…`` as nexpaper-ios up to 1.3 reads it (and trades the code at
+    # ``POST /api/v1/devices/pair``), then ``address``, ``pairing`` and ``secret`` for an app built on NexKonto.
+    link_form="pair",
     # A device is known by its ``uid`` (32 hex characters), as ``/api/v1/devices`` has always named it.
     device_id=str,
 )
@@ -368,15 +372,32 @@ def store() -> Iterator[GeraeteStore]:
 def on_paired(holder: Holder, device: ModuleDevice) -> None:
     """The mail "New sign-in" after every new device, as after a sign-in from a browser nexpaper does not know: to an
     address that counts, unless the person switched the notice off; in the background. It names the device
-    (``nexgeraete.describe``) and the moment, never a network."""
+    (``nexgeraete.notices.letter``, G50: „„Kims iPhone“ (iPhone 16 Pro)“) and the moment, never a network."""
     from . import notices
 
-    notices.later(_mail_paired, int(holder.id), nexgeraete.describe(device), clock.now())
+    notices.later(_mail_paired, int(holder.id), device, clock.now())
 
 
-def _mail_paired(account_id: int, where: str, moment: datetime) -> None:
+def paired_letter(db: Session, account: Account, device: ModuleDevice, moment: datetime) -> Any:
+    """The letter "New sign-in" for a new device (G50): the shared post module's, through ``nexgeraete.notices.letter``
+    (``from_account_mail`` reads a User-Agent and names browsers only), with the button to the page Security under the
+    public address only, in the person's language and time zone. ``ValueError``/``MailError`` for an address the post
+    module refuses."""
+    from ..vendor import nexkonten, nexpost
+    from . import kontenpost, notices, timezones
+
+    assert account.email
+    base = settings_service.public_url(db)
+    mail = nexkonten.Mail(kind=nexkonten.MAIL_NEW_SIGN_IN, to=account.email.strip(), account_id=account.id,
+                          username=account.name, display_name=account.display_name or "", at=moment)
+    return nexgeraete.notices.letter(nexpost.letters, mail, device, language=kontenpost.language_for(db, account),
+                                     link=f"{base}{notices.SECURITY_PATH}" if base else "",
+                                     time_zone=timezones.zone_of(account))
+
+
+def _mail_paired(account_id: int, device: ModuleDevice, moment: datetime) -> None:
     from ..vendor import nexpost
-    from . import notices, post_store
+    from . import post_store
 
     with SessionLocal() as db:
         account = db.get(Account, account_id)
@@ -385,9 +406,8 @@ def _mail_paired(account_id: int, where: str, moment: datetime) -> None:
         profile = account.profile if isinstance(account.profile, dict) else {}
         if profile.get("notify_login") is False:
             return
-        base = settings_service.public_url(db)
         try:
-            letter = notices.sign_in_letter(db, account, account.email.strip(), where, moment, base)
+            letter = paired_letter(db, account, device, moment)
         except Exception:  # noqa: BLE001 (an address the post module refuses: no mail, the device stands)
             logger.warning("New device not mailed name=%s", account.name)
             return
@@ -430,8 +450,15 @@ def sweep() -> int:
     return gone
 
 
-def announce(version: str) -> None:
-    """G18, ``updates.on_newer``: the operators' devices that understand it hear of the new version once, with the
+def update_wanted() -> bool:
+    """G56, ``nexupdates`` ``devices_want``: a device of an operator understands and wants the kind ``update``; then
+    (and only with the update check allowed) the background looks at most once a day."""
+    with SessionLocal() as db:
+        return nexgeraete.notices.update_wanted(GeraeteStore(db), CONFIG)
+
+
+def newer(version: str) -> None:
+    """G56, ``nexupdates`` ``on_devices``: the operators' devices that want it hear of the new version once, with the
     link to what is new."""
     shown = version.strip().removeprefix("v")
     with SessionLocal() as db:

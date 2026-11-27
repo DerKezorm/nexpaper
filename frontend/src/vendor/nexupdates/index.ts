@@ -6,6 +6,7 @@ export {
   GITHUB,
   UPDATES_TEXTS,
   aboutUpdates,
+  dailyHint,
   hostOf,
   makeUpdatesApi,
   plainFetch,

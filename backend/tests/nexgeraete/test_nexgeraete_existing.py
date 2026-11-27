@@ -21,6 +21,7 @@ def test_the_module_lists_it_for_its_owner_only(app: Any, spec: LegacyDevice, pa
     made = app.make_legacy(spec)
     rows = listed(app)
     assert len(rows) == 1 and rows[0]["name"] == spec.label and rows[0]["push"] is spec.push
+    assert rows[0]["chooses_kinds"] is False, "the published app shows no ticks of its own"
     assert rows[0]["kind"] in ("ios", "ipados", "mac")
     assert listed(app, "other") == []
     text = app.client("owner").get(f"{app.browser_prefix}/app-devices").text

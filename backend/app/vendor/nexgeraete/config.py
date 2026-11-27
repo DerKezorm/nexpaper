@@ -37,6 +37,8 @@ SWITCH_PAIRING = "pairing"
 SWITCHES = (SWITCH_APP, SWITCH_PAIRING)
 
 #: The kinds of notification the module sends itself (G18, G29); the app's own come in ``AppConfig.kinds``.
+#: The forms of the QR code's link (G58): ``connect`` for every app, ``pair`` as the published nexpaper-ios reads it.
+LINK_FORMS = ("connect", "pair")
 KIND_UPDATE = "update"
 KIND_SECURITY = "security"
 
@@ -100,6 +102,10 @@ class AppConfig:
     pairing_minutes: int = 10
     #: Pairings of one account that may wait at once (nexpaper 1: a new one ends the one before, ``pairing.start``).
     open_pairings: int = 5
+    #: Since 0.1.1 (G58): the QR code's link. ``connect`` (every app): ``<scheme>://connect?server=&address=&pairing=
+    #: &secret=``. ``pair`` (nexpaper): ``<scheme>://pair?server=&code=&address=&pairing=&secret=``, which the published
+    #: nexpaper-ios reads by ``server`` and ``code`` and a coming app by ``pairing`` and ``secret``.
+    link_form: str = "connect"
     #: The one-time code of the sign-in in the browser.
     connect_minutes: int = 5
     max_devices: int = 30
@@ -136,6 +142,8 @@ class AppConfig:
         for prefix in (self.token_prefix, *self.accepted_prefixes):
             if not _PREFIX.fullmatch(prefix):
                 raise ValueError(f"prefix {prefix!r} must be lower-case letters, digits and underscores")
+        if self.link_form not in LINK_FORMS:
+            raise ValueError(f"link_form {self.link_form!r} must be one of {LINK_FORMS}")
         if self.form not in FORMS:
             raise ValueError(f"form {self.form!r} must be one of {FORMS}")
         if not 6 <= self.code_length <= 16 or not 1 <= self.pairing_minutes <= 60 or not 1 <= self.open_pairings:
