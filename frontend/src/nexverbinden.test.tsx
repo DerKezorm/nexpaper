@@ -1,4 +1,4 @@
-// Vorlage nexverbinden 0.1.9
+// Vorlage nexverbinden 0.1.10
 // @vitest-environment jsdom
 /**
  * The parts of the module in the app: the card of a partner app in each state, the cards of all partners, the consent
@@ -503,6 +503,27 @@ describe('the page back from the partner', () => {
 })
 
 describe("the operator's card", () => {
+  it('comes into view when "Einrichten" led here (#nex-apps, 0.1.10)', async () => {
+    const admin: ConnectionsAdmin = { connections: true, partners: [PARTNER], addresses: { [PARTNER]: '' }, local: false }
+    answers['GET /api/connect/admin'] = admin
+    const seen: Element[] = []
+    const kept = Element.prototype.scrollIntoView
+    Element.prototype.scrollIntoView = function (this: Element) {
+      seen.push(this)
+    }
+    try {
+      await show(<ConnectionsOperatorCard app={APP} request={request} />)
+      expect(seen).toHaveLength(0)
+      window.history.replaceState(null, '', '#nex-apps')
+      await show(<ConnectionsOperatorCard key="anchor" app={APP} request={request} />)
+      expect(seen).toHaveLength(1)
+      expect(seen[0]?.querySelector('#nex-apps')).not.toBeNull()
+    } finally {
+      Element.prototype.scrollIntoView = kept
+      window.history.replaceState(null, '', ' ')
+    }
+  })
+
   it('switches connections and keeps the addresses', async () => {
     const admin: ConnectionsAdmin = { connections: true, partners: [PARTNER], addresses: { [PARTNER]: '' }, local: false }
     answers['GET /api/connect/admin'] = admin

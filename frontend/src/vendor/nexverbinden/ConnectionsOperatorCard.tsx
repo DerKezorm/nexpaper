@@ -6,9 +6,12 @@
  * of the other apps of the server, each a text field with its own "Speichern", filled in for every account in the
  * cards.
  *
+ * Since 0.1.10: opened at `#nex-apps` (the cards' "Einrichten", `OPERATOR_PAGE`), the card scrolls itself into view once
+ * it has loaded, since the settings pages render after the browser looked for the anchor.
+ *
  * Copied unchanged into frontend/src/vendor/nexverbinden/ by bauplaene/verbinden/tools/sync.py; changed only there.
  */
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import { Button, Card, CheckboxRow, Field, Notice } from '../nexui'
 import { VERBINDEN_BASE, VERBINDEN_BUTTONS, fillVerbinden, refusalText, useVerbindenTexts, type ConnectionsAdmin, type VerbindenRequest } from './verbinden'
@@ -27,6 +30,13 @@ export function ConnectionsOperatorCard({ app, request, base = VERBINDEN_BASE, l
   const [typed, setTyped] = useState<Record<string, string>>({})
   const [problem, setProblem] = useState<string>()
   const [saved, setSaved] = useState<string>()
+  const place = useRef<HTMLDivElement>(null)
+  const loaded = admin !== null
+
+  // 0.1.10: "Einrichten" leads here with `#nex-apps`; once the card stands, it comes into view.
+  useEffect(() => {
+    if (loaded && typeof window !== 'undefined' && window.location.hash === '#nex-apps') place.current?.scrollIntoView?.({ block: 'start' })
+  }, [loaded])
 
   useEffect(() => {
     request<ConnectionsAdmin>(`${base}/admin`).then(
@@ -52,6 +62,7 @@ export function ConnectionsOperatorCard({ app, request, base = VERBINDEN_BASE, l
   }
 
   return (
+    <div ref={place}>
     <Card id="nex-apps" icon="Plug" title={texts.operator.title} subtitle={texts.operator.subtitle} testId={testId}>
       {problem && <Notice tone="danger">{problem}</Notice>}
       {admin && (
@@ -91,5 +102,6 @@ export function ConnectionsOperatorCard({ app, request, base = VERBINDEN_BASE, l
         </>
       )}
     </Card>
+    </div>
   )
 }
