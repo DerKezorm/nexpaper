@@ -32,6 +32,7 @@ from urllib.parse import parse_qsl
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Query, Request
 from fastapi.responses import JSONResponse
+from starlette.background import BackgroundTask
 
 from . import connect, persons, reach
 from .config import PREFIX, WELL_KNOWN, AppConfig
@@ -72,8 +73,10 @@ async def _form(request: Request) -> dict[str, str]:
         raise GrantError("invalid_request", "The body must be a form.") from None
 
 
-def _grant_answer(body: dict[str, Any], status: int = 200) -> JSONResponse:
-    return JSONResponse(body, status_code=status, headers={"Cache-Control": "no-store", "Pragma": "no-cache"})
+def _grant_answer(body: dict[str, Any], status: int = 200, background: BackgroundTask | None = None) -> JSONResponse:
+    return JSONResponse(
+        body, status_code=status, headers={"Cache-Control": "no-store", "Pragma": "no-cache"}, background=background
+    )
 
 
 def router(
@@ -95,10 +98,13 @@ def router(
     dependency of a signed-in browser session (never a key, never a device); ``operator``: the app's dependency for
     operators. ``address(request)``: the app's public address (its setting, else the request's through trusted proxies
     only). ``error``: the app's form of a refusal on its own pages. ``on_connected(store, account_id, partner)``: after
-    a connection was made here (load lists, calendars). ``on_disconnected(store, account_id, partner)`` (since 0.1.4,
-    V-13): after a connection ended here, by "Trennen" in this app or because the partner ended it (drop the app's own
-    rows of it). ``old_key(store, account_id, partner)``: the API key of an
-    older connection with this partner, if the app has one; after "Neu verbinden" it ends itself at the partner.
+    a connection was made here (load lists, calendars); since 0.2.1 (BS6) also where the partner started it, then after
+    the answer to the partner's token request went out (the partner may still be saving its side: a hook that asks the
+    partner at once must bear a first refusal). It may run more than once for a connection.
+    ``on_disconnected(store, account_id, partner)`` (since 0.1.4, V-13): after a connection ended here, by "Trennen"
+    in this app or because the partner ended it (drop the app's own rows of it). ``old_key(store, account_id,
+    partner)``: the API key of an older connection with this partner, if the app has one; after "Neu verbinden" it
+    ends itself at the partner.
     ``about(store, caller, purpose, person)`` (since 0.1.13, V52): what the app has about ``person`` (``Person``) for
     one of its person purposes, only in ``caller.areas``: ``{"count", "next", "last", "open"}`` (``persons.cleaned``
     cuts it to that form); without it the app tells nothing about people (404 ``about_unknown``)."""
@@ -106,6 +112,14 @@ def router(
     base_of = address or (lambda request: str(request.base_url).rstrip("/"))
     Data = Annotated[Any, Depends(store)]
     Own = Annotated[Any, Depends(account)]
+
+    def _connected(data: Any, who: Any, partner: str) -> None:
+        if on_connected is None:
+            return
+        try:
+            on_connected(data, who, partner)
+        except Exception:  # the connection stands; the hook of the app is its own matter
+            logger.exception("on_connected failed after a connection %s started", partner)
 
     def refuse(refusal: Refused) -> Exception:
         if error is not None:
@@ -345,11 +359,18 @@ def router(
     async def token(request: Request, data: Data) -> JSONResponse:
         if request.headers.get("origin"):
             return wall("origin_refused")
+        traded: list[Any] = []
         try:
             form = await _form(request)
-            return _grant_answer(connect.token(data, config, form, base_of(request), _now()))
+            answer = connect.token(data, config, form, base_of(request), _now(), traded=traded)
         except GrantError as refusal:
             return _grant_answer(refusal.as_dict(), refusal.status)
+        later = None
+        if traded and on_connected is not None:
+            # Since 0.2.1 (BS6): a connection the partner started gets the app's hook too, after the answer went out.
+            made = traded[0]
+            later = BackgroundTask(_connected, data, made.account_id, made.partner)
+        return _grant_answer(answer, background=later)
 
     @routes.post(f"{PREFIX}/revoke", include_in_schema=False)
     async def revoke(request: Request, data: Data) -> JSONResponse:

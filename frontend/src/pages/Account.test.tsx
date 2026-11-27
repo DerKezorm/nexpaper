@@ -503,13 +503,17 @@ describe('devices and apps', () => {
     answers['GET /api/v1/connections/keys'] = listing(true, [keyOf(1, 'nexdeck', 'read', 'npk_AbCd')])
     await click(dialog()!.querySelector<HTMLElement>('[data-testid="key-submit"]')!)
     expect(made()!.body).toEqual(expect.objectContaining({ kind: 'api', name: 'nexdeck', right: 'read', days: 365 }))
-    expect(dialog()).toBeNull()
-    const shown = box.querySelector('[data-testid="key-made"]')!
+    // schluessel 1.2.0 (B23): the same window shows the new key once, nothing of it on the card.
+    expect(document.querySelector('[data-testid="key-dialog"]')).not.toBeNull()
+    expect([...document.querySelectorAll('[data-testid="key-made"]')].every((found) => found.closest('[role="dialog"]') !== null)).toBe(true)
+    const shown = document.querySelector<HTMLElement>('[data-testid="key-dialog"]')!
+    expect(shown.querySelector('[data-testid="key-made"]')).not.toBeNull()
     expect(shown.textContent).toContain('„nexdeck“ angelegt')
     expect(shown.textContent).toContain('Kopiere den Schlüssel jetzt. Er wird nur dieses eine Mal angezeigt; nexpaper speichert nur eine Prüfsumme.')
     expect(shown.querySelector<HTMLInputElement>('[data-testid="key-header"] input')!.value).toBe('Authorization: Bearer npk_' + 's'.repeat(43))
-    await click(button('Fertig', shown as HTMLElement))
-    expect(box.textContent).not.toContain('s'.repeat(43))
+    await click(shown.querySelector<HTMLElement>('[data-testid="key-done"]')!)
+    expect(document.querySelector('[data-testid="key-dialog"]')).toBeNull()
+    expect(document.body.textContent).not.toContain('s'.repeat(43))
     expect(box.querySelector('[data-testid="key-row"]')!.textContent).toContain('npk_AbCd')
   })
 
@@ -555,7 +559,7 @@ describe('devices and apps', () => {
     answers['GET /api/v1/connections/keys'] = listing(true, [keyOf(2, 'Scanner im Flur', 'upload', 'npk_Up12')])
     await click(dialog()!.querySelector<HTMLElement>('[data-testid="key-submit"]')!)
     expect(made()!.body).toEqual(expect.objectContaining({ kind: 'api', name: 'Scanner im Flur', days: null, right: 'upload' }))
-    await click(button('Fertig'))
+    await click(document.querySelector<HTMLElement>('[data-testid="key-dialog"] [data-testid="key-done"]')!)
     expect(box.querySelector('[data-testid="key-row"]')!.textContent).toContain('Nur hochladen')
   })
 })

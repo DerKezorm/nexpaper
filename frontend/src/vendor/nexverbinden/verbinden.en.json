@@ -112,7 +112,7 @@
     "address": "Address of {partner}",
     "saved": "Saved.",
     "local": "Connections into the local network",
-    "localHint": "Other nex apps may also be at an address in the local network (LAN, VPN). Then every account can have {app} ask addresses there.",
+    "localHint": "Other nex apps and addresses accounts enter themselves (such as calendar or contact sources) may also be in the local network (LAN, VPN). Then every account can have {app} ask addresses there.",
     "titleBefore": "Other ",
     "savedWhat": "Saved: {what}.",
     "nothingChanged": "Nothing changed.",

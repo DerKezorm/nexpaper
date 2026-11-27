@@ -1,4 +1,4 @@
-"""nexpaper's side of the shared module ``vendor/nexgeraete`` (geraete 0.1.4): its ``AppConfig`` and the ``Store`` over
+"""nexpaper's side of the shared module ``vendor/nexgeraete`` (geraete 0.1.5): its ``AppConfig`` and the ``Store`` over
 ``devices`` and ``pairings``.
 
 The module pairs, lists, renames and disconnects devices the same in every nex app, knows a device again by its key and
@@ -198,6 +198,15 @@ class GeraeteStore:
         self.db.execute(update(Device).where(Device.uid == str(device_id), Device.revoked_at.is_(None))
                         .values(revoked_at=clock.now(), push_ticket=None, push_key=None, push_understands=None))
         self.db.flush()
+
+    def sibling_times(self, account_id: Any, since: datetime) -> list[datetime]:
+        """geraete 0.1.5 (G33 anew): when each device of the account that came in over iCloud at or after ``since`` was
+        made, the disconnected ones included. nexpaper keeps a disconnected row with ``revoked_at``, so the rows answer
+        this themselves (no table ``app_gone_siblings``); an older version named the way ``device``."""
+        rows = self.db.scalars(select(Device.created_at).where(
+            Device.account_id == int(account_id), Device.via.in_((nexgeraete.VIA_ICLOUD, OLD_SIBLING)),
+            Device.created_at >= since))
+        return [moment for row in rows if (moment := _aware(row)) is not None]
 
     def touch(self, device_id: Any, when: datetime) -> None:
         self.db.execute(update(Device).where(Device.uid == str(device_id)).values(last_used_at=when))

@@ -22,7 +22,7 @@ from urllib.parse import quote
 
 from . import tokens
 from .config import SWITCH_APP, VIA_BROWSER, VIA_CODE, VIA_ICLOUD, VIA_QR, AppConfig
-from .devices import Caller, Client, add, kind_of, utcnow
+from .devices import Caller, Client, add, kind_of, sibling_times, utcnow
 from .errors import DeviceRefused
 from .model import AccountId, ConnectCode, Device, Holder, NewPairing, Pairing, Store
 
@@ -270,15 +270,13 @@ def sibling(
 ) -> Paired:
     """A key of its own for another device of the same account, asked for by a device it has (iCloud). The new one
     has the rights of the one asking, no more. At most ``siblings_per_hour`` per account, counted in the database:
-    devices of the account that came in over iCloud in the last hour (G9), so a restart forgets nothing."""
+    devices of the account that came in over iCloud in the last hour (G9), so a restart forgets nothing. Since 0.1.5
+    (G33 anew) the ones disconnected since count too (``Store.sibling_times``), else disconnecting would open the
+    limit again."""
     ready(store, config)
     now = now or utcnow()
     hour = timedelta(hours=1)
-    recent = sorted(
-        device.created_at
-        for device in store.devices_of(caller.holder.id)
-        if device.via == VIA_ICLOUD and device.created_at is not None and now - device.created_at < hour
-    )
+    recent = [at for at in sibling_times(store, caller.holder.id, now - hour) if now - at < hour]
     if len(recent) >= config.siblings_per_hour:
         wait = max(1, math.ceil((hour - (now - recent[0])).total_seconds()))
         raise DeviceRefused("too_many_new_devices", retry_after=wait, max=config.siblings_per_hour)

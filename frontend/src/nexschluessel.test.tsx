@@ -1,4 +1,4 @@
-// Vorlage nexschluessel 1.1.3
+// Vorlage nexschluessel 1.2.0
 // @vitest-environment jsdom
 /**
  * The cards of the module in the app: "API-Schlüssel", "KI-Werkzeuge (MCP)", "Schnittstellen" and "API-Schlüssel aller
@@ -279,10 +279,40 @@ describe('the card API-Schlüssel', () => {
     await settle()
     const sent = calls.find((call) => call.method === 'POST')!
     expect(sent.body).toMatchObject({ kind: 'api', name: 'n8n', right: 'read', areas: 'all', options: { mcp: true }, days: 90 })
-    expect(find<HTMLInputElement>('[data-testid="key-secret"] input')!.value).toBe(SECRET)
-    expect(find<HTMLInputElement>('[data-testid="key-header"] input')!.value).toBe(`Authorization: Bearer ${SECRET}`)
+    // Since 1.2.0 (B23): the new key shows in the same window, not on the card.
+    expect(find('[data-testid="key-dialog"] [data-testid="key-made"]')).not.toBeNull()
+    expect(find('[data-testid="key-dialog"]')!.textContent).toContain('„n8n“ angelegt')
+    expect(find<HTMLInputElement>('[data-testid="key-dialog"] [data-testid="key-secret"] input')!.value).toBe(SECRET)
+    expect(find<HTMLInputElement>('[data-testid="key-dialog"] [data-testid="key-header"] input')!.value).toBe(`Authorization: Bearer ${SECRET}`)
+    expect(all('[data-testid="key-made"]').every((made) => made.closest('[role="dialog"]') !== null)).toBe(true)
     click(button('key-done'))
     await settle()
+    expect(find('[data-testid="key-dialog"]')).toBeNull()
+    expect(document.body.textContent).not.toContain(SECRET)
+  })
+
+  it('asks before the window with a new key closes without "Fertig" (since 1.2.0, B23)', async () => {
+    show(<ApiKeysCard request={request} base={BASE} things={THINGS} />)
+    await settle()
+    click(button('api-keys-new'))
+    type(find<HTMLInputElement>('[data-testid="key-name"]')!, 'n8n')
+    click(button('key-submit'))
+    await settle()
+    // Escape leaves the key where it is.
+    act(() => void window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })))
+    expect(find('[data-testid="key-made"]')).not.toBeNull()
+    // The close button asks first; back to the key keeps it.
+    click(find('[data-testid="key-dialog"] button[data-close]'))
+    const asked = find('[data-testid="key-close-made"]')!
+    expect(asked.textContent).toContain('Der Schlüssel wird danach nicht mehr angezeigt.')
+    click(all('[data-testid="key-close-made"] button').find((found) => found.textContent === 'Zurück zum Schlüssel') ?? null)
+    expect(find('[data-testid="key-close-made"]')).toBeNull()
+    expect(find<HTMLInputElement>('[data-testid="key-secret"] input')!.value).toBe(SECRET)
+    // Closing after the question: the key is gone for good.
+    click(find('[data-testid="key-dialog"] button[data-close]'))
+    click(find('[data-testid="key-close-made"] button[type="submit"]'))
+    await settle()
+    expect(find('[data-testid="key-dialog"]')).toBeNull()
     expect(document.body.textContent).not.toContain(SECRET)
   })
 

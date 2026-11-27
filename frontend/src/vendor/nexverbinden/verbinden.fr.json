@@ -112,7 +112,7 @@
     "address": "Adresse de {partner}",
     "saved": "Enregistré.",
     "local": "Connexions vers le réseau local",
-    "localHint": "Les autres apps nex peuvent aussi se trouver à une adresse du réseau local (LAN, VPN). Chaque compte peut alors faire interroger des adresses de ce réseau par {app}.",
+    "localHint": "Les autres apps nex et les adresses que les comptes saisissent eux-mêmes (sources d’agenda ou de contacts, par exemple) peuvent aussi se trouver dans le réseau local (LAN, VPN). Chaque compte peut alors faire interroger des adresses de ce réseau par {app}.",
     "titleBefore": "Autres ",
     "savedWhat": "Enregistré : {what}.",
     "nothingChanged": "Rien n’a changé.",

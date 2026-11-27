@@ -184,9 +184,14 @@ class VerbindenStore:
     # --- the account and the app ---------------------------------------------------------------------------------
 
     def account_may(self, account_id: Any) -> bool:
+        """False while the account is blocked, deleted or locked after failed sign-ins (``schluessel_store.out``), and,
+        as for its API and MCP keys (``totp.keys_wait``, ``mcp_store.account_may``), while it still owes the second
+        factor the operator requires: its connections rest until then, none ends (verbinden 0.2.1, E41, BS5)."""
+        from . import totp
         from .schluessel_store import out
 
-        return not out(self.db.get(Account, account_id))
+        row = self.db.get(Account, account_id)
+        return not out(row) and not totp.keys_wait(self.db, row)  # type: ignore[arg-type]
 
     def account_name(self, account_id: Any) -> str:
         row = self.db.get(Account, account_id)

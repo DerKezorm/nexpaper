@@ -400,6 +400,55 @@ describe('ConfirmDialog', () => {
     fireEvent.click(getByRole(dialog, 'button', { name: 'Close' }))
     expect(closed).toHaveBeenCalledTimes(1)
   })
+
+  it('Tab and Shift+Tab stay inside the dialog, round from the last to the first (since 1.3.1)', () => {
+    const outside = document.createElement('button')
+    outside.textContent = 'Page'
+    document.body.append(outside)
+    show(
+      <Dialog title="Pairing" onClose={() => undefined} closeLabel="Close">
+        <button type="button">One</button>
+        <button type="button">Two</button>
+      </Dialog>,
+    )
+    const dialog = getByRole(document.body, 'dialog', { name: 'Pairing' })
+    const [close, one, two] = getAllByRole(dialog, 'button')
+    expect(document.activeElement).toBe(one)
+    two?.focus()
+    fireEvent.keyDown(window, { key: 'Tab' })
+    expect(document.activeElement).toBe(close)
+    fireEvent.keyDown(window, { key: 'Tab', shiftKey: true })
+    expect(document.activeElement).toBe(two)
+    outside.focus()
+    fireEvent.keyDown(window, { key: 'Tab' })
+    expect(document.activeElement).toBe(close)
+    outside.remove()
+  })
+
+  it('a focused button that goes with the next step hands the focus back into the dialog (since 1.3.1)', async () => {
+    let next: () => void = () => undefined
+    function Steps() {
+      const [done, setDone] = useState(false)
+      next = () => setDone(true)
+      return (
+        <Dialog title="Pairing" onClose={() => undefined} closeLabel="Close">
+          {done ? (
+            <button key="done" type="button">
+              Done
+            </button>
+          ) : (
+            <button key="cancel" type="button">
+              Cancel
+            </button>
+          )}
+        </Dialog>
+      )
+    }
+    show(<Steps />)
+    expect(document.activeElement?.textContent).toBe('Cancel')
+    await act(async () => next())
+    expect(document.activeElement?.textContent).toBe('Done')
+  })
 })
 
 describe('Avatar, Row with a picture, Facts, ButtonGroup (since 0.1.1)', () => {

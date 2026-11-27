@@ -144,7 +144,9 @@ class Store(Protocol):
 
     # --- the account and the app --------------------------------------------------------------------------------
     def account_may(self, account_id: AccountId) -> bool:
-        """False while the account is blocked or deleted (its connections rest, E41)."""
+        """False while the account is blocked or deleted (its connections rest, E41). Since 0.2.1 also while it is
+        locked after failed sign-ins or must still set up a second factor the server asks for, where the app knows
+        that (nexlore); its connections rest the same way and come back afterwards."""
         ...
 
     def account_name(self, account_id: AccountId) -> str: ...

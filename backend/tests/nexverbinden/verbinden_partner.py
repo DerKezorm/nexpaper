@@ -323,6 +323,8 @@ class ReferenceApp:
         self.old_key_for: dict[str, str] = {}
         #: What the app's ``on_disconnected`` heard, as (account id, partner).
         self.ended: list[tuple[Any, str]] = []
+        #: Since 0.2.1 (BS6): what the app's ``on_connected`` heard, as (account id, partner).
+        self.connected: list[tuple[Any, str]] = []
         #: Since 0.1.13: the questions about a person the app was asked, as (purpose, person).
         self.asked: list[tuple[str, Any]] = []
         self.api = self._app()
@@ -418,6 +420,7 @@ class ReferenceApp:
                 operator=operator,
                 address=lambda request: self.base,
                 old_key=lambda data, who, partner: self.old_key_for.get(partner),
+                on_connected=lambda data, who, partner: self.connected.append((who, partner)),
                 on_disconnected=lambda data, who, partner: self.ended.append((who, partner)),
                 about=self._about,
             )

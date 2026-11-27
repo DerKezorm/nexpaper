@@ -55,6 +55,9 @@ class AppConfig:
     about_per_minute: int = 30
     #: How many spent refresh tokens per connection are recognised when brought again.
     spent_kept: int = 20
+    #: Since 0.2.1 (BS2): seconds within which a refresh token spent here, brought again, gets the same answer once
+    #: more (its answer got lost on the way) instead of ending the connection as copied.
+    refresh_grace: int = 300
     #: A revocation that did not reach the partner is tried again for this long.
     revoke_days: int = 30
     #: The words the app sends as ``User-Agent``.

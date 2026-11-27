@@ -12,7 +12,7 @@ import { useCallback, useEffect, useState, type ReactNode } from 'react'
 
 import { Box, Button, Card, CopyRow, Notice } from '../nexui'
 import { useKeyTexts } from './hooks'
-import { KeyDialog, KeyFactorHint, KeysTable, MadeBox, RevokeDialog, type DialogState } from './parts'
+import { KeyDialog, KeyFactorHint, KeysTable, RevokeDialog, type DialogState } from './parts'
 import { BUTTONS, KEYS_BASE, fillKeys, mcpKeys, programs, refusalText, type AppWords, type KeyEntry, type KeyListing, type KeyRequest, type WhenFormat } from './schluessel'
 
 export type ToolsCardProps = {
@@ -34,7 +34,6 @@ export function ToolsCard({ request, base = KEYS_BASE, words, securityHref = '/s
   const [listing, setListing] = useState<KeyListing | null>(null)
   const [problem, setProblem] = useState<string>()
   const [dialog, setDialog] = useState<DialogState | null>(null)
-  const [made, setMade] = useState<{ name: string; secret: string } | null>(null)
   const [revoking, setRevoking] = useState<KeyEntry | null>(null)
   const [busy, setBusy] = useState(false)
   const [round, setRound] = useState(0)
@@ -111,7 +110,6 @@ export function ToolsCard({ request, base = KEYS_BASE, words, securityHref = '/s
           {problem}
         </Notice>
       )}
-      {made && listing && <MadeBox texts={texts} name={made.name} secret={made.secret} app={listing.app} onDone={() => setMade(null)} />}
       {listing?.programs && (
         <Box title={texts.tools.programs} hint={texts.tools.programsHint} testId="tools-programs">
           {table(programs(listing), texts.tools.programs, texts.tools.programsEmpty, 'tools-programs-table')}
@@ -158,10 +156,11 @@ export function ToolsCard({ request, base = KEYS_BASE, words, securityHref = '/s
           words={words}
           keysWait={listing.keys_wait}
           securityHref={securityHref}
+          app={listing.app}
           onClose={() => setDialog(null)}
-          onMade={(result) => {
+          onCreated={reload}
+          onMade={() => {
             setDialog(null)
-            if (result.secret) setMade({ name: result.key.name ?? '', secret: result.secret })
             reload()
           }}
           onChanged={() => {

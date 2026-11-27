@@ -44,6 +44,8 @@ class State:
 
 
 _known: State | None = None
+#: Since 0.1.4: the last question failed (the last good answer was kept), so the next comes after ``RETRY``.
+_failed = False
 _lock = threading.Lock()
 #: The day the log last said that a question did not get through.
 _told_failure: date | None = None
@@ -99,18 +101,20 @@ def ask() -> str | None:
 def state(*, on: bool, force: bool = False) -> State:
     """The last known state; asked afresh when it is a day old (an hour after a failure) and the check is on, or
     when forced (the operator's button). Off and not forced: never a question."""
-    global _known
+    global _known, _failed
     config = current()
     running = config.running()
     if not on and not force:
         return _known if _known is not None else State(current=running)
     now = datetime.now(UTC)
     with _lock:
-        wait = INTERVAL if _known is not None and _known.latest else RETRY
+        # Since 0.1.4: an hour after a failure also where a good answer was kept (before, a day).
+        wait = INTERVAL if _known is not None and _known.latest and not _failed else RETRY
         fresh = _known is not None and _known.checked_at is not None and now - _known.checked_at < wait
         if fresh and not force:
             return _known  # type: ignore[return-value]
         latest = ask()
+        _failed = latest is None
         if latest is None and _known is not None and _known.latest:
             # One failed question (GitHub down, a proxy in the way) keeps what the last good one found.
             _known = replace(_known, checked_at=now, current=running, newer=is_newer(_known.latest, running))
@@ -122,9 +126,10 @@ def state(*, on: bool, force: bool = False) -> State:
 
 def forget() -> None:
     """For tests, and when the check is switched off."""
-    global _known, _told_failure
+    global _known, _told_failure, _failed
     _known = None
     _told_failure = None
+    _failed = False
 
 
 # --- The switch ----------------------------------------------------------------------------------------------------

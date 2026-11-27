@@ -4,7 +4,9 @@
  * buttons right below, "Cancel" first. Escape and the scrim close it, focus starts inside and comes back afterwards.
  * `dismissable={false}` (since E38): Escape and a click beside it do nothing; the close button and the dialog's own
  * buttons ("Cancel", "Done") stay. Since E47 Escape closes only the topmost open dialog (the one opened last), never
- * every dialog of a stack at once; a topmost one that is not dismissable keeps Escape for itself.
+ * every dialog of a stack at once; a topmost one that is not dismissable keeps Escape for itself. Since 1.3.1 the focus
+ * stays inside: Tab and Shift+Tab go round, and a focused button that goes with a change of the inside hands the focus
+ * back to the dialog's first field or button.
  */
 import { useEffect, useId, useRef, type ReactNode } from 'react'
 import { X } from 'lucide-react'
@@ -15,6 +17,11 @@ import { MUTED, PLAIN, type ButtonKind } from './styles'
 
 /** The open dialogs, the one opened last at the end: only it hears Escape (since E47). */
 const OPEN: symbol[] = []
+/** Where the focus starts: the first field or button, never the close button. */
+const START = 'input:not([type="hidden"]), textarea, select, button:not([data-close])'
+/** What Tab reaches inside the dialog (since 1.3.1). */
+const FOCUSABLE =
+  'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
 
 export function Dialog({
   title,
@@ -47,17 +54,41 @@ export function Dialog({
     const me = Symbol('dialog')
     OPEN.push(me)
     const before = document.activeElement as HTMLElement | null
-    const first = panel.current?.querySelector<HTMLElement>('input:not([type="hidden"]), textarea, select, button:not([data-close])')
-    first?.focus()
+    const start = () => panel.current?.querySelector<HTMLElement>(START)?.focus()
+    start()
     const key = (event: KeyboardEvent) => {
       // Only the topmost dialog answers; the ones below it stay open.
-      if (event.key === 'Escape' && OPEN[OPEN.length - 1] === me) {
+      if (OPEN[OPEN.length - 1] !== me) return
+      if (event.key === 'Escape') {
         event.stopPropagation()
         if (leave.current) close.current()
       }
+      // Since 1.3.1: Tab and Shift+Tab stay inside (aria-modal), from the last to the first and back.
+      if (event.key === 'Tab' && panel.current) {
+        const all = Array.from(panel.current.querySelectorAll<HTMLElement>(FOCUSABLE))
+        if (all.length === 0) return
+        const at = document.activeElement
+        const inside = at instanceof HTMLElement && panel.current.contains(at)
+        const [first, last] = [all[0], all.at(-1)]
+        if (event.shiftKey && (!inside || at === first)) {
+          event.preventDefault()
+          last?.focus()
+        } else if (!event.shiftKey && (!inside || at === last)) {
+          event.preventDefault()
+          first?.focus()
+        }
+      }
     }
+    // Since 1.3.1: when the focused button goes with a change inside (a step that follows, "Abbrechen" becoming
+    // "Fertig"), the focus comes back into the dialog instead of falling onto the page.
+    const lost = new MutationObserver(() => {
+      const at = document.activeElement
+      if (OPEN[OPEN.length - 1] === me && (at === null || at === document.body)) start()
+    })
+    if (panel.current) lost.observe(panel.current, { childList: true, subtree: true })
     window.addEventListener('keydown', key, true)
     return () => {
+      lost.disconnect()
       window.removeEventListener('keydown', key, true)
       OPEN.splice(OPEN.indexOf(me), 1)
       before?.focus?.()

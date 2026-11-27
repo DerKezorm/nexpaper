@@ -78,9 +78,9 @@ def _refused(code: str) -> Problem:
     return Problem(ours, status, message)
 
 
-def _access(store: VerbindenStore, account_id: int, *, force: bool = False) -> Any:
+def _access(store: VerbindenStore, account_id: int, *, force: bool = False, failed: str | None = None) -> Any:
     try:
-        found = nexverbinden.access(store, CONFIG, account_id, PARTNER, _now(), force=force)
+        found = nexverbinden.access(store, CONFIG, account_id, PARTNER, _now(), force=force, failed=failed)
     except nexverbinden.Refused as refusal:
         store.commit()
         raise _refused(refusal.code) from None
@@ -105,10 +105,13 @@ def _ask(store: VerbindenStore, account_id: int, method: str, path: str, **sent:
         store.commit()
 
     try:
-        answer = once(_access(store, account_id))
+        first = _access(store, account_id)
+        answer = once(first)
         if answer.status == 401 and answer.code != "account_resting":
-            # An access can end before its time (nextasks restarted with other keys, a clock): once more, renewed.
-            answer = once(_access(store, account_id, force=True))
+            # An access can end before its time (nextasks restarted with other keys, a clock): once more, renewed;
+            # only where the refused token is still the one held (verbinden 0.2.1, BS1: another request may have
+            # renewed it meanwhile).
+            answer = once(_access(store, account_id, force=True, failed=first.token))
     except nexverbinden.reach.Unreachable:
         told("unreachable")
         raise _refused("unreachable") from None

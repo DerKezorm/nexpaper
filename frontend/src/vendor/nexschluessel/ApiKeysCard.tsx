@@ -1,7 +1,8 @@
 /**
  * My account › Connections: the card "API-Schlüssel" (KeyRound), in all eight apps. The account's keys as a table
  * (name, right and reach, expiry where the app knows one, last use; "Bearbeiten" and "Widerrufen" as `sm` buttons),
- * "Neuer API-Schlüssel" (primary) with the app's rights, areas, extras and lifetimes, the new key shown once to copy,
+ * "Neuer API-Schlüssel" (primary) with the app's rights, areas, extras and lifetimes in a window that then shows the
+ * new key once to copy (since 1.2.0, B23; before, a box on the card),
  * the address for programs and the description of the interface. While the operator has the interface switched off
  * it says so; while the account's keys rest until it sets up a second factor it says "Wirkt erst, wenn du einen
  * zweiten Faktor einrichtest." (making stays, decided 24.11.2026). Places for the app (since 1.0.1, E57): `extra` per
@@ -13,7 +14,7 @@ import { useCallback, useEffect, useState, type ReactNode } from 'react'
 
 import { Button, Buttons, Card, CopyRow, Notice } from '../nexui'
 import { useKeyTexts } from './hooks'
-import { KeyDialog, KeyFactorHint, KeysTable, MadeBox, RevokeDialog, type DialogState } from './parts'
+import { KeyDialog, KeyFactorHint, KeysTable, RevokeDialog, type DialogState } from './parts'
 import { BUTTONS, KEYS_BASE, apiKeys, fillKeys, refusalText, type AppWords, type KeyEntry, type KeyListing, type KeyRequest, type WhenFormat } from './schluessel'
 
 export type ApiKeysCardProps = {
@@ -39,8 +40,8 @@ export type ApiKeysCardProps = {
   extra?: (key: KeyEntry) => ReactNode
   /** Since 1.0.1 (E57): the app's own part in the note "switched off" (an operator's button to switch it on). */
   offAction?: ReactNode
-  /** Since 1.0.1 (E57): the app's own parts in the box of a new key, under its copy rows, while the key is shown once
-   * (a command to try it, with the key in it). */
+  /** Since 1.0.1 (E57): the app's own parts under a new key, below its copy rows, while the key is shown once (a
+   * command to try it, with the key in it); since 1.2.0 in the window that made the key. */
   made?: (made: { name: string; secret: string }) => ReactNode
   /** The app's own parts at the end of the card (a link to more, hints on lifetimes). */
   children?: ReactNode
@@ -68,7 +69,6 @@ export function ApiKeysCard({
   const [listing, setListing] = useState<KeyListing | null>(null)
   const [problem, setProblem] = useState<string>()
   const [dialog, setDialog] = useState<DialogState | null>(null)
-  const [made, setMade] = useState<{ name: string; secret: string } | null>(null)
   const [revoking, setRevoking] = useState<KeyEntry | null>(null)
   const [busy, setBusy] = useState(false)
   const [round, setRound] = useState(0)
@@ -111,20 +111,6 @@ export function ApiKeysCard({
         <Notice tone="danger" testId="api-keys-problem">
           {problem}
         </Notice>
-      )}
-      {made && listing && (
-        <MadeBox
-          texts={texts}
-          name={made.name}
-          secret={made.secret}
-          app={listing.app}
-          onDone={() => {
-            setMade(null)
-            reload()
-          }}
-        >
-          {madeExtra?.(made)}
-        </MadeBox>
       )}
       {listing && kind && (
         <KeysTable
@@ -185,10 +171,12 @@ export function ApiKeysCard({
           words={words}
           keysWait={listing.keys_wait}
           securityHref={securityHref}
+          app={listing.app}
+          madeExtra={madeExtra}
           onClose={() => setDialog(null)}
-          onMade={(result) => {
+          onCreated={reload}
+          onMade={() => {
             setDialog(null)
-            if (result.secret) setMade({ name: result.key.name ?? '', secret: result.secret })
             reload()
           }}
           onChanged={() => {

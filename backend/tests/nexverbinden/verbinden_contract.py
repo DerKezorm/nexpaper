@@ -116,6 +116,12 @@ class StandardAdapter:
         """APP: the rows of the app's own tables of its earlier connections and keys (they stay untouched)."""
         raise NotImplementedError("APP: own_tables")
 
+    #: Optional (since 0.2.1, E41 as it stands now): an app whose ``Store.account_may`` lets an account rest also
+    #: while it is locked after failed sign-ins, or while it must still set up its second factor, gives
+    #: ``lock(role, locked=True)`` and ``require_second_factor(role, required=True)``; without them their cases skip.
+    lock: Any = None
+    require_second_factor: Any = None
+
     #: APP: with ``older``: an API key of ``owner`` of the older version and a route it opens.
     older_key = ""
     older_key_path = ""

@@ -53,7 +53,7 @@ from .model import (
 )
 from .tokens import bearer, digest, make_secret, plausible, shown_prefix
 
-__version__ = "1.1.3"
+__version__ = "1.2.0"
 
 __all__ = [
     "ALL_AREAS",

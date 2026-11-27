@@ -1,13 +1,13 @@
 /**
  * What the cards share: the module's words in the kit's language, the hint "Works only once you set up a second
- * factor", the table of an account's keys, the dialog that makes or changes a key, the box that shows a new key once,
- * the question before revoking. Built only from the ui kit.
+ * factor", the table of an account's keys, the dialog that makes or changes a key and, since 1.2.0 (B23), shows a new
+ * key once in the same window, the question before revoking. Built only from the ui kit.
  *
  * Copied unchanged into frontend/src/vendor/nexschluessel/ by bauplaene/schluessel/tools/sync.py; changed only there.
  */
 import { useState, type ReactNode } from 'react'
 
-import { Badge, Box, Button, Buttons, Checkbox, CheckboxRow, ConfirmDialog, CopyRow, Dialog, Field, Notice, Segment, SelectField, Table, TextLink, inSentence, useNexuiTexts } from '../nexui'
+import { Badge, Button, Buttons, Checkbox, CheckboxRow, ConfirmDialog, CopyRow, Dialog, Field, Notice, Segment, SelectField, Table, TextLink, inSentence, useNexuiTexts } from '../nexui'
 import {
   BUTTONS,
   COLUMN_WIDTHS,
@@ -165,19 +165,21 @@ export function KeysTable({
   )
 }
 
-/** The box that shows a new key this once: the key and the header to copy, then "Done". */
-export function MadeBox({ texts, name, secret, app, onDone, children }: { texts: KeyTexts; name: string; secret: string; app: string; onDone: () => void; children?: ReactNode }) {
+/** What a new key shows this once inside the window that made it (since 1.2.0, B23): the key and the header to copy,
+ * the app's own parts, then "Done". */
+function MadeView({ texts, secret, app, onDone, children }: { texts: KeyTexts; secret: string; app: string; onDone: () => void; children?: ReactNode }) {
   return (
-    <Box title={fillKeys(texts.key.made, { name })} hint={fillKeys(texts.key.madeText, { app })} testId="key-made">
+    <div className="flex flex-col gap-4" data-testid="key-made">
+      <p className="m-0 text-sm leading-5 text-[var(--nexui-text)]">{fillKeys(texts.key.madeText, { app })}</p>
       <CopyRow value={secret} label={texts.key.secret} testId="key-secret" />
       <CopyRow value={`Authorization: Bearer ${secret}`} label={texts.key.header} testId="key-header" />
       {children}
-      <Buttons>
+      <Buttons end>
         <Button kind={BUTTONS.done.kind} icon={BUTTONS.done.icon} onClick={onDone} testId="key-done">
           {texts.key.done}
         </Button>
       </Buttons>
-    </Box>
+    </div>
   )
 }
 
@@ -202,7 +204,10 @@ export function RevokeDialog({ texts, keyEntry, busy, error, onCancel, onConfirm
 
 type DialogState = { mode: 'new'; kind: KindChoice } | { mode: 'edit'; kind: KindChoice; key: KeyEntry }
 
-/** Make or change a key: name, right, areas, extras, lifetime (only when making, and only where the app knows one). */
+/** Make or change a key: name, right, areas, extras, lifetime (only when making, and only where the app knows one).
+ * Since 1.2.0 (B23) a new key shows in the same window, once, with the header to copy and "Done" (`onMade` then);
+ * `onCreated` hears it at once (the card reloads its list behind). While the key shows, Escape and a click beside it
+ * do nothing, and the close button asks first: the key is not shown again. */
 export function KeyDialog({
   state,
   request,
@@ -211,7 +216,10 @@ export function KeyDialog({
   words,
   keysWait,
   securityHref,
+  app = '',
+  madeExtra,
   onClose,
+  onCreated,
   onMade,
   onChanged,
 }: {
@@ -222,7 +230,12 @@ export function KeyDialog({
   words?: AppWords
   keysWait: boolean
   securityHref: string
+  /** The app's name in the sentence under a new key. */
+  app?: string
+  /** The app's own parts under a new key (a command to try it). */
+  madeExtra?: (made: { name: string; secret: string }) => ReactNode
   onClose: () => void
+  onCreated?: (made: { key: KeyEntry; secret: string | null }) => void
   onMade: (made: { key: KeyEntry; secret: string | null }) => void
   onChanged: (key: KeyEntry) => void
 }) {
@@ -245,6 +258,8 @@ export function KeyDialog({
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string>()
   const [clientRef] = useState(newClientRef)
+  const [made, setMade] = useState<{ key: KeyEntry; secret: string } | null>(null)
+  const [asking, setAsking] = useState(false)
 
   const pickRight = (value: string) => {
     setRight(value)
@@ -265,13 +280,42 @@ export function KeyDialog({
         const body: NewKeyBody = { kind: kind.id, name, right, options, client_ref: clientRef }
         if (kind.areas) body.areas = allAreas ? 'all' : areaIds()
         if (kind.expiry_days !== null) body.days = daysOf(days)
-        onMade(await request<{ key: KeyEntry; secret: string | null }>(`${base}/keys`, { method: 'POST', body }))
+        const result = await request<{ key: KeyEntry; secret: string | null }>(`${base}/keys`, { method: 'POST', body })
+        onCreated?.(result)
+        if (result.secret) setMade({ key: result.key, secret: result.secret })
+        else onMade(result)
       }
     } catch (failure) {
       setError(refusalText(texts, failure))
     } finally {
       setBusy(false)
     }
+  }
+
+  if (made) {
+    const shown = made.key.name ?? name
+    const finish = () => onMade(made)
+    return (
+      <>
+        <Dialog title={fillKeys(texts.key.made, { name: shown })} onClose={() => setAsking(true)} closeLabel={kit.close} dismissable={false} testId="key-dialog">
+          <MadeView texts={texts} secret={made.secret} app={app} onDone={finish}>
+            {madeExtra?.({ name: shown, secret: made.secret })}
+          </MadeView>
+        </Dialog>
+        {asking && (
+          <ConfirmDialog
+            title={texts.key.closeMadeTitle}
+            text={texts.key.closeMadeText}
+            confirm={{ label: texts.key.closeMade, kind: BUTTONS.done.kind, icon: BUTTONS.done.icon }}
+            cancel={texts.key.closeMadeBack}
+            closeLabel={kit.close}
+            onCancel={() => setAsking(false)}
+            onConfirm={finish}
+            testId="key-close-made"
+          />
+        )}
+      </>
+    )
   }
 
   const title = editing ? texts.key.editTitle : kind.id === 'mcp' ? texts.key.newMcpTitle : texts.key.newTitle

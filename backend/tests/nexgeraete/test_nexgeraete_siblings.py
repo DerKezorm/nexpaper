@@ -56,6 +56,24 @@ def test_the_sixth_in_an_hour_waits_also_after_a_restart(app: Any, config: Any) 
     assert _sibling(app, token).status_code == 201
 
 
+def test_disconnected_siblings_still_count_for_the_hour(app: Any, config: Any) -> None:
+    """Since 0.1.5 (G33 anew): disconnecting the new devices does not open the limit again, also after a restart
+    (``Store.sibling_times`` counts them from the database)."""
+    token = new_device(app)
+    for number in range(config.siblings_per_hour):
+        made = _sibling(app, token, f"iPad {number}")
+        assert made.status_code == 201
+        gone = app.client("owner").delete(f"{app.browser_prefix}/app-devices/{made.json()['device']['id']}")
+        assert gone.status_code == 204
+    assert [row["name"] for row in listed(app)] == ["Kim's iPhone"]
+    refused = _sibling(app, token)
+    assert refused.status_code == 429 and code_of(refused) == "too_many_attempts"
+    app.restart()
+    assert _sibling(app, token).status_code == 429, "the disconnected ones are counted in the database"
+    app.travel(timedelta(hours=1, seconds=1))
+    assert _sibling(app, token).status_code == 201
+
+
 def test_without_a_key_there_is_no_sibling(app: Any) -> None:
     answer = app.device_client().post(f"{app.app_prefix}/devices", json={}, headers=NEW)
     assert answer.status_code == 401 and code_of(answer) == "device_disconnected"

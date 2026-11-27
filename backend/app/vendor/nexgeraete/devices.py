@@ -11,17 +11,63 @@ no notification) and works again afterwards without pairing anew (G26)."""
 from __future__ import annotations
 
 import re
+import threading
 import unicodedata
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from . import tokens
-from .config import DEVICE_KINDS, SWITCH_APP, AppConfig
+from .config import DEVICE_KINDS, SWITCH_APP, VIA_ICLOUD, AppConfig
 from .errors import DeviceRefused
 from .model import AccountId, Device, DeviceChange, DeviceId, Holder, NewDevice, Store
 
 _CLIENT = re.compile(r"([a-z][a-z0-9-]{0,40})/([0-9A-Za-z.+-]{1,32})(?: \(([^;()]{1,64})(?:; ([^;()]{1,64}))?\))?")
+
+
+#: Since 0.1.5: devices that came in over iCloud and were disconnected within the hour, per account, for a ``Store``
+#: without ``sibling_times`` (forgotten at a restart; the app's own method keeps them in its database).
+_GONE_SIBLINGS: dict[str, list[datetime]] = {}
+_GONE_LOCK = threading.Lock()
+_HOUR = timedelta(hours=1)
+
+
+def drop(store: Store, device: Device, now: datetime | None = None) -> None:
+    """Disconnects one device (``Store.remove_device``). Since 0.1.5 a device that came in over iCloud still counts
+    for the account's siblings of the hour where the ``Store`` has no ``sibling_times`` of its own."""
+    store.remove_device(device.id)
+    if device.via != VIA_ICLOUD or device.created_at is None or callable(getattr(store, "sibling_times", None)):
+        return
+    now = now or utcnow()
+    with _GONE_LOCK:
+        kept = [at for at in _GONE_SIBLINGS.get(str(device.account_id), []) if now - at < _HOUR]
+        if now - device.created_at < _HOUR:
+            kept.append(device.created_at)
+        _GONE_SIBLINGS[str(device.account_id)] = kept
+
+
+def sibling_times(store: Store, account_id: AccountId, since: datetime) -> list[datetime]:
+    """Since 0.1.5: when each device of the account that came in over iCloud at or after ``since`` was made, those
+    disconnected since included (else disconnecting and asking again would pass the limit of the hour). From the
+    ``Store``'s ``sibling_times(account_id, since)`` where it has one, else the living devices and the ones this
+    process disconnected."""
+    own = getattr(store, "sibling_times", None)
+    if callable(own):
+        return sorted(at for at in own(account_id, since) if at is not None and at >= since)
+    living = [
+        device.created_at
+        for device in store.devices_of(account_id)
+        if device.via == VIA_ICLOUD and device.created_at is not None and device.created_at >= since
+    ]
+    with _GONE_LOCK:
+        gone = [at for at in _GONE_SIBLINGS.get(str(account_id), []) if at >= since]
+    return sorted(living + gone)
+
+
+def forget_gone_siblings() -> None:
+    """For tests: what this process remembers of disconnected siblings."""
+    with _GONE_LOCK:
+        _GONE_SIBLINGS.clear()
 
 
 def utcnow() -> datetime:
@@ -198,7 +244,7 @@ def authenticate(
     if holder.out:
         raise DeviceRefused("account_blocked")
     if _idle(config, device, now):
-        store.remove_device(device.id)
+        drop(store, device, now)
         store.commit()
         raise DeviceRefused("device_disconnected")
     if holder.factor_owed:
@@ -241,8 +287,7 @@ def rename(store: Store, config: AppConfig, account_id: AccountId, device_id: De
 
 def disconnect(store: Store, config: AppConfig, account_id: AccountId, device_id: DeviceId) -> None:
     """The device has no access from this moment on and gets no more notifications; another account's: 404."""
-    _own(store, account_id, device_id)
-    store.remove_device(device_id)
+    drop(store, _own(store, account_id, device_id))
     store.commit()
 
 
@@ -250,7 +295,7 @@ def disconnect_all(store: Store, config: AppConfig, account_id: AccountId) -> in
     """Every device of the account; browsers, API keys and calendar programs stay."""
     found = store.devices_of(account_id)
     for device in found:
-        store.remove_device(device.id)
+        drop(store, device)
     store.commit()
     return len(found)
 
@@ -273,6 +318,6 @@ def sweep(store: Store, config: AppConfig, now: datetime | None = None) -> int:
     before = now - timedelta(days=config.idle_days)
     found = [device for device in store.idle_devices(before) if _idle(config, device, now)]
     for device in found:
-        store.remove_device(device.id)
+        drop(store, device, now)
     store.commit()
     return len(found)

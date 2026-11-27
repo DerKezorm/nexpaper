@@ -1,6 +1,6 @@
 {
   "files": {
-    "backend/app/vendor/nexschluessel/__init__.py": "sha256-uQFW9Cirwp7Giqu4wXOY+viC55CvE66PwhQVK2Ej7vg=",
+    "backend/app/vendor/nexschluessel/__init__.py": "sha256-cT/7tnNkyTC4LiLgaOmg2LsoYZtMRSiPlYkgD1tEzKY=",
     "backend/app/vendor/nexschluessel/api.py": "sha256-v5K+51/ZKbsgcFd2hGVGvz9g8JBv0GadOy8pDn2Zx2s=",
     "backend/app/vendor/nexschluessel/config.py": "sha256-qsBbeiv3pJS5ntbCCVIWCTGbfThlegs46sx012ots4Y=",
     "backend/app/vendor/nexschluessel/errors.py": "sha256-M0tQyKh5Sxg7OLdwrXLo6Yrb+5fgXZszdUj2tOxdxlc=",
@@ -16,15 +16,15 @@
     "backend/tests/nexschluessel/test_nexschluessel_since_110.py": "sha256-upi+gIsTAQmNe3elm5GBd7zYWmcKI0akoG97Y9jR1Ks=",
     "backend/tests/nexschluessel/test_nexschluessel_vendored.py": "sha256-rC7o6I70A0SCobDm1FJ03ndE/DDk0BEdVZCTlBifUIg=",
     "frontend/src/vendor/nexschluessel/AllKeysCard.tsx": "sha256-tYrI6RRZtf5w3hlYVCTTV2vBW1Bs2cWZ5XHRWXb/iFc=",
-    "frontend/src/vendor/nexschluessel/ApiKeysCard.tsx": "sha256-sLx1Uis1RTXcODBODkea3wLNJk3Ia4Zb73lCM4bmBhg=",
+    "frontend/src/vendor/nexschluessel/ApiKeysCard.tsx": "sha256-Aqw6i25qRvKVpHr/k5xJsHCBT/9f0cfkI1ke9f3OXg4=",
     "frontend/src/vendor/nexschluessel/InterfacesCard.tsx": "sha256-LLCEQbxwTypMZyK/UZO/fWUG4lEfxoeB5QtEmg036x0=",
-    "frontend/src/vendor/nexschluessel/ToolsCard.tsx": "sha256-2C4dXb1aaRGzD/f77CgFEFroz+DtzRuj9B4kpsVba0Q=",
+    "frontend/src/vendor/nexschluessel/ToolsCard.tsx": "sha256-u58L44o5m+/CyVKodXHIdKnoKXVymI1yjY97s+i9XEc=",
     "frontend/src/vendor/nexschluessel/hooks.ts": "sha256-tKBwkLv5ama+L6EDNf1ixfAXvXLiElc0ZthUI37nEKk=",
     "frontend/src/vendor/nexschluessel/index.ts": "sha256-/9LKooIjfM/8AGM9wJCGqFeqsEA4ey9xBa9NIHjSodI=",
-    "frontend/src/vendor/nexschluessel/parts.tsx": "sha256-ulVMCIGQU1a/wU9TWUM8GGSSEuwVBex1/PPPZ7e2xj8=",
-    "frontend/src/vendor/nexschluessel/schluessel.de.json": "sha256-WvEm7Ysjw4tmLlH3vNHeQ9aPkbOH26TR7JpdWvoM84k=",
-    "frontend/src/vendor/nexschluessel/schluessel.en.json": "sha256-1X7eHawtxTH1O7rObC6ao8GI55udiGfeeFD2S8KxsZU=",
-    "frontend/src/vendor/nexschluessel/schluessel.fr.json": "sha256-VkiM7QQ0Hlz4HWjwdVXkknuBdOc5aS2xoAYnSR2soFc=",
+    "frontend/src/vendor/nexschluessel/parts.tsx": "sha256-/C86mzm9MBL6XllBFvd/3VUa6wfE7iTZQsb/OY57W6U=",
+    "frontend/src/vendor/nexschluessel/schluessel.de.json": "sha256-MTrQFtafFpD/HC8aVCt0F/r95O7azJsKUfpzru5iNW4=",
+    "frontend/src/vendor/nexschluessel/schluessel.en.json": "sha256-LLDerCb8I1C3z9rKxS3dOSgyqTStubcOV/jM12CGxfQ=",
+    "frontend/src/vendor/nexschluessel/schluessel.fr.json": "sha256-vn3HWXuIlfbj2yN/iXDjpppog3vnwII+vRcybwQ+Vu0=",
     "frontend/src/vendor/nexschluessel/schluessel.ts": "sha256-P7AhmwROAZdxTCFx4uvzhLTpLBb4o+FyijQFdmpCfKU="
   },
   "module": "schluessel",
@@ -32,5 +32,5 @@
     "fastapi": ">=0.121.0"
   },
   "vendor_path": "backend/app/vendor/nexschluessel",
-  "version": "1.1.3"
+  "version": "1.2.0"
 }

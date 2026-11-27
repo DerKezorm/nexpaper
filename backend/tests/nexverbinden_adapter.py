@@ -117,6 +117,23 @@ class Adapter(StandardAdapter):
             row.blocked_at = datetime.now(UTC) if blocked else None
             db.commit()
 
+    def lock(self, role: str, locked: bool = True) -> None:
+        """verbinden 0.2.1: locked for a while after failed sign-ins, as the sign-in brake leaves it."""
+        from app.db import SessionLocal
+        from app.models import Account
+
+        with SessionLocal() as db:
+            row = db.get(Account, self._accounts[role].id)
+            assert row is not None
+            row.locked_until = datetime.now(UTC) + timedelta(minutes=15) if locked else None
+            db.commit()
+
+    def require_second_factor(self, role: str, required: bool = True) -> None:
+        """verbinden 0.2.1: the operator requires a second factor; ``role`` (with a password) has none yet."""
+        from tests.conftest import require_second_factor
+
+        require_second_factor(required)
+
     def about_seed(self, purpose: str, area: Any, person: Any) -> None:
         """A filed document of the owner in the vault ``area`` whose sender is the person (by name)."""
         from tests.papers import add_document

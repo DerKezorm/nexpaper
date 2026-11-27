@@ -112,7 +112,7 @@
     "address": "Adresse von {partner}",
     "saved": "Gespeichert.",
     "local": "Verbindungen ins eigene Netz",
-    "localHint": "Andere nex-Apps dürfen auch unter einer Adresse im eigenen Netz (LAN, VPN) stehen. Dann kann jedes Konto {app} Adressen dort ansprechen lassen.",
+    "localHint": "Andere nex-Apps und Adressen, die Konten selbst eintragen (etwa Kalender- oder Kontaktquellen), dürfen auch im eigenen Netz (LAN, VPN) stehen. Dann kann jedes Konto {app} Adressen dort ansprechen lassen.",
     "titleBefore": "Andere ",
     "savedWhat": "Gespeichert: {what}.",
     "nothingChanged": "Nichts geändert.",

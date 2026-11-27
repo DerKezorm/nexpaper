@@ -18,6 +18,7 @@ from __future__ import annotations
 import json
 import logging
 import secrets
+import threading
 from dataclasses import dataclass, replace
 from datetime import datetime, timedelta
 from typing import Any
@@ -38,6 +39,116 @@ TOUCH_EVERY = timedelta(seconds=60)
 MAX_STATE = 500
 MAX_TOKEN = 300
 MAX_NAME = 200
+#: Since 0.2.1: how long this process remembers a refresh (both ways) beside the app's tables.
+RENEWALS_KEPT = timedelta(hours=1)
+#: The longest chain of refreshes followed from an older view of a connection.
+_CHAIN = 20
+
+
+@dataclass(frozen=True)
+class _Issued:
+    """A refresh this app answered (the side that is asked): what it gave in place of a spent refresh token."""
+
+    connection_id: str
+    access_hash: str
+    refresh_hash: str
+    access_expires: datetime
+    #: The new access and refresh token, sealed by the app, for the same answer once more within the grace (BS2).
+    sealed: str
+    at: datetime
+
+
+class Renewals:
+    """Since 0.2.1 (BS1, BS2): what this process knows of the last refreshes of its connections, beside the app's
+    tables.
+
+    * A **lock** per connection: two requests of the app that find the token run out at the same moment refresh it
+      once; the second takes what the first got (before, both brought the same refresh token and the partner ended the
+      connection as copied).
+    * The **latest tokens**: an app's ``Store`` may give a view of a connection read before another request of the same
+      process refreshed it (a session that keeps what it read). Every save of the module puts the latest tokens it
+      knows into such a view, so an older view never brings back a spent refresh token.
+    * The **grace** (``AppConfig.refresh_grace``): the side that is asked answers a refresh token it spent within that
+      time once more with the same tokens, while they are still the connection's (an answer lost on the way, two
+      requests of the holder at once). Brought later, or after the connection was refreshed again, it is a copy as
+      before and ends the connection.
+
+    Nothing of it goes into the app's tables; a restart forgets it (then a token brought twice ends the connection as
+    before 0.2.1)."""
+
+    def __init__(self) -> None:
+        self._guard = threading.Lock()
+        self._locks: dict[tuple[str, str], threading.Lock] = {}
+        #: The holder's side: the digest of a refresh token traded -> the sealed ``held`` it brought, and when.
+        self._held: dict[str, tuple[str, datetime]] = {}
+        #: The side that is asked: the digest of a refresh token spent -> what was given in its place.
+        self._issued: dict[str, _Issued] = {}
+
+    def lock(self, app: str, key: str) -> threading.Lock:
+        with self._guard:
+            return self._locks.setdefault((app, key), threading.Lock())
+
+    def _prune(self, now: datetime) -> None:
+        self._held = {key: kept for key, kept in self._held.items() if now - kept[1] <= RENEWALS_KEPT}
+        self._issued = {key: kept for key, kept in self._issued.items() if now - kept.at <= RENEWALS_KEPT}
+
+    def renewed(self, spent: str, sealed_held: str, now: datetime) -> None:
+        with self._guard:
+            self._prune(now)
+            self._held[spent] = (sealed_held, now)
+
+    def issued(self, spent: str, given: _Issued) -> None:
+        with self._guard:
+            self._prune(given.at)
+            self._issued[spent] = given
+
+    def given_for(self, spent: str) -> _Issued | None:
+        with self._guard:
+            return self._issued.get(spent)
+
+    def latest(self, store: Any, connection: Connection) -> Connection:
+        """``connection`` with the latest tokens this process gave and got for it, where the view is older."""
+        with self._guard:
+            held, issued = dict(self._held), dict(self._issued)
+        if not held and not issued:
+            return connection
+        changed = connection
+        for _ in range(_CHAIN):
+            given = issued.get(changed.issued_refresh_hash)
+            if given is None or given.connection_id != changed.id:
+                break
+            changed = replace(
+                changed,
+                issued_access_hash=given.access_hash,
+                issued_refresh_hash=given.refresh_hash,
+                issued_access_expires=given.access_expires,
+            )
+        if held:
+            for _ in range(_CHAIN):
+                try:
+                    spent = oauthcore.digest(json.loads(store.unseal(changed.held))["refresh"])
+                except (ValueError, KeyError, TypeError):
+                    break
+                if spent not in held:
+                    break
+                changed = replace(changed, held=held[spent][0])
+        return changed
+
+    def forget(self) -> None:
+        """For tests: as after a restart."""
+        with self._guard:
+            self._held.clear()
+            self._issued.clear()
+
+
+RENEWALS = Renewals()
+
+
+def _save(store: Any, connection: Connection) -> Connection:
+    """Saves a connection that exists already, with the latest tokens this process knows (BS1)."""
+    latest = RENEWALS.latest(store, connection)
+    store.save(latest)
+    return latest
 
 
 def connections_on(store: Any) -> bool:
@@ -660,6 +771,7 @@ def _answer(
     refresh: str,
     store: Any,
     known: dict[str, str] | None = None,
+    lasts: int | None = None,
 ) -> dict[str, Any]:
     found: dict[str, Any] = {} if known is None else {"known": known}
     return {
@@ -668,7 +780,7 @@ def _answer(
         "access_token": access,
         "refresh_token": refresh,
         "token_type": "Bearer",
-        "expires_in": config.access_hours * 3600,
+        "expires_in": config.access_hours * 3600 if lasts is None else lasts,
         "account": account_shown(store, connection.account_id),
         "areas": _areas_named(store, connection.account_id, connection.areas_granted),
         "app": config.app_name,
@@ -676,13 +788,22 @@ def _answer(
     }
 
 
-def token(store: Any, config: AppConfig, form: dict[str, str], base: str, now: datetime) -> dict[str, Any]:
-    """``POST /api/connect/token``: a code traded (with the asking app's tokens for this one), or a refresh."""
+def token(
+    store: Any,
+    config: AppConfig,
+    form: dict[str, str],
+    base: str,
+    now: datetime,
+    *,
+    traded: list[Connection] | None = None,
+) -> dict[str, Any]:
+    """``POST /api/connect/token``: a code traded (with the asking app's tokens for this one), or a refresh. Since
+    0.2.1 (BS6) the connection a code made is added to ``traded`` (the routes call ``on_connected`` with it)."""
     if not connections_on(store):
         raise GrantError("connections_off", "Connections are switched off here.", 403)
     grant_type = form.get("grant_type", "")
     if grant_type == "authorization_code":
-        return _trade(store, config, form, base, now)
+        return _trade(store, config, form, base, now, traded)
     if grant_type == "refresh_token":
         return _refresh(store, config, form, now)
     raise GrantError("unsupported_grant_type", "Only authorization_code and refresh_token.")
@@ -697,7 +818,14 @@ def _end_copy(store: Any, token_hash: str, what: str) -> None:
         logger.warning("connection %s brought twice, connection ended connection=%s", what, connection_id)
 
 
-def _trade(store: Any, config: AppConfig, form: dict[str, str], base: str, now: datetime) -> dict[str, Any]:
+def _trade(
+    store: Any,
+    config: AppConfig,
+    form: dict[str, str],
+    base: str,
+    now: datetime,
+    traded: list[Connection] | None = None,
+) -> dict[str, Any]:
     code_hash = oauthcore.digest(form.get("code", ""))
     code = store.take_code(code_hash)
     store.commit()
@@ -756,14 +884,48 @@ def _trade(store: Any, config: AppConfig, form: dict[str, str], base: str, now: 
     keep_suggestions(store, config, form.get("reverse_known"), code.partner)
     store.commit()
     logger.info("connection with %s confirmed connection=%s", code.partner, made.id)
+    if traded is not None:
+        traded.append(made)
     known = known_addresses(config, store, base, code.partner)
     return _answer(config, made, made_tokens.access, made_tokens.refresh, store, known)
 
 
+def _again(store: Any, config: AppConfig, form: dict[str, str], brought: str, now: datetime) -> dict[str, Any] | None:
+    """Since 0.2.1 (BS2): a refresh token spent here within ``refresh_grace``, brought again while what was given for
+    it is still the connection's: the same answer once more (the first got lost on the way, or two requests of the
+    holder came at once). ``None`` where that does not hold (then it is a copy)."""
+    given = RENEWALS.given_for(brought)
+    if given is None or not timedelta(0) <= now - given.at <= timedelta(seconds=config.refresh_grace):
+        return None
+    connection = store.by_issued_refresh(given.refresh_hash)
+    if (
+        connection is None
+        or connection.id != given.connection_id
+        or connection.issued_access_hash != given.access_hash
+        or not reach.same_place(form.get("client_id", ""), connection.partner_base)
+    ):
+        return None
+    if not store.account_may(connection.account_id):
+        raise GrantError("account_resting", "The account rests on this side.")
+    access, refresh = json.loads(store.unseal(given.sealed))
+    logger.info("refresh token brought again within the grace, the same answer connection=%s", connection.id)
+    lasts = max(1, int((given.access_expires - now).total_seconds()))
+    return _answer(config, connection, access, refresh, store, lasts=lasts)
+
+
 def _refresh(store: Any, config: AppConfig, form: dict[str, str], now: datetime) -> dict[str, Any]:
+    # Since 0.2.1 (BS1): one refresh at a time in this app, so that two with the same token meet the grace (BS2).
+    with RENEWALS.lock(config.app_name, "token"):
+        return _refresh_one(store, config, form, now)
+
+
+def _refresh_one(store: Any, config: AppConfig, form: dict[str, str], now: datetime) -> dict[str, Any]:
     brought = oauthcore.digest(form.get("refresh_token", ""))
     connection = store.by_issued_refresh(brought)
     if connection is None:
+        again = _again(store, config, form, brought, now)
+        if again is not None:
+            return again
         _end_copy(store, brought, "refresh token")
         raise GrantError("invalid_grant", "The refresh token is not valid (any more).")
     if not reach.same_place(form.get("client_id", ""), connection.partner_base):
@@ -780,9 +942,20 @@ def _refresh(store: Any, config: AppConfig, form: dict[str, str], now: datetime)
         issued_access_expires=made.access_expires,
         used_at=now,
     )
-    store.save(fresh)
+    fresh = _save(store, fresh)
     store.spend(connection.id, brought, config.spent_kept)
     store.commit()
+    RENEWALS.issued(
+        brought,
+        _Issued(
+            connection_id=connection.id,
+            access_hash=made.access_hash,
+            refresh_hash=made.refresh_hash,
+            access_expires=made.access_expires,
+            sealed=store.seal(json.dumps([made.access, made.refresh])),
+            at=now,
+        ),
+    )
     return _answer(config, fresh, made.access, made.refresh, store)
 
 
@@ -808,7 +981,8 @@ def revoke(store: Any, form: dict[str, str]) -> Connection | None:
 
 def authenticate(store: Any, config: AppConfig, token_value: str | None, now: datetime) -> Caller:
     """The connection behind a token a partner brings (``Authorization: Bearer``), or ``Refused``: ``token_invalid``
-    (401), ``connections_off`` (403), ``account_resting`` (401, the account is blocked or deleted: it rests, E41)."""
+    (401), ``connections_off`` (403), ``account_resting`` (401, the account is blocked or deleted, or since 0.2.1
+    locked or owing its second factor where ``Store.account_may`` says so: it rests, E41)."""
     if not token_value or not token_value.startswith(config.access_prefix):
         raise Refused("token_invalid")
     connection = store.by_issued_access(oauthcore.digest(token_value))
@@ -819,7 +993,7 @@ def authenticate(store: Any, config: AppConfig, token_value: str | None, now: da
     if not store.account_may(connection.account_id):
         raise Refused("account_resting")
     if connection.used_at is None or now - connection.used_at >= TOUCH_EVERY:
-        store.save(replace(connection, used_at=now))
+        _save(store, replace(connection, used_at=now))
         store.commit()
     return Caller(
         account_id=connection.account_id,
@@ -850,7 +1024,7 @@ def _mark(store: Any, connection: Connection, state: str, now: datetime, problem
         )
     else:
         changed = replace(connection, state=state, problem=problem or state)
-    store.save(changed)
+    changed = _save(store, changed)
     store.commit()
     return changed
 
@@ -867,27 +1041,52 @@ def _held_of(store: Any, connection: Connection) -> dict[str, str]:
     return json.loads(store.unseal(connection.held))
 
 
-def _fresh_access(store: Any, config: AppConfig, connection: Connection, now: datetime, *, force: bool = False) -> str:
-    held = _held_of(store, connection)
-    if not force and datetime.fromisoformat(held["expires"]) - now > REFRESH_EARLY:
-        return held["access"]
-    form = {"grant_type": "refresh_token", "refresh_token": held["refresh"], "client_id": held["own"]}
-    try:
-        answer = _ask(config, store, connection.partner_base, "POST", f"{PREFIX}/token", form=form)
-    except reach.Unreachable as failure:
-        _mark(store, connection, "unreachable", now, unreachable(failure).code)
-        raise Refused("unreachable") from None
-    data = answer.data if isinstance(answer.data, dict) else {}
-    access, refresh = _text(data.get("access_token"), MAX_TOKEN), _text(data.get("refresh_token"), MAX_TOKEN)
-    lasts = data.get("expires_in")
-    if answer.status != 200 or not access or not refresh or not isinstance(lasts, int):
-        state = _state_of_refusal(answer.code)
-        _mark(store, connection, state, now, answer.code or None)
-        raise Refused(state if state != "off" else "partner_off")
-    renewed = replace(connection, held=_held(store, access, refresh, now + timedelta(seconds=lasts), held["own"]))
-    store.save(renewed)
-    store.commit()
-    return access
+def _lasts(held: dict[str, str], now: datetime) -> bool:
+    return datetime.fromisoformat(held["expires"]) - now > REFRESH_EARLY
+
+
+def _fresh_access(
+    store: Any,
+    config: AppConfig,
+    connection: Connection,
+    now: datetime,
+    *,
+    force: bool = False,
+    failed: str | None = None,
+) -> dict[str, str]:
+    """The tokens held of the partner, the access token fresh: refreshed when it ends within ``REFRESH_EARLY``, or with
+    ``force`` (the partner answered 401). Since 0.2.1 (BS1) one refresh per connection at a time; who waited takes the
+    tokens the other got, and with ``force`` and ``failed`` (the access token that got the 401) refreshes only where
+    that is still the one held."""
+    held = _held_of(store, RENEWALS.latest(store, connection))
+    if not force and _lasts(held, now):
+        return held
+    with RENEWALS.lock(config.app_name, connection.id):
+        found = store.connection(connection.account_id, connection.partner)
+        if found is None or found.id != connection.id:
+            raise Refused("not_connected")
+        current = RENEWALS.latest(store, found)
+        held = _held_of(store, current)
+        if _lasts(held, now) and (not force or (failed is not None and held["access"] != failed)):
+            return held
+        form = {"grant_type": "refresh_token", "refresh_token": held["refresh"], "client_id": held["own"]}
+        try:
+            answer = _ask(config, store, current.partner_base, "POST", f"{PREFIX}/token", form=form)
+        except reach.Unreachable as failure:
+            _mark(store, current, "unreachable", now, unreachable(failure).code)
+            raise Refused("unreachable") from None
+        data = answer.data if isinstance(answer.data, dict) else {}
+        access, refresh = _text(data.get("access_token"), MAX_TOKEN), _text(data.get("refresh_token"), MAX_TOKEN)
+        lasts = data.get("expires_in")
+        if answer.status != 200 or not access or not refresh or not isinstance(lasts, int):
+            state = _state_of_refusal(answer.code)
+            _mark(store, current, state, now, answer.code or None)
+            raise Refused(state if state != "off" else "partner_off")
+        renewed = replace(current, held=_held(store, access, refresh, now + timedelta(seconds=lasts), held["own"]))
+        renewed = _save(store, renewed)
+        store.commit()
+        RENEWALS.renewed(oauthcore.digest(held["refresh"]), renewed.held, now)
+        return _held_of(store, renewed)
 
 
 def call(
@@ -908,9 +1107,10 @@ def call(
     connection = store.connection(account_id, partner)
     if connection is None:
         raise Refused("not_connected")
+    access: str | None = None
     for attempt in (1, 2):
-        access = _fresh_access(store, config, connection, now, force=attempt == 2)
-        connection = store.connection(account_id, partner) or connection
+        access = _fresh_access(store, config, connection, now, force=attempt == 2, failed=access)["access"]
+        connection = RENEWALS.latest(store, store.connection(account_id, partner) or connection)
         try:
             answer = _ask(config, store, connection.partner_base, method, path, bearer=access, body=body, params=params)
         except reach.Unreachable as failure:
@@ -945,13 +1145,14 @@ def check(store: Any, config: AppConfig, account_id: AccountId, partner: str, no
         return found
     connection = store.connection(account_id, partner)
     assert connection is not None
+    connection = RENEWALS.latest(store, connection)
     if isinstance(answer.data, dict):
         connection = replace(
             connection,
             partner_account=_text(answer.data.get("account"), MAX_NAME) or connection.partner_account,
             partner_version=_text(answer.data.get("version"), 40) or connection.partner_version,
         )
-        store.save(connection)
+        connection = _save(store, connection)
         store.commit()
     return connection
 
@@ -971,13 +1172,22 @@ def hello(store: Any, config: AppConfig, caller: Caller) -> dict[str, Any]:
 
 def _end(store: Any, config: AppConfig, connection: Connection, now: datetime) -> None:
     """Tells the partner (or keeps the revocation for later) and drops this side."""
-    held = _held_of(store, connection)
+    held = _held_of(store, RENEWALS.latest(store, connection))
     form = {"token": held["refresh"], "client_id": held["own"]}
     try:
         _ask(config, store, connection.partner_base, "POST", f"{PREFIX}/revoke", form=form)
     except reach.Unreachable:
         store.revoke_later(connection.account_id, connection.partner_base, store.seal(json.dumps(form)), now)
         logger.info("%s not reached, the revocation waits connection=%s", connection.partner, connection.id)
+    except Refused as refusal:
+        # Since 0.2.1 (BS4): an address the module never asks (a port below 1024, a name of this server) cannot hear
+        # it later either; the connection ends here all the same (also while an account is deleted for good).
+        logger.info(
+            "%s not asked (%s), the revocation is given up connection=%s",
+            connection.partner,
+            refusal.code,
+            connection.id,
+        )
     store.remove(connection.id)
     store.commit()
 
@@ -1001,10 +1211,12 @@ def disconnect(store: Any, config: AppConfig, account_id: AccountId, partner: st
     the partner ends with it, or alone where there is no connection by click."""
     connection = store.connection(account_id, partner)
     forgot = forget_legacy(store, account_id, partner)
+    if forgot:
+        # Since 0.2.1 (BS3): committed before the partner is asked over the network, so no write lock waits on it.
+        store.commit()
     if connection is None:
         if not forgot:
             raise Refused("not_connected")
-        store.commit()
         return
     _end(store, config, connection, now)
     logger.info("connection with %s ended here connection=%s", partner, connection.id)
@@ -1035,6 +1247,9 @@ def retry_waiting(store: Any, config: AppConfig, now: datetime) -> int:
                 )
             except reach.Unreachable:
                 continue
+            except Refused:
+                # Since 0.2.1 (BS4): an address the module never asks; given up, as after ``revoke_days``.
+                logger.info("a waiting revocation is given up: the address is never asked")
         store.done_waiting(waiting.id)
         store.commit()
         done += 1
@@ -1167,18 +1382,28 @@ class Access:
 
 
 def access(
-    store: Any, config: AppConfig, account_id: AccountId, partner: str, now: datetime, *, force: bool = False
+    store: Any,
+    config: AppConfig,
+    account_id: AccountId,
+    partner: str,
+    now: datetime,
+    *,
+    force: bool = False,
+    failed: str | None = None,
 ) -> Access:
     """Decision V18: the address and a fresh token of the connection with ``partner``, for the app's own requests (as
     it asked with an address and a key typed in by hand). Refreshes on its own; ``force`` refreshes even a token still
-    valid (after the partner answered 401 once). Raises ``Refused`` like ``call``: ``not_connected``, ``unreachable``,
-    ``refused``, ``resting``, ``partner_off``. The app tells the module how its own request went with ``reached``."""
+    valid (after the partner answered 401 once); since 0.2.1 with ``failed``, the token that got the 401, only where it
+    is still the one held (another request may have refreshed it meanwhile). Raises ``Refused`` like ``call``:
+    ``not_connected``, ``unreachable``, ``refused``, ``resting``, ``partner_off``. The app tells the module how its
+    own request went with ``reached``."""
     connection = store.connection(account_id, partner)
     if connection is None:
         raise Refused("not_connected")
-    token = _fresh_access(store, config, connection, now, force=force)
-    held = _held_of(store, store.connection(account_id, partner) or connection)
-    return Access(base=connection.partner_base, token=token, expires_at=datetime.fromisoformat(held["expires"]))
+    held = _fresh_access(store, config, connection, now, force=force, failed=failed)
+    return Access(
+        base=connection.partner_base, token=held["access"], expires_at=datetime.fromisoformat(held["expires"])
+    )
 
 
 def reached(store: Any, account_id: AccountId, partner: str, now: datetime, *, problem: str | None = None) -> None:

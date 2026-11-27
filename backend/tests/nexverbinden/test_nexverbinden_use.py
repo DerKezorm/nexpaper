@@ -6,6 +6,8 @@ from __future__ import annotations
 
 from typing import Any
 
+import pytest
+
 
 def _grants(world: Any) -> tuple[str, ...]:
     """What the partner may do in the app."""
@@ -98,6 +100,53 @@ def test_tokens_refresh_on_their_own_and_a_copied_one_ends_the_connection(world:
     assert world.card("app")["state"] == "none"
     refused = world.partner_calls_app(f"{world.pkg.PREFIX}/hello")
     assert getattr(refused, "code", None) == "refused" and world.card("partner")["state"] == "refused"
+
+
+def _held_refresh(world: Any) -> str:
+    """The refresh token the partner holds of the app."""
+    import json
+
+    connection = world.partner_connection()
+    return json.loads(world.partner.store.unseal(connection.held))["refresh"]
+
+
+def test_a_refresh_whose_answer_got_lost_keeps_the_connection(world: Any) -> None:
+    """Since 0.2.1 (BS2): the app answered a refresh, the answer got lost on the way; the partner brings the same
+    refresh token again within the grace and gets the same tokens, the connection stays. After the grace it is a copy
+    as before and ends the connection."""
+    assert world.connect("partner").status_code == 200
+    spent = _held_refresh(world)
+    lost = world.program().post(
+        f"{world.pkg.PREFIX}/token",
+        data={"grant_type": "refresh_token", "refresh_token": spent, "client_id": world.partner.base},
+    )
+    assert lost.status_code == 200, lost.text
+    world.expire_partner_access()
+    assert world.partner_calls_app(f"{world.pkg.PREFIX}/hello").status == 200
+    assert _held_refresh(world) == lost.json()["refresh_token"]
+    assert world.card("app")["state"] == "connected" and world.card("partner")["state"] == "connected"
+    world.pkg.connect.RENEWALS.forget()
+    again = world.program().post(
+        f"{world.pkg.PREFIX}/token",
+        data={"grant_type": "refresh_token", "refresh_token": spent, "client_id": world.partner.base},
+    )
+    assert again.status_code == 400 and again.json()["error"] == "invalid_grant"
+    assert world.card("app")["state"] == "none"
+
+
+@pytest.mark.parametrize("hook", ["lock", "require_second_factor"])
+def test_an_account_locked_or_owing_its_second_factor_lets_the_connection_rest(world: Any, hook: str) -> None:
+    """Since 0.2.1 (E41 as it stands now): where the app's ``account_may`` knows a lock after failed sign-ins or a
+    second factor still to set up, the connection rests meanwhile (401 ``account_resting``) and comes back after."""
+    rest = getattr(world.app, hook, None)
+    if rest is None:
+        pytest.skip(f"the app's adapter has no {hook} (its accounts rest only when blocked or deleted)")
+    assert world.connect("partner").status_code == 200
+    rest("owner")
+    rested = world.partner_calls_app(f"{world.pkg.PREFIX}/hello")
+    assert getattr(rested, "code", None) == "resting" and world.card("partner")["state"] == "resting"
+    rest("owner", False)
+    assert world.partner_calls_app(f"{world.pkg.PREFIX}/hello").status == 200
 
 
 def test_a_partner_out_of_reach_keeps_the_last_state_and_says_since_when(world: Any) -> None:

@@ -43,6 +43,15 @@ def test_connecting_from_the_app_gives_both_sides_one_connection(world: Any) -> 
     assert theirs["account"] == (f"{shown} ({owner})" if shown else owner)
 
 
+def test_the_side_that_was_asked_hears_on_connected_too(world: Any) -> None:
+    """Since 0.2.1 (BS6): ``on_connected`` runs also on the side whose consent page was asked (after its answer to the
+    token request), not only where the click was; here the partner is that side."""
+    from verbinden_partner import ROLES
+
+    assert world.connect("app").status_code == 200
+    assert world.partner.connected == [(ROLES["owner"][0], world.app.config().app_name)]
+
+
 def test_connecting_from_the_partner_works_the_same(world: Any) -> None:
     done = world.connect("partner")
     assert done.status_code == 200, done.text
