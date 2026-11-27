@@ -1,4 +1,4 @@
-// Vorlage nexverbinden 0.1.6
+// Vorlage nexverbinden 0.1.8
 // @vitest-environment jsdom
 /**
  * The parts of the module in the app: the card of a partner app in each state, the cards of all partners, the consent
@@ -16,8 +16,10 @@ import {
   ConnectionsArea,
   ConnectionsOperatorCard,
   ConsentPage,
+  OPERATOR_PAGE,
   ReturnPage,
   VERBINDEN_TEXTS,
+  carryProblem,
   areaActions,
   type ConnectionsAdmin,
   type ConsentInfo,
@@ -57,6 +59,7 @@ function view(more: Partial<PartnerView> = {}): PartnerView {
     state: 'connected',
     address: 'https://partner.example.com',
     address_from_operator: false,
+    set_up: true,
     host: 'partner.example.com',
     uses: Object.keys(USES),
     grants: Object.keys(GRANTS),
@@ -119,6 +122,7 @@ beforeEach(() => {
   answers = {}
   refuse = {}
   went = []
+  window.sessionStorage.clear()
 })
 
 afterEach(() => {
@@ -127,15 +131,58 @@ afterEach(() => {
 })
 
 describe('the card of a partner app', () => {
-  it('not connected: the address from the operator, then off to the partner', async () => {
+  it('not connected: set up by the operator, one click off to the partner, no address to type (V42)', async () => {
     answers[`POST /api/connect/partners/${PARTNER}/start`] = { go: 'https://partner.example.com/connect/app?state=s' }
-    await show(<ConnectionCard app={APP} view={view({ state: 'none', account: null, host: '', address_from_operator: true })} request={request} navigate={(url) => went.push(url)} defaultOpen />)
+    await show(<ConnectionCard app={APP} view={view({ state: 'none', account: null, host: '', address_from_operator: true })} request={request} navigate={(url) => went.push(url)} manual={<p>form</p>} defaultOpen />)
     expect(byTest('connection-state')?.textContent).toBe('Nicht verbunden')
-    expect((byTest('connection-address') as HTMLInputElement).value).toBe('https://partner.example.com')
-    expect(box.textContent).toContain(VERBINDEN_TEXTS.de.card.fromOperator)
+    expect(byTest('connection-address')).toBeNull()
+    expect(box.querySelector('input[type="url"]')).toBeNull()
+    // V46: a new connection by hand only for the operator.
+    expect(byTest('connection-manual')).toBeNull()
     await click('connection-connect')
-    expect(calls.at(-1)).toEqual({ path: `/api/connect/partners/${PARTNER}/start`, method: 'POST', body: { address: 'https://partner.example.com', areas: null } })
+    expect(calls.at(-1)).toEqual({ path: `/api/connect/partners/${PARTNER}/start`, method: 'POST', body: { areas: null } })
     expect(went).toEqual(['https://partner.example.com/connect/app?state=s'])
+  })
+
+  it('not set up on this server: says so; the operator gets the way there and the form by hand (V42, V46)', async () => {
+    const notSetUp = view({ state: 'none', account: null, host: '', address: '', set_up: false })
+    await show(<ConnectionCard app={APP} view={notSetUp} request={request} manual={<p>form</p>} defaultOpen />)
+    expect(byTest('connection-not-set-up')?.textContent).toContain(`${PARTNER} ist auf diesem Server nicht eingerichtet`)
+    expect(byTest('connection-not-set-up')?.textContent).toContain('Der Betreiber trägt die Adresse')
+    expect(byTest('connection-connect')).toBeNull()
+    expect(byTest('connection-set-up')).toBeNull()
+    expect(byTest('connection-manual')).toBeNull()
+    await show(<ConnectionCard key="op" app={APP} view={notSetUp} request={request} manual={<p>form</p>} operator defaultOpen />)
+    expect(byTest('connection-not-set-up')?.textContent).toContain(`Trag die Adresse von ${PARTNER}`)
+    expect(byTest('connection-set-up')?.getAttribute('href')).toBe(OPERATOR_PAGE)
+    expect(OPERATOR_PAGE).toBe('/settings/general#nex-apps')
+    expect(byTest('connection-manual')).not.toBeNull()
+  })
+
+  it('a refusal the operator can lift names the place, and links there for him, here or in the partner (B2)', async () => {
+    refuse[`POST /api/connect/partners/${PARTNER}/start`] = { code: 'local_off' }
+    await show(<ConnectionCard app={APP} view={view({ state: 'none', account: null })} request={request} defaultOpen />)
+    await click('connection-connect')
+    expect(byTest('connection-problem')?.textContent).toContain('Server › Allgemein › Andere nex-Apps')
+    expect(byTest('connection-problem')?.textContent).not.toContain('nicht erreichbar')
+    expect(byTest('connection-set-up')).toBeNull()
+    await show(<ConnectionCard key="op" app={APP} view={view({ state: 'none', account: null })} request={request} operator defaultOpen />)
+    await click('connection-connect')
+    expect(byTest('connection-set-up')?.getAttribute('href')).toBe(OPERATOR_PAGE)
+    // The other side does not ask this app in the own network (sent back from its consent page, B6).
+    await show(<ConnectionCard key="there" app={APP} view={view({ state: 'none', account: null })} request={request} operator carried="partner_local_off" />)
+    expect(byTest('connection-problem')?.textContent).toBe(
+      VERBINDEN_TEXTS.de.errors.partner_local_off.replaceAll('{partner}', PARTNER).replaceAll('{app}', APP),
+    )
+    expect(byTest('connection-set-up')?.getAttribute('href')).toBe(`https://partner.example.com${OPERATOR_PAGE}`)
+    expect(byTest('connection-set-up')?.textContent).toBe(`In ${PARTNER} einrichten`)
+  })
+
+  it('a connection whose partner sits in the own network without the switch says why (B2)', async () => {
+    await show(<ConnectionCard app={APP} view={view({ state: 'unreachable', problem: 'local_off', stale_since: '2026-11-26T14:05:00+00:00' })} request={request} operator defaultOpen />)
+    expect(byTest('connection-local-off')?.textContent).toContain(`${APP} fragt keine Adressen im eigenen Netz`)
+    expect(byTest('connection-unreachable')).toBeNull()
+    expect(byTest('connection-set-up')?.getAttribute('href')).toBe(OPERATOR_PAGE)
   })
 
   it('where the partner reads areas here, the card asks for them before the click (all at first)', async () => {
@@ -149,7 +196,7 @@ describe('the card of a partner app', () => {
     expect((byTest('connection-connect') as HTMLButtonElement).disabled).toBe(true)
     await click('connection-area-2')
     await click('connection-connect')
-    expect(calls.at(-1)).toMatchObject({ method: 'POST', body: { address: 'https://partner.example.com', areas: [2] } })
+    expect(calls.at(-1)).toMatchObject({ method: 'POST', body: { areas: [2] } })
     await show(<ConnectionCard key="plain" app={APP} view={view({ state: 'none', account: null })} request={request} navigate={(url) => went.push(url)} defaultOpen />)
     expect(byTest('connection-areas')).toBeNull()
     await click('connection-connect')
@@ -201,7 +248,7 @@ describe('the card of a partner app', () => {
 
   it('a partner too old says so and opens the form by hand', async () => {
     refuse[`POST /api/connect/partners/${PARTNER}/start`] = { code: 'partner_too_old' }
-    await show(<ConnectionCard app={APP} view={view({ state: 'none', account: null })} request={request} manual={<p data-testid="own-form">form</p>} defaultOpen />)
+    await show(<ConnectionCard app={APP} view={view({ state: 'none', account: null })} request={request} manual={<p data-testid="own-form">form</p>} operator defaultOpen />)
     await click('connection-connect')
     expect(byTest('connection-state')?.textContent).toBe('Zu alt')
     expect(byTest('connection-problem')?.textContent).toContain('von Hand')
@@ -321,6 +368,20 @@ describe('the cards of all partners', () => {
     expect(mark?.getAttribute('src')?.startsWith('data:image/svg+xml,')).toBe(true)
     expect(calls.filter((call) => call.path === '/api/connect/partners')).toHaveLength(1)
   })
+
+  it('a refusal from the way to the partner and back stands in its card, once (B6, V47)', async () => {
+    answers['GET /api/connect/partners'] = [view({ state: 'none' })]
+    expect(carryProblem({ partner: PARTNER, code: 'partner_off' })).toBe(true)
+    await show(<ConnectionsArea app={APP} request={request} />)
+    expect(byTest('connection-problem')?.textContent).toBe(VERBINDEN_TEXTS.de.errors.partner_off)
+    expect(byTest('connections-problem')).toBeNull()
+    await show(<ConnectionsArea key="again" app={APP} request={request} />)
+    expect(byTest('connection-problem')).toBeNull()
+    // A refusal that names no partner of the list stands above the cards.
+    carryProblem({ partner: null, code: 'return_invalid' })
+    await show(<ConnectionsArea key="none" app={APP} request={request} />)
+    expect(byTest('connections-problem')?.textContent).toBe(VERBINDEN_TEXTS.de.errors.return_invalid)
+  })
 })
 
 describe('the consent page', () => {
@@ -331,6 +392,7 @@ describe('the consent page', () => {
     partner: PARTNER,
     partner_host: 'partner.example.com',
     account: 'kim',
+    account_card: { name: 'Kim Example', username: 'kim', picture: null, color: null },
     partner_may: Object.entries(GRANTS).map(([id, level]) => ({ id, level, areas: true })),
     app_may: Object.entries(USES).map(([id, level]) => ({ id, level, areas: true })),
     areas: [{ id: 11, name: 'Zuhause' }, { id: 12, name: 'Garten' }],
@@ -342,8 +404,17 @@ describe('the consent page', () => {
     answers['POST /api/connect/consent'] = { redirect: 'https://time.example.com/connect/return?code=x&state=s1' }
     await show(<ConsentPage request={request} search={search} navigate={(url) => went.push(url)} />)
     expect(box.textContent).toContain(`${PARTNER} möchte sich mit ${APP} verbinden`)
-    expect(byTest('consent-partner-may')?.textContent).toContain(FIRST_GRANT ? word(APP, FIRST_GRANT) : VERBINDEN_TEXTS.de.card.onlyCheck)
-    expect(byTest('consent-app-may')?.textContent).toContain(FIRST_USE ? word(PARTNER, FIRST_USE) : VERBINDEN_TEXTS.de.card.onlyCheck)
+    // B1 (0.1.8): the account with its shown name, its user name and its picture (the letter, where it has none).
+    expect(byTest('consent-account-name')?.textContent).toBe('Kim Example (kim)')
+    expect(byTest('consent-account')?.textContent).toContain('Angemeldet als')
+    expect(byTest('consent-account-picture')?.textContent).toBe('K')
+    expect(box.textContent).not.toContain('Angemeldet als kim.')
+    // B4 (0.1.8): a direction in which an app may do nothing has no box.
+    if (FIRST_GRANT) expect(byTest('consent-partner-may')?.textContent).toContain(word(APP, FIRST_GRANT))
+    else expect(byTest('consent-partner-may')).toBeNull()
+    if (FIRST_USE) expect(byTest('consent-app-may')?.textContent).toContain(word(PARTNER, FIRST_USE))
+    else expect(byTest('consent-app-may')).toBeNull()
+    expect(box.textContent).not.toContain(VERBINDEN_TEXTS.de.card.onlyCheck)
     await click('consent-all-areas')
     await click('consent-area-12')
     await click('consent-allow')
@@ -366,6 +437,23 @@ describe('the consent page', () => {
     await show(<ConsentPage key="broken" request={request} search="?client_id=x" />)
     expect(byTest('consent-problem')?.textContent).toBe(VERBINDEN_TEXTS.de.consent.broken)
   })
+
+  it('stands in the middle of the window, in every app the same (B5, V48)', async () => {
+    await show(<ConsentPage request={request} search="?client_id=x" />)
+    expect(byTest('connect-consent')?.className.split(' ')).toEqual(expect.arrayContaining(['min-h-dvh', 'items-center', 'justify-center']))
+    refuse['POST /api/connect/return'] = { code: 'return_invalid' }
+    await show(<ReturnPage app={APP} request={request} search="?code=c&state=s" navigate={() => undefined} />)
+    expect(byTest('connect-return')?.className.split(' ')).toEqual(expect.arrayContaining(['min-h-dvh', 'items-center', 'justify-center']))
+  })
+
+  it('where the app that asks cannot connect here, goes straight back to its card (B6, V47)', async () => {
+    const back = 'https://time.example.com/connect/return?error=partner_local_off&state=s1'
+    answers['GET /api/connect/consent'] = { back, refused: 'local_off' }
+    await show(<ConsentPage request={request} search={search} navigate={(url) => went.push(url)} />)
+    expect(went).toEqual([back])
+    expect(byTest('consent-problem')).toBeNull()
+    expect(byTest('consent-allow')).toBeNull()
+  })
 })
 
 describe('the page back from the partner', () => {
@@ -377,13 +465,30 @@ describe('the page back from the partner', () => {
     expect(went).toEqual([`/settings/connections#${PARTNER}`])
   })
 
-  it('a refusal stands with the way back; a no sends nothing', async () => {
-    refuse['POST /api/connect/return'] = { code: 'return_invalid' }
+  it('a refusal, a no or an error mark goes on to the card of the partner (B6, V47)', async () => {
+    refuse['POST /api/connect/return'] = { code: 'consent_failed', partner: PARTNER }
     await show(<ReturnPage app={APP} request={request} search="?code=c&state=s" navigate={(url) => went.push(url)} />)
+    expect(went).toEqual([`/settings/connections#${PARTNER}`])
+    expect(byTest('return-problem')).toBeNull()
+    expect(JSON.parse(window.sessionStorage.getItem('nexverbinden.problem') ?? '{}')).toEqual({ partner: PARTNER, code: 'consent_failed' })
+    // A no or an error mark of the other app is sent once, with the state, so the start is used up.
+    refuse['POST /api/connect/return'] = { code: 'declined', partner: PARTNER }
+    await show(<ReturnPage key="no" app={APP} request={request} search="?error=access_denied&state=s2" navigate={(url) => went.push(url)} />)
+    expect(calls.at(-1)).toMatchObject({ path: '/api/connect/return', method: 'POST', body: { error: 'access_denied', state: 's2' } })
+    expect(went.at(-1)).toBe(`/settings/connections#${PARTNER}`)
+  })
+
+  it('says it itself, in the middle, only where the refusal cannot be carried', async () => {
+    refuse['POST /api/connect/return'] = { code: 'return_invalid' }
+    const storage = Object.getOwnPropertyDescriptor(window, 'sessionStorage')!
+    Object.defineProperty(window, 'sessionStorage', { configurable: true, get: () => { throw new Error('blocked') } })
+    try {
+      await show(<ReturnPage app={APP} request={request} search="?code=c&state=s" navigate={(url) => went.push(url)} />)
+    } finally {
+      Object.defineProperty(window, 'sessionStorage', storage)
+    }
+    expect(went).toEqual([])
     expect(byTest('return-problem')?.textContent).toBe(VERBINDEN_TEXTS.de.errors.return_invalid)
-    calls = []
-    await show(<ReturnPage key="no" app={APP} request={request} search="?error=access_denied" />)
-    expect(calls).toEqual([])
   })
 })
 

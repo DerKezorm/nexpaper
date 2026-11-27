@@ -15,6 +15,7 @@ import json
 from collections.abc import Iterator
 from datetime import datetime
 from typing import Any
+from urllib.parse import quote
 
 from sqlalchemy import func, select
 
@@ -188,6 +189,17 @@ class VerbindenStore:
     def account_name(self, account_id: Any) -> str:
         row = self.db.get(Account, account_id)
         return row.name if row is not None else "?"
+
+    def account_card(self, account_id: Any) -> dict[str, Any] | None:
+        """verbinden 0.1.8 (B1): who is signed in on the consent page, as the profile and the account menu show it: the
+        display name, the name to sign in with, the own picture at the address the app loads it from
+        (``avatarUrl`` in ``api/client.ts``: ``/api/v1/avatars/<id>?v=<when it was set>``), or none. nexpaper has no
+        colour per person."""
+        row = self.db.get(Account, account_id)
+        if row is None:
+            return None
+        picture = f"/api/v1/avatars/{row.id}?v={quote(row.avatar_at.isoformat(), safe='')}" if row.avatar_at else None
+        return {"name": row.display_name or "", "username": row.name, "picture": picture, "color": None}
 
     def areas(self, account_id: Any) -> list[Area]:
         """The vaults of the account: what a partner that reads nexpaper may be limited to."""

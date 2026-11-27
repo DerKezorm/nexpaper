@@ -29,7 +29,7 @@ export function ConnectionsArea({ me }: { me: Me }) {
     <>
       <PairedDevices />
       <InstallCard />
-      <OtherApps />
+      <OtherApps operator={me.role === 'operator'} />
       <ShortcutCard />
       {me.role === 'operator' && <ShortcutLinkCard />}
       <ApiKeys key={round} />

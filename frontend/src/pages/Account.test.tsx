@@ -467,6 +467,30 @@ describe('devices and apps', () => {
     expect(cards()).toEqual(['devices', 'install', 'shortcut', 'api-keys', 'ai-tools'])
   })
 
+  it('lets only the operator set another nex app up or connect a new one by hand (verbinden 0.1.8, V42, V46)', async () => {
+    const notSetUp = {
+      partner: 'nextime', state: 'none', address: '', address_from_operator: false, set_up: false, host: '', uses: [],
+      grants: ['deadlines.read'], uses_levels: {}, grants_levels: { 'deadlines.read': 'read' }, account: null, since: null,
+      ok_at: null, used_at: null, stale_since: null, problem: null, areas_used: null, areas_granted: null, legacy: null,
+      areas_choice: [], version: null,
+    }
+    answers['GET /api/connect/partners'] = [notSetUp]
+    await show('/settings/connections#nextime')
+    const open = async () => {
+      if (!box.querySelector('[data-testid="connection-not-set-up"]')) await click(box.querySelector<HTMLElement>('[data-testid="connection-nextime"] button')!)
+      return box.querySelector('[data-testid="connection-not-set-up"]')!
+    }
+    expect((await open()).textContent).toContain('nextime ist auf diesem Server nicht eingerichtet')
+    expect(box.querySelector('[data-testid="connection-set-up"]')?.getAttribute('href')).toBe('/settings/general#nex-apps')
+    expect(box.querySelector('[data-testid="connection-address"]')).toBeNull()
+    act(() => root.unmount())
+    box.remove()
+    auth.me = { ...baseMe, role: 'member' }
+    await show('/settings/connections#nextime')
+    expect((await open()).textContent).toContain('Der Betreiber trägt die Adresse')
+    expect(box.querySelector('[data-testid="connection-set-up"]')).toBeNull()
+  })
+
   it('keeps API keys off until the operator allows them, and says where', async () => {
     await show('/konto?tab=devices')
     const off = box.querySelector('[data-card="api-keys"] [data-testid="api-keys-off"]')!

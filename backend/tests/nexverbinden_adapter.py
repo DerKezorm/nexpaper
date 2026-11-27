@@ -24,6 +24,8 @@ class Adapter(StandardAdapter):
     partner = "nextime"
     base = "https://paper.example.com"
     older_link = False
+    #: verbinden 0.1.8 (B1): the consent page names the account with its display name beside the name it signs in with.
+    shown_names = {"owner": "Kim Example", "other": "Sam Example"}  # noqa: RUF012 (read only)
 
     def start(self, folder: Path, *, older: bool = False) -> None:
         from app.db import SessionLocal
@@ -38,6 +40,11 @@ class Adapter(StandardAdapter):
             "operator": make_account("op", OPERATOR, password=secrets.token_urlsafe(12)),
         }
         owner = self._accounts["owner"]
+        with SessionLocal() as db:
+            for role, shown in self.shown_names.items():
+                row = db.get(type(owner), self._accounts[role].id)
+                row.display_name = shown
+            db.commit()
         due = datetime.now(UTC).date() + timedelta(days=5)
         office = shared_vault("Office", self._accounts["operator"], (owner, "edit"))
         add_document(own_vault(owner), owner, "Electricity", dates=[("due", due)])
