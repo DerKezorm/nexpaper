@@ -26,6 +26,8 @@ class Adapter(StandardAdapter):
     older_link = False
     #: verbinden 0.1.8 (B1): the consent page names the account with its display name beside the name it signs in with.
     shown_names = {"owner": "Kim Example", "other": "Sam Example"}  # noqa: RUF012 (read only)
+    #: verbinden 0.1.13: nexfolk asks how many documents are from a contact (``services/person_documents.py``).
+    about_purpose = "documents.about"
 
     def start(self, folder: Path, *, older: bool = False) -> None:
         from app.db import SessionLocal
@@ -115,8 +117,18 @@ class Adapter(StandardAdapter):
             row.blocked_at = datetime.now(UTC) if blocked else None
             db.commit()
 
+    def about_seed(self, purpose: str, area: Any, person: Any) -> None:
+        """A filed document of the owner in the vault ``area`` whose sender is the person (by name)."""
+        from tests.papers import add_document
+
+        assert purpose == self.about_purpose
+        add_document(int(str(area)), self._accounts["owner"], "Letter", sender=person.name,
+                     date=datetime.now(UTC).date())
+
     def probe(self, purpose: str) -> str | None:
-        return {"deadlines.read": "/api/v1/deadlines", "documents.add": "/api/v1/vaults"}.get(purpose)
+        return {"deadlines.read": "/api/v1/deadlines", "documents.add": "/api/v1/vaults",
+                # verbinden 0.1.13: the module's fixed place for a purpose about a person (nexfolk's only).
+                "documents.about": "/api/connect/about/documents.about?name=Pat%20Example"}.get(purpose)
 
     def areas_seen(self, purpose: str, answer: Any) -> set[str]:
         if purpose == "documents.add":

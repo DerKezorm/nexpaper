@@ -99,6 +99,9 @@ OPEN = {
     ("POST", "/api/connect/revoke"),
     ("POST", "/api/connect/retire"),
     ("GET", "/api/connect/hello"),
+    # verbinden 0.1.13: nexfolk asks about a person with its token; an unknown purpose is 404 ``about_unknown`` before
+    # the token is read (tests/nexverbinden/test_nexverbinden_about.py).
+    ("GET", "/api/connect/about/{purpose}"),
 }
 
 #: The fixed places of the shared MCP and verbinden modules, the same in every nex app (Entwurf MCP-Modul: one address for all): the

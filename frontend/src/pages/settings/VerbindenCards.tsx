@@ -1,6 +1,7 @@
 /**
  * Other nex apps (the shared module verbinden 0.1.1): one card per partner of the catalog in My account › Connections
- * (place 3: nextime reads nexpaper's deadlines, nexmail adds documents, nexpaper uses tasks of nextasks), the operator's
+ * (place 3: nextime reads nexpaper's deadlines, nexmail adds documents, nexfolk asks how many documents are from a
+ * contact, nexpaper uses tasks of nextasks), the operator's
  * card "Andere nex-Apps" (the switch and the addresses of the other apps) in Server › General, the consent page
  * `/connect/app` and the return `/connect/return`. Only the module's parts; nexpaper gives its word for its areas, the
  * vaults, and whether the signed-in account is the operator (verbinden 0.1.8: only it sets a partner up and connects

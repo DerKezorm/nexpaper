@@ -92,6 +92,7 @@ from .services import (
     mounts,
     notices,
     oidc_store,
+    person_documents,
     pictures,
     post_store,
     schluessel_store,
@@ -403,7 +404,9 @@ app.include_router(verbinden_api.router(
     config=verbinden_store.CONFIG, store=verbinden_store.store, account=require_browser_account,
     operator=require_operator, address=schluessel_store.address,
     # verbinden 0.1.4: an ended connection takes nexpaper's own row of it along (looked up at the call: tests listen).
-    on_disconnected=lambda data, account_id, partner: verbinden_store.on_disconnected(data, account_id, partner)))
+    on_disconnected=lambda data, account_id, partner: verbinden_store.on_disconnected(data, account_id, partner),
+    # verbinden 0.1.13: nexfolk asks how many documents are from a contact (``documents.about``), in the given vaults.
+    about=person_documents.about))
 # AI tools (the shared MCP module, mcp 1.1.0): ``POST /api/mcp`` with an MCP key or a program's token, OAuth for
 # programs under ``/api/oauth`` and ``/.well-known``, the account's rights per tool and requests under
 # ``/api/v1/connections/mcp``. Consent and requests only in a signed-in browser, the settings for the operator.

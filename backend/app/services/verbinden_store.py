@@ -2,7 +2,8 @@
 over the module's tables (``models_verbinden.py``).
 
 nexpaper's pairs in the catalog: nextime reads its deadlines (``deadlines.read``), nexmail adds documents
-(``documents.add``), and nexpaper uses tasks of nextasks (``tasks.read``, ``tasks.write``). A connection's token
+(``documents.add``), nexfolk asks how many documents are from a contact (``documents.about``, since verbinden 0.1.13),
+and nexpaper uses tasks of nextasks (``tasks.read``, ``tasks.write``). A connection's token
 (``npv_``, refresh ``npvr_``) opens ``GET /api/v1/deadlines`` and the upload of documents like an API key of that right,
 limited to the vaults given at the consent (``deps.py``). nexpaper had no connections of its own before, so nothing is
 "verbunden über API-Schlüssel" here: the older ways in are API keys (``npk_``) a partner holds, and they keep working.
@@ -28,11 +29,12 @@ from ..vendor import nexverbinden
 from ..vendor.nexverbinden.model import Area
 from . import settings_service
 
-#: The partners nexpaper has a use with (V20: no card without one): it hosts nextime (deadlines) and nexmail
-#: (documents), and it is the guest of nextasks (a task from a document, ``services/task_from_document.py``).
+#: The partners nexpaper has a use with (V20: no card without one): it hosts nextime (deadlines), nexmail
+#: (documents) and nexfolk (verbinden 0.1.13: how many documents are from a contact, ``services/person_documents.py``),
+#: and it is the guest of nextasks (a task from a document, ``services/task_from_document.py``).
 CONFIG = nexverbinden.AppConfig(
     app_name="nexpaper", version=__version__, access_prefix="npv_", refresh_prefix="npvr_", code_prefix="npvc_",
-    in_use=("nextime", "nexmail", "nextasks"),
+    in_use=("nextime", "nexmail", "nextasks", "nexfolk"),
 )
 
 #: The module's settings and nexpaper's names for them; the context of sealed tokens.
