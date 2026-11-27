@@ -439,9 +439,9 @@ describe('devices and apps', () => {
     answers['GET /api/v1/shortcut'] = { link: '', address: 'https://paper.example.com', upload_url: 'https://paper.example.com/api/v1/documents?source=share' }
     answers['GET /api/v1/api-keys'] = { allowed: false, keys: [] }
     await show('/konto?tab=devices')
-    expect(box.querySelector('[data-testid="shortcut-off"]')!.textContent).toContain('die Programmschnittstelle (API) hat der Betreiber nicht freigegeben. Unter Server › Allgemein › Schnittstellen freigeben.')
-    // The switch stands under General (Schnittstellen) now.
-    expect(box.querySelector('[data-testid="shortcut-off"] a')!.getAttribute('href')).toBe('/settings/general')
+    expect(box.querySelector('[data-testid="shortcut-off"]')!.textContent).toContain('die Programmschnittstelle (API) hat der Betreiber nicht freigegeben. Unter Server › Verbindungen › Schnittstellen freigeben.')
+    // The switch stands under Server › Verbindungen (Schnittstellen) now (E67).
+    expect(box.querySelector('[data-testid="shortcut-off"] a')!.getAttribute('href')).toBe('/settings/server-connections#interfaces')
     expect(button('Schlüssel für den Kurzbefehl')).toBeUndefined()
   })
 
@@ -481,7 +481,7 @@ describe('devices and apps', () => {
       return box.querySelector('[data-testid="connection-not-set-up"]')!
     }
     expect((await open()).textContent).toContain('nextime ist auf diesem Server nicht eingerichtet')
-    expect(box.querySelector('[data-testid="connection-set-up"]')?.getAttribute('href')).toBe('/settings/general#nex-apps')
+    expect(box.querySelector('[data-testid="connection-set-up"]')?.getAttribute('href')).toBe('/settings/server-connections#nex-apps')
     expect(box.querySelector('[data-testid="connection-address"]')).toBeNull()
     act(() => root.unmount())
     box.remove()
@@ -495,8 +495,8 @@ describe('devices and apps', () => {
     await show('/konto?tab=devices')
     const off = box.querySelector('[data-card="api-keys"] [data-testid="api-keys-off"]')!
     expect(off.textContent).toContain('Der Betreiber hat die Programmschnittstelle abgeschaltet.')
-    // The operator is told where the switch is (Server › Allgemein › Schnittstellen).
-    expect(off.textContent).toContain('Einschalten unter Server › Allgemein › Schnittstellen.')
+    // The operator is told where the switch is (Server › Verbindungen › Schnittstellen).
+    expect(off.textContent).toContain('Einschalten unter Server › Verbindungen › Schnittstellen.')
     expect(button('Neuer API-Schlüssel')!.disabled).toBe(true)
   })
 

@@ -1,7 +1,7 @@
 /**
  * AI tools (the shared MCP module, mcp 1.1.0) in nexpaper: the card "KI-Werkzeuge (MCP)" in My account › Connections
  * (schluessel's `ToolsCard`, place 6) with "Rechte je Werkzeug" per key and the requests waiting for a yes, the
- * operator's settings after the switch "MCP-Zugang" in Server › General › Schnittstellen, the consent page
+ * operator's settings after the switch "MCP-Zugang" in Server › Connections › Schnittstellen, the consent page
  * "Programm verbinden" (`/mcp/authorize`; `/oauth/authorize` is the iPhone app's pairing and stays) and the page of one
  * request (`/mcp/requests/<id>`, where a notice of a waiting request leads). Only the module's parts from the ui kit;
  * nexpaper gives its words for the tools, the levels and the vaults.
@@ -50,7 +50,7 @@ export function AiTools() {
   )
 }
 
-/** Server › General › Schnittstellen, after "MCP-Zugang": programs, the highest level, blocked tools. */
+/** Server › Connections › Schnittstellen, after "MCP-Zugang": programs, the highest level, blocked tools. */
 export function McpOperator() {
   const { i18n } = useTranslation()
   return <McpOperatorSettings request={mcpRequest} base={MCP_AT} words={useMcpWords()} language={i18n.language} />

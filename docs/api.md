@@ -58,7 +58,7 @@ Made in the web app (**Settings › My account › Connections › Devices**, or
 
 ### API keys
 
-Off until the operator switches them on (**Settings › Server › General › Interfaces**, "Programming interface (API) for
+Off until the operator switches them on (**Settings › Server › Connections › Interfaces**, "Programming interface (API) for
 members"). A member makes a key under **Settings › My account › Connections › API keys**. A key reads as its account, never more (`scope: read`); a
 key of scope `upload` (a scanner, a script, the iPhone shortcut), which only the routes that take files accept, can
 upload and reads nothing: `GET /uploads` lists only the uploads this key started, and an upload of another key or of a

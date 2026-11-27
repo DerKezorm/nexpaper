@@ -1,7 +1,7 @@
 /**
  * The addresses of the settings (plan "Einstellungen", E8): every area under `/settings/<slug>`, and every address of
  * before leads on for good: the slugs of before (`reminders` is `notifications`, E1; `ai-setup` is `ai-provider`, E10;
- * the area `api` went apart, its address leads to General) and the pages of before (`/konto?tab=…`,
+ * the area `api` went apart, its address leads to Server › Connections since E67) and the pages of before (`/konto?tab=…`,
  * `/einstellungen?tab=…`, `/ueber`), which the server's notices and mails, the providers' answers and saved links
  * still name.
  */
@@ -11,7 +11,7 @@ describe('the slugs of the settings', () => {
   it('are the plan\'s, in its order, with nexpaper\'s own at their places', () => {
     expect(areasFor('operator').map((area) => area.slug)).toEqual([
       'profile', 'security', 'appearance', 'upload', 'ai', 'notifications', 'connections',
-      'general', 'sign-in', 'mail', 'storage', 'ocr', 'ai-provider', 'filing', 'inputs', 'import', 'accounts', 'log',
+      'general', 'server-connections', 'sign-in', 'mail', 'storage', 'ocr', 'ai-provider', 'filing', 'inputs', 'import', 'accounts', 'log',
     ])
     expect(areasFor('member').map((area) => area.slug)).toEqual(['profile', 'security', 'appearance', 'upload', 'ai', 'notifications', 'connections'])
     expect(AREAS.some((area) => (area.slug as string) === 'api' || (area.slug as string) === 'reminders' || (area.slug as string) === 'ai-setup')).toBe(false)
@@ -30,13 +30,23 @@ describe('the slugs of before', () => {
     expect(resolveArea('reminders', 'member', '')).toEqual({ redirect: '/settings/notifications' })
     expect(resolveArea('reminders', 'operator', '?x=1')).toEqual({ redirect: '/settings/notifications?x=1' })
     expect(resolveArea('ai-setup', 'operator', '')).toEqual({ redirect: '/settings/ai-provider' })
-    expect(resolveArea('api', 'operator', '')).toEqual({ redirect: '/settings/general' })
+    expect(resolveArea('api', 'operator', '')).toEqual({ redirect: '/settings/server-connections' })
   })
 
   it('lead a member to the settings\' start where the new area is the operator\'s', () => {
     expect(resolveArea('ai-setup', 'member', '')).toEqual({ redirect: '/settings' })
     expect(resolveArea('api', 'member', '')).toEqual({ redirect: '/settings' })
     expect(resolveArea('nowhere', 'operator', '')).toEqual({ redirect: '/settings' })
+  })
+
+  it('E67: the anchors of the cards that left General lead to Server › Connections, for the operator only', () => {
+    expect(resolveArea('general', 'operator', '', '#nex-apps')).toEqual({ redirect: '/settings/server-connections#nex-apps' })
+    expect(resolveArea('general', 'operator', '?x=1', '#interfaces')).toEqual({ redirect: '/settings/server-connections?x=1#interfaces' })
+    expect(resolveArea('general', 'operator', '', '#limits')).toEqual({ area: 'general' })
+    expect(resolveArea('general', 'operator', '')).toEqual({ area: 'general' })
+    expect(resolveArea('general', 'member', '', '#nex-apps')).toEqual({ redirect: '/settings' })
+    expect(resolveArea('server-connections', 'member', '')).toEqual({ redirect: '/settings' })
+    expect(resolveArea('api', 'operator', '', '#interfaces')).toEqual({ redirect: '/settings/server-connections#interfaces' })
   })
 
   it('a provider\'s answer at /settings belongs to Security', () => {
@@ -58,9 +68,9 @@ describe('the pages of before', () => {
     expect(formerAddress('konto', '?linked=authentik')).toBe('/settings/security?linked=authentik')
   })
 
-  it('/einstellungen?tab=… leads to the areas of "Server", the AI to KI-Anbieter and the API to General', () => {
+  it('/einstellungen?tab=… leads to the areas of "Server", the AI to KI-Anbieter and the API to Connections', () => {
     expect(formerAddress('einstellungen', '?tab=ai')).toBe('/settings/ai-provider')
-    expect(formerAddress('einstellungen', '?tab=api')).toBe('/settings/general')
+    expect(formerAddress('einstellungen', '?tab=api')).toBe('/settings/server-connections')
     expect(formerAddress('einstellungen', '?tab=backups')).toBe('/settings/storage')
     expect(formerAddress('einstellungen', '?tab=storage')).toBe('/settings/filing')
     expect(formerAddress('einstellungen', '?tab=push')).toBe('/settings/general')

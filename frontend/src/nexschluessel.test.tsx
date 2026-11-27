@@ -1,4 +1,4 @@
-// Vorlage nexschluessel 1.1.2
+// Vorlage nexschluessel 1.1.3
 // @vitest-environment jsdom
 /**
  * The cards of the module in the app: "API-Schlüssel", "KI-Werkzeuge (MCP)", "Schnittstellen" and "API-Schlüssel aller
@@ -345,7 +345,8 @@ describe('the card API-Schlüssel', () => {
     listing.api = false
     show(<ApiKeysCard request={request} base={BASE} things={THINGS} operator />)
     await settle()
-    expect(find('[data-testid="api-keys-off"]')!.textContent).toContain('Server › Allgemein › Schnittstellen')
+    // E67 (1.1.3): the card "Schnittstellen" stands under Server › Verbindungen.
+    expect(find('[data-testid="api-keys-off"]')!.textContent).toContain('Server › Verbindungen › Schnittstellen')
     expect(button('api-keys-new')!.disabled).toBe(true)
   })
 

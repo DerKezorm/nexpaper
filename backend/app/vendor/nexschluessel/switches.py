@@ -1,4 +1,5 @@
-"""The operator's card "Interfaces" (Server › General): "Programming interface (API) for members", "MCP access" and,
+"""The operator's card "Interfaces" (Server › Connections since 1.1.3, E67): "Programming interface (API) for
+members", "MCP access" and,
 where the app has an iPhone app, "Allow the iPhone app" and "Connect new devices". Each stays where the app keeps it
 (its own setting, its own default); the store reads and writes it. Switching off deletes nothing: the keys rest and
 work again when it is switched on."""

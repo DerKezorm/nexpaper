@@ -44,6 +44,8 @@ import {
   formatDay,
   formatMoment,
   inSentence,
+  WhatsNewBanner,
+  WhatsNewDialog,
 } from './index'
 import type { RowMarks } from './index'
 import { BUTTON_KIND } from './styles'
@@ -853,7 +855,19 @@ describe('the parts of the settings (since 1.1.0)', () => {
     expect(areaText(NEXUI_TEXTS.de, 'general', { app: 'nexfolk', parts: ['interfaces', 'languages'] })?.text).toBe('Schnittstellen und eigene Sprachen.')
     expect(areaText(NEXUI_TEXTS.en, 'general', { app: 'nexfolk', parts: ['interfaces', 'nexApps', 'languages'] })?.text).toBe('Interfaces, other nex apps and added languages.')
     expect(areaText(NEXUI_TEXTS.fr, 'general', { app: 'nexfolk', parts: ['limits', 'languages'] })?.text).toBe('Limites et langues ajoutées.')
-    expect(areaText(NEXUI_TEXTS.de, 'general', { app: 'nexnotes' })?.text).toBe('Grenzen, Funktionen für alle Konten, Schnittstellen und eigene Sprachen.')
+    expect(areaText(NEXUI_TEXTS.de, 'general', { app: 'nexnotes' })?.text).toBe('Grenzen, Funktionen für alle Konten und eigene Sprachen.')
+    // E67 (1.2.1): Server › Verbindungen has its own slug beside My account › Verbindungen (`connections`), and the
+    // line of General no longer names the interfaces in any language.
+    expect(areaText(NEXUI_TEXTS.de, 'server-connections', { app: 'nexnotes' })).toEqual({
+      title: 'Verbindungen',
+      text: 'Wie sich andere nex-Apps, Programme und KI-Werkzeuge mit nexnotes verbinden.',
+    })
+    expect(areaText(NEXUI_TEXTS.en, 'server-connections', { app: 'nextime' })).toEqual({ title: 'Connections', text: 'How other nex apps, programs and AI tools connect with nextime.' })
+    expect(areaText(NEXUI_TEXTS.fr, 'server-connections', { app: 'nexlore' })?.title).toBe('Connexions')
+    for (const language of ['de', 'en', 'fr'] as const) {
+      expect(NEXUI_TEXTS[language].areas.general.text).not.toMatch(/Schnittstellen|interfaces|nex/i)
+      expect(NEXUI_TEXTS[language].areas['server-connections'].text).toContain('nex')
+    }
     const page = show(
       <NexuiLanguage language="de">
         <SettingsPage slug="general" app="nexfolk" parts={['interfaces', 'nexApps', 'languages']} />
@@ -942,6 +956,101 @@ describe('the parts of the settings (since 1.1.0)', () => {
     expect(root.textContent).not.toContain('1.2.0')
     expect(root.querySelector('[data-card="about"]')?.textContent).toContain('1.1.0')
     expect(root.querySelector('[data-card="about-built-with"]')).not.toBeNull()
+  })
+
+  it('the banner after an update says the version, shows the text and puts itself away (since 1.2.0)', () => {
+    const showing = vi.fn()
+    const away = vi.fn()
+    const root = show(
+      <NexuiLanguage language="de">
+        <WhatsNewBanner app="nexlore" version="1.17.0" onShow={showing} onPutAway={away} />
+      </NexuiLanguage>,
+    )
+    const banner = getByRole(root, 'status')
+    expect(banner.dataset.testid).toBe('whats-new-banner')
+    expect(banner.textContent).toContain('nexlore 1.17.0 ist da.')
+    const open = getByRole(banner, 'button', { name: 'Was ist neu?' })
+    expect([open.dataset.kind, open.dataset.size, open.dataset.icon]).toEqual(['primary', 'sm', 'Sparkles'])
+    fireEvent.click(open)
+    expect(showing).toHaveBeenCalledTimes(1)
+    const put = getByRole(banner, 'button', { name: 'Ausblenden' })
+    expect(put.getAttribute('title')).toBe('Ausblenden')
+    fireEvent.click(put)
+    expect(away).toHaveBeenCalledTimes(1)
+  })
+
+  it('the window shows several versions under their numbers, marks sections for operators and offers the earlier ones (since 1.2.0)', () => {
+    const earlier = vi.fn()
+    const closed = vi.fn()
+    const entry = (title: string, operator = false) => ({ lead: `Lead ${title}`, sections: [{ title, where: 'Einstellungen', body: `Body ${title}`, operator }], smallTitle: '', small: [] })
+    show(
+      <NexuiLanguage language="de">
+        <WhatsNewDialog
+          app="nexlore"
+          version="1.17.0"
+          entries={[
+            { version: '1.17.0', entry: entry('Neu') },
+            { version: '1.16.0', entry: entry('Betrieb', true) },
+          ]}
+          onClose={closed}
+          onEarlier={earlier}
+        />
+      </NexuiLanguage>,
+    )
+    const dialog = getByRole(document.body, 'dialog', { name: 'Neu in nexlore seit deinem letzten Besuch' })
+    const parts = Array.from(dialog.querySelectorAll<HTMLElement>('section[data-version]'))
+    expect(parts.map((part) => part.dataset.version)).toEqual(['1.17.0', '1.16.0'])
+    expect(getByRole(parts[0] as HTMLElement, 'heading', { level: 3, name: 'Version 1.17.0' })).toBeTruthy()
+    expect(parts[1]?.querySelector('[data-operator="true"]')?.textContent).toContain('Für Betreiber')
+    expect(parts[0]?.querySelector('[data-operator]')).toBeNull()
+    expect(dialog.textContent).not.toContain('Außerdem')
+    const more = getByRole(dialog, 'button', { name: 'Frühere Versionen' })
+    expect([more.dataset.kind, more.dataset.icon]).toEqual(['secondary', 'History'])
+    fireEvent.click(more)
+    expect(earlier).toHaveBeenCalledTimes(1)
+    fireEvent.click(getByRole(dialog, 'button', { name: 'Verstanden' }))
+    expect(closed).toHaveBeenCalledTimes(1)
+  })
+
+  it('the window of one version keeps its title; the history is titled as such (since 1.2.0)', () => {
+    const entry = { lead: 'L', sections: [{ title: 'T', where: 'W', body: 'B' }], smallTitle: 'Außerdem', small: ['x'] }
+    show(
+      <NexuiLanguage language="en">
+        <WhatsNewDialog app="nexlore" version="1.17.1" entries={[{ version: '1.17.0', entry }]} onClose={() => undefined} />
+      </NexuiLanguage>,
+    )
+    expect(getByRole(document.body, 'dialog', { name: 'New in nexlore 1.17.0' }).textContent).toContain('Außerdem')
+    expect(queryByRole(document.body, 'button', { name: 'Earlier versions' })).toBeNull()
+    shown?.unmount()
+    show(
+      <NexuiLanguage language="en">
+        <WhatsNewDialog app="nexlore" version="1.17.1" title="all" entries={[{ version: '1.17.0', entry }, { version: '1.16.0', entry }]} onClose={() => undefined} />
+      </NexuiLanguage>,
+    )
+    expect(getByRole(document.body, 'dialog', { name: "What's new in nexlore" })).toBeTruthy()
+  })
+
+  it('the about page names the version of the text and opens the caller\'s window when given one (since 1.2.0)', () => {
+    const opened = vi.fn()
+    const root = show(
+      <NexuiLanguage language="de">
+        <AboutPage
+          app="nexlore"
+          logo="/logo.svg"
+          tagline="Wissen."
+          version="1.17.1"
+          licence={{ name: 'AGPL-3.0', href: 'https://www.gnu.org/licenses/agpl-3.0.html' }}
+          source="https://github.com/example/nexlore"
+          whatsNewVersion="1.17.0"
+          onWhatsNew={opened}
+          showUpdates={false}
+          builtWith={[]}
+        />
+      </NexuiLanguage>,
+    )
+    fireEvent.click(getByRole(root, 'button', { name: 'Neu in nexlore 1.17.0' }))
+    expect(opened).toHaveBeenCalledTimes(1)
+    expect(queryByRole(document.body, 'dialog')).toBeNull()
   })
 
   it("the ways of notifications show only the ways an app has, with the plan's buttons", () => {

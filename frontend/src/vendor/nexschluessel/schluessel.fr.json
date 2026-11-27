@@ -6,7 +6,7 @@
     "empty": "Pas encore de clé d’API.",
     "count": "{count} clés sur {max}",
     "off": "L’exploitant a désactivé l’interface de programmation. Les clés existantes fonctionneront de nouveau quand il la réactivera.",
-    "offOperator": "Activer sous Serveur › Général › Interfaces.",
+    "offOperator": "Activer sous Serveur › Connexions › Interfaces.",
     "address": "Adresse pour les programmes",
     "addressHint": "Les programmes envoient la clé comme « Authorization: Bearer … ».",
     "docs": "Description de l’interface"

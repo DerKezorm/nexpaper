@@ -6,7 +6,7 @@
     "empty": "Noch kein API-Schlüssel.",
     "count": "{count} von {max} Schlüsseln",
     "off": "Der Betreiber hat die Programmschnittstelle abgeschaltet. Bestehende Schlüssel funktionieren erst wieder, wenn er sie einschaltet.",
-    "offOperator": "Einschalten unter Server › Allgemein › Schnittstellen.",
+    "offOperator": "Einschalten unter Server › Verbindungen › Schnittstellen.",
     "address": "Adresse für Programme",
     "addressHint": "Programme schicken den Schlüssel als „Authorization: Bearer …“.",
     "docs": "Beschreibung der Schnittstelle"

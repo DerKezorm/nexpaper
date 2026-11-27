@@ -12,7 +12,7 @@
  * - an older connection by an API key typed in by hand: shown as it is, "läuft ab" a week before its key ends.
  *
  * Since 0.1.8: no address field (B3, V42): the operator sets the other apps up; where he has not, the card says so,
- * for the operator with "Einrichten" (Server › Allgemein › Andere nex-Apps). "Von Hand verbinden" for a new connection
+ * for the operator with "Einrichten" (Server › Verbindungen › Andere nex-Apps). "Von Hand verbinden" for a new connection
  * only for the operator (V46). A refusal that the operator can lift (own network, not set up) names the place and, for
  * the operator, links there, here or in the partner app (B2, V44). A refusal carried from the return page (B6) stands
  * in the card at once, the card open.
@@ -26,6 +26,7 @@ import { useState, type ReactNode } from 'react'
 import { Badge, Box, Button, Buttons, CheckboxRow, Collapsible, ConfirmDialog, Facts, Notice, Row, Rows, inSentence, useNexuiTexts, type Fact } from '../nexui'
 import {
   OPERATOR_PAGE,
+  PARTNER_OPERATOR_PAGE,
   STATE_TONES,
   VERBINDEN_BASE,
   VERBINDEN_BUTTONS,
@@ -150,7 +151,8 @@ export function ConnectionCard({
     if (!operator) return null
     const place = setUpPlace(code)
     if (place === 'here') return OPERATOR_PAGE
-    if (place === 'there' && view.address) return `${view.address}${OPERATOR_PAGE}`
+    // 0.1.18: the old address, which every version of the partner understands (E67 apps send it on).
+    if (place === 'there' && view.address) return `${view.address}${PARTNER_OPERATOR_PAGE}`
     return null
   }
   const setUpButton = (href: string | null, there: boolean) =>

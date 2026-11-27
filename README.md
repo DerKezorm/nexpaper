@@ -567,7 +567,7 @@ changing its pages: the page tools, joining, splitting, a new version or an old 
 ## Connect nex apps
 
 nexpaper connects with other nex apps in one click, without a key to copy. The operator enters each app's address
-once under Settings › Server › General › Other nex apps; an app in your own network (LAN, VPN) also needs
+once under Settings › Server › Connections › Other nex apps; an app in your own network (LAN, VPN) also needs
 "Connections into the local network" there, and the switch at the top turns connections off for everybody (they rest,
 nothing is deleted). After that every person clicks "Connect with …" under Settings › My account › Connections,
 agrees once in the other app and comes back connected. The page where they agree shows the account they are signed in
@@ -589,7 +589,7 @@ the card. A calendar that reads the deadlines with an API key keeps working; it 
 Everything the web app does goes through `/api/v1`; the web app uses nothing else. A phone or a later app pairs with a
 **device token** (Settings › My account › Connections › Devices) and acts with the rights of its account; scripts use an
 **API key** (Settings › My account › Connections › API keys) that
-only reads or only uploads, never more than its account may (off until the operator switches it on under Settings › Server › General › Interfaces; 120 requests a
+only reads or only uploads, never more than its account may (off until the operator switches it on under Settings › Server › Connections › Interfaces; 120 requests a
 minute, 50 uploads an hour). The description is served at `/api/v1/docs` and, for machines, at `/api/v1/openapi.json`;
 [docs/api.md](docs/api.md) says how to sign in.
 
@@ -598,7 +598,7 @@ deadlines, accept suggestions, change fields and put a document in the trash. A 
 read and change) under Settings › My account › Connections › AI tools (MCP), or a program connects itself over
 OAuth with the person's consent in the browser. Both can be limited to vaults, and every tool can be allowed, asked
 first or denied; what asks waits for a yes there, and the person's devices get a notification. A document's history
-names the program that changed it. Off until the operator switches it on under Settings › Server › General ›
+names the program that changed it. Off until the operator switches it on under Settings › Server › Connections ›
 Interfaces.
 
 ## Security in short

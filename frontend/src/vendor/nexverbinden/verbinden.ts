@@ -18,9 +18,15 @@ export const VERBINDEN_BASE = '/api/connect'
 /** The page of the settings that holds the cards (the return page goes back there). */
 export const CONNECTIONS_PAGE = '/settings/connections'
 
-/** Since 0.1.8 (B2, B3): Server › Allgemein with the card "Andere nex-Apps" (`id="nex-apps"`), the same in every app;
- * the cards link there for the operator, here and in the partner app. */
-export const OPERATOR_PAGE = '/settings/general#nex-apps'
+/** Since 0.1.8 (B2, B3): the card "Andere nex-Apps" (`id="nex-apps"`), the same in every app; the cards link there for
+ * the operator. Since 0.1.18 (E67, entschieden 27.11.2026) it stands under Server › Verbindungen
+ * (`/settings/server-connections`), no longer under Server › Allgemein; the anchor stays. */
+export const OPERATOR_PAGE = '/settings/server-connections#nex-apps'
+
+/** Since 0.1.18: the way into the partner app. The address of before (Server › Allgemein), which every app from E67 on
+ * sends on to Server › Verbindungen with its anchor; a partner of an older version still has the card there. So the
+ * link works whichever version the partner runs. */
+export const PARTNER_OPERATOR_PAGE = '/settings/general#nex-apps'
 
 /** Since 0.1.8 (B5, V48): the frame of the module's own pages (`/connect/app`, `/connect/return`): the whole height of
  * the window, the card in its middle, the same in every app; the app shows the page without a frame of its own. */
@@ -128,7 +134,7 @@ export const VERBINDEN_BUTTONS = {
   decline: { kind: 'secondary', icon: 'X' },
   save: { kind: 'secondary', icon: 'Check' },
   back: { kind: 'secondary', icon: 'ArrowLeft' },
-  /** Since 0.1.8 (B2, B3): the operator's way to Server › Allgemein › Andere nex-Apps, here or in the partner app. */
+  /** Since 0.1.8 (B2, B3): the operator's way to Server › Verbindungen › Andere nex-Apps, here or in the partner app. */
   setUp: { kind: 'secondary', icon: 'SlidersHorizontal' },
 } as const
 
@@ -198,7 +204,7 @@ export function codeText(texts: VerbindenTexts, code: string | undefined, app: s
   return fillVerbinden(found ?? texts.failed, { app, partner: partner ?? texts.card.otherApp })
 }
 
-/** Since 0.1.8 (B2, B3): where the operator changes what a refusal names: this app's Server › Allgemein (`here`), the
+/** Since 0.1.8 (B2, B3): where the operator changes what a refusal names: this app's Server › Verbindungen (`here`), the
  * partner app's (`there`), or nowhere. */
 export function setUpPlace(code: string | null | undefined): 'here' | 'there' | null {
   if (code === 'local_off' || code === 'partner_not_set_up') return 'here'

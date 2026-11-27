@@ -1,5 +1,5 @@
 /**
- * Server › General: the card "Schnittstellen" (Webhook), for operators. "Programmschnittstelle (API) für Mitglieder"
+ * Server › Connections (since 1.1.3, E67; before Server › General): the card "Schnittstellen" (Webhook), for operators. "Programmschnittstelle (API) für Mitglieder"
  * and, where the app has MCP, "MCP-Zugang", each a `CheckboxRow`; where the app has an iPhone app, the places
  * "iPhone-App erlauben" and "Neue Geräte verbinden" (the app fills them by naming the switches in its `AppConfig`;
  * the setting stays where the app keeps it). Then the app's own rows (nexlore: highest level of an MCP key,

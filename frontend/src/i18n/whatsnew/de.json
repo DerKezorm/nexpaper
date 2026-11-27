@@ -5,7 +5,7 @@
       {
         "title": "Apps verbinden",
         "where": "Mein Konto › Verbindungen",
-        "body": "Unter „Andere nex-Apps“ klickst du auf „Mit nextime verbinden“ (ebenso bei nexmail und nextasks), stimmst in der anderen App einmal zu und bist zurück, verbunden. Kein Schlüssel zum Anlegen, Kopieren und Einfügen. Die Seite, auf der du zustimmst, zeigt, als wer du angemeldet bist, und sagt in Worten, was jede App darf, etwa „Die Fristen deiner Dokumente lesen“. Mehr darf keine App, und du wählst, welche Tresore sie sehen darf. Die Karte zeigt, seit wann ihr verbunden seid, wann die Verbindung zuletzt genutzt wurde und was sie erlaubt, mit „Jetzt prüfen“ und „Trennen“, das beide Seiten beendet. Klappt etwas nicht, steht der Grund dort. Vorher trägt der Betreiber die Adresse der anderen App einmal unter Server › Allgemein › Andere nex-Apps ein; läuft sie im eigenen Netz (LAN, VPN), erlaubt er dort auch „Verbindungen ins eigene Netz“."
+        "body": "Unter „Andere nex-Apps“ klickst du auf „Mit nextime verbinden“ (ebenso bei nexmail und nextasks), stimmst in der anderen App einmal zu und bist zurück, verbunden. Kein Schlüssel zum Anlegen, Kopieren und Einfügen. Die Seite, auf der du zustimmst, zeigt, als wer du angemeldet bist, und sagt in Worten, was jede App darf, etwa „Die Fristen deiner Dokumente lesen“. Mehr darf keine App, und du wählst, welche Tresore sie sehen darf. Die Karte zeigt, seit wann ihr verbunden seid, wann die Verbindung zuletzt genutzt wurde und was sie erlaubt, mit „Jetzt prüfen“ und „Trennen“, das beide Seiten beendet. Klappt etwas nicht, steht der Grund dort. Vorher trägt der Betreiber die Adresse der anderen App einmal unter Server › Verbindungen › Andere nex-Apps ein; läuft sie im eigenen Netz (LAN, VPN), erlaubt er dort auch „Verbindungen ins eigene Netz“."
       },
       {
         "title": "Fristen, Anhänge und Aufgaben",
@@ -15,7 +15,7 @@
       {
         "title": "KI-Werkzeuge (MCP)",
         "where": "Mein Konto › Verbindungen",
-        "body": "KI-Programme, die MCP sprechen, arbeiten jetzt mit nexpaper: Dokumente suchen und lesen, Eingang und Fristen ansehen, Vorschläge übernehmen, Angaben ändern und Dokumente in den Papierkorb legen. Dafür legst du einen MCP-Schlüssel an (lesen, oder lesen und ändern), oder ein Programm verbindet sich mit deiner Zustimmung selbst. Beides lässt sich auf Tresore beschränken, und je Werkzeug wählst du: erlauben, erst fragen oder verweigern. Was fragt, wartet unter „Wartende Rückfragen“, und deine Geräte bekommen eine Mitteilung. Im Verlauf eines Dokuments steht, welches Programm es geändert hat. Ab Werk aus; der Betreiber gibt es unter Server › Allgemein › Schnittstellen frei."
+        "body": "KI-Programme, die MCP sprechen, arbeiten jetzt mit nexpaper: Dokumente suchen und lesen, Eingang und Fristen ansehen, Vorschläge übernehmen, Angaben ändern und Dokumente in den Papierkorb legen. Dafür legst du einen MCP-Schlüssel an (lesen, oder lesen und ändern), oder ein Programm verbindet sich mit deiner Zustimmung selbst. Beides lässt sich auf Tresore beschränken, und je Werkzeug wählst du: erlauben, erst fragen oder verweigern. Was fragt, wartet unter „Wartende Rückfragen“, und deine Geräte bekommen eine Mitteilung. Im Verlauf eines Dokuments steht, welches Programm es geändert hat. Ab Werk aus; der Betreiber gibt es unter Server › Verbindungen › Schnittstellen frei."
       },
       {
         "title": "Konten und Speicher",
@@ -25,7 +25,7 @@
       {
         "title": "Einstellungen wie in allen nex-Apps",
         "where": "Zahnrad unten in der Seitenleiste",
-        "body": "Hell oder dunkel gehört jetzt zu deinem Konto und gilt auf jedem Gerät. Unter Mein Konto › Benachrichtigungen stellst du ein, auf welchem Weg Erinnerungen und Mitteilungen kommen. Sicherungen laufen zu einer Uhrzeit deiner Wahl, auf Wunsch jeden Monat, und „Jetzt sichern“ nimmt eine Notiz mit. Eigene Sprachen lädt der Betreiber unter Server › Allgemein › Sprachen hoch, mit einer Vorlage zum Herunterladen. Beim Einrichten fragt nexpaper einmal, ob es nach neuen Versionen sehen darf; ob eine neuere erschienen ist, sieht nur der Betreiber."
+        "body": "Hell oder dunkel gehört jetzt zu deinem Konto und gilt auf jedem Gerät. Unter Mein Konto › Benachrichtigungen stellst du ein, auf welchem Weg Erinnerungen und Mitteilungen kommen. Sicherungen laufen zu einer Uhrzeit deiner Wahl, auf Wunsch jeden Monat, und „Jetzt sichern“ nimmt eine Notiz mit. Eigene Sprachen lädt der Betreiber unter Server › Allgemein › Sprachen hoch, mit einer Vorlage zum Herunterladen. Server › Verbindungen hält „Andere nex-Apps“ und „Schnittstellen“. Beim Einrichten fragt nexpaper einmal, ob es nach neuen Versionen sehen darf; ob eine neuere erschienen ist, sieht nur der Betreiber."
       }
     ],
     "smallTitle": "Außerdem",

@@ -75,7 +75,7 @@ export function ShortcutCard() {
           <Notice tone="warn">
             {t('phone.iphone.off')}{' '}
             {me?.role === 'operator' && (
-              <Link to="/settings/general" className="font-semibold underline underline-offset-4">
+              <Link to="/settings/server-connections#interfaces" className="font-semibold underline underline-offset-4">
                 {t('apiKeys.offOperator')}
               </Link>
             )}

@@ -20,7 +20,7 @@ one server would not fit another anyway. There are two ways instead:
 
 The shortcut uses an **API key that only uploads** (`npk_…`, scope `upload`): it can bring files in and nothing else
 (no reading, no changing, at most 120 requests a minute and 50 files an hour). API keys are off until the operator
-switches them on (Settings › Server › General › Interfaces, "Programming interface (API) for members"); until then the
+switches them on (Settings › Server › Connections › Interfaces, "Programming interface (API) for members"); until then the
 card says so and makes no key. The key stands under Settings › My account › Connections › API keys, and deleting it
 there stops the shortcut at once.
 

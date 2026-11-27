@@ -1,7 +1,7 @@
 /**
  * AI tools in nexpaper (the shared MCP module, mcp 1.1.0): the card "KI-Werkzeuge (MCP)" in My account › Connections
  * with "Rechte je Werkzeug" at an MCP key (not at an API key) in nexpaper's words and the requests waiting for a yes;
- * the operator's settings after "MCP-Zugang" in Server › General › Schnittstellen; the consent page under
+ * the operator's settings after "MCP-Zugang" in Server › Connections › Schnittstellen; the consent page under
  * `/mcp/authorize` asks the module's OAuth under `/api/oauth` and names the vaults.
  */
 import type { Me } from '../../api/client'

@@ -1,6 +1,6 @@
 /**
- * The operator's settings of MCP, in the place `after.mcp` of schluessel's `InterfacesCard` (Server › Allgemein ›
- * Schnittstellen): "Programme dürfen sich verbinden" (`CheckboxRow`), "Höchste Stufe" (`Segment`, the app's words for
+ * The operator's settings of MCP, in the place `after.mcp` of schluessel's `InterfacesCard` (Server › Verbindungen ›
+ * Schnittstellen since mcp 1.1.5, E67; before Server › Allgemein): "Programme dürfen sich verbinden" (`CheckboxRow`), "Höchste Stufe" (`Segment`, the app's words for
  * its levels) and "Gesperrte Werkzeuge" (folded, one `CheckboxRow` per tool, ticked = blocked). Like the switches of
  * the card each change is saved at once (`PUT <base>/admin` with just that part), since 1.1.2 with a short "Gespeichert."
  * (MCP 21); switching off deletes nothing.

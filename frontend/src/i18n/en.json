@@ -705,7 +705,7 @@
     "disconnectNamed": "Disconnect {{name}}"
   },
   "apiKeys": {
-    "offOperator": "Allow them under Server › General › Interfaces.",
+    "offOperator": "Allow them under Server › Connections › Interfaces.",
     "scope": {
       "readHint": "Read documents, vaults and the search, as far as your account may. It cannot change anything.",
       "uploadHint": "For a scanner, a script or the shortcut: puts documents into an inbox and reads nothing."
@@ -715,7 +715,7 @@
     "enable": "Allow them now",
     "enableConfirm": "Allow",
     "enableTitle": "Allow API keys for everybody?",
-    "enableText": "After that every person on this server can make API keys under My account › Connections. A key lets a program either only read or only upload, never more than the account that made it may. You can switch this off again under Server › General › Interfaces at any time; keys that exist stop working then too.",
+    "enableText": "After that every person on this server can make API keys under My account › Connections. A key lets a program either only read or only upload, never more than the account that made it may. You can switch this off again under Server › Connections › Interfaces at any time; keys that exist stop working then too.",
     "tryIt": "To try it",
     "lifetimeHint": "A key that never runs out is the one nobody remembers when it falls into the wrong hands. A year is usually enough; the list shows a week ahead that it runs out.",
     "lifetimeHintUpload": "A key for uploading can only put documents into your inbox. It does not read your archive. So it does not run out by itself, and a shortcut or a scanner does not have to be set up again after a year. You can revoke it at any time, or choose a time.",

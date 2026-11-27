@@ -1,8 +1,8 @@
 /**
  * The cards of the shared key module (schluessel 1.0.0, plan "Einstellungen") with nexpaper's words: "API-Schlüssel" in
  * My account › Connections (a key reads or only uploads, nexpaper's sentences for both), "Schnittstellen" in Server ›
- * General (the switch "Programmschnittstelle (API) für Mitglieder"; before the card "Funktionen für alle Konten" and the
- * area "API"), "API-Schlüssel aller Konten" in Server › Accounts. The routes are the module's under
+ * Connections (E67; the switch "Programmschnittstelle (API) für Mitglieder"; before Server › General, the card "Funktionen
+ * für alle Konten" and the area "API"), "API-Schlüssel aller Konten" in Server › Accounts. The routes are the module's under
  * `/api/v1/connections`; nexpaper's older ways (`/api/v1/api-keys`, `/api/v1/admin/api-keys`) stay for nexpaper-ios, the
  * shortcut and scripts. Since mcp 1.1.0 the operator's settings of MCP follow its switch in "Schnittstellen"
  * (`McpCards.tsx`, which has the card "KI-Werkzeuge (MCP)" too).
@@ -70,7 +70,7 @@ export function ApiKeys() {
   )
 }
 
-/** The operator allows API keys for everybody (the switch of Server › General › Interfaces), after a question. */
+/** The operator allows API keys for everybody (the switch of Server › Connections › Interfaces), after a question. */
 function AllowKeys({ onAllowed }: { onAllowed: () => void }) {
   const { t } = useTranslation()
   const [asking, setAsking] = useState(false)
@@ -140,7 +140,7 @@ export function TryIt({ name, secret }: { name: string; secret: string }) {
   )
 }
 
-/** Server › General, place 3: "Schnittstellen". */
+/** Server › Connections, place 2: "Schnittstellen" (E67, before under Server › General). */
 export function Interfaces() {
   const { t, i18n } = useTranslation()
   // nexpaper's own rows at the end (before the area "API"): the machine-readable description, how a device connects

@@ -1,5 +1,5 @@
 /**
- * Server › General, place 4: "Web Push" (plan "Einstellungen", E13, E33: only where there is something to set): ready
+ * Server › General, place 3: "Web Push" (plan "Einstellungen", E13, E33: only where there is something to set): ready
  * and how many devices, the contact for the push services, the key pair with a renewal and a test, more push services
  * beyond the known ones, and what goes out. The person's own devices are under My account › Notifications ("Auf welchem
  * Weg"), the switch for the notice of a new sign-in under Security.

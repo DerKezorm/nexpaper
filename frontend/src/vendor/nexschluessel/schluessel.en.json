@@ -6,7 +6,7 @@
     "empty": "No API key yet.",
     "count": "{count} of {max} keys",
     "off": "The operator has switched the programming interface off. Existing keys work again once it is switched on.",
-    "offOperator": "Switch it on under Server › General › Interfaces.",
+    "offOperator": "Switch it on under Server › Connections › Interfaces.",
     "address": "Address for programs",
     "addressHint": "Programs send the key as “Authorization: Bearer …”.",
     "docs": "Description of the interface"

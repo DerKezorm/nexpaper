@@ -37,10 +37,16 @@ export function AreaContent({ area }: { area: AreaSlug }) {
         <>
           <LimitsCard />
           <FeaturesCard />
-          <Interfaces />
-          <OtherAppsOperator />
           <PushServerCard />
           <LanguagesCard />
+        </>
+      )
+    case 'server-connections':
+      // E67: the operator's mirror of My account › Connections: the other nex apps, then the interfaces.
+      return (
+        <>
+          <OtherAppsOperator />
+          <Interfaces />
         </>
       )
     case 'sign-in':

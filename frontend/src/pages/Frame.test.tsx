@@ -3,15 +3,16 @@
  * sidebar with the count of the inbox; the settings in areas as in nexnotes, the server's only for the operator; the page of the link in the mail to a new address (one press confirms, a link that does not
  * hold says so).
  */
-import { act } from 'react'
+import { act, useEffect } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, useLocation } from 'react-router-dom'
 
 import type { Me } from '../api/client'
 import App from '../App'
 import '../i18n'
 import { changeLanguage } from '../i18n'
 import { idle, until } from '../test/wait'
+import { areaText, NEXUI_TEXTS } from '../vendor/nexui'
 import { GENERAL_PARTS } from './settings/areas'
 
 const operator: Me = {
@@ -48,12 +49,23 @@ function serve(): void {
 let root: Root
 let box: HTMLDivElement
 
+/** Where the app is: its address with search and anchor, after any redirect. */
+let place = ''
+
+function Place() {
+  const location = useLocation()
+  useEffect(() => {
+    place = location.pathname + location.search + location.hash
+  }, [location])
+  return null
+}
+
 async function show(at: string | { pathname: string; state: unknown }): Promise<void> {
   ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
   box = document.createElement('div')
   document.body.appendChild(box)
   root = createRoot(box)
-  await act(async () => root.render(<MemoryRouter initialEntries={[at]}><App /></MemoryRouter>))
+  await act(async () => root.render(<MemoryRouter initialEntries={[at]}><App /><Place /></MemoryRouter>))
   await idle()
 }
 
@@ -207,29 +219,29 @@ describe('the settings', () => {
     // Plan "Einstellungen": Mein Konto with nexpaper's Upload and AI before Notifications and Connections; Server with
     // nexpaper's own between Storage and Accounts, the server's AI as "KI-Anbieter"; no area "API" any more.
     expect(group('account')).toEqual(['Profil', 'Sicherheit', 'Darstellung', 'Hochladen', 'KI', 'Benachrichtigungen', 'Verbindungen'])
-    expect(group('server')).toEqual(['Allgemein', 'Anmeldung', 'Mail', 'Speicher und Sicherung', 'Texterkennung', 'KI-Anbieter', 'Ablage', 'Eingänge', 'Import', 'Konten', 'Log'])
+    expect(group('server')).toEqual(['Allgemein', 'Verbindungen', 'Anmeldung', 'Mail', 'Speicher und Sicherung', 'Texterkennung', 'KI-Anbieter', 'Ablage', 'Eingänge', 'Import', 'Konten', 'Log'])
     expect([...box.querySelectorAll('[aria-labelledby="settings-group-server"] a')].map((a) => a.getAttribute('href'))).toEqual(
-      ['general', 'sign-in', 'mail', 'storage', 'ocr', 'ai-provider', 'filing', 'inputs', 'import', 'accounts', 'log'].map((slug) => `/settings/${slug}`),
+      ['general', 'server-connections', 'sign-in', 'mail', 'storage', 'ocr', 'ai-provider', 'filing', 'inputs', 'import', 'accounts', 'log'].map((slug) => `/settings/${slug}`),
     )
     // The frame of the ui kit: its navigation, the area's title and line, then only cards.
     expect(box.querySelector('[data-testid="settings-nav"]')).toBeTruthy()
     expect(box.querySelector('h1')!.textContent).toBe('Allgemein')
     // ui 1.1.3 (U-3): the line names exactly the cards of General, in their order.
-    expect(box.querySelector('[data-testid="settings-area-general"] p')!.textContent).toBe('Grenzen, Funktionen für alle Konten, Schnittstellen, andere nex-Apps, Web Push und eigene Sprachen.')
+    expect(box.querySelector('[data-testid="settings-area-general"] p')!.textContent).toBe('Grenzen, Funktionen für alle Konten, Web Push und eigene Sprachen.')
     expect(box.querySelector('[data-testid="settings-about"], [data-part="settings-about"] a')!.textContent).toContain('Über nexpaper')
     // The cards of General in the plan's order, under the plan's names (Bauplan Allgemein, E48: `features`, `web-push`);
-    // the operator's card of the other nex apps (verbinden 0.1.1, V14) after the interfaces.
+    // "Andere nex-Apps" and "Schnittstellen" stand under Server › Verbindungen (E67).
     expect([...box.querySelectorAll('[data-testid="settings-area-general"] section[data-card]')].map((card) => card.getAttribute('data-card'))).toEqual(
-      ['limits', 'features', 'interfaces', 'nex-apps', 'web-push', 'languages'],
+      ['limits', 'features', 'web-push', 'languages'],
     )
     expect(GENERAL_PARTS.map((part) => part.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`))).toEqual(
-      ['limits', 'features', 'interfaces', 'nex-apps', 'web-push', 'languages'],
+      ['limits', 'features', 'web-push', 'languages'],
     )
     act(() => root.unmount())
     box.remove()
-    // An address of before leads to its area: the interface is a card under General now.
+    // An address of before leads to its area: the interface is a card under Server › Verbindungen now (E67).
     await show('/einstellungen?tab=api')
-    expect(box.querySelector('[data-testid^="settings-nav-"][aria-current="page"]')!.getAttribute('data-testid')).toBe('settings-nav-general')
+    expect(box.querySelector('[data-testid^="settings-nav-"][aria-current="page"]')!.getAttribute('data-testid')).toBe('settings-nav-server-connections')
     act(() => root.unmount())
     box.remove()
     await show('/ueber')
@@ -241,6 +253,57 @@ describe('the settings', () => {
     await show('/settings/general')
     expect(box.querySelector('h1')!.textContent).toBe('Profil')
     expect(box.querySelector('[aria-labelledby="settings-group-server"]')).toBeNull()
+  })
+
+  it('E67: "Andere nex-Apps" and "Schnittstellen" stand under Server › Verbindungen, and the addresses of before lead there', async () => {
+    answers['GET /api/v1/settings/push'] = { devices: 0, key: '', contact: '', contact_used: '', known: [], hosts: [] }
+    answers['GET /api/v1/connections/interfaces'] = { api: false, mcp: true }
+    answers['GET /api/v1/connections/mcp/admin'] = { programs: true, levels: ['read', 'write'], max_level: 'write', blocked_tools: [], tools: [] }
+    // The cards' "Einrichten" of before, a partner's link and saved links: the area opens with both cards, the anchor kept.
+    for (const anchor of ['#nex-apps', '#interfaces']) {
+      await show(`/settings/general${anchor}`)
+      expect(place).toBe(`/settings/server-connections${anchor}`)
+      expect(box.querySelector('[data-testid^="settings-nav-"][aria-current="page"]')!.getAttribute('data-testid')).toBe('settings-nav-server-connections')
+      act(() => root.unmount())
+      box.remove()
+    }
+    // Another anchor of General stays there.
+    await show('/settings/general#limits')
+    expect(place).toBe('/settings/general#limits')
+    act(() => root.unmount())
+    box.remove()
+    await show('/settings/server-connections')
+    const kit = areaText(NEXUI_TEXTS.de, 'server-connections', { app: 'nexpaper', parts: GENERAL_PARTS })!
+    expect(box.querySelector('h1')!.textContent).toBe(kit.title)
+    expect(kit.title).toBe('Verbindungen')
+    const area = box.querySelector('[data-testid="settings-area-server-connections"]')!
+    expect(area.querySelector('p')!.textContent).toBe(kit.text)
+    expect([...area.querySelectorAll('section[data-card]')].map((card) => card.getAttribute('data-card'))).toEqual(['nex-apps', 'interfaces'])
+    // Every switch of both cards is there: the other nex apps, the local network, the API and MCP for members.
+    await until(() => area.textContent!.includes('Programmschnittstelle (API) für Mitglieder') && area.textContent!.includes('Verbindungen ins eigene Netz'))
+    for (const name of ['Verbindungen mit anderen nex-Apps', 'Verbindungen ins eigene Netz', 'Programmschnittstelle (API) für Mitglieder', 'MCP-Zugang']) {
+      expect(area.textContent).toContain(name)
+    }
+    expect(area.querySelectorAll('[data-card="nex-apps"] input[type="checkbox"]').length).toBeGreaterThanOrEqual(2)
+    expect(area.querySelectorAll('[data-card="interfaces"] input[type="checkbox"]').length).toBeGreaterThanOrEqual(2)
+    // The interfaces keep nexpaper's own parts: the MCP settings after its switch and the rows of the interface.
+    expect(area.querySelector('[data-card="interfaces"] [data-testid="mcp-operator"]')).toBeTruthy()
+    expect(area.querySelector('[data-card="interfaces"] [data-testid="interface-facts"]')).toBeTruthy()
+    act(() => root.unmount())
+    box.remove()
+    // General keeps the rest, without the two cards.
+    await show('/settings/general')
+    const general = box.querySelector('[data-testid="settings-area-general"]')!
+    expect(general.querySelector('[data-card="nex-apps"]')).toBeNull()
+    expect(general.querySelector('[data-card="interfaces"]')).toBeNull()
+    expect(general.textContent).not.toContain('Verbindungen mit anderen nex-Apps')
+    expect(general.textContent).not.toContain('Programmschnittstelle (API) für Mitglieder')
+    act(() => root.unmount())
+    box.remove()
+    // A member keeps landing on the settings' start.
+    auth.me = { ...operator, role: 'member' }
+    await show('/settings/general#nex-apps')
+    expect(box.querySelector('h1')!.textContent).toBe('Profil')
   })
 
   it('are a list on a phone at /settings, with the way back from an area', async () => {
@@ -282,7 +345,7 @@ describe('the addresses of before lead on for good', () => {
   it('a tab of the settings of before', async () => {
     answers['GET /api/v1/settings/push'] = { devices: 0, key: '', contact: '', contact_used: '', known: [], hosts: [] }
     expect(await landing('/einstellungen?tab=push')).toBe('settings-nav-general')
-    expect(await landing('/settings/api')).toBe('settings-nav-general')
+    expect(await landing('/settings/api')).toBe('settings-nav-server-connections')
   })
 
   it('a member sent to a server slug of before lands on the settings\' start', async () => {

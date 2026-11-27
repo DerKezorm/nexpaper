@@ -20,9 +20,9 @@ export function SettingsPage() {
   const { t, i18n } = useTranslation()
   const { me } = useAuth()
   const { tab: asked } = useParams()
-  const { search } = useLocation()
+  const { search, hash } = useLocation()
   if (!me) return null
-  const where = resolveArea(asked, me.role, search)
+  const where = resolveArea(asked, me.role, search, hash)
   if ('redirect' in where) return <Navigate to={where.redirect} replace />
   const area = findArea(where.area)
   if (!area) return null

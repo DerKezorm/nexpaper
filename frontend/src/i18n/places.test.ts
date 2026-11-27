@@ -10,6 +10,7 @@ import { describe, expect, it } from 'vitest'
 import { NEXUI_TEXTS } from '../vendor/nexui'
 import schluesselDe from '../vendor/nexschluessel/schluessel.de.json'
 import schluesselEn from '../vendor/nexschluessel/schluessel.en.json'
+import schluesselFr from '../vendor/nexschluessel/schluessel.fr.json'
 import de from './de.json'
 import en from './en.json'
 import fr from './fr.json'
@@ -25,7 +26,7 @@ function texts(tree: Tree, prefix = ''): [string, string][] {
 }
 
 const ACCOUNT = ['profile', 'security', 'appearance', 'notifications', 'connections'] as const
-const SERVER = ['general', 'sign-in', 'mail', 'storage', 'accounts', 'log', 'ai-provider'] as const
+const SERVER = ['general', 'server-connections', 'sign-in', 'mail', 'storage', 'accounts', 'log', 'ai-provider'] as const
 /** nexpaper's own areas (`settings.areas.<key>`), by group. */
 const OWN_ACCOUNT = ['upload', 'myAi'] as const
 const OWN_SERVER = ['ocr', 'filing', 'inputs', 'import'] as const
@@ -112,9 +113,11 @@ describe('the places the texts name', () => {
   }
 
   it('lead to the cards where things are now, in their words', () => {
-    // The interface's switch is a card under General (schluessel's "Schnittstellen"), the shortcut under Connections.
-    expect(de.apiKeys.offOperator).toBe(`Unter Server › Allgemein › ${schluesselDe.interfaces.title} freigeben.`)
-    expect(en.apiKeys.offOperator).toBe(`Allow them under Server › General › ${schluesselEn.interfaces.title}.`)
+    // The interface's switch is a card under Server › Connections (schluessel's "Schnittstellen", E67), the shortcut
+    // under My account › Connections.
+    expect(de.apiKeys.offOperator).toBe(`Unter Server › Verbindungen › ${schluesselDe.interfaces.title} freigeben.`)
+    expect(en.apiKeys.offOperator).toBe(`Allow them under Server › Connections › ${schluesselEn.interfaces.title}.`)
+    expect(fr.apiKeys.offOperator).toBe(`Autorisez-les sous Serveur › Connexions › ${schluesselFr.interfaces.title}.`)
     expect(de.phone.settings.text).toContain('Unter Mein Konto › Verbindungen steht dann „Kurzbefehl laden“.')
     expect(de.phone.iphone.key).toBe('Schlüssel für den Kurzbefehl')
     expect(de.uploadRequest.off).toContain(`Server › Allgemein › ${de.server.features}`)

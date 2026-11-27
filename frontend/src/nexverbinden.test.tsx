@@ -1,4 +1,4 @@
-// Vorlage nexverbinden 0.1.13
+// Vorlage nexverbinden 0.1.18
 // @vitest-environment jsdom
 /**
  * The parts of the module in the app: the card of a partner app in each state, the cards of all partners, the consent
@@ -17,6 +17,7 @@ import {
   ConnectionsOperatorCard,
   ConsentPage,
   OPERATOR_PAGE,
+  PARTNER_OPERATOR_PAGE,
   ReturnPage,
   VERBINDEN_TEXTS,
   carryProblem,
@@ -155,7 +156,8 @@ describe('the card of a partner app', () => {
     await show(<ConnectionCard key="op" app={APP} view={notSetUp} request={request} manual={<p>form</p>} operator defaultOpen />)
     expect(byTest('connection-not-set-up')?.textContent).toContain(`Trag die Adresse von ${PARTNER}`)
     expect(byTest('connection-set-up')?.getAttribute('href')).toBe(OPERATOR_PAGE)
-    expect(OPERATOR_PAGE).toBe('/settings/general#nex-apps')
+    // E67 (0.1.18): the card stands under Server › Verbindungen; the anchor stays.
+    expect(OPERATOR_PAGE).toBe('/settings/server-connections#nex-apps')
     expect(byTest('connection-manual')).not.toBeNull()
   })
 
@@ -163,7 +165,8 @@ describe('the card of a partner app', () => {
     refuse[`POST /api/connect/partners/${PARTNER}/start`] = { code: 'local_off' }
     await show(<ConnectionCard app={APP} view={view({ state: 'none', account: null })} request={request} defaultOpen />)
     await click('connection-connect')
-    expect(byTest('connection-problem')?.textContent).toContain('Server › Allgemein › Andere nex-Apps')
+    expect(byTest('connection-problem')?.textContent).toContain('Server › Verbindungen › Andere nex-Apps')
+    expect(byTest('connection-problem')?.textContent).not.toContain('Allgemein')
     expect(byTest('connection-problem')?.textContent).not.toContain('nicht erreichbar')
     expect(byTest('connection-set-up')).toBeNull()
     await show(<ConnectionCard key="op" app={APP} view={view({ state: 'none', account: null })} request={request} operator defaultOpen />)
@@ -174,7 +177,9 @@ describe('the card of a partner app', () => {
     expect(byTest('connection-problem')?.textContent).toBe(
       VERBINDEN_TEXTS.de.errors.partner_local_off.replaceAll('{partner}', PARTNER).replaceAll('{app}', APP),
     )
-    expect(byTest('connection-set-up')?.getAttribute('href')).toBe(`https://partner.example.com${OPERATOR_PAGE}`)
+    // 0.1.18: into the partner by the address of before, which a partner of any version understands.
+    expect(byTest('connection-set-up')?.getAttribute('href')).toBe(`https://partner.example.com${PARTNER_OPERATOR_PAGE}`)
+    expect(PARTNER_OPERATOR_PAGE).toBe('/settings/general#nex-apps')
     expect(byTest('connection-set-up')?.textContent).toBe(`In ${PARTNER} einrichten`)
   })
 

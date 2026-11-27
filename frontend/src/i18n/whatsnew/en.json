@@ -5,7 +5,7 @@
       {
         "title": "Connect nex apps",
         "where": "My account › Connections",
-        "body": "Under “Other nex apps” you click “Connect with nextime” (the same for nexmail and nextasks), agree once in the other app and are back, connected. No key to make, copy and paste. The page where you agree shows who you are signed in as and says in plain words what each app may do, for example “Read the deadlines of your documents”. No app may do more, and you choose which vaults it may see. The card shows since when you are connected, when the connection was last used and what it allows, with “Check now” and “Disconnect”, which ends it on both sides. If something goes wrong, the reason is shown there. Before that, the operator enters the other app's address once under Server › General › Other nex apps; if it runs in the local network (LAN, VPN), they also allow “Connections into the local network” there."
+        "body": "Under “Other nex apps” you click “Connect with nextime” (the same for nexmail and nextasks), agree once in the other app and are back, connected. No key to make, copy and paste. The page where you agree shows who you are signed in as and says in plain words what each app may do, for example “Read the deadlines of your documents”. No app may do more, and you choose which vaults it may see. The card shows since when you are connected, when the connection was last used and what it allows, with “Check now” and “Disconnect”, which ends it on both sides. If something goes wrong, the reason is shown there. Before that, the operator enters the other app's address once under Server › Connections › Other nex apps; if it runs in the local network (LAN, VPN), they also allow “Connections into the local network” there."
       },
       {
         "title": "Deadlines, attachments and tasks",
@@ -15,7 +15,7 @@
       {
         "title": "AI tools (MCP)",
         "where": "My account › Connections",
-        "body": "AI programs that speak MCP now work with nexpaper: search and read documents, look at the inbox and the deadlines, accept suggestions, change fields and put documents in the trash. For that you make an MCP key (read, or read and change), or a program connects itself with your consent. Both can be limited to vaults, and for each tool you choose: allow, ask first or deny. What asks waits under “Waiting requests”, and your devices get a notification. A document's history says which program changed it. Off from the start; the operator allows it under Server › General › Interfaces."
+        "body": "AI programs that speak MCP now work with nexpaper: search and read documents, look at the inbox and the deadlines, accept suggestions, change fields and put documents in the trash. For that you make an MCP key (read, or read and change), or a program connects itself with your consent. Both can be limited to vaults, and for each tool you choose: allow, ask first or deny. What asks waits under “Waiting requests”, and your devices get a notification. A document's history says which program changed it. Off from the start; the operator allows it under Server › Connections › Interfaces."
       },
       {
         "title": "Accounts and storage",
@@ -25,7 +25,7 @@
       {
         "title": "Settings like in every nex app",
         "where": "The gear at the foot of the sidebar",
-        "body": "Light or dark now belongs to your account and follows you to every device. Under My account › Notifications you set which way reminders and notifications come. Backups run at a time of day you choose, every month if you like, and “Back up now” takes a note along. The operator uploads added languages under Server › General › Languages, with a template to download. At setup nexpaper asks once whether it may look for new versions; only the operator sees whether a newer one is out."
+        "body": "Light or dark now belongs to your account and follows you to every device. Under My account › Notifications you set which way reminders and notifications come. Backups run at a time of day you choose, every month if you like, and “Back up now” takes a note along. The operator uploads added languages under Server › General › Languages, with a template to download. Server › Connections holds “Other nex apps” and “Interfaces”. At setup nexpaper asks once whether it may look for new versions; only the operator sees whether a newer one is out."
       }
     ],
     "smallTitle": "Also",

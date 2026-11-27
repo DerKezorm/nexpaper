@@ -1,5 +1,5 @@
 /**
- * "Andere nex-Apps" under Server › Allgemein (draft "Apps verbinden", decisions V1 1b and 7a): the operator's switch
+ * "Andere nex-Apps" under Server › Verbindungen (draft "Apps verbinden", decisions V1 1b and 7a): the operator's switch
  * "Verbindungen mit anderen nex-Apps" (on unless switched off; off, nobody connects anew and existing connections
  * rest, nothing is deleted), since 0.1.4 "Verbindungen ins eigene Netz" (V-12, the app's setting
  * `connections_local_network`); both boxes are kept at once with a short "Gespeichert." (MCP 21). Then the addresses

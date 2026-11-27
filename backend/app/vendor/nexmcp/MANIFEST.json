@@ -1,6 +1,6 @@
 {
   "files": {
-    "backend/app/vendor/nexmcp/__init__.py": "sha256-4z8n8qY35H5CdMk0oadEuKRl2c9p2Uque2qDqcib3YQ=",
+    "backend/app/vendor/nexmcp/__init__.py": "sha256-NO4VXcxZrltLwAI6y2PZI4BTNpa8kzdmUQiZQz4GSdI=",
     "backend/app/vendor/nexmcp/api.py": "sha256-SmrWmDDfPilVJz4KMocGjX7X4zs6GSANGrP7fg8RzqQ=",
     "backend/app/vendor/nexmcp/arguments.py": "sha256-MAxoMzwJCQ+AOdxc4ujLuo8T9WmoyLdoYCsm4cRAey8=",
     "backend/app/vendor/nexmcp/brake.py": "sha256-VqZPmc/NHcrRkr8YCV24v/yir1khtyf5NKXVtOMROJU=",
@@ -23,7 +23,7 @@
     "backend/tests/nexmcp/test_nexmcp_vendored.py": "sha256-cjKCi/kQWAQjbL4yDP0+b8OZuSqg27cVrE3JiAuN1iE=",
     "backend/tests/nexmcp/test_nexmcp_walls.py": "sha256-xFyTTsN4W7T/8+9jWITqA3oHAxDt1C/HJn43QXx0sdc=",
     "frontend/src/vendor/nexmcp/ConsentPage.tsx": "sha256-Z1meWuGiN5P9Zc+5haCGBG2r5dfDRZvPn3mbRYd+yl8=",
-    "frontend/src/vendor/nexmcp/McpOperatorSettings.tsx": "sha256-xRdO0lyv3r66sA+i4f4CEmmWuFpNmzza4fttsVQ1kek=",
+    "frontend/src/vendor/nexmcp/McpOperatorSettings.tsx": "sha256-l62VYv40nfnFg4J7hmcGdninPa9F35h0kL7f7ESY0oI=",
     "frontend/src/vendor/nexmcp/PendingRequests.tsx": "sha256-5sYbP1AVrBWRiagKE3TCtH3EFZxSl+9UMJm8KYiL9vk=",
     "frontend/src/vendor/nexmcp/RequestBellRow.tsx": "sha256-s6KrNGdKM9WkViKqXiLfeQ3L32/4ekDZoOj4t8DZ8bU=",
     "frontend/src/vendor/nexmcp/RequestPage.tsx": "sha256-ZRh0UXtxIqEz6hjKZrBtB092qUhcmn/to2kZWPiUlk0=",
@@ -40,5 +40,5 @@
     "fastapi": ">=0.121.0"
   },
   "vendor_path": "backend/app/vendor/nexmcp",
-  "version": "1.1.4"
+  "version": "1.1.5"
 }

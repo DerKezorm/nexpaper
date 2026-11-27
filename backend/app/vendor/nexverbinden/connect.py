@@ -121,7 +121,7 @@ def _own_areas(store: Any, account_id: AccountId, chosen: Any) -> list[Any] | No
 
 
 def operator_address(store: Any, partner: str) -> str:
-    """The address of ``partner`` the operator set under Server › Allgemein › Andere nex-Apps ("" where none)."""
+    """The address of ``partner`` the operator set under Server › Verbindungen › Andere nex-Apps ("" where none)."""
     addresses = store.setting("addresses")
     return str(addresses.get(partner) or "") if isinstance(addresses, dict) else ""
 

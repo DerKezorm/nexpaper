@@ -705,7 +705,7 @@
     "disconnectNamed": "Déconnecter {{name}}"
   },
   "apiKeys": {
-    "offOperator": "Autorisez-les sous Serveur › Général › Interfaces.",
+    "offOperator": "Autorisez-les sous Serveur › Connexions › Interfaces.",
     "scope": {
       "readHint": "Lire les documents, les coffres et la recherche, dans la mesure où votre compte le peut. Il ne peut rien modifier.",
       "uploadHint": "Pour un numériseur, un script ou le raccourci : dépose des documents dans une boîte de réception et ne lit rien."
@@ -715,7 +715,7 @@
     "enable": "Les autoriser maintenant",
     "enableConfirm": "Autoriser",
     "enableTitle": "Autoriser les clés API pour tout le monde ?",
-    "enableText": "Ensuite, chaque personne sur ce serveur pourra créer des clés API sous Mon compte › Connexions. Une clé permet à un programme soit seulement de lire, soit seulement de téléverser, jamais plus que ce que peut le compte qui l'a créée. Vous pouvez désactiver cela de nouveau à tout moment sous Serveur › Général › Interfaces ; les clés existantes cessent alors aussi de fonctionner.",
+    "enableText": "Ensuite, chaque personne sur ce serveur pourra créer des clés API sous Mon compte › Connexions. Une clé permet à un programme soit seulement de lire, soit seulement de téléverser, jamais plus que ce que peut le compte qui l'a créée. Vous pouvez désactiver cela de nouveau à tout moment sous Serveur › Connexions › Interfaces ; les clés existantes cessent alors aussi de fonctionner.",
     "tryIt": "Pour l'essayer",
     "lifetimeHint": "Une clé qui n'expire jamais est celle dont personne ne se souvient quand elle tombe entre de mauvaises mains. Un an suffit généralement ; la liste indique une semaine à l'avance qu'elle expire.",
     "lifetimeHintUpload": "Une clé de téléversement ne peut que déposer des documents dans votre boîte de réception. Elle ne lit pas vos archives. Elle n'expire donc pas d'elle-même, et un raccourci ou un numériseur n'a pas à être reconfiguré au bout d'un an. Vous pouvez la révoquer à tout moment, ou choisir une durée.",

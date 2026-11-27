@@ -23,12 +23,12 @@ DOCS = ("README.md", "docs/api.md", "docs/iphone-shortcut.md")
 #: The groups of the navigation and their areas (ui kit ``texts.ts`` and nexpaper's own areas), in English.
 AREAS = {
     "My account": ("Profile", "Security", "Appearance", "Upload", "AI", "Notifications", "Connections"),
-    "Server": ("General", "Sign-in", "Mail", "Storage and backups", "Text recognition", "AI provider", "Filing",
-               "Inputs", "Import", "Accounts", "Log"),
+    "Server": ("General", "Connections", "Sign-in", "Mail", "Storage and backups", "Text recognition", "AI provider",
+               "Filing", "Inputs", "Import", "Accounts", "Log"),
 }
 #: The slugs of the areas (``frontend/src/pages/settings/areas.ts``).
-SLUGS = {"profile", "security", "appearance", "upload", "ai", "notifications", "connections", "general", "sign-in",
-         "mail", "storage", "ocr", "ai-provider", "filing", "inputs", "import", "accounts", "log", "about"}
+SLUGS = {"profile", "security", "appearance", "upload", "ai", "notifications", "connections", "general",
+         "server-connections", "sign-in", "mail", "storage", "ocr", "ai-provider", "filing", "inputs", "import", "accounts", "log", "about"}
 OLD = re.compile(r"Settings, |Settings →|My account, |\(\*\*Settings\*\*\)|Devices and apps|Settings › (?!My account|Server)")
 TOKEN = re.compile(r"API tokens?\b")
 
@@ -62,8 +62,8 @@ def test_no_text_points_the_old_way_and_a_programs_access_is_an_api_key() -> Non
 #: German words of the places, for the server's own mails and notices in German (``reminders.WORDS``).
 AREAS_DE = {
     "Mein Konto": ("Profil", "Sicherheit", "Darstellung", "Hochladen", "KI", "Benachrichtigungen", "Verbindungen"),
-    "Server": ("Allgemein", "Anmeldung", "Mail", "Speicher und Sicherung", "Texterkennung", "KI-Anbieter", "Ablage",
-               "Eingänge", "Import", "Konten", "Log"),
+    "Server": ("Allgemein", "Verbindungen", "Anmeldung", "Mail", "Speicher und Sicherung", "Texterkennung",
+               "KI-Anbieter", "Ablage", "Eingänge", "Import", "Konten", "Log"),
 }
 
 
@@ -110,11 +110,12 @@ def test_a_place_is_written_with_its_group_and_no_comma_arrow_or_card_form() -> 
 def test_the_guard_of_the_place_form_finds_what_it_is_for() -> None:
     """The rule above on sentences that break it, so that a guard that finds nothing is no guard."""
     for bad in ("See Server, Storage and backups.", "under Settings › My account › Connections, card \"API keys\"",
-                "under General › Interfaces", "My account → Security", "Settings, Sign-in"):
+                "under Connections › Interfaces", "My account → Security", "Settings, Sign-in"):
         assert _place_form_errors({"probe": bad}, "Settings", AREAS), bad
-    for bad in ("unter Mein Konto, Sicherheit", "unter Allgemein › Schnittstellen", "in der Karte „Mail“"):
+    for bad in ("unter Mein Konto, Sicherheit", "unter Verbindungen › Schnittstellen", "in der Karte „Mail“"):
         assert _place_form_errors({"probe": bad}, "Einstellungen", AREAS_DE), bad
     for good in ("under Settings › Server › Storage and backups › Check files", "My account › Notifications",
+                 "under Settings › Server › Connections › Interfaces",
                  "Server, user and password are missing."):
         assert _place_form_errors({"probe": good}, "Settings", AREAS) == [], good
 

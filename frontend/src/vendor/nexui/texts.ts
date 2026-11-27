@@ -57,6 +57,15 @@ const DE = {
   builtWith: 'Gebaut mit',
   whatsNewWhere: 'Wo:',
   whatsNewDone: 'Verstanden',
+  // Since 1.2.0 (module wasneu): the banner after an update, several versions in one window, the earlier ones.
+  whatsNewBanner: '{app} {version} ist da.',
+  whatsNewShow: 'Was ist neu?',
+  whatsNewPutAway: 'Ausblenden',
+  whatsNewSince: 'Neu in {app} seit deinem letzten Besuch',
+  whatsNewAll: 'Was ist neu in {app}',
+  whatsNewVersion: 'Version {version}',
+  whatsNewEarlier: 'Frühere Versionen',
+  whatsNewOperator: 'Für Betreiber',
   close: 'Schließen',
   // Since 1.1.2 (E65): a moment of today or yesterday (`formatMoment`).
   today: 'heute',
@@ -78,7 +87,8 @@ const DE = {
   notifyDevices: 'iPhone und iPad',
   notifyDevicesHint: 'Mitteilungen aufs iPhone und iPad kommen über die App; verbunden wird sie unter „Verbindungen“.',
   notifyToConnections: 'Zu den Verbindungen',
-  // Since 1.1.3 (U-3): the parts of Server › General an app has, for its line (`areaText` with `parts`).
+  // Since 1.1.3 (U-3): the parts of Server › General an app has, for its line (`areaText` with `parts`). Since 1.2.1
+  // `interfaces` and `nexApps` stand under Server › Verbindungen; they stay here only so an app not yet moved still builds.
   generalParts: {
     limits: 'Grenzen',
     features: 'Funktionen für alle Konten',
@@ -94,7 +104,10 @@ const DE = {
     'appearance': { title: 'Darstellung', text: 'Hell oder dunkel und wie {app} bei dir aussieht.' },
     'notifications': { title: 'Benachrichtigungen', text: 'Was dich auf welchem Weg erreicht.' },
     'connections': { title: 'Verbindungen', text: 'Geräte, andere Apps, API-Schlüssel und KI-Werkzeuge, die mit deinen {thingsDative} arbeiten.' },
-    'general': { title: 'Allgemein', text: 'Grenzen, Funktionen für alle Konten, Schnittstellen und eigene Sprachen.' },
+    'general': { title: 'Allgemein', text: 'Grenzen, Funktionen für alle Konten und eigene Sprachen.' },
+    // Since 1.2.1 (E67, decided 27.11.2026): Server › Verbindungen, the operator's mirror of My account › Verbindungen
+    // with the cards "Andere nex-Apps" and "Schnittstellen"; its own slug, `connections` is the account's.
+    'server-connections': { title: 'Verbindungen', text: 'Wie sich andere nex-Apps, Programme und KI-Werkzeuge mit {app} verbinden.' },
     'sign-in': { title: 'Anmeldung', text: 'Wie sich alle anmelden: Passwort, öffentliche Adresse, zweiter Faktor und Anbieter.' },
     'mail': { title: 'Mail', text: 'Der Mailserver, über den {app} Einladungen, Links und Benachrichtigungen verschickt.' },
     'storage': { title: 'Speicher und Sicherung', text: 'Der belegte Platz und die Sicherungen des Servers.' },
@@ -150,6 +163,14 @@ const EN: NexuiTexts = {
   builtWith: 'Built with',
   whatsNewWhere: 'Where:',
   whatsNewDone: 'Got it',
+  whatsNewBanner: '{app} {version} is here.',
+  whatsNewShow: "What's new?",
+  whatsNewPutAway: 'Dismiss',
+  whatsNewSince: 'New in {app} since your last visit',
+  whatsNewAll: "What's new in {app}",
+  whatsNewVersion: 'Version {version}',
+  whatsNewEarlier: 'Earlier versions',
+  whatsNewOperator: 'For operators',
   close: 'Close',
   // Since 1.1.2 (E65): a moment of today or yesterday (`formatMoment`).
   today: 'today',
@@ -171,7 +192,8 @@ const EN: NexuiTexts = {
   notifyDevices: 'iPhone and iPad',
   notifyDevicesHint: 'Notifications on iPhone and iPad come through the app; it is connected under “Connections”.',
   notifyToConnections: 'To connections',
-  // Since 1.1.3 (U-3): the parts of Server › General an app has, for its line (`areaText` with `parts`).
+  // Since 1.1.3 (U-3): the parts of Server › General an app has, for its line (`areaText` with `parts`). Since 1.2.1
+  // `interfaces` and `nexApps` stand under Server › Verbindungen; they stay here only so an app not yet moved still builds.
   generalParts: {
     limits: 'limits',
     features: 'features for every account',
@@ -187,7 +209,8 @@ const EN: NexuiTexts = {
     'appearance': { title: 'Appearance', text: 'Light or dark and how {app} looks for you.' },
     'notifications': { title: 'Notifications', text: 'What reaches you, and which way.' },
     'connections': { title: 'Connections', text: 'Devices, other apps, API keys and AI tools that work with your {thingsDative}.' },
-    'general': { title: 'General', text: 'Limits, features for every account, interfaces and added languages.' },
+    'general': { title: 'General', text: 'Limits, features for every account and added languages.' },
+    'server-connections': { title: 'Connections', text: 'How other nex apps, programs and AI tools connect with {app}.' },
     'sign-in': { title: 'Sign-in', text: 'How everyone signs in: password, public address, second factor and providers.' },
     'mail': { title: 'Mail', text: 'The mail server {app} sends invitations, links and notifications through.' },
     'storage': { title: 'Storage and backups', text: 'The space in use and the backups of the server.' },
@@ -241,6 +264,14 @@ const FR: NexuiTexts = {
   builtWith: 'Construit avec',
   whatsNewWhere: 'Où :',
   whatsNewDone: 'Compris',
+  whatsNewBanner: '{app} {version} est là.',
+  whatsNewShow: 'Quoi de neuf ?',
+  whatsNewPutAway: 'Masquer',
+  whatsNewSince: 'Nouveau dans {app} depuis ta dernière visite',
+  whatsNewAll: 'Quoi de neuf dans {app}',
+  whatsNewVersion: 'Version {version}',
+  whatsNewEarlier: 'Versions précédentes',
+  whatsNewOperator: 'Pour les opérateurs',
   close: 'Fermer',
   // Since 1.1.2 (E65): a moment of today or yesterday (`formatMoment`).
   today: 'aujourd’hui',
@@ -262,7 +293,8 @@ const FR: NexuiTexts = {
   notifyDevices: 'iPhone et iPad',
   notifyDevicesHint: 'Les notifications sur iPhone et iPad passent par l’app ; elle se connecte sous « Connexions ».',
   notifyToConnections: 'Vers les connexions',
-  // Since 1.1.3 (U-3): the parts of Server › General an app has, for its line (`areaText` with `parts`).
+  // Since 1.1.3 (U-3): the parts of Server › General an app has, for its line (`areaText` with `parts`). Since 1.2.1
+  // `interfaces` and `nexApps` stand under Server › Verbindungen; they stay here only so an app not yet moved still builds.
   generalParts: {
     limits: 'limites',
     features: 'fonctions pour tous les comptes',
@@ -278,7 +310,8 @@ const FR: NexuiTexts = {
     'appearance': { title: 'Apparence', text: 'Clair ou sombre et l’allure de {app} chez toi.' },
     'notifications': { title: 'Notifications', text: 'Ce qui te parvient, et par quel moyen.' },
     'connections': { title: 'Connexions', text: 'Appareils, autres apps, clés API et outils d’IA qui travaillent avec tes {thingsDative}.' },
-    'general': { title: 'Général', text: 'Limites, fonctions pour tous les comptes, interfaces et langues ajoutées.' },
+    'general': { title: 'Général', text: 'Limites, fonctions pour tous les comptes et langues ajoutées.' },
+    'server-connections': { title: 'Connexions', text: 'Comment les autres apps nex, les programmes et les outils d’IA se connectent à {app}.' },
     'sign-in': { title: 'Connexion', text: 'Comment tout le monde se connecte : mot de passe, adresse publique, second facteur et fournisseurs.' },
     'mail': { title: 'E-mail', text: 'Le serveur de messagerie par lequel {app} envoie invitations, liens et notifications.' },
     'storage': { title: 'Stockage et sauvegardes', text: 'L’espace occupé et les sauvegardes du serveur.' },

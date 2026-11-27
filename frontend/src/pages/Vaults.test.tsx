@@ -329,7 +329,7 @@ describe('the switches for all accounts (links to the outside, upload requests, 
     page.close()
     server.answers['GET /api/v1/connections/interfaces'] = { api: false }
     server.answers['PUT /api/v1/connections/interfaces'] = { api: true }
-    await page.show(<Interfaces />, '/settings/general')
+    await page.show(<Interfaces />, '/settings/server-connections')
     const toggle = tick('Programmschnittstelle (API) für Mitglieder')
     expect(toggle.checked).toBe(false)
     await page.click(toggle)

@@ -39,7 +39,7 @@ from .errors import CODES, GrantError, Refused
 from .model import Caller, Code, Connection, Legacy, Pending, Store, Waiting
 from .persons import Person, about
 
-__version__ = "0.1.17"
+__version__ = "0.1.18"
 
 __all__ = [
     "APPS",
