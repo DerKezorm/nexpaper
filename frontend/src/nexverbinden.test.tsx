@@ -1,4 +1,4 @@
-// Vorlage nexverbinden 0.1.10
+// Vorlage nexverbinden 0.1.11
 // @vitest-environment jsdom
 /**
  * The parts of the module in the app: the card of a partner app in each state, the cards of all partners, the consent
@@ -517,7 +517,9 @@ describe("the operator's card", () => {
       window.history.replaceState(null, '', '#nex-apps')
       await show(<ConnectionsOperatorCard key="anchor" app={APP} request={request} />)
       expect(seen).toHaveLength(1)
-      expect(seen[0]?.querySelector('#nex-apps')).not.toBeNull()
+      expect(seen[0]?.id).toBe('nex-apps')
+      // 0.1.11: no box around the card; it stands where the app puts it.
+      expect(byTest('connections-operator')?.parentElement).toBe(box)
     } finally {
       Element.prototype.scrollIntoView = kept
       window.history.replaceState(null, '', ' ')

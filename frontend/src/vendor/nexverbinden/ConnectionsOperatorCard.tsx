@@ -11,7 +11,7 @@
  *
  * Copied unchanged into frontend/src/vendor/nexverbinden/ by bauplaene/verbinden/tools/sync.py; changed only there.
  */
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import { Button, Card, CheckboxRow, Field, Notice } from '../nexui'
 import { VERBINDEN_BASE, VERBINDEN_BUTTONS, fillVerbinden, refusalText, useVerbindenTexts, type ConnectionsAdmin, type VerbindenRequest } from './verbinden'
@@ -30,12 +30,12 @@ export function ConnectionsOperatorCard({ app, request, base = VERBINDEN_BASE, l
   const [typed, setTyped] = useState<Record<string, string>>({})
   const [problem, setProblem] = useState<string>()
   const [saved, setSaved] = useState<string>()
-  const place = useRef<HTMLDivElement>(null)
   const loaded = admin !== null
 
-  // 0.1.10: "Einrichten" leads here with `#nex-apps`; once the card stands, it comes into view.
+  // 0.1.10: "Einrichten" leads here with `#nex-apps`; once the card stands, it comes into view. Since 0.1.11 found by its
+  // id, without a box around the card (the card stands directly in the app's row of cards, as before 0.1.10).
   useEffect(() => {
-    if (loaded && typeof window !== 'undefined' && window.location.hash === '#nex-apps') place.current?.scrollIntoView?.({ block: 'start' })
+    if (loaded && typeof document !== 'undefined' && window.location.hash === '#nex-apps') document.getElementById('nex-apps')?.scrollIntoView?.({ block: 'start' })
   }, [loaded])
 
   useEffect(() => {
@@ -62,7 +62,6 @@ export function ConnectionsOperatorCard({ app, request, base = VERBINDEN_BASE, l
   }
 
   return (
-    <div ref={place}>
     <Card id="nex-apps" icon="Plug" title={texts.operator.title} subtitle={texts.operator.subtitle} testId={testId}>
       {problem && <Notice tone="danger">{problem}</Notice>}
       {admin && (
@@ -102,6 +101,5 @@ export function ConnectionsOperatorCard({ app, request, base = VERBINDEN_BASE, l
         </>
       )}
     </Card>
-    </div>
   )
 }
