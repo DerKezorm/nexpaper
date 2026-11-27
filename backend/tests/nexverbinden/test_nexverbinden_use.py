@@ -143,16 +143,19 @@ def test_a_connection_unused_for_half_a_year_rests(world: Any) -> None:
 
 
 def test_starting_in_the_app_with_the_data_gives_only_the_areas_chosen_in_the_card(world: Any) -> None:
-    """Decision V16 (F1 = a): the partner reads areas of the app; starting in the app, the card asks for them first."""
+    """Decision V16 (F1 = a), V41 (since 0.1.7): where a purpose the partner uses here has areas, reading or writing,
+    the card asks for them before the click; the partner reaches only the areas chosen, a write into another is
+    refused."""
     app_name = world.app.config().app_name
-    reading = [
+    with_areas = [
         purpose
         for purpose in world.pkg.CATALOG.uses(world.partner.name, app_name)
         if world.pkg.CATALOG.purpose(app_name, purpose).areas
-        and world.pkg.CATALOG.purpose(app_name, purpose).level == "read"
     ]
+    reading = [purpose for purpose in with_areas if world.pkg.CATALOG.purpose(app_name, purpose).level == "read"]
+    writing = [purpose for purpose in with_areas if purpose not in reading]
     card = world.card("app")
-    if not reading:
+    if not with_areas:
         assert card["areas_choice"] == []
         return
     choice = card["areas_choice"]
@@ -175,6 +178,12 @@ def test_starting_in_the_app_with_the_data_gives_only_the_areas_chosen_in_the_ca
         assert getattr(answer, "status", None) == 200, (purpose, answer)
         seen = world.app.areas_seen(purpose, answer.data)
         assert first in seen and second not in seen, (purpose, seen)
+    # V41: "nie mehr als nötig" holds for writing too: into the area chosen it goes, into the other one it does not.
+    for purpose in writing:
+        given = world.partner_calls_app(world.app.write_into(purpose, choice[0]["id"]))
+        assert 200 <= getattr(given, "status", 0) < 300, (purpose, given)
+        refused = world.partner_calls_app(world.app.write_into(purpose, choice[1]["id"]))
+        assert getattr(refused, "status", None) in (403, 404), (purpose, refused)
 
 
 def test_the_app_uses_a_connection_with_its_own_requests(world: Any) -> None:

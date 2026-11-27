@@ -18,6 +18,14 @@ export const VERBINDEN_BASE = '/api/connect'
 /** The page of the settings that holds the cards (the return page goes back there). */
 export const CONNECTIONS_PAGE = '/settings/connections'
 
+/** Since 0.1.8 (B2, B3): Server › Allgemein with the card "Andere nex-Apps" (`id="nex-apps"`), the same in every app;
+ * the cards link there for the operator, here and in the partner app. */
+export const OPERATOR_PAGE = '/settings/general#nex-apps'
+
+/** Since 0.1.8 (B5, V48): the frame of the module's own pages (`/connect/app`, `/connect/return`): the whole height of
+ * the window, the card in its middle, the same in every app; the app shows the page without a frame of its own. */
+export const PAGE_FRAME = 'flex min-h-dvh w-full items-center justify-center px-4 py-8'
+
 /** The state of a card: the module's states, an older connection by API key (`legacy`, `expiring`), none. */
 export type ConnectionState = 'none' | 'connected' | 'unreachable' | 'refused' | 'resting' | 'off' | 'legacy' | 'expiring'
 
@@ -30,6 +38,9 @@ export type PartnerView = {
   /** The partner's address: of the connection, of the older one, else the operator's (may be empty). */
   address: string
   address_from_operator: boolean
+  /** Since 0.1.8 (V42, B3): whether the account can connect from here (an address of the operator, of the connection
+   * or of an older one). Left out by an older server: an address there means set up. */
+  set_up?: boolean
   host: string
   /** What this app may do at the partner, and what the partner may do here (purpose ids). */
   uses: string[]
@@ -49,7 +60,7 @@ export type PartnerView = {
   /** This app's areas the partner reaches (`null`: all). */
   areas_granted: AreaRef[] | null
   legacy: { shown: string; expires_at: string | null } | null
-  /** Decision V16: this app's areas to choose before the click, where the partner reads areas here (else empty). */
+  /** V16, V41: this app's areas to choose before the click, where the partner reads or writes areas here (else empty). */
   areas_choice: AreaRef[]
   version: string | null
 }
@@ -57,18 +68,28 @@ export type PartnerView = {
 /** One purpose on the consent page. */
 export type PurposeInfo = { id: string; level: string; areas: boolean }
 
+/** Since 0.1.8 (B1, V43): who is signed in on the consent page: the shown name ("" where it is the user name), the
+ * user name, the address of the own picture and the app's colour of the person (or none). */
+export type AccountCard = { name: string; username: string; picture: string | null; color: string | null }
+
 /** `GET <base>/consent`: what the consent page shows. */
 export type ConsentInfo = {
   app: string
   partner: string
   partner_host: string
   account: string
+  /** Since 0.1.8 (B1); left out by an older server. */
+  account_card?: AccountCard
   /** What the asking app may do here, and what this app gets there. */
   partner_may: PurposeInfo[]
   app_may: PurposeInfo[]
   areas: AreaRef[]
   replaces: boolean
 }
+
+/** Since 0.1.8 (B6, V47): `GET <base>/consent` where the app that asks cannot connect here but has a safe way back:
+ * the page sends the browser there at once, and the refusal stands in the card where "Verbinden" was clicked. */
+export type ConsentBack = { back: string; refused: string }
 
 /** `GET` and `PUT <base>/admin`. */
 export type ConnectionsAdmin = {
@@ -101,6 +122,8 @@ export const VERBINDEN_BUTTONS = {
   decline: { kind: 'secondary', icon: 'X' },
   save: { kind: 'secondary', icon: 'Check' },
   back: { kind: 'secondary', icon: 'ArrowLeft' },
+  /** Since 0.1.8 (B2, B3): the operator's way to Server › Allgemein › Andere nex-Apps, here or in the partner app. */
+  setUp: { kind: 'secondary', icon: 'SlidersHorizontal' },
 } as const
 
 /** The badge of each state. */
@@ -150,11 +173,77 @@ export function refusalCode(error: unknown): string | undefined {
   return typeof inner?.code === 'string' ? inner.code : undefined
 }
 
-/** The words of a refusal of the module. */
-export function refusalText(texts: VerbindenTexts, error: unknown, app: string): string {
-  const code = refusalCode(error)
+/** Since 0.1.8 (B6): the partner a refusal belongs to (`partner` in the module's `detail`), if it names one. */
+export function refusalPartner(error: unknown): string | undefined {
+  const found = error as { detail?: unknown; body?: unknown } | null
+  const inner = (found?.detail ?? (found?.body as { detail?: unknown } | undefined)?.detail ?? found) as { partner?: unknown } | null
+  return typeof inner?.partner === 'string' ? inner.partner : undefined
+}
+
+/** The words of a refusal of the module (by its code). Since 0.1.8 `{partner}` is filled too: the partner given, else
+ * the one the refusal names, else "die andere App". */
+export function refusalText(texts: VerbindenTexts, error: unknown, app: string, partner?: string): string {
+  return codeText(texts, refusalCode(error), app, partner ?? refusalPartner(error))
+}
+
+/** Since 0.1.8: the words of a code of the module, with `{app}` and `{partner}`. */
+export function codeText(texts: VerbindenTexts, code: string | undefined, app: string, partner?: string): string {
   const found = code ? (texts.errors as Record<string, string>)[code] : undefined
-  return fillVerbinden(found ?? texts.failed, { app })
+  return fillVerbinden(found ?? texts.failed, { app, partner: partner ?? texts.card.otherApp })
+}
+
+/** Since 0.1.8 (B2, B3): where the operator changes what a refusal names: this app's Server › Allgemein (`here`), the
+ * partner app's (`there`), or nowhere. */
+export function setUpPlace(code: string | null | undefined): 'here' | 'there' | null {
+  if (code === 'local_off' || code === 'partner_not_set_up') return 'here'
+  if (code === 'partner_local_off' || code === 'partner_cannot_reach') return 'there'
+  return null
+}
+
+/** Since 0.1.8 (B6, V47): a refusal on the way to the partner and back, kept for the card while the browser goes from
+ * the return page to the cards (in `sessionStorage` of this app; read once). */
+export type CarriedProblem = { partner: string | null; code: string }
+const CARRIED = 'nexverbinden.problem'
+
+export function carryProblem(problem: CarriedProblem): boolean {
+  try {
+    window.sessionStorage.setItem(CARRIED, JSON.stringify(problem))
+    return true
+  } catch {
+    return false
+  }
+}
+
+export function takeProblem(): CarriedProblem | null {
+  try {
+    const raw = window.sessionStorage.getItem(CARRIED)
+    if (!raw) return null
+    window.sessionStorage.removeItem(CARRIED)
+    const found = JSON.parse(raw) as { partner?: unknown; code?: unknown } | null
+    if (!found || typeof found.code !== 'string') return null
+    return { partner: typeof found.partner === 'string' ? found.partner : null, code: found.code }
+  } catch {
+    return null
+  }
+}
+
+/** Since 0.1.8 (B1): the picture of an account without a photo, one letter and a hue from the name; the same rule as
+ * `avatarPlaceholder` of the module konten (and the iPhone apps), kept here so the module needs only the kit. */
+export function placeholderOf(name: string): { letter: string; hue: number } {
+  const text = name.trim()
+  const first = Array.from(text)[0] ?? ''
+  const letter = first ? (Array.from(first.toUpperCase())[0] ?? '?') : '?'
+  let hash = 0x811c9dc5
+  for (const byte of new TextEncoder().encode(text.toLowerCase())) {
+    hash ^= byte
+    hash = Math.imul(hash, 0x01000193) >>> 0
+  }
+  return { letter, hue: hash % 360 }
+}
+
+/** Since 0.1.8 (B1): "Kim Example (kim)", or the user name alone where there is no other shown name. */
+export function accountLine(card: AccountCard): string {
+  return card.name && card.name !== card.username ? `${card.name} (${card.username})` : card.username
 }
 
 /** How a moment is written; the app may give its own (nextime: the account's zone). */

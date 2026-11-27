@@ -85,12 +85,19 @@ def _ask(config: AppConfig, store: Any, base: str, method: str, path: str, **sen
     )
 
 
+def unreachable(failure: reach.Unreachable) -> Refused:
+    """Since 0.1.8 (B2): ``local_off`` where the address lies in the own network and the operator has not allowed it
+    (the account learns who can change that, and where), else ``unreachable``."""
+    return Refused("local_off" if failure.local else "unreachable")
+
+
 def partner_description(config: AppConfig, store: Any, base: str) -> dict[str, Any]:
-    """The description at ``base``, checked: ``partner_too_old`` without one, ``unreachable`` when nothing came."""
+    """The description at ``base``, checked: ``partner_too_old`` without one, ``unreachable`` when nothing came,
+    ``local_off`` when the address lies in the own network and the operator has not allowed that (0.1.8, B2)."""
     try:
         answer = _ask(config, store, base, "GET", WELL_KNOWN, seconds=config.describe_seconds)
-    except reach.Unreachable:
-        raise Refused("unreachable") from None
+    except reach.Unreachable as failure:
+        raise unreachable(failure) from None
     data = answer.data
     if answer.status != 200 or not isinstance(data, dict) or not isinstance(data.get("app"), str):
         raise Refused("partner_too_old")
@@ -113,22 +120,45 @@ def _own_areas(store: Any, account_id: AccountId, chosen: Any) -> list[Any] | No
     return [own[key] for key in own if key in wanted]
 
 
+def operator_address(store: Any, partner: str) -> str:
+    """The address of ``partner`` the operator set under Server › Allgemein › Andere nex-Apps ("" where none)."""
+    addresses = store.setting("addresses")
+    return str(addresses.get(partner) or "") if isinstance(addresses, dict) else ""
+
+
+def partner_address(store: Any, account_id: AccountId, partner: str) -> str:
+    """Decision V42 (B3, decided 27.11.2026): where the account connects with ``partner``. Only the operator sets the
+    other apps up; the account types no address. A connection there is (also one made with an address typed in before
+    0.1.8) and an older one by API key keep their own address, so that they go on as they are and "Neu verbinden"
+    reaches the same app; else the operator's. "" where there is none: the app is not set up on this server."""
+    connection = store.connection(account_id, partner)
+    if connection is not None:
+        return connection.partner_base
+    legacy = next((row for row in store.legacy(account_id) if row.partner == partner), None)
+    if legacy is not None and legacy.partner_base:
+        return legacy.partner_base
+    return operator_address(store, partner)
+
+
 def start(
     store: Any,
     config: AppConfig,
     account_id: AccountId,
     partner: str,
-    address: str,
     base: str,
     now: datetime,
     *,
     areas: Any = None,
 ) -> str:
-    """The account clicked "Mit <partner> verbinden": the address of the partner's consent page to send it to."""
+    """The account clicked "Mit <partner> verbinden": the address of the partner's consent page to send it to. Since
+    0.1.8 (V42) the address is the operator's (or the one of the connection there is), never one the account types."""
     if not connections_on(store):
         raise Refused("connections_off")
     if partner not in config.usable:
         raise Refused("partner_unknown")
+    address = partner_address(store, account_id, partner)
+    if not address:
+        raise Refused("partner_not_set_up")
     url = reach.clean_url(address)
     # Only what goes out counts: a mistyped address costs nothing.
     if not BRAKE.take(f"verbinden:start:{account_id}", config.starts_per_minute):
@@ -203,7 +233,9 @@ def come_back(
         or (iss and not reach.same_place(iss, pending.partner_base))
         or not _text(code, MAX_TOKEN)
     ):
-        raise Refused("return_invalid")
+        # Since 0.1.8 (B6): the card of the partner shows it, where the return belongs to one started here.
+        mine = pending is not None and pending.account_id == account_id
+        raise Refused("return_invalid", **({"partner": pending.partner} if mine and pending else {}))
     own = _base(base)
     theirs = oauthcore.new_tokens(config.access_prefix, config.refresh_prefix, config.access_hours, now)
     form = {
@@ -221,17 +253,17 @@ def come_back(
     }
     try:
         answer = _ask(config, store, pending.partner_base, "POST", f"{PREFIX}/token", form=form)
-    except reach.Unreachable:
-        raise Refused("unreachable") from None
+    except reach.Unreachable as failure:
+        raise Refused(unreachable(failure).code, partner=pending.partner) from None
     data = answer.data if isinstance(answer.data, dict) else {}
     if answer.status != 200:
         logger.info("%s did not confirm the connection (%s)", pending.partner, answer.code or answer.status)
-        raise Refused("partner_off" if answer.code == "connections_off" else "consent_failed")
+        raise Refused("partner_off" if answer.code == "connections_off" else "consent_failed", partner=pending.partner)
     access, refresh = _text(data.get("access_token"), MAX_TOKEN), _text(data.get("refresh_token"), MAX_TOKEN)
     connection_id = _text(data.get("connection_id"), 100)
     lasts = data.get("expires_in")
     if not access or not refresh or not connection_id or not isinstance(lasts, int) or not 60 <= lasts <= 86400:
-        raise Refused("consent_failed")
+        raise Refused("consent_failed", partner=pending.partner)
     areas_used = data.get("areas")
     earlier = store.connection(account_id, pending.partner)
     if earlier is not None:
@@ -259,6 +291,32 @@ def come_back(
     store.commit()
     logger.info("connected with %s connection=%s", pending.partner, made.id)
     return made
+
+
+#: Since 0.1.8 (B6): what another app may send back with ``error`` from its consent page, and what the card here says.
+#: ``access_denied`` is the account's no (RFC 6749); the others are the module's own (``way_back`` on the other side).
+CAME_BACK = {
+    "access_denied": "declined",
+    "partner_off": "partner_off",
+    "partner_local_off": "partner_local_off",
+    "partner_cannot_reach": "partner_cannot_reach",
+    "connections_off": "connections_off",
+    "consent_failed": "consent_failed",
+}
+
+
+def came_back_refused(store: Any, account_id: AccountId, error: str, state: str) -> Refused:
+    """Decision V47 (B6): the browser is back from the partner's consent page with ``error`` instead of a code: the
+    refusal for the card of the partner where "Verbinden" was clicked (``partner`` in it where the ``state`` belongs to
+    a connection this account started here; the start is used up). Anything not in ``CAME_BACK`` says
+    ``consent_failed``."""
+    pending = store.take_pending(oauthcore.digest(state or ""))
+    store.commit()
+    code = CAME_BACK.get(str(error), "consent_failed")
+    if pending is None or pending.account_id != account_id:
+        return Refused(code)
+    logger.info("connection with %s not made (%s)", pending.partner, code)
+    return Refused(code, partner=pending.partner)
 
 
 def _area_list(raw: Any) -> list[dict[str, Any]] | None:
@@ -302,6 +360,72 @@ def _checked_asker(store: Any, config: AppConfig, params: dict[str, Any], base: 
     return found["app"], client, redirect
 
 
+#: Since 0.1.8 (B6): a refusal on this side, said as the app that asks understands it (its ``CAME_BACK``).
+ECHO = {
+    "connections_off": "partner_off",
+    "local_off": "partner_local_off",
+    "unreachable": "partner_cannot_reach",
+    "partner_off": "connections_off",
+}
+
+
+def _known(store: Any, config: AppConfig, account_id: AccountId, client: str) -> bool:
+    """Whether ``client`` is an app this side knows without asking it: the address the operator set for one of the
+    partners, or the address of a connection (or an older one by API key) of this account."""
+    places = [operator_address(store, partner) for partner in config.partners]
+    places += [connection.partner_base for connection in store.connections(account_id)]
+    places += [row.partner_base for row in store.legacy(account_id)]
+    return any(place and reach.same_place(client, place) for place in places)
+
+
+def way_back(
+    store: Any, config: AppConfig, account_id: AccountId, params: dict[str, Any], base: str, refusal: Refused
+) -> str | None:
+    """Decision V47 (B6): where a refusal on the consent page goes, so that the account reads it in the card of the
+    app where it clicked "Verbinden": that app's return address with ``error`` (``ECHO``), ``state`` and ``iss``. Only
+    to an app this side knows (``_known``: the operator's address or a connection of the account), whose return is
+    exactly ``<its address>/connect/return`` and a valid one; else ``None`` and the page says it itself."""
+    try:
+        client = reach.clean_url(str(params.get("client_id") or ""))
+    except Refused:
+        return None
+    redirect = str(params.get("redirect_uri") or "")
+    state = params.get("state")
+    if not isinstance(state, str) or not 0 < len(state) <= MAX_STATE or redirect != client + RETURN_PAGE:
+        return None
+    own = _base(base)
+    host = urlsplit(client).hostname or ""
+    http_hosts = (*oauthcore.LOOPBACK, host) if urlsplit(own).scheme == "http" else oauthcore.LOOPBACK
+    if not oauthcore.valid_redirect(redirect, http_hosts=http_hosts) or not _known(store, config, account_id, client):
+        return None
+    code = ECHO.get(refusal.code, "consent_failed")
+    logger.info("connection asked for not possible here (%s), sent back", refusal.code)
+    return oauthcore.back(redirect, {"error": code, "state": state, "iss": own})
+
+
+#: The forms of a picture's address the consent page shows: the app's own route, a web address, a picture inline.
+PICTURE_FORMS = ("/", "https://", "http://", "data:image/")
+
+
+def account_card(store: Any, account_id: AccountId) -> dict[str, Any]:
+    """Decision V43 (B1): who is signed in, for "Angemeldet als Kim Example (kim)" with the picture. The app's
+    ``Store.account_card(account_id)`` (since 0.1.8, optional) gives ``name`` (the shown name), ``username``,
+    ``picture`` (the address of the own picture, or none) and ``color`` (the app's colour of the person, or none);
+    without it the account's name alone, as before."""
+    plain = store.account_name(account_id)
+    given = getattr(store, "account_card", None)
+    found = given(account_id) if callable(given) else None
+    found = found if isinstance(found, dict) else {}
+    username = _text(found.get("username"), MAX_NAME) or plain
+    name = _text(found.get("name"), MAX_NAME)
+    picture = found.get("picture")
+    shown = isinstance(picture, str) and 0 < len(picture) <= 2048 and picture.startswith(PICTURE_FORMS)
+    picture = picture if shown else None
+    color = found.get("color")
+    color = color if isinstance(color, str) and 0 < len(color) <= 40 else None
+    return {"name": name if name != username else "", "username": username, "picture": picture, "color": color}
+
+
 def _words_of(config: AppConfig, granted_by: str, purposes: tuple[str, ...]) -> list[dict[str, Any]]:
     return [
         {
@@ -314,8 +438,16 @@ def _words_of(config: AppConfig, granted_by: str, purposes: tuple[str, ...]) -> 
 
 
 def consent_info(store: Any, config: AppConfig, account_id: AccountId, params: dict[str, Any], base: str) -> dict:
-    """What the consent page shows: the app that asks, what it may do here and what this app gets there."""
-    asker, client, _ = _checked_asker(store, config, params, base)
+    """What the consent page shows: the app that asks, what it may do here and what this app gets there. Since 0.1.8
+    (B6): where the app that asks cannot connect here but has a safe way back (``way_back``), only ``{"back": …,
+    "refused": <code>}``, and the page sends the browser there."""
+    try:
+        asker, client, _ = _checked_asker(store, config, params, base)
+    except Refused as refusal:
+        back = way_back(store, config, account_id, params, base, refusal)
+        if back is None:
+            raise
+        return {"back": back, "refused": refusal.code}
     theirs = config.catalog.uses(asker, config.app_name)
     mine = config.catalog.uses(config.app_name, asker)
     with_areas = any(config.catalog.purpose(config.app_name, purpose).areas for purpose in theirs)
@@ -324,6 +456,8 @@ def consent_info(store: Any, config: AppConfig, account_id: AccountId, params: d
         "partner": asker,
         "partner_host": urlsplit(client).netloc,
         "account": store.account_name(account_id),
+        # Since 0.1.8 (B1): the shown name, the user name and the picture of the account.
+        "account_card": account_card(store, account_id),
         "partner_may": _words_of(config, config.app_name, theirs),
         "app_may": _words_of(config, asker, mine),
         "areas": [{"id": area["id"], "name": area["name"]} for area in store.areas(account_id)] if with_areas else [],
@@ -334,8 +468,15 @@ def consent_info(store: Any, config: AppConfig, account_id: AccountId, params: d
 def consent(
     store: Any, config: AppConfig, account_id: AccountId, body: dict[str, Any], base: str, now: datetime
 ) -> str:
-    """The account's answer; the address to send the browser to (the asking app's return, with a code or a no)."""
-    asker, client, redirect = _checked_asker(store, config, body, base)
+    """The account's answer; the address to send the browser to (the asking app's return, with a code or a no; since
+    0.1.8 with the error mark of a refusal where there is a safe way back, ``way_back``)."""
+    try:
+        asker, client, redirect = _checked_asker(store, config, body, base)
+    except Refused as refusal:
+        back = way_back(store, config, account_id, body, base, refusal)
+        if back is None:
+            raise
+        return back
     state = str(body["state"])
     own = _base(base)
     if not body.get("allow"):
@@ -540,7 +681,10 @@ def _mark(store: Any, connection: Connection, state: str, now: datetime, problem
     if state == "connected":
         changed = replace(connection, state=state, ok_at=now, stale_since=None, problem=None)
     elif state == "unreachable":
-        changed = replace(connection, state=state, stale_since=connection.stale_since or now, problem="unreachable")
+        # Since 0.1.8 (B2): ``local_off`` where the operator does not allow the own network, so the card says why.
+        changed = replace(
+            connection, state=state, stale_since=connection.stale_since or now, problem=problem or "unreachable"
+        )
     else:
         changed = replace(connection, state=state, problem=problem or state)
     store.save(changed)
@@ -567,8 +711,8 @@ def _fresh_access(store: Any, config: AppConfig, connection: Connection, now: da
     form = {"grant_type": "refresh_token", "refresh_token": held["refresh"], "client_id": held["own"]}
     try:
         answer = _ask(config, store, connection.partner_base, "POST", f"{PREFIX}/token", form=form)
-    except reach.Unreachable:
-        _mark(store, connection, "unreachable", now)
+    except reach.Unreachable as failure:
+        _mark(store, connection, "unreachable", now, unreachable(failure).code)
         raise Refused("unreachable") from None
     data = answer.data if isinstance(answer.data, dict) else {}
     access, refresh = _text(data.get("access_token"), MAX_TOKEN), _text(data.get("refresh_token"), MAX_TOKEN)
@@ -606,8 +750,8 @@ def call(
         connection = store.connection(account_id, partner) or connection
         try:
             answer = _ask(config, store, connection.partner_base, method, path, bearer=access, body=body, params=params)
-        except reach.Unreachable:
-            _mark(store, connection, "unreachable", now)
+        except reach.Unreachable as failure:
+            _mark(store, connection, "unreachable", now, unreachable(failure).code)
             raise Refused("unreachable") from None
         if answer.status == 401 and answer.code != "account_resting" and attempt == 1:
             continue
@@ -731,14 +875,16 @@ def view(
     config: AppConfig, store: Any, account_id: AccountId, partner: str, now: datetime, connection: Connection | None
 ) -> dict[str, Any]:
     """One card: the partner, its state, what flows (both directions), the address to start from."""
-    addresses = store.setting("addresses") or {}
-    from_operator = str(addresses.get(partner) or "") if isinstance(addresses, dict) else ""
+    from_operator = operator_address(store, partner)
     legacy = next((row for row in store.legacy(account_id) if row.partner == partner), None)
     found: dict[str, Any] = {
         "partner": partner,
         "state": "none",
         "address": from_operator,
         "address_from_operator": bool(from_operator),
+        # Since 0.1.8 (V42, B3): whether the account can connect from here (an address of the operator, of the
+        # connection or of an older one); without, the card says the app is not set up on this server.
+        "set_up": bool(from_operator),
         "host": "",
         "uses": list(config.catalog.uses(config.app_name, partner)),
         "grants": list(config.catalog.uses(partner, config.app_name)),
@@ -759,12 +905,12 @@ def view(
     found["grants_levels"] = {
         purpose: config.catalog.purpose(config.app_name, purpose).level for purpose in found["grants"]
     }
-    # Decision V16 (F1 = a): where the partner reads areas of this app, the card asks for them before the click; the
-    # account's own areas to choose from (empty when the partner reads none).
+    # Decisions V16 (F1 = a) and V41: where a purpose the partner uses here has areas, reading or writing, the card asks
+    # for them before the click; the account's own areas to choose from (empty when no purpose of the partner has any).
     catalog_grants = config.catalog.uses(partner, config.app_name)
-    reads_areas = any(config.catalog.purpose(config.app_name, purpose).areas for purpose in catalog_grants)
+    asks_areas = any(config.catalog.purpose(config.app_name, purpose).areas for purpose in catalog_grants)
     found["areas_choice"] = (
-        [{"id": area["id"], "name": area["name"]} for area in store.areas(account_id)] if reads_areas else []
+        [{"id": area["id"], "name": area["name"]} for area in store.areas(account_id)] if asks_areas else []
     )
     if connection is not None:
         found.update(
@@ -780,6 +926,7 @@ def view(
             areas_used=connection.areas_used,
             areas_granted=_areas_named(store, account_id, connection.areas_granted),
             version=connection.partner_version or None,
+            set_up=True,
         )
         return found
     if legacy is not None:
@@ -794,6 +941,7 @@ def view(
             host=urlsplit(legacy.partner_base).netloc,
             ok_at=_iso(legacy.ok_at),
             legacy={"shown": legacy.shown, "expires_at": _iso(legacy.expires_at)},
+            set_up=bool(legacy.partner_base) or bool(from_operator),
         )
     return found
 
@@ -845,7 +993,7 @@ def reached(store: Any, account_id: AccountId, partner: str, now: datetime, *, p
         return
     if problem is None:
         _mark(store, connection, "connected", now)
-    elif problem == "unreachable":
-        _mark(store, connection, "unreachable", now)
+    elif problem in ("unreachable", "local_off"):
+        _mark(store, connection, "unreachable", now, problem)
     else:
         _mark(store, connection, _state_of_refusal(problem), now, problem)

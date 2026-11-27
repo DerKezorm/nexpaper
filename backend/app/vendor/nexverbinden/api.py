@@ -2,7 +2,9 @@
 
 ``GET    /.well-known/nex-app``                   who answers here, and whether it connects now
 ``GET    /api/connect/partners``                   the cards: every partner of the app with its state (account)
-``POST   /api/connect/partners/{partner}/start``   "Mit <partner> verbinden": ``{"go": <consent page>}`` (account)
+``POST   /api/connect/partners/{partner}/start``   "Mit <partner> verbinden": ``{"go": <consent page>}`` (account;
+                                                  since 0.1.8 at the operator's address, an ``address`` sent is
+                                                  not taken, V42)
 ``POST   /api/connect/return``                     back from the partner with ``code``, ``state``, ``iss`` (account)
 ``POST   /api/connect/partners/{partner}/check``   "Jetzt prüfen" (account)
 ``DELETE /api/connect/partners/{partner}``         "Trennen", both directions (account)
@@ -125,7 +127,6 @@ def router(
                 config,
                 account_id(signed_in),
                 _partner(partner),
-                str(body.get("address") or ""),
                 base_of(request),
                 _now(),
                 areas=body.get("areas"),
@@ -139,7 +140,9 @@ def router(
     def come_back(request: Request, signed_in: Own, data: Data, body: Annotated[dict, Body()]) -> dict:
         who = account_id(signed_in)
         if body.get("error"):
-            raise refuse(Refused("consent_failed"))
+            # Since 0.1.8 (B6, V47): the other app sent back a refusal of its consent page; the card of the partner
+            # here shows it (``partner`` in the refusal).
+            raise refuse(connect.came_back_refused(data, who, str(body.get("error")), str(body.get("state") or "")))
         try:
             made = connect.come_back(
                 data,

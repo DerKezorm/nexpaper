@@ -5,13 +5,17 @@
  * `GET <base>/partners` once and keeps each card as the server answers after a change. The app gives its forms for
  * connecting by hand and its own parts per partner; the marks come from the module (V21).
  *
+ * Since 0.1.8: `operator` (the signed-in account is one) gives the cards "Einrichten" and "Von Hand verbinden" for a new
+ * connection (B3); a refusal carried from the return page (B6) goes to the card of its partner, or stands above the
+ * cards where it names none.
+ *
  * Copied unchanged into frontend/src/vendor/nexverbinden/ by bauplaene/verbinden/tools/sync.py; changed only there.
  */
 import { useEffect, useState, type ReactNode } from 'react'
 
 import { Notice } from '../nexui'
 import { ConnectionCard } from './ConnectionCard'
-import { VERBINDEN_BASE, refusalText, useVerbindenTexts, type PartnerView, type VerbindenRequest, type WhenFormat } from './verbinden'
+import { VERBINDEN_BASE, codeText, refusalText, takeProblem, useVerbindenTexts, type PartnerView, type VerbindenRequest, type WhenFormat } from './verbinden'
 
 export type ConnectionsAreaProps = {
   app: string
@@ -27,13 +31,17 @@ export type ConnectionsAreaProps = {
   language?: string
   when?: WhenFormat
   navigate?: (url: string) => void
+  /** Since 0.1.8: the signed-in account is an operator (B3). */
+  operator?: boolean
   testId?: string
 }
 
-export function ConnectionsArea({ app, request, base = VERBINDEN_BASE, logos = {}, manual = {}, extra, areaWord, language, when, navigate, testId = 'connections-area' }: ConnectionsAreaProps) {
+export function ConnectionsArea({ app, request, base = VERBINDEN_BASE, logos = {}, manual = {}, extra, areaWord, language, when, navigate, operator = false, testId = 'connections-area' }: ConnectionsAreaProps) {
   const { texts } = useVerbindenTexts(language)
   const [views, setViews] = useState<PartnerView[] | null>(null)
   const [problem, setProblem] = useState<string>()
+  // B6 (0.1.8): a refusal from the return page, read once.
+  const [carried] = useState(takeProblem)
 
   useEffect(() => {
     let live = true
@@ -57,8 +65,14 @@ export function ConnectionsArea({ app, request, base = VERBINDEN_BASE, logos = {
       </div>
     )
   }
+  const homeless = carried && views !== null && !views.some((view) => view.partner === carried.partner)
   return (
     <div className="flex flex-col gap-6" data-testid={testId}>
+      {homeless && (
+        <Notice tone={carried.code === 'declined' ? 'warn' : 'danger'} testId="connections-problem">
+          {codeText(texts, carried.code, app, carried.partner ?? undefined)}
+        </Notice>
+      )}
       {(views ?? []).map((view) => (
         <ConnectionCard
           key={view.partner}
@@ -72,6 +86,8 @@ export function ConnectionsArea({ app, request, base = VERBINDEN_BASE, logos = {
           language={language}
           when={when}
           navigate={navigate}
+          operator={operator}
+          carried={carried?.partner === view.partner ? carried.code : undefined}
           onChange={(changed) => setViews((all) => (all ?? []).map((one) => (one.partner === changed.partner ? changed : one)))}
         >
           {extra?.(view)}

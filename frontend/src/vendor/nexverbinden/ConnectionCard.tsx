@@ -4,12 +4,18 @@
  * the title, on the right the state as a `Badge` with the host or since when. Open it shows what flows each way (rows
  * with an arrow: ← comes here, → goes there), the facts of the connection and the buttons of its state:
  *
- * - not connected: the partner's address (filled in by the operator where he named it), where the partner reads areas
- *   of this app the choice of them (all at first, decision V16), one sentence how it goes, "Mit <partner> verbinden"
+ * - not connected: the partner's address (filled in by the operator where he named it), where the partner reads or
+ *   writes areas of this app the choice of them (all at first, V16, V41), one sentence how it goes, "Mit <partner> verbinden"
  *   (primary) and, where the app has its own form, "Von Hand verbinden";
  * - connected: "Erneuern", "Trennen"; a partner that only uses this app: "Zugriff beenden";
  * - not reachable (the last state stays, since when), refused, resting, switched off: a `Notice` and what helps;
  * - an older connection by an API key typed in by hand: shown as it is, "läuft ab" a week before its key ends.
+ *
+ * Since 0.1.8: no address field (B3, V42): the operator sets the other apps up; where he has not, the card says so,
+ * for the operator with "Einrichten" (Server › Allgemein › Andere nex-Apps). "Von Hand verbinden" for a new connection
+ * only for the operator (V46). A refusal that the operator can lift (own network, not set up) names the place and, for
+ * the operator, links there, here or in the partner app (B2, V44). A refusal carried from the return page (B6) stands
+ * in the card at once, the card open.
  *
  * The app adds its own parts (lists, calendars, a feed's address) as `children`, shown open in every state, connected
  * by click, by hand or not at all (V23, V-9), and its form for connecting by hand as `manual`. The partner's mark comes from the module, light and dark
@@ -17,13 +23,15 @@
  */
 import { useState, type ReactNode } from 'react'
 
-import { Badge, Box, Button, Buttons, CheckboxRow, Collapsible, ConfirmDialog, Facts, Field, Notice, Row, Rows, inSentence, useNexuiTexts, type Fact } from '../nexui'
+import { Badge, Box, Button, Buttons, CheckboxRow, Collapsible, ConfirmDialog, Facts, Notice, Row, Rows, inSentence, useNexuiTexts, type Fact } from '../nexui'
 import {
+  OPERATOR_PAGE,
   STATE_TONES,
   VERBINDEN_BASE,
   VERBINDEN_BUTTONS,
   aboutPair,
   areaActions,
+  codeText,
   defaultDay,
   defaultWhen,
   fillVerbinden,
@@ -31,6 +39,7 @@ import {
   refusalCode,
   markOf,
   refusalText,
+  setUpPlace,
   usePageDark,
   useVerbindenTexts,
   wayOf,
@@ -61,6 +70,10 @@ export type ConnectionCardProps = {
   /** Sends the browser to the partner's consent page (default `window.location.assign`). */
   navigate?: (url: string) => void
   defaultOpen?: boolean
+  /** Since 0.1.8: the signed-in account is an operator (B3: "Einrichten", "Von Hand verbinden" for a new connection). */
+  operator?: boolean
+  /** Since 0.1.8 (B6): the code of a refusal carried from the return page, shown at once. */
+  carried?: string
   testId?: string
 }
 
@@ -102,6 +115,8 @@ export function ConnectionCard({
   when = defaultWhen,
   navigate = (url) => window.location.assign(url),
   defaultOpen,
+  operator = false,
+  carried,
   testId,
 }: ConnectionCardProps) {
   const { texts, code } = useVerbindenTexts(language)
@@ -109,13 +124,14 @@ export function ConnectionCard({
   const partner = view.partner
   // M-19 (0.1.5): inside a sentence the app's word stands small in English and French (`areasInline`).
   const words = { app, partner, areas: areaWord ?? texts.areaWord, areasInline: inSentence(areaWord ?? texts.areaWord, code) }
-  const [address, setAddress] = useState(view.address)
   const [byHand, setByHand] = useState(false)
   const [busy, setBusy] = useState(false)
-  const [problem, setProblem] = useState<string>()
+  // B6 (0.1.8): a refusal carried from the return page stands at once, with its code (for the way to set up).
+  const [problem, setProblem] = useState<string | undefined>(carried ? codeText(texts, carried, app, partner) : undefined)
+  const [problemCode, setProblemCode] = useState<string | undefined>(carried)
   const [tooOld, setTooOld] = useState(false)
   const [leaving, setLeaving] = useState(false)
-  // Decision V16: the areas the partner may read here, chosen before the click (all at first).
+  // Decisions V16, V41: the areas the partner may read or write here, chosen before the click (all at first).
   const choice = view.areas_choice ?? []
   const [allAreas, setAllAreas] = useState(true)
   const [chosen, setChosen] = useState<string[]>([])
@@ -127,10 +143,29 @@ export function ConnectionCard({
   const connected = !['none', 'legacy', 'expiring'].includes(view.state)
   const word = view.state === 'connected' && onlyThem ? fillVerbinden(texts.states.usesUs, words) : (texts.states as Record<string, string>)[view.state]
   const tone = tooOld && !connected ? 'warn' : STATE_TONES[view.state]
+  // V42 (B3): set up by the operator (or by the connection there is); an older server leaves it out.
+  const setUp = view.set_up ?? Boolean(view.address)
+  // B2/B3 (0.1.8): where the operator changes it, here or in the partner app; only for the operator.
+  const setUpAt = (code: string | null | undefined): string | null => {
+    if (!operator) return null
+    const place = setUpPlace(code)
+    if (place === 'here') return OPERATOR_PAGE
+    if (place === 'there' && view.address) return `${view.address}${OPERATOR_PAGE}`
+    return null
+  }
+  const setUpButton = (href: string | null, there: boolean) =>
+    href ? (
+      <div>
+        <Button kind={VERBINDEN_BUTTONS.setUp.kind} icon={VERBINDEN_BUTTONS.setUp.icon} size="sm" href={href} testId="connection-set-up">
+          {there ? fillVerbinden(texts.buttons.setUpThere, words) : texts.buttons.setUp}
+        </Button>
+      </div>
+    ) : null
 
   const start = async () => {
     setBusy(true)
     setProblem(undefined)
+    setProblemCode(undefined)
     setTooOld(false)
     try {
       const renewing = view.state === 'connected' || view.state === 'resting'
@@ -139,11 +174,13 @@ export function ConnectionCard({
         : allAreas || choice.length === 0
           ? null
           : choice.filter((area) => chosen.includes(String(area.id))).map((area) => area.id)
-      const { go } = await request<{ go: string }>(`${base}/partners/${encodeURIComponent(partner)}/start`, { method: 'POST', body: { address: address || view.address, areas } })
+      // V42 (0.1.8): no address from here; the server takes the operator's (or the connection's).
+      const { go } = await request<{ go: string }>(`${base}/partners/${encodeURIComponent(partner)}/start`, { method: 'POST', body: { areas } })
       navigate(go)
     } catch (failure) {
       setTooOld(refusalCode(failure) === 'partner_too_old')
-      setProblem(refusalText(texts, failure, app))
+      setProblemCode(refusalCode(failure))
+      setProblem(refusalText(texts, failure, app, partner))
       setBusy(false)
     }
   }
@@ -151,11 +188,13 @@ export function ConnectionCard({
   const act = async (path: string, method: 'POST' | 'DELETE') => {
     setBusy(true)
     setProblem(undefined)
+    setProblemCode(undefined)
     try {
       const changed = await request<PartnerView>(`${base}/partners/${encodeURIComponent(partner)}${path}`, { method })
       onChange?.(changed)
     } catch (failure) {
-      setProblem(refusalText(texts, failure, app))
+      setProblemCode(refusalCode(failure))
+      setProblem(refusalText(texts, failure, app, partner))
     }
     setBusy(false)
     setLeaving(false)
@@ -219,7 +258,8 @@ export function ConnectionCard({
       {kind === 'primary' ? fillVerbinden(texts.buttons.connect, words) : texts.buttons.reconnect}
     </Button>
   )
-  const manualButton = manual ? (
+  // V46 (0.1.8): a new connection by hand only for the operator; an older one by hand stays the account's to change.
+  const manualButton = manual && (operator || view.legacy) ? (
     <Button kind={VERBINDEN_BUTTONS.manual.kind} icon={VERBINDEN_BUTTONS.manual.icon} size="sm" onClick={() => setByHand(!byHand)} testId="connection-manual">
       {texts.buttons.manual}
     </Button>
@@ -239,15 +279,24 @@ export function ConnectionCard({
       title={partner}
       subtitle={aboutPair(texts, app, partner)}
       status={status}
-      defaultOpen={defaultOpen}
+      defaultOpen={defaultOpen ?? (carried ? true : undefined)}
       testId={testId ?? `connection-${partner}`}
     >
       {problem && (
-        <Notice tone={tooOld ? 'warn' : 'danger'} testId="connection-problem">
-          {tooOld ? fillVerbinden(texts.card.tooOld, words) : problem}
+        <Notice tone={tooOld || problemCode === 'declined' ? 'warn' : 'danger'} testId="connection-problem">
+          {tooOld ? fillVerbinden(operator ? texts.card.tooOld : texts.card.tooOldMember, words) : problem}
         </Notice>
       )}
-      {view.state === 'unreachable' && (
+      {problem && setUpButton(setUpAt(problemCode), setUpPlace(problemCode) === 'there')}
+      {view.state === 'unreachable' && view.problem === 'local_off' && (
+        <>
+          <Notice tone="warn" title={fillVerbinden(texts.card.localOffTitle, words)} testId="connection-local-off">
+            {fillVerbinden(texts.card.localOffText, words)}
+          </Notice>
+          {!problem && setUpButton(setUpAt('local_off'), false)}
+        </>
+      )}
+      {view.state === 'unreachable' && view.problem !== 'local_off' && (
         <Notice tone="warn" title={fillVerbinden(texts.card.unreachableTitle, words)} testId="connection-unreachable">
           {fillVerbinden(texts.card.unreachableText, { ...words, when: at(view.ok_at) || at(view.stale_since) })}
         </Notice>
@@ -277,22 +326,33 @@ export function ConnectionCard({
       {view.state === 'none' ? (
         <>
           <FlowBox title={texts.card.wouldFlow} items={[...mine, ...theirs]} empty={texts.card.onlyCheck} testId="connection-would-flow" />
-          <Field
-            label={fillVerbinden(texts.card.address, words)}
-            value={address}
-            onChange={(event) => setAddress(event.target.value)}
-            type="url"
-            maxLength={500}
-            placeholder={fillVerbinden(texts.card.addressHint, words)}
-            hints={view.address_from_operator ? [texts.card.fromOperator] : []}
-            data-testid="connection-address"
-          />
-          {areaChoice}
-          <p className="m-0 text-sm text-[var(--nexui-text-muted)]">{fillVerbinden(texts.card.how, words)}</p>
-          <Buttons>
-            {connectButton('primary')}
-            {manualButton}
-          </Buttons>
+          {setUp ? (
+            <>
+              {areaChoice}
+              <p className="m-0 text-sm text-[var(--nexui-text-muted)]">{fillVerbinden(texts.card.how, words)}</p>
+              <Buttons>
+                {connectButton('primary')}
+                {manualButton}
+              </Buttons>
+            </>
+          ) : (
+            <>
+              {/* V42 (B3): only the operator sets the other app up; the card says so, for him with the way there. */}
+              <Notice tone="warn" title={fillVerbinden(texts.card.notSetUpTitle, words)} testId="connection-not-set-up">
+                {fillVerbinden(operator ? texts.card.notSetUpOperator : texts.card.notSetUpText, words)}
+              </Notice>
+              {(operator || manualButton) && (
+                <Buttons>
+                  {operator && (
+                    <Button kind={VERBINDEN_BUTTONS.setUp.kind} icon={VERBINDEN_BUTTONS.setUp.icon} size="sm" href={OPERATOR_PAGE} testId="connection-set-up">
+                      {texts.buttons.setUp}
+                    </Button>
+                  )}
+                  {manualButton}
+                </Buttons>
+              )}
+            </>
+          )}
           {/* V23, V-9: the app's own parts stand in every state, also before a connection by click (nexfolk's address
               of the calendar feed, its device password). */}
           {children}

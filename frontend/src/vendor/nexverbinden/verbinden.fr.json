@@ -48,7 +48,14 @@
     "actionRead": "lire",
     "actionWrite": "lire et modifier",
     "and": " et ",
-    "actionOrder": "{verbs} {object}"
+    "actionOrder": "{verbs} {object}",
+    "notSetUpTitle": "{partner} n’est pas configurée sur ce serveur",
+    "notSetUpText": "L’opérateur saisit une fois l’adresse de {partner} sous Serveur › Général › Autres apps nex. Ensuite, tu te connectes ici en un clic.",
+    "notSetUpOperator": "Saisis l’adresse de {partner} sous Serveur › Général › Autres apps nex. Ensuite, chaque compte se connecte ici en un clic.",
+    "localOffTitle": "{app} n’interroge pas d’adresses du réseau local",
+    "localOffText": "{partner} se trouve à une adresse du réseau local. L’opérateur doit d’abord l’autoriser : Serveur › Général › Autres apps nex, « Connexions vers le réseau local ».",
+    "otherApp": "l’autre app",
+    "tooOldMember": "{partner} à cette adresse ne peut pas encore se connecter ainsi. Demande à l’opérateur de mettre {partner} à jour."
   },
   "buttons": {
     "connect": "Connecter avec {partner}",
@@ -63,7 +70,9 @@
     "decline": "Refuser",
     "cancel": "Annuler",
     "save": "Enregistrer",
-    "back": "Aux connexions"
+    "back": "Aux connexions",
+    "setUp": "Configurer",
+    "setUpThere": "Configurer dans {partner}"
   },
   "disconnect": {
     "title": "Déconnecter {partner} ?",
@@ -71,14 +80,15 @@
   },
   "consent": {
     "title": "{partner} veut se connecter avec {app}",
-    "subtitle": "Connecté en tant que {account}. {partner} à {host} et {app} reçoivent ensuite un accès l'un à l'autre.",
+    "subtitle": "{partner} à {host} et {app} obtiennent ensuite un accès propre l’une à l’autre.",
     "areas": "Quels {areas}",
     "allAreas": "Tous les {areasInline}, aussi les futurs",
     "replaces": "Une connexion antérieure avec {partner} est remplacée.",
     "footer": "Tu peux déconnecter à tout moment sous Mon compte › Connexions, ici ou dans {partner}.",
     "loading": "Chargement …",
     "failed": "Cela n'a pas marché",
-    "broken": "Cette demande est incomplète. Recommence la connexion dans l'autre app."
+    "broken": "Cette demande est incomplète. Recommence la connexion dans l'autre app.",
+    "account": "Connecté en tant que"
   },
   "return": {
     "working": "La connexion se termine …",
@@ -117,7 +127,12 @@
     "client_invalid": "L'app qui demande ne peut pas être vérifiée.",
     "redirect_invalid": "Cette adresse de retour n'appartient pas à l'app qui demande.",
     "pkce_required": "L'app qui demande doit utiliser PKCE avec S256.",
-    "areas_invalid": "L'un d'eux ne t'appartient pas."
+    "areas_invalid": "L'un d'eux ne t'appartient pas.",
+    "local_off": "{app} n’interroge les adresses du réseau local qu’une fois que l’opérateur l’autorise : Serveur › Général › Autres apps nex, « Connexions vers le réseau local ».",
+    "partner_not_set_up": "{partner} n’est pas configurée sur ce serveur. L’opérateur le fait sous Serveur › Général › Autres apps nex.",
+    "declined": "Tu as refusé la connexion dans {partner}.",
+    "partner_local_off": "{partner} n’interroge pas {app}, car l’adresse de {app} se trouve dans le réseau local. L’opérateur doit d’abord l’autoriser dans {partner} : Serveur › Général › Autres apps nex, « Connexions vers le réseau local ».",
+    "partner_cannot_reach": "{partner} ne joint pas {app} pour le moment. Si cela dure, l’opérateur vérifie l’adresse de {app} dans {partner} sous Serveur › Général › Autres apps nex."
   },
   "purposes": {
     "nextasks": {

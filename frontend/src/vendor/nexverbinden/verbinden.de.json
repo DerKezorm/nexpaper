@@ -48,7 +48,14 @@
     "actionRead": "lesen",
     "actionWrite": "lesen und ändern",
     "and": " und ",
-    "actionOrder": "{object} {verbs}"
+    "actionOrder": "{object} {verbs}",
+    "notSetUpTitle": "{partner} ist auf diesem Server nicht eingerichtet",
+    "notSetUpText": "Der Betreiber trägt die Adresse von {partner} einmal unter Server › Allgemein › Andere nex-Apps ein. Danach verbindest du hier mit einem Klick.",
+    "notSetUpOperator": "Trag die Adresse von {partner} unter Server › Allgemein › Andere nex-Apps ein. Danach verbindet jedes Konto hier mit einem Klick.",
+    "localOffTitle": "{app} fragt keine Adressen im eigenen Netz",
+    "localOffText": "{partner} steht unter einer Adresse im eigenen Netz. Das muss der Betreiber erst erlauben: Server › Allgemein › Andere nex-Apps, „Verbindungen ins eigene Netz“.",
+    "otherApp": "die andere App",
+    "tooOldMember": "{partner} unter dieser Adresse kann so noch nicht verbinden. Bitte den Betreiber um ein Update von {partner}."
   },
   "buttons": {
     "connect": "Mit {partner} verbinden",
@@ -63,7 +70,9 @@
     "decline": "Ablehnen",
     "cancel": "Abbrechen",
     "save": "Speichern",
-    "back": "Zu den Verbindungen"
+    "back": "Zu den Verbindungen",
+    "setUp": "Einrichten",
+    "setUpThere": "In {partner} einrichten"
   },
   "disconnect": {
     "title": "{partner} trennen?",
@@ -71,14 +80,15 @@
   },
   "consent": {
     "title": "{partner} möchte sich mit {app} verbinden",
-    "subtitle": "Angemeldet als {account}. {partner} unter {host} und {app} bekommen danach einen eigenen Zugang zueinander.",
+    "subtitle": "{partner} unter {host} und {app} bekommen danach einen eigenen Zugang zueinander.",
     "areas": "Welche {areas}",
     "allAreas": "Alle {areasInline}, auch spätere",
     "replaces": "Eine frühere Verbindung mit {partner} wird dabei ersetzt.",
     "footer": "Trennen kannst du jederzeit unter Mein Konto › Verbindungen, hier oder in {partner}.",
     "loading": "Wird geladen …",
     "failed": "Das hat nicht geklappt",
-    "broken": "Dieser Aufruf ist unvollständig. Starte das Verbinden noch einmal in der anderen App."
+    "broken": "Dieser Aufruf ist unvollständig. Starte das Verbinden noch einmal in der anderen App.",
+    "account": "Angemeldet als"
   },
   "return": {
     "working": "Die Verbindung wird fertig …",
@@ -117,7 +127,12 @@
     "client_invalid": "Die App, die fragt, lässt sich nicht prüfen.",
     "redirect_invalid": "Diese Rücksprungadresse gehört nicht zu der App, die fragt.",
     "pkce_required": "Die App, die fragt, muss PKCE mit S256 verwenden.",
-    "areas_invalid": "Einer davon gehört nicht dir."
+    "areas_invalid": "Einer davon gehört nicht dir.",
+    "local_off": "{app} fragt Adressen im eigenen Netz erst, wenn der Betreiber es erlaubt: Server › Allgemein › Andere nex-Apps, „Verbindungen ins eigene Netz“.",
+    "partner_not_set_up": "{partner} ist auf diesem Server nicht eingerichtet. Das macht der Betreiber unter Server › Allgemein › Andere nex-Apps.",
+    "declined": "Du hast das Verbinden in {partner} abgelehnt.",
+    "partner_local_off": "{partner} fragt {app} nicht, weil die Adresse von {app} im eigenen Netz liegt. Das muss der Betreiber in {partner} erst erlauben: Server › Allgemein › Andere nex-Apps, „Verbindungen ins eigene Netz“.",
+    "partner_cannot_reach": "{partner} erreicht {app} gerade nicht. Bleibt es so, prüft der Betreiber in {partner} unter Server › Allgemein › Andere nex-Apps die Adresse von {app}."
   },
   "purposes": {
     "nextasks": {

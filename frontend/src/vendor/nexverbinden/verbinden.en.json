@@ -48,7 +48,14 @@
     "actionRead": "read",
     "actionWrite": "read and change",
     "and": " and ",
-    "actionOrder": "{verbs} {object}"
+    "actionOrder": "{verbs} {object}",
+    "notSetUpTitle": "{partner} is not set up on this server",
+    "notSetUpText": "The operator enters the address of {partner} once under Server › General › Other nex apps. Then you connect here with one click.",
+    "notSetUpOperator": "Enter the address of {partner} under Server › General › Other nex apps. Then every account connects here with one click.",
+    "localOffTitle": "{app} does not ask addresses in the local network",
+    "localOffText": "{partner} is at an address in the local network. The operator has to allow that first: Server › General › Other nex apps, “Connections into the local network”.",
+    "otherApp": "the other app",
+    "tooOldMember": "{partner} at this address cannot connect this way yet. Ask the operator to update {partner}."
   },
   "buttons": {
     "connect": "Connect with {partner}",
@@ -63,7 +70,9 @@
     "decline": "Decline",
     "cancel": "Cancel",
     "save": "Save",
-    "back": "To the connections"
+    "back": "To the connections",
+    "setUp": "Set up",
+    "setUpThere": "Set up in {partner}"
   },
   "disconnect": {
     "title": "Disconnect {partner}?",
@@ -71,14 +80,15 @@
   },
   "consent": {
     "title": "{partner} wants to connect with {app}",
-    "subtitle": "Signed in as {account}. {partner} at {host} and {app} then get their own access to each other.",
+    "subtitle": "{partner} at {host} and {app} then get their own access to each other.",
     "areas": "Which {areas}",
     "allAreas": "All {areasInline}, including later ones",
     "replaces": "An earlier connection with {partner} is replaced.",
     "footer": "You can disconnect at any time under My account › Connections, here or in {partner}.",
     "loading": "Loading …",
     "failed": "That did not work",
-    "broken": "This request is incomplete. Start connecting again in the other app."
+    "broken": "This request is incomplete. Start connecting again in the other app.",
+    "account": "Signed in as"
   },
   "return": {
     "working": "Finishing the connection …",
@@ -117,7 +127,12 @@
     "client_invalid": "The app that asks cannot be checked.",
     "redirect_invalid": "This return address does not belong to the app that asks.",
     "pkce_required": "The app that asks must use PKCE with S256.",
-    "areas_invalid": "One of them is not yours."
+    "areas_invalid": "One of them is not yours.",
+    "local_off": "{app} asks addresses in the local network only once the operator allows it: Server › General › Other nex apps, “Connections into the local network”.",
+    "partner_not_set_up": "{partner} is not set up on this server. The operator does that under Server › General › Other nex apps.",
+    "declined": "You turned the connection down in {partner}.",
+    "partner_local_off": "{partner} does not ask {app}, because the address of {app} lies in the local network. The operator has to allow that in {partner} first: Server › General › Other nex apps, “Connections into the local network”.",
+    "partner_cannot_reach": "{partner} cannot reach {app} right now. If it stays so, the operator checks the address of {app} in {partner} under Server › General › Other nex apps."
   },
   "purposes": {
     "nextasks": {

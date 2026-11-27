@@ -44,6 +44,12 @@ TRANSPORT: httpx.BaseTransport | None = None
 class Unreachable(Exception):  # noqa: N818
     """Nothing usable came back from the partner (the reason is in the log)."""
 
+    @property
+    def local(self) -> bool:
+        """Since 0.1.8 (B2): the partner was not asked because its address lies in the own network and the operator
+        has not allowed connections there (``connections_local_network``)."""
+        return bool(self.args) and self.args[0] == "local"
+
 
 def clean_url(raw: str) -> str:
     """The address in its form (blanks at the edges and a slash at the end gone), or ``Refused``."""
@@ -145,7 +151,8 @@ def ask(
         place = outbound.pin(url, RESOLVER, address_rule(local_allowed))
     except outbound.Refused as exc:
         logger.info("partner not asked: an address the server does not ask (%s)", exc.reason)
-        raise Unreachable("refused") from exc
+        # Since 0.1.8 (B2): "local" says the address lies in the own network and the operator has not allowed it.
+        raise Unreachable("local" if exc.reason == "local" else "refused") from exc
     except outbound.Unreachable as exc:
         logger.info("partner not asked: the name does not resolve")
         raise Unreachable("name") from exc

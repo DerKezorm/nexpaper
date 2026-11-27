@@ -16,6 +16,14 @@ CODES: dict[str, tuple[int, str]] = {
     "partner_too_old": (409, "The app at this address cannot connect this way yet. Connect it by hand."),
     "partner_off": (409, "The operator of the other app has switched connections off."),
     "unreachable": (502, "The other app cannot be reached right now."),
+    # Since 0.1.8 (B2): the address of the other app lies in the own network, and the operator has not allowed that.
+    "local_off": (409, "Addresses in the own network are not asked here until the operator allows them."),
+    # Since 0.1.8 (B3): only the operator sets the other apps up (Server › Allgemein › Andere nex-Apps).
+    "partner_not_set_up": (409, "The operator has not set this app up on this server."),
+    # Since 0.1.8 (B6): what the other app sent back from its consent page, for the card where "Verbinden" was clicked.
+    "declined": (409, "The connection was turned down."),
+    "partner_local_off": (409, "The other app does not ask addresses in its own network until its operator allows it."),
+    "partner_cannot_reach": (409, "The other app cannot reach this one."),
     "refused": (409, "The other app does not take this connection any more."),
     "resting": (409, "The other app lets this connection rest."),
     "consent_failed": (409, "The other app did not confirm the connection. Connect again."),

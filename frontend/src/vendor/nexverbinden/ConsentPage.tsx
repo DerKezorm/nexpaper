@@ -6,13 +6,21 @@
  * and "Verbinden erlauben" (primary, Check) on the right (MCP 20, since 0.1.4). Either way the browser goes to the address the server answers: the asking app's own return,
  * which the server checked against that app's description. A refusal of the server stands as a `Notice`.
  *
+ * Since 0.1.8: the account at the top with its picture, "Kim Example (kim)" (B1, V43); a direction in which an app
+ * may do nothing has no box (B4, V45); where the app that asks cannot connect here but is known (B6, V47), the server
+ * answers with a way back and the page goes there at once, so the refusal stands in the card where "Verbinden" was
+ * clicked. The page of its own ("Das hat nicht geklappt") is left only where there is no safe way back.
+ *
  * Copied unchanged into frontend/src/vendor/nexverbinden/ by bauplaene/verbinden/tools/sync.py; changed only there.
  */
 import { useEffect, useMemo, useState } from 'react'
 
-import { AuthCard, Box, Button, Buttons, CheckboxRow, Notice, Row, Rows, inSentence } from '../nexui'
+import { AuthCard, Avatar, Box, Button, Buttons, CheckboxRow, Notice, Row, Rows, inSentence } from '../nexui'
 import {
   CONSENT_PARAMS,
+  PAGE_FRAME,
+  accountLine,
+  placeholderOf,
   VERBINDEN_BASE,
   VERBINDEN_BUTTONS,
   fillVerbinden,
@@ -20,6 +28,8 @@ import {
   refusalText,
   useVerbindenTexts,
   wayOf,
+  type AccountCard,
+  type ConsentBack,
   type ConsentInfo,
   type PurposeInfo,
   type VerbindenRequest,
@@ -51,6 +61,22 @@ function MayBox({ title, texts, grantedBy, items, mine }: { title: string; texts
   )
 }
 
+/** B1: who is signed in, with the picture (the letter where there is none). */
+function AccountRow({ texts, card }: { texts: VerbindenTexts; card: AccountCard }) {
+  const shown = placeholderOf(card.name || card.username)
+  return (
+    <div className="flex min-w-0 items-center gap-3" data-testid="consent-account">
+      <Avatar src={card.picture} letter={shown.letter} hue={shown.hue} color={card.color} testId="consent-account-picture" />
+      <div className="min-w-0">
+        <p className="m-0 text-xs leading-4 text-[var(--nexui-text-muted)]">{texts.consent.account}</p>
+        <p className="m-0 truncate text-sm leading-5 font-medium text-[var(--nexui-text)]" data-testid="consent-account-name">
+          {accountLine(card)}
+        </p>
+      </div>
+    </div>
+  )
+}
+
 export function ConsentPage({ request, base = VERBINDEN_BASE, search, areaWord, language, navigate = (url) => window.location.assign(url), testId = 'connect-consent' }: ConsentPageProps) {
   const { texts, code } = useVerbindenTexts(language)
   const asked = search ?? window.location.search
@@ -68,11 +94,15 @@ export function ConsentPage({ request, base = VERBINDEN_BASE, search, areaWord, 
 
   useEffect(() => {
     if (!complete) return
-    request<ConsentInfo>(`${base}/consent?${new URLSearchParams(params).toString()}`).then(
-      (found) => setInfo(found),
+    request<ConsentInfo | ConsentBack>(`${base}/consent?${new URLSearchParams(params).toString()}`).then(
+      (found) => {
+        // B6 (0.1.8): the app that asks cannot connect here; back to its card with the refusal.
+        if ('back' in found) navigate(found.back)
+        else setInfo(found)
+      },
       (failure: unknown) => setProblem(refusalText(texts, failure, '')),
     )
-  }, [request, base, params, complete, texts])
+  }, [request, base, params, complete, texts, navigate])
 
   const answer = async (allow: boolean) => {
     if (!info || busy) return
@@ -91,7 +121,7 @@ export function ConsentPage({ request, base = VERBINDEN_BASE, search, areaWord, 
 
   if (problem || !info) {
     return (
-      <div className="flex w-full justify-center" data-testid={testId}>
+      <div className={PAGE_FRAME} data-testid={testId}>
         <AuthCard title={problem ? texts.consent.failed : texts.consent.loading}>
           {problem && (
             <Notice tone="danger" testId="consent-problem">
@@ -105,11 +135,16 @@ export function ConsentPage({ request, base = VERBINDEN_BASE, search, areaWord, 
   const words = { app: info.app, partner: info.partner, account: info.account, host: info.partner_host, areas: areaWord ?? texts.areaWord, areasInline: inSentence(areaWord ?? texts.areaWord, code) }
   const toggle = (id: string, on: boolean) => setAreas((all) => (on ? [...all, id] : all.filter((one) => one !== id)))
   const nothingChosen = !allAreas && info.areas.length > 0 && areas.length === 0
+  const card = info.account_card ?? { name: '', username: info.account, picture: null, color: null }
+  // B4 (0.1.8, V45): a direction in which an app may do nothing has no box; where neither may do anything (no pair of
+  // the catalog), one box says that only the connection is checked.
+  const neither = info.partner_may.length === 0 && info.app_may.length === 0
   return (
-    <div className="flex w-full justify-center" data-testid={testId}>
+    <div className={PAGE_FRAME} data-testid={testId}>
       <AuthCard wide title={fillVerbinden(texts.consent.title, words)} subtitle={fillVerbinden(texts.consent.subtitle, words)} footer={fillVerbinden(texts.consent.footer, words)}>
-        <MayBox title={fillVerbinden(texts.card.partnerMay, words)} texts={texts} grantedBy={info.app} items={info.partner_may} mine={false} />
-        <MayBox title={fillVerbinden(texts.card.appMay, words)} texts={texts} grantedBy={info.partner} items={info.app_may} mine />
+        <AccountRow texts={texts} card={card} />
+        {(info.partner_may.length > 0 || neither) && <MayBox title={fillVerbinden(texts.card.partnerMay, words)} texts={texts} grantedBy={info.app} items={info.partner_may} mine={false} />}
+        {info.app_may.length > 0 && <MayBox title={fillVerbinden(texts.card.appMay, words)} texts={texts} grantedBy={info.partner} items={info.app_may} mine />}
         {info.areas.length > 0 && (
           <div className="flex flex-col gap-2" data-testid="consent-areas">
             <CheckboxRow label={fillVerbinden(texts.consent.allAreas, words)} checked={allAreas} onChange={setAllAreas} testId="consent-all-areas" />
