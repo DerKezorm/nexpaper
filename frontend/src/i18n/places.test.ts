@@ -14,8 +14,11 @@ import schluesselFr from '../vendor/nexschluessel/schluessel.fr.json'
 import de from './de.json'
 import en from './en.json'
 import fr from './fr.json'
-import newsDe from './whatsnew/de.json'
-import newsEn from './whatsnew/en.json'
+import { whatsNewTexts } from '../test/whatsNewTexts'
+
+const newsDe = await whatsNewTexts('de')
+const newsEn = await whatsNewTexts('en')
+const newsFr = await whatsNewTexts('fr')
 
 type Tree = { [key: string]: string | Tree }
 
@@ -89,7 +92,7 @@ describe('the places the texts name', () => {
       const wrong: string[] = []
       // "Was ist neu" of every version points to the places as they are now (E46, E49): its signposts (`where`); the
       // text of an older entry stays as it was written.
-      const news = ({ de: newsDe, en: newsEn } as Record<string, unknown>)[name]
+      const news = ({ de: newsDe, en: newsEn, fr: newsFr } as Record<string, unknown>)[name]
       const signposts = texts((news ?? {}) as Tree, 'whatsnew.').filter(([key]) => key.endsWith('.where'))
       for (const [key, text] of [...texts(tree), ...signposts]) {
         // Safari's own menus ("Teilen › Zum Home-Bildschirm", "Ablage › Zum Dock hinzufügen") keep its words (E46).

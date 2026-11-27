@@ -29,6 +29,7 @@ from .models import OPERATOR, SIGN_IN_PASSWORD, STAGE_CODES, STAGE_FULL, STAGE_S
 from .models import Account as AccountRow
 from .security import SESSION_COOKIE, brake, current_session
 from .services import accounts, apikeys, devices, logs, totp
+from .vendor import nexwasneu
 from .vendor.nexkonten.brake import BRAKE, DOOR_CONFIRM, door_key
 from .vendor.nexkonten.common import FRESH_SIGN_IN_MINUTES
 
@@ -394,6 +395,21 @@ Reader = Annotated[AccountRow, Depends(require_reader)]
 Uploader = Annotated[AccountRow, Depends(require_uploader)]
 BrowserAccount = Annotated[AccountRow, Depends(require_browser_account)]
 OperatorAccount = Annotated[AccountRow, Depends(require_operator)]
+
+
+def whats_new_viewer(account: Account, db: DbSession) -> nexwasneu.Viewer:
+    """The signed-in account as the shared module "What's new" needs it (``vendor/nexwasneu``): the version it read,
+    whether it is an operator (sections for operators), how to store a version it read, and its own language. A device
+    reaches it too: the iPhone app may show the texts (W17)."""
+
+    def mark(version: str) -> None:
+        row = db.get(AccountRow, account.id)
+        if row is not None:
+            row.whats_new_seen = version
+            db.commit()
+
+    return nexwasneu.Viewer(seen=account.whats_new_seen or "", operator=account.role == OPERATOR, mark=mark,
+                            language=account.language or None)
 
 
 # --- The password once more, while signed in ------------------------------------------------------------------------

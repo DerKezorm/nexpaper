@@ -21,7 +21,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from . import __version__, private
 from .config import get_settings
 from .db import SessionLocal, init_db
-from .deps import client_ip, require_browser_account, require_operator
+from .deps import client_ip, require_browser_account, require_operator, whats_new_viewer
 from .errors import detail
 from .middleware import ForwardedProtoMiddleware, GuardMiddleware, RequestContextMiddleware, unhandled_error
 from .routers import (
@@ -112,7 +112,7 @@ from .services import passkeys as passkeys_service
 from .services import reminders as reminders_service
 from .services import uploads as uploads_service
 from .services.konten_store import KontenStore
-from .vendor import nexoidc
+from .vendor import nexoidc, nexwasneu
 from .vendor.nexgeraete import api as geraete_api
 from .vendor.nexki import api as ki_api
 from .vendor.nexkonten import factor as konten_factor
@@ -123,6 +123,7 @@ from .vendor.nexmcp import api as mcp_api
 from .vendor.nexschluessel import api as schluessel_api
 from .vendor.nexupdates import check as updates_check
 from .vendor.nexverbinden import api as verbinden_api
+from .vendor.nexwasneu import api as wasneu_api
 
 logger = logging.getLogger("nexpaper")
 
@@ -399,6 +400,13 @@ app.add_exception_handler(Exception, unhandled_error)
 
 for module in ROUTERS:
     app.include_router(module.router)
+
+# "What's new" from the shared module (vendor/nexwasneu, wasneu 0.1.0): the texts of every version in the package
+# (whatsnew/, German, English and French), so the image carries them; the banner after an update, the row on "About"
+# and its earlier versions ask these routes, an iPhone app may too (W17).
+nexwasneu.configure(nexwasneu.AppConfig(app_name="nexpaper", version=lambda: __version__,
+                                        folder=Path(__file__).parent / "whatsnew", languages=("de", "en", "fr")))
+app.include_router(wasneu_api.router(viewer=whats_new_viewer, prefix="/api/v1/whats-new", tags=["whats new"]))
 
 # iPhone, iPad and Mac (the shared module geraete 0.1.0, ``services/geraete_store.py``): the routes of the apps built on
 # NexKonto under ``/api/app/1`` (pairing by the QR code, a code, the sign-in in the browser or iCloud; the own devices;

@@ -29,6 +29,16 @@ let calls: Call[] = []
 let answers: Record<string, unknown> = {}
 let fails: Record<string, number> = {}
 
+/** What the server answers where a test names nothing: empty lists, nothing new since the version the account read
+ * (the banner of the shared module wasneu), no devices (the cards of the shared module geraete). */
+function quiet(url: string): unknown {
+  if (url.includes('/api/v1/locales') || url.includes('/api/v1/accounts') || url.includes('/api/v1/invites')) return []
+  if (url.startsWith('/api/v1/whats-new?')) return { version: '1.0.0', seen: '1.0.0', unread: [], more: false, current: null, earlier: false }
+  if (url === '/api/v1/app-devices') return { devices: [], max: 30, app_store_url: null, has_app: true }
+  if (/^\/api\/v1\/server\/accounts\/[^/]+\/devices$/.test(url)) return { count: 0, devices: [] }
+  return {}
+}
+
 function serve(): void {
   calls = []
   vi.stubGlobal(
@@ -38,7 +48,7 @@ function serve(): void {
       calls.push({ method, url, body: init?.body ? JSON.parse(String(init.body)) : undefined })
       const status = fails[`${method} ${url}`]
       if (status) return new Response(JSON.stringify({ detail: { code: 'email_link_invalid' } }), { status, headers: { 'Content-Type': 'application/json' } })
-      return new Response(JSON.stringify(answers[`${method} ${url}`] ?? (url.includes('/api/v1/locales') || url.includes('/api/v1/accounts') || url.includes('/api/v1/invites') ? [] : {})), {
+      return new Response(JSON.stringify(answers[`${method} ${url}`] ?? quiet(url)), {
         status: 200,
         headers: { 'Content-Type': 'application/json' },
       })

@@ -319,7 +319,6 @@ export const authApi = {
     api<Me>(`/api/v1/invite/${encodeURIComponent(token)}`, { method: 'POST', body: form }),
   /** "Forgot your password?": a link to the address on record, if there is one; the answer is the same either way. */
   forgot: (name: string) => api<{ ok: true }>('/api/v1/auth/forgot', { method: 'POST', body: { name } }),
-  whatsNewSeen: () => api<Me>('/api/v1/me/whats-new/seen', { method: 'POST' }),
 }
 
 // ---- Sign-in providers (the shared module `vendor/nexoidc`) -----------------------------------------------

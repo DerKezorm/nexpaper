@@ -1,0 +1,24 @@
+{
+  "files": {
+    "backend/app/vendor/nexwasneu/__init__.py": "sha256-DN+TTn11yI4zx3mTcRUJxH4r964aGuaz5fbNDLh0LwE=",
+    "backend/app/vendor/nexwasneu/api.py": "sha256-6HTRk2ayK5c0A+8uq4O9EOQxVUc91n7z7SiqUQTurC4=",
+    "backend/app/vendor/nexwasneu/config.py": "sha256-JShgs2pPM0r/pSVRi2VCEnrHZdUVtraEBUdkD+jNJxo=",
+    "backend/app/vendor/nexwasneu/seen.py": "sha256-KfT/gpJgRqkRkD3dtaYGmiZjwQnuqKYmA+0M5UUSAyg=",
+    "backend/app/vendor/nexwasneu/texts.py": "sha256-+aT9Z5W61N542RyqOZpG2G9FVezq2RESS0Y3yLhO7EY=",
+    "backend/tests/nexwasneu/conftest.py": "sha256-INHVJIP8BgxJmKS7ZcXpe+WA37Hv0CKKS6BpaNWI6n0=",
+    "backend/tests/nexwasneu/test_nexwasneu_routes.py": "sha256-ipRX94bZhD667fel4qi5yn6hkTzTW5/PqpxKZaEROhM=",
+    "backend/tests/nexwasneu/test_nexwasneu_texts.py": "sha256-iQwasVMTKJAbxYXVhKA9qyGgJUpcCY7MCStc7s0H1jc=",
+    "backend/tests/nexwasneu/test_nexwasneu_vendored.py": "sha256-juyMduSJx+fMVdHKiBi95XNULvKz2i26FoOjzfUFQ1A=",
+    "backend/tests/nexwasneu/wasneu_contract.py": "sha256-KR2aUN6J7Qip/UZcuvFZM3zDiwXkF6yLbmqUr6grcrU=",
+    "frontend/src/vendor/nexwasneu/WhatsNew.tsx": "sha256-OS8+jOPqfPP6hptMqAkZmo9+8xkul8N+YNPJecePgHY=",
+    "frontend/src/vendor/nexwasneu/index.ts": "sha256-XkPBrfahj2mLqIh67Cilh6E4EEnDtDSWnJj4WYYPkfU=",
+    "frontend/src/vendor/nexwasneu/useWhatsNew.tsx": "sha256-+8YlnFbBnn6T/V02JHrBDcUkjGjhjELUmclQmQKYjCo=",
+    "frontend/src/vendor/nexwasneu/wasneu.ts": "sha256-QmARxlG9I4mXiscVWRxyiZpAJjJmNlkpQukELNmoBkw="
+  },
+  "module": "wasneu",
+  "requires": {
+    "fastapi": ">=0.121.0"
+  },
+  "vendor_path": "backend/app/vendor/nexwasneu",
+  "version": "0.1.0"
+}

@@ -153,14 +153,6 @@
       "toAccount": "Vers Mon compte"
     }
   },
-  "whatsNew": {
-    "title": "Nouveautés de nexpaper {{version}}",
-    "banner": "nexpaper {{version}} est arrivé.",
-    "show": "Quoi de neuf ?",
-    "putAway": "Masquer",
-    "where": "Où :",
-    "done": "Compris"
-  },
   "about": {
     "menu": "À propos de nexpaper",
     "subtitle": "Des documents pour les ménages et les petites entreprises : téléverser, trouver, terminé.",

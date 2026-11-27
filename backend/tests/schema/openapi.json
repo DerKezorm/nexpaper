@@ -11791,6 +11791,187 @@
         "title": "WaitingOut",
         "type": "object"
       },
+      "WhatsNewHistoryOut": {
+        "properties": {
+          "entries": {
+            "items": {
+              "$ref": "#/components/schemas/WhatsNewItem"
+            },
+            "title": "Entries",
+            "type": "array"
+          },
+          "version": {
+            "title": "Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "version",
+          "entries"
+        ],
+        "title": "WhatsNewHistoryOut",
+        "type": "object"
+      },
+      "WhatsNewItem": {
+        "properties": {
+          "language": {
+            "title": "Language",
+            "type": "string"
+          },
+          "lead": {
+            "title": "Lead",
+            "type": "string"
+          },
+          "sections": {
+            "items": {
+              "$ref": "#/components/schemas/WhatsNewSection"
+            },
+            "title": "Sections",
+            "type": "array"
+          },
+          "small": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Small",
+            "type": "array"
+          },
+          "smallTitle": {
+            "title": "Smalltitle",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "version",
+          "language",
+          "lead",
+          "sections",
+          "smallTitle",
+          "small"
+        ],
+        "title": "WhatsNewItem",
+        "type": "object"
+      },
+      "WhatsNewLink": {
+        "properties": {
+          "href": {
+            "title": "Href",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "label",
+          "href"
+        ],
+        "title": "WhatsNewLink",
+        "type": "object"
+      },
+      "WhatsNewOut": {
+        "properties": {
+          "current": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WhatsNewItem"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "earlier": {
+            "title": "Earlier",
+            "type": "boolean"
+          },
+          "more": {
+            "title": "More",
+            "type": "boolean"
+          },
+          "seen": {
+            "title": "Seen",
+            "type": "string"
+          },
+          "unread": {
+            "items": {
+              "$ref": "#/components/schemas/WhatsNewItem"
+            },
+            "title": "Unread",
+            "type": "array"
+          },
+          "version": {
+            "title": "Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "version",
+          "seen",
+          "unread",
+          "more",
+          "current",
+          "earlier"
+        ],
+        "title": "WhatsNewOut",
+        "type": "object"
+      },
+      "WhatsNewSection": {
+        "properties": {
+          "body": {
+            "title": "Body",
+            "type": "string"
+          },
+          "link": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WhatsNewLink"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "operator": {
+            "default": false,
+            "title": "Operator",
+            "type": "boolean"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "where": {
+            "title": "Where",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "where",
+          "body"
+        ],
+        "title": "WhatsNewSection",
+        "type": "object"
+      },
+      "WhatsNewSeenOut": {
+        "properties": {
+          "seen": {
+            "title": "Seen",
+            "type": "string"
+          }
+        },
+        "required": [
+          "seen"
+        ],
+        "title": "WhatsNewSeenOut",
+        "type": "object"
+      },
       "YearCount": {
         "properties": {
           "count": {
@@ -31187,6 +31368,142 @@
         "summary": "Give a person a right in the vault, or change it (managers)",
         "tags": [
           "vaults"
+        ]
+      }
+    },
+    "/api/v1/whats-new": {
+      "get": {
+        "operationId": "whats_new_api_v1_whats_new_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "language",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 35,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Language"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WhatsNewOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "What is new for this account since the version it read",
+        "tags": [
+          "whats new"
+        ]
+      }
+    },
+    "/api/v1/whats-new/history": {
+      "get": {
+        "operationId": "whats_new_history_api_v1_whats_new_history_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "language",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 35,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Language"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WhatsNewHistoryOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "What every version up to the running one brought",
+        "tags": [
+          "whats new"
+        ]
+      }
+    },
+    "/api/v1/whats-new/seen": {
+      "post": {
+        "operationId": "whats_new_seen_now_api_v1_whats_new_seen_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WhatsNewSeenOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "What's new of the running version is read or put away",
+        "tags": [
+          "whats new"
         ]
       }
     },

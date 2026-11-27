@@ -216,6 +216,11 @@ TOKEN_ROUTES = {
     ("GET", "/api/v1/auth/sessions"),
     ("PUT", "/api/v1/me/profile"),
     ("POST", "/api/v1/me/whats-new/seen"),
+    # "What's new" of the shared module wasneu 0.1.0: the texts, the earlier versions and putting them away; an iPhone
+    # app may show them too (W17).
+    ("GET", "/api/v1/whats-new"),
+    ("GET", "/api/v1/whats-new/history"),
+    ("POST", "/api/v1/whats-new/seen"),
     ("PUT", "/api/v1/me/language"),
     ("PUT", "/api/v1/me/preferences"),
     # konten 1.1.0: light or dark for the account on every device, as ``mode`` in the preferences above.

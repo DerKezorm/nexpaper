@@ -17,7 +17,7 @@ import logging
 import unicodedata
 from typing import Annotated, Any, Literal
 
-from fastapi import APIRouter, HTTPException, Path, Request, Response
+from fastapi import APIRouter, Depends, HTTPException, Path, Request, Response
 from pydantic import BaseModel, ConfigDict, Field, StrictBool
 from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
@@ -42,6 +42,7 @@ from ..deps import (
     reauth_guard,
     reauth_succeeded,
     session_of,
+    whats_new_viewer,
 )
 from ..errors import detail, error
 from ..models import (
@@ -87,7 +88,7 @@ from ..services import (
 from ..services import vaults as vaults_service
 from ..services.accounts import AccountError
 from ..services.konten_store import KontenStore, blocked_since, counts, pending_of, proven, theme_of
-from ..vendor import nexkonten, nexpost
+from ..vendor import nexkonten, nexpost, nexwasneu
 from ..vendor.nexkonten import login as konten_login
 from ..vendor.nexkonten import passkeys as konten_passkeys
 from ..vendor.nexkonten import profiles
@@ -841,11 +842,13 @@ def set_profile(payload: ProfileIn, request: Request, account: Account, db: DbSe
 
 
 @router.post("/me/whats-new/seen", summary="\"What's new\" of the running version is read or put away")
-def whats_new_seen(account: Account, db: DbSession) -> dict[str, Any]:
+def whats_new_seen(viewer: Annotated[nexwasneu.Viewer, Depends(whats_new_viewer)], account: Account,
+                   db: DbSession) -> dict[str, Any]:
+    # The route of before stays with its answer; the shared module "What's new" stores the version (W10).
+    nexwasneu.mark_seen(viewer)
     row = db.get(AccountRow, account.id)
     assert row is not None
-    row.whats_new_seen = __version__
-    db.commit()
+    db.refresh(row)
     return account_view(row)
 
 

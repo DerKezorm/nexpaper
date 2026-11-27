@@ -34,7 +34,7 @@ from sqlalchemy import delete, func, or_, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from .. import __version__, clock
+from .. import clock
 from ..config import get_settings
 from ..models import (
     MEMBER,
@@ -64,7 +64,7 @@ from ..security import (
     server_key,
     verify_password,
 )
-from ..vendor import nexkonten
+from ..vendor import nexkonten, nexwasneu
 from ..vendor.nexkonten import (
     Access,
     AccountId,
@@ -367,7 +367,7 @@ class KontenStore:
             password_hash=hash_password(new.password) if new.password else "",
             password_changed_at=now if new.password else None,
             language=new.language or "",
-            whats_new_seen=__version__,
+            whats_new_seen=nexwasneu.seen_for_new_account(),
             # The limit new accounts start with (Bauplan E44, Server › General › Limits).
             storage_limit=settings_service.new_account_storage_limit(self.db),
             # Light, dark or system where nexpaper keeps it (``profile.mode``): a new account starts with ``system``

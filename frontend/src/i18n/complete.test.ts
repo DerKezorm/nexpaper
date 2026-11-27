@@ -5,8 +5,10 @@ import en from './en.json'
 import fr from './fr.json'
 import oidcFr from './oidc.fr.json'
 import oidcEn from '../vendor/nexoidc/oidc.en.json'
-import whatsNewDe from './whatsnew/de.json'
-import whatsNewEn from './whatsnew/en.json'
+import { whatsNewTexts } from '../test/whatsNewTexts'
+
+const whatsNewDe = await whatsNewTexts('de')
+const whatsNewEn = await whatsNewTexts('en')
 
 function flat(tree: Record<string, unknown>, prefix = ''): Map<string, string> {
   const out = new Map<string, string>()

@@ -3,15 +3,34 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 
-import { inboxApi } from '../api/client'
+import { inboxApi, tabFetch } from '../api/client'
 import { usesDeadlines } from '../lib/deadlines'
 import { INBOX_CHANGED, type NoticeLink } from '../lib/say'
 import { useAuth } from '../state/auth'
+import { NexuiLanguage } from '../vendor/nexui'
+import { WhatsNewAfterUpdate } from '../vendor/nexwasneu/WhatsNew'
 import { Avatar } from './Avatar'
 import { Wordmark } from './Logo'
 import { Sidebar, type MenuCounts } from './Sidebar'
 import { DropSheet, UploadPanel, UploadRound } from './UploadPanel'
-import { WhatsNewBanner } from './WhatsNew'
+
+/**
+ * "What's new" after an update, from the shared module wasneu 0.1.0: the kit's banner above the page, for the signed-in
+ * account, as long as it has texts it has not read or put away; "Was ist neu?" opens them. The account keeps what it
+ * read on the server (`whats_new_seen`), so the banner does not come back on another device.
+ */
+function AfterUpdate() {
+  const { i18n } = useTranslation()
+  const { me, refresh } = useAuth()
+  if (!me) return null
+  return (
+    <div className="page pt-4 empty:hidden">
+      <NexuiLanguage language={i18n.language}>
+        <WhatsNewAfterUpdate app="nexpaper" logo="/logo.svg" fetcher={tabFetch} base="/api/v1/whats-new" language={i18n.language} onSeen={() => void refresh()} />
+      </NexuiLanguage>
+    </div>
+  )
+}
 
 /** A short sentence after something was done ("Gespeichert."), handed over by the page that did it as `notice` in the
  * navigation state; shown for a moment, then gone, and not again after a reload. */
@@ -153,7 +172,7 @@ function Frame({ t }: { t: (key: string) => string }) {
             )}
           </div>
         </div>
-        <WhatsNewBanner />
+        <AfterUpdate />
         <Outlet />
       </main>
 

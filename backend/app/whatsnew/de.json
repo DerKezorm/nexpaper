@@ -1,16 +1,21 @@
 {
   "1.13.0": {
-    "lead": "nexpaper verbindet sich jetzt mit einem Klick mit nextime, nexmail und nextasks, ohne Schlüssel abzutippen. Dazu kommen KI-Werkzeuge (MCP), eine Speichergrenze je Konto und Einstellungen, die aussehen wie in allen nex-Apps. Deine Dokumente bleiben, wie sie sind.",
+    "lead": "nexpaper verbindet sich jetzt mit einem Klick mit nextime, nexmail und nextasks, ohne Schlüssel abzutippen. Dazu kommen KI-Werkzeuge (MCP), eine Liste deiner iPhones und iPads, eine Speichergrenze je Konto und Einstellungen, die aussehen wie in allen nex-Apps. Deine Dokumente bleiben, wie sie sind.",
     "sections": [
       {
         "title": "Apps verbinden",
         "where": "Mein Konto › Verbindungen",
-        "body": "Unter „Andere nex-Apps“ klickst du auf „Mit nextime verbinden“ (ebenso bei nexmail und nextasks), stimmst in der anderen App einmal zu und bist zurück, verbunden. Kein Schlüssel zum Anlegen, Kopieren und Einfügen. Die Seite, auf der du zustimmst, zeigt, als wer du angemeldet bist, und sagt in Worten, was jede App darf, etwa „Die Fristen deiner Dokumente lesen“. Mehr darf keine App, und du wählst, welche Tresore sie sehen darf. Die Karte zeigt, seit wann ihr verbunden seid, wann die Verbindung zuletzt genutzt wurde und was sie erlaubt, mit „Jetzt prüfen“ und „Trennen“, das beide Seiten beendet. Klappt etwas nicht, steht der Grund dort. Vorher trägt der Betreiber die Adresse der anderen App einmal unter Server › Verbindungen › Andere nex-Apps ein; läuft sie im eigenen Netz (LAN, VPN), erlaubt er dort auch „Verbindungen ins eigene Netz“."
+        "body": "nextime, nexmail und nextasks haben dort je eine eigene Karte. Ein Klick auf „Mit nextime verbinden“ (ebenso bei den anderen), einmal in der anderen App zustimmen, und du bist zurück, verbunden. Kein Schlüssel zum Anlegen, Kopieren und Einfügen. Die Seite, auf der du zustimmst, zeigt, als wer du angemeldet bist, und sagt in Worten, was jede App darf, etwa „Die Fristen deiner Dokumente lesen“. Mehr darf keine App, und du wählst, welche Tresore sie sehen darf. Die Karte zeigt, seit wann ihr verbunden seid, wann die Verbindung zuletzt genutzt wurde und was sie erlaubt. „Trennen“ beendet sie auf beiden Seiten; bei nextime und nexmail, die nur bei nexpaper etwas tun, heißt der Knopf „Zugriff beenden“. Ist die andere App nicht erreichbar oder klappt etwas nicht, steht der Grund dort."
       },
       {
         "title": "Fristen, Anhänge und Aufgaben",
         "where": "nextime, nexmail und nextasks",
         "body": "Fristen im Kalender: nextime zeigt deine offenen Fristen (zahlen, kündigen bis, Garantie und mehr) als ganztägige Einträge an dem Tag, bis zu dem du handeln musst, und ein Klick öffnet das Dokument in nexpaper. Das gab es schon, jetzt mit einem Klick verbunden; eine Verbindung mit API-Schlüssel läuft weiter und lässt sich in nextime auf die neue Art erneuern. Neu, Anhang direkt in den Eingang: In nexmail steht neben jedem Anhang „Als Dokument an nexpaper“, und ein Klick legt etwa eine Rechnung aus einer Mail in deinen Eingang. Neu, Aufgabe zu einem Dokument: „Aufgabe in nextasks“ auf der Seite eines Dokuments legt in einer Liste deiner Wahl eine Aufgabe mit dem Titel des Dokuments und einem Link zurück an. Ein zweiter Klick beim selben Dokument findet die Aufgabe von vorher."
+      },
+      {
+        "title": "Geräte",
+        "where": "Mein Konto › Verbindungen",
+        "body": "Die Karte „Geräte“ zeigt jedes verbundene iPhone und iPad mit Namen und wann es zuletzt da war. Du kannst Geräte umbenennen, einzeln trennen oder alle auf einmal. „iPhone oder iPad verbinden“ zeigt einen QR-Code und einen Code zum Abtippen, fünf Minuten gültig; die nexpaper-App liest beide wie bisher. Kommt ein neues Gerät dazu, bekommst du eine Mail, solange „Mail bei neuer Anmeldung“ an ist. Unter Mein Konto › Benachrichtigungen wählst du je Gerät, ob es „Neues Gerät verbunden“ meldet, als Betreiber auch „Neue Version von nexpaper“. Die iPhone-App selbst bleibt in dieser Version, wie sie ist, und empfängt diese Mitteilungen noch nicht; deine Haken gelten, sobald eine spätere Version es tut. Wird ein Konto gesperrt oder gelöscht, ruhen seine Geräte und gehen nach dem Entsperren oder Zurückholen wieder, ohne neu zu verbinden."
       },
       {
         "title": "KI-Werkzeuge (MCP)",
@@ -23,9 +28,15 @@
         "body": "Der Betreiber setzt jedem Konto eine Speichergrenze (unter Verwalten) und unter Server › Allgemein › Grenzen die, mit der jedes neue Konto beginnt; ab Werk gibt es keine. Ist der Speicher voll, nimmt nexpaper keine neuen Uploads an, verliert aber nichts: Dateien aus dem Eingangsordner und Mails im Postfach warten und kommen herein, sobald wieder Platz ist, und die Person erfährt, wie viele warten. Ein gelöschtes Konto lässt sich 30 Tage lang zurückholen, erst danach gehen seine Dokumente weiter. Es kann mehrere Betreiber geben. Angemeldet wird mit Benutzername oder Mailadresse, und jedes Konto hat dazu einen Anzeigenamen. Ändert sich ein Benutzername, erreichen Eingangsordner und Plus-Adresse des alten Namens die Person weiter."
       },
       {
+        "title": "Server › Verbindungen",
+        "where": "Server › Verbindungen",
+        "body": "Ein eigener Bereich mit zwei Karten. „Andere nex-Apps“: Hier trägst du die Adresse jeder anderen App einmal ein, danach klicken alle Konten nur noch. Läuft sie im eigenen Netz (LAN, VPN), erlaubst du hier „Verbindungen ins eigene Netz“, und Verbindungen lassen sich für alle aus- und wieder einschalten. „Schnittstellen“: API-Schlüssel und MCP, dazu neu „iPhone-App erlauben“ und „Neue Geräte verbinden“, beide ab Werk an. Unter Server › Konten › Verwalten siehst du, wie viele Geräte ein Konto hat und wann zuletzt, und kannst sie trennen.",
+        "operator": true
+      },
+      {
         "title": "Einstellungen wie in allen nex-Apps",
         "where": "Zahnrad unten in der Seitenleiste",
-        "body": "Hell oder dunkel gehört jetzt zu deinem Konto und gilt auf jedem Gerät. Unter Mein Konto › Benachrichtigungen stellst du ein, auf welchem Weg Erinnerungen und Mitteilungen kommen. Sicherungen laufen zu einer Uhrzeit deiner Wahl, auf Wunsch jeden Monat, und „Jetzt sichern“ nimmt eine Notiz mit. Eigene Sprachen lädt der Betreiber unter Server › Allgemein › Sprachen hoch, mit einer Vorlage zum Herunterladen. Server › Verbindungen hält „Andere nex-Apps“ und „Schnittstellen“. Beim Einrichten fragt nexpaper einmal, ob es nach neuen Versionen sehen darf; ob eine neuere erschienen ist, sieht nur der Betreiber."
+        "body": "Hell oder dunkel gehört jetzt zu deinem Konto und gilt auf jedem Gerät. Unter Mein Konto › Benachrichtigungen stellst du ein, auf welchem Weg Erinnerungen und Mitteilungen kommen. Sicherungen laufen zu einer Uhrzeit deiner Wahl, auf Wunsch jeden Monat, und „Jetzt sichern“ nimmt eine Notiz mit. Eigene Sprachen lädt der Betreiber unter Server › Allgemein › Sprachen hoch, mit einer Vorlage zum Herunterladen. Beim Einrichten fragt nexpaper einmal, ob es nach neuen Versionen sehen darf; ob eine neuere erschienen ist, sieht nur der Betreiber."
       }
     ],
     "smallTitle": "Außerdem",

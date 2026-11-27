@@ -18,9 +18,10 @@ from sqlalchemy import delete, func, select
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 
-from .. import __version__, clock
+from .. import clock
 from ..models import MEMBER, ROLES, SIGN_IN_PASSWORD, Account, Invite, utcnow
 from ..security import LOCK_MINUTES, MAX_FAILURES, hash_password, hash_token, verify_password
+from ..vendor import nexwasneu
 from . import settings_service
 
 logger = logging.getLogger("nexpaper.auth")
@@ -54,7 +55,7 @@ def create_with_password(db: Session, name: str, password: str, role: str = MEMB
         role=role,
         sign_in=SIGN_IN_PASSWORD,
         password_hash=hash_password(password),
-        whats_new_seen=__version__,
+        whats_new_seen=nexwasneu.seen_for_new_account(),
         storage_limit=settings_service.new_account_storage_limit(db),
         # A new account starts with the theme system (Bauplan E45, ``profile.mode``).
         profile={"mode": "system"},

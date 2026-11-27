@@ -1,0 +1,53 @@
+{
+  "1.13.0": {
+    "lead": "nexpaper se connecte désormais en un clic avec nextime, nexmail et nextasks, sans clé à recopier. S’y ajoutent les outils d’IA (MCP), la liste de tes iPhone et iPad, une limite de stockage par compte et des réglages qui ressemblent à ceux de toutes les apps nex. Tes documents restent tels qu’ils sont.",
+    "sections": [
+      {
+        "title": "Connecter les apps nex",
+        "where": "Mon compte › Connexions",
+        "body": "nextime, nexmail et nextasks y ont chacune leur propre carte. Un clic sur « Connecter avec nextime » (de même pour les autres), un accord donné une fois dans l’autre app, et te voilà de retour, connecté. Plus de clé à créer, copier et coller. La page où tu donnes ton accord montre sous quel compte tu es connecté et dit en clair ce que chaque app peut faire, par exemple « Lire les échéances de tes documents ». Aucune app ne peut faire davantage, et tu choisis quels coffres elle peut voir. La carte montre depuis quand vous êtes connectés, quand la connexion a servi pour la dernière fois et ce qu’elle permet. « Déconnecter » y met fin des deux côtés ; pour nextime et nexmail, qui ne font quelque chose que dans nexpaper, le bouton s’appelle « Retirer l'accès ». Si l’autre app est injoignable ou si quelque chose échoue, la raison s’affiche là."
+      },
+      {
+        "title": "Échéances, pièces jointes et tâches",
+        "where": "nextime, nexmail et nextasks",
+        "body": "Les échéances dans le calendrier : nextime affiche tes échéances ouvertes (à payer, résilier avant, garantie et plus) comme événements sur toute la journée, le jour où tu dois agir, et un clic ouvre le document dans nexpaper. Cela existait déjà, désormais connecté en un clic ; une connexion faite avec une clé API continue de fonctionner et se renouvelle à la nouvelle manière dans nextime. Nouveau, une pièce jointe directement dans l’entrée : dans nexmail, chaque pièce jointe propose de l’envoyer à nexpaper comme document, et un clic dépose par exemple une facture reçue par courriel dans ton entrée. Nouveau, une tâche pour un document : « Tâche dans nextasks » sur la page d’un document crée une tâche dans la liste de ton choix, avec le titre du document et un lien de retour. Un second clic pour le même document retrouve la tâche créée avant."
+      },
+      {
+        "title": "Appareils",
+        "where": "Mon compte › Connexions",
+        "body": "La carte « Appareils » montre chaque iPhone et iPad connecté, avec son nom et sa dernière visite. Tu peux renommer les appareils, les déconnecter un par un ou tous à la fois. « Connecter un iPhone ou un iPad » affiche un code QR et un code à saisir, valables cinq minutes ; l’app nexpaper lit les deux comme avant. Quand un nouvel appareil est connecté, tu reçois un courriel tant que « M'avertir d'une nouvelle connexion » est activé. Sous Mon compte › Notifications, tu choisis pour chaque appareil s’il signale « Nouvel appareil connecté », et en tant qu’administrateur aussi « Nouvelle version de nexpaper ». L’app iPhone elle-même reste telle quelle dans cette version et ne reçoit pas encore ces notifications ; tes choix s’appliqueront dès qu’une version ultérieure le fera. Quand un compte est bloqué ou supprimé, ses appareils sont en pause et refonctionnent dès qu’il est débloqué ou récupéré, sans nouvelle connexion."
+      },
+      {
+        "title": "Outils d’IA (MCP)",
+        "where": "Mon compte › Connexions",
+        "body": "Les programmes d’IA qui parlent MCP travaillent désormais avec nexpaper : chercher et lire des documents, consulter l’entrée et les échéances, accepter des suggestions, modifier des champs et mettre des documents à la corbeille. Pour cela, tu crées une clé MCP (lecture, ou lecture et modification), ou un programme se connecte lui-même avec ton accord. Les deux peuvent être limités à des coffres, et pour chaque outil tu choisis : autoriser, demander d’abord ou refuser. Ce qui demande attend sous « Demandes en attente », et tes appareils reçoivent une notification. L’historique d’un document indique quel programme l’a modifié. Désactivé au départ ; l’administrateur l’autorise sous Serveur › Connexions › Interfaces."
+      },
+      {
+        "title": "Comptes et stockage",
+        "where": "Serveur › Comptes",
+        "body": "L’administrateur donne à chaque compte une limite de stockage (sous Gérer) et fixe, sous Serveur › Général › Limites, celle avec laquelle chaque nouveau compte commence ; il n’y en a aucune au départ. Quand le stockage est plein, nexpaper n’accepte plus de nouveaux téléversements mais ne perd rien : les fichiers du dossier d’entrée et les courriels de la boîte attendent et arrivent dès qu’il y a de nouveau de la place, et la personne apprend combien attendent. Un compte supprimé peut être récupéré pendant 30 jours ; ce n’est qu’ensuite que ses documents sont transmis. Il peut y avoir plusieurs administrateurs. On se connecte avec son nom d’utilisateur ou son adresse e-mail, et chaque compte a en plus un nom affiché. Quand un nom d’utilisateur change, le dossier d’entrée et l’adresse plus de l’ancien nom atteignent toujours la personne."
+      },
+      {
+        "title": "Serveur › Connexions",
+        "where": "Serveur › Connexions",
+        "body": "Une partie à part avec deux cartes. « Autres apps nex » : tu y saisis une fois l’adresse de chaque autre app, ensuite tous les comptes n’ont plus qu’à cliquer. Si elle tourne dans ton réseau local (LAN, VPN), tu autorises ici les « Connexions vers le réseau local », et les connexions se désactivent et se réactivent pour tout le monde. « Interfaces » : les clés API et MCP, et, nouveaux, « Autoriser l’app iPhone » et « Connecter de nouveaux appareils », tous deux activés au départ. Sous Serveur › Comptes › Gérer, tu vois combien d’appareils a un compte et quand ils ont servi pour la dernière fois, et tu peux les déconnecter.",
+        "operator": true
+      },
+      {
+        "title": "Des réglages comme dans toutes les apps nex",
+        "where": "La roue dentée en bas de la barre latérale",
+        "body": "Clair ou sombre appartient désormais à ton compte et te suit sur chaque appareil. Sous Mon compte › Notifications, tu règles par quel moyen arrivent rappels et notifications. Les sauvegardes se font à l’heure de ton choix, chaque mois si tu le souhaites, et « Sauvegarder maintenant » emporte une note. L’administrateur téléverse des langues ajoutées sous Serveur › Général › Langues, avec un modèle à télécharger. À l’installation, nexpaper demande une fois s’il peut chercher de nouvelles versions ; seul l’administrateur voit si une version plus récente est parue."
+      }
+    ],
+    "smallTitle": "Aussi",
+    "small": [
+      "Les coffres partagés peuvent désormais être supprimés dans le navigateur, sous Gérer les coffres dans la fenêtre « qui peut faire quoi ». Les documents qu’ils contiennent vont d’abord dans un coffre de ton choix.",
+      "Sous Serveur › Fournisseur d’IA, l’administrateur choisit « Un pour tous » ou « Chaque compte lui-même » ; chaque personne saisit alors son propre service d’IA sous Mon compte › IA. Là, « Ce qui est parti » montre ce que nexpaper a envoyé à l’IA ces 14 derniers jours.",
+      "Les rappels d’échéances et l’aperçu de la semaine arrivent désormais aussi en français, et chaque courriel de nexpaper dans la langue de la personne qui le reçoit.",
+      "Quand une sauvegarde planifiée échoue, les administrateurs en sont avertis par notification et par courriel, une fois, jusqu’à ce qu’une sauvegarde réussisse de nouveau.",
+      "Les jetons API s’appellent de nouveau clés API, comme dans toutes les apps nex. Sous Serveur › Comptes, l’administrateur voit les clés de tous les comptes et débloque une clé bloquée. Les clés d’un compte bloqué ou supprimé sont en pause jusqu’à son retour.",
+      "Le courriel et la notification d’une nouvelle connexion nomment le navigateur et le moment.",
+      "Les réglages n’affichent plus de bande vide ni de seconde barre de défilement sous la page."
+    ]
+  }
+}

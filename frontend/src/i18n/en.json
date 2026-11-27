@@ -153,14 +153,6 @@
       "toAccount": "To My account"
     }
   },
-  "whatsNew": {
-    "title": "New in nexpaper {{version}}",
-    "banner": "nexpaper {{version}} is here.",
-    "show": "What's new?",
-    "putAway": "Put away",
-    "where": "Where:",
-    "done": "Got it"
-  },
   "about": {
     "menu": "About nexpaper",
     "subtitle": "Documents for households and small firms: upload, find, done.",

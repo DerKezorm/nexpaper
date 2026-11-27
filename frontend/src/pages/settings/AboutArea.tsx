@@ -1,6 +1,6 @@
 /**
  * About nexpaper, the ui kit's `AboutPage` (plan "Einstellungen", "Über"): the logo as a picture, version, "Was ist
- * neu" from nexpaper's own file, licence, where it comes from, whether a newer one is out, and what it is built with.
+ * neu" from the shared module wasneu (the newest text and the earlier versions; reading here puts nothing away), licence, where it comes from, whether a newer one is out, and what it is built with.
  * The last area of the settings, `/settings/about`; the old address `/ueber` leads there.
  *
  * The card "Aktualisierungen" comes from the shared module `nexupdates` (updates 0.1.1): only an operator sees it,
@@ -12,10 +12,10 @@ import { useTranslation } from 'react-i18next'
 
 import { tabFetch } from '../../api/client'
 import { APP_NAME } from '../../i18n'
-import { useWhatsNew } from '../../lib/whatsNew'
 import { useAuth } from '../../state/auth'
 import { AboutPage, Notice, formatMoment, type BuiltWith } from '../../vendor/nexui'
 import { useUpdates, useUpdatesTexts, whatGoesOut } from '../../vendor/nexupdates/updates'
+import { useAboutWhatsNew } from '../../vendor/nexwasneu/useWhatsNew'
 
 const PARTS: BuiltWith[] = [
   { name: 'FastAPI', url: 'https://fastapi.tiangolo.com', licence: 'MIT' },
@@ -47,8 +47,8 @@ export function AboutArea() {
   const { t, i18n } = useTranslation()
   const { me } = useAuth()
   const operator = me?.role === 'operator'
-  // The written text of the running version, to read again at any time.
-  const { entry } = useWhatsNew(me?.version, i18n.language)
+  // The written text of the running version and the earlier ones, to read again at any time.
+  const news = useAboutWhatsNew({ app: APP_NAME, logo: '/logo.svg', fetcher: tabFetch, base: '/api/v1/whats-new', language: i18n.language })
   const texts = useUpdatesTexts(i18n.language)
   const { about, updates, showUpdates, onDaily, onCheck, checking, problem } = useUpdates({
     fetcher: tabFetch,
@@ -60,39 +60,42 @@ export function AboutArea() {
 
   if (!about) return problem ? <Notice tone="danger">{problem}</Notice> : null
   return (
-    <AboutPage
-      app={APP_NAME}
-      logo="/logo.svg"
-      tagline={t('about.subtitle')}
-      version={about.version}
-      licence={{ name: about.license, href: 'https://www.gnu.org/licenses/agpl-3.0.html' }}
-      source={about.repo_url}
-      releases={about.releases_url}
-      project={about.project_url || null}
-      whatsNew={entry}
-      updates={updates}
-      showUpdates={showUpdates}
-      operator={operator}
-      onDaily={onDaily}
-      onCheck={onCheck}
-      checking={checking}
-      builtWith={PARTS}
-      builtWithMore={
-        <div className="flex flex-col gap-1" data-testid="about-fonts">
-          <h3 className="m-0 text-xs font-semibold text-[var(--nexui-text-muted)]">{t('about.fonts')}</h3>
-          <p className="m-0 text-xs leading-relaxed text-[var(--nexui-text-muted)]">{t('about.fontsText')}</p>
-          <ul className="m-0 flex list-none flex-wrap gap-x-3 gap-y-1 p-0 text-sm">
-            {FONTS.map((font) => (
-              <li key={font}>
-                {font}
-                <span className="ml-1 text-xs text-[var(--nexui-text-muted)]">(OFL-1.1)</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      }
-      problem={problem}
-      texts={{ updatesWhatGoesOut: whatGoesOut(texts, APP_NAME, undefined, [t('about.updates.otherCalls')]) }}
-    />
+    <>
+      <AboutPage
+        app={APP_NAME}
+        logo="/logo.svg"
+        tagline={t('about.subtitle')}
+        version={about.version}
+        licence={{ name: about.license, href: 'https://www.gnu.org/licenses/agpl-3.0.html' }}
+        source={about.repo_url}
+        releases={about.releases_url}
+        project={about.project_url || null}
+        {...news.about}
+        updates={updates}
+        showUpdates={showUpdates}
+        operator={operator}
+        onDaily={onDaily}
+        onCheck={onCheck}
+        checking={checking}
+        builtWith={PARTS}
+        builtWithMore={
+          <div className="flex flex-col gap-1" data-testid="about-fonts">
+            <h3 className="m-0 text-xs font-semibold text-[var(--nexui-text-muted)]">{t('about.fonts')}</h3>
+            <p className="m-0 text-xs leading-relaxed text-[var(--nexui-text-muted)]">{t('about.fontsText')}</p>
+            <ul className="m-0 flex list-none flex-wrap gap-x-3 gap-y-1 p-0 text-sm">
+              {FONTS.map((font) => (
+                <li key={font}>
+                  {font}
+                  <span className="ml-1 text-xs text-[var(--nexui-text-muted)]">(OFL-1.1)</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        }
+        problem={problem}
+        texts={{ updatesWhatGoesOut: whatGoesOut(texts, APP_NAME, undefined, [t('about.updates.otherCalls')]) }}
+      />
+      {news.window}
+    </>
   )
 }

@@ -153,14 +153,6 @@
       "toAccount": "Zu Mein Konto"
     }
   },
-  "whatsNew": {
-    "title": "Neu in nexpaper {{version}}",
-    "banner": "nexpaper {{version}} ist da.",
-    "show": "Was ist neu?",
-    "putAway": "Wegklicken",
-    "where": "Wo:",
-    "done": "Verstanden"
-  },
   "about": {
     "menu": "Über nexpaper",
     "subtitle": "Dokumente für Haushalt und kleine Betriebe: hochladen, finden, fertig.",

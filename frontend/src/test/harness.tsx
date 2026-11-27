@@ -24,10 +24,12 @@ export function inboxOf<T extends { vault_id: number; status: string }>(items: T
   return { items, total: items.length, counts, all: items.length, reading: items.filter((d) => d.status === 'processing').length }
 }
 
-/** The lists of the shared module geraete (`vendor/nexgeraete`), empty where a test names none: its cards ask on every
- * page that shows them (Mein Konto › Verbindungen, Benachrichtigungen, Server › Konten › Verwalten). */
+/** The lists of the shared modules geraete (`vendor/nexgeraete`) and wasneu (`vendor/nexwasneu`), empty where a test
+ * names none: their cards ask on every page that shows them (Mein Konto › Verbindungen, Benachrichtigungen, Server ›
+ * Konten › Verwalten; the banner after an update in the frame of every page). */
 function quietDevices(method: string, url: string): unknown {
   if (method !== 'GET') return undefined
+  if (url.startsWith('/api/v1/whats-new?')) return { version: '1.0.0', seen: '1.0.0', unread: [], more: false, current: null, earlier: false }
   if (url === '/api/v1/app-devices') return { devices: [], max: 30, app_store_url: null, has_app: true }
   if (/^\/api\/v1\/server\/accounts\/[^/]+\/devices$/.test(url)) return { count: 0, devices: [] }
   return undefined

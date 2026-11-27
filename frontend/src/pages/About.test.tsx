@@ -1,12 +1,13 @@
 /**
  * The About page against a stand-in of the server: version, licence and links, whether a newer version is out (and the
- * daily question, which only the operator switches or asks now), the written text of 1.0.0 and what nexpaper is built
- * with, in German and in English.
+ * daily question, which only the operator switches or asks now), the written text of 1.0.0 (from the shared module
+ * wasneu: the server hands the newest text up to the running version) and what nexpaper is built with, in German and in
+ * English.
  */
 import type { Me } from '../api/client'
 import { changeLanguage } from '../i18n'
-import { entriesFor } from '../lib/whatsNew'
 import { Page, Server } from '../test/harness'
+import { whatsNewTexts } from '../test/whatsNewTexts'
 import { AboutArea } from './settings/AboutArea'
 
 const me = {
@@ -25,6 +26,13 @@ const about = {
 }
 const current = { update_check: true, checked: true, latest: 'v1.0.0', newer: false, checked_at: '2026-10-10T08:15:00Z', release_url: null }
 
+/** What `GET /api/v1/whats-new` answers for an account that read 1.0.0: the text of 1.0.0 from the server's file. */
+async function news(language: 'de' | 'en'): Promise<Record<string, unknown>> {
+  const entry = (await whatsNewTexts(language))['1.0.0']!
+  const current = { version: '1.0.0', language, ...entry, sections: entry.sections.map((part) => ({ link: null, operator: false, ...part })) }
+  return { [`GET /api/v1/whats-new?language=${language}`]: { version: '1.0.0', seen: '1.0.0', unread: [], more: false, current, earlier: false } }
+}
+
 beforeEach(async () => {
   // jsdom has no modal dialogs: the window opens as a plain element.
   HTMLDialogElement.prototype.showModal = function showModal(this: HTMLDialogElement) {
@@ -32,7 +40,7 @@ beforeEach(async () => {
   }
   await changeLanguage('de', false)
   auth.me = me
-  server.answers = { 'GET /api/v1/about': about, 'GET /api/v1/about/updates': current }
+  server.answers = { 'GET /api/v1/about': about, 'GET /api/v1/about/updates': current, ...(await news('de')), ...(await news('en')) }
   server.fails = {}
   server.install()
 })
@@ -109,9 +117,6 @@ describe('the daily question', () => {
 
 describe('what is new', () => {
   it('opens the text of 1.0.0 and reads it again at any time', async () => {
-    // The texts come by a dynamic import: loaded before the page, the button is there at its first idle moment, also
-    // on a busy machine.
-    await entriesFor('de')
     await page.show(<AboutArea />)
     await page.click(page.button('Neu in nexpaper 1.0.0'))
     const window = document.querySelector('[data-testid="whats-new-window"]')!
@@ -124,7 +129,6 @@ describe('what is new', () => {
 
   it('has the same text in English', async () => {
     await changeLanguage('en', false)
-    await entriesFor('en')
     await page.show(<AboutArea />)
     await page.click(page.button('New in nexpaper 1.0.0'))
     const window = document.querySelector('[data-testid="whats-new-window"]')!

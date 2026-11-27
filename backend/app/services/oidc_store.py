@@ -18,13 +18,12 @@ import logging
 from sqlalchemy import delete, event, func, select, update
 from sqlalchemy.orm import Session
 
-from .. import __version__
 from ..config import get_settings
 from ..db import SessionLocal
 from ..models import MEMBER, SIGN_IN_OIDC, SIGN_IN_PASSWORD, Account, OidcLink, OidcProvider, utcnow
 from ..models import Invite as InviteRow
 from ..security import decrypt_secret, encrypt_secret
-from ..vendor import nexkonten, nexoidc
+from ..vendor import nexkonten, nexoidc, nexwasneu
 from ..vendor.nexoidc import (
     LEGACY_SLUG,
     AccountState,
@@ -347,7 +346,8 @@ class SqlStore:
         if not shown and invited is not None:
             shown = nexkonten.names.provider_display_name(store, invited.display_name or "")
         # A new account starts with the theme system (Bauplan E45, ``profile.mode`` as at the store's add_account).
-        row = Account(name=name, display_name=shown, role=MEMBER, sign_in=SIGN_IN_OIDC, whats_new_seen=__version__,
+        row = Account(name=name, display_name=shown, role=MEMBER, sign_in=SIGN_IN_OIDC,
+                      whats_new_seen=nexwasneu.seen_for_new_account(),
                       storage_limit=settings_service.new_account_storage_limit(self.db),
                       profile={"mode": "system"})
         self.db.add(row)
