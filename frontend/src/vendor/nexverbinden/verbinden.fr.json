@@ -57,7 +57,9 @@
     "otherApp": "l’autre app",
     "tooOldMember": "{partner} à cette adresse ne peut pas encore se connecter ainsi. Demande à l’opérateur de mettre {partner} à jour.",
     "sendsPerson": "Pour cela, {app} envoie à {partner} le nom, les adresses e-mail et les numéros du contact que tu regardes dans {app}, seulement quand tu l’ouvres.",
-    "receivesPerson": "Pour cela, {partner} envoie à {app} le nom, les adresses e-mail et les numéros du contact que tu regardes dans {partner}, seulement quand tu l’ouvres."
+    "receivesPerson": "Pour cela, {partner} envoie à {app} le nom, les adresses e-mail et les numéros du contact que tu regardes dans {partner}, seulement quand tu l’ouvres.",
+    "aborted": "Annulé. La connexion avec {partner} ne s’est pas faite ; tu peux réessayer.",
+    "timedOut": "Aucune réponse de {partner}. Réessaie."
   },
   "buttons": {
     "connect": "Connecter avec {partner}",
@@ -74,11 +76,15 @@
     "save": "Enregistrer",
     "back": "Aux connexions",
     "setUp": "Configurer",
-    "setUpThere": "Configurer dans {partner}"
+    "setUpThere": "Configurer dans {partner}",
+    "goBack": "Retour",
+    "take": "Reprendre",
+    "dropSuggestion": "Écarter"
   },
   "disconnect": {
     "title": "Déconnecter {partner} ?",
-    "text": "Les deux sens prennent fin, dans {app} et dans {partner}. Ce que tu as créé toi-même reste dans les deux apps."
+    "text": "Les deux sens prennent fin, dans {app} et dans {partner}. Ce que tu as créé toi-même reste dans les deux apps.",
+    "legacyText": "La connexion par clé API prend fin dans {app}. Tu peux supprimer la clé elle-même dans {partner}."
   },
   "consent": {
     "title": "{partner} veut se connecter avec {app}",
@@ -102,11 +108,27 @@
     "subtitle": "Comment les apps de ce serveur se connectent entre elles.",
     "switch": "Connexions avec d'autres apps nex",
     "switchHint": "Désactivé : personne ne se connecte à nouveau, les connexions existantes sont en pause. Rien n'est supprimé.",
-    "addressesHint": "Une adresse saisie ici est préremplie dans la carte de chaque compte.",
+    "addressesHint": "Avec une adresse ici, chaque compte se connecte en un clic. À l’enregistrement, {app} vérifie ce qui répond à chaque nouvelle adresse.",
     "address": "Adresse de {partner}",
     "saved": "Enregistré.",
     "local": "Connexions vers le réseau local",
-    "localHint": "Les autres apps nex peuvent aussi se trouver à une adresse du réseau local (LAN, VPN). Chaque compte peut alors faire interroger des adresses de ce réseau par {app}."
+    "localHint": "Les autres apps nex peuvent aussi se trouver à une adresse du réseau local (LAN, VPN). Chaque compte peut alors faire interroger des adresses de ce réseau par {app}.",
+    "titleBefore": "Autres ",
+    "savedWhat": "Enregistré : {what}.",
+    "nothingChanged": "Rien n’a changé.",
+    "notSaved": "Non enregistré. Vérifie les champs marqués.",
+    "suggestion": "{from} connaît {partner} à l’adresse {address}. La reprendre ?",
+    "notTaken": "Non reprise : {reason}",
+    "checks": {
+      "found": "Trouvée : {found} {version}",
+      "partner_off": "Trouvée : {found} {version}. Son opérateur y a désactivé les connexions.",
+      "name_unknown": "Enregistrée, mais le nom ne se résout pas. L’adresse est-elle juste ?",
+      "unreachable": "Enregistrée, mais rien n’y répond pour le moment. {partner} est peut-être arrêtée.",
+      "wrong_app": "Enregistrée, mais c’est {found} qui y répond, pas {partner}.",
+      "local_off": "Enregistrée, mais l’adresse se trouve dans le réseau local. Coche « Connexions vers le réseau local » plus haut.",
+      "address_refused": "Enregistrée, mais {app} n’interroge jamais cette adresse.",
+      "partner_too_old": "Enregistrée, mais aucune app nex capable de se connecter ainsi n’y répond (trop ancienne ou une autre page)."
+    }
   },
   "areaWord": "espaces",
   "failed": "Cela n'a pas marché. Réessaie dans un instant.",
@@ -130,13 +152,14 @@
     "redirect_invalid": "Cette adresse de retour n'appartient pas à l'app qui demande.",
     "pkce_required": "L'app qui demande doit utiliser PKCE avec S256.",
     "areas_invalid": "L'un d'eux ne t'appartient pas.",
-    "local_off": "{app} n’interroge les adresses du réseau local qu’une fois que l’opérateur l’autorise : Serveur › Connexions › Autres apps nex, « Connexions vers le réseau local ».",
+    "local_off": "{app} n’interroge les adresses du réseau local qu’une fois que l’opérateur l’autorise dans {app} : Serveur › Connexions › Autres apps nex, « Connexions vers le réseau local ».",
     "partner_not_set_up": "{partner} n’est pas configurée sur ce serveur. L’opérateur le fait sous Serveur › Connexions › Autres apps nex.",
     "declined": "Tu as refusé la connexion dans {partner}.",
     "partner_local_off": "{partner} n’interroge pas {app}, car l’adresse de {app} se trouve dans le réseau local. L’opérateur doit d’abord l’autoriser dans {partner} : Serveur › Connexions › Autres apps nex, « Connexions vers le réseau local ».",
     "partner_cannot_reach": "{partner} ne joint pas {app} pour le moment. Si cela dure, l’opérateur vérifie l’adresse de {app} dans {partner} sous Serveur › Connexions › Autres apps nex.",
     "about_unknown": "Cette app ne dit rien sur les personnes pour cela.",
-    "person_invalid": "Nomme une personne par son nom, son adresse e-mail ou son numéro, dans les limites."
+    "person_invalid": "Nomme une personne par son nom, son adresse e-mail ou son numéro, dans les limites.",
+    "suggestion_unknown": "Cette suggestion n’existe plus."
   },
   "purposes": {
     "nextasks": {

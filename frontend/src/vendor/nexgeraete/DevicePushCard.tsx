@@ -1,6 +1,6 @@
 /**
  * My account › Notifications, after "Auf welchem Weg": the card "Mitteilungen auf deinen Geräten" (BellRing,
- * `id="devices-push"`). One box per device ("Kims iPhone · iPhone 15"), a badge "Mitteilungen erlaubt" or "Keine
+ * `id="devices-push"`). One box per device ("Kims iPhone · iPhone 15"; since 0.1.4 "iPhone" alone, never "iPhone · iPhone", B21), a badge "Mitteilungen erlaubt" or "Keine
  * Mitteilungen angemeldet" (then a line that the ticks apply once the device gets them again), and a `CheckboxRow`
  * per kind the server names for the device (`GET <base>/app-devices/{id}/push-kinds`), marked "nur Betreiber" where only operators
  * get it. A tick is kept at once (`PUT … {<kind>: on}`) with a short "Gespeichert.". Without devices one sentence with
@@ -12,7 +12,7 @@ import { useCallback, useEffect, useState, type ReactNode } from 'react'
 
 import { Badge, Box, Button, Buttons, Card, CheckboxRow, Notice } from '../nexui'
 import { useDeviceTexts } from './hooks'
-import { DEVICES_BASE, asListing, asPushKinds, fillDevices, kindLabel, refusalText, type Device, type DeviceRequest, type PushKind } from './geraete'
+import { DEVICES_BASE, DEVICE_RENAMED, asListing, asPushKinds, deviceTitle, fillDevices, refusalText, type Device, type DeviceRequest, type PushKind } from './geraete'
 
 export type DevicePushCardProps = {
   request: DeviceRequest
@@ -67,6 +67,19 @@ export function DevicePushCard({ request, base = DEVICES_BASE, app, language, co
     }
   }, [request, base, kindsPath, texts])
 
+  // Since 0.1.4: a device renamed on the same page shows its new name here at once (else on the next visit).
+  useEffect(() => {
+    const renamed = (event: Event) => {
+      const changed = (event as CustomEvent<Device>).detail
+      if (!changed) return
+      setLoaded((before) =>
+        before ? { ...before, devices: before.devices.map((device) => (String(device.id) === String(changed.id) ? { ...device, name: changed.name } : device)) } : before,
+      )
+    }
+    window.addEventListener(DEVICE_RENAMED, renamed)
+    return () => window.removeEventListener(DEVICE_RENAMED, renamed)
+  }, [])
+
   const change = async (device: Device, kind: PushKind, on: boolean) => {
     const id = String(device.id)
     setBusy(`${id}:${kind.id}`)
@@ -109,7 +122,7 @@ export function DevicePushCard({ request, base = DEVICES_BASE, app, language, co
         return (
           <Box
             key={id}
-            title={`${device.name} · ${device.model || kindLabel(texts, device.kind)}`}
+            title={deviceTitle(device, texts)}
             badge={
               <Badge tone={device.push ? 'on' : 'warn'} testId="devices-push-state">
                 {device.push ? texts.push.allowed : texts.push.systemOff}

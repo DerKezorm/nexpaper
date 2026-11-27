@@ -139,6 +139,8 @@ class World:
         self._kept: tuple[Any, Any] | None = None
         #: Since 0.1.8 (B2): hosts besides ``home.…`` whose name points into the own network.
         self.at_home: set[str] = set()
+        #: Since 0.2.0 (B11): hosts whose name does not resolve.
+        self.no_name: set[str] = set()
 
     @staticmethod
     def host(base: str) -> str:
@@ -148,7 +150,9 @@ class World:
         reach = self.pkg.reach
         self._kept = (reach.TRANSPORT, reach.RESOLVER)
         reach.TRANSPORT = httpx.MockTransport(self._handle)
-        reach.RESOLVER = lambda host, port: [HOME if host.startswith("home.") or host in self.at_home else PUBLIC]
+        reach.RESOLVER = lambda host, port: (
+            [] if host in self.no_name else [HOME if host.startswith("home.") or host in self.at_home else PUBLIC]
+        )
         self.pkg.connect.BRAKE.forget()
 
     def uninstall(self) -> None:

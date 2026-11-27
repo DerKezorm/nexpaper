@@ -65,7 +65,8 @@ export type PartnerView = {
   areas_used: AreaRef[] | null
   /** This app's areas the partner reaches (`null`: all). */
   areas_granted: AreaRef[] | null
-  legacy: { shown: string; expires_at: string | null } | null
+  /** `can_end` (since 0.2.0, B9): "Trennen" ends the older connection, where the app's Store can forget it. */
+  legacy: { shown: string; expires_at: string | null; can_end?: boolean } | null
   /** V16, V41: this app's areas to choose before the click, where the partner reads or writes areas here (else empty). */
   areas_choice: AreaRef[]
   version: string | null
@@ -103,6 +104,14 @@ export type ConsentInfo = {
  * the page sends the browser there at once, and the refusal stands in the card where "Verbinden" was clicked. */
 export type ConsentBack = { back: string; refused: string }
 
+/** Since 0.2.0 (B11, V57): what answers at an address the operator kept. `found` and `partner_off` are the right app
+ * (`ok`); `name_unknown`, `unreachable`, `wrong_app` (with the app that answered), `local_off`, `address_refused`,
+ * `partner_too_old` say what is wrong, the address is kept anyway. */
+export type AddressCheck = { ok: boolean; code: string; app: string | null; version: string | null }
+
+/** Since 0.2.0 (B16, V58): an address another nex app passed on, for the operator to take with a click. */
+export type AddressSuggestion = { partner: string; address: string; from: string }
+
 /** `GET` and `PUT <base>/admin`. */
 export type ConnectionsAdmin = {
   connections: boolean
@@ -110,7 +119,18 @@ export type ConnectionsAdmin = {
   addresses: Record<string, string>
   /** Since 0.1.4 (V-12): connections into the own network (the app's setting `connections_local_network`). */
   local: boolean
+  /** Since 0.2.0 (B16); left out by an older server. */
+  suggestions?: AddressSuggestion[]
+  /** Since 0.2.0 (B18): what the change kept (`connections`, `local`, partners), and what answers at each address kept
+   * anew (B11). */
+  saved?: string[]
+  checks?: Record<string, AddressCheck>
 }
+
+/** Since 0.2.0 (B13, V61): how long "Mit … verbinden" waits for the way back before it is free again, and how soon
+ * after leaving a return to this page counts as "abgebrochen" (the window of the other app was closed). */
+export const WAIT_SECONDS = 120
+export const RETURN_GRACE_MS = 500
 
 /** The values of the consent page's address that go back to the server. */
 export const CONSENT_PARAMS = ['client_id', 'redirect_uri', 'state', 'code_challenge', 'code_challenge_method'] as const
@@ -133,6 +153,11 @@ export const VERBINDEN_BUTTONS = {
   allow: { kind: 'primary', icon: 'Check' },
   decline: { kind: 'secondary', icon: 'X' },
   save: { kind: 'secondary', icon: 'Check' },
+  /** Since 0.2.0 (B18): the one "Speichern" of the card "Andere nex-Apps", for its switches and every address. */
+  saveAll: { kind: 'primary', icon: 'Check' },
+  /** Since 0.2.0 (B16): a suggested address taken over or turned down. */
+  take: { kind: 'secondary', icon: 'Check' },
+  dropSuggestion: { kind: 'secondary', icon: 'X' },
   back: { kind: 'secondary', icon: 'ArrowLeft' },
   /** Since 0.1.8 (B2, B3): the operator's way to Server › Verbindungen › Andere nex-Apps, here or in the partner app. */
   setUp: { kind: 'secondary', icon: 'SlidersHorizontal' },
@@ -171,7 +196,9 @@ export function aboutPair(texts: VerbindenTexts, app: string, partner: string): 
 }
 
 /** Which way a purpose makes things go, seen from the app showing the card: reading at the partner brings things here,
- * writing there sends them there; the partner's reading here sends things there, its writing brings them here. */
+ * writing there sends them there; the partner's reading here sends things there, its writing brings them here.
+ * @deprecated Since 0.2.0 (B10, V62) the parts show no arrows: two sections, "{app} darf bei {partner}" and "{partner}
+ * darf bei {app}"; kept only for apps that still call it. */
 export function wayOf(level: string, mine: boolean): 'in' | 'out' {
   const reads = level === 'read'
   return mine === reads ? 'in' : 'out'
@@ -192,10 +219,30 @@ export function refusalPartner(error: unknown): string | undefined {
   return typeof inner?.partner === 'string' ? inner.partner : undefined
 }
 
+function detailOf(error: unknown): Record<string, unknown> | null {
+  const found = error as { detail?: unknown; body?: unknown } | null
+  const inner = found?.detail ?? (found?.body as { detail?: unknown } | undefined)?.detail ?? found
+  return inner && typeof inner === 'object' ? (inner as Record<string, unknown>) : null
+}
+
+/** Since 0.2.0 (B14, V59): the app that refused (`app` in the module's `detail`), where the page does not know it. */
+export function refusalApp(error: unknown): string | undefined {
+  const app = detailOf(error)?.app
+  return typeof app === 'string' ? app : undefined
+}
+
+/** Since 0.2.0 (B18, V60): the fields of the operator's card a refusal names, with their codes. */
+export function refusalFields(error: unknown): Record<string, string> {
+  const fields = detailOf(error)?.fields
+  if (!fields || typeof fields !== 'object') return {}
+  return Object.fromEntries(Object.entries(fields as Record<string, unknown>).filter((entry): entry is [string, string] => typeof entry[1] === 'string'))
+}
+
 /** The words of a refusal of the module (by its code). Since 0.1.8 `{partner}` is filled too: the partner given, else
- * the one the refusal names, else "die andere App". */
+ * the one the refusal names, else "die andere App". Since 0.2.0 (B14) `{app}` is the app the refusal names where the
+ * page gives none (the consent page). */
 export function refusalText(texts: VerbindenTexts, error: unknown, app: string, partner?: string): string {
-  return codeText(texts, refusalCode(error), app, partner ?? refusalPartner(error))
+  return codeText(texts, refusalCode(error), app || refusalApp(error) || '', partner ?? refusalPartner(error))
 }
 
 /** Since 0.1.8: the words of a code of the module, with `{app}` and `{partner}`. */

@@ -26,6 +26,8 @@ CODES: dict[str, tuple[int, str]] = {
     "partner_cannot_reach": (409, "The other app cannot reach this one."),
     # Since 0.1.13 (V52): the question about one person.
     "about_unknown": (404, "This app tells nothing about people for that."),
+    # Since 0.2.0 (B16): the operator takes or turns down an address another nex app suggested.
+    "suggestion_unknown": (404, "There is no such suggestion (any more)."),
     "person_invalid": (422, "Name a person by name, mail addresses or numbers, within the limits."),
     "refused": (409, "The other app does not take this connection any more."),
     "resting": (409, "The other app lets this connection rest."),

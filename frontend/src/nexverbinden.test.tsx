@@ -1,4 +1,4 @@
-// Vorlage nexverbinden 0.1.18
+// Vorlage nexverbinden 0.2.0
 // @vitest-environment jsdom
 /**
  * The parts of the module in the app: the card of a partner app in each state, the cards of all partners, the consent
@@ -18,6 +18,7 @@ import {
   ConsentPage,
   OPERATOR_PAGE,
   PARTNER_OPERATOR_PAGE,
+  RETURN_GRACE_MS,
   ReturnPage,
   VERBINDEN_TEXTS,
   carryProblem,
@@ -41,6 +42,8 @@ const FIRST_USE = Object.keys(USES)[0]
 const FIRST_GRANT = Object.keys(GRANTS)[0]
 const IS_GUEST = FIRST_USE !== undefined
 const word = (grantedBy: string, id: string) => (VERBINDEN_TEXTS.de.purposes as Record<string, Record<string, string>>)[grantedBy]?.[id] ?? id
+// Since 0.2.0: a second partner for the operator's card, never the one above.
+const SECOND = ['nexpaper', 'nexmail'].find((name) => name !== PARTNER && name !== APP) ?? 'nexdiary'
 const OWN_PURPOSE = Object.keys((VERBINDEN_TEXTS.de.purposes as Record<string, Record<string, string>>)[APP] ?? {})[0] ?? 'own.purpose'
 
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
@@ -105,6 +108,20 @@ async function click(id: string) {
     found!.click()
   })
 }
+
+async function typeInto(id: string, value: string) {
+  const input = byTest(id) as HTMLInputElement
+  expect(input, id).not.toBeNull()
+  const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!
+  await act(async () => {
+    setter.call(input, value)
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+  })
+}
+
+const pause = (ms: number) => act(async () => {
+  await new Promise((done) => setTimeout(done, ms))
+})
 
 async function confirmDialog() {
   const dialog = byTest('connection-disconnect-dialog') ?? (document.body.querySelector('[data-testid="connection-disconnect-dialog"]') as HTMLElement | null)
@@ -365,6 +382,61 @@ describe('the card of a partner app', () => {
     expect(Array.from(summary.querySelectorAll('span')).some((part) => part.className.includes('truncate'))).toBe(true)
   })
 
+  it('says what each app may do under its own sentence, without arrows (B10, 0.2.0)', async () => {
+    for (const state of ['none', 'connected'] as const) {
+      await show(<ConnectionCard key={state} app={APP} view={view({ state })} request={request} defaultOpen />)
+      if (FIRST_USE) expect(byTest('connection-app-may')?.textContent).toContain(`${APP} darf bei ${PARTNER}`)
+      else expect(byTest('connection-app-may')).toBeNull()
+      if (FIRST_GRANT) expect(byTest('connection-partner-may')?.textContent).toContain(`${PARTNER} darf bei ${APP}`)
+      else expect(byTest('connection-partner-may')).toBeNull()
+      expect(box.querySelector('.lucide-arrow-left, .lucide-arrow-right'), state).toBeNull()
+    }
+    await show(<ConnectionCard key="nothing" app={APP} view={view({ state: 'none', uses: [], grants: [] })} request={request} defaultOpen />)
+    expect(byTest('connection-would-flow')?.textContent).toContain(VERBINDEN_TEXTS.de.card.onlyCheck)
+  })
+
+  it('the button waits only until this page is back in front or the time is up (B13, 0.2.0)', async () => {
+    answers[`POST /api/connect/partners/${PARTNER}/start`] = { go: 'https://partner.example.com/connect/app?state=s' }
+    await show(<ConnectionCard app={APP} view={view({ state: 'none', account: null })} request={request} navigate={(url) => went.push(url)} defaultOpen />)
+    await click('connection-connect')
+    expect(went).toHaveLength(1)
+    expect((byTest('connection-connect') as HTMLButtonElement).disabled).toBe(true)
+    // Right after leaving a return does not count yet.
+    await act(async () => {
+      window.dispatchEvent(new Event('focus'))
+    })
+    expect((byTest('connection-connect') as HTMLButtonElement).disabled).toBe(true)
+    await pause(RETURN_GRACE_MS + 50)
+    await act(async () => {
+      window.dispatchEvent(new Event('focus'))
+    })
+    expect((byTest('connection-connect') as HTMLButtonElement).disabled).toBe(false)
+    expect(byTest('connection-stopped')?.textContent).toBe(VERBINDEN_TEXTS.de.card.aborted.replaceAll('{partner}', PARTNER))
+    // Nothing comes back at all: free again after the time.
+    await show(<ConnectionCard key="slow" app={APP} view={view({ state: 'none', account: null })} request={request} navigate={(url) => went.push(url)} waitSeconds={0.1} defaultOpen />)
+    await click('connection-connect')
+    expect((byTest('connection-connect') as HTMLButtonElement).disabled).toBe(true)
+    await pause(200)
+    expect((byTest('connection-connect') as HTMLButtonElement).disabled).toBe(false)
+    expect(byTest('connection-stopped')?.textContent).toBe(VERBINDEN_TEXTS.de.card.timedOut.replaceAll('{partner}', PARTNER))
+    await click('connection-connect')
+    expect(byTest('connection-stopped')).toBeNull()
+  })
+
+  it('an older connection by API key ends with "Trennen" where the app can forget it (B9, 0.2.0)', async () => {
+    answers[`DELETE /api/connect/partners/${PARTNER}`] = view({ state: 'none', legacy: null })
+    const legacy = { shown: 'ntk_AbCd', expires_at: null, can_end: true }
+    await show(<ConnectionCard app={APP} view={view({ state: 'legacy', account: null, legacy })} request={request} defaultOpen />)
+    expect(byTest('connection-disconnect')?.textContent).toBe('Trennen')
+    await click('connection-disconnect')
+    const dialog = byTest('connection-disconnect-dialog') ?? (document.body.querySelector('[data-testid="connection-disconnect-dialog"]') as HTMLElement | null)
+    expect(dialog?.textContent).toContain(VERBINDEN_TEXTS.de.disconnect.legacyText.replaceAll('{app}', APP).replaceAll('{partner}', PARTNER))
+    await confirmDialog()
+    expect(calls.at(-1)).toMatchObject({ path: `/api/connect/partners/${PARTNER}`, method: 'DELETE' })
+    await show(<ConnectionCard key="older" app={APP} view={view({ state: 'legacy', account: null, legacy: { ...legacy, can_end: false } })} request={request} defaultOpen />)
+    expect(byTest('connection-disconnect')).toBeNull()
+  })
+
   it('speaks English and French', async () => {
     await show(<ConnectionCard app={APP} view={view({ state: 'none' })} request={request} />, 'en')
     expect(byTest('connection-state')?.textContent).toBe('Not connected')
@@ -481,6 +553,30 @@ describe('the consent page', () => {
     expect(byTest('consent-app-sends-person')).toBeNull()
   })
 
+  it('a refusal it says itself names the app that refused, and the place there (B14, 0.2.0)', async () => {
+    refuse['GET /api/connect/consent'] = { code: 'local_off', app: 'nexfolk' }
+    await show(<ConsentPage request={request} search={search} />)
+    const said = byTest('consent-problem')?.textContent ?? ''
+    expect(said).toBe(VERBINDEN_TEXTS.de.errors.local_off.replaceAll('{app}', 'nexfolk'))
+    expect(said.startsWith('nexfolk fragt')).toBe(true)
+    expect(said).toContain('Server › Verbindungen › Andere nex-Apps')
+    // The app's own name, where it gives one.
+    refuse['GET /api/connect/consent'] = { code: 'local_off' }
+    await show(<ConsentPage key="own" app={APP} request={request} search={search} />)
+    expect(byTest('consent-problem')?.textContent?.startsWith(`${APP} fragt`)).toBe(true)
+    for (const words of Object.values(VERBINDEN_TEXTS)) {
+      for (const text of Object.values(words.errors)) expect(text).not.toMatch(/Allgemein|General|Général/)
+    }
+  })
+
+  it('without a way back from the server it offers the page before (B12, 0.2.0)', async () => {
+    refuse['GET /api/connect/consent'] = { code: 'client_invalid' }
+    await show(<ConsentPage request={request} search={search} back={() => went.push('back')} />)
+    expect(byTest('consent-problem')).not.toBeNull()
+    await click('consent-back')
+    expect(went).toEqual(['back'])
+  })
+
   it('where the app that asks cannot connect here, goes straight back to its card (B6, V47)', async () => {
     const back = 'https://time.example.com/connect/return?error=partner_local_off&state=s1'
     answers['GET /api/connect/consent'] = { back, refused: 'local_off' }
@@ -551,26 +647,75 @@ describe("the operator's card", () => {
     }
   })
 
-  it('switches connections and keeps the addresses', async () => {
+  it('one "Speichern" for the switches and every address, each checked at its field (B18, B11, B17, B19, B20)', async () => {
+    const admin: ConnectionsAdmin = { connections: true, partners: [PARTNER, SECOND], addresses: { [PARTNER]: '', [SECOND]: '' }, local: false, suggestions: [] }
+    answers['GET /api/connect/admin'] = admin
+    answers['PUT /api/connect/admin'] = {
+      ...admin,
+      local: true,
+      addresses: { [PARTNER]: 'https://partner.example.com', [SECOND]: 'https://second.example.com' },
+      saved: ['local', PARTNER, SECOND],
+      checks: {
+        [PARTNER]: { ok: true, code: 'found', app: PARTNER, version: '0.9.0' },
+        [SECOND]: { ok: false, code: 'wrong_app', app: 'nextime', version: '1.0.0' },
+      },
+    }
+    await show(<ConnectionsOperatorCard app={APP} request={request} />)
+    // B19, B20: the mark and the wordmark of the nex apps in the head; B17: the mark of each app at its address.
+    expect(byTest('connections-operator')?.querySelector('[data-mark="nex"]')).not.toBeNull()
+    expect(byTest('connections-operator')?.querySelector('[data-wordmark="nex"]')).not.toBeNull()
+    expect(byTest(`connections-mark-${PARTNER}`)?.getAttribute('src')?.startsWith('data:image/svg+xml,')).toBe(true)
+    expect(byTest(`connections-mark-${SECOND}`)).not.toBeNull()
+    expect(box.querySelectorAll('[data-testid^="connections-save-"]')).toHaveLength(0)
+    // Nothing is kept before "Speichern".
+    await click('connections-local')
+    await typeInto(`connections-address-${PARTNER}`, 'https://partner.example.com')
+    await typeInto(`connections-address-${SECOND}`, 'https://second.example.com')
+    expect(calls.filter((call) => call.method === 'PUT')).toHaveLength(0)
+    await click('connections-save')
+    expect(calls.at(-1)).toEqual({
+      path: '/api/connect/admin',
+      method: 'PUT',
+      body: { connections: true, local: true, addresses: { [PARTNER]: 'https://partner.example.com', [SECOND]: 'https://second.example.com' } },
+    })
+    expect(byTest('connections-saved')?.textContent).toBe(`Gespeichert: Verbindungen ins eigene Netz, ${PARTNER}, ${SECOND}.`)
+    expect(byTest(`connections-field-${PARTNER}`)?.textContent).toContain(`Gefunden: ${PARTNER} 0.9.0`)
+    expect(byTest(`connections-field-${SECOND}`)?.textContent).toContain(`dort antwortet nextime, nicht ${SECOND}`)
+    expect((byTest('connections-local') as HTMLInputElement).checked).toBe(true)
+  })
+
+  it('a field that is no address keeps nothing and says so at the field (B18)', async () => {
     const admin: ConnectionsAdmin = { connections: true, partners: [PARTNER], addresses: { [PARTNER]: '' }, local: false }
     answers['GET /api/connect/admin'] = admin
-    answers['PUT /api/connect/admin'] = { ...admin, connections: false }
+    refuse['PUT /api/connect/admin'] = { code: 'address_invalid', partner: PARTNER, fields: { [PARTNER]: 'address_invalid' } }
     await show(<ConnectionsOperatorCard app={APP} request={request} />)
-    expect(byTest('connections-saved')).toBeNull()
-    await click('connections-switch')
-    expect(calls.at(-1)).toMatchObject({ method: 'PUT', body: { connections: false } })
-    expect(byTest('connections-saved')?.textContent).toBe('Gespeichert.')
-    // V-12 (0.1.4): the own network as a box to tick, kept at once (MCP 21).
-    const local = byTest('connections-local') as HTMLInputElement
-    expect(local.checked).toBe(false)
-    expect(local.parentElement!.textContent).toContain('Verbindungen ins eigene Netz')
-    expect(local.parentElement!.textContent).toContain(`Dann kann jedes Konto ${APP} Adressen dort ansprechen lassen.`)
-    answers['PUT /api/connect/admin'] = { ...admin, connections: false, local: true }
-    await click('connections-local')
-    expect(calls.at(-1)).toMatchObject({ method: 'PUT', body: { local: true } })
-    expect((byTest('connections-local') as HTMLInputElement).checked).toBe(true)
-    expect(byTest('connections-saved')?.textContent).toBe('Gespeichert.')
-    await click(`connections-save-${PARTNER}`)
-    expect(calls.at(-1)).toMatchObject({ method: 'PUT', body: { addresses: { [PARTNER]: '' } } })
+    await typeInto(`connections-address-${PARTNER}`, 'ftp://x')
+    await click('connections-save')
+    expect(byTest(`connections-field-${PARTNER}`)?.textContent).toContain(VERBINDEN_TEXTS.de.errors.address_invalid)
+    expect(byTest('connections-saved')?.textContent).toBe(VERBINDEN_TEXTS.de.operator.notSaved)
+  })
+
+  it('an address another app passed on waits at its field, taken with a click after a check (B16)', async () => {
+    const suggestion = { partner: PARTNER, address: 'https://partner.example.com', from: SECOND }
+    const admin: ConnectionsAdmin = { connections: true, partners: [PARTNER], addresses: { [PARTNER]: '' }, local: false, suggestions: [suggestion] }
+    answers['GET /api/connect/admin'] = admin
+    answers[`POST /api/connect/admin/suggestions/${PARTNER}`] = { ...admin, suggestions: [suggestion], saved: [], checks: { [PARTNER]: { ok: false, code: 'unreachable', app: null, version: null } } }
+    await show(<ConnectionsOperatorCard app={APP} request={request} />)
+    expect(byTest(`connections-suggestion-${PARTNER}`)?.textContent).toContain(`${SECOND} kennt ${PARTNER} unter https://partner.example.com. Übernehmen?`)
+    await click(`connections-take-${PARTNER}`)
+    expect(calls.at(-1)).toMatchObject({ path: `/api/connect/admin/suggestions/${PARTNER}`, method: 'POST' })
+    expect(byTest(`connections-not-taken-${PARTNER}`)?.textContent).toContain('Nicht übernommen:')
+    expect((byTest(`connections-address-${PARTNER}`) as HTMLInputElement).value).toBe('')
+    answers[`POST /api/connect/admin/suggestions/${PARTNER}`] = {
+      ...admin,
+      suggestions: [],
+      addresses: { [PARTNER]: 'https://partner.example.com' },
+      saved: [PARTNER],
+      checks: { [PARTNER]: { ok: true, code: 'found', app: PARTNER, version: '0.9.0' } },
+    }
+    await click(`connections-take-${PARTNER}`)
+    expect(byTest(`connections-suggestion-${PARTNER}`)).toBeNull()
+    expect((byTest(`connections-address-${PARTNER}`) as HTMLInputElement).value).toBe('https://partner.example.com')
+    expect(byTest(`connections-field-${PARTNER}`)?.textContent).toContain(`Gefunden: ${PARTNER} 0.9.0`)
   })
 })

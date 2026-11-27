@@ -6197,6 +6197,78 @@
         "title": "NewPasswordIn",
         "type": "object"
       },
+      "NexgeraeteAddressIn": {
+        "properties": {
+          "address": {
+            "default": "",
+            "maxLength": 600,
+            "title": "Address",
+            "type": "string"
+          }
+        },
+        "title": "NexgeraeteAddressIn",
+        "type": "object"
+      },
+      "NexgeraeteConnectIn": {
+        "properties": {
+          "challenge": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Challenge"
+          },
+          "device": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Device"
+          },
+          "state": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "State"
+          }
+        },
+        "title": "NexgeraeteConnectIn",
+        "type": "object"
+      },
+      "NexgeraeteNameIn": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "maxLength": 1000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          }
+        },
+        "title": "NexgeraeteNameIn",
+        "type": "object"
+      },
       "NextasksListOut": {
         "properties": {
           "id": {
@@ -12677,6 +12749,7 @@
         ]
       },
       "put": {
+        "description": "Since 0.2.0 (B18, V60): one change for the whole card, its switches and every address. First everything is\nchecked: a switch that is not on or off (422), an address that is none (422 with ``partner`` and ``fields``,\nevery field that is wrong with its code); then nothing is kept. Else all of it is kept, and every address kept\nanew is asked what answers there (B11, V57): ``checks``, kept also where nothing or another app answers.",
         "operationId": "admin_put_api_connect_admin_put",
         "requestBody": {
           "content": {
@@ -12720,6 +12793,103 @@
           }
         ],
         "summary": "Change switch or addresses (operator)",
+        "tags": [
+          "connect"
+        ]
+      }
+    },
+    "/api/connect/admin/suggestions/{partner}": {
+      "delete": {
+        "operationId": "suggestion_drop_api_connect_admin_suggestions__partner__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "partner",
+            "required": true,
+            "schema": {
+              "title": "Partner",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Suggestion Drop Api Connect Admin Suggestions  Partner  Delete",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Turn a suggested address down (operator)",
+        "tags": [
+          "connect"
+        ]
+      },
+      "post": {
+        "description": "Since 0.2.0 (B16, V58): the operator takes a suggestion with one click; it is asked first like a typed\naddress (B11, V57) and kept only where the right app answers there, else it stays a suggestion and the\nfield says why.",
+        "operationId": "suggestion_take_api_connect_admin_suggestions__partner__post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "partner",
+            "required": true,
+            "schema": {
+              "title": "Partner",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Suggestion Take Api Connect Admin Suggestions  Partner  Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Take a suggested address of another nex app (operator)",
         "tags": [
           "connect"
         ]
@@ -14552,6 +14722,426 @@
         "summary": "Delete an own API key",
         "tags": [
           "api keys"
+        ]
+      }
+    },
+    "/api/v1/app-connect": {
+      "post": {
+        "description": "With ``state``: the link back into the app with a one-time code (five minutes, once; ``challenge`` for\nPKCE). With ``device`` alone (nextasks, nexlore): the QR code's link of a new pairing.",
+        "operationId": "connect_api_v1_app_connect_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NexgeraeteConnectIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Connect the app that opened /app-connect",
+        "tags": [
+          "devices"
+        ]
+      }
+    },
+    "/api/v1/app-devices": {
+      "delete": {
+        "operationId": "disconnect_all_api_v1_app_devices_delete",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Disconnect every device of the account",
+        "tags": [
+          "devices"
+        ]
+      },
+      "get": {
+        "operationId": "own_devices_api_v1_app_devices_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "The own devices",
+        "tags": [
+          "devices"
+        ]
+      }
+    },
+    "/api/v1/app-devices/{device_id}": {
+      "delete": {
+        "operationId": "disconnect_api_v1_app_devices__device_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "device_id",
+            "required": true,
+            "schema": {
+              "title": "Device Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Disconnect a device",
+        "tags": [
+          "devices"
+        ]
+      },
+      "patch": {
+        "operationId": "rename_api_v1_app_devices__device_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "device_id",
+            "required": true,
+            "schema": {
+              "title": "Device Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NexgeraeteNameIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Rename a device",
+        "tags": [
+          "devices"
+        ]
+      }
+    },
+    "/api/v1/app-devices/{device_id}/push-kinds": {
+      "get": {
+        "operationId": "device_kinds_api_v1_app_devices__device_id__push_kinds_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "device_id",
+            "required": true,
+            "schema": {
+              "title": "Device Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "The kinds of notification of a device",
+        "tags": [
+          "devices"
+        ]
+      },
+      "put": {
+        "operationId": "set_device_kinds_api_v1_app_devices__device_id__push_kinds_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "device_id",
+            "required": true,
+            "schema": {
+              "title": "Device Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": {
+                  "type": "boolean"
+                },
+                "title": "Body",
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Switch kinds of notification on a device",
+        "tags": [
+          "devices"
+        ]
+      }
+    },
+    "/api/v1/app-pairing": {
+      "post": {
+        "operationId": "pair_api_v1_app_pairing_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/NexgeraeteAddressIn"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "A QR code and a code for the app (10 minutes, one device)",
+        "tags": [
+          "devices"
+        ]
+      }
+    },
+    "/api/v1/app-pairing/{pairing_id}": {
+      "delete": {
+        "operationId": "withdraw_api_v1_app_pairing__pairing_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "pairing_id",
+            "required": true,
+            "schema": {
+              "title": "Pairing Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Withdraw a QR code",
+        "tags": [
+          "devices"
+        ]
+      },
+      "get": {
+        "operationId": "pairing_state_api_v1_app_pairing__pairing_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "pairing_id",
+            "required": true,
+            "schema": {
+              "title": "Pairing Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Whether the app used the QR code or the code",
+        "tags": [
+          "devices"
         ]
       }
     },
@@ -27972,6 +28562,94 @@
         "summary": "Move all documents of a sender to another sender of the same vault, and delete it (manage)",
         "tags": [
           "catalog"
+        ]
+      }
+    },
+    "/api/v1/server/accounts/{account}/devices": {
+      "delete": {
+        "operationId": "account_devices_off_api_v1_server_accounts__account__devices_delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "account",
+            "required": true,
+            "schema": {
+              "title": "Account",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Disconnect every device of an account",
+        "tags": [
+          "devices"
+        ]
+      },
+      "get": {
+        "operationId": "account_devices_api_v1_server_accounts__account__devices_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "account",
+            "required": true,
+            "schema": {
+              "title": "Account",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "How many devices an account has, which, last seen",
+        "tags": [
+          "devices"
         ]
       }
     },

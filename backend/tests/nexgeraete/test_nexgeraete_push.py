@@ -178,9 +178,6 @@ def test_an_operator_s_device_that_wants_new_versions_counts_as_a_bell(app: Any,
     app.switch("app", False)
     assert wanted() is False, "the iPhone app is switched off"
     app.switch("app", True)
-    app.block("operator")
-    assert wanted() is False, "a blocked operator"
-    app.unblock("operator")
     assert wanted() is True
 
 

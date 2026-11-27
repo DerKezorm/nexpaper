@@ -57,7 +57,9 @@
     "otherApp": "the other app",
     "tooOldMember": "{partner} at this address cannot connect this way yet. Ask the operator to update {partner}.",
     "sendsPerson": "For this, {app} sends {partner} the name, mail addresses and phone numbers of the contact you look at in {app}, only when you open it.",
-    "receivesPerson": "For this, {partner} sends {app} the name, mail addresses and phone numbers of the contact you look at in {partner}, only when you open it."
+    "receivesPerson": "For this, {partner} sends {app} the name, mail addresses and phone numbers of the contact you look at in {partner}, only when you open it.",
+    "aborted": "Cancelled. The connection with {partner} was not made; you can try again.",
+    "timedOut": "No answer came from {partner}. Try again."
   },
   "buttons": {
     "connect": "Connect with {partner}",
@@ -74,11 +76,15 @@
     "save": "Save",
     "back": "To the connections",
     "setUp": "Set up",
-    "setUpThere": "Set up in {partner}"
+    "setUpThere": "Set up in {partner}",
+    "goBack": "Back",
+    "take": "Take over",
+    "dropSuggestion": "Dismiss"
   },
   "disconnect": {
     "title": "Disconnect {partner}?",
-    "text": "Both directions end, in {app} and in {partner}. What you created yourself stays in both apps."
+    "text": "Both directions end, in {app} and in {partner}. What you created yourself stays in both apps.",
+    "legacyText": "The connection by API key ends in {app}. You can delete the key itself in {partner}."
   },
   "consent": {
     "title": "{partner} wants to connect with {app}",
@@ -102,11 +108,27 @@
     "subtitle": "How the apps of this server connect with each other.",
     "switch": "Connections with other nex apps",
     "switchHint": "Off: nobody connects anew, existing connections rest. Nothing is deleted.",
-    "addressesHint": "An address set here is prefilled in the card for every account.",
+    "addressesHint": "With an address here, every account connects with one click. When saving, {app} checks what answers at each new address.",
     "address": "Address of {partner}",
     "saved": "Saved.",
     "local": "Connections into the local network",
-    "localHint": "Other nex apps may also be at an address in the local network (LAN, VPN). Then every account can have {app} ask addresses there."
+    "localHint": "Other nex apps may also be at an address in the local network (LAN, VPN). Then every account can have {app} ask addresses there.",
+    "titleBefore": "Other ",
+    "savedWhat": "Saved: {what}.",
+    "nothingChanged": "Nothing changed.",
+    "notSaved": "Not saved. Check the marked fields.",
+    "suggestion": "{from} knows {partner} at {address}. Take it over?",
+    "notTaken": "Not taken over: {reason}",
+    "checks": {
+      "found": "Found: {found} {version}",
+      "partner_off": "Found: {found} {version}. Its operator has switched connections off there.",
+      "name_unknown": "Saved, but the name does not resolve. Is the address right?",
+      "unreachable": "Saved, but nothing answers there right now. Perhaps {partner} is off.",
+      "wrong_app": "Saved, but {found} answers there, not {partner}.",
+      "local_off": "Saved, but the address lies in the local network. Tick “Connections into the local network” above.",
+      "address_refused": "Saved, but {app} never asks this address.",
+      "partner_too_old": "Saved, but no nex app that can connect this way answers there (too old, or another page)."
+    }
   },
   "areaWord": "areas",
   "failed": "That did not work. Try again in a moment.",
@@ -130,13 +152,14 @@
     "redirect_invalid": "This return address does not belong to the app that asks.",
     "pkce_required": "The app that asks must use PKCE with S256.",
     "areas_invalid": "One of them is not yours.",
-    "local_off": "{app} asks addresses in the local network only once the operator allows it: Server › Connections › Other nex apps, “Connections into the local network”.",
+    "local_off": "{app} asks addresses in the local network only once the operator allows it in {app}: Server › Connections › Other nex apps, “Connections into the local network”.",
     "partner_not_set_up": "{partner} is not set up on this server. The operator does that under Server › Connections › Other nex apps.",
     "declined": "You turned the connection down in {partner}.",
     "partner_local_off": "{partner} does not ask {app}, because the address of {app} lies in the local network. The operator has to allow that in {partner} first: Server › Connections › Other nex apps, “Connections into the local network”.",
     "partner_cannot_reach": "{partner} cannot reach {app} right now. If it stays so, the operator checks the address of {app} in {partner} under Server › Connections › Other nex apps.",
     "about_unknown": "This app tells nothing about people for that.",
-    "person_invalid": "Name a person by name, mail address or number, within the limits."
+    "person_invalid": "Name a person by name, mail address or number, within the limits.",
+    "suggestion_unknown": "This suggestion is gone."
   },
   "purposes": {
     "nextasks": {

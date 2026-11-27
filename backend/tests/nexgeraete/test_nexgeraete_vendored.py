@@ -50,11 +50,20 @@ def test_the_module_needs_only_fastapi_segno_and_cryptography_beyond_the_standar
 
 
 def test_the_module_s_bodies_keep_their_names_beside_the_app_s(app: Any) -> None:
-    """G59: in the app's description the module's bodies are ``Nexgeraete…``, and none of the app's names is
-    renamed into a long module path (FastAPI does that when two models share a name)."""
+    """G59, G60: every body of the module is named ``Nexgeraete…``, and where the app shows the module's routes in its
+    description, they appear under exactly that name: FastAPI never had to rename one into a long module path, so no
+    name of the app changed either. Long names the app keeps of its own (nexlore ``app__routers__accounts__NameIn``,
+    E53) are the app's matter and stay as they are."""
+    from pydantic import BaseModel
+
+    api = importlib.import_module(f"{app.package}.api")
+    bodies = sorted(
+        value.__name__
+        for value in vars(api).values()
+        if isinstance(value, type) and issubclass(value, BaseModel) and value.__module__ == api.__name__
+    )
+    assert bodies, "the module's bodies were not found"
+    assert [name for name in bodies if not name.startswith("Nexgeraete")] == [], bodies
     schemas = app.client("anonymous").app.openapi().get("components", {}).get("schemas", {})
-    renamed = [name for name in schemas if "__" in name]
+    renamed = [name for name in schemas if "__" in name and "nexgeraete" in name.lower()]
     assert renamed == [], renamed
-    for name in schemas:
-        if name.endswith(("PairIn", "PushIn", "NameIn", "AddressIn", "ConnectIn")) and name.startswith("Nex"):
-            assert name.startswith("Nexgeraete"), name

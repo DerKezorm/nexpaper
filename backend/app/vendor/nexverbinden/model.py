@@ -150,12 +150,20 @@ class Store(Protocol):
     def account_name(self, account_id: AccountId) -> str: ...
     def areas(self, account_id: AccountId) -> list[Area]: ...
     def legacy(self, account_id: AccountId) -> list[Legacy]: ...
+
+    # Since 0.2.0 (B9, V56), asked for by the contract tests, optional for the module (without it nothing changes):
+    # ``forget_legacy(account_id, partner) -> None``: the account's older connection with ``partner`` (the row
+    # ``legacy`` shows) ends here, with the key it holds; what a connection by click goes on using in the same row
+    # (nexnotes' lists of nextasks) may stay. Called after a connection by click with ``partner`` was made, on
+    # "Trennen" and on a no on the consent page; no commit (the module commits). Never touches the app's API keys.
     def retire_key(self, token: str) -> bool:
         """An API key of the app (an older connection's) ends itself; True when there was one."""
         ...
 
     def setting(self, name: str) -> Any:
-        """``connections`` (bool, ``None`` = never set = on), ``addresses`` (partner -> address)."""
+        """``connections`` (bool, ``None`` = never set = on), ``addresses`` (partner -> address); since 0.2.0 (B16,
+        V58) ``suggestions`` (partner -> ``{"address", "from"}``, ``None`` = none yet). A Store that knows only the
+        names of before raises for an unknown name; then the module leaves the suggestions out."""
         ...
 
     def set_setting(self, name: str, value: Any) -> None: ...

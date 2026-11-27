@@ -31,7 +31,7 @@ export function OtherAppsOperator() {
 /** `/connect/app`: another nex app asks to connect with nexpaper. */
 export function ConnectConsentPage() {
   const { t, i18n } = useTranslation()
-  return <ConsentPage request={request} areaWord={t('mcp.vaults')} language={i18n.language} />
+  return <ConsentPage request={request} app="nexpaper" areaWord={t('mcp.vaults')} language={i18n.language} />
 }
 
 /** `/connect/return`: back from the other app, the connection is made. */

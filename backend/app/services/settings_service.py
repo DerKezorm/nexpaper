@@ -117,6 +117,9 @@ DEFAULTS: dict[str, Any] = {
     "connections_enabled": None,
     "connections_addresses": None,
     "connections_local_network": False,
+    #: verbinden 0.2.0 (B16, V58): addresses of other nex apps a partner passed on, as suggestions for the operator
+    #: (``partner -> {"address", "from"}``); None while none came.
+    "connections_suggestions": None,
     #: Web Push (``services/webpush.py``, ``services/push.py``): nexpaper's own key pair, made at the first need and
     #: sealed with the server's secret; who the push services may contact (empty: the public https address, else a
     #: placeholder); and push services beyond the known ones, as host names.

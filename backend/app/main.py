@@ -153,7 +153,7 @@ ROUTERS = [
     request_page_router,
     # konten 1.1.0: the page Server › Sign-in of the shared account module.
     signin_page_router,
-    # geraete 0.1.1: ``/api/app/1/hello`` and ``me`` (the module's routes are added below).
+    # geraete 0.1.4: ``/api/app/1/hello`` and ``me`` (the module's routes are added below).
     app_devices,
 ]
 
@@ -407,13 +407,14 @@ nexwasneu.configure(nexwasneu.AppConfig(app_name="nexpaper", version=lambda: __v
                                         folder=Path(__file__).parent / "whatsnew", languages=("de", "en", "fr")))
 app.include_router(wasneu_api.router(viewer=whats_new_viewer, prefix="/api/v1/whats-new", tags=["whats new"]))
 
-# iPhone, iPad and Mac (the shared module geraete 0.1.1, ``services/geraete_store.py``): the routes of the apps built on
+# iPhone, iPad and Mac (the shared module geraete 0.1.4, ``services/geraete_store.py``): the routes of the apps built on
 # NexKonto under ``/api/app/1`` (pairing by the QR code, a code, the sign-in in the browser or iCloud; the own devices;
 # notifications), and the browser's under ``/api/v1`` (``app-pairing``, whose QR code the published iPhone app reads
 # too, G58; ``app-connect``, ``app-devices``, the operator's ``server/accounts/{id}/devices``), only for a signed-in
-# browser. Not in the description of ``/api/v1``: they are the module's, the same in every nex app (``SCHNITTSTELLE.md``
-# of the module); G59 would allow them, but its guard of the names stays red on nexpaper's own older names. The
-# published iPhone app keeps its routes of before (``routers/devices.py``, ``routers/pairing.py``).
+# browser. The browser's stand in the description of ``/api/v1``: the module's bodies are named ``Nexgeraete…`` (G59)
+# and its guard of the names asks only about them (G60). ``/api/app/1`` stays out of it, as nexpaper's own
+# ``routers/app_devices.py`` (the description is that of ``/api/v1``). The published iPhone app keeps its routes of
+# before (``routers/devices.py``, ``routers/pairing.py``).
 app.include_router(geraete_api.app_router(
     config=geraete_store.CONFIG, store=geraete_store.store, brake=KONTEN_BRAKE, sender=client_ip,
     on_paired=lambda holder, device: geraete_store.paired_hook(holder, device),
@@ -422,7 +423,7 @@ app.include_router(geraete_api.app_router(
 app.include_router(geraete_api.browser_router(
     config=geraete_store.CONFIG, store=geraete_store.store, account=require_browser_account, operator=require_operator,
     address=geraete_store.address, send=lambda url, body: geraete_store.send(url, body), clock=geraete_store.now,
-    prefix="/api/v1", tags=["devices"]), include_in_schema=False)
+    prefix="/api/v1", tags=["devices"]))
 
 # The cards "API keys", "Interfaces" and "API keys of every account" (the shared key module): an account's own keys
 # only in a signed-in browser (``require_browser_account`` turns a device token and a key away, as on the old routes

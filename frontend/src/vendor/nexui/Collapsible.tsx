@@ -20,6 +20,7 @@ export function Collapsible({
   subtitle,
   icon,
   logo,
+  mark: ownMark,
   variant = 'box',
   children,
   open,
@@ -28,7 +29,8 @@ export function Collapsible({
   id,
   testId,
 }: {
-  title: string
+  /** Since 1.3.0 also an element (a `NexWordmark`). */
+  title: ReactNode
   /** Right of the title, open and closed: a symbol, a `Badge`, a short summary. */
   status?: ReactNode
   /** A line under the title (the card's line; in a box a short explanation). */
@@ -37,6 +39,8 @@ export function Collapsible({
   icon?: IconLike
   /** An app's own mark in place of the symbol (form `card`). */
   logo?: string
+  /** Since 1.3.0 (form `card`): an element in place of the symbol, 36 px, hidden from readers: `<NexMark />`. */
+  mark?: ReactNode
   variant?: 'box' | 'card'
   children?: ReactNode
   open?: boolean
@@ -57,7 +61,11 @@ export function Collapsible({
     onOpenChange?.(!shown)
   }
   const mark = card ? (
-    logo ? (
+    ownMark !== undefined && ownMark !== null && ownMark !== false ? (
+      <span aria-hidden className="flex h-9 w-9 shrink-0 items-center justify-center" data-part="card-mark">
+        {ownMark}
+      </span>
+    ) : logo ? (
       <img src={logo} alt="" className="h-9 w-9 shrink-0 rounded-[12px]" />
     ) : icon ? (
       <span className={TILE}>

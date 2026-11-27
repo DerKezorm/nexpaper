@@ -26,7 +26,7 @@ The only part of the module that needs FastAPI."""
 
 import logging
 import math
-from collections.abc import Callable
+from collections.abc import Callable, Collection
 from datetime import datetime
 from typing import Annotated, Any, Protocol
 from urllib.parse import urlsplit, urlunsplit
@@ -88,6 +88,9 @@ class NexgeraeteConnectIn(BaseModel):
     #: nextasks, nexlore: ``/app-connect?device=<name>`` leads to the QR code's link.
     device: str | None = Field(default=None, max_length=200)
 
+
+#: G62: the routes of ``app_router`` an app may answer itself (``skip``).
+SKIPPABLE = ("put_push", "delete_push")
 
 #: The optional bodies as the routes take them.
 PairBody = Annotated[NexgeraetePairIn | None, Body()]
@@ -195,11 +198,17 @@ def app_router(
     clock: Callable[[], datetime] | None = None,
     prefix: str = "/api/app/1",
     tags: list[str] | None = None,
+    skip: Collection[str] = (),
 ) -> APIRouter:
     """The app's routes. ``store``: the dependency giving the app's ``Store`` for this request. ``brake``: the sign-in
     brake of ``konten`` (pot ``app-pairing:<sender>``); ``sender(request)`` the sender's address behind the app's
     proxies (``konten`` ``client_address``). ``on_paired(holder, device)``: after every new device (G29, the mail "Neue
-    Anmeldung"). ``send``: what posts to the relay (default ``push.post``)."""
+    Anmeldung"). ``send``: what posts to the relay (default ``push.post``). ``skip`` (G62): routes of the module the
+    app answers itself on the same path, from ``SKIPPABLE`` (``put_push``, ``delete_push``); the app's route then calls
+    ``push.register`` / ``push.unregister``."""
+    skipped = frozenset(skip)
+    if skipped - set(SKIPPABLE):
+        raise ValueError(f"skip names routes the module does not have: {sorted(skipped - set(SKIPPABLE))}")
     routes = APIRouter(prefix=prefix, tags=tags or ["app"])
     Data = Annotated[Store, Depends(store)]
     Found = Annotated[Caller, Depends(device(config=config, store=store, clock=clock))]
@@ -344,11 +353,6 @@ def app_router(
         devices.disconnect(data, config, found.holder.id, found.device.id)
         return Response(status_code=204)
 
-    @routes.put(
-        "/push",
-        response_model=None,
-        summary="Notifications for this device: the relay's ticket, its key, what it understands",
-    )
     def push_on(request: Request, found: Found, data: Data, body: NexgeraetePushIn) -> Any:
         form = forms.form_of(config, request.headers)
         try:
@@ -358,10 +362,22 @@ def app_router(
             return _refuse(form, refused)
         return _respond(forms.done(form))
 
-    @routes.delete("/push", response_model=None, summary="No more notifications for this device; it stays connected")
     def push_off(request: Request, found: Found, data: Data) -> Any:
         push.unregister(data, config, found)
         return _respond(forms.done(forms.form_of(config, request.headers)))
+
+    # G62: an app that answers PUT/DELETE /push itself (nextime: its TestFlight app's ``alerts``) leaves the module's
+    # out, so that one route answers on the path and no operation id is there twice.
+    if "put_push" not in skipped:
+        routes.put(
+            "/push",
+            response_model=None,
+            summary="Notifications for this device: the relay's ticket, its key, what it understands",
+        )(push_on)
+    if "delete_push" not in skipped:
+        routes.delete(
+            "/push", response_model=None, summary="No more notifications for this device; it stays connected"
+        )(push_off)
 
     @routes.get("/push/kinds", response_model=None, summary="The kinds of notification of this device")
     def push_kinds(request: Request, found: Found) -> Any:

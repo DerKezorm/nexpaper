@@ -29,7 +29,10 @@ import {
   Facts,
   Field,
   IconButton,
+  NEX_MARK_COLORS,
   NEXUI_TEXTS,
+  NexMark,
+  NexWordmark,
   areaText,
   NexuiLanguage,
   NotifyWays,
@@ -1227,5 +1230,122 @@ describe('the other nex apps in "What\'s new" link their repositories (since 1.2
     expect(here?.getAttribute('rel')).toBeNull()
     expect(there?.getAttribute('target')).toBe('_blank')
     expect(there?.getAttribute('rel')).toBe('noopener noreferrer')
+  })
+})
+
+describe('the umbrella brand nex: NexMark and NexWordmark (since 1.3.0, B19, B20)', () => {
+  // The geometry of icons-vergleich/neu/nex-logo.svg, unchanged: tile, its border, three frames, the filled tile.
+  const SHAPES = [
+    '2 2 60 60 16',
+    '2.75 2.75 58.5 58.5 15.3',
+    '13 13 16 16 4.5',
+    '35 13 16 16 4.5',
+    '13 35 16 16 4.5',
+    '33 33 20 20 5.5',
+  ]
+  const INDIGO = /#5b5bd6|#818cf8/i
+
+  afterEach(() => {
+    document.documentElement.style.removeProperty('--nexui-surface')
+  })
+
+  it('draws the mark of nex-logo.svg with the accent of the app as the dot, never indigo', () => {
+    const root = show(<NexMark dark={false} />)
+    const svg = root.querySelector('svg[data-mark="nex"]')
+    expect(svg).not.toBeNull()
+    const shapes = [...(svg?.querySelectorAll('rect') ?? [])].map((rect) =>
+      ['x', 'y', 'width', 'height', 'rx'].map((name) => rect.getAttribute(name)).join(' '),
+    )
+    expect(shapes).toEqual(SHAPES)
+    const dot = svg?.querySelector('[data-part="dot"]') as SVGElement | null
+    expect(dot?.style.fill).toBe('var(--nexui-accent)')
+    expect(dot?.getAttribute('fill')).toBeNull()
+    // The ring stays in the tile's colour.
+    expect(dot?.getAttribute('stroke')).toBe(NEX_MARK_COLORS.light.tile)
+    expect(svg?.outerHTML).not.toMatch(INDIGO)
+    expect(JSON.stringify(NEX_MARK_COLORS)).not.toMatch(INDIGO)
+    expect([...(svg?.querySelectorAll('stop') ?? [])].map((stop) => stop.getAttribute('stop-color'))).toEqual([...NEX_MARK_COLORS.light.gradient])
+  })
+
+  it('takes its light or dark from the app: the surface, else by hand', () => {
+    document.documentElement.style.setProperty('--nexui-surface', '#16161d')
+    let root = show(<NexMark />)
+    let svg = root.querySelector('svg[data-mark="nex"]')
+    expect(svg?.getAttribute('data-look')).toBe('dark')
+    expect(svg?.querySelector('[data-part="tile"]')?.getAttribute('fill')).toBe(NEX_MARK_COLORS.dark.tile)
+    expect(svg?.querySelector('[data-part="dot"]')?.getAttribute('stroke')).toBe(NEX_MARK_COLORS.dark.tile)
+    expect(svg?.outerHTML).not.toMatch(INDIGO)
+    shown?.unmount()
+    document.documentElement.style.setProperty('--nexui-surface', '#ffffff')
+    root = show(<NexMark />)
+    svg = root.querySelector('svg[data-mark="nex"]')
+    expect(svg?.getAttribute('data-look')).toBe('light')
+    shown?.unmount()
+    root = show(<NexMark dark />)
+    expect(root.querySelector('svg')?.getAttribute('data-look')).toBe('dark')
+  })
+
+  it('is hidden beside text and named only when it stands alone; 36 px like the tile of a card', () => {
+    let root = show(<NexMark />)
+    let svg = root.querySelector('svg')
+    expect(svg?.getAttribute('aria-hidden')).toBe('true')
+    expect(svg?.getAttribute('role')).toBeNull()
+    expect([svg?.getAttribute('width'), svg?.getAttribute('height')]).toEqual(['36', '36'])
+    shown?.unmount()
+    root = show(<NexMark label="nex" size={64} />)
+    svg = getByRole(root, 'img', { name: 'nex' }).closest('svg')
+    expect(svg?.getAttribute('aria-hidden')).toBeNull()
+    expect(svg?.getAttribute('width')).toBe('64')
+  })
+
+  it('writes NEX in the text colour and APPS in the accent, read as "nex-Apps"', () => {
+    const root = show(
+      <NexuiLanguage language="de">
+        <h2>
+          <NexWordmark />
+        </h2>
+      </NexuiLanguage>,
+    )
+    const heading = getByRole(root, 'heading', { name: 'nex-Apps' })
+    const mark = heading.querySelector('[data-wordmark="nex"]')
+    expect(mark?.className).toContain('text-[var(--nexui-text)]')
+    expect(mark?.className).toContain('font-bold')
+    expect(mark?.className).toContain('tracking-tight')
+    const accent = mark?.querySelector('[data-part="wordmark-accent"]')
+    expect(accent?.textContent).toBe('APPS')
+    expect(accent?.className).toContain('var(--nexui-accent-text)')
+    expect(accent?.getAttribute('aria-hidden')).toBe('true')
+    expect(mark?.querySelector('.sr-only')?.textContent).toBe('nex-Apps')
+    expect(mark?.className).toContain('relative')
+    expect(mark?.outerHTML).not.toMatch(INDIGO)
+    shown?.unmount()
+    const english = show(
+      <NexuiLanguage language="en">
+        <h2>
+          <NexWordmark />
+        </h2>
+      </NexuiLanguage>,
+    )
+    expect(getByRole(english, 'heading', { name: 'nex apps' })).toBeTruthy()
+  })
+
+  it('stand in the head of a Card and a Collapsible card in place of the symbol', () => {
+    const root = show(
+      <NexuiLanguage language="de">
+        <Card id="nex-apps" mark={<NexMark />} title="Andere nex-Apps" subtitle="Verbinden" />
+        <Card id="family" mark={<NexMark />} title={<NexWordmark />} />
+        <Collapsible variant="card" id="fold" mark={<NexMark />} title="nextime" />
+      </NexuiLanguage>,
+    )
+    const card = getByRole(root, 'region', { name: 'Andere nex-Apps' })
+    const head = card.querySelector('[data-part="card-mark"]')
+    expect(head?.getAttribute('aria-hidden')).toBe('true')
+    expect(head?.className).toContain('h-9 w-9')
+    expect(head?.querySelector('svg[data-mark="nex"]')).not.toBeNull()
+    expect(card.querySelector('img')).toBeNull()
+    expect(getByRole(root, 'region', { name: 'nex-Apps' }).querySelector('[data-wordmark="nex"]')).not.toBeNull()
+    const fold = root.querySelector('[data-card="fold"]')
+    expect(fold?.querySelector('[data-part="card-mark"] svg[data-mark="nex"]')).not.toBeNull()
+    expect(getByRole(root, 'button', { name: 'nextime' })).toBeTruthy()
   })
 })

@@ -109,6 +109,12 @@ def test_the_consent_needs_pkce_with_s256(world: Any) -> None:
     world.set_address("app", None)
     found = world.app.client("owner").get(f"{world.pkg.PREFIX}/consent", params={**params, "code_challenge": "short"})
     assert found.status_code == 400 and found.json()["detail"]["code"] == "pkce_required"
+    # Since 0.2.0 (B14, V59): the refusal names the app that refused, for the words of the page.
+    assert found.json()["detail"]["app"] == world.app.config().app_name
+    sent = world.app.client("owner").post(
+        f"{world.pkg.PREFIX}/consent", json={**params, "code_challenge": "short", "allow": True}
+    )
+    assert sent.status_code == 400 and sent.json()["detail"]["app"] == world.app.config().app_name
 
 
 def test_an_asking_app_with_a_host_of_odd_letters_is_refused(world: Any) -> None:

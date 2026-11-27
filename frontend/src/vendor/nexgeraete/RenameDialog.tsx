@@ -1,6 +1,6 @@
 /**
  * "Gerät umbenennen": one field "Name" with the hint why a name of one's own helps (since iOS 16 an iPhone tells the app
- * only its model), "Abbrechen" and "Sichern". `PATCH <base>/app-devices/{id} {name}` answers the device. Built only
+ * only its model), "Abbrechen" and "Sichern". `PATCH <base>/app-devices/{id} {name}` answers the device; since 0.1.4 announced as `DEVICE_RENAMED` on `window`. Built only
  * from the ui kit.
  *
  * Copied unchanged into frontend/src/vendor/nexgeraete/ by bauplaene/geraete/tools/sync.py; changed only there.
@@ -9,7 +9,7 @@ import { useState } from 'react'
 
 import { Button, Dialog, Field, useNexuiTexts } from '../nexui'
 import { useDeviceTexts } from './hooks'
-import { BUTTONS, DEVICES_BASE, NAME_MAX, asDevice, refusalText, type Device, type DeviceRequest } from './geraete'
+import { BUTTONS, DEVICES_BASE, DEVICE_RENAMED, NAME_MAX, asDevice, refusalText, type Device, type DeviceRequest } from './geraete'
 
 export type RenameDialogProps = {
   request: DeviceRequest
@@ -32,7 +32,9 @@ export function RenameDialog({ request, base = DEVICES_BASE, device, language, o
     setBusy(true)
     setError(undefined)
     try {
-      onRenamed(asDevice(await request<unknown>(`${base}/app-devices/${encodeURIComponent(String(device.id))}`, { method: 'PATCH', body: { name: name.trim() } })))
+      const renamed = asDevice(await request<unknown>(`${base}/app-devices/${encodeURIComponent(String(device.id))}`, { method: 'PATCH', body: { name: name.trim() } }))
+      window.dispatchEvent(new CustomEvent<Device>(DEVICE_RENAMED, { detail: renamed }))
+      onRenamed(renamed)
     } catch (failure) {
       setError(refusalText(texts, failure))
       setBusy(false)

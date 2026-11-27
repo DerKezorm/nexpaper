@@ -249,6 +249,10 @@ class ReferenceStore:
             for row in rows
         ]
 
+    def forget_legacy(self, account_id: Any, partner: str) -> None:
+        """Since 0.2.0 (B9, V56): the older connection typed in by hand ends, with the key it holds."""
+        self.db.execute("DELETE FROM old_links WHERE account_id = ? AND partner = ?", (account_id, partner))
+
     def retire_key(self, token: str) -> bool:
         """Marks an older API key as ended."""
         done = self.db.execute(

@@ -1,4 +1,4 @@
-// Vorlage nexgeraete 0.1.1
+// Vorlage nexgeraete 0.1.4
 // @vitest-environment jsdom
 /**
  * The parts of the module in the app: the card "Geräte" with the pairing window, renaming and disconnecting, the card
@@ -479,6 +479,55 @@ describe('the card Mitteilungen auf deinen Geräten', () => {
     await settle()
     expect(find('[data-testid="devices-push-none"]')!.textContent).toContain('Mein Konto › Verbindungen')
     expect(find<HTMLAnchorElement>('[data-testid="devices-push-connections"]')!.getAttribute('href')).toBe('/settings/connections')
+  })
+})
+
+describe('a name that only says the kind (since 0.1.4, B21)', () => {
+  beforeEach(() => {
+    // The apps of today send "iPhone" or "iPad" as the name and no model.
+    devices = [
+      device(1, { name: 'iPhone', model: null }),
+      device(2, { name: 'iPad', kind: 'ipados', model: null }),
+      device(3, { name: 'Kims iPhone', model: null }),
+      device(4, { name: ' iphone ', model: 'iPhone' }),
+    ]
+    kinds = { '1': kindsOf(true), '2': kindsOf(true), '3': kindsOf(true), '4': kindsOf(true) }
+  })
+
+  it('stands once in the push card, never "iPhone · iPhone"', async () => {
+    show(<DevicePushCard request={request} base={BASE} app={APP} />)
+    await settle()
+    const titles = all('[data-testid="devices-push-device"]').map((found) => found.querySelector('h3')!.textContent)
+    expect(titles).toEqual(['iPhone', 'iPad', 'Kims iPhone · iPhone', 'iphone'])
+  })
+
+  it('stands once in the card Geräte: the line under the name leaves out what the name already says', async () => {
+    show(<DevicesCard request={request} base={BASE} app={APP} />)
+    await settle()
+    const lines = all('[data-testid="device-line"]').map((line) => line.textContent ?? '')
+    expect(lines[0]).toMatch(/^App 1\.0\.2 · zuletzt /)
+    expect(lines[1]).toMatch(/^App 1\.0\.2 · zuletzt /)
+    expect(lines[2]).toMatch(/^iPhone · App 1\.0\.2 · zuletzt /)
+    expect(lines[3]).toMatch(/^App 1\.0\.2 · zuletzt /)
+  })
+
+  it('takes a new name everywhere, the push card on the same page at once', async () => {
+    show(
+      <>
+        <DevicesCard request={request} base={BASE} app={APP} />
+        <DevicePushCard request={request} base={BASE} app={APP} />
+      </>,
+    )
+    await settle()
+    click(all('[data-testid="device-rename"]')[0]!)
+    type(find<HTMLInputElement>('[data-testid="device-rename-name"]')!, 'Kims iPhone 15')
+    click(button('device-rename-save'))
+    await settle()
+    expect(made('PATCH', `${BASE}/app-devices/1`).at(-1)!.body).toEqual({ name: 'Kims iPhone 15' })
+    expect(all('[data-testid="device-name"]')[0]!.textContent).toBe('Kims iPhone 15')
+    expect(all('[data-testid="device-line"]')[0]!.textContent).toMatch(/^iPhone · App 1\.0\.2/)
+    expect(all('[data-testid="devices-push-device"]')[0]!.querySelector('h3')!.textContent).toBe('Kims iPhone 15 · iPhone')
+    expect(made('GET', `${BASE}/app-devices`)).toHaveLength(3)
   })
 })
 

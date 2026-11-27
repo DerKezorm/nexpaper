@@ -25,16 +25,21 @@ export function Badge({ tone, children, testId }: { tone: BadgeTone; children: R
 export function Card({
   icon,
   logo,
+  mark,
   title,
   subtitle,
   children,
   id,
   testId,
 }: {
-  icon: IconLike
+  /** The symbol in the tile; since 1.3.0 optional, a card with `mark` or `logo` needs none. */
+  icon?: IconLike
   /** An app's own mark in place of the symbol (e.g. nextasks' in nexnotes, the connections to other nex apps). */
   logo?: string
-  title: string
+  /** Since 1.3.0: an element in place of the symbol, 36 px, hidden from readers (the title names the card): `<NexMark />`. */
+  mark?: ReactNode
+  /** Since 1.3.0 also an element (a `NexWordmark`); a plain title stays a string. */
+  title: ReactNode
   subtitle?: ReactNode
   children?: ReactNode
   /** Names the card; since 1.1.0 also as `data-card`, for the comparison of the settings across the apps. */
@@ -43,17 +48,18 @@ export function Card({
 }) {
   const own = useId()
   const titleId = `${id ?? own}-title`
-  const { Icon } = iconOf(icon)
   return (
     <section id={id} aria-labelledby={titleId} className={CARD} data-card={id} data-testid={testId}>
       <div className={`flex gap-3${filled(children) ? ' mb-4' : ''}`}>
-        {logo ? (
-          <img src={logo} alt="" className="h-9 w-9 shrink-0 rounded-[12px]" />
-        ) : (
-          <span className={TILE}>
-            <Icon aria-hidden className="h-4 w-4" strokeWidth={1.8} />
+        {filled(mark) ? (
+          <span aria-hidden className="flex h-9 w-9 shrink-0 items-center justify-center" data-part="card-mark">
+            {mark}
           </span>
-        )}
+        ) : logo ? (
+          <img src={logo} alt="" className="h-9 w-9 shrink-0 rounded-[12px]" />
+        ) : icon ? (
+          <CardIcon icon={icon} />
+        ) : null}
         <div className="min-w-0 flex-1">
           <h2 id={titleId} className={`${PLAIN} text-base leading-6 font-semibold text-[var(--nexui-text)] [overflow-wrap:break-word]`}>
             {title}
@@ -173,6 +179,15 @@ export function Row({
       {action}
       {note && <span className={`${HINT} basis-full pl-7`}>{note}</span>}
     </li>
+  )
+}
+
+function CardIcon({ icon }: { icon: IconLike }) {
+  const { Icon } = iconOf(icon)
+  return (
+    <span className={TILE}>
+      <Icon aria-hidden className="h-4 w-4" strokeWidth={1.8} />
+    </span>
   )
 }
 

@@ -126,6 +126,126 @@ def operator_address(store: Any, partner: str) -> str:
     return str(addresses.get(partner) or "") if isinstance(addresses, dict) else ""
 
 
+def check_address(config: AppConfig, store: Any, partner: str, address: str) -> dict[str, Any]:
+    """Decision V57 (B11, decided 27.11.2026): what answers at the address the operator gave for ``partner``, said at
+    the field: ``found`` (``ok``, with the app's name and version), ``partner_off`` (the right app, its operator has
+    switched connections off; ``ok`` as well), ``name_unknown``, ``unreachable``, ``local_off`` (the operator here has
+    not allowed the own network), ``address_refused``, ``wrong_app`` (with the name of the app that answered),
+    ``partner_too_old`` (no description). The address is kept either way (the partner may be off right now); only the
+    operator sees this, so the reason may be named (the account's card never says more than "nicht erreichbar")."""
+    try:
+        answer = _ask(config, store, address, "GET", WELL_KNOWN, seconds=config.describe_seconds)
+    except Refused as refusal:
+        return {"ok": False, "code": refusal.code, "app": None, "version": None}
+    except reach.Unreachable as failure:
+        why = failure.args[0] if failure.args else ""
+        code = {"local": "local_off", "name": "name_unknown", "refused": "address_refused"}.get(why, "unreachable")
+        return {"ok": False, "code": code, "app": None, "version": None}
+    data = answer.data if isinstance(answer.data, dict) else {}
+    app = _text(data.get("app"), 40) or None
+    version = _text(data.get("version"), 40) or None
+    if answer.status != 200 or app is None:
+        return {"ok": False, "code": "partner_too_old", "app": None, "version": None}
+    if app != partner:
+        return {"ok": False, "code": "wrong_app", "app": app, "version": version}
+    if not isinstance(data.get("protocol"), int) or data["protocol"] < PROTOCOL:
+        return {"ok": False, "code": "partner_too_old", "app": app, "version": version}
+    code = "partner_off" if data.get("connect") is False else "found"
+    return {"ok": True, "code": code, "app": app, "version": version}
+
+
+# --- suggestions of addresses (B16) -----------------------------------------------------------------------------------
+
+#: Since 0.2.0 (B16, V58): the setting in which the operator's suggestions are kept (``Store.setting``), and the most
+#: addresses one side passes on.
+SUGGESTIONS = "suggestions"
+MAX_KNOWN = 16
+
+
+def known_addresses(config: AppConfig, store: Any, own_base: str, other: str) -> dict[str, str]:
+    """Decision V58 (B16, decided 27.11.2026): the addresses of nex apps this side knows, passed on to ``other`` as
+    suggestions when the two connect: the operator's addresses of the apps ``other`` connects with, and this app's own
+    (the way of connecting has proved it). Never ``other`` itself, never an address an account typed in."""
+    wanted = set(config.catalog.partners(other))
+    found: dict[str, str] = {}
+    if config.app_name in wanted:
+        found[config.app_name] = _base(own_base)
+    for partner in config.partners:
+        address = operator_address(store, partner)
+        if partner in wanted and partner != other and address:
+            found[partner] = address
+    return found
+
+
+def _kept_suggestions(store: Any) -> dict[str, dict[str, str]] | None:
+    """The suggestions kept so far, or ``None`` where the app's ``Store`` keeps no setting ``suggestions`` (an app not
+    updated to 0.2.0: the suggestions are left out, nothing else changes)."""
+    try:
+        found = store.setting(SUGGESTIONS)
+    except Exception:  # an app whose settings know only the names of before 0.2.0
+        return None
+    if not isinstance(found, dict):
+        return {}
+    return {
+        str(partner): {"address": str(entry["address"]), "from": str(entry.get("from") or "")}
+        for partner, entry in found.items()
+        if isinstance(entry, dict) and isinstance(entry.get("address"), str)
+    }
+
+
+def keep_suggestions(store: Any, config: AppConfig, raw: Any, source: str) -> int:
+    """V58 (B16): the addresses ``source`` passed on, kept as suggestions for the operator, never as addresses (the
+    operator takes each with a click, after it was checked like a typed one, V57). Only apps this one connects with,
+    without an address of the operator here, in a clean form. The number of new ones."""
+    if isinstance(raw, str):
+        try:
+            raw = json.loads(raw)
+        except ValueError:
+            return 0
+    if not isinstance(raw, dict):
+        return 0
+    kept = _kept_suggestions(store)
+    if kept is None:
+        return 0
+    added = 0
+    for partner, address in list(raw.items())[:MAX_KNOWN]:
+        if partner not in config.partners or not isinstance(address, str) or operator_address(store, partner):
+            continue
+        try:
+            url = reach.clean_url(address)
+        except Refused:
+            continue
+        if kept.get(partner, {}).get("address") == url:
+            continue
+        kept[partner] = {"address": url, "from": source}
+        added += 1
+    if added:
+        store.set_setting(SUGGESTIONS, kept)
+        logger.info("%s suggested %s address(es) of other nex apps", source, added)
+    return added
+
+
+def suggestions(store: Any, config: AppConfig) -> list[dict[str, str]]:
+    """V58: the suggestions the operator sees under Server › Verbindungen › Andere nex-Apps, in the order of the
+    catalog; one for an app that has an address meanwhile is left out."""
+    kept = _kept_suggestions(store) or {}
+    return [
+        {"partner": partner, **kept[partner]}
+        for partner in config.partners
+        if partner in kept and not operator_address(store, partner)
+    ]
+
+
+def drop_suggestion(store: Any, partner: str) -> bool:
+    """V58: a suggestion taken over or turned down by the operator goes."""
+    kept = _kept_suggestions(store)
+    if not kept or partner not in kept:
+        return False
+    del kept[partner]
+    store.set_setting(SUGGESTIONS, kept)
+    return True
+
+
 def partner_address(store: Any, account_id: AccountId, partner: str) -> str:
     """Decision V42 (B3, decided 27.11.2026): where the account connects with ``partner``. Only the operator sets the
     other apps up; the account types no address. A connection there is (also one made with an address typed in before
@@ -250,6 +370,8 @@ def come_back(
         "reverse_account": account_shown(store, account_id),
         "reverse_areas": json.dumps(_areas_named(store, account_id, pending.areas_granted)),
         "reverse_version": config.version,
+        # Since 0.2.0 (B16, V58): the addresses of other nex apps known here, a suggestion for the partner's operator.
+        "reverse_known": json.dumps(known_addresses(config, store, own, pending.partner)),
     }
     try:
         answer = _ask(config, store, pending.partner_base, "POST", f"{PREFIX}/token", form=form)
@@ -288,8 +410,10 @@ def come_back(
         partner_version=_text(data.get("version"), 40),
     )
     store.save(made)
+    keep_suggestions(store, config, data.get("known"), pending.partner)
     store.commit()
     logger.info("connected with %s connection=%s", pending.partner, made.id)
+    # The older connection by API key with the partner ends in the route (``api``), after its key retired itself there.
     return made
 
 
@@ -309,13 +433,16 @@ def came_back_refused(store: Any, account_id: AccountId, error: str, state: str)
     """Decision V47 (B6): the browser is back from the partner's consent page with ``error`` instead of a code: the
     refusal for the card of the partner where "Verbinden" was clicked (``partner`` in it where the ``state`` belongs to
     a connection this account started here; the start is used up). Anything not in ``CAME_BACK`` says
-    ``consent_failed``."""
+    ``consent_failed``. Since 0.2.0 (B9, V56): a no leaves nothing connected, an older connection by API key with the
+    partner ends as well (``forget_legacy``)."""
     pending = store.take_pending(oauthcore.digest(state or ""))
     store.commit()
     code = CAME_BACK.get(str(error), "consent_failed")
     if pending is None or pending.account_id != account_id:
         return Refused(code)
     logger.info("connection with %s not made (%s)", pending.partner, code)
+    if code == "declined" and forget_legacy(store, account_id, pending.partner):
+        store.commit()
     return Refused(code, partner=pending.partner)
 
 
@@ -358,6 +485,12 @@ def _checked_asker(store: Any, config: AppConfig, params: dict[str, Any], base: 
     if found.get("connect") is False:
         raise Refused("partner_off")
     return found["app"], client, redirect
+
+
+def named(config: AppConfig, refusal: Refused) -> Refused:
+    """Decision V59 (B14): a refusal the consent page shows itself names the app that refused (``app``), so that its
+    words never start with an empty name ("… fragt Adressen im eigenen Netz erst …")."""
+    return Refused(refusal.code, status=refusal.status, **{"app": config.app_name, **refusal.details})
 
 
 #: Since 0.1.8 (B6): a refusal on this side, said as the app that asks understands it (its ``CAME_BACK``).
@@ -456,7 +589,7 @@ def consent_info(store: Any, config: AppConfig, account_id: AccountId, params: d
     except Refused as refusal:
         back = way_back(store, config, account_id, params, base, refusal)
         if back is None:
-            raise
+            raise named(config, refusal) from None
         return {"back": back, "refused": refusal.code}
     theirs = config.catalog.uses(asker, config.app_name)
     mine = config.catalog.uses(config.app_name, asker)
@@ -488,12 +621,15 @@ def consent(
     except Refused as refusal:
         back = way_back(store, config, account_id, body, base, refusal)
         if back is None:
-            raise
+            raise named(config, refusal) from None
         return back
     state = str(body["state"])
     own = _base(base)
     if not body.get("allow"):
         logger.info("connection with %s declined", asker)
+        # Since 0.2.0 (B9, V56): a no leaves nothing connected here either, also no older connection by API key.
+        if forget_legacy(store, account_id, asker):
+            store.commit()
         return oauthcore.back(redirect, {"error": "access_denied", "state": state, "iss": own})
     granted = _own_areas(store, account_id, body.get("areas"))
     code = config.code_prefix + secrets.token_urlsafe(32)
@@ -517,8 +653,17 @@ def consent(
 # --- the side that is asked: tokens ----------------------------------------------------------------------------------
 
 
-def _answer(config: AppConfig, connection: Connection, access: str, refresh: str, store: Any) -> dict[str, Any]:
+def _answer(
+    config: AppConfig,
+    connection: Connection,
+    access: str,
+    refresh: str,
+    store: Any,
+    known: dict[str, str] | None = None,
+) -> dict[str, Any]:
+    found: dict[str, Any] = {} if known is None else {"known": known}
     return {
+        **found,
         "connection_id": connection.id,
         "access_token": access,
         "refresh_token": refresh,
@@ -605,9 +750,14 @@ def _trade(store: Any, config: AppConfig, form: dict[str, str], base: str, now: 
     )
     store.save(made)
     store.spend(made.id, code_hash, config.spent_kept)
+    # Since 0.2.0 (B9, V56): the connection by click takes the place of an older one by API key with the partner.
+    forget_legacy(store, code.account_id, code.partner)
+    # B16, V58: what the asking app knows of other nex apps, kept as suggestions for the operator here.
+    keep_suggestions(store, config, form.get("reverse_known"), code.partner)
     store.commit()
     logger.info("connection with %s confirmed connection=%s", code.partner, made.id)
-    return _answer(config, made, made_tokens.access, made_tokens.refresh, store)
+    known = known_addresses(config, store, base, code.partner)
+    return _answer(config, made, made_tokens.access, made_tokens.refresh, store, known)
 
 
 def _refresh(store: Any, config: AppConfig, form: dict[str, str], now: datetime) -> dict[str, Any]:
@@ -832,11 +982,30 @@ def _end(store: Any, config: AppConfig, connection: Connection, now: datetime) -
     store.commit()
 
 
+def forget_legacy(store: Any, account_id: AccountId, partner: str) -> bool:
+    """Decision V56 (B9, decided 27.11.2026): the account's older connection with ``partner`` by an API key typed in by
+    hand ends here; the app drops its row with the key (``Store.forget_legacy(account_id, partner)``, since 0.2.0). So
+    after a connection by click (made from either side), after "Trennen" and after a no on the consent page the card
+    shows no older connection that comes forward again. A ``Store`` without the method keeps everything as before 0.2.0.
+    True when one ended; the caller commits."""
+    forget = getattr(store, "forget_legacy", None)
+    if not callable(forget) or not any(row.partner == partner for row in store.legacy(account_id)):
+        return False
+    forget(account_id, partner)
+    logger.info("older connection with %s by API key ended here", partner)
+    return True
+
+
 def disconnect(store: Any, config: AppConfig, account_id: AccountId, partner: str, now: datetime) -> None:
-    """ "Trennen" on either side: both directions end (V3)."""
+    """ "Trennen" on either side: both directions end (V3). Since 0.2.0 (B9, V56) an older connection by API key with
+    the partner ends with it, or alone where there is no connection by click."""
     connection = store.connection(account_id, partner)
+    forgot = forget_legacy(store, account_id, partner)
     if connection is None:
-        raise Refused("not_connected")
+        if not forgot:
+            raise Refused("not_connected")
+        store.commit()
+        return
     _end(store, config, connection, now)
     logger.info("connection with %s ended here connection=%s", partner, connection.id)
 
@@ -963,7 +1132,12 @@ def view(
             address=legacy.partner_base,
             host=urlsplit(legacy.partner_base).netloc,
             ok_at=_iso(legacy.ok_at),
-            legacy={"shown": legacy.shown, "expires_at": _iso(legacy.expires_at)},
+            # Since 0.2.0 (B9, V56): "Trennen" ends it, where the app's Store can forget it.
+            legacy={
+                "shown": legacy.shown,
+                "expires_at": _iso(legacy.expires_at),
+                "can_end": callable(getattr(store, "forget_legacy", None)),
+            },
             set_up=bool(legacy.partner_base) or bool(from_operator),
         )
     return found

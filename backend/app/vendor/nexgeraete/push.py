@@ -60,15 +60,28 @@ class Told:
 
 
 def register(
-    store: Store, config: AppConfig, caller: Caller, ticket: str, key: str, understands: list[str] | None = None
+    store: Store,
+    config: AppConfig,
+    caller: Caller,
+    ticket: str,
+    key: str,
+    understands: list[str] | tuple[str, ...] | None = None,
+    *,
+    chosen: bool = True,
 ) -> None:
+    """Sign a device up for notifications. ``chosen`` False (G61): ``understands`` is the app's translation of an older
+    form of its own (nextime: ``alerts`` of the TestFlight app), not the device's word; the store keeps it so that
+    ``chooses_kinds`` stays false."""
     if not ticket or len(ticket) > TICKET_MAX or not key or len(key) > 100 or not seal.key_valid(key):
         raise DeviceRefused("push_ticket_invalid")
     kinds = None if understands is None else tuple(dict.fromkeys(str(kind)[:32] for kind in understands[:100]))
     for other in store.devices_of(caller.holder.id):
         if str(other.id) != str(caller.device.id) and other.push is not None and other.push.ticket == ticket:
             store.set_push(other.id, None)
-    store.set_push(caller.device.id, PushState(ticket=ticket, key=key, understands=kinds))
+    store.set_push(
+        caller.device.id,
+        PushState(ticket=ticket, key=key, understands=kinds, chosen=None if kinds is None else bool(chosen)),
+    )
     store.commit()
 
 

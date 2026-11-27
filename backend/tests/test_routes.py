@@ -466,7 +466,9 @@ def test_the_description_is_served_and_names_the_ways_in() -> None:
         assert sorted(path for path in answer.json()["paths"] if path.startswith(MODULE_PLACES)) == sorted([
             "/api/mcp", "/api/oauth/authorize", "/api/connect/partners", "/api/connect/partners/{partner}/start",
             "/api/connect/return", "/api/connect/partners/{partner}/check", "/api/connect/partners/{partner}",
-            "/api/connect/consent", "/api/connect/admin"]), "only the shared modules' places for people and programs"
+            "/api/connect/consent", "/api/connect/admin",
+            # verbinden 0.2.0 (B16, V58): the operator takes over or drops an address a partner suggested.
+            "/api/connect/admin/suggestions/{partner}"]), "only the shared modules' places for people and programs"
         assert "HTTPBearer" in str(answer.json()["components"]["securitySchemes"])
 
 

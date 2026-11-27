@@ -11,6 +11,10 @@
  * answers with a way back and the page goes there at once, so the refusal stands in the card where "Verbinden" was
  * clicked. The page of its own ("Das hat nicht geklappt") is left only where there is no safe way back.
  *
+ * Since 0.2.0: what each app may do stands under its sentence, without arrows (B10, V62); a refusal the page shows
+ * itself names the app that refused (`app`, else the server's, B14, V59); and it has "Zurück" to the page before,
+ * the card of the app that asked, where the browser has one (B12, V63).
+ *
  * Copied unchanged into frontend/src/vendor/nexverbinden/ by bauplaene/verbinden/tools/sync.py; changed only there.
  */
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -27,7 +31,6 @@ import {
   purposeLabel,
   refusalText,
   useVerbindenTexts,
-  wayOf,
   type AccountCard,
   type ConsentBack,
   type ConsentInfo,
@@ -38,6 +41,11 @@ import {
 
 export type ConsentPageProps = {
   request: VerbindenRequest
+  /** Since 0.2.0 (B14): this app's name, for the words of a refusal (else the one the server names). */
+  app?: string
+  /** Since 0.2.0 (B12): back to the page before, where the page cannot go on (default `window.history.back()`, shown
+   * where the browser has a page before). */
+  back?: () => void
   base?: string
   /** The query of the page (`?client_id=…`); without, `window.location.search`. */
   search?: string
@@ -47,15 +55,12 @@ export type ConsentPageProps = {
   testId?: string
 }
 
+/** B10 (0.2.0, V62): what one app may do at the other, under its sentence; no arrows, as in the card. */
 function MayBox({ title, texts, grantedBy, items, mine }: { title: string; texts: VerbindenTexts; grantedBy: string; items: PurposeInfo[]; mine: boolean }) {
   return (
     <Box title={title} testId={mine ? 'consent-app-may' : 'consent-partner-may'}>
       <Rows label={title}>
-        {items.length === 0 ? (
-          <Row icon="Check" name={texts.card.onlyCheck} />
-        ) : (
-          items.map((item) => <Row key={item.id} icon={wayOf(item.level, mine) === 'in' ? 'ArrowLeft' : 'ArrowRight'} name={purposeLabel(texts, grantedBy, item.id)} />)
-        )}
+        {items.length === 0 ? <Row icon="Check" name={texts.card.onlyCheck} /> : items.map((item) => <Row key={item.id} name={purposeLabel(texts, grantedBy, item.id)} />)}
       </Rows>
     </Box>
   )
@@ -77,7 +82,7 @@ function AccountRow({ texts, card }: { texts: VerbindenTexts; card: AccountCard 
   )
 }
 
-export function ConsentPage({ request, base = VERBINDEN_BASE, search, areaWord, language, navigate = (url) => window.location.assign(url), testId = 'connect-consent' }: ConsentPageProps) {
+export function ConsentPage({ request, app, back, base = VERBINDEN_BASE, search, areaWord, language, navigate = (url) => window.location.assign(url), testId = 'connect-consent' }: ConsentPageProps) {
   const { texts, code } = useVerbindenTexts(language)
   const asked = search ?? window.location.search
   const params = useMemo(() => {
@@ -107,9 +112,9 @@ export function ConsentPage({ request, base = VERBINDEN_BASE, search, areaWord, 
         if ('back' in found) go.current(found.back)
         else setInfo(found)
       },
-      (failure: unknown) => setProblem(refusalText(texts, failure, '')),
+      (failure: unknown) => setProblem(refusalText(texts, failure, app ?? '')),
     )
-  }, [request, base, params, complete, texts])
+  }, [request, base, params, complete, texts, app])
 
   const answer = async (allow: boolean) => {
     if (!info || busy) return
@@ -121,12 +126,15 @@ export function ConsentPage({ request, base = VERBINDEN_BASE, search, areaWord, 
       const { redirect } = await request<{ redirect: string }>(`${base}/consent`, { method: 'POST', body })
       go.current(redirect)
     } catch (failure) {
-      setSendProblem(refusalText(texts, failure, info.app))
+      setSendProblem(refusalText(texts, failure, info.app || app || ''))
       setBusy(false)
     }
   }
 
   if (problem || !info) {
+    // B12 (0.2.0, V63): without a safe way back from the server, at least the page before (the card of the app that
+    // asked), where the browser has one.
+    const goBack = back ?? (typeof window !== 'undefined' && window.history.length > 1 ? () => window.history.back() : undefined)
     return (
       <div className={PAGE_FRAME} data-testid={testId}>
         <AuthCard title={problem ? texts.consent.failed : texts.consent.loading}>
@@ -134,6 +142,13 @@ export function ConsentPage({ request, base = VERBINDEN_BASE, search, areaWord, 
             <Notice tone="danger" testId="consent-problem">
               {problem}
             </Notice>
+          )}
+          {problem && goBack && (
+            <div>
+              <Button kind={VERBINDEN_BUTTONS.back.kind} icon={VERBINDEN_BUTTONS.back.icon} onClick={goBack} testId="consent-back">
+                {texts.buttons.goBack}
+              </Button>
+            </div>
           )}
         </AuthCard>
       </div>

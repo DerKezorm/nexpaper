@@ -87,15 +87,23 @@ def entry(device: Device, this: DeviceId | None = None) -> dict[str, Any]:
         "last_seen_at": iso(device.last_seen_at),
         "push": device.push is not None,
         # Since 0.1.1: the app on the device named what it understands, so it shows the same ticks itself.
-        "chooses_kinds": device.push is not None and device.push.understands is not None,
+        "chooses_kinds": chooses_kinds(device),
         "this": this is not None and str(device.id) == str(this),
     }
 
 
+def chooses_kinds(device: Device) -> bool:
+    """G54, G61: the app on the device shows the same ticks itself: it named what it understands, not the app's server
+    from an older form (``PushState.chosen``)."""
+    if device.push is None or device.push.understands is None:
+        return False
+    return device.push.chosen is not False
+
+
 def describe(device: Device) -> str:
     """The device in one line, for ``konten`` "Angemeldete Geräte" (``device_label``): its name, and the model where
-    it says more."""
-    if device.model and device.model != device.name:
+    it says more (since 0.1.4, B21, case and spaces aside: "iPhone" and "iphone" are one)."""
+    if device.model and " ".join(device.model.split()).casefold() != " ".join(device.name.split()).casefold():
         return f"{device.name} ({device.model})"
     return device.name
 

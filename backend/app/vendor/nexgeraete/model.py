@@ -22,6 +22,10 @@ class PushState:
     ticket: str
     key: str
     understands: tuple[str, ...] | None = None
+    #: Since 0.1.3 (G61): the device named ``understands`` itself (True), or the app set it from an older form of its
+    #: own (False: nextime turns the TestFlight app's ``alerts`` into kinds). None: as ``understands`` says (named by
+    #: the device when given). Only a device that chose shows the same ticks in its app (``chooses_kinds``, G54).
+    chosen: bool | None = None
 
 
 @dataclass

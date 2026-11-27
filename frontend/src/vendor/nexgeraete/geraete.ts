@@ -191,16 +191,42 @@ export function kindLabel(texts: DeviceTexts, kind: string): string {
   return (texts.kinds as Record<string, string>)[kind] ?? texts.kinds.ios
 }
 
+/** B21 (0.1.4): whether two parts say the same, case and spaces aside: the name "iPhone" and the kind "iPhone". */
+export function sameWords(one: string, other: string): boolean {
+  const plain = (text: string) => text.trim().replace(/\s+/g, ' ').toLocaleLowerCase()
+  return plain(one) === plain(other)
+}
+
+/** The model, else the kind ("iPhone 15", "iPad"). */
+export function modelOrKind(device: Pick<Device, 'model' | 'kind'>, texts: DeviceTexts): string {
+  return device.model?.trim() || kindLabel(texts, device.kind)
+}
+
+/** B21 (0.1.4): the model or kind beside the name, unless it only repeats the name (the apps of today send "iPhone"
+ * or "iPad" as the name and no model): null then, so nothing stands twice. */
+export function modelBesideName(device: Pick<Device, 'name' | 'model' | 'kind'>, texts: DeviceTexts): string | null {
+  const what = modelOrKind(device, texts)
+  return device.name.trim() && sameWords(device.name, what) ? null : what
+}
+
+/** Name and model in one line ("Kims iPhone · iPhone 15"); "iPhone" alone where the name is the kind (B21, never
+ * "iPhone · iPhone"); the model or kind alone for a device without a name. */
+export function deviceTitle(device: Pick<Device, 'name' | 'model' | 'kind'>, texts: DeviceTexts): string {
+  const name = device.name.trim()
+  const what = modelBesideName(device, texts)
+  return [name, what].filter((part): part is string => Boolean(part)).join(' · ')
+}
+
 /** "1 Gerät", "3 Geräte". */
 export function countText(texts: DeviceTexts, count: number): string {
   return fillDevices(count === 1 ? texts.devices.one : texts.devices.many, { count })
 }
 
 /** The line under a device's name: "iPhone 15 · App 1.0.2 · zuletzt heute, 14:05", with "über iCloud übernommen" for
- * a device taken over from another one. */
+ * a device taken over from another one. Since 0.1.4 (B21) without the model or kind where it only repeats the name. */
 export function deviceLine(device: Device, texts: DeviceTexts, language: string, when: WhenFormat = defaultWhen): string {
   return [
-    device.model || kindLabel(texts, device.kind),
+    modelBesideName(device, texts),
     device.app_version ? fillDevices(texts.devices.app, { version: device.app_version }) : null,
     device.via === 'icloud' ? texts.devices.icloud : null,
     device.last_seen_at ? fillDevices(texts.devices.lastSeen, { when: when(device.last_seen_at, language) }) : texts.devices.neverSeen,
@@ -208,6 +234,10 @@ export function deviceLine(device: Device, texts: DeviceTexts, language: string,
     .filter((part): part is string => Boolean(part))
     .join(' · ')
 }
+
+/** Since 0.1.4: what `RenameDialog` announces on `window` with the renamed device (`detail`), so that a card of the
+ * same page that shows the name (the push card) takes the new one at once. */
+export const DEVICE_RENAMED = 'nexgeraete:renamed'
 
 /** "iPhone, iPad": the kinds of the devices, each once, in the order they come. */
 export function kindsText(texts: DeviceTexts, devices: readonly { kind: string }[]): string {

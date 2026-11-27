@@ -1,4 +1,4 @@
-"""The shared module geraete 0.1.1 in nexpaper (``services/geraete_store.py``): the parts that are nexpaper's own.
+"""The shared module geraete 0.1.4 in nexpaper (``services/geraete_store.py``): the parts that are nexpaper's own.
 
 ``GET /api/app/1/hello`` and ``GET /api/app/1/me``: the two routes of the app's own on ``/api/app/1``, where the iPhone
 apps built on NexKonto speak (``me`` with the key, through the module's ``api.device``). The rest of ``/api/app/1`` and

@@ -39,7 +39,7 @@ CONFIG = nexverbinden.AppConfig(
 
 #: The module's settings and nexpaper's names for them; the context of sealed tokens.
 SETTINGS = {"connections": "connections_enabled", "addresses": "connections_addresses",
-            "connections_local_network": "connections_local_network"}
+            "connections_local_network": "connections_local_network", "suggestions": "connections_suggestions"}
 SEAL_CONTEXT = "connections:token"
 
 
@@ -212,6 +212,9 @@ class VerbindenStore:
     def legacy(self, account_id: Any) -> list[Any]:
         # nexpaper connected to no other app before: nothing typed in by hand to show.
         return []
+
+    def forget_legacy(self, account_id: Any, partner: str) -> None:
+        """verbinden 0.2.0 (B9, V56): nexpaper has no connection typed in by hand (``legacy`` is empty); none ends."""
 
     def retire_key(self, token: str) -> bool:
         """An API key of nexpaper that a partner held before "Neu verbinden" ends itself."""

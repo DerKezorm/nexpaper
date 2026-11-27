@@ -1,8 +1,9 @@
 /**
  * The card of one partner app under Mein Konto › Verbindungen (Bauplan „Einstellungen“, Platz 3 der Verbindungen; draft "Apps
  * verbinden", one kind of card for every pair): a `Collapsible` card with the partner's logo, the pair's sentence under
- * the title, on the right the state as a `Badge` with the host or since when. Open it shows what flows each way (rows
- * with an arrow: ← comes here, → goes there), the facts of the connection and the buttons of its state:
+ * the title, on the right the state as a `Badge` with the host or since when. Open it shows what each app may do at the
+ * other (since 0.2.0, B10: two sections, "{app} darf bei {partner}" and "{partner} darf bei {app}", no arrows), the facts
+ * of the connection and the buttons of its state:
  *
  * - not connected: the partner's address (filled in by the operator where he named it), where the partner reads or
  *   writes areas of this app the choice of them (all at first, V16, V41), one sentence how it goes, "Mit <partner> verbinden"
@@ -17,19 +18,26 @@
  * the operator, links there, here or in the partner app (B2, V44). A refusal carried from the return page (B6) stands
  * in the card at once, the card open.
  *
+ * Since 0.2.0: after "Mit … verbinden" the button waits only until this page is back in front (the window of the other
+ * app was closed, "Abgebrochen") or `waitSeconds` passed (B13, V61). An older connection by API key ends with
+ * "Trennen" where the app's Store can forget it (B9, V56). A partner without a mark of its own shows the mark of the
+ * nex apps (B20).
+ *
  * The app adds its own parts (lists, calendars, a feed's address) as `children`, shown open in every state, connected
  * by click, by hand or not at all (V23, V-9), and its form for connecting by hand as `manual`. The partner's mark comes from the module, light and dark
  * as the page is (V21). Copied unchanged into frontend/src/vendor/nexverbinden/ by bauplaene/verbinden/tools/sync.py.
  */
-import { useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 
-import { Badge, Box, Button, Buttons, CheckboxRow, Collapsible, ConfirmDialog, Facts, Notice, Row, Rows, inSentence, useNexuiTexts, type Fact } from '../nexui'
+import { Badge, Box, Button, Buttons, CheckboxRow, Collapsible, ConfirmDialog, Facts, NexMark, Notice, Row, Rows, inSentence, useNexuiTexts, type Fact } from '../nexui'
 import {
   OPERATOR_PAGE,
   PARTNER_OPERATOR_PAGE,
+  RETURN_GRACE_MS,
   STATE_TONES,
   VERBINDEN_BASE,
   VERBINDEN_BUTTONS,
+  WAIT_SECONDS,
   aboutPair,
   areaActions,
   codeText,
@@ -43,7 +51,6 @@ import {
   setUpPlace,
   usePageDark,
   useVerbindenTexts,
-  wayOf,
   type PartnerView,
   type VerbindenRequest,
   type VerbindenTexts,
@@ -75,24 +82,23 @@ export type ConnectionCardProps = {
   operator?: boolean
   /** Since 0.1.8 (B6): the code of a refusal carried from the return page, shown at once. */
   carried?: string
+  /** Since 0.2.0 (B13): how long "Mit … verbinden" waits for the way back (default `WAIT_SECONDS`). */
+  waitSeconds?: number
   testId?: string
 }
 
-type Flow = { id: string; text: string; way: 'in' | 'out' }
+type Flow = { id: string; text: string }
 
-function flows(texts: VerbindenTexts, grantedBy: string, ids: string[], levels: Record<string, string>, mine: boolean): Flow[] {
-  return ids.map((id) => ({ id, text: purposeLabel(texts, grantedBy, id), way: wayOf(levels[id] ?? 'read', mine) }))
+function flows(texts: VerbindenTexts, grantedBy: string, ids: string[]): Flow[] {
+  return ids.map((id) => ({ id, text: purposeLabel(texts, grantedBy, id) }))
 }
 
+/** B10 (0.2.0, V62): what one app may do at the other, under a sentence that says who and where; no arrows. */
 function FlowBox({ title, items, empty, testId }: { title: string; items: Flow[]; empty: string; testId: string }) {
   return (
     <Box title={title} testId={testId}>
       <Rows label={title}>
-        {items.length === 0 ? (
-          <Row icon="Check" name={empty} />
-        ) : (
-          items.map((item) => <Row key={item.id} icon={item.way === 'in' ? 'ArrowLeft' : 'ArrowRight'} name={item.text} testId={`flow-${item.id}`} />)
-        )}
+        {items.length === 0 ? <Row icon="Check" name={empty} /> : items.map((item) => <Row key={item.id} name={item.text} testId={`flow-${item.id}`} />)}
       </Rows>
     </Box>
   )
@@ -118,6 +124,7 @@ export function ConnectionCard({
   defaultOpen,
   operator = false,
   carried,
+  waitSeconds = WAIT_SECONDS,
   testId,
 }: ConnectionCardProps) {
   const { texts, code } = useVerbindenTexts(language)
@@ -132,6 +139,9 @@ export function ConnectionCard({
   const [problemCode, setProblemCode] = useState<string | undefined>(carried)
   const [tooOld, setTooOld] = useState(false)
   const [leaving, setLeaving] = useState(false)
+  // B13 (0.2.0, V61): off to the partner's consent page; free again once this page is back in front or time is up.
+  const [waiting, setWaiting] = useState(false)
+  const [stopped, setStopped] = useState<'aborted' | 'timedOut'>()
   // Decisions V16, V41: the areas the partner may read or write here, chosen before the click (all at first).
   const choice = view.areas_choice ?? []
   const [allAreas, setAllAreas] = useState(true)
@@ -164,10 +174,42 @@ export function ConnectionCard({
       </div>
     ) : null
 
+  useEffect(() => {
+    if (!waiting) return
+    const left = Date.now()
+    const stop = (why: 'aborted' | 'timedOut') => {
+      setWaiting(false)
+      setBusy(false)
+      setStopped(why)
+    }
+    // Back in front: the other app's window was closed (an app on the home screen opens it above itself), or the
+    // browser came back to this page. Events right after leaving do not count.
+    const back = () => {
+      if (Date.now() - left >= RETURN_GRACE_MS) stop('aborted')
+    }
+    const visible = () => {
+      if (document.visibilityState === 'visible') back()
+    }
+    const shown = (event: Event) => {
+      if ((event as Event & { persisted?: boolean }).persisted) stop('aborted')
+    }
+    const timer = window.setTimeout(() => stop('timedOut'), waitSeconds * 1000)
+    window.addEventListener('focus', back)
+    window.addEventListener('pageshow', shown)
+    document.addEventListener('visibilitychange', visible)
+    return () => {
+      window.clearTimeout(timer)
+      window.removeEventListener('focus', back)
+      window.removeEventListener('pageshow', shown)
+      document.removeEventListener('visibilitychange', visible)
+    }
+  }, [waiting, waitSeconds])
+
   const start = async () => {
     setBusy(true)
     setProblem(undefined)
     setProblemCode(undefined)
+    setStopped(undefined)
     setTooOld(false)
     try {
       const renewing = view.state === 'connected' || view.state === 'resting'
@@ -179,6 +221,7 @@ export function ConnectionCard({
       // V42 (0.1.8): no address from here; the server takes the operator's (or the connection's).
       const { go } = await request<{ go: string }>(`${base}/partners/${encodeURIComponent(partner)}/start`, { method: 'POST', body: { areas } })
       navigate(go)
+      setWaiting(true)
     } catch (failure) {
       setTooOld(refusalCode(failure) === 'partner_too_old')
       setProblemCode(refusalCode(failure))
@@ -216,8 +259,17 @@ export function ConnectionCard({
     if (view.ok_at) facts.push({ label: texts.card.lastOk, value: at(view.ok_at) })
   }
 
-  const mine = flows(texts, partner, view.uses, view.uses_levels ?? {}, true)
-  const theirs = flows(texts, app, view.grants, view.grants_levels ?? {}, false)
+  const mine = flows(texts, partner, view.uses)
+  const theirs = flows(texts, app, view.grants)
+  // B10 (0.2.0): one section per direction in which an app may do something; none at all says the connection is checked.
+  const mayBoxes = (
+    <>
+      {mine.length > 0 && <FlowBox title={fillVerbinden(texts.card.appMay, words)} items={mine} empty={texts.card.onlyCheck} testId="connection-app-may" />}
+      {theirs.length > 0 && <FlowBox title={fillVerbinden(texts.card.partnerMay, words)} items={theirs} empty={texts.card.onlyCheck} testId="connection-partner-may" />}
+      {mine.length === 0 && theirs.length === 0 && <FlowBox title={texts.card.wouldFlow} items={[]} empty={texts.card.onlyCheck} testId="connection-would-flow" />}
+    </>
+  )
+  const endsLegacy = (view.state === 'legacy' || view.state === 'expiring') && Boolean(view.legacy?.can_end)
   const status = (
     // V-15 (0.1.6, ui 1.1.3): state and address are one unit that goes under the title when the card is narrow; the
     // state keeps its width, the address shortens.
@@ -287,12 +339,13 @@ export function ConnectionCard({
     </Button>
   )
 
+  const stoppedText = stopped ? fillVerbinden(texts.card[stopped], words) : undefined
   return (
     <Collapsible
       variant="card"
       id={partner}
       logo={mark}
-      icon="Plug"
+      mark={mark ? undefined : <NexMark />}
       title={partner}
       subtitle={aboutPair(texts, app, partner)}
       status={status}
@@ -305,6 +358,11 @@ export function ConnectionCard({
         </Notice>
       )}
       {problem && setUpButton(setUpAt(problemCode), setUpPlace(problemCode) === 'there')}
+      {!problem && stoppedText && (
+        <Notice tone="warn" testId="connection-stopped">
+          {stoppedText}
+        </Notice>
+      )}
       {view.state === 'unreachable' && view.problem === 'local_off' && (
         <>
           <Notice tone="warn" title={fillVerbinden(texts.card.localOffTitle, words)} testId="connection-local-off">
@@ -342,7 +400,7 @@ export function ConnectionCard({
 
       {view.state === 'none' ? (
         <>
-          <FlowBox title={texts.card.wouldFlow} items={[...mine, ...theirs]} empty={texts.card.onlyCheck} testId="connection-would-flow" />
+          {mayBoxes}
           {personLines}
           {setUp ? (
             <>
@@ -377,8 +435,7 @@ export function ConnectionCard({
         </>
       ) : (
         <>
-          {mine.length > 0 && <FlowBox title={fillVerbinden(texts.card.appMay, words)} items={mine} empty={texts.card.onlyCheck} testId="connection-app-may" />}
-          {theirs.length > 0 && <FlowBox title={fillVerbinden(texts.card.partnerMay, words)} items={theirs} empty={texts.card.onlyCheck} testId="connection-partner-may" />}
+          {mayBoxes}
           {personLines}
           {facts.length > 0 && <Facts items={facts} testId="connection-facts" />}
           {/* V23: the app's own choice (lists, areas, calendars) stands open in every state, by click or by hand. */}
@@ -407,6 +464,8 @@ export function ConnectionCard({
               </Button>
             )}
             {(view.state === 'legacy' || view.state === 'expiring') && manualButton}
+            {/* B9 (0.2.0, V56): the older connection by API key ends with "Trennen" as well. */}
+            {endsLegacy && disconnectButton(texts.buttons.disconnect)}
             {connected &&
               disconnectButton(
                 view.state === 'refused' ? texts.buttons.remove : onlyThem ? texts.buttons.endAccess : texts.buttons.disconnect,
@@ -419,7 +478,7 @@ export function ConnectionCard({
       {leaving && (
         <ConfirmDialog
           title={fillVerbinden(texts.disconnect.title, words)}
-          text={fillVerbinden(texts.disconnect.text, words)}
+          text={fillVerbinden(endsLegacy ? texts.disconnect.legacyText : texts.disconnect.text, words)}
           confirm={{ label: view.state === 'refused' ? texts.buttons.remove : onlyThem ? texts.buttons.endAccess : texts.buttons.disconnect, kind: 'danger', icon: 'Unplug' }}
           cancel={texts.buttons.cancel}
           closeLabel={kit.close}

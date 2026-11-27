@@ -11,6 +11,9 @@
 ``GET    /api/connect/consent``                    what the consent page shows (account)
 ``POST   /api/connect/consent``                    the account's answer: ``{"redirect": …}`` (account)
 ``GET|PUT /api/connect/admin``                     the operator: switch, addresses of the other nex apps, own network
+                                                  (since 0.2.0 in one change, each address checked, B11, B18)
+``POST|DELETE /api/connect/admin/suggestions/{partner}``  since 0.2.0: take or turn down an address another nex
+                                                  app suggested (operator, B16)
 ``POST   /api/connect/token``, ``/revoke``         between the apps (forms, RFC 6749 and 7009)
 ``POST   /api/connect/retire``                     an older API key of this app ends itself (``Authorization``)
 ``GET    /api/connect/hello``                      a partner checks its connection (``Authorization``)
@@ -168,6 +171,10 @@ def router(
             found = old_key(data, who, made.partner)
             if found:
                 connect.retire_at(data, config, made.partner_base, found)
+        # Since 0.2.0 (B9, V56): the connection by click takes the place of an older one by API key with the partner
+        # (after its key ended itself there, above).
+        if connect.forget_legacy(data, who, made.partner):
+            data.commit()
         if on_connected is not None:
             on_connected(data, who, made.partner)
         return connect.view(config, data, who, made.partner, _now(), made)
@@ -228,7 +235,7 @@ def router(
 
     # --- the operator -----------------------------------------------------------------------------------------------
 
-    def _admin(data: Any) -> dict:
+    def _admin(data: Any, *, saved: list[str] | None = None, checks: dict[str, Any] | None = None) -> dict:
         found = data.setting("addresses")
         addresses = found if isinstance(found, dict) else {}
         return {
@@ -237,7 +244,20 @@ def router(
             "addresses": {partner: str(addresses.get(partner) or "") for partner in config.partners},
             # Since 0.1.4 (V-12): the switch for connections into the own network, the app's own setting.
             "local": bool(data.local_allowed()),
+            # Since 0.2.0 (B16, V58): addresses other nex apps passed on, for the operator to take with a click.
+            "suggestions": connect.suggestions(data, config),
+            # Since 0.2.0 (B18, V60): what this change kept ("connections", "local", partners), and what answers at
+            # each address kept anew (B11, V57); empty where nothing was changed.
+            "saved": saved or [],
+            "checks": checks or {},
         }
+
+    def _keep_address(data: Any, partner: str, url: str) -> None:
+        found = data.setting("addresses")
+        kept = {name: str(value) for name, value in (found if isinstance(found, dict) else {}).items() if value}
+        kept[partner] = url
+        data.set_setting("addresses", {name: value for name, value in kept.items() if value})
+        connect.drop_suggestion(data, partner)
 
     @routes.get(f"{PREFIX}/admin", dependencies=[Depends(operator)], summary="Switch and addresses (operator)")
     def admin_get(data: Data) -> dict:
@@ -245,28 +265,78 @@ def router(
 
     @routes.put(f"{PREFIX}/admin", dependencies=[Depends(operator)], summary="Change switch or addresses (operator)")
     def admin_put(data: Data, body: Annotated[dict, Body()]) -> dict:
-        if "connections" in body:
-            if not isinstance(body["connections"], bool):
+        """Since 0.2.0 (B18, V60): one change for the whole card, its switches and every address. First everything is
+        checked: a switch that is not on or off (422), an address that is none (422 with ``partner`` and ``fields``,
+        every field that is wrong with its code); then nothing is kept. Else all of it is kept, and every address kept
+        anew is asked what answers there (B11, V57): ``checks``, kept also where nothing or another app answers."""
+        for name in ("connections", "local"):
+            if name in body and not isinstance(body[name], bool):
                 raise HTTPException(status_code=422, detail={"code": "invalid", "message": "On or off."})
+        given = body.get("addresses", {})
+        if not isinstance(given, dict) or not set(given) <= set(config.partners):
+            raise refuse(Refused("partner_unknown"))
+        before = _admin(data)
+        kept = dict(before["addresses"])
+        wrong: dict[str, str] = {}
+        for partner, raw in given.items():
+            text = str(raw or "").strip()
+            try:
+                kept[partner] = reach.clean_url(text) if text else ""
+            except Refused as refusal:
+                wrong[partner] = refusal.code
+        if wrong:
+            first = next(iter(wrong))
+            raise refuse(Refused(wrong[first], partner=first, fields=wrong))
+        saved: list[str] = []
+        if "connections" in body and body["connections"] != before["connections"]:
             data.set_setting("connections", body["connections"])
-        if "local" in body:
-            if not isinstance(body["local"], bool):
-                raise HTTPException(status_code=422, detail={"code": "invalid", "message": "On or off."})
+            saved.append("connections")
+        if "local" in body and body["local"] != before["local"]:
             data.set_local_allowed(body["local"])
-        if "addresses" in body:
-            given = body["addresses"]
-            if not isinstance(given, dict) or not set(given) <= set(config.partners):
-                raise refuse(Refused("partner_unknown"))
-            kept = _admin(data)["addresses"]
-            for partner, raw in given.items():
-                text = str(raw or "").strip()
-                try:
-                    kept[partner] = reach.clean_url(text) if text else ""
-                except Refused as refusal:
-                    raise refuse(Refused(refusal.code, partner=partner)) from None
+            saved.append("local")
+        changed = [partner for partner in config.partners if kept[partner] != before["addresses"][partner]]
+        if changed:
             data.set_setting("addresses", {partner: url for partner, url in kept.items() if url})
+            for partner in changed:
+                if kept[partner]:
+                    connect.drop_suggestion(data, partner)
+            saved += changed
         data.commit()
-        logger.info("connections with other nex apps changed by the operator")
+        if saved:
+            logger.info("connections with other nex apps changed by the operator (%s)", ", ".join(saved))
+        checks = {partner: connect.check_address(config, data, partner, kept[partner]) for partner in changed}
+        return _admin(data, saved=saved, checks={partner: check for partner, check in checks.items() if kept[partner]})
+
+    @routes.post(
+        f"{PREFIX}/admin/suggestions/{{partner}}",
+        dependencies=[Depends(operator)],
+        summary="Take a suggested address of another nex app (operator)",
+    )
+    def suggestion_take(partner: str, data: Data) -> dict:
+        """Since 0.2.0 (B16, V58): the operator takes a suggestion with one click; it is asked first like a typed
+        address (B11, V57) and kept only where the right app answers there, else it stays a suggestion and the
+        field says why."""
+        wanted = _partner(partner)
+        found = next((one for one in connect.suggestions(data, config) if one["partner"] == wanted), None)
+        if found is None:
+            raise refuse(Refused("suggestion_unknown"))
+        check = connect.check_address(config, data, partner, found["address"])
+        if not check["ok"]:
+            return _admin(data, checks={partner: check})
+        _keep_address(data, partner, found["address"])
+        data.commit()
+        logger.info("the operator took the suggested address of %s (from %s)", partner, found["from"] or "?")
+        return _admin(data, saved=[partner], checks={partner: check})
+
+    @routes.delete(
+        f"{PREFIX}/admin/suggestions/{{partner}}",
+        dependencies=[Depends(operator)],
+        summary="Turn a suggested address down (operator)",
+    )
+    def suggestion_drop(partner: str, data: Data) -> dict:
+        if not connect.drop_suggestion(data, _partner(partner)):
+            raise refuse(Refused("suggestion_unknown"))
+        data.commit()
         return _admin(data)
 
     # --- between the apps -------------------------------------------------------------------------------------------

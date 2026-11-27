@@ -1,4 +1,4 @@
-"""nexpaper's side of the shared module ``vendor/nexgeraete`` (geraete 0.1.1): its ``AppConfig`` and the ``Store`` over
+"""nexpaper's side of the shared module ``vendor/nexgeraete`` (geraete 0.1.4): its ``AppConfig`` and the ``Store`` over
 ``devices`` and ``pairings``.
 
 The module pairs, lists, renames and disconnects devices the same in every nex app, knows a device again by its key and

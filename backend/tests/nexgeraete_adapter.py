@@ -145,29 +145,20 @@ class Adapter(StandardAdapter):
                         if Path(str(path) + rest).is_file())
 
     def _manage(self, action: str, account: str) -> None:
-        """Through the shared account module, as the operator's page does. Blocking and deleting end the account's
-        browser sessions in nexpaper; its browser signs in anew afterwards."""
+        """Through the shared account module, as the operator's page does; the operator acts (the contract blocks no
+        operator since geraete 0.1.3, G63). Blocking and deleting end the account's browser sessions in nexpaper; its
+        browser signs in anew afterwards."""
         from app.db import SessionLocal
         from app.services.konten_store import KontenStore
         from app.vendor.nexkonten import manage
         from tests.conftest import PASSWORD
 
         with SessionLocal() as db:
-            getattr(manage, action)(KontenStore(db), self.ids[account], actor_id=self._actor(account),
+            getattr(manage, action)(KontenStore(db), self.ids[account], actor_id=self.ids["operator"],
                                     password=PASSWORD)
         old = self.clients.pop(account, None)
         if old is not None:
             old.close()
-
-    def _actor(self, account: str) -> Any:
-        """The operator acts; on the operator's own account a second operator does (nobody blocks themselves)."""
-        from tests.conftest import make_account
-
-        if account != "operator":
-            return self.ids["operator"]
-        if "second operator" not in self.ids:
-            self.ids["second operator"] = make_account("otto", "operator").id
-        return self.ids["second operator"]
 
     def block(self, account: str = "owner") -> None:
         self._manage("block", account)
