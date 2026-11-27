@@ -1,4 +1,44 @@
 {
+  "1.13.0": {
+    "lead": "nexpaper now connects with nextime, nexmail and nextasks in one click, without typing in a key. On top come AI tools (MCP), a storage limit per account and settings that look like those of every nex app. Your documents stay as they are.",
+    "sections": [
+      {
+        "title": "Connect nex apps",
+        "where": "My account › Connections",
+        "body": "Under “Other nex apps” you click “Connect with nextime” (the same for nexmail and nextasks), agree once in the other app and are back, connected. No key to make, copy and paste. The page where you agree shows who you are signed in as and says in plain words what each app may do, for example “Read the deadlines of your documents”. No app may do more, and you choose which vaults it may see. The card shows since when you are connected, when the connection was last used and what it allows, with “Check now” and “Disconnect”, which ends it on both sides. If something goes wrong, the reason is shown there. Before that, the operator enters the other app's address once under Server › General › Other nex apps; if it runs in the local network (LAN, VPN), they also allow “Connections into the local network” there."
+      },
+      {
+        "title": "Deadlines, attachments and tasks",
+        "where": "nextime, nexmail and nextasks",
+        "body": "Deadlines in the calendar: nextime shows your open deadlines (to pay, cancel by, warranty and more) as all-day entries on the day you have to act by, and a click opens the document in nexpaper. This was there before, now connected in one click; a connection made with an API key keeps working and can be renewed the new way in nextime. New, an attachment straight into the inbox: in nexmail every attachment has “Send to nexpaper as a document”, and one click puts, say, an invoice from a mail into your inbox. New, a task for a document: “Task in nextasks” on a document's page makes a task in a list you choose, with the document's title and a link back. A second click for the same document finds the task made before."
+      },
+      {
+        "title": "AI tools (MCP)",
+        "where": "My account › Connections",
+        "body": "AI programs that speak MCP now work with nexpaper: search and read documents, look at the inbox and the deadlines, accept suggestions, change fields and put documents in the trash. For that you make an MCP key (read, or read and change), or a program connects itself with your consent. Both can be limited to vaults, and for each tool you choose: allow, ask first or deny. What asks waits under “Waiting requests”, and your devices get a notification. A document's history says which program changed it. Off from the start; the operator allows it under Server › General › Interfaces."
+      },
+      {
+        "title": "Accounts and storage",
+        "where": "Server › Accounts",
+        "body": "The operator gives each account a storage limit (under Manage) and sets, under Server › General › Limits, the one every new account starts with; there is none from the start. When the storage is full, nexpaper takes no new uploads but loses nothing: files from the intake folder and mails in the mailbox wait and come in once there is room again, and the person learns how many wait. A deleted account can be brought back for 30 days; only then are its documents handed on. There can be several operators. People sign in with their username or their email address, and every account has a display name besides. When a username changes, the intake folder and the plus address of the former name keep reaching the person."
+      },
+      {
+        "title": "Settings like in every nex app",
+        "where": "The gear at the foot of the sidebar",
+        "body": "Light or dark now belongs to your account and follows you to every device. Under My account › Notifications you set which way reminders and notifications come. Backups run at a time of day you choose, every month if you like, and “Back up now” takes a note along. The operator uploads added languages under Server › General › Languages, with a template to download. At setup nexpaper asks once whether it may look for new versions; only the operator sees whether a newer one is out."
+      }
+    ],
+    "smallTitle": "Also",
+    "small": [
+      "Shared vaults can now be deleted in the browser, under Manage vaults in the window “who may do what”. The documents in them first go to a vault you choose.",
+      "Under Server › AI provider the operator chooses “One for all” or “Each account itself”; then every person enters their own AI service under My account › AI. There “What went out” shows what nexpaper sent to the AI in the last 14 days.",
+      "Reminders of deadlines and the weekly overview now come in French too, and every mail from nexpaper in the language of the person who gets it.",
+      "When a scheduled backup fails, the operators hear of it by notification and mail, once, until one works again.",
+      "API tokens are called API keys again, as in every nex app. Under Server › Accounts the operator sees the keys of every account and unblocks a blocked one. The keys of a blocked or deleted account rest until it is back.",
+      "The mail and the notification about a new sign-in name the browser and the moment.",
+      "The settings no longer show an empty strip and a second scroll bar below the page."
+    ]
+  },
   "1.12.0": {
     "lead": "nexpaper now speaks French too.",
     "sections": [

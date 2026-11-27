@@ -22,6 +22,9 @@ over what you already have in Paperless-ngx.
 - **Deadlines and reminders.** What has to be paid, cancelled or claimed under a warranty stands on one page, with the
   last day to cancel worked out from the notice period. nexpaper reminds the people who may edit the vault, by push, by
   mail or in a weekly overview, each reminder once.
+- **Connect nex apps.** In one click nexpaper connects with nextime (your deadlines in the calendar), nexmail (an
+  attachment straight into the inbox) and nextasks (a task for a document). Each app may only do what the
+  connection is for, and only in the vaults you choose.
 - **Keeping times.** A kind can say how many years its documents are kept. When the time is over the document shows up
   in the archive under "May go". Nothing is deleted by itself; a kind can ask nexpaper to put its expired documents in
   the trash once a day, at night (off from the start, they stay there for 30 days).
@@ -30,7 +33,8 @@ over what you already have in Paperless-ngx.
 - **No Redis, no Celery, no Postgres.** One container, SQLite, plain readable files on the disk.
 - **Best kept at home.** nexpaper is meant for your own network; from on the way, reach it through a VPN. It still
   comes with a second factor from the start, passkeys, sign-in through your own provider and a checklist in the
-  settings. Everything the web app does goes through an open API (`/api/v1`) for your own tools.
+  settings. Everything the web app does goes through an open API (`/api/v1`) for your own tools, and AI programs
+  can work with it over MCP.
 
 nexpaper is one of the nex apps and looks like them: light paper and kraft by day, a dark desk by night. It speaks
 German, English and French; the operator adds more languages as JSON files, and whatever a file leaves out appears in
@@ -111,6 +115,12 @@ least 16 characters; a shorter one is passed over and the log says so). The setu
 address (optional) and the password twice; then the operator invites the others by link. People sign in with their
 username or their address. Everything
 personal is in the settings under "My account" for everybody; "Server" there is the operator's and holds the server.
+
+The operator manages the accounts under Settings › Server › Accounts: invitations, roles (there can be several
+operators), a **storage limit** per account (Manage; the limit every new account starts with is under Settings ›
+Server › General › Limits, none from the start) and deleting. A deleted account can be brought back for 30 days;
+only then are its documents handed on to the person chosen when it was deleted. When an account's storage is full,
+uploads are refused, while files of the intake folder and mails in the mailbox wait and come in once there is room.
 
 ## Reaching nexpaper from outside
 
@@ -334,6 +344,10 @@ knew them; a proposal is only a proposal, and the inbox says where each field ca
   reached, the documents keep what the rules and the text gave them until the next day.
 - The operator can add **own instructions** (at most 2000 characters), for example how titles should be named. They go
   with the fixed rules and change nothing in which fields are filled and how the answer is checked.
+- Instead of one service for everybody, the operator can let **each account set up its own** (Settings › Server ›
+  AI provider, "Each account itself"); every person then enters theirs under Settings › My account › AI. Hosts in
+  your own network are open to those only where the operator names them.
+- **What went out** (Settings › My account › AI) lists what nexpaper sent to the AI for you in the last 14 days.
 
 ## Filing
 
@@ -550,6 +564,26 @@ A link shows the document as it is now. Whoever may change it sees that it is op
 archive and a notice at the document, without to whom; that stays with who may share it), and is asked before
 changing its pages: the page tools, joining, splitting, a new version or an old one back.
 
+## Connect nex apps
+
+nexpaper connects with other nex apps in one click, without a key to copy. The operator enters each app's address
+once under Settings › Server › General › Other nex apps; an app in your own network (LAN, VPN) also needs
+"Connections into the local network" there, and the switch at the top turns connections off for everybody (they rest,
+nothing is deleted). After that every person clicks "Connect with …" under Settings › My account › Connections,
+agrees once in the other app and comes back connected. The page where they agree shows the account they are signed in
+with and says in plain words what each app may do. Each app may only do what its connection is for, and only in the
+vaults the person chooses.
+
+| App | May do in nexpaper, or nexpaper there | What you do with it |
+|---|---|---|
+| nextime | Read the deadlines of your documents | Open deadlines as all-day entries in the calendar; a click opens the document |
+| nexmail | Put documents into the inbox | "Send to nexpaper as a document" beside an attachment puts it into your inbox |
+| nextasks | nexpaper reads your lists and creates tasks there | "Task in nextasks" on a document's page makes a task with a link back |
+
+The card of each app shows since when it is connected, when it was last used and what it allows, with "Check now"
+and "Disconnect", which ends it on both sides. When something goes wrong in the other app, the reason is shown in
+the card. A calendar that reads the deadlines with an API key keeps working; it can be renewed the new way.
+
 ## For programs
 
 Everything the web app does goes through `/api/v1`; the web app uses nothing else. A phone or a later app pairs with a
@@ -558,6 +592,14 @@ Everything the web app does goes through `/api/v1`; the web app uses nothing els
 only reads or only uploads, never more than its account may (off until the operator switches it on under Settings › Server › General › Interfaces; 120 requests a
 minute, 50 uploads an hour). The description is served at `/api/v1/docs` and, for machines, at `/api/v1/openapi.json`;
 [docs/api.md](docs/api.md) says how to sign in.
+
+**AI tools (MCP)** reach nexpaper at `/api/mcp`: list vaults, search and read documents, look at the inbox and the
+deadlines, accept suggestions, change fields and put a document in the trash. A person makes an MCP key (read, or
+read and change) under Settings › My account › Connections › AI tools (MCP), or a program connects itself over
+OAuth with the person's consent in the browser. Both can be limited to vaults, and every tool can be allowed, asked
+first or denied; what asks waits for a yes there, and the person's devices get a notification. A document's history
+names the program that changed it. Off until the operator switches it on under Settings › Server › General ›
+Interfaces.
 
 ## Security in short
 
