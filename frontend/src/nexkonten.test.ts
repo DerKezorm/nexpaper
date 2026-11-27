@@ -111,7 +111,9 @@ async function show(element: ReactNode, at: string, path = '*', status = 'signed
   vi.stubGlobal(
     'fetch',
     vi.fn(async (url: string, init?: RequestInit) => {
-      const found = ANSWERS[`${init?.method ?? 'GET'} ${String(url).split('?')[0]}`]
+      const path = String(url).split('?')[0]
+      // The account's devices in "Manage" (geraete 0.1.0): none.
+      const found = ANSWERS[`${init?.method ?? 'GET'} ${path}`] ?? (/^\/api\/v1\/server\/accounts\/[^/]+\/devices$/.test(path) ? { count: 0, devices: [] } : undefined)
       return new Response(JSON.stringify(found ?? {}), { status: 200, headers: { 'Content-Type': 'application/json' } })
     }),
   )
