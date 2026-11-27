@@ -133,3 +133,17 @@ def test_a_connection_without_the_purpose_learns_nothing(about_world: Any) -> No
         headers={"Authorization": f"Bearer {token}"},
     )
     assert found.status_code == 403 and found.json()["detail"]["code"] == "purpose_missing"
+
+
+def test_a_connection_about_a_person_opens_nothing_else(about_world: Any) -> None:
+    """Since 0.1.14 (found in nextime): the connection of nexfolk may ask about a person and nothing more; every other
+    purpose of the app refuses it (403), also where the app's own routes take a token by its level ("read")."""
+    w = about_world
+    assert w.connect("partner").status_code == 200
+    app = w.app.config().app_name
+    asked = set(w.pkg.CATALOG.uses("nexfolk", app))
+    for purpose in [p for p in w.pkg.CATALOG.purposes[app] if p not in asked]:
+        path = w.app.probe(purpose)
+        assert path, purpose
+        answer = w.partner_calls_app(path)
+        assert getattr(answer, "status", None) == 403, (purpose, answer)
