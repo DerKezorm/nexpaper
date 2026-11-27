@@ -22,9 +22,10 @@ from pydantic import BaseModel, Field
 
 from ..deps import BrowserAccount, DbSession, from_a_web_page, pairing_failed, pairing_guard
 from ..errors import error
-from ..services import pairing, settings_service, totp
+from ..services import devices, pairing, settings_service, totp
 from ..services.konten_store import oldest_name
 from ..services.pairing import OAuthProblem
+from ..vendor import nexgeraete
 from .devices import DeviceOut, _out
 
 logger = logging.getLogger("nexpaper.auth")
@@ -62,8 +63,12 @@ class PairingStateOut(BaseModel):
 @router.post("/api/v1/devices/pairing", response_model=PairingOut, status_code=201,
              summary="Make a code to pair a device (QR code; 5 minutes, once); one still open ends")
 def start(request: Request, account: BrowserAccount, db: DbSession) -> PairingOut:
-    row, code = pairing.start_qr(db, account.id)
     server = _base(request, db)
+    try:
+        row, code = pairing.start_qr(db, account.id, server)
+    except nexgeraete.DeviceRefused as refusal:
+        db.rollback()
+        raise devices.refused(refusal) from None
     link = "nexpaper://pair?" + urlencode({"server": server, "code": code})
     return PairingOut(code=code, expires_at=row.expires_at, server=server, link=link, qr_svg=totp.qr_svg(link))
 
@@ -104,7 +109,11 @@ def pair(payload: PairIn, request: Request, db: DbSession) -> PairedOut:
     if from_a_web_page(request):
         raise error("origin_refused", "Pairing is for devices and apps, not web pages.", 403)
     pairing_guard(request)
-    found = pairing.redeem_qr(db, payload.code, payload.name)
+    try:
+        found = pairing.redeem_qr(db, payload.code, payload.name,
+                                  nexgeraete.client_of(request.headers.get(nexgeraete.CLIENT_HEADER)))
+    except nexgeraete.DeviceRefused as refusal:
+        raise devices.refused(refusal) from None
     if found is None:
         pairing_failed(request)
         raise error("pairing_code_invalid", "This code is not valid (wrong, used or run out).", 400)

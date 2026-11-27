@@ -102,11 +102,17 @@ OPEN = {
     # verbinden 0.1.13: nexfolk asks about a person with its token; an unknown purpose is 404 ``about_unknown`` before
     # the token is read (tests/nexverbinden/test_nexverbinden_about.py).
     ("GET", "/api/connect/about/{purpose}"),
+    # iPhone, iPad and Mac (the shared module geraete 0.1.0): who answers, and an app built on NexKonto picks its key
+    # up with the code it was shown (410 for every code that does not fit; tests/nexgeraete).
+    ("GET", "/api/app/1/hello"),
+    ("POST", "/api/app/1/pairing/code"),
+    ("POST", "/api/app/1/pairing/{pairing_id}/key"),
 }
 
-#: The fixed places of the shared MCP and verbinden modules, the same in every nex app (Entwurf MCP-Modul: one address for all): the
-#: only routes outside ``/api/v1``.
-MODULE_PLACES = ("/api/mcp", "/api/oauth/", "/.well-known/oauth-", "/api/connect/", "/.well-known/nex-app")
+#: The fixed places of the shared MCP, verbinden and geraete modules, the same in every nex app (Entwurf MCP-Modul: one
+#: address for all; ``/api/app/1`` for the iPhone apps built on NexKonto): the only routes outside ``/api/v1``.
+MODULE_PLACES = ("/api/mcp", "/api/oauth/", "/.well-known/oauth-", "/api/connect/", "/.well-known/nex-app",
+                 "/api/app/")
 
 
 def concrete(path: str) -> str:

@@ -4,11 +4,12 @@ Both end in the same place: a device token (``npd_``, ``services/devices.py``) f
 listed with the signed-in devices and revocable one by one. Only a full session of a signed-in browser makes a code
 (the second factor was met there), so a device never gets in past the second factor.
 
-**The QR code.** ``start_qr`` makes a code of twelve letters and digits (about 59 bits), valid for five minutes and
-once. A new code ends the one before. The device sends it with a name of its own to ``POST /api/v1/devices/pair``
+**The QR code.** ``start_qr`` makes a code of twelve letters and digits (about 60 bits), valid for five minutes and
+once, through the shared module geraete (``services/geraete_store.py``: the same code also pairs a new app by its QR
+code). A new code ends the one before. The device sends it with a name of its own to ``POST /api/v1/devices/pair``
 (``redeem_qr``) and gets the token. A wrong code counts against the sender like a wrong password (the brake per
-address in the router). Two devices with the same code at the same moment: the one whose write comes first wins, the
-other hears "no such code" (the code is marked used in the same statement that checks it).
+address in the router). Two devices with the same code at the same moment: the one that takes the write lock first
+wins, the other hears "no such code" (the code is marked used only while it is still open).
 
 **OAuth 2 with PKCE** (RFC 6749, RFC 7636, RFC 8252). An app opens ``/oauth/authorize`` of the web app in the browser
 with its ``client_id``, a ``redirect_uri`` from the fixed list of that app, ``code_challenge`` (S256 only; ``plain`` is
@@ -40,7 +41,8 @@ from sqlalchemy.orm import Session
 
 from .. import clock
 from ..models import Account, Device, Pairing
-from . import devices, totp
+from ..vendor import nexgeraete
+from . import devices, geraete_store, totp
 
 logger = logging.getLogger("nexpaper.auth")
 
@@ -50,11 +52,11 @@ OAUTH = "oauth"
 QR_LIFETIME = timedelta(minutes=5)
 #: How long the code an app gets back stays valid.
 OAUTH_LIFETIME = timedelta(minutes=2)
-#: Letters and digits that cannot be taken for one another (no I, L, O, 0, 1).
-ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"
+#: Letters and digits that cannot be taken for one another (no I, O, 0, 1): the module's (G35); the codes of before,
+#: also without L, are among them.
+ALPHABET = nexgeraete.ALPHABET
 QR_GROUPS = 3
 QR_GROUP = 4
-_QR_SHAPE = re.compile(rf"^[{ALPHABET}]{{{QR_GROUPS * QR_GROUP}}}$")
 #: RFC 7636: the verifier is 43 to 128 of these characters; the S256 challenge is 43 of base64url.
 _VERIFIER = re.compile(r"^[A-Za-z0-9._~-]{43,128}$")
 _CHALLENGE = re.compile(r"^[A-Za-z0-9_-]{43}$")
@@ -79,18 +81,17 @@ def _fits(account: Account | None) -> bool:
 # --- The QR code ------------------------------------------------------------------------------------------------------
 
 
-def start_qr(db: Session, account_id: int) -> tuple[Pairing, str]:
-    """A new code for the account; one that was still open is ended. The code is returned once."""
-    raw = "".join(secrets.choice(ALPHABET) for _ in range(QR_GROUPS * QR_GROUP))
-    code = "-".join(raw[index : index + QR_GROUP] for index in range(0, len(raw), QR_GROUP))
-    now = clock.now()
+def start_qr(db: Session, account_id: int, address: str = "") -> tuple[Pairing, str]:
+    """A new code for the account (the module's ``pairing.start``); one that was still open is ended. The code is
+    returned once. ``nexgeraete.DeviceRefused`` while the operator lets no new device in."""
+    data = geraete_store.GeraeteStore(db)
     db.execute(delete(Pairing).where(Pairing.account_id == account_id, Pairing.kind == QR, Pairing.used_at.is_(None)))
-    row = Pairing(account_id=account_id, kind=QR, code_hash=digest(raw), created_at=now, expires_at=now + QR_LIFETIME)
-    db.add(row)
-    db.commit()
-    db.refresh(row)
+    started = nexgeraete.pairing.start(data, geraete_store.CONFIG, account_id, address=address, replace=True,
+                                       now=clock.now())
+    row = db.scalar(select(Pairing).where(Pairing.uid == started.pairing.id))
+    assert row is not None
     logger.info("Pairing code made pairing_id=%s", row.id)
-    return row, code
+    return row, started.code
 
 
 @dataclass
@@ -132,16 +133,31 @@ def _use(db: Session, kind: str, code_hash: str) -> Pairing | None:
     return db.scalar(select(Pairing).where(Pairing.code_hash == code_hash))
 
 
-def redeem_qr(db: Session, code: str, name: str) -> tuple[Device, str, Account] | None:
-    """The device for a code, or None (no such code, used, run out, or the account may not sign in now)."""
-    devices.clean_name(name)
-    raw = normal_qr(code)
-    if not _QR_SHAPE.match(raw):
+def redeem_qr(db: Session, code: str, name: str,
+              client: nexgeraete.Client | None = None) -> tuple[Device, str, Account] | None:
+    """The device for a code, or None (no such code, used, run out, or the account may not sign in now): the module's
+    ``pairing.redeem_code`` for a typed code. ``nexgeraete.DeviceRefused`` for a refusal of another kind (the operator
+    lets no new device in, the account holds as many as it may)."""
+    name = devices.clean_name(name)
+    raw = nexgeraete.tokens.code_key(code, geraete_store.CONFIG.code_length)
+    if raw is None:
         return None
-    row = _use(db, QR, digest(raw))
-    if row is None:
-        return None
-    return _finish(db, row, name, "qr")
+    data = geraete_store.GeraeteStore(db)
+    try:
+        done = nexgeraete.pairing.redeem_code(data, geraete_store.CONFIG, raw, name=name, client=client,
+                                              now=clock.now())
+    except nexgeraete.DeviceRefused as refusal:
+        db.rollback()
+        if refusal.code == "pairing_gone":
+            return None
+        raise
+    logger.info("Device paired device_id=%s via=qr", done.device.id)
+    geraete_store.after_pairing(db, done)
+    device = data.row(done.device.id)
+    account = db.get(Account, int(done.holder.id))
+    assert device is not None and account is not None
+    db.expunge(account)
+    return device, done.token, account
 
 
 def _finish(db: Session, row: Pairing, name: str, via: str) -> tuple[Device, str, Account] | None:
@@ -155,8 +171,13 @@ def _finish(db: Session, row: Pairing, name: str, via: str) -> tuple[Device, str
     row.device_id = device.id
     db.commit()
     db.refresh(device)
-    db.expunge(account)
     logger.info("Device paired device_id=%s via=%s", device.uid, via)
+    # As after every new device (geraete 0.1.0, G29): the mail, and ``security`` to the account's other devices.
+    data = geraete_store.GeraeteStore(db)
+    holder, paired = data.holder(account.id), data.device(device.uid)
+    if holder is not None and paired is not None:
+        geraete_store.after_pairing(db, nexgeraete.Paired(token, paired, holder))
+    db.expunge(account)
     return device, token, account
 
 

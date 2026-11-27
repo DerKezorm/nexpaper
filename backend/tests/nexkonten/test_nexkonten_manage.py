@@ -91,11 +91,14 @@ def test_blocking_shuts_every_way_and_unblocking_lets_in_without_the_old_session
     own = password()
     kim = app.seed("kim", password=own)
     browser = app.open_session(kim, "browser")
-    device = app.open_session(kim, "device")
+    # Since 1.1.5 (G26) paired devices rest while the account is out (test_nexkonten_devices.py); an app without them
+    # is still held to its "device" here.
+    device = None if app.paired_devices else app.open_session(kim, "device")
     with app.store() as store:
         blocked = konten.manage.block(store, kim, actor_id=boss, password=secret)
     assert blocked.blocked and blocked.blocked_at is not None
-    assert not app.session_alive(browser) and not app.session_alive(device)
+    assert not app.session_alive(browser)
+    assert device is None or not app.session_alive(device)
     assert app.sign_in("kim", own) is None
     with app.store() as store:
         # Again: nothing happens.

@@ -40,11 +40,15 @@ class ManageStore(Protocol):
         ...
 
     def shut_out(self, account_id: AccountId) -> None:
-        """After blocking or deleting: no way in is left. Browser sessions and sign-ins that wait end, paired devices
-        are disconnected, API keys, MCP and OAuth grants, calendar programs and providers are refused while the
-        account is blocked or deleted (the app checks ``blocked`` wherever it lets something in), the key of known
-        browsers is renewed. Nothing is deleted that unblocking should bring back (keys of programs may stay,
-        refused)."""
+        """After blocking or deleting: no way in is left. Browser sessions and sign-ins that wait end, the key of
+        known browsers is renewed. Paired devices rest (since 1.1.5, G26): they are neither deleted nor disconnected
+        (nothing is written to ``app_gone_devices`` either), the app's check of a device refuses them while the
+        account is blocked or deleted (``account_blocked``; the module geraete does so through ``Store.holder``'s
+        ``out``), and after unblocking or bringing the account back they work again without pairing anew. API keys,
+        MCP and OAuth grants, calendar programs and providers are refused while the account is blocked or deleted
+        (the app checks ``blocked`` wherever it lets something in). Nothing is deleted that unblocking should bring
+        back (keys of programs may stay, refused). Only ``purge_account`` removes the devices; "sign out everywhere"
+        (``end_everywhere``) and ``factor.operator_reset(disconnect_devices=True)`` still disconnect them."""
         ...
 
     def deleted_before(self, moment: datetime) -> list[AccountId]:
@@ -53,7 +57,8 @@ class ManageStore(Protocol):
 
     def purge_account(self, account_id: AccountId) -> None:
         """Gone for good, with everything the app says it owned (notes, mailboxes, documents, pages …; the app's
-        rules: nexpaper hands documents on before). Its username stays reserved for ever (``name_reserved``)."""
+        rules: nexpaper hands documents on before), its paired devices too (since 1.1.5: they rested while it was
+        deleted). Its username stays reserved for ever (``name_reserved``)."""
         ...
 
     def set_storage_limit(self, account_id: AccountId, limit: int | None) -> None:

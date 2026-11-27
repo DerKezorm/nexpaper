@@ -3,7 +3,9 @@
  * every app that notifies, "Auf welchem Weg" (ui `NotifyWays`) with nexpaper's ways: mail (the account's address), this
  * browser (Web Push: turn on, turn off, a test notice), the browsers and phones with notifications (each renamed and
  * removed on its own; before the card "Benachrichtigungen auf deinen Geräten" under Connections), and the iPhone and
- * iPad app (under Connections). Then nexpaper's own cards of the deadlines (`RemindersCards.tsx`).
+ * iPad app (under Connections; how many are connected, the shared module geraete 0.1.0). Then the module's card of what
+ * each connected device is told ("Mitteilungen auf deinen Geräten"), then nexpaper's own cards of the deadlines
+ * (`RemindersCards.tsx`).
  */
 import { Laptop, Smartphone } from 'lucide-react'
 import { useEffect, useState } from 'react'
@@ -11,19 +13,26 @@ import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 
 import { ApiError, pushApi, type Me, type PushDevice } from '../../api/client'
+import { DEVICES_AT, deviceRequest } from '../../api/devices'
 import { dayOfMoment } from '../../lib/dates'
 import { currentSubscription, installed, readiness, subscribe, unsubscribe, type PushReadiness } from '../../lib/push'
 import { iso } from '../../lib/say'
+import { DevicePushCard, useDevicesWay } from '../../vendor/nexgeraete'
 import { Box, Button, ConfirmDialog, Field, NotifyWays } from '../../vendor/nexui'
 import { useAction } from './actions'
 import { Outcome } from './Outcome'
 import { RemindersPart } from './RemindersCards'
 import { useAsk } from './useAsk'
 
+/** Where the devices are listed and paired. */
+const CONNECTIONS = '/settings/connections'
+
 export function NotificationsArea({ me }: { me: Me }) {
+  const { i18n } = useTranslation()
   return (
     <>
       <Ways me={me} />
+      <DevicePushCard request={deviceRequest} base={DEVICES_AT} app="nexpaper" language={i18n.language} connectionsHref={CONNECTIONS} />
       <RemindersPart me={me} />
     </>
   )
@@ -44,6 +53,7 @@ function Ways({ me }: { me: Me }) {
   const action = useAction()
   const probe = useAction()
   const { ask, dialog } = useAsk()
+  const appWay = useDevicesWay(deviceRequest, { base: DEVICES_AT, language: i18n.language })
 
   const load = async () => {
     const found = await pushApi.state()
@@ -172,7 +182,7 @@ function Ways({ me }: { me: Me }) {
           },
           busy: action.busy,
         }}
-        devices={{ onOpen: () => navigate('/settings/connections') }}
+        devices={{ onOpen: () => navigate(CONNECTIONS), note: appWay?.note }}
       >
         {/* A test notice reaches every device of the person, also while this browser has none. */}
         {devices && !mine && list.length > 0 && (

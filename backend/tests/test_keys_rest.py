@@ -1,6 +1,6 @@
 """Bauplan E41: an account's own API keys rest while it is blocked or deleted and count again when it is back; only the
-end of the 30 days removes them. Its paired devices go for good at a block or a deletion (revoked, they stay in the
-list as before) and do not come back with the account."""
+end of the 30 days removes them. Since konten 1.1.5 and geraete 0.1.0 (G26) its paired devices do the same: they rest
+while the account is out and work again when it is back, without pairing anew (before, a block revoked them for good)."""
 
 from __future__ import annotations
 
@@ -40,23 +40,24 @@ def test_keys_rest_while_the_account_is_out_and_go_only_with_it(client: TestClie
     assert reads(token) == 200 and reads(device_token) == 200
     password = {"current_password": PASSWORD}
 
-    # Blocked: the key rests, the device is cut off.
+    # Blocked: the key rests, and so does the device (G26).
     assert client.post(f"/api/v1/accounts/{jule.id}/block", json=password).status_code == 204
     assert reads(token) == 401 and reads(device_token) == 401
     with SessionLocal() as db:
         assert db.get(ApiKey, key_id) is not None, "a block keeps the key"
-        assert db.get(Device, device_id).revoked_at is not None  # type: ignore[union-attr]
-    # Unblocked: the key counts again, the device stays cut off.
+        assert db.get(Device, device_id).revoked_at is None, "a block keeps the device"  # type: ignore[union-attr]
+    # Unblocked: the key and the device count again.
     assert client.post(f"/api/v1/accounts/{jule.id}/unblock", json=password).status_code == 204
-    assert reads(token) == 200 and reads(device_token) == 401
+    assert reads(token) == 200 and reads(device_token) == 200
 
     # Deleted: the key rests again; brought back within the 30 days it counts again.
     gone = client.request("DELETE", f"/api/v1/accounts/{jule.id}",
                           json={**password, "confirm_name": "jule", "documents": "delete_documents"})
     assert gone.status_code == 204, gone.text
     assert reads(token) == 401
+    assert reads(device_token) == 401
     assert client.post(f"/api/v1/accounts/{jule.id}/restore", json=password).status_code == 200
-    assert reads(token) == 200 and reads(device_token) == 401
+    assert reads(token) == 200 and reads(device_token) == 200
 
     # Deleted again and the 30 days over: only now the key goes, with the account.
     assert client.request("DELETE", f"/api/v1/accounts/{jule.id}",

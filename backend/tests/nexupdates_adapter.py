@@ -6,8 +6,10 @@ The contract tests in ``backend/tests/nexupdates/`` run the module inside nexpap
 ``/api/v1/about`` (``app/routers/about.py``) and its setup route ``POST /api/v1/setup`` with the box "Nach neuen
 Versionen sehen".
 
-nexpaper has no bell (U19, ``has_bell = False``): nothing looks in the background, and the operators hear of a new
-version on the about page; the contract (updates 0.1.2) checks exactly that.
+nexpaper has no bell of its own; since geraete 0.1.0 (G18) the operators' devices are told once about a new version
+(``on_newer`` → ``geraete_store.announce``), so the background looks once a day while the switch is on, and the
+contract (updates 0.1.2) checks that as the bell (``has_bell = True``). ``bell`` is every version handed to
+``on_newer``; ``bell_notices`` the title each operator's devices get, in the language of the account.
 """
 
 from __future__ import annotations
@@ -22,7 +24,7 @@ class Adapter(StandardAdapter):
     package = "app.vendor.nexupdates"
     prefix = "/api/v1/about"
     also: tuple[str, ...] = ()
-    has_bell = False
+    has_bell = True
 
     def start(self) -> None:
         from fastapi.testclient import TestClient
@@ -39,12 +41,46 @@ class Adapter(StandardAdapter):
         for client in self._clients.values():
             client.close()
         self._main.__exit__(None, None, None)
+        if hasattr(self, "_on_newer"):
+            from app.services import updates
+
+            updates._on_newer = self._on_newer  # type: ignore[assignment]
 
     def restart(self) -> None:
         from app.services import updates
 
         # nexpaper's start configures the module on its settings (at import, as in production).
         updates.configure()
+        if not hasattr(self, "_told"):
+            self._told: list[str] = []
+            self._on_newer = updates._on_newer
+
+            def recorded(version: str) -> None:
+                self._told.append(version)
+                self._on_newer(version)
+
+            updates._on_newer = recorded  # type: ignore[assignment]
+
+    def bell(self) -> list[str]:
+        return list(self._told)
+
+    def bell_notices(self) -> list[tuple[str, str, str]]:
+        """What each operator's devices got as the title (``nexgeraete.notices.newer``), per version told."""
+        from app.db import SessionLocal
+        from app.services import geraete_store
+        from app.vendor.nexgeraete import notices
+
+        found = []
+        with SessionLocal() as db:
+            data = geraete_store.GeraeteStore(db)
+            for account in data.operators():
+                holder = data.holder(account)
+                assert holder is not None
+                for version in self._told:
+                    title = notices.words(holder.language)["update_title"].format(
+                        app=geraete_store.CONFIG.app, version=version.strip().removeprefix("v"))
+                    found.append((holder.language, version, title))
+        return found
 
     def _account(self, role: str) -> Any:
         """The operator set up at ``setup`` when there is one, else made now; a member made now."""

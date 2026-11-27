@@ -1,0 +1,16 @@
+// nexgeraete in the browser: the cards, the pairing window, the page /app-connect and what they share. Copied unchanged
+// into frontend/src/vendor/nexgeraete/ by bauplaene/geraete/tools/sync.py; changed only there.
+export { AccountDevicesPart } from './AccountDevicesPart'
+export type { AccountDevicesPartProps } from './AccountDevicesPart'
+export { AppConnectPage } from './AppConnectPage'
+export type { AppConnectPageProps, ConnectAccount } from './AppConnectPage'
+export { DevicePushCard } from './DevicePushCard'
+export type { DevicePushCardProps } from './DevicePushCard'
+export { DevicesCard } from './DevicesCard'
+export type { DevicesCardProps } from './DevicesCard'
+export { PairDialog } from './PairDialog'
+export type { PairDialogProps } from './PairDialog'
+export { RenameDialog } from './RenameDialog'
+export type { RenameDialogProps } from './RenameDialog'
+export { useDeviceTexts, useDevicesWay } from './hooks'
+export * from './geraete'

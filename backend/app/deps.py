@@ -175,17 +175,25 @@ def _device_account(request: Request, token: str) -> AccountRow:
         # the brake (else one script with the wrong header would shut its own address out).
         raise error("token_wrong_kind", "This is an API key; this route wants a device token.", 401)
     address_guard(request)
+    from .vendor import nexgeraete
+
     with SessionLocal() as db:
-        found = devices.authenticate(db, token)
-        if found is None:
+        try:
+            caller, account = devices.check(db, token, nexgeraete.client_of(request.headers.get(
+                nexgeraete.CLIENT_HEADER)))
+        except nexgeraete.DeviceRefused as refusal:
+            db.rollback()
+            if refusal.code == "second_factor_required":
+                raise error("second_factor_setup_required", "Set up your second factor first.", 403) from None
+            if refusal.code == "app_disabled":
+                raise error("app_disabled", refusal.message, 403) from None
+            # Unknown, revoked, unused for a year, or resting while its account is out (geraete 0.1.0, G26): the
+            # answer of before, and it counts against the sender as before.
             address_failed(request)
-            raise error("token_invalid", "No valid device token.", 401)
-        device, account = found
-        if totp.setup_required(db, account):
-            raise error("second_factor_setup_required", "Set up your second factor first.", 403)
-        request.state.session = SessionInfo(f"device:{device.uid}", STAGE_FULL, True, device.created_at)
-        request.state.device = device.uid
-        db.expunge(account)
+            raise error("token_invalid", "No valid device token.", 401) from None
+        device = caller.device
+        request.state.session = SessionInfo(f"device:{device.id}", STAGE_FULL, True, device.created_at)
+        request.state.device = str(device.id)
     logs.set_actor(account.name)
     return account
 

@@ -54,7 +54,8 @@ CONFIG = AppConfig(
             programs_count=True,
         ),
     ),
-    switches=("api", "mcp"),
+    # geraete 0.1.0: the iPhone app and new devices (``services/geraete_store.py`` reads the same settings).
+    switches=("api", "mcp", "app", "pairing"),
     programs=True,
     mcp_path="/api/mcp",
     # What a program heard before the module: ``key_invalid`` for a key that does not work, 401 while keys are off.
@@ -63,7 +64,8 @@ CONFIG = AppConfig(
 )
 
 #: The module's switch and nexpaper's setting behind it.
-SWITCH_SETTINGS = {"api": "api_keys_allowed", "mcp": "mcp_enabled"}
+SWITCH_SETTINGS = {"api": "api_keys_allowed", "mcp": "mcp_enabled", "app": "app_enabled",
+                   "pairing": "app_pairing_allowed"}
 
 
 def _key(row: ApiKey) -> Key:

@@ -1,11 +1,12 @@
 """Whether a newer nexpaper is out: the shared module ``nexupdates`` (updates 0.1.1) on nexpaper's settings.
 
-The public GitHub API is asked for the newest release only when an operator opens the about page (``GET
-/api/v1/about/updates``) and the last answer is older than a day (an hour after one that failed), or when an operator
-presses "Jetzt nachsehen". A member's page never asks and learns nothing of the check (U15, U21). nexpaper has no bell,
-so nothing looks in the background (U19): ``NEXPAPER_DISABLE_BACKGROUND`` has nothing to do with it. Nothing goes out
-but the question itself: no names, no documents, no settings, not the version of this server. Off means "not by
-itself": the button still asks.
+The public GitHub API is asked for the newest release when an operator opens the about page (``GET
+/api/v1/about/updates``) and the last answer is older than a day (an hour after one that failed), when an operator
+presses "Jetzt nachsehen", and since geraete 0.1.0 by the background at most once a day while the switch is on: a newer
+version is told once to the operators' devices that understand it (G18, ``geraete_store.announce``; nexpaper has no
+bell of its own, the about page shows it as before). A member's page never asks and learns nothing of the check (U15,
+U21). Nothing goes out but the question itself: no names, no documents, no settings, not the version of this server.
+Off means "not by itself": the button still asks.
 
 The switch stays where it was, ``update_check`` in the settings table, with its value; a new installation answers it
 at setup (U1, ``nexupdates.at_setup``). The project pages are switched off, so the about page names none (U18).
@@ -28,6 +29,8 @@ RELEASES_URL = f"{REPO_URL}/releases"
 PROJECT_URL = ""
 #: Where the switch lives in the settings table (as before the module).
 SWITCH = "update_check"
+#: The version the operators' devices were last told about (geraete 0.1.0): nobody hears of a version twice.
+TOLD = "update_told"
 
 
 def _read_switch() -> bool | None:
@@ -48,6 +51,29 @@ def _write_switch(on: bool) -> None:
         settings_service.save(db, {SWITCH: bool(on)})
 
 
+def _read_told() -> str | None:
+    from ..db import SessionLocal
+    from . import settings_service
+
+    with SessionLocal() as db:
+        found = settings_service.get(db, TOLD)
+    return str(found) if found else None
+
+
+def _write_told(version: str) -> None:
+    from ..db import SessionLocal
+    from . import settings_service
+
+    with SessionLocal() as db:
+        settings_service.save(db, {TOLD: version})
+
+
+def _on_newer(version: str) -> None:
+    from . import geraete_store
+
+    geraete_store.announce(version)
+
+
 def configure() -> nexupdates.AppConfig:
     """nexpaper's settings for the module; at import, and again by a test that moved the data folder."""
     return nexupdates.configure(
@@ -59,8 +85,11 @@ def configure() -> nexupdates.AppConfig:
             update_url=lambda: get_settings().update_url,
             read_switch=_read_switch,
             write_switch=_write_switch,
-            # No bell in nexpaper (U19): the operators hear of a new version on the about page only.
-            on_newer=None,
+            read_told=_read_told,
+            write_told=_write_told,
+            # nexpaper has no bell; since geraete 0.1.0 (G18) the operators' devices hear of a new version once
+            # (looked up at the call: the contract tests listen). The about page shows it as before.
+            on_newer=lambda version: _on_newer(version),
         )
     )
 

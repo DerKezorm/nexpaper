@@ -226,6 +226,16 @@ PROGRAM_PATHS = frozenset({
 })
 
 
+#: Where the iPhone apps built on NexKonto speak (the shared module geraete 0.1.0): with a device's key, or with the
+#: code they were shown while they pick their key up; never with a tab. Nothing there reads a cookie, so a page on
+#: another site gains nothing by sending a browser there; a code that does not fit counts on the module's brake.
+APP_PLACE = "/api/app/1/"
+
+
+def _app_pickup(method: str, path: str) -> bool:
+    return path.startswith(APP_PLACE)
+
+
 def _stranger_upload(method: str, path: str) -> bool:
     """The upload of a stranger to an upload request (``POST /api/v1/u/<token>/files``), and nothing else under
     ``/api/v1/u/``: the sender has no account and no tab of ours, so no tab header. The route reads no cookie and sets
@@ -268,7 +278,8 @@ class GuardMiddleware:
         # stand in for the tab header, and neither does a token next to a cookie: a made-up one would take the wall
         # away from a request the cookie answers (log out, sign-in steps, accepting an invitation).
         exempt = (_carries_token(headers.get(b"authorization", b"")) and not _is_browser(headers.get(b"cookie", b""))
-                  ) or scope["path"] in PROGRAM_PATHS or _stranger_upload(scope.get("method", ""), scope["path"])
+                  ) or scope["path"] in PROGRAM_PATHS or _stranger_upload(scope.get("method", ""), scope["path"]) \
+            or _app_pickup(scope.get("method", ""), scope["path"])
         if scope.get("method") in CHANGING and not exempt and not CLIENT_PATTERN.match(headers.get(CLIENT_HEADER, b"")):
             for message in _refuse(400, "client_required", "Changes need the header X-Nexpaper-Client."):
                 await send(message)

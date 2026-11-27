@@ -28,6 +28,7 @@ from .routers import (
     about,
     ai,
     apikeys,
+    app_devices,
     auth,
     changes,
     devices,
@@ -84,6 +85,7 @@ from .services import (
     backups,
     catalog,
     filecheck,
+    geraete_store,
     jobs,
     ki_store,
     locales,
@@ -111,12 +113,15 @@ from .services import reminders as reminders_service
 from .services import uploads as uploads_service
 from .services.konten_store import KontenStore
 from .vendor import nexoidc
+from .vendor.nexgeraete import api as geraete_api
 from .vendor.nexki import api as ki_api
 from .vendor.nexkonten import factor as konten_factor
 from .vendor.nexkonten import manage as konten_manage
 from .vendor.nexkonten import setup as konten_setup
+from .vendor.nexkonten.brake import BRAKE as KONTEN_BRAKE
 from .vendor.nexmcp import api as mcp_api
 from .vendor.nexschluessel import api as schluessel_api
+from .vendor.nexupdates import check as updates_check
 from .vendor.nexverbinden import api as verbinden_api
 
 logger = logging.getLogger("nexpaper")
@@ -147,6 +152,9 @@ ROUTERS = [
     request_page_router,
     # konten 1.1.0: the page Server › Sign-in of the shared account module.
     signin_page_router,
+    # geraete 0.1.0: ``/api/app/1/hello`` and ``me``, and the QR code the published iPhone app reads too (the module's
+    # routes are added below).
+    app_devices,
 ]
 
 
@@ -190,7 +198,7 @@ async def _sweep_forever(stop: asyncio.Event) -> None:
     """Enrolments and sign-ins waiting for their second factor run out; what ran out goes from memory, ended
     sessions from the database once an hour (they stayed until someone showed them again), and so do accounts whose 30
     days after a deletion are over. System mail waiting in the outbox of the shared post module goes out (in a thread:
-    SMTP blocks)."""
+    SMTP blocks). Once a day, devices not used for a year are disconnected (geraete 0.1.0, G27)."""
     rounds = 0
     while not stop.is_set():
         totp.sweep()
@@ -214,6 +222,11 @@ async def _sweep_forever(stop: asyncio.Event) -> None:
                 await asyncio.to_thread(_retry_revocations)
             except Exception:
                 logger.exception("Telling other nex apps of ended connections failed")
+        if rounds % (60 * 24) == 0:
+            try:
+                await asyncio.to_thread(geraete_store.sweep)
+            except Exception:
+                logger.exception("Disconnecting devices unused for a year failed")
         rounds += 1
         try:
             await asyncio.wait_for(stop.wait(), 60)
@@ -281,6 +294,9 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
         tasks.append(asyncio.create_task(deadlines_service.run_forever(stop)))
         tasks.append(asyncio.create_task(reminders_service.run_forever(stop)))
         tasks.append(asyncio.create_task(autotrash_service.run_forever(stop)))
+        # Whether a newer nexpaper is out, at most once a day while the operator's switch is on: the operators' devices
+        # hear of it once (geraete 0.1.0, G18; ``services/updates.py``).
+        tasks.append(asyncio.create_task(updates_check.run_forever(stop)))
     logger.info("nexpaper %s started", __version__)
     with SessionLocal() as db:
         # The setup code of the shared account module, in the log while nobody has set nexpaper up.
@@ -383,6 +399,22 @@ app.add_exception_handler(Exception, unhandled_error)
 
 for module in ROUTERS:
     app.include_router(module.router)
+
+# iPhone, iPad and Mac (the shared module geraete 0.1.0, ``services/geraete_store.py``): the routes of the apps built on
+# NexKonto under ``/api/app/1`` (pairing by the QR code, a code, the sign-in in the browser or iCloud; the own devices;
+# notifications), and the browser's under ``/api/v1`` (``app-pairing``, ``app-connect``, ``app-devices``, the operator's
+# ``server/accounts/{id}/devices``), only for a signed-in browser. Not in the description of ``/api/v1``: they are the
+# module's, the same in every nex app (``SCHNITTSTELLE.md`` of the module), and the published iPhone app keeps its
+# routes of before (``routers/devices.py``, ``routers/pairing.py``).
+app.include_router(geraete_api.app_router(
+    config=geraete_store.CONFIG, store=geraete_store.store, brake=KONTEN_BRAKE, sender=client_ip,
+    on_paired=lambda holder, device: geraete_store.paired_hook(holder, device),
+    send=lambda url, body: geraete_store.send(url, body), clock=geraete_store.now, tags=["devices"]),
+    include_in_schema=False)
+app.include_router(geraete_api.browser_router(
+    config=geraete_store.CONFIG, store=geraete_store.store, account=require_browser_account, operator=require_operator,
+    address=geraete_store.address, send=lambda url, body: geraete_store.send(url, body), clock=geraete_store.now,
+    prefix="/api/v1", tags=["devices"]), include_in_schema=False)
 
 # The cards "API keys", "Interfaces" and "API keys of every account" (the shared key module): an account's own keys
 # only in a signed-in browser (``require_browser_account`` turns a device token and a key away, as on the old routes

@@ -5,7 +5,9 @@
   make the other one operator, then oneself member). There is always at least one operator who can sign in: the last
   one is never made a member, blocked or deleted (``last_operator``, as nexnotes counted).
 - **Block and unblock:** a blocked account has no way in (``ManageStore.shut_out``); everything in it stays. Unblocking
-  does not bring back the sessions of before.
+  does not bring back the sessions of before. Paired devices rest meanwhile (since 1.1.5, G26): refused while the
+  account is out, they work again after unblocking or bringing it back, without pairing anew; only the purge removes
+  them.
 - **Delete with 30 days to bring back:** the account is gone for everybody at once, its things stay for
   ``DELETE_DAYS`` days; the operator brings it back in that time (``restore``), after it ``purge_due`` removes it for
   good (the app calls it in its housekeeping, nexnotes every six hours).

@@ -24,6 +24,15 @@ export function inboxOf<T extends { vault_id: number; status: string }>(items: T
   return { items, total: items.length, counts, all: items.length, reading: items.filter((d) => d.status === 'processing').length }
 }
 
+/** The lists of the shared module geraete (`vendor/nexgeraete`), empty where a test names none: its cards ask on every
+ * page that shows them (Mein Konto › Verbindungen, Benachrichtigungen, Server › Konten › Verwalten). */
+function quietDevices(method: string, url: string): unknown {
+  if (method !== 'GET') return undefined
+  if (url === '/api/v1/app-devices') return { devices: [], max: 30, app_store_url: null, has_app: true }
+  if (/^\/api\/v1\/server\/accounts\/[^/]+\/devices$/.test(url)) return { count: 0, devices: [] }
+  return undefined
+}
+
 export class Server {
   calls: Call[] = []
   answers: Record<string, unknown> = {}
@@ -39,7 +48,7 @@ export class Server {
         this.calls.push({ method, url, body })
         const failed = this.fails[`${method} ${url}`]
         if (failed) return new Response(JSON.stringify({ detail: { code: failed.code, ...failed.values } }), { status: failed.status, headers: { 'Content-Type': 'application/json' } })
-        const found = this.answers[`${method} ${url}`]
+        const found = this.answers[`${method} ${url}`] ?? quietDevices(method, url)
         if (found === 204) return new Response(null, { status: 204 })
         return new Response(JSON.stringify(found ?? {}), { status: 200, headers: { 'Content-Type': 'application/json' } })
       }),

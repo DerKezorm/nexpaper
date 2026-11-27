@@ -10,7 +10,7 @@ from fastapi.testclient import TestClient
 
 from app.db import SessionLocal
 from app.models import Account
-from app.services import apikeys
+from app.services import apikeys, settings_service
 
 from .conftest import make_account, new_client
 
@@ -38,7 +38,7 @@ def old_key(account: Account, name: str, scope: str, days: int | None) -> str:
 
 def test_keys_made_before_work_and_both_lists_show_them(client: TestClient, operator: Account) -> None:
     # Since mcp 1.1.0 the switch "MCP-Zugang" stands beside it, off in a new installation.
-    assert client.put(f"{NEW}/interfaces", json={"api": True}).json() == {"api": True, "mcp": False}
+    assert client.put(f"{NEW}/interfaces", json={"api": True}).json() == {"api": True, "mcp": False, "app": True, "pairing": True}
     made = {
         "read": old_key(operator, "nexdeck", "read", 365),
         "upload": old_key(operator, "Scanner", "upload", None),
@@ -117,17 +117,21 @@ def test_the_new_routes_want_a_signed_in_browser(client: TestClient, operator: A
 
 
 def test_the_switch_of_the_card_is_the_old_setting(client: TestClient, operator: Account) -> None:
-    assert client.get(f"{NEW}/interfaces").json() == {"api": False, "mcp": False}
+    assert client.get(f"{NEW}/interfaces").json() == {"api": False, "mcp": False, "app": True, "pairing": True}
     # Since mcp 1.1.0 the switch "MCP-Zugang" stands beside it, off in a new installation.
-    assert client.put(f"{NEW}/interfaces", json={"api": True}).json() == {"api": True, "mcp": False}
+    assert client.put(f"{NEW}/interfaces", json={"api": True}).json() == {"api": True, "mcp": False, "app": True, "pairing": True}
     assert client.get("/api/v1/settings").json()["api_keys_allowed"] is True
-    # Since mcp 1.1.0 the switch "MCP-Zugang" is nexpaper's too (setting ``mcp_enabled``); a switch nexpaper does not
-    # have is still refused.
-    assert client.put(f"{NEW}/interfaces", json={"mcp": True}).json() == {"api": True, "mcp": True}
+    # Since mcp 1.1.0 the switch "MCP-Zugang" is nexpaper's too (setting ``mcp_enabled``); since geraete 0.1.0 the
+    # switches "iPhone-App erlauben" and "Neue Geräte verbinden" (``app_enabled``, ``app_pairing_allowed``, both on).
+    assert client.put(f"{NEW}/interfaces", json={"mcp": True}).json() == {"api": True, "mcp": True, "app": True, "pairing": True}
     assert client.put(f"{NEW}/interfaces", json={"mcp": False}).json()["mcp"] is False
-    assert client.put(f"{NEW}/interfaces", json={"pairing": True}).status_code == 422
+    assert client.put(f"{NEW}/interfaces", json={"pairing": False}).json()["pairing"] is False
+    assert client.get("/api/v1/settings").status_code == 200
+    with SessionLocal() as db:
+        assert settings_service.get(db, "app_pairing_allowed") is False
+    assert client.put(f"{NEW}/interfaces", json={"pairing": True}).json()["pairing"] is True
     client.put("/api/v1/settings", json={"api_keys_allowed": False})
-    assert client.get(f"{NEW}/interfaces").json() == {"api": False, "mcp": False}
+    assert client.get(f"{NEW}/interfaces").json() == {"api": False, "mcp": False, "app": True, "pairing": True}
 
 
 def test_a_new_key_starts_with_a_year_for_reading_and_never_for_uploading(client: TestClient,

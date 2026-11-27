@@ -468,35 +468,7 @@ export const apiKeysApi = {
   block: (id: number) => api<AnyApiKey>(`/api/v1/admin/api-keys/${id}/block`, { method: 'POST' }),
 }
 
-/** A device or app paired with the account: it speaks with a token of its own (`Authorization: Bearer`). */
-export type PairedDevice = {
-  id: string
-  name: string
-  prefix: string
-  created_at: string
-  last_used_at: string | null
-  /** How it was paired: `token` (made in the browser), `qr` (a pairing code), `app:<client>` (an app, OAuth with PKCE). */
-  via?: string
-}
-
-export const devicesApi = {
-  list: () => api<PairedDevice[]>('/api/v1/devices'),
-  /** The token comes back once. */
-  pair: (name: string) => api<{ device: PairedDevice; token: string }>('/api/v1/devices', { method: 'POST', body: { name } }),
-  revoke: (id: string) => api<void>(`/api/v1/devices/${encodeURIComponent(id)}`, { method: 'DELETE' }),
-}
-
 // ---- The phone: pairing, apps, the quick upload, the iPhone shortcut ---------------------------------------------------
-
-/** A code to pair a device: shown as a QR code and for typing; valid until `expires_at`, once. */
-export type PairingCode = { code: string; expires_at: string; server: string; link: string; qr_svg: string }
-export type PairingState = { state: 'open' | 'used' | 'expired' | 'none'; expires_at: string | null; device: PairedDevice | null }
-
-export const pairingApi = {
-  start: () => api<PairingCode>('/api/v1/devices/pairing', { method: 'POST' }),
-  state: () => api<PairingState>('/api/v1/devices/pairing'),
-  cancel: () => api<void>('/api/v1/devices/pairing/cancel', { method: 'POST' }),
-}
 
 /** What an app asks for (OAuth 2 with PKCE), as the address of `/oauth/authorize` carries it. */
 export type OAuthAsk = {

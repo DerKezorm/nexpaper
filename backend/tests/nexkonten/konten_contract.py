@@ -66,6 +66,11 @@ class StandardAdapter:
     #: Since 1.1.0 (E23): the migration to 1.1.0 marks every address of before that counts as proven; only nexpaper
     #: keeps its unproven ones (it showed "not confirmed" before) and says True here.
     keeps_unproven_addresses: bool = False
+    #: Since 1.1.5 (G26): the app pairs devices (iPhone, iPad, Mac; module geraete or its own pairing) and checks
+    #: them on its device routes. An app without (nexdiary, nexfolk until their iPhone app) says False here; the
+    #: tests of resting devices (``test_nexkonten_devices.py``) pass over it. With True the adapter answers
+    #: ``pair_device``, ``device_works`` and ``device_kept``.
+    paired_devices: bool = True
 
     def start(self) -> None:
         """APP: an empty app with a fresh database, ``nexkonten.configure(...)`` as at start-up."""
@@ -231,6 +236,25 @@ class StandardAdapter:
         (the adapter makes one where the app needs it); None for an app without pushes or one that cannot tell (then
         the contract test checks only that ``on_shut_out`` and ``on_back`` are called, not what the app does)."""
         return None
+
+    def pair_device(self, account_id: Any) -> Any:
+        """APP (since 1.1.5, G26; only with ``paired_devices``): a device paired with the account the way the app
+        pairs one (module geraete: ``devices.add`` or a pairing redeemed through its route; the app's own pairing
+        otherwise). Returns what ``device_works`` and ``device_kept`` need, usually the device's key."""
+        raise NotImplementedError("APP: pair_device")
+
+    def device_works(self, handle: Any) -> bool:
+        """APP (since 1.1.5): whether a request of that device gets in now, through the app's own device route
+        (``GET /api/app/1/me`` or another of its device routes): True for 200; False when the app refuses it, in its
+        own form (``401 account_blocked`` while the account is blocked or deleted, ``401 device_disconnected`` or the
+        app's old code once the device is gone)."""
+        raise NotImplementedError("APP: device_works")
+
+    def device_kept(self, handle: Any) -> bool:
+        """APP (since 1.1.5): whether the app still keeps that device, refused or not: its row in the app's table of
+        devices, as the store of the module geraete sees it (``Store.device_by_hash``). True while the device rests
+        (account blocked or deleted with its days to bring it back), False once it is disconnected or removed."""
+        raise NotImplementedError("APP: device_kept")
 
 
 def konten_package(adapter: Any) -> ModuleType:

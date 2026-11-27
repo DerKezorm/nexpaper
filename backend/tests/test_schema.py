@@ -53,9 +53,10 @@ KONTEN_TABLES = {
 
 def without_konten(schema: dict[str, list[tuple[str, str, int, object, int]]]) -> dict[str, list[tuple]]:
     """``schema`` without what the shared account module adds at every start: what one step of the schema made."""
-    from app.db import KONTEN_COLUMNS
+    from app.db import GERAETE_COLUMNS, KONTEN_COLUMNS
 
-    added = {(table, column) for table, column, _ in KONTEN_COLUMNS}
+    # The module geraete 0.1.0 adds columns the same way (``db._additions_geraete``).
+    added = {(table, column) for table, column, _ in (*KONTEN_COLUMNS, *GERAETE_COLUMNS)}
     return {
         table: [column for column in columns if (table, column[0]) not in added]
         for table, columns in schema.items() if table not in KONTEN_TABLES

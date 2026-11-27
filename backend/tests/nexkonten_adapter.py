@@ -501,3 +501,38 @@ class Adapter(StandardAdapter):
         finally:
             push._deliver = original  # type: ignore[assignment]
         return bool(delivered)
+
+    # --- Since konten 1.1.5 (G26): paired devices rest while the account is out ------------------------------------
+
+    def pair_device(self, account_id: Any) -> Any:
+        """A device as nexpaper pairs one: the module geraete's ``devices.add`` over nexpaper's store (the way a code
+        or the iPad's sibling ends); its key."""
+        from app.db import SessionLocal
+        from app.services import geraete_store
+        from app.vendor import nexgeraete
+
+        with SessionLocal() as db:
+            data = geraete_store.GeraeteStore(db)
+            holder = data.holder(account_id)
+            assert holder is not None
+            _device, token = nexgeraete.devices.add(data, geraete_store.CONFIG, holder, name="Probe", kind="ios",
+                                                     via=nexgeraete.VIA_CODE)
+            data.commit()
+        return token
+
+    def device_works(self, handle: Any) -> bool:
+        """``GET /api/app/1/me`` with the key (the module's ``api.device`` before nexpaper's own route)."""
+        from fastapi.testclient import TestClient
+
+        from app.main import app
+
+        with TestClient(app, base_url="http://testserver") as device:
+            return device.get("/api/app/1/me", headers={"Authorization": f"Bearer {handle}"}).status_code == 200
+
+    def device_kept(self, handle: Any) -> bool:
+        from app.db import SessionLocal
+        from app.services import geraete_store
+        from app.vendor import nexgeraete
+
+        with SessionLocal() as db:
+            return geraete_store.GeraeteStore(db).device_by_hash(nexgeraete.tokens.digest(handle)) is not None

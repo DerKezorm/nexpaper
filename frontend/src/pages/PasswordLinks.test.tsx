@@ -41,7 +41,8 @@ function serve(): void {
       const method = init?.method ?? 'GET'
       const body = init?.body ? JSON.parse(String(init.body)) : undefined
       calls.push({ method, url, body })
-      const found = answers[`${method} ${url}`]
+      // The account's devices in "Verwalten" (geraete 0.1.0): none, where a test names none.
+      const found = answers[`${method} ${url}`] ?? (/^\/api\/v1\/server\/accounts\/[^/]+\/devices$/.test(url) ? { count: 0, devices: [] } : undefined)
       if (found === 204) return new Response(null, { status: 204 })
       if (found && typeof found === 'object' && 'refused' in found) {
         return new Response(JSON.stringify({ detail: { code: (found as { refused: string }).refused } }), { status: 404, headers: { 'Content-Type': 'application/json' } })

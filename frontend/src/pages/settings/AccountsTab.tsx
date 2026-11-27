@@ -31,10 +31,12 @@ import {
   type Invite,
   type Person,
 } from '../../api/client'
+import { DEVICES_AT, deviceRequest } from '../../api/devices'
 import { AccountButton } from '../../components/AccountButton'
 import { confirmOf } from '../../lib/accountButton'
 import { formatBytes } from '../../lib/bytes'
 import { useAuth } from '../../state/auth'
+import { AccountDevicesPart } from '../../vendor/nexgeraete'
 import { WhatYouSeeCard } from '../../vendor/nexkonten/AccountCards'
 import {
   ACCOUNT_LIST,
@@ -301,6 +303,16 @@ function ManageDialog({ row, ownId, links, operatorHasPassword, mailServer, onCl
             <Row lead={<Picture row={listed} size={48} />} name={name} badge={<Badges shown={accountBadges(listed)} />} sub={accountLine(listed)} />
           </Rows>
           <Facts items={facts} label={t(MANAGE_DIALOG.title, { name })} testId="manage-facts" />
+          {/* The account's iPhones and iPads (geraete 0.1.0, G28): how many, which, last seen; "Geräte trennen". */}
+          <AccountDevicesPart
+            request={deviceRequest}
+            base={DEVICES_AT}
+            accountId={row.id}
+            name={name}
+            blocked={row.blocked || Boolean(row.deleted_at)}
+            language={lang}
+            onChanged={onChanged}
+          />
           {groups.map((group) => (
             <ButtonGroup key={group.group} title={t(group.title)} layout={group.layout} testId={`manage-${group.group}`}>
               {group.actions.map((act) =>

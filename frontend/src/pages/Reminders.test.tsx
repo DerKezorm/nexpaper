@@ -101,8 +101,8 @@ describe('my account, reminders', () => {
     // The address of before leads to "Benachrichtigungen" (E1); the first card is the kit's "Auf welchem Weg", then nexpaper's.
     expect(page.box.querySelector('[aria-current="page"][data-testid^="settings-nav-"]')!.textContent).toContain('Benachrichtigungen')
     expect(page.box.querySelector('[data-testid="settings-area-notifications"]')).toBeTruthy()
-    expect(cards()).toEqual(['Auf welchem Weg', 'Fristen verwenden', 'Wie du erinnert wirst', 'Wie früh', 'Welche Tresore', 'So sieht es aus'])
-    expect([...page.box.querySelectorAll('section[data-card]')].map((card) => card.getAttribute('data-card'))).toEqual(['notify-ways', 'deadlines-use', 'deadlines-how', 'deadlines-early', 'deadlines-vaults', 'deadlines-preview'])
+    expect(cards()).toEqual(['Auf welchem Weg', 'Mitteilungen auf deinen Geräten', 'Fristen verwenden', 'Wie du erinnert wirst', 'Wie früh', 'Welche Tresore', 'So sieht es aus'])
+    expect([...page.box.querySelectorAll('section[data-card]')].map((card) => card.getAttribute('data-card'))).toEqual(['notify-ways', 'devices-push', 'deadlines-use', 'deadlines-how', 'deadlines-early', 'deadlines-vaults', 'deadlines-preview'])
     expect(page.text).toContain('Je Frist eine Nachricht, so früh wie unten eingestellt.')
     expect(toggle('Push aufs Handy und in den Browser')!.checked).toBe(true)
     expect(page.text).toContain('Auf 2 Geräten eingeschaltet. Tippen öffnet das Dokument.')
@@ -182,7 +182,7 @@ describe('my account, reminders', () => {
     expect(page.text).toContain('Die Wochenübersicht geht per Mail an jule@example.com.')
     expect(page.text).toContain('Montags um 8 Uhr eine Mail mit allem, was in dieser Woche ansteht.')
     expect(toggle('Push aufs Handy und in den Browser')).toBeNull()
-    expect(cards()).toEqual(['Auf welchem Weg', 'Fristen verwenden', 'Wie du erinnert wirst', 'Welche Tresore', 'So sieht es aus'])
+    expect(cards()).toEqual(['Auf welchem Weg', 'Mitteilungen auf deinen Geräten', 'Fristen verwenden', 'Wie du erinnert wirst', 'Welche Tresore', 'So sieht es aus'])
   })
 
   it('warns when no single reminder can reach the person', async () => {
@@ -210,7 +210,7 @@ describe('my account, reminders', () => {
   it('comes in English too', async () => {
     await changeLanguage('en', false)
     await page.show(<SettingsRoutes />, NOTIFICATIONS)
-    expect(cards()).toEqual(['Which way', 'Use deadlines', 'How you are reminded', 'How early', 'Which vaults', 'What it looks like'])
+    expect(cards()).toEqual(['Which way', 'Notifications on your devices', 'Use deadlines', 'How you are reminded', 'How early', 'Which vaults', 'What it looks like'])
     expect(page.text).toContain('Cancel by Thu, Oct 22: Handyvertrag Telekom')
     page.close()
     answer({ may_go: 2 })
@@ -249,7 +249,7 @@ describe('deadlines on or off for the person', () => {
     auth.me = off
     server.answers['PUT /api/v1/me/preferences'] = { ...me.profile, deadlines: true }
     await page.show(<SettingsRoutes />, NOTIFICATIONS)
-    expect(cards()).toEqual(['Auf welchem Weg', 'Fristen sind aus'])
+    expect(cards()).toEqual(['Auf welchem Weg', 'Mitteilungen auf deinen Geräten', 'Fristen sind aus'])
     expect(page.text).toContain('Im Menü steht kein Punkt Fristen, du bekommst keine Erinnerungen und keine Wochenübersicht.')
     expect(page.text).toContain('Die Termine an den Dokumenten bleiben, und die anderen Personen sind nicht betroffen.')
     expect(toggle('Fristen verwenden')).toBeNull()
@@ -277,7 +277,7 @@ describe('deadlines on or off for the person', () => {
     await changeLanguage('en', false)
     auth.me = off
     await page.show(<SettingsRoutes />, NOTIFICATIONS)
-    expect(cards()).toEqual(['Which way', 'Deadlines are off'])
+    expect(cards()).toEqual(['Which way', 'Notifications on your devices', 'Deadlines are off'])
     expect(page.button('Switch deadlines on')).toBeTruthy()
     auth.me = me
   })

@@ -195,6 +195,14 @@ def _dummy_hash() -> str:
     return accounts._dummy_hash()
 
 
+def device_label(row: Device) -> str:
+    """A paired device in the lists of signed-in devices: its name, and the model where it says more (geraete 0.1.0,
+    ``nexgeraete.describe``)."""
+    if row.model and row.model != row.name:
+        return f"{row.name} ({row.model})"
+    return row.name
+
+
 def blocked_since(row: Account) -> datetime | None:
     """When the operator blocked the account. A deletion blocks an account that was not blocked at the same moment
     (``set_deleted``): that mark belongs to the deletion, not to a block."""
@@ -483,7 +491,7 @@ class KontenStore:
             select(Device).where(Device.account_id == int(account_id), Device.revoked_at.is_(None))
             .order_by(Device.created_at)
         )
-        found = [Access(f"{DEVICE_UID}{row.uid}", "device", row.name, row.last_used_at) for row in devices]
+        found = [Access(f"{DEVICE_UID}{row.uid}", "device", device_label(row), row.last_used_at) for row in devices]
         keys = self.db.scalars(
             select(ApiKey).where(ApiKey.account_id == int(account_id), ApiKey.blocked_at.is_(None))
             .order_by(ApiKey.created_at)
@@ -843,7 +851,7 @@ class KontenStore:
             created_at=created,
             expires_at=created + timedelta(days=36500),
             last_seen_at=_aware(row.last_used_at) if row.last_used_at else None,
-            label=row.name,
+            label=device_label(row),
         )
 
     def add_session(self, session: SessionData, token_hash: str) -> None:
@@ -1040,16 +1048,15 @@ class KontenStore:
         self.db.flush()
 
     def shut_out(self, account_id: AccountId) -> None:
-        """What blocking ended in nexpaper before the module: every browser session and sign-in that waits, every
-        paired device (revoked, it stays in the list), a pairing code not used yet, the upload requests of the account,
-        and the key of known browsers. API keys stay and are refused while the account is blocked or deleted
+        """What blocking ends: every browser session and sign-in that waits, a pairing code not used yet, the upload
+        requests of the account, and the key of known browsers. Paired devices rest (konten 1.1.5, geraete G26): they
+        stay, are refused while the account is out (``geraete_store.is_out``) and work again once it is back; deleting
+        for good takes them (``purge_account``). API keys stay and are refused while the account is blocked or deleted
         (``schluessel_store.out``), as its providers and its links are (``blocked_at``)."""
         from . import upload_requests
 
         uid = int(account_id)
         self.end_sessions(uid)
-        self.db.execute(update(Device).where(Device.account_id == uid, Device.revoked_at.is_(None))
-                        .values(revoked_at=utcnow()))
         self.db.execute(delete(Pairing).where(Pairing.account_id == uid))
         upload_requests.end_for(self.db, uid)
         self.db.flush()

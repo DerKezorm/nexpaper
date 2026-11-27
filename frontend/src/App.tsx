@@ -5,6 +5,7 @@ import { inboxApi } from './api/client'
 import { AppShell } from './components/AppShell'
 import { usesDeadlines } from './lib/deadlines'
 import { ForgotPage, InvitePage, LoginPage, MailConfirmPage, ResetPage, SenderConfirmPage, SetupPage } from './pages/AuthPages'
+import { AppConnectRoute } from './pages/AppConnectRoute'
 import { ArchivePage } from './pages/ArchivePage'
 import { DeadlinesPage } from './pages/DeadlinesPage'
 import { DocumentPage } from './pages/DocumentPage'
@@ -141,6 +142,8 @@ export default function App() {
           }
         />
         <Route path="oauth/authorize" element={<OAuthPage />} />
+        {/* An iPhone, iPad or Mac app built on NexKonto connects in the browser (geraete 0.1.0, G8). */}
+        <Route path="app-connect" element={<AppConnectRoute />} />
         {/* AI tools (mcp 1.1.0): a program asks to connect; one of its requests waits for a yes. */}
         <Route path="mcp/authorize" element={<McpConsentPage />} />
         {/* Another nex app asks to connect (verbinden 0.1.1), and the way back from one. */}

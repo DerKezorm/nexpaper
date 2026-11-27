@@ -58,6 +58,10 @@ DEFAULTS: dict[str, Any] = {
     #: AI tools (MCP, ``services/mcp_store.py``): closed in a new installation until the operator opens it (MCP
     #: decision 5; nexpaper had no MCP before, so no installation had it open).
     "mcp_enabled": False,
+    #: The iPhone and iPad app (the shared module geraete 0.1.0, card "Interfaces" under Server › Connections): devices
+    #: may use nexpaper, and new devices may be connected. Both on, as every paired device worked before.
+    "app_enabled": True,
+    "app_pairing_allowed": True,
     #: The operator's settings of MCP (``vendor/nexmcp``): programs may connect (None: yes), the highest level of a key
     #: (None: ``write``), the tools blocked for every account (None: none).
     "mcp.programs": None,
@@ -65,6 +69,8 @@ DEFAULTS: dict[str, Any] = {
     "mcp.blocked_tools": None,
     #: Ask GitHub once a day whether a newer nexpaper is out (services/updates). Only the question goes out, so on.
     "update_check": True,
+    #: The newest version the operators' devices were told about (geraete 0.1.0, ``services/updates.py``).
+    "update_told": None,
     #: Invitation mail: without a host nothing is sent, the link to copy is enough.
     "smtp_host": "",
     "smtp_port": 587,

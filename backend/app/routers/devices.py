@@ -17,8 +17,9 @@ from pydantic import BaseModel, Field
 from ..deps import Account, BrowserAccount, DbSession
 from ..errors import error
 from ..models import Device
-from ..services import devices
+from ..services import devices, geraete_store
 from ..services.konten_store import oldest_name
+from ..vendor import nexgeraete
 
 router = APIRouter(prefix="/api/v1/devices", tags=["devices"])
 
@@ -52,8 +53,9 @@ class PairedOut(BaseModel):
 
 
 def _out(row: Device) -> DeviceOut:
+    # The names of before (geraete 0.1.0 writes ``icloud`` and ``code`` for these two ways).
     return DeviceOut(id=row.uid, name=row.name, prefix=row.prefix, created_at=row.created_at,
-                     last_used_at=row.last_used_at, via=row.via or "token")
+                     last_used_at=row.last_used_at, via=geraete_store.old_via(row.via))
 
 
 @router.get("", response_model=list[DeviceOut], summary="The devices paired with the own account")
@@ -85,7 +87,8 @@ def bring_in(body: DeviceIn, request: Request, account: Account, db: DbSession) 
     if parent is None:
         # A browser pairs with ``POST /devices`` or a code; this way is for a device that hands its connection on.
         raise error("device_only", "This needs a device token.", 403)
-    row, token = devices.sibling(db, account, parent, body.name)
+    row, token = devices.sibling(db, account, parent, body.name,
+                                 nexgeraete.client_of(request.headers.get(nexgeraete.CLIENT_HEADER)))
     return BroughtOut(device=_out(row), token=token, account=oldest_name(db, account), account_id=account.id)
 
 

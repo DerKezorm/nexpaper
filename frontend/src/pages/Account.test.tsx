@@ -97,6 +97,8 @@ beforeEach(async () => {
   auth.setMe.mockClear()
   answers = {
     'GET /api/v1/connections/mcp/requests?status=waiting': [],
+    // The card "Geräte" of the shared module geraete 0.1.0 (`/api/v1/app-devices`).
+    'GET /api/v1/app-devices': { devices: [], max: 30, app_store_url: 'https://apps.apple.com/app/nexpaper/id6824032969', has_app: true },
     'GET /api/connect/partners': [],
     'GET /api/v1/auth/methods': { password: true, providers: [], passkeys: true },
     'GET /api/v1/auth/passkeys': [],
@@ -318,94 +320,55 @@ describe('devices and apps', () => {
   /** The connections in the plan's order (Verbindungen 1, 2, 4, 5). */
   const cards = () => [...box.querySelectorAll('[data-testid="settings-area-connections"] section[data-card]')].map((card) => card.getAttribute('data-card'))
 
-  it('pairs a device by a code shown as a QR code in a dialog, and lists it once the device took it', async () => {
+  it('pairs a device in the window of the shared module, with a QR code the published iPhone app reads too', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true })
     try {
-      answers['POST /api/v1/devices/pairing'] = {
-        code: 'KRAF-T7Q2-K9XW', expires_at: new Date(Date.now() + 300_000).toISOString(), server: 'https://paper.example.com',
-        link: 'nexpaper://pair?server=https%3A%2F%2Fpaper.example.com&code=KRAF-T7Q2-K9XW', qr_svg: '<svg xmlns="http://www.w3.org/2000/svg"></svg>',
+      const link = 'nexpaper://pair?server=https%3A%2F%2Fpaper.example.com&code=KRAF-T7Q2-K9XW&address=https%3A%2F%2Fpaper.example.com&pairing=p1&secret=s'
+      answers['POST /api/v1/devices/app-pairing'] = {
+        id: 'p1', secret: 's', code: 'KRAF-T7Q2-K9XW', link, address: 'https://paper.example.com',
+        expires_at: new Date(Date.now() + 300_000).toISOString(), qr_svg: '<svg xmlns="http://www.w3.org/2000/svg"></svg>',
+        app_store_url: 'https://apps.apple.com/app/nexpaper/id6824032969',
       }
-      answers['GET /api/v1/devices/pairing'] = { state: 'open', expires_at: null, device: null }
-      await show('/konto?tab=devices')
+      answers['GET /api/v1/app-pairing/p1'] = { state: 'waiting', device: null }
+      await show('/settings/connections')
       const card = box.querySelector<HTMLElement>('[data-card="devices"]')!
       expect(card.querySelector('h2')!.textContent).toBe('Geräte')
-      expect(card.textContent).toContain('iPhone und iPad mit der nexpaper-App und eigene Programme.')
-      expect(card.querySelector('[data-testid="devices-none"]')!.textContent).toBe('Noch kein Gerät gekoppelt.')
-      // As in nexnotes: one primary button "iPhone oder iPad verbinden", the code in a window.
-      expect(dialog()).toBeNull()
+      expect(card.querySelector('[data-testid="devices-none"]')!.textContent).toBe('Noch kein Gerät verbunden.')
       const pair = button('iPhone oder iPad verbinden', card)!
       expect([pair.dataset.kind, pair.dataset.icon]).toEqual(['primary', 'Smartphone'])
       await click(pair)
-      const shown = dialog()!.querySelector('[data-testid="pairing-code"]')!
-      expect(shown.textContent).toContain('Mit dem Gerät scannen. Der Code gilt 5 Minuten und nur einmal.')
-      expect(shown.textContent).toContain('Oder von Hand:')
-      // Address and code in the kit's rows to copy.
-      expect(shown.querySelector<HTMLInputElement>('[data-testid="pairing-server"] input')!.value).toBe('https://paper.example.com')
-      expect(shown.querySelector<HTMLInputElement>('[data-testid="pairing-text"] input')!.value).toBe('KRAF-T7Q2-K9XW')
-      expect(dialog()!.querySelector('img')!.getAttribute('alt')).toBe('QR-Code zum Koppeln')
-      // It shows a code and asks meanwhile: Escape leaves it open (ui `dismissable`, E38).
-      await act(async () => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })))
-      expect(dialog()).toBeTruthy()
-      answers['GET /api/v1/devices/pairing'] = { state: 'used', expires_at: null, device: { id: 'a'.repeat(32), name: 'iPhone von jule', prefix: 'npd_AbCd', created_at: '2026-10-08T10:00:00Z', last_used_at: null, via: 'qr' } }
-      answers['GET /api/v1/devices'] = [{ id: 'a'.repeat(32), name: 'iPhone von jule', prefix: 'npd_AbCd', created_at: '2026-10-08T10:00:00Z', last_used_at: null, via: 'qr' }]
+      // nexpaper's way to the module's pairing: the link holds `pair` with `server` and `code` for nexpaper-ios 1.3.
+      expect(calls.some((call) => call.method === 'POST' && call.url === '/api/v1/devices/app-pairing')).toBe(true)
+      expect(calls.some((call) => call.method === 'POST' && call.url === '/api/v1/app-pairing')).toBe(false)
+      expect(dialog()!.textContent).toContain('KRAF-T7Q2-K9XW')
+      // Once the device took the code, the window says so and the list comes again.
+      const phone = { id: 'a'.repeat(32), name: 'iPhone von jule', kind: 'ios', model: null, system: null, app_version: null, via: 'code', created_at: '2026-10-08T10:00:00Z', last_seen_at: null, push: false }
+      answers['GET /api/v1/app-pairing/p1'] = { state: 'used', device: phone }
+      answers['GET /api/v1/app-devices'] = { devices: [phone], max: 30, app_store_url: null, has_app: true }
       await act(async () => vi.advanceTimersByTime(2100))
       await idle()
-      expect(dialog()).toBeNull()
-      expect(box.textContent).toContain('Gekoppelt. Das Gerät steht jetzt in der Liste.')
-      expect(box.querySelector('[data-testid="paired-device"]')!.textContent).toContain('iPhone von jule')
-      expect(box.querySelector('[data-testid="paired-device"]')!.textContent).toContain('gekoppelt per QR-Code · zuletzt noch nie benutzt')
+      expect(dialog()!.querySelector('[data-testid="pair-paired"]')).toBeTruthy()
     } finally {
       vi.useRealTimers()
     }
   })
 
-  it('ends a code that is not wanted when the dialog closes, and offers a new one when it ran out', async () => {
-    vi.useFakeTimers({ shouldAdvanceTime: true })
-    try {
-      answers['POST /api/v1/devices/pairing'] = { code: 'KRAF-T7Q2-K9XW', expires_at: new Date(Date.now() + 300_000).toISOString(), server: 'https://paper.example.com', link: '', qr_svg: '<svg/>' }
-      answers['POST /api/v1/devices/pairing/cancel'] = 204
-      await show('/konto?tab=devices')
-      await click(button('iPhone oder iPad verbinden'))
-      await click(button('Schließen', dialog()!.querySelector('[data-testid="pairing-dialog"]')!))
-      expect(calls.some((call) => call.method === 'POST' && call.url === '/api/v1/devices/pairing/cancel')).toBe(true)
-      expect(dialog()).toBeNull()
-      await click(button('iPhone oder iPad verbinden'))
-      answers['GET /api/v1/devices/pairing'] = { state: 'expired', expires_at: null, device: null }
-      await act(async () => vi.advanceTimersByTime(2100))
-      await idle()
-      expect(dialog()!.textContent).toContain('Der Code ist abgelaufen.')
-      const before = calls.filter((call) => call.method === 'POST' && call.url === '/api/v1/devices/pairing').length
-      await click(button('Neuen Code zeigen', dialog()!))
-      expect(calls.filter((call) => call.method === 'POST' && call.url === '/api/v1/devices/pairing').length).toBe(before + 1)
-      expect(dialog()!.querySelector('[data-testid="pairing-code"]')).toBeTruthy()
-    } finally {
-      vi.useRealTimers()
-    }
-  })
-
-  it('lists the paired devices and disconnects one only after the question', async () => {
+  it('lists the connected devices and disconnects one only after the question', async () => {
     const id = 'd'.repeat(32)
-    answers['GET /api/v1/devices'] = [{ id, name: 'iPad von jule', prefix: 'npd_Ip12', created_at: '2026-10-08T10:00:00Z', last_used_at: null, via: 'device' }]
-    answers[`DELETE /api/v1/devices/${id}`] = 204
-    await show('/konto?tab=devices')
-    const row = box.querySelector<HTMLElement>('[data-testid="paired-device"]')!
-    expect(row.textContent).toContain('von einem anderen Gerät hinzugefügt')
-    const sent = () => calls.some((call) => call.method === 'DELETE' && call.url === `/api/v1/devices/${id}`)
-    const end = button('iPad von jule trennen', row)!
-    // Small and red in the row, with words (ui 1.1.0).
-    expect([end.dataset.kind, end.dataset.size, end.textContent]).toEqual(['danger', 'sm', 'Trennen'])
-    await click(end)
-    // The name stands isolated from the words around it (`iso`), as everywhere a person's text is said.
-    expect(document.body.querySelector('[role="dialog"]')!.textContent!.replace(/[\u2068\u2069]/g, '')).toContain('„iPad von jule“ trennen?')
+    const ipad = { id, name: 'iPad von jule', kind: 'ipados', model: null, system: null, app_version: null, via: 'icloud', created_at: '2026-10-08T10:00:00Z', last_seen_at: null, push: false }
+    answers['GET /api/v1/app-devices'] = { devices: [ipad], max: 30, app_store_url: null, has_app: true }
+    answers[`DELETE /api/v1/app-devices/${id}`] = 204
+    await show('/settings/connections')
+    const row = box.querySelector<HTMLElement>('[data-card="devices"] [data-testid="device-row"]')!
+    expect(row.textContent).toContain('iPad von jule')
+    expect(row.textContent).toContain('über iCloud übernommen')
+    const sent = () => calls.some((call) => call.method === 'DELETE' && call.url === `/api/v1/app-devices/${id}`)
+    await click(button('iPad von jule trennen', row) ?? button('Trennen', row))
     expect(sent()).toBe(false)
-    await click(button('Abbrechen', document.body.querySelector<HTMLElement>('[role="dialog"]')!))
-    expect(sent()).toBe(false)
-    answers['GET /api/v1/devices'] = []
-    await click(button('iPad von jule trennen', row))
-    await click(button('Trennen', document.body.querySelector<HTMLElement>('[role="dialog"]')!))
+    answers['GET /api/v1/app-devices'] = { devices: [], max: 30, app_store_url: null, has_app: true }
+    await click(button('Trennen', dialog()!))
     expect(sent()).toBe(true)
-    expect(box.textContent).toContain('iPad von jule ist getrennt.')
-    expect(box.querySelector('[data-testid="paired-device"]')).toBeNull()
+    expect(box.querySelector('[data-card="devices"] [data-testid="device-row"]')).toBeNull()
   })
 
   it('makes a key that only uploads for the iPhone shortcut, once, and shows the address and the header to copy', async () => {

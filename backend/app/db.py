@@ -790,9 +790,36 @@ def _additions_verbinden(connection: Connection) -> None:
         connection.exec_driver_sql(statement)
 
 
+#: The columns the shared module geraete 0.1.0 added to ``devices`` and ``pairings`` (last in each table), all empty in
+#: the rows of before: a device paired before keeps working as it was, a code of before as it was.
+GERAETE_COLUMNS: tuple[tuple[str, str, str], ...] = (
+    ("devices", "kind", "VARCHAR(16)"),
+    ("devices", "model", "VARCHAR(80)"),
+    ("devices", "system", "VARCHAR(80)"),
+    ("devices", "app_version", "VARCHAR(40)"),
+    ("devices", "push_ticket", "VARCHAR(500)"),
+    ("devices", "push_key", "TEXT"),
+    ("devices", "push_understands", "JSON"),
+    ("devices", "push_kinds", "JSON"),
+    ("pairings", "uid", "VARCHAR(32)"),
+    ("pairings", "secret_hash", "VARCHAR(64)"),
+    ("pairings", "state", "VARCHAR(200)"),
+)
+
+
+def _additions_geraete(connection: Connection) -> None:
+    """1.13.0, the shared module geraete (``services/geraete_store.py``): what a device tells of itself (kind, model,
+    system, version of the app), where its notifications go and which it wants, and at a pairing code the module's id
+    and the hash of its secret. Only columns without a value; 1.12.0 reads none of them and keeps working."""
+    for table, column, kind in GERAETE_COLUMNS:
+        if not _has_column(connection, table, column):
+            connection.exec_driver_sql(f'ALTER TABLE "{table}" ADD COLUMN {column} {kind}')
+    connection.exec_driver_sql("CREATE INDEX IF NOT EXISTS ix_pairings_uid ON pairings (uid)")
+
+
 #: Made at every start when missing, without a new version (see the top of this file). Each is idempotent.
 ADDITIONS: list[Callable[[Connection], None]] = [_additions_signin, _additions_konten, _additions_mcp, _additions_ki,
-                                                 _additions_verbinden]
+                                                 _additions_verbinden, _additions_geraete]
 
 #: The schema the additions are made on: the one of 1.0.1. From there on they run before every step too, so that a
 #: step of a later version finds their tables on a database 1.0.1 made (it would stop with "no such table" else).
@@ -955,7 +982,8 @@ def _init(schema: Engine, *, backup: bool = True) -> None:
 def _konten_missing(schema: Engine) -> bool:
     """A column of the shared modules is not there yet (1.12.0, or a database of an earlier build of 1.13.0)."""
     with schema.connect() as connection:
-        return any(not _has_column(connection, table, column) for table, column, _kind in KONTEN_COLUMNS)
+        return any(not _has_column(connection, table, column)
+                   for table, column, _kind in (*KONTEN_COLUMNS, *GERAETE_COLUMNS))
 
 
 def _run_additions(schema: Engine) -> None:

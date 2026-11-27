@@ -369,6 +369,18 @@ class Device(Base):
     #: How it was paired: ``token`` (made in the browser), ``qr`` (a code shown in the browser), ``app:<client>`` (an
     #: app through OAuth 2 with PKCE). Last column: the step that brought it adds it at the end.
     via: Mapped[str] = mapped_column(String(40), default="token", server_default=text("'token'"))
+    #: The shared module geraete 0.1.0 (``services/geraete_store.py``), added at the end (``db._additions_geraete``):
+    #: ``ios``, ``ipados`` or ``mac``; model, system and the app's version from ``X-Nex-App``; the relay's ticket and
+    #: the device's key for notifications, the kinds it understands (JSON list, ``NULL``: what the published app knows)
+    #: and the kinds switched on or off on it (JSON object). Empty in every row of before.
+    kind: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    model: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    system: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    app_version: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    push_ticket: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    push_key: Mapped[str | None] = mapped_column(Text, nullable=True)
+    push_understands: Mapped[Any] = mapped_column(JSON, nullable=True)
+    push_kinds: Mapped[Any] = mapped_column(JSON, nullable=True)
 
 
 # --- Web Push ----------------------------------------------------------------------------------------
@@ -799,6 +811,12 @@ class Pairing(Base):
     redirect_uri: Mapped[str] = mapped_column(String(300), default="", server_default=text("''"))
     challenge: Mapped[str] = mapped_column(String(128), default="", server_default=text("''"))
     device_name: Mapped[str] = mapped_column(String(80), default="", server_default=text("''"))
+    #: The shared module geraete 0.1.0, added at the end (``db._additions_geraete``): the id the module knows a QR code
+    #: by, the hash of its secret, and for a one-time code of the sign-in in the browser (``kind = connect``) the
+    #: app's ``state``. Empty in rows of before.
+    uid: Mapped[str | None] = mapped_column(String(32), nullable=True, index=True)
+    secret_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    state: Mapped[str | None] = mapped_column(String(200), nullable=True)
 
 
 class VersionText(Base):
