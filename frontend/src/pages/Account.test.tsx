@@ -389,13 +389,50 @@ describe('devices and apps', () => {
     await click(button('Schlüssel für den Kurzbefehl'))
     expect(calls.find((call) => call.method === 'POST' && call.url === '/api/v1/api-keys')!.body).toEqual({ name: 'iPhone-Kurzbefehl', days: null, scope: 'upload' })
     expect(calls.some((call) => call.method === 'POST' && call.url === '/api/v1/devices')).toBe(false)
-    const shown = box.querySelector('[data-testid="shortcut-key"]')!
+    // As a new key of the key module since schluessel 1.2.0 (B23): in a window, not in a box on the card.
+    const shown = document.querySelector<HTMLElement>('[data-testid="shortcut-key"]')!
+    expect(shown.getAttribute('role')).toBe('dialog')
+    expect([...document.querySelectorAll('input')].filter((input) => input.value.includes('k'.repeat(43))).every((input) => input.closest('[role="dialog"]') === shown)).toBe(true)
+    expect(shown.textContent).toContain('„iPhone-Kurzbefehl“ angelegt')
+    expect(shown.textContent).toContain('wird nur jetzt gezeigt')
     const values = [...shown.querySelectorAll('input')].map((input) => input.value)
     expect(values).toEqual(['https://paper.example.com/api/v1/documents?source=share', 'Bearer npk_' + 'k'.repeat(43)])
     // The list of keys (the module's card) shows it at once.
     expect(box.querySelector('[data-card="api-keys"] [data-testid="key-row"]')!.textContent).toContain('iPhone-Kurzbefehl')
-    await click(button('Fertig', shown))
-    expect(box.textContent).not.toContain('k'.repeat(43))
+    // Escape leaves the key where it is; the close button asks first, and "Zurück zum Schlüssel" keeps it.
+    await act(async () => void window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })))
+    expect(document.querySelector('[data-testid="shortcut-key"]')).not.toBeNull()
+    await click(shown.querySelector<HTMLElement>('button[data-close]')!)
+    const asked = document.querySelector<HTMLElement>('[data-testid="shortcut-close-made"]')!
+    expect(asked.textContent).toContain('Der Schlüssel wird danach nicht mehr angezeigt.')
+    await click(button('Zurück zum Schlüssel', asked))
+    expect(document.querySelector('[data-testid="shortcut-close-made"]')).toBeNull()
+    expect(document.querySelector('[data-testid="shortcut-key"]')).not.toBeNull()
+    await click(button('Fertig', document.querySelector<HTMLElement>('[data-testid="shortcut-key"]')!))
+    expect(document.querySelector('[data-testid="shortcut-key"]')).toBeNull()
+    expect(document.body.textContent).not.toContain('k'.repeat(43))
+  })
+
+  it('closes the window of the key for the shortcut without "Fertig" only after asking', async () => {
+    answers['GET /api/v1/shortcut'] = { link: '', address: 'https://paper.example.com', upload_url: 'https://paper.example.com/api/v1/documents?source=share' }
+    answers['GET /api/v1/api-keys'] = { allowed: true, keys: [] }
+    answers['GET /api/v1/connections/keys'] = listing(true)
+    answers['POST /api/v1/api-keys'] = {
+      key: { id: 6, name: 'iPhone-Kurzbefehl', scope: 'upload', prefix: 'npk_Zz34', created_at: '2026-10-08T10:00:00Z', last_used_at: null, expires_at: null, blocked: false },
+      secret: 'npk_' + 'z'.repeat(43),
+    }
+    await show('/konto?tab=devices')
+    await click(button('Schlüssel für den Kurzbefehl'))
+    // A click beside the window does nothing.
+    const scrim = document.querySelector<HTMLElement>('[data-testid="shortcut-key"]')!.parentElement!
+    await act(async () => void scrim.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true })))
+    expect(document.querySelector('[data-testid="shortcut-key"]')).not.toBeNull()
+    await click(document.querySelector<HTMLElement>('[data-testid="shortcut-key"] button[data-close]')!)
+    await click(document.querySelector<HTMLElement>('[data-testid="shortcut-close-made"] button[type="submit"]')!)
+    expect(document.querySelector('[data-testid="shortcut-key"]')).toBeNull()
+    expect(document.body.textContent).not.toContain('z'.repeat(43))
+    // The key was made; another one needs the button again.
+    expect(button('Schlüssel für den Kurzbefehl')).toBeTruthy()
   })
 
   it('says when the operator has not switched keys on, and makes none', async () => {
