@@ -187,7 +187,7 @@
     "nexdiary+nextime": "The day's events in the review of the day.",
     "nexdiary+nextasks": "The day's finished tasks in the review of the day.",
     "nexdiary+nexfolk": "People from your contacts in the entry.",
-    "nexnotes+nextime": "A note for the event, with a link back.",
+    "nexnotes+nextime": "A note for the event in your inbox.",
     "nexfolk+nextasks": "The open tasks about the person in the contact.",
     "nexfolk+nexpaper": "The person's documents in the contact."
   },

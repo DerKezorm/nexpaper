@@ -1,6 +1,6 @@
 {
   "files": {
-    "backend/app/vendor/nexverbinden/__init__.py": "sha256-caSdbJlU0CU9zR50hUvuvvPxdNMnc6U3JQcr6Ivi+cU=",
+    "backend/app/vendor/nexverbinden/__init__.py": "sha256-bTwT8h946ivYWlV+VXyheQUJjE9akwodjvsx2OyxY/Y=",
     "backend/app/vendor/nexverbinden/api.py": "sha256-nGkUgfEH44+uq1Ut2Qy8h1QVkmwg8CRCaTK++eS7FQ8=",
     "backend/app/vendor/nexverbinden/catalog.py": "sha256-JMbMPcf+VF1hPI6p3902ywZO0jGcFSIK/o7EwWM7u4Q=",
     "backend/app/vendor/nexverbinden/config.py": "sha256-Og7GyLitAjRQSZGi2tGtpQFmfCbI60j6gbns97PEcXA=",
@@ -28,9 +28,9 @@
     "frontend/src/vendor/nexverbinden/ReturnPage.tsx": "sha256-7aSriicaVRSaSaPQcoju5cNWUlfri4CHoLJTm26EXv4=",
     "frontend/src/vendor/nexverbinden/index.ts": "sha256-lhmebq0dsrkMYsxrROv7nhUEpBnkh40VEULM/CPpKSg=",
     "frontend/src/vendor/nexverbinden/logos.ts": "sha256-Qyf6CIYPCC4Tdh9ySvkALKEMPDvRwfHE1nZ/qebNFSg=",
-    "frontend/src/vendor/nexverbinden/verbinden.de.json": "sha256-27gb/BEITA1xFMIOxndg8DPbmP2BNX/KObnya+vTn/s=",
-    "frontend/src/vendor/nexverbinden/verbinden.en.json": "sha256-CotacY4VL/IukrjbhJYWZRbd2+XaFHyBEI3Qi6RuzOw=",
-    "frontend/src/vendor/nexverbinden/verbinden.fr.json": "sha256-PQPn7FfOWCPKwJci1bb9sMsef0TNgyX6yfV5+k4fjaY=",
+    "frontend/src/vendor/nexverbinden/verbinden.de.json": "sha256-Y7Ecq2VGxmXTueIF4CcOksljaANhvOGfOUkqAhZB4YI=",
+    "frontend/src/vendor/nexverbinden/verbinden.en.json": "sha256-Emylocr11R2qeolEDpuiEeeoqsH3tCwWyF0osJsaW1Q=",
+    "frontend/src/vendor/nexverbinden/verbinden.fr.json": "sha256-w0okKqnOTn3YPUiQAoedtWPoI92LbwP1R8dr6mojpgM=",
     "frontend/src/vendor/nexverbinden/verbinden.ts": "sha256-V5Gwtzg9e3SLF50iJYs6Pho1gW1GvawoaRa/YR/Xys0="
   },
   "module": "verbinden",
@@ -42,5 +42,5 @@
     "httpx": ">=0.28.1"
   },
   "vendor_path": "backend/app/vendor/nexverbinden",
-  "version": "0.1.16"
+  "version": "0.1.17"
 }
