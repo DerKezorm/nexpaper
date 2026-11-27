@@ -13,7 +13,7 @@
  *
  * Copied unchanged into frontend/src/vendor/nexverbinden/ by bauplaene/verbinden/tools/sync.py; changed only there.
  */
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { AuthCard, Avatar, Box, Button, Buttons, CheckboxRow, Notice, Row, Rows, inSentence } from '../nexui'
 import {
@@ -91,18 +91,25 @@ export function ConsentPage({ request, base = VERBINDEN_BASE, search, areaWord, 
   const [allAreas, setAllAreas] = useState(true)
   const [areas, setAreas] = useState<string[]>([])
   const [busy, setBusy] = useState(false)
+  // 0.1.9: the way to another page is read when needed, not a dependency of the request; the default (a new function
+  // on every render) asked the server again after every answer, without end.
+  // An app may give a new function on every render (`navigate={(url) => leave.to(url)}`); the request does not hang on it.
+  const go = useRef(navigate)
+  useEffect(() => {
+    go.current = navigate
+  }, [navigate])
 
   useEffect(() => {
     if (!complete) return
     request<ConsentInfo | ConsentBack>(`${base}/consent?${new URLSearchParams(params).toString()}`).then(
       (found) => {
         // B6 (0.1.8): the app that asks cannot connect here; back to its card with the refusal.
-        if ('back' in found) navigate(found.back)
+        if ('back' in found) go.current(found.back)
         else setInfo(found)
       },
       (failure: unknown) => setProblem(refusalText(texts, failure, '')),
     )
-  }, [request, base, params, complete, texts, navigate])
+  }, [request, base, params, complete, texts])
 
   const answer = async (allow: boolean) => {
     if (!info || busy) return
@@ -112,7 +119,7 @@ export function ConsentPage({ request, base = VERBINDEN_BASE, search, areaWord, 
       const chosen = info.areas.filter((area) => areas.includes(String(area.id))).map((area) => area.id)
       const body = { ...params, allow, areas: allAreas || info.areas.length === 0 ? null : chosen }
       const { redirect } = await request<{ redirect: string }>(`${base}/consent`, { method: 'POST', body })
-      navigate(redirect)
+      go.current(redirect)
     } catch (failure) {
       setSendProblem(refusalText(texts, failure, info.app))
       setBusy(false)

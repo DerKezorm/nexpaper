@@ -38,7 +38,7 @@ from .connect import (
 from .errors import CODES, GrantError, Refused
 from .model import Caller, Code, Connection, Legacy, Pending, Store, Waiting
 
-__version__ = "0.1.8"
+__version__ = "0.1.9"
 
 __all__ = [
     "APPS",
