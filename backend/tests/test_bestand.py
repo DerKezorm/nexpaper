@@ -99,6 +99,8 @@ def bestand() -> tuple[dict[str, set[str]], dict[str, int]]:
         plain.execute("UPDATE invites SET expires_at = datetime('now', '+7 days')")
         plain.execute("UPDATE password_resets SET expires_at = datetime('now', '+20 hours')")
         plain.execute("UPDATE email_confirmations SET expires_at = datetime('now', '+20 hours')")
+        # A paired device rests after 365 days unused.
+        plain.execute("UPDATE devices SET last_used_at = datetime('now')")
         plain.commit()
     finally:
         plain.close()
