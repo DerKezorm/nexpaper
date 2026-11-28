@@ -84,7 +84,8 @@ def test_the_zip_takes_what_goes_with_them_and_never_what_the_person_may_not_see
         assert sorted(archive.namelist()) == sorted([alt, strom, rechnung, "liste.csv"])
         listing = archive.read("liste.csv").decode("utf-8-sig")
     rows = list(csv.reader(io.StringIO(listing), delimiter=";"))
-    assert rows[0][-1] == "Gehört zu" and len(rows[0]) == 16
+    # The columns of the list (with the reference since 1.14.0), then this one.
+    assert rows[0][-1] == "Gehört zu" and len(rows[0]) == 17
     by_title = {row[1]: row for row in rows[1:]}
     assert set(by_title) == {"Strom März", "Rechnung Heizungswartung", "Alt"}
     assert by_title["Strom März"][-1] == alt
@@ -103,7 +104,7 @@ def test_without_the_choice_nothing_comes_along_and_the_list_keeps_its_columns(w
         archive = zip_of(jule, made["id"])
         assert len(archive.namelist()) == 3
         rows = list(csv.reader(io.StringIO(archive.read("liste.csv").decode("utf-8-sig")), delimiter=";"))
-    assert len(rows[0]) == 15 and "Gehört zu" not in rows[0]
+    assert len(rows[0]) == 16 and "Gehört zu" not in rows[0]
 
 
 def test_the_limits_hold_for_the_whole(world: World, monkeypatch: pytest.MonkeyPatch) -> None:

@@ -274,7 +274,8 @@ def test_a_database_of_1_12_0_gets_the_additions_and_keeps_the_second_factor_req
             "'password', 'h', 'anna@example.com', 0, '', '', '2026-11-01 08:00:00', 0, '', '', 0, 1, '', 1)")
         connection.commit()
     database.init_db()
-    assert database._made_backups == ["before the shared account module"]  # type: ignore[attr-defined]
+    # Schema 20 takes a step since 1.14.0 (21, the reference): its backup is made first and covers the additions too.
+    assert database._made_backups == ["before schema 21"]  # type: ignore[attr-defined]
     with closing(sqlite3.connect(scratch)) as connection:
         assert connection.execute("SELECT email_counts FROM users").fetchone() == (1,)
         assert connection.execute("SELECT value FROM settings WHERE key = 'two_factor_required'").fetchone() == (
@@ -283,7 +284,7 @@ def test_a_database_of_1_12_0_gets_the_additions_and_keeps_the_second_factor_req
         assert {"former_names", "setup_claims", "failed_unknown", "mail_outbox"} <= tables
     # A second start changes nothing and makes no other backup.
     database.init_db()
-    assert database._made_backups == ["before the shared account module"]  # type: ignore[attr-defined]
+    assert database._made_backups == ["before schema 21"]  # type: ignore[attr-defined]
 
 
 def test_a_new_installation_requires_no_second_factor() -> None:
