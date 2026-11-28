@@ -81,6 +81,8 @@ class DocumentPatch(BaseModel):
     kind_id: StrictInt | None = Field(default=None, ge=1, le=2**31 - 1)
     date: Date | None = None
     amount: StrictInt | None = None
+    #: The document's reference (issue #13), at most 100 characters (blanks joined); empty or null takes it away.
+    reference: str | None = Field(default=None, max_length=documents.REFERENCE_MAX * 2)
     status: Literal["inbox", "filed"] | None = None
     tags: list[str] | None = Field(default=None, max_length=60)
     dates: list[DateIn] | None = Field(default=None, max_length=12)
@@ -150,9 +152,15 @@ def listing(
                                    "only those of the caller's vaults (false)"),
     sender: str | None = Query(default=None, min_length=1, max_length=160, description="A sender's name"),
     tag: str | None = Query(default=None, min_length=1, max_length=40, description="A tag's name"),
+    reference: str | None = Query(default=None, min_length=1, max_length=documents.REFERENCE_MAX * 2,
+                                  description="Only documents with this reference (blanks joined, case of A to Z "
+                                  "aside)"),
+    has_reference: bool | None = Query(default=None, description="Only documents with a reference (true), or only "
+                                       "those without one (false)"),
 ) -> DocumentPage:
     found = documents.listing(db, account.id, vault_id=vault_id, status=status, after=after, limit=limit + 1,
-                              via_share=via_share, sender=sender, tag=tag)
+                              via_share=via_share, sender=sender, tag=tag, reference=reference,
+                              has_reference=has_reference)
     more = len(found) > limit
     found = found[:limit]
     return DocumentPage(items=[document_out(r) for r in documents.rows(db, account.id, found)],

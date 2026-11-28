@@ -112,9 +112,9 @@ def test_the_zip_holds_what_was_asked_for_and_nothing_of_anybody_else(world: Wor
         rows = list(csv.reader(io.StringIO(listing.decode("utf-8-sig")), delimiter=";"))
         assert rows[0] == ["Datum", "Titel", "Absender", "Art", "Betrag", "Währung", "Rechnungsnummer", "Tresor",
                            "Datei", "Fällig am", "Vertrag bis", "Kündigen bis", "Garantie bis", "Erledigt",
-                           "Aufbewahren bis"]
+                           "Aufbewahren bis", "Aktenzeichen"]
         assert ["2026-03-14", "Strom März", "Stadtwerke Lindenau", "", "84,00", "EUR", "", "jule",
-                "jule/2026/Stadtwerke Lindenau/2026-03-14 Strom März.pdf", "", "", "", "", "", ""] in rows
+                "jule/2026/Stadtwerke Lindenau/2026-03-14 Strom März.pdf", "", "", "", "", "", "", ""] in rows
         assert not any("Geheim" in "".join(row) for row in rows)
 
 

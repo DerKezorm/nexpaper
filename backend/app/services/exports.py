@@ -88,9 +88,9 @@ PACKED_KINDS = (filetypes.PDF, filetypes.JPEG, filetypes.PNG, filetypes.HEIC, fi
 CSV_NAME = {"de": "liste.csv", "en": "list.csv"}
 CSV_HEADINGS = {
     "de": ("Datum", "Titel", "Absender", "Art", "Betrag", "Währung", "Rechnungsnummer", "Tresor", "Datei",
-           "Fällig am", "Vertrag bis", "Kündigen bis", "Garantie bis", "Erledigt", "Aufbewahren bis"),
+           "Fällig am", "Vertrag bis", "Kündigen bis", "Garantie bis", "Erledigt", "Aufbewahren bis", "Aktenzeichen"),
     "en": ("Date", "Title", "Sender", "Kind", "Amount", "Currency", "Invoice number", "Vault", "File",
-           "Due", "Contract until", "Cancel by", "Warranty until", "Done", "Keep until"),
+           "Due", "Contract until", "Cancel by", "Warranty until", "Done", "Keep until", "Reference"),
 }
 #: The last column when the documents that go with them came along (N2): the files of those in the ZIP.
 RELATED_HEADING = {"de": "Gehört zu", "en": "Goes with"}
@@ -599,6 +599,8 @@ def _pack(db: Session, export_id: int) -> None:
             invoice_numbers.get(document.id, ""), item.vault.name if item.vault else "", first,
             *terms.get(document.id, ("",) * (len(DEADLINE_COLUMNS) + 1)),
             keep_until[document.id].isoformat() if document.id in keep_until else "",
+            # Issue #13, after the columns there were: a sheet that counts them from the left reads them as before.
+            document.reference or "",
         ))
         first_names[document.id] = first
     if params.related:

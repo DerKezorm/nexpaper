@@ -178,14 +178,14 @@ def test_an_empty_search_is_everything_the_person_sees_newest_first(browser: Tes
     assert body["total"] == 4 and body["next"] is None
     assert all(hit["excerpt"] is None and hit["title_marks"] == [] for hit in body["items"])
     assert body["understood"] == {"words": [], "phrases": [], "kinds": [], "senders": [], "tags": [], "amounts": [],
-                                  "deadlines": []}
+                                  "deadlines": [], "references": []}
 
 
 def test_what_the_search_understood(browser: TestClient) -> None:
     body = search(browser, 'Straße "Bitte Überweisen" art:rechnung tag:Haus betrag:>1,5 R-2026-17')
     assert body["understood"] == {
         "words": ["strasse"], "phrases": ["bitte uberweisen", "r 2026 17"], "kinds": ["rechnung"], "senders": [],
-        "tags": ["Haus"], "amounts": [{"op": ">", "cents": 150}], "deadlines": [],
+        "tags": ["Haus"], "amounts": [{"op": ">", "cents": 150}], "deadlines": [], "references": [],
     }
 
 

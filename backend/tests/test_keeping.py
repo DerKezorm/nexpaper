@@ -515,11 +515,12 @@ def test_the_search_finds_what_may_go(client: TestClient, operator: Account) -> 
 def test_the_list_of_the_export_names_until_when_to_keep(client: TestClient, operator: Account) -> None:
     from app.services import exports
 
-    rows = [("2026-03-14", "Strom", "", "", "84,00", "EUR", "", "jule", "a.pdf", "2036-12-31")]
+    rows = [("2026-03-14", "Strom", "", "", "84,00", "EUR", "", "jule", "a.pdf", "2036-12-31", "")]
     text = exports._csv(rows, "de").decode("utf-8-sig")
     table = list(csv.reader(io.StringIO(text), delimiter=";"))
-    assert table[0][-1] == "Aufbewahren bis" and table[1][-1] == "2036-12-31"
-    assert exports.CSV_HEADINGS["en"][-1] == "Keep until"
+    # The reference (issue #13) came after it.
+    assert table[0][-2] == "Aufbewahren bis" and table[1][-2] == "2036-12-31"
+    assert exports.CSV_HEADINGS["en"][-2:] == ("Keep until", "Reference")
 
 
 def test_the_list_of_a_packed_export_has_the_date_of_each(client: TestClient, operator: Account) -> None:
@@ -543,7 +544,7 @@ def test_the_list_of_a_packed_export_has_the_date_of_each(client: TestClient, op
     answer = client.get(f"/api/v1/exports/{made.json()['id']}/file")
     assert answer.status_code == 200, answer.text
     listing = zipfile.ZipFile(io.BytesIO(answer.content)).read("liste.csv").decode("utf-8-sig")
-    rows = {row[1]: row[-1] for row in csv.reader(io.StringIO(listing), delimiter=";")}
+    rows = {row[1]: row[-2] for row in csv.reader(io.StringIO(listing), delimiter=";")}
     assert rows == {"Titel": "Aufbewahren bis", "Strom": "2036-12-31", "Brief": "2040-01-01", "Ohne": ""}
 
 

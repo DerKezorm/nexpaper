@@ -885,11 +885,12 @@ def test_the_list_for_the_tax_adviser_has_the_deadlines(house: House) -> None:
     assert cells[paid] == ("2026-01-20", "", "", "2028-01-03", "bezahlt 2026-10-08")
     with SessionLocal() as db:
         assert exports._terms(db, [paid], "en")[paid][-1] == "paid 2026-10-08"
-    # After the nine columns of the document come these five, then "Keep until" (F3).
-    rows = list(csv.reader(io.StringIO(exports._csv([("x",) * 9 + cells[mobile] + ("2036-12-31",)], "de")
+    # After the nine columns of the document come these five, then "Keep until" (F3) and the reference (issue #13).
+    rows = list(csv.reader(io.StringIO(exports._csv([("x",) * 9 + cells[mobile] + ("2036-12-31", "")], "de")
                                        .decode("utf-8-sig")), delimiter=";"))
-    assert rows[0][9:] == ["Fällig am", "Vertrag bis", "Kündigen bis", "Garantie bis", "Erledigt", "Aufbewahren bis"]
-    assert rows[1][10:13] == ["2026-12-31", "2026-09-30", ""] and rows[1][-1] == "2036-12-31"
+    assert rows[0][9:] == ["Fällig am", "Vertrag bis", "Kündigen bis", "Garantie bis", "Erledigt", "Aufbewahren bis",
+                           "Aktenzeichen"]
+    assert rows[1][10:13] == ["2026-12-31", "2026-09-30", ""] and rows[1][-2] == "2036-12-31"
 
 
 # --- Schema 10 to 11, the backup --------------------------------------------------------------------------------------

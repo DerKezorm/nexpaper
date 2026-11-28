@@ -641,7 +641,8 @@ def _split(db: Session, uid: int, document_id: int, base_version: int, parts: li
         made_documents: list[Document] = []
         for index, (part, item) in enumerate(zip(parts, made, strict=True)):
             new = Document(vault_id=original.vault_id, owner_id=original.owner_id, title=names[index],
-                           sender_id=original.sender_id, kind_id=original.kind_id, date=original.date, status=INBOX,
+                           sender_id=original.sender_id, kind_id=original.kind_id, date=original.date,
+                           reference=original.reference, status=INBOX,
                            source=original.source, added_at=clock.now(), pages=item.pages, current_version=1,
                            change_seq=changes.next_seq(db))
             db.add(new)

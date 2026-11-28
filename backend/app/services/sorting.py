@@ -6,7 +6,8 @@ the inbox), nexpaper fills in its fields from what it knows, and notes per field
 field wins, in this order:
 
 1. **The e-invoice** (``services/einvoices.py``): exact data, nothing beats it.
-2. **The rules** (``services/rules.py``), the person's own and the operator's.
+2. **The rules** (``services/rules.py``), the person's own and the operator's. The reference (issue #13) comes from
+   them alone.
 3. **As last time**: a filed document of the same person with the same IBAN, VAT id, customer number or letterhead
    (``last_time``), its sender, kind and tags. Only documents the person may see are looked at, and the rights are in
    the query that finds them.
@@ -55,7 +56,7 @@ EINVOICE, RULE, LAST_TIME, TEXT, AI = "einvoice", "rule", "last_time", "text", "
 DEFAULT, PERSON = "default", "person"
 #: The order in which the origins are asked for a field: the first that knows it wins.
 PRIORITY = (EINVOICE, RULE, LAST_TIME, TEXT, AI)
-FIELDS = ("title", "sender", "kind", "date", "amount", "dates", "tags", "vault")
+FIELDS = ("title", "sender", "kind", "date", "amount", "dates", "tags", "vault", "reference")
 PROPOSED = "proposed"
 #: Earlier documents a sign of the sender is looked up in, the newest first.
 LOOK_BACK = 25
@@ -288,6 +289,8 @@ def propose(db: Session, document: Document, text: str, *, invoice: EInvoice | N
             return row.name if row is not None else None
         if name == "currency":
             return document.currency
+        if name == "reference":
+            return document.reference
         return {"kind": document.kind_id, "date": document.date, "amount": document.amount}.get(name)
 
     # 2. The rules, against the document as it would be without them; what a person set counts as it stands (sorting
@@ -305,12 +308,16 @@ def propose(db: Session, document: Document, text: str, *, invoice: EInvoice | N
             return facts.amount
         return ai_values.get(name)
 
+    # The reference only as a person set it: nothing but a rule proposes one, and the rules look at the document as it
+    # would be without them.
     subject = rules.Subject(sender=str(best("sender") or ""), text=text, kind_id=best("kind"),
-                            source=document.source, amount=best("amount"))
+                            source=document.source, amount=best("amount"),
+                            reference=str(as_set("reference") or "") if "reference" in human else "")
     outcome = rules.evaluate(db, rules.applying(db, arrival), subject, document.owner_id, arrival)
     # A document from an upload request stays in the inbox of the person who asked (U1): a rule never moves it.
     proposal.offer("vault", RULE, None if document.source == "request" else outcome.vault_id)
     proposal.offer("sender", RULE, outcome.sender)
+    proposal.offer("reference", RULE, outcome.reference)
     offer_kind(RULE, outcome.kind_id)
     rule_title = outcome.title
 
@@ -351,7 +358,7 @@ def propose(db: Session, document: Document, text: str, *, invoice: EInvoice | N
         rendered = rules.render_title(rule_title, sender=str(will_be("sender") or ""),
                                       kind=kind_row.name if kind_row else "", day=will_be("date"),
                                       amount=will_be("amount"), currency=str(will_be("currency") or "EUR"),
-                                      language=language)
+                                      language=language, reference=str(will_be("reference") or ""))
         if rendered:
             proposal.values["title"], proposal.origins["title"] = rendered, RULE
     changed = _apply(db, document, proposal, human)
@@ -443,6 +450,14 @@ def _apply(db: Session, document: Document, proposal: Proposal, human: set[str])
             document.sender_id = sender_id
             catalog.prune(db, [old] if old else [], [])
             changed.append("sender")
+    if "reference" in values and "reference" not in human:
+        try:
+            reference = documents.clean_reference(str(values["reference"]))
+        except Exception:  # noqa: BLE001 - a proposal that is no reference is left out
+            reference = ""
+        if reference and reference != document.reference:
+            document.reference = reference
+            changed.append("reference")
     if "kind" in values and "kind" not in human and values["kind"] != document.kind_id and db.get(Kind, values["kind"]):
         document.kind_id = values["kind"]
         changed.append("kind")
@@ -500,7 +515,7 @@ def _in_range(value: Any) -> bool:
 def mark_person(document: Document, fields: list[str]) -> None:
     """The fields a person changed are theirs from now on (``person``)."""
     names = {"kind": "kind", "title": "title", "sender": "sender", "date": "date", "amount": "amount",
-             "dates": "dates", "tags": "tags", "vault": "vault"}
+             "dates": "dates", "tags": "tags", "vault": "vault", "reference": "reference"}
     mine = [names[f] for f in fields if f in names]
     if not mine:
         return

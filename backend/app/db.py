@@ -46,7 +46,7 @@ _settings.data_dir.mkdir(parents=True, exist_ok=True)
 BUSY_SECONDS = 15
 
 #: The version of the schema the models describe.
-SCHEMA_VERSION = 20
+SCHEMA_VERSION = 21
 
 
 def _step_v2(connection: Connection) -> None:
@@ -521,6 +521,19 @@ def _step_upload_requests(connection: Connection) -> None:
         connection.exec_driver_sql(statement)
 
 
+def _step_reference(connection: Connection) -> None:
+    """The reference of a document (issue #13): one column at the documents, and at the vaults what each calls it and
+    whether it is hidden. Columns with a default only: every document there is has none, every vault shows the field
+    under the interface's word. Written out as it stood when the step was made, so that the step moves to another
+    number unchanged."""
+    for statement in (
+        "ALTER TABLE documents ADD COLUMN reference VARCHAR(100) DEFAULT '' NOT NULL",
+        "ALTER TABLE vaults ADD COLUMN reference_name VARCHAR(40) DEFAULT '' NOT NULL",
+        "ALTER TABLE vaults ADD COLUMN reference_hidden BOOLEAN DEFAULT 0 NOT NULL",
+    ):
+        connection.exec_driver_sql(statement)
+
+
 #: ``MIGRATIONS[n]`` brings a database from version ``n - 1`` to ``n``. Version 1 is the first schema; it has no step.
 #: Later steps are written out as the tables stood then, not taken from the models, which move on.
 MIGRATIONS: dict[int, Callable[[Connection], None]] = {
@@ -550,6 +563,8 @@ MIGRATIONS: dict[int, Callable[[Connection], None]] = {
     19: _step_pdf_passwords,
     # U1, upload requests: files from somebody without an account into a person's inbox.
     20: _step_upload_requests,
+    # Issue #13, the reference of a document and what each vault calls it.
+    21: _step_reference,
 }
 
 def _has_column(connection: Connection, table: str, column: str) -> bool:

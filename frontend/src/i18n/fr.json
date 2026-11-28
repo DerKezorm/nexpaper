@@ -639,7 +639,9 @@
     "nextasks_not_connected": "nexpaper n'est pas connecté à nextasks. Vous le connectez sous Mon compte › Connexions.",
     "nextasks_disconnected": "La connexion avec nextasks ne tient plus. Mon compte › Connexions indique pourquoi.",
     "nextasks_declined": "nextasks n'a pas accepté la tâche. Choisissez une autre liste ou réessayez plus tard.",
-    "nextasks_unreachable": "nextasks est injoignable pour le moment. Réessayez dans un instant."
+    "nextasks_unreachable": "nextasks est injoignable pour le moment. Réessayez dans un instant.",
+    "invalid_reference": "Une référence compte au plus 100 caractères, sans caractères de contrôle.",
+    "invalid_reference_name": "Le nom du champ compte au plus 40 caractères, sans caractères de contrôle."
   },
   "ready": {
     "secrets": {
@@ -1281,7 +1283,9 @@
       "dateRange": "Cette date ne fonctionne pas. Les années {{from}} à {{to}} sont autorisées.",
       "noKind": "aucun",
       "noTags": "aucune",
-      "none": "aucun"
+      "none": "aucun",
+      "reference": "Référence",
+      "noReference": "non renseignée"
     },
     "archive": {
       "title": "Archives",
@@ -1568,7 +1572,8 @@
         "status": "le statut",
         "tags": "les étiquettes",
         "dates": "les dates",
-        "keep_until": "« Conserver jusqu'au »"
+        "keep_until": "« Conserver jusqu'au »",
+        "reference": "la référence"
       },
       "moved": "l'a déplacé de {{from}} vers {{to}}",
       "shared": "l'a partagé avec {{person}} ({{right}})",
@@ -1927,7 +1932,7 @@
       "inVault": "dans {{vault}}",
       "valuePlaceholder": "Fournisseur d'électricité",
       "titlePlaceholder": "Électricité {month} {year}",
-      "titleHint": "Dans le titre, {sender}, {kind}, {date}, {month}, {year} et {amount} représentent les champs du document.",
+      "titleHint": "Dans le titre, {sender}, {kind}, {date}, {month}, {year}, {amount} et {ref} représentent les champs du document.",
       "or": "ou",
       "quoted": "« {{value}} »",
       "field": {
@@ -1935,22 +1940,26 @@
         "text": "Texte",
         "kind": "Type",
         "source": "Source",
-        "amount": "Montant"
+        "amount": "Montant",
+        "reference": "Référence"
       },
       "op": {
         "is": "est",
         "contains": "contient",
         "over": "supérieur à",
-        "under": "inférieur à"
+        "under": "inférieur à",
+        "empty": "est vide"
       },
       "target": {
         "vault": "Coffre",
         "kind": "Type",
         "tag": "Étiquette",
         "sender": "Expéditeur",
-        "title": "Titre"
+        "title": "Titre",
+        "reference": "Référence"
       },
-      "gone": "n'existe plus"
+      "gone": "n'existe plus",
+      "referencePlaceholder": "4711"
     },
     "kinds": {
       "title": "Types",
@@ -3234,5 +3243,19 @@
     "there": "Ce document a déjà une tâche dans nextasks.",
     "open": "Ouvrir dans nextasks",
     "noList": "nextasks n'a pas encore de liste."
+  },
+  "reference": {
+    "searchExample": "ref:4711",
+    "searchHelp": "la référence contient 4711",
+    "vault": {
+      "title": "Champ de référence",
+      "text": "Un champ libre par document, par exemple pour un numéro de patient ou de client.",
+      "name": "Nom du champ",
+      "nameHint": "Laisser vide pour « Référence ».",
+      "hide": "Masquer le champ",
+      "hideHint": "Là où une valeur est déjà saisie, le champ reste visible.",
+      "cardName": "La référence s'appelle ici « {{name}} ».",
+      "cardHidden": "Le champ « {{name}} » est masqué."
+    }
   }
 }

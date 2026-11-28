@@ -139,7 +139,8 @@ class SortAgainIn(BaseModel):
 
 
 class SortAgainItem(BaseModel):
-    #: The fields that would change: `title`, `sender`, `kind`, `date`, `amount`, `dates`, `tags`, `vault`.
+    #: The fields that would change: `title`, `sender`, `kind`, `date`, `amount`, `dates`, `tags`, `vault`,
+    #: `reference`.
     fields: list[str]
     #: Per changed field where the new value comes from: `rule`, `last_time`, `text`, `ai`, `einvoice`.
     origins: dict[str, str]

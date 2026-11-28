@@ -56,6 +56,8 @@ TRASH_DAYS = 30
 TITLE_MAX = 200
 NOTE_MAX = 5000
 AMOUNT_LIMIT = 10**12
+#: The longest reference of a document (issue #13), after its blanks were joined.
+REFERENCE_MAX = 100
 DATE_MIN, DATE_MAX = Date(1900, 1, 1), Date(2200, 12, 31)
 SOURCES = ("upload", "camera", "mail", "folder", "share", "paperless", "api", "request")
 #: The statuses a person may set by hand: filing a document or putting it back in the inbox.
@@ -74,6 +76,20 @@ def clean_title(value: str) -> str:
     if not title or len(title) > TITLE_MAX:
         raise error("invalid_title", f"Use 1 to {TITLE_MAX} characters.", 422)
     return title
+
+
+def clean_reference(value: str | None) -> str:
+    """A document's reference as it is kept: blanks joined, the characters that turn text around taken out; empty
+    when there is none. Control characters and more than ``REFERENCE_MAX`` characters answer ``invalid_reference``."""
+    if value is None:
+        return ""
+    value = value.translate(BIDI_CONTROLS)
+    if any(ord(char) < 32 or ord(char) == 127 for char in value):
+        raise error("invalid_reference", "A reference cannot hold control characters.", 422)
+    reference = " ".join(value.split())
+    if len(reference) > REFERENCE_MAX:
+        raise error("invalid_reference", f"Use at most {REFERENCE_MAX} characters.", 422, limit=REFERENCE_MAX)
+    return reference
 
 
 def check_date(value: Date | None, field: str = "date") -> Date | None:
@@ -263,12 +279,18 @@ def one(db: Session, uid: int, document_id: int, need: str = READ) -> tuple[righ
 def listing(
     db: Session, uid: int, *, vault_id: int | None, status: str | None, after: int, limit: int,
     via_share: bool | None = None, sender: str | None = None, tag: str | None = None,
+    reference: str | None = None, has_reference: bool | None = None,
 ) -> list[Document]:
     """Documents the caller may see, by id, ``limit`` of them after the id ``after``. A vault the caller is not in is
     simply empty, like one that does not exist. ``via_share``: only those the caller sees through a share alone (true)
     or only those of their vaults (false). ``sender`` and ``tag`` filter by name across the vaults (the same name in
-    two vaults is two rows, one filter)."""
+    two vaults is two rows, one filter). ``reference``: the documents with this reference (blanks joined, case aside
+    for the letters A to Z); ``has_reference``: only those with one (true) or without (false)."""
     query = select(Document).where(rights.visible_clause(uid), Document.id > after)
+    if reference is not None:
+        query = query.where(func.lower(Document.reference) == func.lower(clean_reference(reference)))
+    if has_reference is not None:
+        query = query.where(Document.reference != "" if has_reference else Document.reference == "")
     if vault_id is not None:
         query = query.where(Document.vault_id == vault_id)
     if via_share is not None:
@@ -568,6 +590,11 @@ def change_fields(db: Session, uid: int, document_id: int, patch: dict[str, Any]
         if amount != document.amount:
             document.amount = amount
             changed.append("amount")
+    if "reference" in patch:
+        reference = clean_reference(patch["reference"])
+        if reference != document.reference:
+            document.reference = reference
+            changed.append("reference")
     if "status" in patch:
         if patch["status"] not in SETTABLE:
             raise error("invalid_status", "A document can be put in the inbox or filed.", 422)

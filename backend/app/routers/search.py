@@ -99,6 +99,8 @@ class Understood(BaseModel):
     amounts: list[AmountOut]
     #: ``frist:`` / ``deadline:``: ``open``, ``overdue``, ``done``, or the number of days of ``<n``.
     deadlines: list[str | int] = []
+    #: ``az:`` / ``ref:``: what the reference of a document holds (issue #13).
+    references: list[str] = []
 
 
 class SearchOut(BaseModel):
@@ -223,7 +225,7 @@ def find(
         words=query.words, phrases=[" ".join(parts) for parts, _prefix in query.phrases], kinds=query.kinds,
         senders=query.senders, tags=query.tags,
         amounts=[AmountOut(op=a.op, cents=a.cents) for a in query.amounts],  # type: ignore[arg-type]
-        deadlines=query.deadlines,
+        deadlines=query.deadlines, references=query.references,
     ))
 
 

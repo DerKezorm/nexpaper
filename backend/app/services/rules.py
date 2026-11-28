@@ -3,11 +3,12 @@
 A rule has **conditions** (all must hold) and **what follows**, and rules are tried in their order: for a field, the
 first rule that sets it wins; tags add up. A rule that applied counts a hit, once per document.
 
-* Conditions: the sender is or contains, the text contains, the kind is, the source is, the amount is over or under.
-  A condition on a text names up to ``MAX_VALUES`` words, one of which must be found.
-* What follows: the vault, the kind, a tag, the sender, the title (a pattern with ``{sender}``, ``{kind}``,
-  ``{date}``, ``{month}``, ``{year}``, ``{amount}``, also in German: ``{absender}``, ``{art}``, ``{datum}``,
-  ``{monat}``, ``{jahr}``, ``{betrag}``).
+* Conditions: the sender is or contains, the text contains, the kind is, the source is, the amount is over or under,
+  the reference is, contains or is empty (issue #13). A condition on a text names up to ``MAX_VALUES`` words, one of
+  which must be found.
+* What follows: the vault, the kind, a tag, the sender, the reference, the title (a pattern with ``{sender}``,
+  ``{kind}``, ``{date}``, ``{month}``, ``{year}``, ``{amount}``, ``{ref}``, also in German: ``{absender}``, ``{art}``,
+  ``{datum}``, ``{monat}``, ``{jahr}``, ``{betrag}``, ``{az}``).
 
 **Whose rules.** A rule belongs to one vault and applies to the documents that arrive there; the people who manage the
 vault make and change them (for their own vault every person does). A rule without a vault applies to every document
@@ -60,11 +61,13 @@ CONDITIONS = {
     "kind": ("is",),
     "source": ("is",),
     "amount": ("over", "under"),
+    "reference": ("is", "contains", "empty"),
 }
-ACTIONS = ("vault", "kind", "tag", "sender", "title")
+ACTIONS = ("vault", "kind", "tag", "sender", "title", "reference")
 PLACEHOLDERS = {
     "sender": "sender", "absender": "sender", "kind": "kind", "art": "kind", "date": "date", "datum": "date",
     "month": "month", "monat": "month", "year": "year", "jahr": "year", "amount": "amount", "betrag": "amount",
+    "ref": "reference", "az": "reference",
 }
 _PLACEHOLDER = re.compile(r"\{([a-z]{1,10})\}")
 MONTH_NAMES = {
@@ -122,7 +125,9 @@ def clean_when(db: Session, raw: Any, vault_id: int | None = None) -> list[dict[
         name, op = item.get("field"), item.get("op")
         if name not in CONDITIONS or op not in CONDITIONS[name]:
             raise error("invalid_rule", "There is no such condition.", 422)
-        if name in ("sender", "text"):
+        if name == "reference" and op == "empty":
+            out.append({"field": name, "op": op})
+        elif name in ("sender", "text", "reference"):
             values = item.get("values")
             if not isinstance(values, list) or not 1 <= len(values) <= MAX_VALUES:
                 raise error("invalid_rule", f"A condition names 1 to {MAX_VALUES} words.", 422)
@@ -145,7 +150,8 @@ def clean_then(db: Session, uid: int, raw: Any, vault_id: int | None = None) -> 
     seen: set[str] = set()
     for item in raw:
         if not isinstance(item, dict) or item.get("field") not in ACTIONS:
-            raise error("invalid_rule", "A rule sets the vault, the kind, a tag, the sender or the title.", 422)
+            raise error("invalid_rule", "A rule sets the vault, the kind, a tag, the sender, the reference or the "
+                        "title.", 422)
         name = item["field"]
         if name != "tag" and name in seen:
             raise error("invalid_rule", "A rule sets each field once.", 422)
@@ -164,12 +170,16 @@ def clean_then(db: Session, uid: int, raw: Any, vault_id: int | None = None) -> 
         elif name == "sender":
             out.append({"field": name, "value": catalog.clean_word(_word(value, catalog.SENDER_MAX),
                                                                    catalog.SENDER_MAX, "invalid_sender")})
+        elif name == "reference":
+            from .documents import REFERENCE_MAX, clean_reference
+
+            out.append({"field": name, "value": clean_reference(_word(value, REFERENCE_MAX))})
         else:
             pattern = _word(value, PATTERN_MAX)
             for found in _PLACEHOLDER.findall(pattern):
                 if found not in PLACEHOLDERS:
-                    raise error("invalid_rule", "The title knows {sender}, {kind}, {date}, {month}, {year} and "
-                                "{amount}.", 422)
+                    raise error("invalid_rule", "The title knows {sender}, {kind}, {date}, {month}, {year}, "
+                                "{amount} and {ref}.", 422)
             out.append({"field": name, "value": pattern})
     return out
 
@@ -279,6 +289,8 @@ class Subject:
     kind_id: int | None
     source: str
     amount: int | None
+    #: The reference the document has (set by a person, or by an earlier sorting); empty when none.
+    reference: str = ""
     #: Filled once: the text in its compared form.
     _folded: str = field(default="", repr=False)
 
@@ -299,6 +311,14 @@ def holds(condition: dict[str, Any], subject: Subject) -> bool:
     if name == "text":
         words = [compare_form(v) for v in condition.get("values") or [] if isinstance(v, str)]
         return any(w and w in subject.folded_text() for w in words)
+    if name == "reference":
+        mine = compare_form(subject.reference)
+        if op == "empty":
+            return not mine
+        if not mine:
+            return False
+        words = [compare_form(v) for v in condition.get("values") or [] if isinstance(v, str)]
+        return any(mine == w for w in words) if op == "is" else any(w and w in mine for w in words)
     if name == "kind":
         return subject.kind_id is not None and subject.kind_id == condition.get("value")
     if name == "source":
@@ -338,6 +358,7 @@ class Outcome:
     kind_id: int | None = None
     sender: str | None = None
     title: str | None = None
+    reference: str | None = None
     tags: list[str] = field(default_factory=list)
     applied: list[int] = field(default_factory=list)
 
@@ -387,6 +408,8 @@ def evaluate(db: Session, rules: list[Rule], subject: Subject, owner_id: int | N
                 out.sender = value
             elif name == "title" and out.title is None and isinstance(value, str):
                 out.title = value
+            elif name == "reference" and out.reference is None and isinstance(value, str) and value:
+                out.reference = value
             elif name == "tag" and isinstance(value, str) and name_key(value) not in {name_key(t) for t in out.tags}:
                 out.tags.append(value)
     return out
@@ -407,7 +430,7 @@ def count_hits(db: Session, rule_ids: list[int], document_id: int) -> None:
 
 
 def render_title(pattern: str, *, sender: str, kind: str, day: Date | None, amount: int | None, currency: str,
-                 language: str) -> str:
+                 language: str, reference: str = "") -> str:
     """A title from a pattern: each known placeholder replaced by its value (empty when there is none), nothing else
     touched; the result cleaned and cut to a title's length."""
     names = MONTH_NAMES.get(language, MONTH_NAMES["en"])
@@ -418,6 +441,8 @@ def render_title(pattern: str, *, sender: str, kind: str, day: Date | None, amou
             return sender
         if what == "kind":
             return kind
+        if what == "reference":
+            return reference
         if what == "date":
             return (day.strftime("%d.%m.%Y") if language == "de" else day.isoformat()) if day else ""
         if what == "month":

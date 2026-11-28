@@ -36,9 +36,10 @@ class Strict(BaseModel):
 
 
 class ConditionIn(Strict):
-    field: Literal["sender", "text", "kind", "source", "amount"]
-    op: Literal["is", "contains", "over", "under"]
-    #: For ``sender`` and ``text``: one of these words (compared as plain text, case and accents aside).
+    field: Literal["sender", "text", "kind", "source", "amount", "reference"]
+    #: ``empty`` only for ``reference`` (the document has none), and without words.
+    op: Literal["is", "contains", "over", "under", "empty"]
+    #: For ``sender``, ``text`` and ``reference``: one of these words (compared as plain text, case and accents aside).
     values: list[StrictStr] | None = Field(default=None, max_length=rules_service.MAX_VALUES)
     #: For ``kind`` (its id), ``source`` (``upload``, ``camera``, ``mail``, ``folder``, ``share``, ``paperless``,
     #: ``api``) and ``amount`` (cents).
@@ -46,9 +47,9 @@ class ConditionIn(Strict):
 
 
 class ActionIn(Strict):
-    field: Literal["vault", "kind", "tag", "sender", "title"]
-    #: A vault or kind id; a tag or sender name; a title pattern (``{sender}``, ``{kind}``, ``{date}``, ``{month}``,
-    #: ``{year}``, ``{amount}``).
+    field: Literal["vault", "kind", "tag", "sender", "title", "reference"]
+    #: A vault or kind id; a tag or sender name; the reference to set; a title pattern (``{sender}``, ``{kind}``,
+    #: ``{date}``, ``{month}``, ``{year}``, ``{amount}``, ``{ref}``).
     value: StrictInt | StrictStr
 
 

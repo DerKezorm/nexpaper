@@ -351,8 +351,12 @@ knew them; a proposal is only a proposal, and the inbox says where each field ca
 
 ## Filing
 
-New documents wait in the inbox with proposals. **Rules** (a vault's own, made by its managers, and the operator's for
-the whole server) fill in a vault, a kind, a tag, a sender or a title when conditions hold; their words are compared as
+New documents wait in the inbox with proposals. Next to title, sender, kind, date and amount, every document has a
+**reference**: one free field for the number you file by (a patient file, a case or a customer number). Each vault
+names the field itself or hides it; `az:` / `ref:` finds it in the search, and `GET /api/v1/documents?reference=…`
+lists every document with one. **Rules** (a vault's own, made by its managers, and the operator's for
+the whole server) fill in a vault, a kind, a tag, a sender, the reference or a title (`{ref}` puts the reference into
+it) when conditions hold, and may check the reference (is, contains, is empty); their words are compared as
 plain text, never as patterns. A rule of the operator's for the whole server does not reach into the personal vault of
 anybody else. A new or changed rule can be **applied again to what already waits in the inbox** ("Apply rules", for
 the whole inbox or the documents selected, and offered right after "Remember as a rule"): nexpaper first shows every

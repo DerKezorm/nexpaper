@@ -162,6 +162,9 @@ class DocumentOut(BaseModel):
     #: ``restricted`` (it opens without one, only printing or changing it is locked); empty else. The view, links,
     #: exports and the page tools take the PDF opened (``/archive``); ``/file`` is the original as it came.
     original_protected: Literal["", "password", "restricted"] = ""
+    #: The document's reference (issue #13: a patient file number, a file number): free text, empty when there is none.
+    #: What it is called is the vault's business (`reference_name` of the vault, empty: the interface's own word).
+    reference: str = ""
 
 
 def _suggest(value: object) -> dict[str, str]:
@@ -217,4 +220,5 @@ def document_out(row: Row) -> DocumentOut:
         has_related=row.has_related, pinned=row.pinned, shown_outside=row.shown_outside,
         sender_memo=(row.sender.memo or "") if row.sender is not None and not row.via_share else None,
         original_protected=row.original_protected,  # type: ignore[arg-type]
+        reference=document.reference or "",
     )

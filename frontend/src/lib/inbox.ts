@@ -26,6 +26,8 @@ export type Draft = {
   kind_id: number | null
   date: string
   amount: number | null
+  /** The reference ("Aktenzeichen", #13); empty when there is none. */
+  reference: string
   tags: string[]
   dates: DateEntry[]
   vault_id: number
@@ -54,6 +56,7 @@ export function draftOf(d: DocumentInfo): Draft {
     kind_id: d.kind?.id ?? null,
     date: d.date ?? '',
     amount: d.amount,
+    reference: d.reference ?? '',
     tags: d.tags,
     dates: d.dates.map(dateEntry),
     vault_id: d.vault_id,
@@ -75,6 +78,7 @@ export function follow(was: Draft, now: Draft, mine: Draft): Draft {
   keep('kind_id')
   keep('date')
   keep('amount')
+  keep('reference')
   keep('tags')
   keep('dates')
   keep('vault_id')
@@ -90,6 +94,8 @@ export function changesOf(d: DocumentInfo, f: Draft): DocumentPatch {
   if (f.kind_id !== was.kind_id) out.kind_id = f.kind_id
   if (f.date !== was.date) out.date = f.date || null
   if (f.amount !== was.amount) out.amount = f.amount
+  // The server draws spaces together; empty clears it.
+  if (f.reference.trim() !== was.reference) out.reference = f.reference.trim() || null
   if (JSON.stringify(f.tags) !== JSON.stringify(was.tags)) out.tags = f.tags
   return { ...out, ...datesChanged(was.dates, f.dates) }
 }

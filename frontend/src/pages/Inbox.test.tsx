@@ -317,6 +317,53 @@ describe('the inbox', () => {
   })
 })
 
+describe('the reference in the inbox (#13)', () => {
+  const vaultsWith = (extra: Record<string, unknown>) => (server.answers['GET /api/v1/vaults'] as { id: number }[]).map((v) => (v.id === 9 ? { ...v, ...extra } : v))
+  const field = (label: string) => page.box.querySelector<HTMLInputElement>(`input[aria-label="${label}"]`)
+
+  it('is a field under the name of the vault chosen, with where its proposal came from, and is filed with the rest', async () => {
+    server.answers['GET /api/v1/vaults'] = vaultsWith({ reference_name: 'Patientenakte', reference_hidden: false })
+    server.answers[INBOX] = inboxOf([reading, { ...heating, reference: 'PA 1', suggest: { ...heating.suggest, reference: 'rule' } }, teeth])
+    await show('/eingang/11')
+    await until(() => Boolean(field('Patientenakte')))
+    expect(field('Patientenakte')!.value).toBe('PA 1')
+    expect(plain(field('Patientenakte')!.closest('.text-sm')!.textContent)).toContain('Regel')
+    await page.type(field('Patientenakte'), ' PA 4711 ')
+    // In the own vault the field has the default name again.
+    await page.choose(page.select('Tresor'), '7')
+    expect(field('Patientenakte')).toBeNull()
+    await page.click(page.button('Ablegen'))
+    expect(server.called('PATCH', '/api/v1/documents/11')!.body).toEqual({ reference: 'PA 4711', status: 'filed' })
+  })
+
+  it('sends an emptied field as null, and nothing when it stays as it was', async () => {
+    server.answers[INBOX] = inboxOf([reading, { ...heating, reference: '4711' }, teeth])
+    await show('/eingang/11')
+    await until(() => Boolean(field('Aktenzeichen')))
+    expect(field('Aktenzeichen')!.placeholder).toBe('nicht angegeben')
+    await page.type(field('Aktenzeichen'), '')
+    await page.click(page.button('Ablegen'))
+    expect(server.called('PATCH', '/api/v1/documents/11')!.body).toEqual({ reference: null, status: 'filed' })
+  })
+
+  it('is hidden where the vault hides it and the document has none, and shows in a vault that does not', async () => {
+    server.answers['GET /api/v1/vaults'] = vaultsWith({ reference_hidden: true })
+    await show('/eingang/11')
+    await until(() => page.text.includes('Von rechnung@example.com'))
+    expect(field('Aktenzeichen')).toBeNull()
+    await page.choose(page.select('Tresor'), '7')
+    expect(field('Aktenzeichen')).toBeTruthy()
+  })
+
+  it('shows where the vault hides it but the document has one: nothing is kept unseen', async () => {
+    server.answers['GET /api/v1/vaults'] = vaultsWith({ reference_hidden: true })
+    server.answers[INBOX] = inboxOf([reading, { ...heating, reference: '4711' }, teeth])
+    await show('/eingang/11')
+    await until(() => page.text.includes('Von rechnung@example.com'))
+    expect(field('Aktenzeichen')!.value).toBe('4711')
+  })
+})
+
 describe('a batch scan in the inbox (the page tools)', () => {
   it('has the scissors in the list and the proposal to split in place of the details, and splits', async () => {
     const stack = doc(15, 'Stapelscan vom Drucker', '2026-10-08T10:00:00Z', { pages: 3, source: 'folder', split_suggested: true, sender: null })

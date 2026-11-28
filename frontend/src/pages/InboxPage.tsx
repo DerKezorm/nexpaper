@@ -58,6 +58,7 @@ import { errorText } from '../lib/errors'
 import { useVaultTags } from '../lib/tags'
 import { changesOf, draftOf, follow, type Draft } from '../lib/inbox'
 import { oneOfEachName } from '../lib/kinds'
+import { REFERENCE_MAX, referenceName, referenceShown } from '../lib/reference'
 import { baseYear } from '../lib/keeping'
 import { trashQuestion } from '../components/KeepTrash'
 import { personName } from '../lib/people'
@@ -811,6 +812,9 @@ function Detail({ document: d, next, slots, search, onChanged }: { document: Doc
     )
 
   const why = d.suggest ?? {}
+  // The reference (#13) under the name of the vault chosen now; hidden there only while neither field nor document has one.
+  const chosenVault = vaults.find((v) => v.id === f.vault_id)
+  const referenceLabel = referenceName(chosenVault, t)
   const unreadable = UNREADABLE.includes(d.process_error)
   const longPages = text?.long_document_pages ?? 0
   const SplitPanel = slots.SplitPanel
@@ -993,6 +997,19 @@ function Detail({ document: d, next, slots, search, onChanged }: { document: Doc
             </Field>
           </div>
           <FoundDates document={d} text={text} chosen={f.date} onPick={(date) => setF((was) => ({ ...was, date }))} />
+          {referenceShown(chosenVault, f.reference, d.reference) && (
+            <Field label={referenceLabel} why={why.reference}>
+              <input
+                value={f.reference}
+                maxLength={REFERENCE_MAX}
+                aria-label={referenceLabel}
+                placeholder={t('docs.fields.noReference')}
+                aria-invalid={problem?.code === 'invalid_reference'}
+                onChange={(event) => setF({ ...f, reference: event.target.value })}
+                className="input"
+              />
+            </Field>
+          )}
           <Field label={t('docs.fields.vault')} why={why.vault}>
             <select
               value={f.vault_id}

@@ -16,6 +16,7 @@ import { keepUntil } from '../lib/keeping'
 import { addMonths, daysBetween, isDay, lastToCancel, useDayName, whatOfKind } from '../lib/deadlines'
 import { personName } from '../lib/people'
 import { amountText, parseAmount } from '../lib/money'
+import { REFERENCE_MAX } from '../lib/reference'
 import { Chip, WhyBadge } from './docs'
 import { TagPicker } from './TagPicker'
 
@@ -96,6 +97,36 @@ export function AmountInput({ cents, onChange, label, className = 'input', langu
       />
       {wrong && <p className="mt-1 text-xs text-bad">{t('docs.fields.amountWrong')}</p>}
     </>
+  )
+}
+
+/** The reference of a saved document (#13): typed freely, saved when the field is left or with Enter (spaces drawn
+ * together, empty clears it); Escape puts the saved one back. */
+export function ReferenceInput({ value, onCommit, label, className = 'input' }: { value: string; onCommit: (value: string) => void; label: string; className?: string }) {
+  const { t } = useTranslation()
+  const [typed, setTyped] = useState(value)
+  useEffect(() => {
+    setTyped(value)
+  }, [value])
+  const commit = () => {
+    const wanted = typed.replace(/\s+/g, ' ').trim()
+    if (wanted !== value) onCommit(wanted)
+    else setTyped(value)
+  }
+  return (
+    <input
+      value={typed}
+      maxLength={REFERENCE_MAX}
+      aria-label={label}
+      placeholder={t('docs.fields.noReference')}
+      onChange={(event) => setTyped(event.target.value)}
+      onBlur={commit}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter') commit()
+        if (event.key === 'Escape') setTyped(value)
+      }}
+      className={className}
+    />
   )
 }
 

@@ -639,7 +639,9 @@
     "nextasks_not_connected": "nexpaper ist nicht mit nextasks verbunden. Verbinden kannst du unter Mein Konto › Verbindungen.",
     "nextasks_disconnected": "Die Verbindung mit nextasks trägt nicht mehr. Unter Mein Konto › Verbindungen steht, warum.",
     "nextasks_declined": "nextasks hat die Aufgabe nicht angenommen. Wähle eine andere Liste oder versuche es später.",
-    "nextasks_unreachable": "nextasks ist gerade nicht erreichbar. Versuche es gleich noch einmal."
+    "nextasks_unreachable": "nextasks ist gerade nicht erreichbar. Versuche es gleich noch einmal.",
+    "invalid_reference": "Ein Aktenzeichen hat höchstens 100 Zeichen, ohne Steuerzeichen.",
+    "invalid_reference_name": "Der Name des Felds hat höchstens 40 Zeichen, ohne Steuerzeichen."
   },
   "ready": {
     "secrets": {
@@ -1281,7 +1283,9 @@
       "dateRange": "Dieses Datum geht nicht. Erlaubt sind die Jahre {{from}} bis {{to}}.",
       "noKind": "keine",
       "noTags": "keine",
-      "none": "keiner"
+      "none": "keiner",
+      "reference": "Aktenzeichen",
+      "noReference": "nicht angegeben"
     },
     "archive": {
       "title": "Archiv",
@@ -1568,7 +1572,8 @@
         "status": "den Status",
         "tags": "die Tags",
         "dates": "die Termine",
-        "keep_until": "„Aufbewahren bis“"
+        "keep_until": "„Aufbewahren bis“",
+        "reference": "das Aktenzeichen"
       },
       "moved": "hat es von {{from}} nach {{to}} verschoben",
       "shared": "hat es mit {{person}} geteilt ({{right}})",
@@ -1927,7 +1932,7 @@
       "inVault": "in {{vault}}",
       "valuePlaceholder": "Stadtwerke",
       "titlePlaceholder": "Strom {monat} {jahr}",
-      "titleHint": "Im Titel stehen {absender}, {art}, {datum}, {monat}, {jahr} und {betrag} für die Felder des Dokuments.",
+      "titleHint": "Im Titel stehen {absender}, {art}, {datum}, {monat}, {jahr}, {betrag} und {az} für die Felder des Dokuments.",
       "or": "oder",
       "quoted": "„{{value}}“",
       "field": {
@@ -1935,22 +1940,26 @@
         "text": "Text",
         "kind": "Art",
         "source": "Quelle",
-        "amount": "Betrag"
+        "amount": "Betrag",
+        "reference": "Aktenzeichen"
       },
       "op": {
         "is": "ist",
         "contains": "enthält",
         "over": "über",
-        "under": "unter"
+        "under": "unter",
+        "empty": "ist leer"
       },
       "target": {
         "vault": "Tresor",
         "kind": "Art",
         "tag": "Tag",
         "sender": "Absender",
-        "title": "Titel"
+        "title": "Titel",
+        "reference": "Aktenzeichen"
       },
-      "gone": "nicht mehr vorhanden"
+      "gone": "nicht mehr vorhanden",
+      "referencePlaceholder": "4711"
     },
     "kinds": {
       "title": "Arten",
@@ -3234,5 +3243,19 @@
     "there": "Für dieses Dokument gibt es in nextasks schon eine Aufgabe.",
     "open": "In nextasks öffnen",
     "noList": "In nextasks gibt es noch keine Liste."
+  },
+  "reference": {
+    "searchExample": "az:4711",
+    "searchHelp": "Aktenzeichen enthält 4711",
+    "vault": {
+      "title": "Aktenzeichen-Feld",
+      "text": "Ein freies Feld je Dokument, zum Beispiel für eine Patienten- oder Kundennummer.",
+      "name": "Name des Felds",
+      "nameHint": "Leer lassen für „Aktenzeichen“.",
+      "hide": "Feld ausblenden",
+      "hideHint": "Wo schon etwas eingetragen ist, bleibt das Feld sichtbar.",
+      "cardName": "Das Aktenzeichen heißt hier „{{name}}“.",
+      "cardHidden": "Das Feld „{{name}}“ ist ausgeblendet."
+    }
   }
 }

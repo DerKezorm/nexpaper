@@ -8,6 +8,7 @@
 * ``art:rechnung`` / ``kind:invoice``: the kind (its name or key begins so),
 * ``absender:hansa`` / ``sender:hansa``: the sender (its name holds it),
 * ``tag:auto``: a tag that begins so,
+* ``az:4711`` / ``ref:4711``: the reference of the document holds it (issue #13),
 * ``betrag:>100`` / ``amount:<50,5`` / ``betrag:=12.30`` / ``betrag:100``: the amount in euros, comma or point,
 * ``frist:offen`` / ``deadline:open``, ``frist:überfällig`` / ``deadline:overdue``, ``frist:erledigt`` /
   ``deadline:done``, ``frist:<30`` / ``deadline:<30``: a deadline of the document that is open, overdue, done, or
@@ -50,6 +51,7 @@ AMOUNT_LIMIT = 10**12
 KIND_KEYS = ("art", "kind")
 SENDER_KEYS = ("absender", "sender")
 TAG_KEYS = ("tag",)
+REFERENCE_KEYS = ("az", "aktenzeichen", "ref", "reference")
 AMOUNT_KEYS = ("betrag", "amount")
 KEEP_KEYS = ("aufbewahren", "keep")
 #: The words of ``aufbewahren:`` / ``keep:`` (folded) and what they ask for; any other word asks for ``none``.
@@ -124,6 +126,8 @@ class Query:
     kinds: list[str] = field(default_factory=list)
     senders: list[str] = field(default_factory=list)
     tags: list[str] = field(default_factory=list)
+    #: ``az:`` / ``ref:``: the reference holds this (case aside for the letters A to Z).
+    references: list[str] = field(default_factory=list)
     amounts: list[Amount] = field(default_factory=list)
     #: ``expired``, ``running`` or ``none`` (a word the search does not know: nothing is found).
     keeps: list[str] = field(default_factory=list)
@@ -141,7 +145,7 @@ class Query:
     @property
     def empty(self) -> bool:
         return not (self.has_text or self.kinds or self.senders or self.tags or self.amounts or self.deadlines
-                    or self.keeps or self.linked or self.pinned)
+                    or self.keeps or self.linked or self.pinned or self.references)
 
     def patterns(self) -> list[str]:
         """Regular expressions for the places a hit is marked at, as the index finds them: a word of
@@ -245,6 +249,10 @@ def parse(raw: str) -> Query:
             if name in PINNED_KEYS:
                 if clean:
                     query.pinned.append(LINKED_WORDS.get(fold(clean), "none"))
+                continue
+            if name in REFERENCE_KEYS:
+                if clean:
+                    query.references.append(" ".join(clean.split())[:100])
                 continue
             if name in KIND_KEYS + SENDER_KEYS + TAG_KEYS:
                 if clean:

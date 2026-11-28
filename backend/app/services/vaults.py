@@ -50,6 +50,21 @@ def clean_name(value: str) -> str:
     return name
 
 
+#: The longest name a vault gives the reference of its documents (issue #13).
+REFERENCE_NAME_MAX = 40
+
+
+def clean_reference_name(value: str) -> str:
+    """What a vault calls the reference of its documents: blanks joined, empty for the interface's own word."""
+    if any(ord(char) < 32 or ord(char) == 127 or unicodedata.category(char) == "Cf" for char in value):
+        raise error("invalid_reference_name", "A name cannot hold control or invisible characters.", 422)
+    name = " ".join(value.split())
+    if len(name) > REFERENCE_NAME_MAX:
+        raise error("invalid_reference_name", f"Use at most {REFERENCE_NAME_MAX} characters.", 422,
+                    limit=REFERENCE_NAME_MAX)
+    return name
+
+
 @dataclass
 class VaultView:
     vault: Vault
@@ -130,9 +145,16 @@ def create_shared(db: Session, operator: Account, name: str, icon: str) -> Vault
     return vault
 
 
-def update_vault(db: Session, uid: int, vault_id: int, name: str | None, icon: str | None) -> Vault:
+def update_vault(db: Session, uid: int, vault_id: int, name: str | None, icon: str | None, *,
+                 reference_name: str | None = None, reference_hidden: bool | None = None) -> Vault:
+    """A shared vault's name and icon; what a vault calls the reference of its documents and whether the field is hidden
+    (issue #13), for a personal vault too. Managers only."""
     changes.write_lock(db)
     vault, _right = rights.require_vault(db, uid, vault_id, MANAGE)
+    if reference_name is not None:
+        vault.reference_name = clean_reference_name(reference_name)
+    if reference_hidden is not None:
+        vault.reference_hidden = reference_hidden
     if name is not None:
         if vault.personal_of is not None:
             raise error("personal_vault", "A personal vault keeps its person's name.", 409)

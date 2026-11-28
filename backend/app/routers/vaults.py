@@ -39,6 +39,10 @@ class VaultOut(BaseModel):
     documents: int
     size: int
     members: list[MemberOut]
+    #: What the vault calls a document's reference (issue #13, "Patientenakte"); empty: the interface's own word.
+    reference_name: str = ""
+    #: The reference field is not shown where it is empty (a value a document has is shown anyway).
+    reference_hidden: bool = False
 
 
 class VaultIn(BaseModel):
@@ -47,8 +51,14 @@ class VaultIn(BaseModel):
 
 
 class VaultPatch(BaseModel):
+    #: Only for a shared vault: a personal one keeps its person's name.
     name: str | None = Field(default=None, min_length=1, max_length=vaults.NAME_MAX)
     icon: str | None = Field(default=None, max_length=16)
+    #: What the vault calls a document's reference, up to 40 characters; empty: the interface's own word. Also for a
+    #: personal vault.
+    reference_name: str | None = Field(default=None, max_length=vaults.REFERENCE_NAME_MAX * 2)
+    #: Hide the reference field where a document has none. Also for a personal vault.
+    reference_hidden: bool | None = None
 
 
 class MemberIn(BaseModel):
@@ -77,6 +87,7 @@ def _out(item: vaults.VaultView) -> VaultOut:
         documents=item.documents, size=item.size,
         members=[MemberOut(user_id=m.user_id, name=a.name, display_name=a.display_name,
                            right=m.right) for m, a in item.members],  # type: ignore[arg-type]
+        reference_name=item.vault.reference_name or "", reference_hidden=bool(item.vault.reference_hidden),
     )
 
 
@@ -101,7 +112,10 @@ def create(payload: VaultIn, operator: OperatorAccount, db: DbSession) -> VaultO
 @router.patch("/vaults/{vault_id}", response_model=VaultOut,
               summary="Rename a shared vault or change its icon (managers)")
 def patch(vault_id: int, payload: VaultPatch, account: BrowserAccount, db: DbSession) -> VaultOut:
-    vaults.update_vault(db, account.id, vault_id, payload.name, payload.icon)
+    """Also what the vault calls the reference of its documents and whether the field is hidden (`reference_name`,
+    `reference_hidden`), for a personal vault too."""
+    vaults.update_vault(db, account.id, vault_id, payload.name, payload.icon, reference_name=payload.reference_name,
+                        reference_hidden=payload.reference_hidden)
     return _out(vaults.view(db, account.id, vault_id))
 
 

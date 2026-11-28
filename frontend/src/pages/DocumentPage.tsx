@@ -64,7 +64,7 @@ import { Avatar } from '../components/Avatar'
 import { Button } from '../components/Button'
 import { Dialog } from '../components/Dialog'
 import { TagPicker } from '../components/TagPicker'
-import { AmountInput, DateInput, Dates, type DateEntry } from '../components/DocumentFields'
+import { AmountInput, DateInput, Dates, ReferenceInput, type DateEntry } from '../components/DocumentFields'
 import { SenderPicker } from '../components/SenderPicker'
 import { FileNotice, KindPill, Menu, MenuItem } from '../components/docs'
 import { EInvoiceBox, useEInvoice } from '../components/EInvoice'
@@ -90,6 +90,7 @@ import { problemOf, refusedOf, refusedValue, shownAtField } from '../lib/dateInp
 import { errorText } from '../lib/errors'
 import { eventWhat, eventWho, standsAlone } from '../lib/events'
 import { money } from '../lib/money'
+import { referenceName, referenceShown } from '../lib/reference'
 import { readablePath } from '../lib/paths'
 import { asAvatarPerson, personName } from '../lib/people'
 import { inboxChanged, iso, listOf, moment, useSay, useSourceText, type NoticeLink } from '../lib/say'
@@ -662,6 +663,9 @@ function Details({ document: d, canEdit, vaults, path, change, problem, onShare,
       onProblem(error instanceof ApiError ? { code: error.code, values: error.values } : { code: 'internal_error' })
     }
   }
+  // The reference (#13) under the name the vault gives it; a vault that hides it still shows one that is there.
+  const ownVault = vaults.find((v) => v.id === d.vault_id)
+  const referenceLabel = referenceName(ownVault, t)
   const dates = d.dates.map(dateEntry)
   const keep = {
     kindName: d.kind?.name ?? null,
@@ -759,6 +763,17 @@ function Details({ document: d, canEdit, vaults, path, change, problem, onShare,
           money(d.amount, i18n.language, d.currency) || <span className="text-muted">{t('docs.fields.noAmount')}</span>
         )}
       </Row>
+      {referenceShown(ownVault, d.reference) && (
+        <Row label={referenceLabel}>
+          {canEdit ? (
+            <ReferenceInput value={d.reference ?? ''} onCommit={(reference) => void change({ reference: reference || null })} label={referenceLabel} className="input h-9" />
+          ) : d.reference ? (
+            <bdi>{d.reference}</bdi>
+          ) : (
+            <span className="text-muted">{t('docs.fields.noReference')}</span>
+          )}
+        </Row>
+      )}
       <Row label={t('docs.fields.vault')}>
         {canEdit && !d.via_share ? (
           <select value={d.vault_id} aria-label={t('docs.fields.vault')} onChange={(event) => void move(Number(event.target.value))} className="input h-9">

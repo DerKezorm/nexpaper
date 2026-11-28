@@ -513,3 +513,63 @@ describe('the check of the files on the page of a document', () => {
     ])
   })
 })
+
+describe('the reference of a document (#13)', () => {
+  const named = (extra: Record<string, unknown>) => vaults.map((v) => (v.id === 9 ? { ...v, ...extra } : v))
+
+  it('is a row under the name the vault gives it, saved with Enter and cleared when emptied', async () => {
+    server.answers['GET /api/v1/vaults'] = named({ reference_name: 'Patientenakte', reference_hidden: false })
+    server.answers['GET /api/v1/documents/7'] = { ...base, reference: '' }
+    await show()
+    expect(input('Aktenzeichen')).toBeNull()
+    const field = input('Patientenakte')!
+    expect(field.value).toBe('')
+    expect(field.placeholder).toBe('nicht angegeben')
+    field.focus()
+    await page.type(field, '  PA  4711 ')
+    await act(async () => field.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })))
+    await until(() => server.called('PATCH', '/api/v1/documents/7'))
+    expect(server.calls.filter((c) => c.method === 'PATCH').map((c) => c.body)).toEqual([{ reference: 'PA 4711' }])
+  })
+
+  it('goes away with an empty field, as null', async () => {
+    server.answers['GET /api/v1/documents/7'] = { ...base, reference: 'AZ 12/26' }
+    await show()
+    const field = input('Aktenzeichen')!
+    expect(field.value).toBe('AZ 12/26')
+    await page.type(field, '')
+    field.dispatchEvent(new FocusEvent('focusout', { bubbles: true }))
+    await until(() => server.called('PATCH', '/api/v1/documents/7'))
+    expect(server.called('PATCH', '/api/v1/documents/7')!.body).toEqual({ reference: null })
+  })
+
+  it('is not shown where the vault hides it and the document has none', async () => {
+    server.answers['GET /api/v1/vaults'] = named({ reference_hidden: true })
+    server.answers['GET /api/v1/documents/7'] = { ...base, reference: '' }
+    await show()
+    expect(input('Aktenzeichen')).toBeNull()
+    expect(page.text).not.toContain('Aktenzeichen')
+  })
+
+  it('is shown where the vault hides it but the document has one: nothing is kept unseen', async () => {
+    server.answers['GET /api/v1/vaults'] = named({ reference_hidden: true })
+    server.answers['GET /api/v1/documents/7'] = { ...base, reference: '4711' }
+    await show()
+    expect(input('Aktenzeichen')!.value).toBe('4711')
+  })
+
+  it('is read, not changed, by a reader', async () => {
+    server.answers['GET /api/v1/documents/7'] = { ...base, reference: '4711', my_right: 'read', can_share: false }
+    await show()
+    expect(input('Aktenzeichen')).toBeNull()
+    expect(page.text).toContain('Aktenzeichen4711')
+  })
+
+  it('is named in the history', async () => {
+    server.answers['GET /api/v1/documents/7/events'] = [{ id: 4, at: '2026-09-19T09:47:00Z', action: 'changed', by: { id: 1, name: 'jule', display_name: 'Jule' }, by_link: '', detail: { fields: ['reference', 'amount'] } }]
+    await show()
+    await page.click(page.box.querySelector<HTMLButtonElement>('[role="tab"]:nth-child(5)'))
+    const lines = [...page.box.querySelectorAll('[data-testid="history"] li > p:nth-of-type(1)')].map((p) => plain(p.textContent))
+    expect(lines).toEqual(['Jule hat das Aktenzeichen und den Betrag geändert'])
+  })
+})

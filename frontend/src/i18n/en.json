@@ -639,7 +639,9 @@
     "nextasks_not_connected": "nexpaper is not connected with nextasks. You connect it under My account › Connections.",
     "nextasks_disconnected": "The connection with nextasks no longer holds. My account › Connections says why.",
     "nextasks_declined": "nextasks did not take the task. Choose another list or try again later.",
-    "nextasks_unreachable": "nextasks cannot be reached right now. Try again in a moment."
+    "nextasks_unreachable": "nextasks cannot be reached right now. Try again in a moment.",
+    "invalid_reference": "A reference has at most 100 characters, without control characters.",
+    "invalid_reference_name": "The name of the field has at most 40 characters, without control characters."
   },
   "ready": {
     "secrets": {
@@ -1281,7 +1283,9 @@
       "dateRange": "This date does not work. The years {{from}} to {{to}} are allowed.",
       "noKind": "none",
       "noTags": "none",
-      "none": "none"
+      "none": "none",
+      "reference": "Reference",
+      "noReference": "none"
     },
     "archive": {
       "title": "Archive",
@@ -1568,7 +1572,8 @@
         "status": "the status",
         "tags": "the tags",
         "dates": "the dates",
-        "keep_until": "“Keep until”"
+        "keep_until": "“Keep until”",
+        "reference": "the reference"
       },
       "moved": "moved it from {{from}} to {{to}}",
       "shared": "shared it with {{person}} ({{right}})",
@@ -1927,7 +1932,7 @@
       "inVault": "in {{vault}}",
       "valuePlaceholder": "Power company",
       "titlePlaceholder": "Power {month} {year}",
-      "titleHint": "In the title, {sender}, {kind}, {date}, {month}, {year} and {amount} stand for the fields of the document.",
+      "titleHint": "In the title, {sender}, {kind}, {date}, {month}, {year}, {amount} and {ref} stand for the fields of the document.",
       "or": "or",
       "quoted": "“{{value}}”",
       "field": {
@@ -1935,22 +1940,26 @@
         "text": "Text",
         "kind": "Kind",
         "source": "Source",
-        "amount": "Amount"
+        "amount": "Amount",
+        "reference": "Reference"
       },
       "op": {
         "is": "is",
         "contains": "contains",
         "over": "over",
-        "under": "under"
+        "under": "under",
+        "empty": "is empty"
       },
       "target": {
         "vault": "Vault",
         "kind": "Kind",
         "tag": "Tag",
         "sender": "Sender",
-        "title": "Title"
+        "title": "Title",
+        "reference": "Reference"
       },
-      "gone": "no longer there"
+      "gone": "no longer there",
+      "referencePlaceholder": "4711"
     },
     "kinds": {
       "title": "Kinds",
@@ -3234,5 +3243,19 @@
     "there": "This document has a task in nextasks already.",
     "open": "Open in nextasks",
     "noList": "nextasks has no list yet."
+  },
+  "reference": {
+    "searchExample": "ref:4711",
+    "searchHelp": "reference contains 4711",
+    "vault": {
+      "title": "Reference field",
+      "text": "One free field per document, for example a patient or customer number.",
+      "name": "Name of the field",
+      "nameHint": "Leave it empty for “Reference”.",
+      "hide": "Hide the field",
+      "hideHint": "Where something is filled in already, the field stays visible.",
+      "cardName": "The reference is called “{{name}}” here.",
+      "cardHidden": "The field “{{name}}” is hidden."
+    }
   }
 }

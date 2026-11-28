@@ -211,6 +211,9 @@ def filter_clauses(query: searchtext.Query, today: Date | None = None) -> list[C
         pattern = _escape_like(name_key(value.lstrip("#"))) + "%"
         clauses.append(exists().where(DocumentTag.document_id == Document.id, DocumentTag.tag_id == Tag.id,
                                       Tag.key.like(pattern, escape="\\")))
+    for value in query.references:
+        pattern = "%" + _escape_like(value) + "%"
+        clauses.append(func.lower(Document.reference).like(func.lower(pattern), escape="\\"))
     for amount in query.amounts:
         column = Document.amount
         clauses.append(column > amount.cents if amount.op == ">" else column < amount.cents if amount.op == "<"

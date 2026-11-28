@@ -562,6 +562,10 @@ export type Vault = {
   documents: number
   size: number
   members: VaultMember[]
+  /** The name the vault gives the reference field of its documents (#13); empty: the default of the language. */
+  reference_name?: string
+  /** The vault does not show the reference field (a document that has a value still shows it). */
+  reference_hidden?: boolean
 }
 /** `vault_id` is the vault a kind belongs to; empty for the kinds of the whole server. */
 export type DocumentKind = { id: number; key: string; name: string; hue: number; position: number; vault_id?: number | null; keep_years?: number | null; auto_trash?: boolean }
@@ -576,6 +580,8 @@ export type DocumentInfo = {
   /** In cents. */
   amount: number | null
   currency: string
+  /** One free reference ("Aktenzeichen", #13); empty when there is none. */
+  reference?: string
   tags: string[]
   dates: DocumentDate[]
   pages: number
@@ -689,6 +695,9 @@ export const vaultsApi = {
   /** Everybody in the vault at once, in one write: a refusal changes nothing. */
   setMembers: (vault: number, members: { user_id: number; right: VaultRight }[]) => api<Vault>(`/api/v1/vaults/${vault}/members`, { method: 'PUT', body: { members } }),
   removeMember: (vault: number, user: number) => api<void>(`/api/v1/vaults/${vault}/members/${user}`, { method: 'DELETE' }),
+  /** The reference field of the vault (#13): its name (empty: the default) and whether it is hidden. `manage`, the own
+   * vault too. */
+  change: (vault: number, change: { reference_name?: string; reference_hidden?: boolean }) => api<Vault>(`/api/v1/vaults/${vault}`, { method: 'PATCH', body: change }),
   /** A shared vault goes; the documents in it (the trash included) to ``moveTo``, which an empty vault does not need. */
   remove: (vault: number, moveTo: number | null) => api<void>(`/api/v1/vaults/${vault}${moveTo ? `?move_to=${moveTo}` : ''}`, { method: 'DELETE' }),
   people: () => api<Person[]>('/api/v1/people'),
@@ -942,7 +951,7 @@ export type SearchResult = {
   items: SearchHit[]
   total: number
   next: string | null
-  understood: { words: string[]; phrases: string[]; kinds: string[]; senders: string[]; tags: string[]; amounts: { op: '<' | '>' | '='; cents: number }[]; deadlines?: (string | number)[] }
+  understood: { words: string[]; phrases: string[]; kinds: string[]; senders: string[]; tags: string[]; amounts: { op: '<' | '>' | '='; cents: number }[]; deadlines?: (string | number)[]; references?: string[] }
 }
 export type SearchFilters = {
   vault_id?: number
@@ -1183,6 +1192,8 @@ export type DocumentPatch = Partial<{
   kind_id: number | null
   date: string | null
   amount: number | null
+  /** The reference (#13); empty or `null` clears it. */
+  reference: string | null
   status: 'inbox' | 'filed'
   tags: string[]
   dates: DateIn[]
@@ -1470,7 +1481,9 @@ export type RuleCondition =
   | { field: 'kind'; op: 'is'; value: number }
   | { field: 'source'; op: 'is'; value: string }
   | { field: 'amount'; op: 'over' | 'under'; value: number }
-export type RuleAction = { field: 'vault' | 'kind'; value: number } | { field: 'tag' | 'sender' | 'title'; value: string }
+  | { field: 'reference'; op: 'is' | 'contains'; values: string[] }
+  | { field: 'reference'; op: 'empty' }
+export type RuleAction = { field: 'vault' | 'kind'; value: number } | { field: 'tag' | 'sender' | 'title' | 'reference'; value: string }
 export type Rule = {
   id: number
   /** Empty for a rule of the whole server (the operator's). */

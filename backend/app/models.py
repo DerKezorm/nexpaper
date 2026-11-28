@@ -462,6 +462,10 @@ class Vault(Base):
     personal_of: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="RESTRICT"), nullable=True)
     created_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utcnow)
     created_by: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    #: What the vault calls a document's reference (``Document.reference``, issue #13: "Patientenakte"); empty: the
+    #: word of the interface's language. ``reference_hidden``: the field is not shown where it is empty.
+    reference_name: Mapped[str] = mapped_column(String(40), default="", server_default=text("''"))
+    reference_hidden: Mapped[bool] = mapped_column(Boolean, default=False, server_default=text("0"))
 
 
 class VaultMember(Base):
@@ -580,6 +584,10 @@ class Document(Base):
     #: What the check of the files (``services/filecheck.py``) found: empty while all is well, ``changed`` when a file
     #: no longer has its checksum, ``missing`` when one is gone from the disk. Not a change of the document: no number.
     files_state: Mapped[str] = mapped_column(String(8), default="", server_default=text("''"))
+    #: One reference of the document's own (issue #13: a patient file number, a file number of an office): free text,
+    #: at most ``documents.REFERENCE_MAX`` characters, empty when there is none. The same field in every vault, so a
+    #: move keeps it; each vault names it (``Vault.reference_name``).
+    reference: Mapped[str] = mapped_column(String(100), default="", server_default=text("''"))
 
 
 class DocumentDate(Base):

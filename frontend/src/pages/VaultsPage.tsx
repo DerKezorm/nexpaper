@@ -16,6 +16,7 @@ import { VaultIcon } from '../components/VaultIcon'
 import { formatBytes } from '../lib/bytes'
 import { shortDate } from '../lib/dates'
 import { asAvatarPerson, personName } from '../lib/people'
+import { REFERENCE_NAME_MAX } from '../lib/reference'
 import { INBOX_CHANGED, iso } from '../lib/say'
 import { useAuth } from '../state/auth'
 import { Feedback } from './settings/ui'
@@ -140,6 +141,12 @@ export function VaultsPage() {
                   </li>
                 ))}
               </ul>
+              {/* The vault's own name for the reference field, or that it is hidden (#13): only when not the default. */}
+              {(v.reference_name || v.reference_hidden) && (
+                <p className="mt-3 text-xs text-muted" data-testid="reference-note">
+                  {v.reference_hidden ? t('reference.vault.cardHidden', { name: iso(v.reference_name || t('docs.fields.reference')) }) : t('reference.vault.cardName', { name: iso(v.reference_name ?? '') })}
+                </p>
+              )}
               <div className="mt-4 flex flex-wrap gap-2 border-t border-line pt-3">
                 <Link to="/" className="text-sm font-semibold text-accent">
                   {t('vaults.viewDocuments')}
@@ -272,7 +279,8 @@ async function sharedOneByOne(): Promise<DocumentInfo[]> {
 
 type Row = { user_id: number; right: VaultRight }
 
-/** Who is in a vault and with which right. Changes are collected and sent on "Save"; the owner of a personal vault stays. */
+/** Who is in a vault and with which right. Changes are collected and sent on "Save"; the owner of a personal vault stays.
+ * Below, the vault's reference field (#13): its name and whether it shows, for the own vault too (sent only when changed). */
 function Members({ vault, people, mineId, onClose, onSaved, onDelete }: { vault: Vault; people: Person[]; mineId: number; onClose: () => void; onSaved: () => void; onDelete?: () => void }) {
   const { t } = useTranslation()
   const [rows, setRows] = useState<Row[]>(vault.members.map((m) => ({ user_id: m.user_id, right: m.right })))
@@ -283,6 +291,26 @@ function Members({ vault, people, mineId, onClose, onSaved, onDelete }: { vault:
   for (const m of vault.members) if (!byId.has(m.user_id)) byId.set(m.user_id, { id: m.user_id, name: m.name, display_name: m.display_name })
   const free = people.filter((p) => !rows.some((r) => r.user_id === p.id))
   const own = vault.personal_of === mineId
+  const [referenceName, setReferenceName] = useState(vault.reference_name ?? '')
+  const [referenceHidden, setReferenceHidden] = useState(!!vault.reference_hidden)
+  /** The reference field as it changed, as the server takes it; null when nothing changed. */
+  const referenceChange = () => {
+    const change: { reference_name?: string; reference_hidden?: boolean } = {}
+    const name = referenceName.replace(/\s+/g, ' ').trim()
+    if (name !== (vault.reference_name ?? '')) change.reference_name = name
+    if (referenceHidden !== !!vault.reference_hidden) change.reference_hidden = referenceHidden
+    return Object.keys(change).length ? change : null
+  }
+  /** The people (and the reference field, when changed), the field first: a refused name leaves the members as they were. */
+  const send = async () => {
+    const change = referenceChange()
+    if (change)
+      await vaultsApi.change(vault.id, change).catch((error: unknown) => {
+        // The server says `invalid_name` for the field's name too; here it is said for that name, not the vault's.
+        throw error instanceof ApiError && error.code === 'invalid_name' ? new ApiError(error.status, 'invalid_reference_name', error.values) : error
+      })
+    await vaultsApi.setMembers(vault.id, rows)
+  }
 
   const { ask, dialog } = useConfirm()
   /** Saves; when somebody is taken out of the vault, asks first, as they lose it. */
@@ -294,7 +322,7 @@ function Members({ vault, people, mineId, onClose, onSaved, onDelete }: { vault:
       text: t('confirm.members.text', { names: dropped.map((m) => iso(personName(byId.get(m.user_id) ?? m))).join(', '), count: dropped.length }),
       confirm: t('confirm.members.confirm'),
       run: async () => {
-        await vaultsApi.setMembers(vault.id, rows)
+        await send()
         onSaved()
       },
     })
@@ -304,7 +332,7 @@ function Members({ vault, people, mineId, onClose, onSaved, onDelete }: { vault:
     setProblem(null)
     try {
       // All at once, in one write: a refusal (the last manager, somebody gone) leaves the vault as it was.
-      await vaultsApi.setMembers(vault.id, rows)
+      await send()
       onSaved()
     } catch (error) {
       setProblem(error instanceof ApiError ? error.code : 'internal_error')
@@ -366,6 +394,29 @@ function Members({ vault, people, mineId, onClose, onSaved, onDelete }: { vault:
           </div>
         ))}
       </dl>
+      <section className="mt-5 space-y-2 rounded-2xl border border-line p-4 text-sm" aria-label={t('reference.vault.title')} data-testid="reference-settings">
+        <h3 className="font-semibold">{t('reference.vault.title')}</h3>
+        <p className="text-xs text-ink-2">{t('reference.vault.text')}</p>
+        <label className="block">
+          <span className="text-xs font-semibold">{t('reference.vault.name')}</span>
+          <input
+            value={referenceName}
+            maxLength={REFERENCE_NAME_MAX}
+            onChange={(e) => setReferenceName(e.target.value)}
+            placeholder={t('docs.fields.reference')}
+            aria-label={t('reference.vault.name')}
+            className="input mt-1"
+          />
+        </label>
+        <p className="text-xs text-muted">{t('reference.vault.nameHint')}</p>
+        <label className="flex items-start gap-2.5">
+          <input type="checkbox" checked={referenceHidden} onChange={(e) => setReferenceHidden(e.target.checked)} className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--accent)]" />
+          <span>
+            <span className="block font-semibold">{t('reference.vault.hide')}</span>
+            <span className="block text-xs text-ink-2">{t('reference.vault.hideHint')}</span>
+          </span>
+        </label>
+      </section>
       <div className="mt-4">
         <Feedback problem={problem} values={values} />
       </div>

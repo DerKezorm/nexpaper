@@ -249,6 +249,45 @@ describe('the rules card', () => {
     expect(server.called('POST', '/api/v1/rules')!.body).toEqual({ vault_id: 9, when: [{ field: 'amount', op: 'over', value: 25000 }], then: [{ field: 'vault', value: 7 }] })
   })
 
+  it('reads the reference in a rule: is, contains, empty, and set (#13)', async () => {
+    server.answers['GET /api/v1/settings/rules'] = []
+    server.answers['GET /api/v1/rules'] = [
+      { ...rules[1], id: 4, when: [{ field: 'reference', op: 'is', values: ['4711'] }], then: [{ field: 'reference', value: 'PA 1' }] },
+      { ...rules[1], id: 5, when: [{ field: 'reference', op: 'empty' }], then: [{ field: 'title', value: 'Akte {az}' }] },
+    ]
+    await page.show(<RulesCard server />)
+    await until(() => page.box.querySelectorAll('[data-testid="rule"]').length === 2)
+    const lines = [...page.box.querySelectorAll('[data-testid="rule"]')].map((li) => plain(li.textContent).replace(/\s+/g, ' '))
+    expect(lines[0]).toContain('Wenn Aktenzeichen ist „4711“ Aktenzeichen „PA 1“')
+    expect(lines[1]).toContain('Wenn Aktenzeichen ist leer Titel „Akte {az}“')
+  })
+
+  it('makes a rule on the reference, with no value for "ist leer", and one that sets it (#13)', async () => {
+    await page.show(<RulesCard server />)
+    await until(() => page.button('Regel'))
+    await page.click(page.button('Regel'))
+    // The placeholders of the title name the reference too.
+    await page.choose(chosen('dann'), 'title')
+    expect(page.text).toContain('{betrag} und {az}')
+    await page.choose(chosen('Wenn'), 'reference')
+    expect([...chosen('Aktenzeichen')!.options].map((o) => o.value)).toEqual(['is', 'contains', 'empty'])
+    await page.choose(chosen('Aktenzeichen'), 'contains')
+    await page.type(typed('Aktenzeichen'), 'PA-')
+    await page.choose(chosen('dann'), 'tag')
+    await page.type(typed('Tag'), 'patient')
+    await page.click(page.button('Regel anlegen'))
+    expect(server.called('POST', '/api/v1/settings/rules')!.body).toEqual({ when: [{ field: 'reference', op: 'contains', values: ['PA-'] }], then: [{ field: 'tag', value: 'patient' }] })
+    server.calls = []
+    await page.click(page.button('Regel'))
+    await page.choose(chosen('Wenn'), 'reference')
+    await page.choose(chosen('Aktenzeichen'), 'empty')
+    // "ist leer" asks for no value; the only field of that name is the one of "dann".
+    await page.choose(chosen('dann'), 'reference')
+    await page.type(typed('Aktenzeichen'), 'offen')
+    await page.click(page.button('Regel anlegen'))
+    expect(server.called('POST', '/api/v1/settings/rules')!.body).toEqual({ when: [{ field: 'reference', op: 'empty' }], then: [{ field: 'reference', value: 'offen' }] })
+  })
+
   it('stays away for somebody who manages no vault and has no rules', async () => {
     server.answers['GET /api/v1/rules'] = []
     server.answers['GET /api/v1/vaults'] = [{ ...vaults[1], my_right: 'edit' }]

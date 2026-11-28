@@ -202,6 +202,61 @@ describe('who is in a vault', () => {
   })
 })
 
+describe('the reference field of a vault (#13)', () => {
+  const nameField = () => document.body.querySelector<HTMLInputElement>('input[aria-label="Name des Felds"]')
+  const hide = () => {
+    const label = [...document.body.querySelectorAll('label')].find((item) => item.textContent?.includes('Feld ausblenden'))
+    return label?.querySelector<HTMLInputElement>('input[type="checkbox"]') ?? null
+  }
+
+  it('is set in the dialog of the own vault too, and sent before the people only when it changed', async () => {
+    server.answers['PATCH /api/v1/vaults/7'] = { ...mineVault, reference_name: 'Patientenakte', reference_hidden: true }
+    server.answers['PUT /api/v1/vaults/7/members'] = mineVault
+    await page.show(<VaultsPage />, '/tresore')
+    await page.click(page.button('Freigaben ändern: Mein Tresor'))
+    expect(page.text).toContain('Aktenzeichen-Feld')
+    expect(nameField()!.placeholder).toBe('Aktenzeichen')
+    expect(hide()!.checked).toBe(false)
+    await page.type(nameField(), '  Patientenakte ')
+    await page.check(hide())
+    await page.click(page.button('Speichern'))
+    expect(server.changes()).toEqual(['PATCH /api/v1/vaults/7', 'PUT /api/v1/vaults/7/members'])
+    expect(server.called('PATCH', '/api/v1/vaults/7')!.body).toEqual({ reference_name: 'Patientenakte', reference_hidden: true })
+  })
+
+  it('sends only what changed, and an emptied name as the default', async () => {
+    server.answers['GET /api/v1/vaults'] = [mineVault, toms, { ...house, reference_name: 'Patientenakte', reference_hidden: false }]
+    server.answers['PATCH /api/v1/vaults/9'] = house
+    server.answers['PUT /api/v1/vaults/9/members'] = house
+    await page.show(<VaultsPage />, '/tresore')
+    expect(plain(page.box.querySelector('[data-testid="reference-note"]')!.textContent)).toBe('Das Aktenzeichen heißt hier „Patientenakte“.')
+    await page.click(page.button('Freigaben ändern: Haushalt'))
+    expect(nameField()!.value).toBe('Patientenakte')
+    await page.type(nameField(), '')
+    await page.click(page.button('Speichern'))
+    expect(server.called('PATCH', '/api/v1/vaults/9')!.body).toEqual({ reference_name: '' })
+  })
+
+  it('shows on the card that the field is hidden', async () => {
+    server.answers['GET /api/v1/vaults'] = [{ ...mineVault, reference_hidden: true }, toms, house]
+    await page.show(<VaultsPage />, '/tresore')
+    expect(page.box.querySelectorAll('[data-testid="reference-note"]')).toHaveLength(1)
+    expect(plain(page.box.querySelector('[data-testid="reference-note"]')!.textContent)).toBe('Das Feld „Aktenzeichen“ ist ausgeblendet.')
+  })
+
+  it('shows what the server refuses, and leaves the people as they were', async () => {
+    // The server says `invalid_name`; the dialog names the field's name, not the vault's.
+    server.fails['PATCH /api/v1/vaults/7'] = { status: 422, code: 'invalid_name' }
+    await page.show(<VaultsPage />, '/tresore')
+    await page.click(page.button('Freigaben ändern: Mein Tresor'))
+    await page.type(nameField(), 'Akte')
+    await page.click(page.button('Speichern'))
+    expect(page.text).toContain('Der Name des Felds hat höchstens 40 Zeichen, ohne Steuerzeichen.')
+    expect(server.changes()).toEqual(['PATCH /api/v1/vaults/7'])
+    expect(page.button('Speichern')).toBeTruthy()
+  })
+})
+
 describe('a shared vault', () => {
   it('is made by the operator, who has the button, and by nobody else', async () => {
     server.answers['POST /api/v1/vaults'] = { ...house, id: 10, name: 'Auto' }

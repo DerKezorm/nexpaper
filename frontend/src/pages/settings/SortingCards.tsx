@@ -13,6 +13,7 @@ import { useNavigate } from 'react-router-dom'
 import { catalogApi, kindsApi, rulesApi, vaultsApi, type DocumentKind, type Rule, type RuleAction, type RuleCondition, type Vault } from '../../api/client'
 import { SenderPicker } from '../../components/SenderPicker'
 import { amountText, money, parseAmount } from '../../lib/money'
+import { REFERENCE_MAX } from '../../lib/reference'
 import { listOf } from '../../lib/say'
 import { Box, Button, Card, Checkbox, Field, IconButton, Row, Rows, SelectField } from '../../vendor/nexui'
 import { useAction } from './actions'
@@ -45,6 +46,7 @@ export function useRuleWords() {
   const vaultName = (id: number, names: Names) => names.vaults.find((v) => v.id === id)?.name ?? t('sorting.rules.gone')
   const condition = (c: RuleCondition, names: Names) => {
     const head = `${t(`sorting.rules.field.${c.field}`)} ${t(`sorting.rules.op.${c.op}`)}`
+    if (c.field === 'reference') return c.op === 'empty' ? head : `${head} ${c.values.map(quoted).join(` ${t('sorting.rules.or')} `)}`
     if (c.field === 'sender' || c.field === 'text') return `${head} ${c.values.map(quoted).join(` ${t('sorting.rules.or')} `)}`
     if (c.field === 'kind') return `${head} ${kindName(c.value, names)}`
     if (c.field === 'source') return `${head} ${t(`docs.source.${c.value}`, { defaultValue: c.value })}`
@@ -54,7 +56,7 @@ export function useRuleWords() {
     const head = t(`sorting.rules.target.${a.field}`)
     if (a.field === 'vault') return `${head} ${vaultName(a.value, names)}`
     if (a.field === 'kind') return `${head} ${kindName(a.value, names)}`
-    if (a.field === 'title') return `${head} ${quoted(a.value)}`
+    if (a.field === 'title' || a.field === 'reference') return `${head} ${quoted(a.value)}`
     return `${head} ${a.value}`
   }
   return {
@@ -65,9 +67,9 @@ export function useRuleWords() {
 
 type WhenField = RuleCondition['field']
 type ThenField = RuleAction['field']
-const WHEN_FIELDS: WhenField[] = ['sender', 'text', 'kind', 'source', 'amount']
-const THEN_FIELDS: ThenField[] = ['vault', 'kind', 'tag', 'sender', 'title']
-const OPS: Record<WhenField, RuleCondition['op'][]> = { sender: ['is', 'contains'], text: ['contains'], kind: ['is'], source: ['is'], amount: ['over', 'under'] }
+const WHEN_FIELDS: WhenField[] = ['sender', 'text', 'kind', 'source', 'amount', 'reference']
+const THEN_FIELDS: ThenField[] = ['vault', 'kind', 'tag', 'sender', 'title', 'reference']
+const OPS: Record<WhenField, RuleCondition['op'][]> = { sender: ['is', 'contains'], text: ['contains'], kind: ['is'], source: ['is'], amount: ['over', 'under'], reference: ['is', 'contains', 'empty'] }
 const SOURCES = ['upload', 'camera', 'mail', 'folder', 'share', 'paperless', 'api']
 
 /** The rules: under Settings (`server`) those of the whole server and of the vaults the operator manages; on the vaults
@@ -220,6 +222,10 @@ function RuleForm({ server, names, managed, onCancel, onSave, busy }: { server: 
     if (whenField === 'text') return value ? { field: 'text', op: 'contains', values: [value] } : null
     if (whenField === 'kind') return value ? { field: 'kind', op: 'is', value: Number(value) } : null
     if (whenField === 'source') return value ? { field: 'source', op: 'is', value } : null
+    if (whenField === 'reference') {
+      if (op === 'empty') return { field: 'reference', op: 'empty' }
+      return value ? { field: 'reference', op: op as 'is' | 'contains', values: [value] } : null
+    }
     const cents = parseAmount(value)
     return typeof cents === 'number' ? { field: 'amount', op: op as 'over' | 'under', value: cents } : null
   }
@@ -273,6 +279,9 @@ function RuleForm({ server, names, managed, onCancel, onSave, busy }: { server: 
             select(t('sorting.rules.field.kind'), whenValue, setWhenValue, kindChoices.map((k) => ({ value: String(k.id), label: k.name })))
           ) : whenField === 'source' ? (
             select(t('sorting.rules.field.source'), whenValue, setWhenValue, SOURCES.map((value) => ({ value, label: t(`docs.source.${value}`) })))
+          ) : whenField === 'reference' && op === 'empty' ? (
+            // "ist leer" needs no value.
+            <span aria-hidden />
           ) : whenField === 'sender' && op === 'is' ? (
             <div className="flex min-w-0 flex-col gap-1 self-end">
               <SenderPicker value={whenValue} onChange={setWhenValue} names={names.senders} label={t('sorting.rules.field.sender')} className="input h-10" />
@@ -282,7 +291,7 @@ function RuleForm({ server, names, managed, onCancel, onSave, busy }: { server: 
               label={t(`sorting.rules.field.${whenField}`)}
               value={whenValue}
               onChange={(event) => setWhenValue(event.target.value)}
-              placeholder={whenField === 'amount' ? amountText(10000, i18n.language) : t('sorting.rules.valuePlaceholder')}
+              placeholder={whenField === 'amount' ? amountText(10000, i18n.language) : whenField === 'reference' ? t('sorting.rules.referencePlaceholder') : t('sorting.rules.valuePlaceholder')}
               maxLength={100}
             />
           )}
@@ -301,8 +310,8 @@ function RuleForm({ server, names, managed, onCancel, onSave, busy }: { server: 
                 label={t(`sorting.rules.target.${thenField}`)}
                 value={thenValue}
                 onChange={(event) => setThenValue(event.target.value)}
-                placeholder={thenField === 'title' ? t('sorting.rules.titlePlaceholder') : ''}
-                maxLength={thenField === 'title' ? 120 : thenField === 'tag' ? 40 : 160}
+                placeholder={thenField === 'title' ? t('sorting.rules.titlePlaceholder') : thenField === 'reference' ? t('sorting.rules.referencePlaceholder') : ''}
+                maxLength={thenField === 'title' ? 120 : thenField === 'tag' ? 40 : thenField === 'reference' ? REFERENCE_MAX : 160}
                 hints={thenField === 'title' ? [t('sorting.rules.titleHint')] : undefined}
               />
             )}

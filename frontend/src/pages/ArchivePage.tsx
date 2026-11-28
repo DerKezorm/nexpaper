@@ -175,6 +175,8 @@ export function ArchivePage({ slots = appSlots }: { slots?: Slots }) {
     [t('related.searchExample'), t('related.searchHelp')],
     // Pinned (K1): the person's own pins.
     [t('pins.searchExample'), t('pins.searchHelp')],
+    // The reference (#13): the documents whose reference holds the word.
+    [t('reference.searchExample'), t('reference.searchHelp')],
   ]
 
   // What the filters offer.
