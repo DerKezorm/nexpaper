@@ -1,4 +1,34 @@
 {
+  "1.14.0": {
+    "lead": "Every document now has a reference: a field of its own for the number you file and search by, such as a patient file, a tax or a customer number. Each vault gives the field its own name.",
+    "sections": [
+      {
+        "title": "Reference",
+        "where": "Inbox, document, archive",
+        "body": "In the inbox the reference stands next to title, sender, kind, date and amount and can be filled in right there, and so on a document's page. It is free text of up to 100 characters. When a document moves to another vault, it keeps its reference. In the archive's search field, ref:4711 finds every document whose reference holds 4711, and the list of an export has a column for it."
+      },
+      {
+        "title": "A name per vault",
+        "where": "Manage vaults, gear “Change sharing”",
+        "body": "Whoever manages a vault gives the field a name of its own there, such as “Patient file no.”, or hides it. Hidden, it only shows on documents that already have a reference. This works for your own vault too."
+      },
+      {
+        "title": "Rules",
+        "where": "Manage vaults › Rules; Server › Filing",
+        "body": "Rules check the reference (is, contains, is empty) and set it. In a rule's title, {ref} stands for the reference, for example “PATIENT{ref} - {sender}”. With “is empty” and “Apply rules” in the inbox you find documents still missing their number. A reference you type in yourself is not changed by a rule any more."
+      },
+      {
+        "title": "API and AI tools",
+        "where": "API, MCP",
+        "body": "PATCH /api/v1/documents/{id} sets the reference. GET /api/v1/documents?reference=4711 finds every document with exactly that one, has_reference=true or false those with and without one. The AI tools (MCP) read and set it too, and their search knows ref:."
+      }
+    ],
+    "smallTitle": "Also",
+    "small": [
+      "Thank you, techniquecd, for the suggestion and for describing so precisely how your practice files its papers.",
+      "The iPhone app shows the reference with its next version and keeps working unchanged until then."
+    ]
+  },
   "1.13.0": {
     "lead": "nexpaper now connects with nextime, nexmail and nextasks in one click, without typing in a key. On top come AI tools (MCP), a list of your iPhones and iPads, a storage limit per account and settings that look like those of every nex app. Your documents stay as they are.",
     "sections": [

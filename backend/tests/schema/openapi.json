@@ -165,7 +165,8 @@
               "kind",
               "tag",
               "sender",
-              "title"
+              "title",
+              "reference"
             ],
             "title": "Field",
             "type": "string"
@@ -1008,7 +1009,8 @@
               "text",
               "kind",
               "source",
-              "amount"
+              "amount",
+              "reference"
             ],
             "title": "Field",
             "type": "string"
@@ -1018,7 +1020,8 @@
               "is",
               "contains",
               "over",
-              "under"
+              "under",
+              "empty"
             ],
             "title": "Op",
             "type": "string"
@@ -1852,6 +1855,11 @@
             "title": "Process Error",
             "type": "string"
           },
+          "reference": {
+            "default": "",
+            "title": "Reference",
+            "type": "string"
+          },
           "sender": {
             "anyOf": [
               {
@@ -2072,6 +2080,18 @@
               }
             ],
             "title": "Kind Id"
+          },
+          "reference": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reference"
           },
           "remove_dates": {
             "anyOf": [
@@ -11250,6 +11270,14 @@
             "title": "Phrases",
             "type": "array"
           },
+          "references": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "References",
+            "type": "array"
+          },
           "senders": {
             "items": {
               "type": "string"
@@ -11611,6 +11639,16 @@
             ],
             "title": "Personal Of"
           },
+          "reference_hidden": {
+            "default": false,
+            "title": "Reference Hidden",
+            "type": "boolean"
+          },
+          "reference_name": {
+            "default": "",
+            "title": "Reference Name",
+            "type": "string"
+          },
           "size": {
             "title": "Size",
             "type": "integer"
@@ -11655,6 +11693,29 @@
               }
             ],
             "title": "Name"
+          },
+          "reference_hidden": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reference Hidden"
+          },
+          "reference_name": {
+            "anyOf": [
+              {
+                "maxLength": 80,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reference Name"
           }
         },
         "title": "VaultPatch",
@@ -12717,7 +12778,7 @@
   "info": {
     "summary": "The interface the web app speaks, and the one native apps and scripts use.",
     "title": "nexpaper",
-    "version": "1.13.0"
+    "version": "1.14.0"
   },
   "openapi": "3.1.0",
   "paths": {
@@ -17936,6 +17997,44 @@
               ],
               "description": "A tag's name",
               "title": "Tag"
+            }
+          },
+          {
+            "description": "Only documents with this reference (blanks joined, case of A to Z aside)",
+            "in": "query",
+            "name": "reference",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 200,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only documents with this reference (blanks joined, case of A to Z aside)",
+              "title": "Reference"
+            }
+          },
+          {
+            "description": "Only documents with a reference (true), or only those without one (false)",
+            "in": "query",
+            "name": "has_reference",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only documents with a reference (true), or only those without one (false)",
+              "title": "Has Reference"
             }
           }
         ],
@@ -31784,6 +31883,7 @@
         ]
       },
       "patch": {
+        "description": "Also what the vault calls the reference of its documents and whether the field is hidden (`reference_name`,\n`reference_hidden`), for a personal vault too.",
         "operationId": "patch_api_v1_vaults__vault_id__patch",
         "parameters": [
           {

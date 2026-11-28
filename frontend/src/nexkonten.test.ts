@@ -75,7 +75,7 @@ type Shown = { root: HTMLElement; unmount: () => void }
 const ME: Me = {
   id: 1, name: 'robin', display_name: 'Robin', role: 'operator', sign_in: 'password', email: 'robin@example.com',
   email_confirmed: true, email_counts: true, email_pending: '', language: 'de', oidc_linked: false, two_factor: false,
-  totp: false, passkeys: 0, two_factor_recovery_left: 0, avatar: null, version: '1.13.0', whats_new_seen: '1.13.0',
+  totp: false, passkeys: 0, two_factor_recovery_left: 0, avatar: null, version: '1.14.0', whats_new_seen: '1.14.0',
   has_password: true, mail: true, mail_links: true, session_stage: 'full', passkeys_allowed: true,
   profile: { mode: 'light', quick_start: true, view: 'list', default_vault: null, timezone: 'Europe/Berlin', timezone_source: 'browser', ai: true, notify_login: true, deadlines: true },
 }
@@ -90,7 +90,7 @@ vi.mock('./state/auth', () => ({ useAuth: () => auth, safeNext: (next: string | 
 const TOKEN = 'abcdefghijklmnopqrstuvwxyz'
 /** What the stand-in server answers, by `METHOD /path` (lists empty where a page asks for one). */
 const ANSWERS: Record<string, unknown> = {
-  'GET /api/v1/setup': { needs_setup: true, code_required: true, signed_in: false, version: '1.13.0', min_password: 12, factor_required: false },
+  'GET /api/v1/setup': { needs_setup: true, code_required: true, signed_in: false, version: '1.14.0', min_password: 12, factor_required: false },
   'GET /api/v1/auth/methods': { password: true, providers: [], passkeys: false, forgot: true, session_days: 30 },
   [`GET /api/v1/invite/${TOKEN}`]: { min_password: 12, signed_in_as: null, display_name: '', name: '', email: '' },
   [`GET /api/v1/reset/${TOKEN}`]: { name: 'kim', display_name: 'Kim', min_password: 12 },

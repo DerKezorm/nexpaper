@@ -1,4 +1,34 @@
 {
+  "1.14.0": {
+    "lead": "Chaque document a désormais une référence : un champ à lui pour le numéro sous lequel tu classes et cherches, par exemple un dossier patient, un numéro fiscal ou un numéro client. Chaque coffre donne au champ son propre nom.",
+    "sections": [
+      {
+        "title": "Référence",
+        "where": "Entrée, document, archive",
+        "body": "Dans l’entrée, la référence se trouve à côté du titre, de l’expéditeur, du type, de la date et du montant, et se remplit directement, de même sur la page d’un document. C’est un texte libre de 100 caractères au plus. Quand un document change de coffre, il garde sa référence. Dans le champ de recherche de l’archive, ref:4711 trouve tous les documents dont la référence contient 4711, et la liste d’un export a une colonne pour elle."
+      },
+      {
+        "title": "Un nom par coffre",
+        "where": "Gérer les coffres, roue dentée « Modifier les partages »",
+        "body": "Qui gère un coffre y donne au champ un nom à lui, par exemple « N° de dossier patient », ou le masque. Masqué, il n’apparaît plus que sur les documents qui ont déjà une référence. Cela vaut aussi pour ton propre coffre."
+      },
+      {
+        "title": "Règles",
+        "where": "Gérer les coffres › Règles ; Serveur › Classement",
+        "body": "Les règles vérifient la référence (est, contient, est vide) et la définissent. Dans le titre d’une règle, {ref} remplace la référence, par exemple « PATIENT{ref} - {sender} ». Avec « est vide » et « Appliquer les règles » dans l’entrée, tu trouves les documents auxquels il manque encore leur numéro. Une référence que tu saisis toi-même n’est plus modifiée par une règle."
+      },
+      {
+        "title": "API et outils d’IA",
+        "where": "API, MCP",
+        "body": "PATCH /api/v1/documents/{id} définit la référence. GET /api/v1/documents?reference=4711 trouve tous les documents qui ont exactement celle-ci, has_reference=true ou false ceux qui en ont une ou non. Les outils d’IA (MCP) la lisent et la définissent aussi, et leur recherche connaît ref:."
+      }
+    ],
+    "smallTitle": "Aussi",
+    "small": [
+      "Merci, techniquecd, pour la proposition et pour avoir décrit si précisément comment ton cabinet classe ses papiers.",
+      "L’app iPhone affiche la référence avec sa prochaine version et continue de fonctionner sans changement d’ici là."
+    ]
+  },
   "1.13.0": {
     "lead": "nexpaper se connecte désormais en un clic avec nextime, nexmail et nextasks, sans clé à recopier. S’y ajoutent les outils d’IA (MCP), la liste de tes iPhone et iPad, une limite de stockage par compte et des réglages qui ressemblent à ceux de toutes les apps nex. Tes documents restent tels qu’ils sont.",
     "sections": [

@@ -1,4 +1,34 @@
 {
+  "1.14.0": {
+    "lead": "Jedes Dokument hat jetzt ein Aktenzeichen: ein eigenes Feld für die Nummer, nach der du ablegst und suchst, etwa eine Patientenakte, ein Steuer- oder ein Kundenzeichen. Jeder Tresor gibt dem Feld seinen eigenen Namen.",
+    "sections": [
+      {
+        "title": "Aktenzeichen",
+        "where": "Eingang, Dokument, Archiv",
+        "body": "Im Eingang steht das Aktenzeichen neben Titel, Absender, Art, Datum und Betrag und lässt sich dort direkt eintragen, ebenso auf der Seite eines Dokuments. Es ist ein freies Feld mit bis zu 100 Zeichen. Wandert ein Dokument in einen anderen Tresor, nimmt es sein Aktenzeichen mit. Im Suchfeld des Archivs findet az:4711 alle Dokumente, deren Aktenzeichen 4711 enthält, und die Liste eines Exports hat dafür eine eigene Spalte."
+      },
+      {
+        "title": "Ein Name je Tresor",
+        "where": "Tresore verwalten, Zahnrad „Freigaben ändern“",
+        "body": "Wer einen Tresor verwaltet, gibt dem Feld dort einen eigenen Namen, etwa „Patientenakte“, oder blendet es aus. Ausgeblendet erscheint es nur noch bei Dokumenten, die schon ein Aktenzeichen haben. Das geht auch für deinen eigenen Tresor."
+      },
+      {
+        "title": "Regeln",
+        "where": "Tresore verwalten › Regeln; Server › Ablage",
+        "body": "Regeln prüfen das Aktenzeichen (ist, enthält, ist leer) und setzen es. Im Titel einer Regel steht {az} für das Aktenzeichen, etwa „PATIENT{az} – {absender}“. Mit „ist leer“ und „Regeln anwenden“ im Eingang findest du Dokumente, denen die Nummer noch fehlt. Ein Aktenzeichen, das du selbst einträgst, ändert keine Regel mehr."
+      },
+      {
+        "title": "API und KI-Werkzeuge",
+        "where": "API, MCP",
+        "body": "PATCH /api/v1/documents/{id} setzt das Aktenzeichen. GET /api/v1/documents?reference=4711 findet alle Dokumente mit genau diesem, has_reference=true oder false die mit und ohne eins. Die KI-Werkzeuge (MCP) lesen und setzen es ebenso, und die Suche dort kennt ref:."
+      }
+    ],
+    "smallTitle": "Außerdem",
+    "small": [
+      "Danke, techniquecd, für den Vorschlag und die genaue Beschreibung, wie ihr in der Praxis ablegt.",
+      "Die iPhone-App zeigt das Aktenzeichen mit ihrer nächsten Version und läuft bis dahin unverändert weiter."
+    ]
+  },
   "1.13.0": {
     "lead": "nexpaper verbindet sich jetzt mit einem Klick mit nextime, nexmail und nextasks, ohne Schlüssel abzutippen. Dazu kommen KI-Werkzeuge (MCP), eine Liste deiner iPhones und iPads, eine Speichergrenze je Konto und Einstellungen, die aussehen wie in allen nex-Apps. Deine Dokumente bleiben, wie sie sind.",
     "sections": [

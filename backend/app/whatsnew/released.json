@@ -86,5 +86,10 @@
   "1.12.0": {
     "de": "sha256-FBa1XTYS5WKXO+JHpGwVO2bW2kMALklFi5a/eOpudAo=",
     "en": "sha256-0xagD3863eEr3kcfzE3/5Z0K9NwFGXqrICw+o50Cmxs="
+  },
+  "1.13.0": {
+    "de": "sha256-btTX2AqIRPZw+qcUiiISOuCctFgGlXf411Veu/H28Dc=",
+    "en": "sha256-hgnzlSsZ4iHaJRk3c5tiBv3F/NjXXV2mf004ThSrlNo=",
+    "fr": "sha256-gDQevgpxKtdba/+yKDIfERv+tfaS3tqvzOWJ17xCVqs="
   }
 }
